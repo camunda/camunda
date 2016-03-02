@@ -1,0 +1,34 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+sourceCompatibility = 1.8
+version = '0.0.1'
+jar {
+  manifest {
+    attributes 'Implementation-Title': 'dispatcher',
+               'Implementation-Version': version
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  runtime 'uk.co.real-logic:Agrona:0.4.+'
+  testCompile 'org.mockito:mockito-all:1.8.+'
+  testCompile 'org.assertj:assertj-core:3.3.+'
+  testCompile 'junit:junit:4.+'
+}
+
+test {
+  systemProperties 'property': 'value'
+}
+
+uploadArchives {
+  repositories {
+    flatDir {
+      dirs 'repos'
+    }
+  }
+}
