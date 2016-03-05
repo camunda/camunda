@@ -73,7 +73,7 @@ public class DataFrameDescriptor
         HEADER_LENGTH = offset;
     }
 
-    public static int frameLengthOffset(int offset)
+    public static int lengthOffset(int offset)
     {
         return offset + FRAME_LENGTH_OFFSET;
     }

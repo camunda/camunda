@@ -40,6 +40,7 @@ public class DispatcherTest
     Position publisherPosition;
     Subscription subscription;
     FragmentHandler fragmentHandler;
+    ClaimedFragment claimedFragment;
 
     @Before
     public void setup()
@@ -61,6 +62,7 @@ public class DispatcherTest
         publisherPosition = mock(Position.class);
         fragmentHandler = mock(FragmentHandler.class);
         subscription = mock(Subscription.class);
+        claimedFragment = mock(ClaimedFragment.class);
 
         dispatcher = new Dispatcher(logBuffer,
                 logAppender,
@@ -102,6 +104,31 @@ public class DispatcherTest
     }
 
     @Test
+    public void shouldNotClaimBeyondPublisherLimit()
+    {
+        // given
+        // position of 0,0
+        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+        // publisher limit of 0
+        when(publisherLimit.getVolatile()).thenReturn(position(0, 0));
+
+        // if
+        long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
+
+        // then
+        assertThat(newPosition).isEqualTo(-1);
+
+        verify(publisherLimit).getVolatile();
+        verifyNoMoreInteractions(publisherLimit);
+        verifyNoMoreInteractions(logAppender);
+        verifyNoMoreInteractions(claimedFragment);
+        verify(logBuffer).getActivePartitionIdVolatile();
+        verify(logBuffer).getPartition(0);
+        verify(logBufferPartition0).getTailCounterVolatile();
+    }
+
+    @Test
     public void shouldWriteUnfragmented()
     {
         // given
@@ -119,6 +146,34 @@ public class DispatcherTest
         assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
 
         verify(logAppender).appendUnfragmented(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+
+        verify(publisherLimit).getVolatile();
+        verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
+
+        verify(logBuffer).getActivePartitionIdVolatile();
+        verify(logBuffer).getPartition(0);
+        verify(logBufferPartition0).getTailCounterVolatile();
+
+    }
+
+    @Test
+    public void shouldClaimFragment()
+    {
+        // given
+        // position is 0,0
+        when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+        when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+        when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+
+        when(logAppender.claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH)).thenReturn(A_FRAGMENT_LENGTH);
+
+        // if
+        long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
+
+        // then
+        assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
+
+        verify(logAppender).claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH);
 
         verify(publisherLimit).getVolatile();
         verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));

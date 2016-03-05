@@ -1,23 +1,24 @@
 package net.long_running.dispatcher.impl.log;
 
+import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
+import static net.long_running.dispatcher.impl.log.LogBufferDescriptor.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.*;
+import static uk.co.real_logic.agrona.BitUtil.*;
+
+import java.nio.charset.Charset;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import net.long_running.dispatcher.impl.log.LogAppender;
-import net.long_running.dispatcher.impl.log.LogBufferPartition;
+import net.long_running.dispatcher.ClaimedFragment;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
-import static net.long_running.dispatcher.impl.log.LogBufferDescriptor.*;
-import static org.mockito.Mockito.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
-import static org.assertj.core.api.Assertions.*;
-
-import java.nio.charset.Charset;
-
-public class LogBufferAppenderUnfragmentedTest
+public class LogBufferAppenderClaimTest
 {
+
     static final int A_PARTITION_LENGTH = 1024;
     static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
     static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
@@ -29,12 +30,14 @@ public class LogBufferAppenderUnfragmentedTest
     UnsafeBuffer dataBufferMock;
     LogAppender logBufferAppender;
     LogBufferPartition logBufferPartition;
+    ClaimedFragment claimedFragmentMock;
 
     @Before
     public void setup()
     {
         dataBufferMock = mock(UnsafeBuffer.class);
         metadataBufferMock = mock(UnsafeBuffer.class);
+        claimedFragmentMock = mock(ClaimedFragment.class);
 
         when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
         logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock);
@@ -45,7 +48,7 @@ public class LogBufferAppenderUnfragmentedTest
     }
 
     @Test
-    public void shouldAppendMessage()
+    public void shouldClaimFragment()
     {
         // given
         // that the message + next message header fit into the buffer and there is more space
@@ -54,7 +57,7 @@ public class LogBufferAppenderUnfragmentedTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.appendUnfragmented(logBufferPartition, A_PARTITION_ID, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newTail).isEqualTo(currentTail + A_FRAGMENT_LENGTH);
@@ -63,16 +66,15 @@ public class LogBufferAppenderUnfragmentedTest
         verify(metadataBufferMock).getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH);
         verifyNoMoreInteractions(metadataBufferMock);
 
-        // and the message is appended to the buffer
-        InOrder inOrder = inOrder(dataBufferMock);
+        // the negative header was written and the claimed fragment now wraps the buffer section
+        InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
-        inOrder.verify(dataBufferMock).putBytes(messageOffset(currentTail), A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
-        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), A_MSG_PAYLOAD_LENGTH);
+        inOrder.verify(claimedFragmentMock).wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH);
     }
 
     @Test
-    public void shouldAppendMessageIfRemaingCapacityIsEqualHeaderSize()
+    public void shouldClaimIfRemaingCapacityIsEqualHeaderSize()
     {
         // given
         // that the message + next message header EXACTLY fit into the buffer
@@ -81,7 +83,7 @@ public class LogBufferAppenderUnfragmentedTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.appendUnfragmented(logBufferPartition, A_PARTITION_ID, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newTail).isEqualTo(currentTail + A_FRAGMENT_LENGTH);
@@ -90,11 +92,11 @@ public class LogBufferAppenderUnfragmentedTest
         verify(metadataBufferMock).getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH);
         verifyNoMoreInteractions(metadataBufferMock);
 
-        // and the message is appended to the buffer
-        InOrder inOrder = inOrder(dataBufferMock);
+        // the negative header was written and the claimed fragment now wraps the buffer section
+        InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
-        inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), A_MSG_PAYLOAD_LENGTH);
+        inOrder.verify(claimedFragmentMock).wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH);
     }
 
     @Test
@@ -107,7 +109,7 @@ public class LogBufferAppenderUnfragmentedTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.appendUnfragmented(logBufferPartition, A_PARTITION_ID, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newTail).isEqualTo(-2);
@@ -134,7 +136,7 @@ public class LogBufferAppenderUnfragmentedTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.appendUnfragmented(logBufferPartition, A_PARTITION_ID, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newTail).isEqualTo(-2);
@@ -161,7 +163,7 @@ public class LogBufferAppenderUnfragmentedTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.appendUnfragmented(logBufferPartition, A_PARTITION_ID, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newTail).isEqualTo(-1);

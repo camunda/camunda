@@ -2,7 +2,6 @@ package net.long_running.dispatcher;
 
 import static net.long_running.dispatcher.impl.PositionUtil.*;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -162,6 +161,46 @@ public class Dispatcher
             publisherPosition.proposeMaxOrdered(newPosition);
         }
         return newPosition;
+    }
+
+    public long claim(ClaimedFragment claim, int length)
+    {
+
+        final long limit = publisherLimit.getVolatile();
+
+        final int initialPartitionId = logBuffer.getInitialPartitionId();
+        final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
+        final int partitionIndex = (activePartitionId - initialPartitionId) % logBuffer.getPartitionCount();
+        final LogBufferPartition partition = logBuffer.getPartition(partitionIndex);
+
+        final int partitionOffset = partition.getTailCounterVolatile();
+        final long position = position(activePartitionId, partitionOffset);
+
+        long newPosition = -1;
+
+        if(position < limit)
+        {
+            int newOffset;
+
+            if (length < maxFrameLength)
+            {
+                newOffset = logAppender.claim(partition,
+                        activePartitionId,
+                        claim,
+                        length);
+            }
+            else
+            {
+                throw new RuntimeException("Cannot claim more than "+maxFrameLength+ " bytes.");
+            }
+
+            newPosition = updatePublisherPosition(initialPartitionId, activePartitionId, newOffset);
+
+            publisherPosition.proposeMaxOrdered(newPosition);
+        }
+
+        return newPosition;
+
     }
 
     protected long updatePublisherPosition(final int initialPartitionId, final int activePartitionId, int newOffset)

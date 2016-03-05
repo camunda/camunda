@@ -36,7 +36,7 @@ public class Subscription
 
         do
         {
-            final int length = buffer.getIntVolatile(frameLengthOffset(partitionOffset));
+            final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
             if(length <= 0)
             {
                 break;

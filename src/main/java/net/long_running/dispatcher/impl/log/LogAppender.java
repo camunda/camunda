@@ -4,6 +4,7 @@ import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
 import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
 
+import net.long_running.dispatcher.ClaimedFragment;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -31,13 +32,49 @@ public class LogAppender
             final UnsafeBuffer buffer = partition.getDataBuffer();
 
             // write negative length field
-            buffer.putIntOrdered(frameLengthOffset(frameOffset), -length);
+            buffer.putIntOrdered(lengthOffset(frameOffset), -length);
             UNSAFE.storeFence();
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
             buffer.putBytes(messageOffset(frameOffset), msg, start, length);
 
             // commit the message
-            buffer.putIntOrdered(frameLengthOffset(frameOffset), length);
+            buffer.putIntOrdered(lengthOffset(frameOffset), length);
+        }
+        else
+        {
+            newTail = onEndOfPartition(partition, frameOffset);
+        }
+
+        return newTail;
+    }
+
+    public int claim(
+            LogBufferPartition partition,
+            int activePartitionId,
+            ClaimedFragment claim,
+            int length)
+    {
+        final int partitionSize = partition.getPartitionSize();
+        final int framedMessageLength = length + HEADER_LENGTH;
+        final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
+
+        // move the tail of the partition
+        final int frameOffset = partition.getAndAddTail(alignedFrameLength);
+
+        int newTail = frameOffset + alignedFrameLength;
+
+        if(newTail <= (partitionSize - HEADER_LENGTH))
+        {
+            final UnsafeBuffer buffer = partition.getDataBuffer();
+
+            // write negative length field
+            buffer.putIntOrdered(lengthOffset(frameOffset), -length);
+            UNSAFE.storeFence();
+            buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
+
+            claim.wrap(buffer, frameOffset, framedMessageLength);
+
+            // Do not commit the message
         }
         else
         {
@@ -67,10 +104,10 @@ public class LogAppender
         {
             // this message tripped the end of the partition, fill buffer with padding
             final UnsafeBuffer buffer = partition.getDataBuffer();
-            buffer.putIntOrdered(frameLengthOffset(partitionOffset), -padLength);
+            buffer.putIntOrdered(lengthOffset(partitionOffset), -padLength);
             UNSAFE.storeFence();
             buffer.putShort(typeOffset(partitionOffset), TYPE_PADDING);
-            buffer.putIntOrdered(frameLengthOffset(partitionOffset), padLength);
+            buffer.putIntOrdered(lengthOffset(partitionOffset), padLength);
 
             newTail = -2;
         }
