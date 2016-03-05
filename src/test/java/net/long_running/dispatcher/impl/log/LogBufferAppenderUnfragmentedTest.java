@@ -23,7 +23,7 @@ public class LogBufferAppenderUnfragmentedTest
     static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
     static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
     static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-    static final ByteBuffer A_MSG = ByteBuffer.wrap(A_MSG_PAYLOAD);
+    static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
     static final int A_PARTITION_ID = 10;
 
     UnsafeBuffer metadataBufferMock;

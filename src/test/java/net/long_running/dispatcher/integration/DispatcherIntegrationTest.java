@@ -1,16 +1,15 @@
 package net.long_running.dispatcher.integration;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.junit.Test;
 
 import net.long_running.dispatcher.Dispatcher;
 import net.long_running.dispatcher.Dispatchers;
 import net.long_running.dispatcher.FragmentHandler;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-//@Ignore
 public class DispatcherIntegrationTest
 {
 
@@ -20,9 +19,9 @@ public class DispatcherIntegrationTest
         int counter = 0;
 
         @Override
-        public void onFragment(UnsafeBuffer buffer, int offset, int length)
+        public void onFragment(DirectBuffer buffer, int offset, int length)
         {
-            int newCounter = buffer.getInt(offset, ByteOrder.BIG_ENDIAN);
+            int newCounter = buffer.getInt(offset);
             if(newCounter  - 1 != counter)
             {
                 throw new RuntimeException();
@@ -35,11 +34,13 @@ public class DispatcherIntegrationTest
     @Test
     public void test() throws Exception
     {
+        // 1 million 10 K messages
         final int totalWork = 1000000;
+        UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(1024*10));
 
-        ByteBuffer msg = ByteBuffer.allocate(1024*10);
-
-        Dispatcher dispatcher = Dispatchers.create("default").buildAndStart();
+        Dispatcher dispatcher = Dispatchers.create("default")
+                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .buildAndStart();
 
         final Consumer consumer = new Consumer();
 

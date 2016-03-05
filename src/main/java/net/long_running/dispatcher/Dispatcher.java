@@ -12,6 +12,7 @@ import net.long_running.dispatcher.impl.Subscription;
 import net.long_running.dispatcher.impl.log.LogBuffer;
 import net.long_running.dispatcher.impl.log.LogAppender;
 import net.long_running.dispatcher.impl.log.LogBufferPartition;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 /**
@@ -109,18 +110,19 @@ public class Dispatcher
             {
                 throw (RuntimeException) e.getCause();
             }
-            else {
+            else
+            {
                 throw new RuntimeException("Exception while waiting for dispatcher to start", e.getCause());
             }
         }
     }
 
-    public long offer(ByteBuffer msg)
+    public long offer(DirectBuffer msg)
     {
-        return offer(msg, msg.position(), msg.remaining());
+        return offer(msg, 0, msg.capacity());
     }
 
-    public long offer(ByteBuffer msg, int start, int length)
+    public long offer(DirectBuffer msg, int start, int length)
     {
         final long limit = publisherLimit.getVolatile();
 

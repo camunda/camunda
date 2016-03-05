@@ -1,11 +1,11 @@
 package net.long_running.dispatcher;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 @FunctionalInterface
 public interface FragmentHandler
 {
 
-    void onFragment(UnsafeBuffer buffer, int offset, int length);
+    void onFragment(DirectBuffer buffer, int offset, int length);
 
 }

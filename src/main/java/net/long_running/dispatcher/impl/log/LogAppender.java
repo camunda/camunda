@@ -6,6 +6,7 @@ import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
 
 import java.nio.ByteBuffer;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class LogAppender
@@ -14,7 +15,7 @@ public class LogAppender
     public int appendUnfragmented(
             final LogBufferPartition partition,
             final int activePartitionId,
-            final ByteBuffer msg,
+            final DirectBuffer msg,
             final int start,
             final int length)
     {
@@ -55,7 +56,7 @@ public class LogAppender
     public int appendFramented(
             final LogBufferPartition partition,
             final int activePartitionId,
-            final ByteBuffer msg,
+            final DirectBuffer msg,
             final int start,
             final int length)
     {

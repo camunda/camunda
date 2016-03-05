@@ -4,7 +4,6 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
 import static net.long_running.dispatcher.impl.PositionUtil.*;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
@@ -17,6 +16,7 @@ import net.long_running.dispatcher.impl.Subscription;
 import net.long_running.dispatcher.impl.log.LogAppender;
 import net.long_running.dispatcher.impl.log.LogBuffer;
 import net.long_running.dispatcher.impl.log.LogBufferPartition;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 public class DispatcherTest
@@ -25,7 +25,7 @@ public class DispatcherTest
     static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
     static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
     static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-    static final ByteBuffer A_MSG = ByteBuffer.wrap(A_MSG_PAYLOAD);
+    static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
     static final int AN_INITIAL_PARTITION_ID = 0;
     static final int A_LOG_WINDOW_LENGTH = 128;
     static final int A_PARITION_SIZE = 1024;
