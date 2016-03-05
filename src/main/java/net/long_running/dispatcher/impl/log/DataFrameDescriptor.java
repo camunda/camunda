@@ -11,10 +11,6 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  *  |  Version      |B|E| Flags     |             Type              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- *  |                        Log Partition Id                       |
- *  +---------------------------------------------------------------+
- *  |                     Log Partition Offset                      |
- *  +---------------------------------------------------------------+
  *  |                                                               |
  *  |                            Message                           ...
  * ...                                                              |
@@ -38,10 +34,6 @@ public class DataFrameDescriptor
     public static final short TYPE_MESSAGE = 0;
 
     public static final short TYPE_PADDING = 1;
-
-    public static final int LOG_PARTITION_ID_OFFSET;
-
-    public static final int LOG_PARTITION_OFFSET_OFFSET;
 
     public static final int HEADER_LENGTH;
 
@@ -78,12 +70,6 @@ public class DataFrameDescriptor
         TYPE_OFFSET = offset + SIZE_OF_SHORT - 2;
         offset += SIZE_OF_SHORT;
 
-        LOG_PARTITION_ID_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_PARTITION_OFFSET_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         HEADER_LENGTH = offset;
     }
 
@@ -105,16 +91,6 @@ public class DataFrameDescriptor
     public static int typeOffset(int offset)
     {
         return offset + TYPE_OFFSET;
-    }
-
-    public static int logPartitionIdOffset(int offset)
-    {
-        return offset + LOG_PARTITION_ID_OFFSET;
-    }
-
-    public static int logPartitionOffset(int offset)
-    {
-        return offset + LOG_PARTITION_OFFSET_OFFSET;
     }
 
     public static int messageOffset(int offset)

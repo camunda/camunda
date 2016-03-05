@@ -4,8 +4,6 @@ import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
 import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
 
-import java.nio.ByteBuffer;
-
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -34,12 +32,8 @@ public class LogAppender
 
             // write negative length field
             buffer.putIntOrdered(frameLengthOffset(frameOffset), -length);
-
             UNSAFE.storeFence();
-
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
-            buffer.putInt(logPartitionIdOffset(frameOffset), activePartitionId);
-            buffer.putInt(logPartitionOffset(frameOffset), frameOffset);
             buffer.putBytes(messageOffset(frameOffset), msg, start, length);
 
             // commit the message
