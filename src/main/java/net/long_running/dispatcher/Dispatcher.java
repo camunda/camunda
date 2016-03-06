@@ -1,6 +1,7 @@
 package net.long_running.dispatcher;
 
 import static net.long_running.dispatcher.impl.PositionUtil.*;
+import static net.long_running.dispatcher.AsyncCompletionCallback.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -85,19 +86,9 @@ public class Dispatcher
 
     public void startSync() throws InterruptedException
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableFuture<Dispatcher> future = new CompletableFuture<>();
 
-        start((ex, d) ->
-        {
-            if(ex != null)
-            {
-                future.completeExceptionally(ex);
-            }
-            else
-            {
-                future.complete(null);
-            }
-        });
+        start(completeFuture(future));
 
         try
         {
@@ -118,10 +109,15 @@ public class Dispatcher
 
     public long offer(DirectBuffer msg)
     {
-        return offer(msg, 0, msg.capacity());
+        return offer(msg, 0, msg.capacity(), 0);
     }
 
     public long offer(DirectBuffer msg, int start, int length)
+    {
+        return offer(msg, start, length, 0);
+    }
+
+    public long offer(DirectBuffer msg, int start, int length, int streamId)
     {
         final long limit = publisherLimit.getVolatile();
 
@@ -141,19 +137,16 @@ public class Dispatcher
 
             if (length < maxFrameLength)
             {
-                newOffset = logAppender.appendUnfragmented(partition,
+                newOffset = logAppender.appendFrame(partition,
                         activePartitionId,
                         msg,
                         start,
-                        length);
+                        length,
+                        streamId);
             }
             else
             {
-                newOffset = logAppender.appendFramented(partition,
-                        activePartitionId,
-                        msg,
-                        start,
-                        length);
+                throw new RuntimeException("Message length of "+length+" is larger than max frame length of "+maxFrameLength);
             }
 
             newPosition = updatePublisherPosition(initialPartitionId, activePartitionId, newOffset);
@@ -164,6 +157,11 @@ public class Dispatcher
     }
 
     public long claim(ClaimedFragment claim, int length)
+    {
+        return claim(claim, length, 0);
+    }
+
+    public long claim(ClaimedFragment claim, int length, int streamId)
     {
 
         final long limit = publisherLimit.getVolatile();
@@ -187,7 +185,8 @@ public class Dispatcher
                 newOffset = logAppender.claim(partition,
                         activePartitionId,
                         claim,
-                        length);
+                        length,
+                        streamId);
             }
             else
             {
@@ -272,19 +271,9 @@ public class Dispatcher
 
     public void close() throws InterruptedException
     {
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final CompletableFuture<Dispatcher> future = new CompletableFuture<>();
 
-        closeAsync((t, d) ->
-        {
-            if(t != null)
-            {
-                future.completeExceptionally(t);
-            }
-            else
-            {
-                future.complete(null);
-            }
-        });
+        closeAsync(completeFuture(future));
 
         try
         {
@@ -371,6 +360,11 @@ public class Dispatcher
       }
 
       logBuffer.close();
+    }
+
+    public int getMaxFrameLength()
+    {
+        return maxFrameLength;
     }
 
 }

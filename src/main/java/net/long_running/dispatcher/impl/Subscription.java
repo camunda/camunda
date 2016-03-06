@@ -28,7 +28,7 @@ public class Subscription
             FragmentHandler frgHandler,
             int maxNumOfFragments,
             int partitionId,
-            int partitionOffset)
+            int fragmentOffset)
     {
         final UnsafeBuffer buffer = partition.getDataBuffer();
 
@@ -36,28 +36,39 @@ public class Subscription
 
         do
         {
-            final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
+            final int length = buffer.getIntVolatile(lengthOffset(fragmentOffset));
             if(length <= 0)
             {
                 break;
             }
-            final short type = buffer.getShort(typeOffset(partitionOffset));
+
+            final short type = buffer.getShort(typeOffset(fragmentOffset));
             if(type == TYPE_PADDING)
             {
                 ++partitionId;
-                partitionOffset = 0;
+                fragmentOffset = 0;
                 break;
             }
             else
             {
-                frgHandler.onFragment(buffer, messageOffset(partitionOffset), length);
-                partitionOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+                final int streamId = buffer.getInt(streamIdOffset(fragmentOffset));
+                try
+                {
+                    frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId);
+                }
+                catch(RuntimeException e)
+                {
+                    // TODO!
+                    e.printStackTrace();
+                }
+
+                fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
                 ++fragmentsRead;
             }
         }
         while(fragmentsRead < maxNumOfFragments);
 
-        position.setOrdered(position(partitionId, partitionOffset));
+        position.setOrdered(position(partitionId, fragmentOffset));
 
         return fragmentsRead;
     }

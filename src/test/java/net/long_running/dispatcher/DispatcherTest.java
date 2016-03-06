@@ -29,6 +29,7 @@ public class DispatcherTest
     static final int AN_INITIAL_PARTITION_ID = 0;
     static final int A_LOG_WINDOW_LENGTH = 128;
     static final int A_PARITION_SIZE = 1024;
+    static final int A_STREAM_ID = 20;
 
     Dispatcher dispatcher;
     LogBuffer logBuffer;
@@ -137,15 +138,15 @@ public class DispatcherTest
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(logAppender.appendUnfragmented(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH)).thenReturn(A_FRAGMENT_LENGTH);
+        when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
 
         // if
-        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logAppender).appendUnfragmented(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        verify(logAppender).appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         verify(publisherLimit).getVolatile();
         verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
@@ -165,15 +166,15 @@ public class DispatcherTest
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(logAppender.claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH)).thenReturn(A_FRAGMENT_LENGTH);
+        when(logAppender.claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
 
         // if
-        long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
+        long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
 
-        verify(logAppender).claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH);
+        verify(logAppender).claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         verify(publisherLimit).getVolatile();
         verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
@@ -193,10 +194,10 @@ public class DispatcherTest
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(logAppender.appendUnfragmented(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH)).thenReturn(-2);
+        when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-2);
 
         // if
-        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newPosition).isEqualTo(-2);
@@ -221,7 +222,7 @@ public class DispatcherTest
         when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
         when(publisherLimit.getVolatile()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(logAppender.appendUnfragmented(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH)).thenReturn(-1);
+        when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-1);
 
         // if
         long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);

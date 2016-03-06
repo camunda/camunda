@@ -11,6 +11,8 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  *  |  Version      |B|E| Flags     |             Type              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ *  |                            StreamId                           |
+ *  +---------------------------------------------------------------+
  *  |                                                               |
  *  |                            Message                           ...
  * ...                                                              |
@@ -31,26 +33,13 @@ public class DataFrameDescriptor
 
     public static final int TYPE_OFFSET;
 
+    public static final int STREAM_ID_OFFSET;
+
     public static final short TYPE_MESSAGE = 0;
 
     public static final short TYPE_PADDING = 1;
 
     public static final int HEADER_LENGTH;
-
-    /**
-     * Beginning fragment of a frame.
-     */
-    public static final byte BEGIN_FRAG_FLAG = (byte)0b1000_0000;
-
-    /**
-     * End fragment of a frame.
-     */
-    public static final byte END_FRAG_FLAG = (byte)0b0100_0000;
-
-    /**
-     * End fragment of a frame.
-     */
-    public static final byte UNFRAGMENTED = BEGIN_FRAG_FLAG | END_FRAG_FLAG;
 
     static
     {
@@ -69,6 +58,9 @@ public class DataFrameDescriptor
 
         TYPE_OFFSET = offset + SIZE_OF_SHORT - 2;
         offset += SIZE_OF_SHORT;
+
+        STREAM_ID_OFFSET = offset;
+        offset += SIZE_OF_INT;
 
         HEADER_LENGTH = offset;
     }
@@ -91,6 +83,11 @@ public class DataFrameDescriptor
     public static int typeOffset(int offset)
     {
         return offset + TYPE_OFFSET;
+    }
+
+    public static int streamIdOffset(int offset)
+    {
+        return offset + STREAM_ID_OFFSET;
     }
 
     public static int messageOffset(int offset)

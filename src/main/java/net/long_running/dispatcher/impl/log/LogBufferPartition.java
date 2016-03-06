@@ -22,8 +22,14 @@ public class LogBufferPartition
      */
     protected final UnsafeBuffer metadataBuffer;
 
-    public LogBufferPartition(UnsafeBuffer dataBuffer, UnsafeBuffer metadataBuffer)
+    /**
+     * the offset of the partition's data buffer in the underlying buffer
+     */
+    protected final int dataBufferOffset;
+
+    public LogBufferPartition(int dataSectionOffset, UnsafeBuffer dataBuffer, UnsafeBuffer metadataBuffer)
     {
+        this.dataBufferOffset = dataSectionOffset;
         dataBuffer.verifyAlignment();
         metadataBuffer.verifyAlignment();
         this.dataBuffer = dataBuffer;
@@ -71,6 +77,11 @@ public class LogBufferPartition
     public boolean needsCleaning()
     {
         return getStatusVolatile() == PARTITION_NEEDS_CLEANING;
+    }
+
+    public int getDataBufferOffset()
+    {
+        return dataBufferOffset;
     }
 
 }

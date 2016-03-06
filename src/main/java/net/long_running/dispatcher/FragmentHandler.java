@@ -6,6 +6,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
 public interface FragmentHandler
 {
 
-    void onFragment(DirectBuffer buffer, int offset, int length);
+    void onFragment(DirectBuffer buffer, int offset, int length, int streamId);
 
 }

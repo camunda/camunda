@@ -22,7 +22,7 @@ public class DispatcherIntegrationTest
         int counter = 0;
 
         @Override
-        public void onFragment(DirectBuffer buffer, int offset, int length)
+        public void onFragment(DirectBuffer buffer, int offset, int length, int streamId)
         {
             int newCounter = buffer.getInt(offset);
             if(newCounter  - 1 != counter)

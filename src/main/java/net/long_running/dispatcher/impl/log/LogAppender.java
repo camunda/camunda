@@ -11,12 +11,13 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class LogAppender
 {
 
-    public int appendUnfragmented(
+    public int appendFrame(
             final LogBufferPartition partition,
             final int activePartitionId,
             final DirectBuffer msg,
             final int start,
-            final int length)
+            final int length,
+            final int streamId)
     {
 
         final int partitionSize = partition.getPartitionSize();
@@ -35,6 +36,7 @@ public class LogAppender
             buffer.putIntOrdered(lengthOffset(frameOffset), -length);
             UNSAFE.storeFence();
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
+            buffer.putInt(streamIdOffset(frameOffset), streamId);
             buffer.putBytes(messageOffset(frameOffset), msg, start, length);
 
             // commit the message
@@ -49,10 +51,11 @@ public class LogAppender
     }
 
     public int claim(
-            LogBufferPartition partition,
-            int activePartitionId,
-            ClaimedFragment claim,
-            int length)
+            final LogBufferPartition partition,
+            final int activePartitionId,
+            final ClaimedFragment claim,
+            final int length,
+            final int streamId)
     {
         final int partitionSize = partition.getPartitionSize();
         final int framedMessageLength = length + HEADER_LENGTH;
@@ -71,6 +74,7 @@ public class LogAppender
             buffer.putIntOrdered(lengthOffset(frameOffset), -length);
             UNSAFE.storeFence();
             buffer.putShort(typeOffset(frameOffset), TYPE_MESSAGE);
+            buffer.putInt(streamIdOffset(frameOffset), streamId);
 
             claim.wrap(buffer, frameOffset, framedMessageLength);
 
@@ -82,16 +86,6 @@ public class LogAppender
         }
 
         return newTail;
-    }
-
-    public int appendFramented(
-            final LogBufferPartition partition,
-            final int activePartitionId,
-            final DirectBuffer msg,
-            final int start,
-            final int length)
-    {
-        throw new RuntimeException("not implemented");
     }
 
     protected int onEndOfPartition (final LogBufferPartition partition, final int partitionOffset)

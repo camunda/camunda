@@ -25,6 +25,7 @@ public class LogBufferAppenderClaimTest
     static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
     static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
     static final int A_PARTITION_ID = 10;
+    static final int A_STREAM_ID = 20;
 
     UnsafeBuffer metadataBufferMock;
     UnsafeBuffer dataBufferMock;
@@ -40,7 +41,7 @@ public class LogBufferAppenderClaimTest
         claimedFragmentMock = mock(ClaimedFragment.class);
 
         when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
-        logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock);
+        logBufferPartition = new LogBufferPartition(0, dataBufferMock, metadataBufferMock);
         verify(dataBufferMock).verifyAlignment();
         verify(metadataBufferMock).verifyAlignment();
 
@@ -57,7 +58,7 @@ public class LogBufferAppenderClaimTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newTail).isEqualTo(currentTail + A_FRAGMENT_LENGTH);
@@ -70,6 +71,7 @@ public class LogBufferAppenderClaimTest
         InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
+        inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
         inOrder.verify(claimedFragmentMock).wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH);
     }
 
@@ -83,7 +85,7 @@ public class LogBufferAppenderClaimTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newTail).isEqualTo(currentTail + A_FRAGMENT_LENGTH);
@@ -96,6 +98,7 @@ public class LogBufferAppenderClaimTest
         InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
+        inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
         inOrder.verify(claimedFragmentMock).wrap(dataBufferMock, currentTail, A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH);
     }
 
@@ -109,7 +112,7 @@ public class LogBufferAppenderClaimTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newTail).isEqualTo(-2);
@@ -136,7 +139,7 @@ public class LogBufferAppenderClaimTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newTail).isEqualTo(-2);
@@ -163,7 +166,7 @@ public class LogBufferAppenderClaimTest
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
         // if
-        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH);
+        final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newTail).isEqualTo(-1);
