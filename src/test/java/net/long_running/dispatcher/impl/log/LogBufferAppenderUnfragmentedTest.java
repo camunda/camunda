@@ -38,7 +38,7 @@ public class LogBufferAppenderUnfragmentedTest
         metadataBufferMock = mock(UnsafeBuffer.class);
 
         when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
-        logBufferPartition = new LogBufferPartition(0, dataBufferMock, metadataBufferMock);
+        logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock, null, 0);
         verify(dataBufferMock).verifyAlignment();
         verify(metadataBufferMock).verifyAlignment();
 

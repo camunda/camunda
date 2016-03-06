@@ -4,14 +4,16 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 
+import net.long_running.dispatcher.BlockHandler;
 import net.long_running.dispatcher.ClaimedFragment;
 import net.long_running.dispatcher.Dispatcher;
 import net.long_running.dispatcher.Dispatchers;
 import net.long_running.dispatcher.FragmentHandler;
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
 
 public class DispatcherIntegrationTest
 {
@@ -25,6 +27,24 @@ public class DispatcherIntegrationTest
         public void onFragment(DirectBuffer buffer, int offset, int length, int streamId)
         {
             int newCounter = buffer.getInt(offset);
+            if(newCounter  - 1 != counter)
+            {
+                throw new RuntimeException();
+            }
+            counter = newCounter;
+        }
+
+    }
+
+    class BlockConsumer implements BlockHandler
+    {
+
+        int counter = 0;
+
+        @Override
+        public void onBlockAvailable(ByteBuffer buffer, int blockOffset, int blockLength, int streamId)
+        {
+            int newCounter = buffer.getInt(messageOffset(blockOffset));
             if(newCounter  - 1 != counter)
             {
                 throw new RuntimeException();
@@ -113,6 +133,50 @@ public class DispatcherIntegrationTest
             }
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
             buffer.putInt(claimedFragment.getOffset(), i);
+            claimedFragment.commit();
+        }
+
+        consumerThread.join();
+
+        dispatcher.close();
+    }
+
+    @Test
+    public void testPollBlock() throws Exception
+    {
+        final int totalWork = 1000000;
+        final ClaimedFragment claimedFragment = new ClaimedFragment();
+
+        final Dispatcher dispatcher = Dispatchers.create("default")
+                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .buildAndStart();
+
+        final BlockConsumer consumer = new BlockConsumer();
+
+
+        final Thread consumerThread = new Thread(new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                while(consumer.counter < totalWork)
+                {
+                    dispatcher.pollBlock(consumer, 1, false);
+                }
+            }
+        });
+
+        consumerThread.start();
+
+        for(int i = 1; i <= totalWork; i++)
+        {
+            while (dispatcher.claim(claimedFragment, 64) <= 0)
+            {
+                // spin
+            }
+            final MutableDirectBuffer buffer = claimedFragment.getBuffer();
+            buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(i));
             claimedFragment.commit();
         }
 

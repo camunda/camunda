@@ -4,6 +4,9 @@ import static net.long_running.dispatcher.impl.PositionUtil.*;
 import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
 
+import java.nio.ByteBuffer;
+
+import net.long_running.dispatcher.BlockHandler;
 import net.long_running.dispatcher.FragmentHandler;
 import net.long_running.dispatcher.impl.log.LogBufferPartition;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -23,10 +26,10 @@ public class Subscription
         return position.get();
     }
 
-    public int pollPartition(
-            LogBufferPartition partition,
-            FragmentHandler frgHandler,
-            int maxNumOfFragments,
+    public int pollFragments(
+            final LogBufferPartition partition,
+            final FragmentHandler frgHandler,
+            final int maxNumOfFragments,
             int partitionId,
             int fragmentOffset)
     {
@@ -69,6 +72,86 @@ public class Subscription
         while(fragmentsRead < maxNumOfFragments);
 
         position.setOrdered(position(partitionId, fragmentOffset));
+
+        return fragmentsRead;
+    }
+
+    public int pollBlock(
+            final LogBufferPartition partition,
+            final BlockHandler blockHandler,
+            final int maxNumOfFragments,
+            int partitionId,
+            int partitionOffset,
+            final boolean isStreamAware)
+    {
+
+        final UnsafeBuffer buffer = partition.getDataBuffer();
+        final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
+        final int bufferOffset = partition.getUnderlyingBufferOffset();
+
+        int fragmentsRead = 0;
+
+        int firstFragmentOffset = partitionOffset;
+        int blockLength = 0;
+        int initialStreamId = -1;
+
+        // scan buffer for block
+        do
+        {
+            final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
+            if(length <= 0)
+            {
+                break;
+            }
+
+            final short type = buffer.getShort(typeOffset(partitionOffset));
+            if(type == TYPE_PADDING)
+            {
+                ++partitionId;
+                partitionOffset = 0;
+                break;
+            }
+            else
+            {
+                if(isStreamAware)
+                {
+                    final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
+                    if(fragmentsRead == 0)
+                    {
+                        initialStreamId = streamId;
+                    }
+                    else
+                    {
+                        if(streamId != initialStreamId)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                final int alignedFrameLength = align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+                partitionOffset += alignedFrameLength;
+                blockLength += alignedFrameLength;
+                ++fragmentsRead;
+            }
+        }
+        while(fragmentsRead < maxNumOfFragments);
+
+        if(fragmentsRead > 0)
+        {
+            final int absoluteOffset = bufferOffset + firstFragmentOffset;
+            try
+            {
+                blockHandler.onBlockAvailable(rawBuffer, absoluteOffset, blockLength, initialStreamId);
+            }
+            catch(Exception e)
+            {
+                // TODO!
+                e.printStackTrace();
+            }
+        }
+
+        position.setOrdered(position(partitionId, partitionOffset));
 
         return fragmentsRead;
     }

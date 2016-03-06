@@ -2,6 +2,7 @@ package net.long_running.dispatcher.impl.log;
 
 import static net.long_running.dispatcher.impl.log.LogBufferDescriptor.*;
 
+import net.long_running.dispatcher.impl.allocation.AllocatedBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class LogBufferPartition
@@ -23,18 +24,29 @@ public class LogBufferPartition
     protected final UnsafeBuffer metadataBuffer;
 
     /**
-     * the offset of the partition's data buffer in the underlying buffer
+     * the offset of the partition's data buffer in the underlying buffer (see {@link #underlyingBuffer}.
      */
-    protected final int dataBufferOffset;
+    protected final int rawBufferOffset;
 
-    public LogBufferPartition(int dataSectionOffset, UnsafeBuffer dataBuffer, UnsafeBuffer metadataBuffer)
+    /**
+     * the raw buffer in which this partition is allocated into.
+     * {@link #getUnderlyingBufferOffset()} is the offset of the data buffer in this buffer
+     */
+    protected final AllocatedBuffer underlyingBuffer;
+
+    public LogBufferPartition(
+            UnsafeBuffer dataBuffer,
+            UnsafeBuffer metadataBuffer,
+            AllocatedBuffer underlyingBuffer,
+            int rawBufferOffset)
     {
-        this.dataBufferOffset = dataSectionOffset;
         dataBuffer.verifyAlignment();
         metadataBuffer.verifyAlignment();
         this.dataBuffer = dataBuffer;
         this.metadataBuffer = metadataBuffer;
         this.partitionSize = dataBuffer.capacity();
+        this.underlyingBuffer = underlyingBuffer;
+        this.rawBufferOffset = rawBufferOffset;
     }
 
     public void clean()
@@ -79,9 +91,13 @@ public class LogBufferPartition
         return getStatusVolatile() == PARTITION_NEEDS_CLEANING;
     }
 
-    public int getDataBufferOffset()
+    public int getUnderlyingBufferOffset()
     {
-        return dataBufferOffset;
+        return rawBufferOffset;
     }
 
+    public AllocatedBuffer getUnderlyingBuffer()
+    {
+        return underlyingBuffer;
+    }
 }

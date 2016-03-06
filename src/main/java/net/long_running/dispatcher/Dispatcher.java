@@ -240,11 +240,48 @@ public class Dispatcher
 
             final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
 
-            fragmentsRead = subscription.pollPartition(partition,
+            fragmentsRead = subscription.pollFragments(partition,
                     frgHandler,
                     maxNumOfFragments,
                     partitionId,
                     partitionOffset);
+        }
+
+        return fragmentsRead;
+    }
+
+    public int pollBlock(BlockHandler blockHandler, int maxNumOfFragments)
+    {
+        return pollBlock(0, blockHandler, maxNumOfFragments, false);
+    }
+
+    public int pollBlock(BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
+    {
+        return pollBlock(0, blockHandler, maxNumOfFragments, isStreamAware);
+    }
+
+    public int pollBlock(int subscriberId, BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
+    {
+        int fragmentsRead = 0;
+
+        final Subscription subscription = subscriptions[subscriberId];
+        final long currentPosition = subscription.getPosition();
+
+        final long limit = subscriberLimit(subscriberId, publisherPosition, subscriptions);
+
+        if(limit > currentPosition)
+        {
+            final int partitionId = partitionId(currentPosition);
+            final int partitionOffset = partitionOffset(currentPosition);
+
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+
+            fragmentsRead = subscription.pollBlock(partition,
+                    blockHandler,
+                    maxNumOfFragments,
+                    partitionId,
+                    partitionOffset,
+                    isStreamAware);
         }
 
         return fragmentsRead;

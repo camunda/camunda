@@ -3,7 +3,6 @@ package net.long_running.dispatcher.impl.log;
 import static net.long_running.dispatcher.impl.log.LogBufferDescriptor.*;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import net.long_running.dispatcher.impl.allocation.AllocatedBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -25,7 +24,7 @@ public class LogBuffer
         rawBuffer = allocatedBuffer;
 
 
-        partitions = new PartitionBuilder().slicePartitions(partitionSize, rawBuffer.getRawBuffer());
+        partitions = new PartitionBuilder().slicePartitions(partitionSize, rawBuffer);
 
         metadataBuffer = new UnsafeBuffer(rawBuffer.getRawBuffer(), logMetadataOffset(partitionSize), LOG_META_DATA_LENGTH);
 

@@ -15,7 +15,7 @@ import net.long_running.dispatcher.impl.log.LogBufferPartition;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
-public class SubscriptionPollPartitionTest
+public class SubscriptionPollFragmentsTest
 {
     static final int A_PARTITION_LENGTH = 1024;
     static final int A_MSG_PAYLOAD_LENGTH = 10;
@@ -38,7 +38,7 @@ public class SubscriptionPollPartitionTest
         metadataBufferMock = mock(UnsafeBuffer.class);
 
         when(dataBufferMock.capacity()).thenReturn(A_PARTITION_LENGTH);
-        logBufferPartition = new LogBufferPartition(0, dataBufferMock, metadataBufferMock);
+        logBufferPartition = new LogBufferPartition(dataBufferMock, metadataBufferMock, null, 0);
 
         mockSubscriberPosition = mock(Position.class);
         mockFragmentHandler = mock(FragmentHandler.class);
@@ -56,7 +56,7 @@ public class SubscriptionPollPartitionTest
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
 
         // when
-        int fragmentsRead = subscription.pollPartition(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset);
+        int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
@@ -84,7 +84,7 @@ public class SubscriptionPollPartitionTest
         when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
 
         // when
-        int fragmentsRead = subscription.pollPartition(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, firstFragOffset);
+        int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, firstFragOffset);
 
         // then
         assertThat(fragmentsRead).isEqualTo(2);
@@ -110,7 +110,7 @@ public class SubscriptionPollPartitionTest
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
-        int fragmentsRead = subscription.pollPartition(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset);
+        int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -129,7 +129,7 @@ public class SubscriptionPollPartitionTest
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(-A_MSG_PAYLOAD_LENGTH);
 
         // when
-        int fragmentsRead = subscription.pollPartition(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset);
+        int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);

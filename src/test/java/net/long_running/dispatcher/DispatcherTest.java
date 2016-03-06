@@ -41,6 +41,7 @@ public class DispatcherTest
     Position publisherPosition;
     Subscription subscription;
     FragmentHandler fragmentHandler;
+    BlockHandler blockHandler;
     ClaimedFragment claimedFragment;
 
     @Before
@@ -64,6 +65,7 @@ public class DispatcherTest
         fragmentHandler = mock(FragmentHandler.class);
         subscription = mock(Subscription.class);
         claimedFragment = mock(ClaimedFragment.class);
+        blockHandler = mock(BlockHandler.class);
 
         dispatcher = new Dispatcher(logBuffer,
                 logAppender,
@@ -241,13 +243,13 @@ public class DispatcherTest
     }
 
     @Test
-    public void shouldReadFromPartition()
+    public void shouldReadFragmentsFromPartition()
     {
         // given
         when(subscription.getPosition()).thenReturn(0l);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(subscription.pollPartition(logBufferPartition0, fragmentHandler, 2, 0, 0)).thenReturn(1);
+        when(subscription.pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0)).thenReturn(1);
 
         // if
         int fragmentsRead = dispatcher.poll(fragmentHandler, 2);
@@ -255,7 +257,25 @@ public class DispatcherTest
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         verify(subscription).getPosition();
-        verify(subscription).pollPartition(logBufferPartition0, fragmentHandler, 2, 0, 0);
+        verify(subscription).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
+    }
+
+    @Test
+    public void shouldReadBlockFromPartition()
+    {
+        // given
+        when(subscription.getPosition()).thenReturn(0l);
+        when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+
+        when(subscription.pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true)).thenReturn(1);
+
+        // if
+        int fragmentsRead = dispatcher.pollBlock(blockHandler, 2, true);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+        verify(subscription).getPosition();
+        verify(subscription).pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true);
     }
 
     @Test
