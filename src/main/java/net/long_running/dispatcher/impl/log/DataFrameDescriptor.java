@@ -95,7 +95,7 @@ public class DataFrameDescriptor
         return offset + HEADER_LENGTH;
     }
 
-    public static int aligedLength(int msgLength)
+    public static int alignedLength(int msgLength)
     {
         return align(msgLength + HEADER_LENGTH, FRAME_ALIGNMENT);
     }

@@ -1,6 +1,7 @@
 package net.long_running.dispatcher;
 
 import static net.long_running.dispatcher.impl.PositionUtil.*;
+import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static net.long_running.dispatcher.AsyncCompletionCallback.*;
 
 import java.util.concurrent.CompletableFuture;
@@ -402,6 +403,11 @@ public class Dispatcher
     public int getMaxFrameLength()
     {
         return maxFrameLength;
+    }
+
+    public long getPublisherPosition()
+    {
+        return publisherPosition.get();
     }
 
 }

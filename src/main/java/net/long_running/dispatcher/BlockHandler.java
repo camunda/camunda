@@ -6,6 +6,11 @@ import java.nio.ByteBuffer;
 public interface BlockHandler
 {
 
-    void onBlockAvailable(ByteBuffer buffer, int blockOffset, int blockLength, int streamId);
+    void onBlockAvailable(
+            ByteBuffer buffer,
+            int blockOffset,
+            int blockLength,
+            int streamId,
+            long blockPosition);
 
 }

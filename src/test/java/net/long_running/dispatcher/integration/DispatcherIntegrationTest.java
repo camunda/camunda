@@ -42,7 +42,7 @@ public class DispatcherIntegrationTest
         int counter = 0;
 
         @Override
-        public void onBlockAvailable(ByteBuffer buffer, int blockOffset, int blockLength, int streamId)
+        public void onBlockAvailable(ByteBuffer buffer, int blockOffset, int blockLength, int streamId, long position)
         {
             int newCounter = buffer.getInt(messageOffset(blockOffset));
             if(newCounter  - 1 != counter)

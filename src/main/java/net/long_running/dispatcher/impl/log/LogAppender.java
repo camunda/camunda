@@ -19,9 +19,8 @@ public class LogAppender
             final int length,
             final int streamId)
     {
-
         final int partitionSize = partition.getPartitionSize();
-        final int alignedFrameLength = align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+        final int alignedFrameLength = alignedLength(length);
 
         // move the tail of the partition
         final int frameOffset = partition.getAndAddTail(alignedFrameLength);

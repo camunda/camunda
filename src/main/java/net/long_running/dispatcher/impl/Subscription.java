@@ -88,6 +88,7 @@ public class Subscription
         final UnsafeBuffer buffer = partition.getDataBuffer();
         final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
         final int bufferOffset = partition.getUnderlyingBufferOffset();
+        final long blockPosition = position(partitionId, partitionOffset);
 
         int fragmentsRead = 0;
 
@@ -142,7 +143,12 @@ public class Subscription
             final int absoluteOffset = bufferOffset + firstFragmentOffset;
             try
             {
-                blockHandler.onBlockAvailable(rawBuffer, absoluteOffset, blockLength, initialStreamId);
+                blockHandler.onBlockAvailable(
+                        rawBuffer,
+                        absoluteOffset,
+                        blockLength,
+                        initialStreamId,
+                        blockPosition);
             }
             catch(Exception e)
             {

@@ -61,7 +61,8 @@ public class SubscriptionPollBlockTest
     {
         int fragOffset = 0;
 
-        when(mockSubscriberPosition.get()).thenReturn(position(A_PARTITION_ID, fragOffset));
+        long subscriberPosition = position(A_PARTITION_ID, fragOffset);
+        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
@@ -72,7 +73,7 @@ public class SubscriptionPollBlockTest
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         // the fragment handler was handed one fragment
-        verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + fragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID));
+        verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + fragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID), eq(subscriberPosition));
         verifyNoMoreInteractions(mockBlockHandler);
         // and the position was increased by the fragment length
         verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
@@ -84,7 +85,8 @@ public class SubscriptionPollBlockTest
         int firstFragOffset = 0;
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
-        when(mockSubscriberPosition.get()).thenReturn(position(A_PARTITION_ID, firstFragOffset));
+        long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
+        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -102,7 +104,7 @@ public class SubscriptionPollBlockTest
 
         // the block handler was handed two fragments as blocks
         InOrder inOrder = inOrder(mockBlockHandler);
-        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(2*A_FRAGMENT_LENGTH), eq(A_STREAM_ID));
+        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(2*A_FRAGMENT_LENGTH), eq(A_STREAM_ID), eq(subscriberPosition));
         inOrder.verifyNoMoreInteractions();
 
         // and the position was increased by the fragment length of the two fragments
@@ -116,7 +118,8 @@ public class SubscriptionPollBlockTest
         int firstFragOffset = 0;
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
-        when(mockSubscriberPosition.get()).thenReturn(position(A_PARTITION_ID, firstFragOffset));
+        long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
+        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -134,7 +137,7 @@ public class SubscriptionPollBlockTest
 
         // the block handler was handed two fragments as blocks
         InOrder inOrder = inOrder(mockBlockHandler);
-        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID));
+        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID), eq(subscriberPosition));
         inOrder.verifyNoMoreInteractions();
 
         // and the position was increased by the fragment length of the two fragments
@@ -148,7 +151,8 @@ public class SubscriptionPollBlockTest
         int firstFragOffset = 0;
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
-        when(mockSubscriberPosition.get()).thenReturn(position(A_PARTITION_ID, firstFragOffset));
+        long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
+        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -166,7 +170,7 @@ public class SubscriptionPollBlockTest
 
         // the block handler was handed two fragments as blocks
         InOrder inOrder = inOrder(mockBlockHandler);
-        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(2*A_FRAGMENT_LENGTH), eq(-1));
+        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(2*A_FRAGMENT_LENGTH), eq(-1), eq(subscriberPosition));
         inOrder.verifyNoMoreInteractions();
 
         // and the position was increased by the fragment length of the two fragments
@@ -200,7 +204,8 @@ public class SubscriptionPollBlockTest
         int firstFragOffset = 0;
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
-        when(mockSubscriberPosition.get()).thenReturn(position(A_PARTITION_ID, firstFragOffset));
+        long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
+        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -217,7 +222,7 @@ public class SubscriptionPollBlockTest
 
         // the block handler was handed only one fragment in as block
         InOrder inOrder = inOrder(mockBlockHandler);
-        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID));
+        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID), eq(subscriberPosition));
         inOrder.verifyNoMoreInteractions();
 
         // and the position was rolled over to the next partition
