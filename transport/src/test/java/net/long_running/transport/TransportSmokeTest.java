@@ -42,6 +42,10 @@ public class TransportSmokeTest
         UnsafeBuffer unsafeBuffer = new UnsafeBuffer("hello".getBytes());
         channel.offer(unsafeBuffer, 0 , unsafeBuffer.capacity());
 
+        Thread.sleep(1000);
+
+        channel.closeSync();
+
         transport.close();
     }
 

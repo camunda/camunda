@@ -68,14 +68,4 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         return this.cmdQueue;
     }
 
-    public void onChannelClose(final BaseChannelImpl channel)
-    {
-        transportPoller.removeChannel(channel);
-        channel.closeConnection();
-        toSenderCmdQueue.add((s) ->
-        {
-           s.removeChannel(channel);
-        });
-    }
-
 }

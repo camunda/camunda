@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 import net.long_running.dispatcher.AsyncCompletionCallback;
+import net.long_running.transport.ChannelErrorHandler;
 import net.long_running.transport.ChannelFrameHandler;
 import net.long_running.transport.ClientChannel;
 import net.long_running.transport.impl.agent.TransportConductorCmd;
@@ -19,12 +20,13 @@ public class ClientChannelImpl extends BaseChannelImpl implements ClientChannel
     protected InetSocketAddress remoteAddress;
 
     public ClientChannelImpl(
-            ChannelFrameHandler channelReader,
-            TransportContext transportContext,
+            final TransportContext transportContext,
+            final ChannelFrameHandler frameHandler,
+            final ChannelErrorHandler errorHandler,
             final InetSocketAddress remoteAddress,
             final AsyncCompletionCallback<ClientChannel> callback)
     {
-        super(channelReader, transportContext);
+        super(transportContext, frameHandler, errorHandler);
         this.toConcuctorCmdQue = transportContext.getConductorCmdQueue();
         this.remoteAddress = remoteAddress;
 
@@ -59,12 +61,6 @@ public class ClientChannelImpl extends BaseChannelImpl implements ClientChannel
         {
             LangUtil.rethrowUnchecked(e);
         }
-    }
-
-    @Override
-    public void close()
-    {
-        // TODO
     }
 
     public InetSocketAddress getRemoteAddress()

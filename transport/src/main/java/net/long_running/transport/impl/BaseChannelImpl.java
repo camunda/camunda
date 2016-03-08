@@ -1,7 +1,8 @@
 package net.long_running.transport.impl;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
-import static net.long_running.dispatcher.impl.log.DataFrameDescriptor.*;
+import static net.long_running.transport.impl.TransportControlFrameDescriptor.*;
+import static net.long_running.transport.ChannelErrorHandler.*;
+import static net.long_running.dispatcher.AsyncCompletionCallback.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,38 +11,88 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+
+import net.long_running.dispatcher.AsyncCompletionCallback;
 import net.long_running.dispatcher.Dispatcher;
 import net.long_running.transport.BaseChannel;
+import net.long_running.transport.ChannelErrorHandler;
 import net.long_running.transport.ChannelFrameHandler;
+import net.long_running.transport.impl.agent.ReceiverCmd;
+import net.long_running.transport.impl.agent.SenderCmd;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public abstract class BaseChannelImpl implements BaseChannel
 {
 
-    public static enum State
+    protected static ByteBuffer CLOSE_FRAME = ByteBuffer.allocate(alignedLength(0));
+    protected static ByteBuffer END_OF_STREAM_FRAME = ByteBuffer.allocate(alignedLength(0));
+
+
+    static
     {
-        NEW, CONNECTED, CLOSING, CLOSED;
+        UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0,0);
+
+        ctrMsgWriter.wrap(CLOSE_FRAME);
+        ctrMsgWriter.putInt(lengthOffset(0), 0);
+        ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_CLOSE);
+
+        ctrMsgWriter.wrap(END_OF_STREAM_FRAME);
+        ctrMsgWriter.putInt(lengthOffset(0), 0);
+        ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_END_OF_STREAM);
+
     }
 
-    protected State state = State.NEW;
+    public static enum State
+    {
+        NEW,
+        CONNECTED,
+        CLOSE_INITIATED,
+        CLOSE_RECEIVED,
+        CLOSED;
+    }
+
+    protected static final AtomicReferenceFieldUpdater<BaseChannelImpl, State> STATE_UPDATER
+        = AtomicReferenceFieldUpdater.newUpdater(BaseChannelImpl.class, State.class, "state");
+
+    protected volatile State state = State.NEW;
+
     protected Integer id = new Random().nextInt();
 
     protected final Dispatcher sendBuffer;
     protected final ByteBuffer receiveBuffer;
     protected final UnsafeBuffer receiveBufferView;
     protected final int maxMessageLength;
+    protected final ManyToOneConcurrentArrayQueue<SenderCmd> senderCmdQueue;
+    protected final ManyToOneConcurrentArrayQueue<ReceiverCmd> receiverCmdQueue;
+
 
     protected ChannelFrameHandler frameHandler;
+    protected ChannelErrorHandler errorHandler;
+
     protected SocketChannel media;
 
-    public BaseChannelImpl(ChannelFrameHandler channelReader, TransportContext transportContext)
+    /** set while the channel is in state {@link State#CLOSE_INITIATED} until it is closed */
+    protected AsyncCompletionCallback<Boolean> closeCallback;
+
+    public BaseChannelImpl(
+            final TransportContext transportContext,
+            final ChannelFrameHandler channelReader,
+            final ChannelErrorHandler errorHandler)
     {
-        this.frameHandler = channelReader;
         this.sendBuffer = transportContext.getSendBuffer();
         this.maxMessageLength = transportContext.getMaxMessageLength();
+        senderCmdQueue = transportContext.getSenderCmdQueue();
+        receiverCmdQueue = transportContext.getReceiverCmdQueue();
+
+        this.frameHandler = channelReader;
+        this.errorHandler = errorHandler;
 
         if(sendBuffer.getMaxFrameLength() < maxMessageLength)
         {
@@ -53,67 +104,118 @@ public abstract class BaseChannelImpl implements BaseChannel
         this.receiveBufferView = new UnsafeBuffer(receiveBuffer);
     }
 
-    /* (non-Javadoc)
-     * @see net.long_running.transport.impl.BaseChannel#offer(uk.co.real_logic.agrona.DirectBuffer, int, int)
-     */
     @Override
     public long offer(final DirectBuffer payload, final int offset, final int length)
     {
-        if(maxMessageLength < length)
-        {
-            throw new IllegalArgumentException("Message length is larger than max message length of "+maxMessageLength);
-        }
         if(state != State.CONNECTED)
         {
             throw new IllegalStateException("Channel is not connected");
         }
 
         // use channel id as stream id in the shared write buffer
-        return sendBuffer.offer(payload, offset, length, id);
+        long position = sendBuffer.offer(payload, offset, length, id);
+
+        if(position > 0)
+        {
+            // return the position of the message itself, not the next message
+            // TODO: turn this into the default behavior of the dispatcher
+            // https://github.com/meyerdan/dispatcher/issues/5
+            position -= alignedLength(length);
+        }
+
+        return position;
     }
 
     public int receive()
     {
-        int bytesRead = 0;
 
-        try
+        final int bytesRead = mediaReceive(receiveBuffer);
+
+        if (bytesRead > 0)
         {
-            bytesRead = media.read(receiveBuffer);
-            if(receiveBuffer.position() > SIZE_OF_INT)
+            final int available = receiveBuffer.position();
+
+            if(available >= HEADER_LENGTH)
             {
-                int msgLength = receiveBufferView.getInt(0);
-                int frameLength = aligedLength(msgLength);
-                if(receiveBuffer.position() >= frameLength)
+                final int msgLength = receiveBufferView.getInt(lengthOffset(0));
+                final int frameLength = alignedLength(msgLength);
+
+                if(available >= frameLength)
                 {
-                    try
+                    final int msgType = receiveBufferView.getShort(typeOffset(0));
+
+                    if (msgType == TYPE_MESSAGE)
                     {
-                        frameHandler.onFrameAvailable(receiveBufferView, HEADER_LENGTH, msgLength);
+                        try
+                        {
+                            frameHandler.onFrameAvailable(receiveBufferView, HEADER_LENGTH, msgLength);
+                        }
+                        catch(RuntimeException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
-                    catch(RuntimeException e)
+                    else
                     {
-                        // TODO
-                        e.printStackTrace();
+                        handleControlFrame(msgType);
                     }
-                    finally
-                    {
-                        receiveBuffer.limit(receiveBuffer.position());
-                        receiveBuffer.position(frameLength);
-                        receiveBuffer.compact();
-                    }
+
+                    receiveBuffer.limit(available);
+                    receiveBuffer.position(frameLength);
+                    receiveBuffer.compact();
                 }
             }
         }
-        catch (IOException e)
+        else if(bytesRead == -1)
         {
-            // TODO
-        }
-
-        if(bytesRead == -1)
-        {
-            state = State.CLOSING;
+            // stream closed on the other side
+            mediaClose();
         }
 
         return bytesRead;
+    }
+
+    private int mediaReceive(ByteBuffer receiveBuffer)
+    {
+        int bytesReceived = -2;
+
+        try
+        {
+            bytesReceived = media.read(receiveBuffer);
+        }
+        catch (IOException e)
+        {
+            closeForcibly(e);
+        }
+
+        return bytesReceived;
+    }
+
+    protected void handleControlFrame(final int msgType)
+    {
+        if (msgType == TYPE_CONTROL_END_OF_STREAM)
+        {
+            mediaClose();
+            notifyClosed();
+        }
+        else if (msgType == TYPE_CONTROL_CLOSE)
+        {
+            final boolean isServer = ServerChannelImpl.class.isAssignableFrom(getClass());
+
+            final State newState = STATE_UPDATER.updateAndGet(this, (state) -> (state == State.CONNECTED
+                                                                            || (state == State.CLOSE_INITIATED && isServer)) ? State.CLOSE_RECEIVED : state);
+
+            if(newState == State.CLOSE_RECEIVED)
+            {
+                senderCmdQueue.add((sender) -> {
+                    sender.sendControlFrame(this);
+                });
+            }
+        }
+        else
+        {
+            System.err.println("Recevied unhandled control frame of type "+msgType);
+        }
     }
 
     public Dispatcher getWriteBuffer()
@@ -121,21 +223,74 @@ public abstract class BaseChannelImpl implements BaseChannel
         return sendBuffer;
     }
 
-    public void write(ByteBuffer buffer)
+    public void writeMessage(ByteBuffer buffer, long messageId)
     {
+        final State state = this.state; // get volatile
 
-        try
+        if(state == State.CONNECTED)
         {
-            while(buffer.hasRemaining())
+            try
             {
-                media.write(buffer);
+                while (buffer.hasRemaining())
+                {
+                    media.write(buffer);
+                }
+            }
+            catch (IOException e)
+            {
+                notifyError(SEND_ERROR, messageId);
+                closeForcibly(e);
             }
         }
-        catch (IOException e)
+        else
+        {
+            notifyError(CHANNEL_CLOSED, messageId);
+        }
+    }
+
+    public void writeControlFrame()
+    {
+        final State state = this.state; // get volatile
+
+        if (state == State.CLOSE_INITIATED)
+        {
+            writeControlFrame(CLOSE_FRAME);
+        }
+        else if (state == State.CLOSE_RECEIVED)
+        {
+            writeControlFrame(END_OF_STREAM_FRAME);
+        }
+    }
+
+    protected void writeControlFrame(ByteBuffer controlFrame)
+    {
+        try
+        {
+            while (controlFrame.hasRemaining())
+            {
+                media.write(controlFrame);
+            }
+        }
+        catch(IOException e)
+        {
+            closeForcibly(e);
+        }
+        finally
+        {
+            controlFrame.clear();
+        }
+    }
+
+    protected void notifyError(int errorType, long messageId)
+    {
+        try
+        {
+            errorHandler.onChannelError(errorType, messageId);
+        }
+        catch (Exception e)
         {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -144,6 +299,7 @@ public abstract class BaseChannelImpl implements BaseChannel
         return id;
     }
 
+    @Override
     public State getState()
     {
         return state;
@@ -171,31 +327,110 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
     }
 
-    @Override
-    public abstract void close();
-
     public void setChannelFrameHandler(ChannelFrameHandler frameHandler)
     {
         this.frameHandler = frameHandler;
     }
 
-    public void closeConnection()
+    public void mediaClose()
     {
-        if(this.state == State.CLOSING)
+        this.state = State.CLOSED;
+
+        try
+        {
+            media.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            senderCmdQueue.add((sender) ->
+            {
+                sender.removeChannel(this);
+            });
+            receiverCmdQueue.add((receiver) ->
+            {
+                receiver.removeChannel(this);
+            });
+        }
+    }
+
+    @Override
+    public void close(AsyncCompletionCallback<Boolean> completionCallback)
+    {
+        if(STATE_UPDATER.compareAndSet(this, State.CONNECTED, State.CLOSE_INITIATED))
+        {
+            this.closeCallback = completionCallback;
+
+            senderCmdQueue.add((s) ->
+            {
+                s.sendControlFrame(this);
+            });
+
+        }
+        else
+        {
+            notifyClosed();
+        }
+    }
+
+    @Override
+    public boolean closeSync() throws InterruptedException
+    {
+        // TODO: make sure this is not called from a transport thread !!
+        final CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        close(completeFuture(future));
+
+        try
+        {
+            return future.get();
+        }
+        catch (ExecutionException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+
+        return false;
+
+    }
+
+    public void closeForcibly(IOException originalException)
+    {
+        mediaClose();
+        notifyCloseException(originalException);
+    }
+
+    protected void notifyCloseException(Exception e)
+    {
+        if(closeCallback != null)
         {
             try
             {
-                media.close();
+                closeCallback.onComplete(e, null);
             }
-            catch (IOException e)
+            catch(Exception ex)
             {
-                // TODO
                 e.printStackTrace();
-            }
-            finally
-            {
-                this.state = State.CLOSED;
             }
         }
     }
+
+    protected void notifyClosed()
+    {
+        if(closeCallback != null)
+        {
+            try
+            {
+                closeCallback.onComplete(null, state == State.CLOSED);
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }

@@ -20,21 +20,29 @@ public class ClientChannelBuilder
 
     protected ChannelFrameHandler channelFrameHandler = ChannelFrameHandler.DISCARD_HANDLER;
 
+    protected ChannelErrorHandler channelErrorHandler = ChannelErrorHandler.DEFAULT_ERROR_HANDLER;
+
     public ClientChannelBuilder(TransportContext transportContext, InetSocketAddress remoteAddress)
     {
         this.transportContext = transportContext;
         this.remoteAddress = remoteAddress;
     }
 
-    public ClientChannelBuilder channelFrameHandler(ChannelFrameHandler channelReader)
+    public ClientChannelBuilder channelFrameHandler(ChannelFrameHandler frameHandler)
     {
-        this.channelFrameHandler = channelReader;
+        this.channelFrameHandler = frameHandler;
+        return this;
+    }
+
+    public ClientChannelBuilder channelErrorHandler(ChannelErrorHandler errorHandler)
+    {
+        this.channelErrorHandler = errorHandler;
         return this;
     }
 
     public void connect(AsyncCompletionCallback<ClientChannel> completionCallback)
     {
-        new ClientChannelImpl(channelFrameHandler, transportContext, remoteAddress, completionCallback);
+        new ClientChannelImpl(transportContext, channelFrameHandler, channelErrorHandler, remoteAddress, completionCallback);
     }
 
     public ClientChannel connectSync()

@@ -9,6 +9,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import net.long_running.dispatcher.AsyncCompletionCallback;
+import net.long_running.transport.ChannelErrorHandler;
 import net.long_running.transport.ChannelFrameHandler;
 import net.long_running.transport.ServerChannelHandler;
 import net.long_running.transport.ServerSocketBinding;
@@ -89,7 +90,10 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
             final SocketChannel socketChannel = media.accept();
             socketChannel.configureBlocking(false);
 
-            channel = new ServerChannelImpl(ChannelFrameHandler.DISCARD_HANDLER, transportContext, socketChannel);
+            channel = new ServerChannelImpl(
+                    transportContext, socketChannel,
+                    ChannelFrameHandler.DISCARD_HANDLER,
+                    ChannelErrorHandler.DEFAULT_ERROR_HANDLER);
 
             if(channelHander != null)
             {

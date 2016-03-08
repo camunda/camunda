@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.function.ToIntFunction;
 
 import net.long_running.transport.impl.BaseChannelImpl;
-import net.long_running.transport.impl.BaseChannelImpl.State;
 import net.long_running.transport.impl.agent.Receiver;
 import net.long_running.transport.impl.agent.ReceiverCmd;
 import uk.co.real_logic.agrona.LangUtil;
@@ -16,8 +15,6 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public class ReadTransportPoller extends TransportPoller
 {
-    public final static int ITERATION_THRESHHOLD = 5;
-
     protected final List<BaseChannelImpl> channels = new ArrayList<>(100);
 
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
@@ -33,11 +30,11 @@ public class ReadTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if(channels.size() <= ITERATION_THRESHHOLD)
+        if(channels.size() <= ITERATION_THRESHOLD)
         {
             for (BaseChannelImpl channel : channels)
             {
-                workCount += channelReceive(channel);
+                workCount += channel.receive();
             }
         }
         else
@@ -59,26 +56,16 @@ public class ReadTransportPoller extends TransportPoller
 
     protected int processKey(SelectionKey key) {
 
-        if(key != null)
+        int workCount = 0;
+
+        if(key != null && key.isReadable())
         {
-            return channelReceive((BaseChannelImpl) key.attachment());
+            final BaseChannelImpl channel = (BaseChannelImpl) key.attachment();
+
+            workCount = channel.receive();
         }
 
-        return 0;
-    }
-
-    protected int channelReceive(final BaseChannelImpl channel)
-    {
-        int received = channel.receive();
-
-        if(channel.getState() == State.CLOSING)
-        {
-            cmdQueue.add((r) -> {
-               r.onChannelClose(channel);
-            });
-        }
-
-        return received;
+        return workCount;
     }
 
     public void addChannel(BaseChannelImpl channel)

@@ -14,11 +14,6 @@ import uk.co.real_logic.agrona.LangUtil;
 public class ServerSocketBindingBuilder
 {
 
-    protected static ServerChannelHandler DEFAULT_CHANNEL_HANDLER = (sc) ->
-    {
-        // ignore the channel
-    };
-
     protected final TransportContext transportContext;
 
     protected final InetSocketAddress bindAddress;

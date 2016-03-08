@@ -1,6 +1,8 @@
 package net.long_running.transport.impl.agent;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import net.long_running.dispatcher.BlockHandler;
@@ -18,6 +20,8 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
     protected final Int2ObjectHashMap<BaseChannelImpl> channelMap;
 
+    protected final List<BaseChannelImpl> channelsWithControlFrames;
+
     protected final Dispatcher sendBuffer;
 
     public Sender(TransportContext context)
@@ -25,17 +29,34 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
         cmdQueue = context.getSenderCmdQueue();
         sendBuffer = context.getSendBuffer();
         channelMap = new Int2ObjectHashMap<>();
+        channelsWithControlFrames = new ArrayList<>(10);
     }
 
     public int doWork() throws Exception
     {
-        int work = 0;
+        int workCount = 0;
 
-        work += cmdQueue.drain(this);
+        workCount += cmdQueue.drain(this);
 
-        work += sendBuffer.pollBlock(this, 5, true);
+        workCount += sendBuffer.pollBlock(this, 1, true);
 
-        return work;
+        workCount += sendControlFrames();
+
+        return workCount;
+    }
+
+    protected int sendControlFrames()
+    {
+        int workCount = 0;
+
+        for (BaseChannelImpl channel : channelsWithControlFrames)
+        {
+            channel.writeControlFrame();
+        }
+
+        channelsWithControlFrames.clear();
+
+        return workCount;
     }
 
     public String roleName()
@@ -57,17 +78,35 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
     public void removeChannel(BaseChannelImpl c)
     {
         channelMap.remove(c.getId());
+        channelsWithControlFrames.remove(c);
     }
 
     @Override
-    public void onBlockAvailable(ByteBuffer buffer, int blockOffset, int blockLength, int streamId)
+    public void onBlockAvailable(
+            final ByteBuffer buffer,
+            final int blockOffset,
+            final int blockLength,
+            final int streamId,
+            final long position)
     {
         final BaseChannelImpl channel = channelMap.get(streamId);
 
-        buffer.limit(blockOffset + blockLength);
-        buffer.position(blockOffset);
+        if(channel != null)
+        {
+            buffer.limit(blockOffset + blockLength);
+            buffer.position(blockOffset);
+            channel.writeMessage(buffer, position);
+        }
+        else
+        {
+            // TODO
+            throw new RuntimeException("Cannot write to channel with id "+streamId + " channel not registered with sender");
+        }
+    }
 
-        channel.write(buffer);
+    public void sendControlFrame(BaseChannelImpl channel)
+    {
+        channelsWithControlFrames.add(channel);
     }
 
 }
