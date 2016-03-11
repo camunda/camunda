@@ -107,6 +107,12 @@ public class DispatcherBuilder
         return this;
     }
 
+    public DispatcherBuilder countersManager(CountersManager countersManager)
+    {
+        this.countersManager = countersManager;
+        return this;
+    }
+
     /**
      * The number of subscriber groups supported by this dispatcher
      * For each subscriber group, the dispatcher maintains a position field, indicating the current position of that subscriber group.
@@ -129,7 +135,7 @@ public class DispatcherBuilder
         return this;
     }
 
-    public DispatcherBuilder conductor(DispatcherContext context)
+    public DispatcherBuilder context(DispatcherContext context)
     {
         this.context = context;
         return this;
@@ -217,7 +223,7 @@ public class DispatcherBuilder
         {
             // create local dispatcher context for this dispatcher
             context = new DispatcherContext();
-            context.init();
+
             DispatcherConductor conductor = new DispatcherConductor(context, true);
             BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
 

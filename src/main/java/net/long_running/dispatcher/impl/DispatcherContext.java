@@ -6,13 +6,8 @@ import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 public class DispatcherContext
 {
 
-    protected ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> dispatcherCommandQueue;
+    protected ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> dispatcherCommandQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected AgentRunner agentRunner;
-
-    public void init()
-    {
-        dispatcherCommandQueue = new ManyToOneConcurrentArrayQueue<>(100);
-    }
 
     public ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> getDispatcherCommandQueue()
     {
