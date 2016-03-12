@@ -1,20 +1,15 @@
 package org.camunda.tngp.transport;
 
-import org.camunda.tngp.transport.impl.BaseChannelImpl.State;
+import java.util.concurrent.Future;
 
-import net.long_running.dispatcher.AsyncCompletionCallback;
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.camunda.tngp.transport.impl.BaseChannelImpl.State;
 
 public interface BaseChannel
 {
 
-    long offer(DirectBuffer payload, int offset, int length);
+    int getId();
 
-    Integer getId();
-
-    void close(AsyncCompletionCallback<Boolean> completionCallback);
-
-    boolean closeSync() throws InterruptedException;
+    Future<Boolean> close();
 
     State getState();
 

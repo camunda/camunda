@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.camunda.tngp.dispatcher.BlockHandler;
+import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.impl.BaseChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 
-import net.long_running.dispatcher.BlockHandler;
-import net.long_running.dispatcher.Dispatcher;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;

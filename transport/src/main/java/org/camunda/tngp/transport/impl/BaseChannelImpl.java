@@ -1,8 +1,8 @@
 package org.camunda.tngp.transport.impl;
 
-import static net.long_running.dispatcher.AsyncCompletionCallback.*;
 import static org.camunda.tngp.transport.ChannelErrorHandler.*;
 import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.*;
+import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,20 +10,17 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
+import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.BaseChannel;
 import org.camunda.tngp.transport.ChannelErrorHandler;
-import org.camunda.tngp.transport.ChannelFrameHandler;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 
-import net.long_running.dispatcher.AsyncCompletionCallback;
-import net.long_running.dispatcher.Dispatcher;
-import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -63,17 +60,18 @@ public abstract class BaseChannelImpl implements BaseChannel
 
     protected volatile State state = State.NEW;
 
-    protected Integer id;
+    protected int id;
 
-    protected final Dispatcher sendBuffer;
-    protected final ByteBuffer receiveBuffer;
-    protected final UnsafeBuffer receiveBufferView;
+    protected final Dispatcher transportSendBuffer;
+    protected final Dispatcher transportReceiveBuffer;
+
+    protected final ByteBuffer channelReadBuffer;
+    protected final UnsafeBuffer channelReadBufferView;
     protected final int maxMessageLength;
     protected final ManyToOneConcurrentArrayQueue<SenderCmd> senderCmdQueue;
     protected final ManyToOneConcurrentArrayQueue<ReceiverCmd> receiverCmdQueue;
 
 
-    protected ChannelFrameHandler frameHandler;
     protected ChannelErrorHandler errorHandler;
 
     protected SocketChannel media;
@@ -83,76 +81,68 @@ public abstract class BaseChannelImpl implements BaseChannel
 
     public BaseChannelImpl(
             final TransportContext transportContext,
-            final ChannelFrameHandler channelReader,
             final ChannelErrorHandler errorHandler)
     {
-        this.sendBuffer = transportContext.getSendBuffer();
+        this.transportSendBuffer = transportContext.getSendBuffer();
+        this.transportReceiveBuffer = transportContext.getReceiveBuffer();
         this.maxMessageLength = transportContext.getMaxMessageLength();
+
         senderCmdQueue = transportContext.getSenderCmdQueue();
         receiverCmdQueue = transportContext.getReceiverCmdQueue();
 
-        this.frameHandler = channelReader;
         this.errorHandler = errorHandler;
 
-        if(sendBuffer.getMaxFrameLength() < maxMessageLength)
+        if(transportSendBuffer.getMaxFrameLength() < maxMessageLength)
         {
             throw new RuntimeException("Cannot create Channel: max frame length in writeBuffer "
-                    +sendBuffer.getMaxFrameLength()+" is less than transport's '"+maxMessageLength+"'.");
+                    +transportSendBuffer.getMaxFrameLength()+" is less than transport's '"+maxMessageLength+"'.");
         }
 
-        this.receiveBuffer = ByteBuffer.allocateDirect(maxMessageLength);
-        this.receiveBufferView = new UnsafeBuffer(receiveBuffer);
-    }
-
-    @Override
-    public long offer(final DirectBuffer payload, final int offset, final int length)
-    {
-        if(state != State.CONNECTED)
-        {
-            throw new IllegalStateException("Channel is not connected");
-        }
-
-        // use channel id as stream id in the shared write buffer
-        long position = sendBuffer.offer(payload, offset, length, id);
-
-        if(position > 0)
-        {
-            // return the position of the message itself, not the next message
-            // TODO: turn this into the default behavior of the dispatcher
-            // https://github.com/meyerdan/dispatcher/issues/5
-            position -= alignedLength(length);
-        }
-
-        return position;
+        this.channelReadBuffer = ByteBuffer.allocateDirect(maxMessageLength * 2);
+        this.channelReadBufferView = new UnsafeBuffer(channelReadBuffer);
     }
 
     public int receive()
     {
 
-        final int bytesRead = mediaReceive(receiveBuffer);
+        final int bytesRead = mediaReceive(channelReadBuffer);
 
         if (bytesRead > 0)
         {
-            final int available = receiveBuffer.position();
+            int available = channelReadBuffer.position();
 
-            if(available >= HEADER_LENGTH)
+            while(available >= HEADER_LENGTH)
             {
-                final int msgLength = receiveBufferView.getInt(lengthOffset(0));
+                final int msgLength = channelReadBufferView.getInt(lengthOffset(0));
                 final int frameLength = alignedLength(msgLength);
 
-                if(available >= frameLength)
+                if(available < frameLength)
                 {
-                    final int msgType = receiveBufferView.getShort(typeOffset(0));
+                    break;
+                }
+                else {
+                    final int msgType = channelReadBufferView.getShort(typeOffset(0));
 
                     if (msgType == TYPE_MESSAGE)
                     {
-                        try
+                        int attempts = 0;
+                        long publishResult = -1;
+                        do
                         {
-                            frameHandler.onFrameAvailable(receiveBufferView, HEADER_LENGTH, msgLength);
+                            publishResult = transportReceiveBuffer.offer(
+                                    channelReadBufferView,
+                                    HEADER_LENGTH,
+                                    msgLength,
+                                    id);
+
+                            attempts++;
                         }
-                        catch(RuntimeException e)
+                        while(publishResult == -2 || (publishResult == -1 && attempts < 25));
+
+                        if(publishResult == -1)
                         {
-                            e.printStackTrace();
+                            // TODO: connection is backpressured
+                            System.out.println("connection backpressured");
                         }
                     }
                     else
@@ -160,9 +150,10 @@ public abstract class BaseChannelImpl implements BaseChannel
                         handleControlFrame(msgType);
                     }
 
-                    receiveBuffer.limit(available);
-                    receiveBuffer.position(frameLength);
-                    receiveBuffer.compact();
+                    channelReadBuffer.limit(available);
+                    channelReadBuffer.position(frameLength);
+                    channelReadBuffer.compact();
+                    available -= frameLength;
                 }
             }
         }
@@ -220,7 +211,7 @@ public abstract class BaseChannelImpl implements BaseChannel
 
     public Dispatcher getWriteBuffer()
     {
-        return sendBuffer;
+        return transportSendBuffer;
     }
 
     public void writeMessage(ByteBuffer buffer, long messageId)
@@ -294,7 +285,7 @@ public abstract class BaseChannelImpl implements BaseChannel
     }
 
     @Override
-    public Integer getId()
+    public int getId()
     {
         return id;
     }
@@ -327,11 +318,6 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
     }
 
-    public void setChannelFrameHandler(ChannelFrameHandler frameHandler)
-    {
-        this.frameHandler = frameHandler;
-    }
-
     public void mediaClose()
     {
         this.state = State.CLOSED;
@@ -357,8 +343,7 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
     }
 
-    @Override
-    public void close(AsyncCompletionCallback<Boolean> completionCallback)
+    protected void close(AsyncCompletionCallback<Boolean> completionCallback)
     {
         if(STATE_UPDATER.compareAndSet(this, State.CONNECTED, State.CLOSE_INITIATED))
         {
@@ -377,24 +362,13 @@ public abstract class BaseChannelImpl implements BaseChannel
     }
 
     @Override
-    public boolean closeSync() throws InterruptedException
+    public Future<Boolean> close()
     {
-        // TODO: make sure this is not called from a transport thread !!
         final CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         close(completeFuture(future));
 
-        try
-        {
-            return future.get();
-        }
-        catch (ExecutionException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-
-        return false;
-
+        return future;
     }
 
     public void closeForcibly(IOException originalException)

@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.impl;
 
-import net.long_running.dispatcher.impl.log.DataFrameDescriptor;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 
 public class TransportControlFrameDescriptor extends DataFrameDescriptor
 {

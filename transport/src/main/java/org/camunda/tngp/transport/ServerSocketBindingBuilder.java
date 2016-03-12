@@ -1,15 +1,15 @@
 package org.camunda.tngp.transport;
 
+import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 
-import static net.long_running.dispatcher.AsyncCompletionCallback.*;
-
-import net.long_running.dispatcher.AsyncCompletionCallback;
 import uk.co.real_logic.agrona.LangUtil;
 
 public class ServerSocketBindingBuilder

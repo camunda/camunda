@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
+import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.ChannelErrorHandler;
-import org.camunda.tngp.transport.ChannelFrameHandler;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 
-import net.long_running.dispatcher.AsyncCompletionCallback;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
@@ -22,12 +21,11 @@ public class ClientChannelImpl extends BaseChannelImpl implements ClientChannel
 
     public ClientChannelImpl(
             final TransportContext transportContext,
-            final ChannelFrameHandler frameHandler,
             final ChannelErrorHandler errorHandler,
             final InetSocketAddress remoteAddress,
             final AsyncCompletionCallback<ClientChannel> callback)
     {
-        super(transportContext, frameHandler, errorHandler);
+        super(transportContext, errorHandler);
         this.toConcuctorCmdQue = transportContext.getConductorCmdQueue();
         this.remoteAddress = remoteAddress;
 

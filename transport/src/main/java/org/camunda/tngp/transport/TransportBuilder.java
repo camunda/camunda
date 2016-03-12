@@ -2,13 +2,15 @@ package org.camunda.tngp.transport;
 
 import java.util.concurrent.TimeUnit;
 
+import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.Dispatchers;
+import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
+import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
 import org.camunda.tngp.transport.impl.agent.TransportConductor;
 
-import net.long_running.dispatcher.Dispatcher;
-import net.long_running.dispatcher.Dispatchers;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.Agent;
@@ -30,20 +32,28 @@ public class TransportBuilder
 
     protected Dispatcher sendBuffer;
 
-    protected int writeBufferSize = 1024 * 1024 * 16;
+    protected Dispatcher receiveBuffer;
+
+    protected int sendBufferSize = 1024 * 1024 * 16;
+
+    protected int recevieBufferSize = 1024 * 1024 * 16;
 
     protected int maxMessageLength = 1024 * 16;
 
     protected ThreadingMode threadingMode = ThreadingMode.SHARED;
 
+    protected CountersManager countersManager;
+
     protected TransportContext transportContext;
+
+    // agents
 
     protected Receiver receiver;
     protected Sender sender;
     protected TransportConductor transportConductor;
-
-    protected CountersManager countersManager;
-
+    protected DispatcherContext dispatcherContext;
+    protected DispatcherConductor dispatcherConductor;
+    protected Agent conductor;
 
     static ErrorHandler DEFAULT_ERROR_HANDLER = (t) -> {
         t.printStackTrace();
@@ -68,7 +78,7 @@ public class TransportBuilder
 
     public TransportBuilder sendBufferSize(int writeBufferSize)
     {
-        this.writeBufferSize = writeBufferSize;
+        this.sendBufferSize = writeBufferSize;
         return this;
     }
 
@@ -89,18 +99,47 @@ public class TransportBuilder
 
         initTransportContext();
         transportContext.setMaxMessageLength(maxMessageLength);
-        initWriteBuffer();
+        initBuffers();
         initRecevier();
         initSender();
         initConductor();
         startAgents();
+        startDispatchers();
 
         return new Transport(transportContext);
+    }
+
+    protected void startDispatchers()
+    {
+        if(sendBuffer.getStatus() == Dispatcher.STATUS_NEW)
+        {
+            try
+            {
+                sendBuffer.startSync();
+            }
+            catch (InterruptedException e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
+        }
+        if(receiveBuffer.getStatus() == Dispatcher.STATUS_NEW)
+        {
+            try
+            {
+                receiveBuffer.startSync();
+            }
+            catch(InterruptedException e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
+        }
     }
 
     protected void initConductor()
     {
         this.transportConductor = new TransportConductor(transportContext);
+        this.dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
+        this.conductor = new CompositeAgent(transportConductor, dispatcherConductor);
     }
 
     protected void initTransportContext()
@@ -108,23 +147,36 @@ public class TransportBuilder
         this.transportContext = new TransportContext();
     }
 
-    protected void initWriteBuffer()
+    protected void initBuffers()
     {
-        if(sendBuffer == null)
+        if(sendBuffer == null || receiveBuffer == null)
         {
-            try
+            dispatcherContext = new DispatcherContext();
+
+            if(sendBuffer == null)
             {
+
                 sendBuffer = Dispatchers.create(name + ".write-buffer")
-                    .bufferSize(writeBufferSize)
-                    .buildAndStart();
+                    .bufferSize(sendBufferSize)
+                    .context(dispatcherContext)
+                    .countersManager(countersManager)
+                    .build();
             }
-            catch (InterruptedException e)
+
+
+            if(receiveBuffer == null)
             {
-                LangUtil.rethrowUnchecked(e);
+                receiveBuffer = Dispatchers.create(name + ".receive-buffer")
+                    .bufferSize(recevieBufferSize)
+                    .context(dispatcherContext)
+                    .countersManager(countersManager)
+                    .build();
             }
+
         }
 
         transportContext.setSendBuffer(sendBuffer);
+        transportContext.setReceiveBuffer(receiveBuffer);
     }
 
     protected void initRecevier()
@@ -144,12 +196,12 @@ public class TransportBuilder
         if(threadingMode == ThreadingMode.SHARED)
         {
             agentRunners = new AgentRunner[1];
-            agentRunners[0] = startAgents(transportConductor, receiver, sender);
+            agentRunners[0] = startAgents(conductor, receiver, sender);
         }
         else if(threadingMode == ThreadingMode.DEDICATED)
         {
             agentRunners = new AgentRunner[3];
-            agentRunners[0] = startAgents(transportConductor);
+            agentRunners[0] = startAgents(conductor);
             agentRunners[1] = startAgents(receiver);
             agentRunners[2] = startAgents(sender);
         }

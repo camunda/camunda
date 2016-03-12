@@ -1,10 +1,10 @@
 package org.camunda.tngp.transport.impl;
 
+import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 
-import net.long_running.dispatcher.Dispatcher;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
@@ -15,6 +15,7 @@ public class TransportContext
     protected ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
 
     protected Dispatcher sendBuffer;
+    protected Dispatcher receiveBuffer;
 
     protected int maxMessageLength;
 
@@ -78,5 +79,15 @@ public class TransportContext
     public void setConductorCmdQueue(ManyToOneConcurrentArrayQueue<TransportConductorCmd> clientConductorCmdQueue)
     {
         this.conductorCmdQueue = clientConductorCmdQueue;
+    }
+
+    public void setReceiveBuffer(Dispatcher receiveBuffer)
+    {
+        this.receiveBuffer = receiveBuffer;
+    }
+
+    public Dispatcher getReceiveBuffer()
+    {
+        return receiveBuffer;
     }
 }

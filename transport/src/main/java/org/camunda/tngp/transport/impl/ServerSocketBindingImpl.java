@@ -8,13 +8,12 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.ChannelErrorHandler;
-import org.camunda.tngp.transport.ChannelFrameHandler;
 import org.camunda.tngp.transport.ServerChannelHandler;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 
-import net.long_running.dispatcher.AsyncCompletionCallback;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
@@ -93,7 +92,6 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
 
             channel = new ServerChannelImpl(
                     transportContext, socketChannel,
-                    ChannelFrameHandler.DISCARD_HANDLER,
                     ChannelErrorHandler.DEFAULT_ERROR_HANDLER);
 
             if(channelHander != null)

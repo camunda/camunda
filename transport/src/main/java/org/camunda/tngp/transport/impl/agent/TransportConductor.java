@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.impl.BaseChannelImpl;
@@ -13,7 +14,6 @@ import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.media.AcceptTransportPoller;
 import org.camunda.tngp.transport.impl.media.ConnectTransportPoller;
 
-import net.long_running.dispatcher.AsyncCompletionCallback;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
