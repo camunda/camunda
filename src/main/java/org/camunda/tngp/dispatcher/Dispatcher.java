@@ -2,7 +2,6 @@ package org.camunda.tngp.dispatcher;
 
 import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -10,7 +9,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.Subscription;
-import org.camunda.tngp.dispatcher.impl.log.LogAppender;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 
@@ -36,7 +35,7 @@ public class Dispatcher
     final DispatcherContext context;
 
     protected final LogBuffer logBuffer;
-    protected final LogAppender logAppender;
+    protected final LogBufferAppender logAppender;
 
     protected final Position publisherLimit;
     protected final Position publisherPosition;
@@ -49,7 +48,7 @@ public class Dispatcher
 
     Dispatcher(
             LogBuffer logBuffer,
-            LogAppender logAppender,
+            LogBufferAppender logAppender,
             Position publisherLimit,
             Position publisherPosition,
             Position[] subscriberPositions,
@@ -287,6 +286,38 @@ public class Dispatcher
         }
 
         return fragmentsRead;
+    }
+
+
+    public int peekBlock(
+            int subscriberId,
+            BlockPeek availableBlock,
+            int maxBlockSize,
+            boolean isStreamAware)
+    {
+        int bytesAvailable = 0;
+
+        final Subscription subscription = subscriptions[subscriberId];
+        final long currentPosition = subscription.getPosition();
+
+        final long limit = subscriberLimit(subscriberId, publisherPosition, subscriptions);
+
+        if(limit > currentPosition)
+        {
+            final int partitionId = partitionId(currentPosition);
+            final int partitionOffset = partitionOffset(currentPosition);
+
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+
+            bytesAvailable = subscription.peekBlock(partition,
+                    availableBlock,
+                    maxBlockSize,
+                    partitionId,
+                    partitionOffset,
+                    isStreamAware);
+        }
+
+        return bytesAvailable;
     }
 
     private static long subscriberLimit(

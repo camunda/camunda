@@ -1,6 +1,6 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import org.camunda.tngp.dispatcher.impl.log.LogAppender;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class LogBufferAppenderUnfragmentedTest
 
     UnsafeBuffer metadataBufferMock;
     UnsafeBuffer dataBufferMock;
-    LogAppender logBufferAppender;
+    LogBufferAppender logBufferAppender;
     LogBufferPartition logBufferPartition;
 
     @Before
@@ -42,7 +42,7 @@ public class LogBufferAppenderUnfragmentedTest
         verify(dataBufferMock).verifyAlignment();
         verify(metadataBufferMock).verifyAlignment();
 
-        logBufferAppender = new LogAppender();
+        logBufferAppender = new LogBufferAppender();
     }
 
     @Test

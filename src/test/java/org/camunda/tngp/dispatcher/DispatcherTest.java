@@ -14,7 +14,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.impl.Subscription;
-import org.camunda.tngp.dispatcher.impl.log.LogAppender;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
@@ -40,7 +40,7 @@ public class DispatcherTest
     LogBufferPartition logBufferPartition0;
     LogBufferPartition logBufferPartition1;
     LogBufferPartition logBufferPartition2;
-    LogAppender logAppender;
+    LogBufferAppender logAppender;
     Position publisherLimit;
     Position publisherPosition;
     Subscription subscription;
@@ -63,7 +63,7 @@ public class DispatcherTest
         when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
         when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
 
-        logAppender = mock(LogAppender.class);
+        logAppender = mock(LogBufferAppender.class);
         publisherLimit = mock(Position.class);
         publisherPosition = mock(Position.class);
         fragmentHandler = mock(FragmentHandler.class);

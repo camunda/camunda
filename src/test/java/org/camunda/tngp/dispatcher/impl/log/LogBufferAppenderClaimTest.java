@@ -10,7 +10,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 import java.nio.charset.Charset;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.dispatcher.impl.log.LogAppender;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +31,7 @@ public class LogBufferAppenderClaimTest
 
     UnsafeBuffer metadataBufferMock;
     UnsafeBuffer dataBufferMock;
-    LogAppender logBufferAppender;
+    LogBufferAppender logBufferAppender;
     LogBufferPartition logBufferPartition;
     ClaimedFragment claimedFragmentMock;
 
@@ -47,7 +47,7 @@ public class LogBufferAppenderClaimTest
         verify(dataBufferMock).verifyAlignment();
         verify(metadataBufferMock).verifyAlignment();
 
-        logBufferAppender = new LogAppender();
+        logBufferAppender = new LogBufferAppender();
     }
 
     @Test

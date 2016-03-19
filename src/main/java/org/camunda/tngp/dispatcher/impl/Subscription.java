@@ -6,6 +6,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 
 import java.nio.ByteBuffer;
 
+import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
@@ -166,6 +167,91 @@ public class Subscription
     public void close()
     {
         position.close();
+    }
+
+    public int peekBlock(
+            final LogBufferPartition partition,
+            final BlockPeek availableBlock,
+            final int maxBlockSize,
+            int partitionId,
+            int partitionOffset,
+            final boolean isStreamAware)
+    {
+
+        final UnsafeBuffer buffer = partition.getDataBuffer();
+        final int bufferOffset = partition.getUnderlyingBufferOffset();
+        final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
+
+        int firstFragmentOffset = partitionOffset;
+        int blockLength = 0;
+        int initialStreamId = -1;
+
+        // scan buffer for block
+        do
+        {
+            final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
+            if(length <= 0)
+            {
+                break;
+            }
+
+            final short type = buffer.getShort(typeOffset(partitionOffset));
+            if(type == TYPE_PADDING)
+            {
+                if(blockLength == 0)
+                {
+                    position.proposeMaxOrdered(position(1 + partitionId, 0));
+                }
+                break;
+            }
+            else
+            {
+                if(isStreamAware)
+                {
+                    final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
+                    if(blockLength == 0)
+                    {
+                        initialStreamId = streamId;
+                    }
+                    else
+                    {
+                        if(streamId != initialStreamId)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                final int alignedFrameLength = alignedLength(length);
+
+                if(alignedFrameLength <= maxBlockSize - blockLength)
+                {
+                    partitionOffset += alignedFrameLength;
+                    blockLength += alignedFrameLength;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        while(maxBlockSize - blockLength > HEADER_LENGTH);
+
+        if(blockLength > 0)
+        {
+            final int absoluteOffset = bufferOffset + firstFragmentOffset;
+
+            availableBlock.setBlock(
+                    rawBuffer,
+                    position,
+                    initialStreamId,
+                    partitionId,
+                    firstFragmentOffset,
+                    absoluteOffset,
+                    blockLength);
+        }
+
+        return blockLength;
     }
 
 }

@@ -14,7 +14,7 @@ import org.camunda.tngp.dispatcher.impl.allocation.DirectBufferAllocator;
 import org.camunda.tngp.dispatcher.impl.allocation.ExternallyAllocatedBuffer;
 import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocationDescriptor;
 import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocator;
-import org.camunda.tngp.dispatcher.impl.log.LogAppender;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -216,7 +216,7 @@ public class DispatcherBuilder
         // create dispatcher
 
         final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize);
-        final LogAppender logAppender = new LogAppender();
+        final LogBufferAppender logAppender = new LogBufferAppender();
 
         int bufferWindowLength = partitionSize / 4;
 

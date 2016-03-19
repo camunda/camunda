@@ -9,7 +9,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class LogAppender
+public class LogBufferAppender
 {
 
     public int appendFrame(
