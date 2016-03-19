@@ -1,25 +1,16 @@
 package org.camunda.tngp.log.appender;
 
-import static org.camunda.tngp.log.appender.AppendableSegment.*;
-
-import java.nio.ByteBuffer;
-
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.LogConductorCmd;
 import org.camunda.tngp.log.LogContext;
+import org.camunda.tngp.log.fs.AppendableLogSegment;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
-/**
- * Reads blocks from the logs write buffer and appends them
- * to the log.
- */
 public class Appender implements Agent
 {
-    protected final SegmentAppender segmentAppender;
-
     protected final SegmentAllocationDescriptor logAllocationDescriptor;
 
     protected final OneToOneConcurrentArrayQueue<LogConductorCmd> toLogConductorCmdQueue;
@@ -28,23 +19,18 @@ public class Appender implements Agent
 
     protected final BlockPeek blockPeek;
 
-    protected AppendableSegment currentSegment;
+    protected AppendableLogSegment currentSegment;
 
-    protected AppendableSegment nextSegment;
-
-    protected int maxAppendSize = 1024 * 1024 * 16;
-
-    int bytesWritten;
+    protected int maxAppendSize = 1024 * 1024;
 
     public Appender(LogContext context)
     {
-        segmentAppender = new SegmentAppender();
         logAllocationDescriptor = context.getLogAllocationDescriptor();
         toLogConductorCmdQueue = context.getLogConductorCmdQueue();
         writeBuffer = context.getWriteBuffer();
         blockPeek = new BlockPeek();
 
-        initInitialSegments(context.getInitialLogSegementId());
+        openOrAllocateInitialSegment(context.getInitialLogSegementId());
     }
 
     @Override
@@ -57,25 +43,24 @@ public class Appender implements Agent
         return workCount;
     }
 
-    private int append()
+    protected int append()
     {
-
         final int bytesAvailable = writeBuffer.peekBlock(0, blockPeek, maxAppendSize, false);
+
+        int bytesWritten = 0;
 
         if(bytesAvailable > 0)
         {
+            int newTail = currentSegment.append(blockPeek.getBuffer());
 
-            int newTail = -1;
-            do
+            if(newTail == -2)
             {
-                newTail = appendBlock(blockPeek.getBuffer());
+                onSegmentFilled();
             }
-            while(newTail == -2);
-
-            if(newTail > 0)
+            else if(newTail > 0)
             {
                 blockPeek.markCompleted();
-                bytesWritten += bytesAvailable;
+                bytesWritten = bytesAvailable;
             }
             else
             {
@@ -83,74 +68,35 @@ public class Appender implements Agent
             }
         }
 
-        return bytesAvailable;
+        return bytesWritten;
     }
 
-    public int appendBlock(ByteBuffer block)
+    protected void onSegmentFilled()
     {
-        int newTail = segmentAppender.append(currentSegment, block);
+        final int nextSegmentId = 1 + currentSegment.getSegmentId();
+        final String nextSegmentFileName = logAllocationDescriptor.fileName(nextSegmentId);
+        final AppendableLogSegment nextSegment = new AppendableLogSegment(nextSegmentFileName);
 
-        if(newTail == -2)
+        if(nextSegment.allocate(nextSegmentId, logAllocationDescriptor.getSegmentSize()))
         {
-            newTail = onLogFragementFilled(currentSegment);
-        }
-
-        if(newTail >=0)
-        {
-            currentSegment.setTailPosition(currentSegment.getTailPosition() + newTail);
-        }
-
-        return newTail;
-    }
-
-    protected int onLogFragementFilled(AppendableSegment filledFragment)
-    {
-        filledFragment.setStateVolatile(STATE_FILLED);
-
-        final int nextFragmentState = nextSegment.getStateVolatile();
-        final int nextNextFragmentId = 1 + nextSegment.getSegmentId();
-
-        int newTail = -1;
-
-        if(nextFragmentState == STATE_ALLOCATED)
-        {
-            // move to next fragment
+            currentSegment.closeSegment();
             currentSegment = nextSegment;
-            nextSegment.setStateVolatile(STATE_ACTIVE);
-
-            // request allocation of next next fragment from conductor
-            nextSegment = new AppendableSegment(nextNextFragmentId, logAllocationDescriptor);
-            requestAllocation(nextSegment);
-
-            newTail = -2;
         }
-        else if(nextFragmentState == STATE_NEW)
-        {
-            // still allocating
-            newTail = -2;
-        }
-
-        return newTail;
     }
 
-    protected void initInitialSegments(final int initalFragementId)
+    protected boolean openOrAllocateInitialSegment(final int initalSegmentId)
     {
-        final int nextFragmentId = 1 + initalFragementId;
+        final String fileName = logAllocationDescriptor.fileName(initalSegmentId);
+        final AppendableLogSegment segment = new AppendableLogSegment(fileName);
 
-        currentSegment = new AppendableSegment(initalFragementId, logAllocationDescriptor);
-        // allocate in this thread
-        currentSegment.allocate();
+        boolean success = false;
 
-        nextSegment = new AppendableSegment(nextFragmentId, logAllocationDescriptor);
-        requestAllocation(nextSegment);
-    }
-
-    protected void requestAllocation(AppendableSegment logFragement)
-    {
-        toLogConductorCmdQueue.add((c) ->
+        if(segment.openSegment(false) || segment.allocate(initalSegmentId, logAllocationDescriptor.getSegmentSize()))
         {
-           c.allocateFragment(logFragement);
-        });
+            currentSegment = segment;
+        }
+
+        return success;
     }
 
     @Override

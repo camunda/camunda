@@ -4,7 +4,7 @@ import java.io.File;
 
 public class SegmentAllocationDescriptor
 {
-    protected final String fragmentFileNameTemplate = "%s" + File.separatorChar + "frag-%02d.log";
+    protected final String fragmentFileNameTemplate = "%s" + File.separatorChar + "seg-%02d.data";
     protected int fragmentSize;
     protected String path;
 
@@ -18,13 +18,20 @@ public class SegmentAllocationDescriptor
     {
         return fragmentFileNameTemplate;
     }
-    public int getFragmentSize()
+
+    public int getSegmentSize()
     {
         return fragmentSize;
     }
+
     public String getPath()
     {
         return path;
+    }
+
+    public String fileName(int segmentId)
+    {
+        return String.format(fragmentFileNameTemplate, path, segmentId);
     }
 
 }

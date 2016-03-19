@@ -2,6 +2,7 @@ package org.camunda.tngp.log;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.appender.SegmentAllocationDescriptor;
+import org.camunda.tngp.log.fs.ReadableLogSegment;
 
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -17,6 +18,8 @@ public class LogContext
     protected AgentRunner[] agentRunners;
 
     protected int initialLogFragmentId = 0;
+
+    protected ReadableLogSegment[] readableSegments;
 
     public OneToOneConcurrentArrayQueue<LogConductorCmd> getLogConductorCmdQueue()
     {
@@ -63,4 +66,13 @@ public class LogContext
         this.initialLogFragmentId = initialLogFragmentId;
     }
 
+    public ReadableLogSegment[] getReadableSegments()
+    {
+        return readableSegments;
+    }
+
+    public void setReadableSegments(ReadableLogSegment[] readableSegments)
+    {
+        this.readableSegments = readableSegments;
+    }
 }

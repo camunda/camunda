@@ -2,6 +2,7 @@ package org.camunda.tngp.log;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -40,13 +41,69 @@ public class TestLogAppender
         }
     }
 
+    public class LogFragmentReader implements LogFragmentHandler
+    {
+        public void onFragment(long position, FileChannel fileChannel, int offset, int length)
+        {
+            System.out.println(position);
+        }
+    }
+
     @Test
     public void shouldAppend() throws InterruptedException
     {
-        final File logRoot = new File("/tmp/test/");
+        final Log log = createLog();
+
+        final Dispatcher writeBuffer = log.getWriteBuffer();
+
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+
+        final int totalWork = 10000000;
+
+        final BlockCompletionHandler blockCompletionHandler = new BlockCompletionHandler(totalWork, alignedLength(msg.capacity()));
+
+        while(!blockCompletionHandler.isDone())
+        {
+            writeBuffer.offer(msg);
+            writeBuffer.pollBlock(1, blockCompletionHandler, totalWork, false);
+        }
+    }
+
+
+    @Test
+    public void shouldPoll() throws InterruptedException
+    {
+        final Log log = createLog();
+
+        final Dispatcher writeBuffer = log.getWriteBuffer();
+
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+
+        int work = 1000;
+
+        final BlockCompletionHandler blockCompletionHandler = new BlockCompletionHandler(work, alignedLength(msg.capacity()));
+
+        while(!blockCompletionHandler.isDone())
+        {
+            if(work > 0)
+            {
+                msg.putInt(0, work);
+                writeBuffer.offer(msg);
+                work--;
+            }
+            writeBuffer.pollBlock(1, blockCompletionHandler, work, false);
+        }
+
+        LogFragmentReader reader = new LogFragmentReader();
+        long nextOffset = log.pollFragment(log.getInitialPosition(), reader);
+    }
+
+    private Log createLog()
+    {
+        final File logRoot = new File("/tmp/logs/foo");
         if(logRoot.exists())
         {
-            File[] logFiles = logRoot.listFiles((f) -> f.getName().endsWith(".log"));
+            File[] logFiles = logRoot.listFiles((f) -> f.getName().endsWith(".data"));
             for (int i = 0; i < logFiles.length; i++)
             {
                 logFiles[i].delete();
@@ -57,24 +114,11 @@ public class TestLogAppender
             logRoot.mkdirs();
         }
 
-        final Log log = Logs.createLog("foo")
-            .logRootPath(logRoot.getAbsolutePath())
-            .logFragementSize(1024 * 1024 * 512)
-            .writeBufferSize(1024 * 1024 * 128)
-            .build();
-
-        final Dispatcher writeBuffer = log.getWriteBuffer();
-
-        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
-
-        final int totalWork = 1000000;
-
-        final BlockCompletionHandler blockCompletionHandler = new BlockCompletionHandler(totalWork, alignedLength(msg.capacity()));
-
-        while(!blockCompletionHandler.isDone())
-        {
-            writeBuffer.offer(msg);
-            writeBuffer.pollBlock(1, blockCompletionHandler, totalWork, false);
-        }
+        return Logs.createLog("foo")
+                .logRootPath("/tmp/logs")
+                .logFragementSize(1024 * 1024 * 512)
+                .writeBufferSize(1024 * 1024 * 128)
+                .build();
     }
+
 }

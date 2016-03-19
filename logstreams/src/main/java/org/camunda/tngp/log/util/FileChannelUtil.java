@@ -30,17 +30,23 @@ public class FileChannelUtil
     }
 
     @SuppressWarnings("resource")
-    public static FileChannel openChannel(String path, String nameTemplate, int fragementId)
+    public static FileChannel openChannel(String filename, boolean create)
     {
-        final String filename = String.format(nameTemplate, path, fragementId);
-
         FileChannel fileChannel = null;
         try
         {
             final File file = new File(filename);
             if(!file.exists())
             {
-                file.createNewFile();
+                if(create)
+                {
+                    file.createNewFile();
+                }
+                else
+                {
+                    return null;
+                }
+
             }
 
             final RandomAccessFile raf = new RandomAccessFile(file, "rw");

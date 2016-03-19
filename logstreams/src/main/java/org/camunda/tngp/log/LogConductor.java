@@ -2,8 +2,6 @@ package org.camunda.tngp.log;
 
 import java.util.function.Consumer;
 
-import org.camunda.tngp.log.appender.AppendableSegment;
-
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
@@ -34,11 +32,6 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
     public void accept(LogConductorCmd c)
     {
         c.execute(this);
-    }
-
-    public void allocateFragment(AppendableSegment nextFragment)
-    {
-        nextFragment.allocate();
     }
 
 }

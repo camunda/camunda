@@ -1,5 +1,6 @@
 package org.camunda.tngp.log;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -97,6 +98,11 @@ public class LogBuilder
     public Log build()
     {
         final LogContext logContext = new LogContext();
+        logContext.setInitialLogFragmentId(initialLogFragmentId);
+        logRootPath += File.separatorChar + name + File.separatorChar;
+        File file = new File(logRootPath);
+        file.mkdirs();
+
         logContext.setLogAllocationDescriptor(new SegmentAllocationDescriptor(logFragmentSize, logRootPath));
 
         final LogConductor logConductor = new LogConductor(logContext);
