@@ -7,8 +7,9 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
-import org.camunda.tngp.log.appender.SegmentAllocationDescriptor;
-import org.camunda.tngp.log.appender.Appender;
+import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
+import org.camunda.tngp.log.conductor.LogConductor;
+import org.camunda.tngp.log.appender.LogAppender;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.LangUtil;
@@ -42,7 +43,7 @@ public class LogBuilder
 
     protected int logFragmentSize = 1024 * 1024 * 128;
 
-    protected int initialLogFragmentId = 0;
+    protected int initialLogSegmentId = 0;
 
     protected CountersManager countersManager;
 
@@ -71,9 +72,9 @@ public class LogBuilder
         return this;
     }
 
-    public LogBuilder initialLogFragmentId(int logFragmentId)
+    public LogBuilder initialLogSegmentId(int logFragmentId)
     {
-        this.initialLogFragmentId = logFragmentId;
+        this.initialLogSegmentId = logFragmentId;
         return this;
     }
 
@@ -98,12 +99,11 @@ public class LogBuilder
     public Log build()
     {
         final LogContext logContext = new LogContext();
-        logContext.setInitialLogFragmentId(initialLogFragmentId);
         logRootPath += File.separatorChar + name + File.separatorChar;
         File file = new File(logRootPath);
         file.mkdirs();
 
-        logContext.setLogAllocationDescriptor(new SegmentAllocationDescriptor(logFragmentSize, logRootPath));
+        logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logFragmentSize, logRootPath, initialLogSegmentId));
 
         final LogConductor logConductor = new LogConductor(logContext);
         Agent conductorAgent = logConductor;
@@ -115,7 +115,6 @@ public class LogBuilder
             writeBuffer = Dispatchers.create("log-write-buffer")
                     .bufferSize(writeBufferSize)
                     .context(dispatcherContext)
-                    .subscriberGroups(2)
                     .build();
 
             final DispatcherConductor dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
@@ -123,7 +122,7 @@ public class LogBuilder
         }
         logContext.setWriteBuffer(writeBuffer);
 
-        final Appender logAppender = new Appender(logContext);
+        final LogAppender logAppender = new LogAppender(logContext);
 
         AgentRunner[] agentRunners = null;
 

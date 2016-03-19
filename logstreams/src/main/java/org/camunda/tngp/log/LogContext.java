@@ -1,8 +1,10 @@
 package org.camunda.tngp.log;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.log.appender.SegmentAllocationDescriptor;
-import org.camunda.tngp.log.fs.ReadableLogSegment;
+import org.camunda.tngp.log.appender.LogAppenderCmd;
+import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
+import org.camunda.tngp.log.conductor.LogConductorCmd;
+import org.camunda.tngp.log.fs.AvailableSegments;
 
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -11,27 +13,27 @@ public class LogContext
 {
     protected OneToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue = new OneToOneConcurrentArrayQueue<>(10);
 
-    protected SegmentAllocationDescriptor logAllocationDescriptor;
+    protected OneToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue = new OneToOneConcurrentArrayQueue<>(10);
+
+    protected LogSegmentAllocationDescriptor logAllocationDescriptor;
 
     protected Dispatcher writeBuffer;
 
     protected AgentRunner[] agentRunners;
 
-    protected int initialLogFragmentId = 0;
-
-    protected ReadableLogSegment[] readableSegments;
+    protected AvailableSegments availableSegments = new AvailableSegments();
 
     public OneToOneConcurrentArrayQueue<LogConductorCmd> getLogConductorCmdQueue()
     {
         return logConductorCmdQueue;
     }
 
-    public SegmentAllocationDescriptor getLogAllocationDescriptor()
+    public LogSegmentAllocationDescriptor getLogAllocationDescriptor()
     {
         return logAllocationDescriptor;
     }
 
-    public void setLogAllocationDescriptor(SegmentAllocationDescriptor logAllocationDescriptor)
+    public void setLogAllocationDescriptor(LogSegmentAllocationDescriptor logAllocationDescriptor)
     {
         this.logAllocationDescriptor = logAllocationDescriptor;
     }
@@ -56,23 +58,23 @@ public class LogContext
         return agentRunners;
     }
 
-    public int getInitialLogSegementId()
+    public AvailableSegments getAvailableSegments()
     {
-        return initialLogFragmentId;
+        return availableSegments;
     }
 
-    public void setInitialLogFragmentId(int initialLogFragmentId)
+    public void setAvailableSegments(AvailableSegments availableSegments)
     {
-        this.initialLogFragmentId = initialLogFragmentId;
+        this.availableSegments = availableSegments;
     }
 
-    public ReadableLogSegment[] getReadableSegments()
+    public OneToOneConcurrentArrayQueue<LogAppenderCmd> getAppenderCmdQueue()
     {
-        return readableSegments;
+        return appenderCmdQueue;
     }
 
-    public void setReadableSegments(ReadableLogSegment[] readableSegments)
+    public void setAppenderCmdQueue(OneToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue)
     {
-        this.readableSegments = readableSegments;
+        this.appenderCmdQueue = appenderCmdQueue;
     }
 }

@@ -3,55 +3,106 @@ package org.camunda.tngp.log;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 import static org.camunda.tngp.log.fs.LogSegmentDescriptor.*;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.log.conductor.LogConductorCmd;
+import org.camunda.tngp.log.fs.AvailableSegments;
 import org.camunda.tngp.log.fs.ReadableLogSegment;
+
+import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public class Log
 {
-    protected LogContext context;
+    protected final OneToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue;
 
-    protected int initialSegmentId;
+    protected final AvailableSegments availableSegments;
+
+    protected final Dispatcher writeBuffer;
 
     public Log(final LogContext logContext)
     {
-        this.context = logContext;
+        this.availableSegments = logContext.getAvailableSegments();
+        writeBuffer = logContext.getWriteBuffer();
+        logConductorCmdQueue = logContext.getLogConductorCmdQueue();
+    }
+
+    public CompletableFuture<Log> start()
+    {
+        final CompletableFuture<Log> future = new CompletableFuture<>();
+
+        logConductorCmdQueue.add((c) ->
+        {
+            c.openLog(future, this);
+        });
+
+        return future;
+    }
+
+    public void startSync() throws InterruptedException
+    {
+        try
+        {
+            start().get();
+        }
+        catch (ExecutionException e)
+        {
+            LangUtil.rethrowUnchecked((Exception) e.getCause());
+        }
+    }
+
+    public CompletableFuture<Boolean> close()
+    {
+        final CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        logConductorCmdQueue.add((c) ->
+        {
+            c.closeLog(future);
+        });
+
+        return future;
+    }
+
+    public boolean closeSync() throws InterruptedException
+    {
+        boolean success = false;
+
+        try
+        {
+            success = close().get();
+        }
+        catch (ExecutionException e)
+        {
+            LangUtil.rethrowUnchecked((Exception) e.getCause());
+        }
+
+        return success;
     }
 
     public Dispatcher getWriteBuffer()
     {
-        return context.getWriteBuffer();
+        return writeBuffer;
     }
 
     public long getInitialPosition()
     {
-        final ReadableLogSegment[] segments = getSegments();
-
-        if(segments.length > 0)
-        {
-            return position(segments[0].getSegmentId(), METADATA_LENGTH);
-        }
-        else
-        {
-            return -1;
-        }
-    }
-
-    protected ReadableLogSegment[] getSegments()
-    {
-        return context.getReadableSegments();
+        return availableSegments.getInitialPosition();
     }
 
     public long pollFragment(long position, LogFragmentHandler fragmentHandler)
     {
-        final ReadableLogSegment[] segments = getSegments();
-        final int segmentId = partitionId(position) - initialSegmentId;
+        final int segmentId = partitionId(position);
         final int segmentOffset = partitionOffset(position);
+        final ReadableLogSegment segment = availableSegments.getSegment(segmentId);
 
         long nextPosition = -1;
 
-        if(0 <= segmentId && segmentId < segments.length)
+        if(null != segment)
         {
-            int nextOffset = segments[segmentId].pollFragment(segmentOffset, fragmentHandler);
+            final int nextOffset = segment.pollFragment(segmentOffset, fragmentHandler);
 
             if(nextOffset > segmentOffset)
             {
@@ -69,15 +120,15 @@ public class Log
 
     public long pollBlock(long position, LogBlockHandler blockHandler, int maxBlockSize)
     {
-        final ReadableLogSegment[] segments = getSegments();
-        final int segmentId = partitionId(position) - initialSegmentId;
+        final int segmentId = partitionId(position);
         final int segmentOffset = partitionOffset(position);
+        final ReadableLogSegment segment = availableSegments.getSegment(segmentId);
 
         long nextPosition = -1;
 
-        if(0 <= segmentId && segmentId < segments.length)
+        if(null != segment)
         {
-            final int blockLength = segments[segmentId].pollBlock(segmentOffset, blockHandler, maxBlockSize);
+            final int blockLength = segment.pollBlock(segmentOffset, blockHandler, maxBlockSize);
 
             if(blockLength > 0)
             {

@@ -15,7 +15,7 @@ import org.camunda.tngp.log.util.FileChannelUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
- * The appender's view of a log fragment
+ * The appender's view of the log segment
  */
 public class AppendableLogSegment extends LogSegment
 {
@@ -68,20 +68,6 @@ public class AppendableLogSegment extends LogSegment
     @Override
     public void closeSegment()
     {
-        // force metadata updates to be written
-        MappedByteBuffer byteBuffer = (MappedByteBuffer) metadataSection.byteBuffer();
-        byteBuffer.force();
-
-        // for fs metadata to be written
-        try
-        {
-            fileChannel.force(true);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-
         super.closeSegment();
     }
 
@@ -128,14 +114,17 @@ public class AppendableLogSegment extends LogSegment
         return newTail;
     }
 
-    private int writeToChannel(final int position, ByteBuffer buff)
+    protected int writeToChannel(final int position, ByteBuffer buff)
     {
         int bytesWritten = -1;
 
         try
         {
             int written = fileChannel.write(buff, position);
+
             // TODO: fsync?
+            // fileChannel.force(false);
+
             bytesWritten = written;
         }
         catch (IOException e)
@@ -145,5 +134,4 @@ public class AppendableLogSegment extends LogSegment
 
         return bytesWritten;
     }
-
 }

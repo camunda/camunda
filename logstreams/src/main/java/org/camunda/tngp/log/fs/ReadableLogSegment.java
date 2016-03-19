@@ -54,10 +54,14 @@ public class ReadableLogSegment extends LogSegment
                             fragmentHandler,
                             fragmentLength);
                 }
-                if(type == TYPE_PADDING)
+                else if(type == TYPE_PADDING)
                 {
                     nextOffset = -2;
                 }
+            }
+            else
+            {
+                nextOffset = offset;
             }
         }
 
@@ -146,7 +150,7 @@ public class ReadableLogSegment extends LogSegment
                     fragmentOffset,
                     fragmentLength);
 
-            nextOffset = alignedLength(fragmentLength);
+            nextOffset = offset + alignedLength(fragmentLength);
         }
         catch (Exception e)
         {
@@ -191,5 +195,11 @@ public class ReadableLogSegment extends LogSegment
             }
             return tail;
         }
+    }
+
+    @Override
+    public boolean isFilled()
+    {
+        return getTailVolatile() == getSegmentSize();
     }
 }

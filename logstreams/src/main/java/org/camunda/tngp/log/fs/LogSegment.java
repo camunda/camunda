@@ -1,7 +1,11 @@
 package org.camunda.tngp.log.fs;
 
-import static org.camunda.tngp.log.fs.LogSegmentDescriptor.*;
+import static org.camunda.tngp.log.fs.LogSegmentDescriptor.METADATA_LENGTH;
+import static org.camunda.tngp.log.fs.LogSegmentDescriptor.SEGMENT_ID_OFFSET;
+import static org.camunda.tngp.log.fs.LogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
+import static org.camunda.tngp.log.fs.LogSegmentDescriptor.SEGMENT_TAIL_OFFSET;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -57,6 +61,15 @@ public abstract class LogSegment
         catch (IOException e)
         {
             e.printStackTrace();
+        }
+    }
+
+    public void delete()
+    {
+        File file = new File(fileName);
+        if(file.exists())
+        {
+            file.delete();
         }
     }
 
