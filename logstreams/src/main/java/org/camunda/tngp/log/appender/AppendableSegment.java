@@ -1,42 +1,26 @@
 package org.camunda.tngp.log.appender;
 
-import static java.lang.Math.max;
-
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.camunda.tngp.log.util.FileChannelUtil;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 /**
- * The appender's view on a log fragment
+ * The appender's view of a log fragment
  */
-public class AppendableLogFragment
+public class AppendableSegment
 {
-
-    static ByteBuffer EMPTY_BUFFER = ByteBuffer.allocateDirect(1024 * 1024);
-
-    static
-    {
-        // fill buffer with 0s
-        new UnsafeBuffer(EMPTY_BUFFER)
-            .setMemory(0, EMPTY_BUFFER.capacity(), (byte)0);
-    }
-
     static final int STATE_NEW = 0;
     static final int STATE_ALLOCATED = 1;
     static final int STATE_ALLOCATION_FAILED = 2;
     static final int STATE_ACTIVE = 3;
     static final int STATE_FILLED = 4;
 
-    protected final LogAllocationDescriptor allocationDescriptor;
+    protected final SegmentAllocationDescriptor allocationDescriptor;
 
-    protected final int fragmentId;
+    protected final int segmentId;
 
-    protected final int fragmentSize;
+    protected final int segmentSize;
 
     protected volatile int state = STATE_NEW;
 
@@ -44,11 +28,11 @@ public class AppendableLogFragment
 
     protected int tailPosition;
 
-    public AppendableLogFragment(int fragmentId, LogAllocationDescriptor allocationDescriptor)
+    public AppendableSegment(int fragmentId, SegmentAllocationDescriptor allocationDescriptor)
     {
-        this.fragmentId = fragmentId;
+        this.segmentId = fragmentId;
         this.allocationDescriptor = allocationDescriptor;
-        this.fragmentSize = allocationDescriptor.fragmentSize;
+        this.segmentSize = allocationDescriptor.fragmentSize;
         this.tailPosition = 0;
     }
 
@@ -57,9 +41,9 @@ public class AppendableLogFragment
         return fileChannel;
     }
 
-    public int getFragmentId()
+    public int getSegmentId()
     {
-        return fragmentId;
+        return segmentId;
     }
 
     public int getTailPosition()
@@ -67,9 +51,9 @@ public class AppendableLogFragment
         return tailPosition;
     }
 
-    public int getFragmentSize()
+    public int getSegmentSize()
     {
-        return fragmentSize;
+        return segmentSize;
     }
 
     public void setTailPosition(int tailPosition)
@@ -80,25 +64,14 @@ public class AppendableLogFragment
     public void allocate()
     {
         int newState = STATE_ALLOCATION_FAILED;
-        try {
-
+        try
+        {
             final long availableSpace = FileChannelUtil.getAvailableSpace(new File(allocationDescriptor.path));
-
-            if(availableSpace > fragmentSize)
+            if(availableSpace > segmentSize)
             {
                 openChannel();
-
-                // fill file with 0s
-//                for (int pos = 0; pos < fragmentSize; pos += EMPTY_BUFFER.capacity())
-//                {
-//                    EMPTY_BUFFER.clear();
-//                    EMPTY_BUFFER.limit(Math.min(EMPTY_BUFFER.capacity(), fragmentSize - pos));
-//                    fileChannel.write(EMPTY_BUFFER, pos);
-//                }
-
                 newState = STATE_ALLOCATED;
             }
-
         }
         catch(Exception e)
         {
@@ -114,13 +87,7 @@ public class AppendableLogFragment
     {
         final String path = allocationDescriptor.getPath();
         final String nameTemplate = allocationDescriptor.getFragmentFileNameTemplate();
-
-        fileChannel = FileChannelUtil.openChannel(path, nameTemplate, fragmentId);
-    }
-
-    public void proposeMaxTail(int newTail)
-    {
-        tailPosition = max(tailPosition, newTail);
+        fileChannel = FileChannelUtil.openChannel(path, nameTemplate, segmentId);
     }
 
     public void setStateVolatile(int state)

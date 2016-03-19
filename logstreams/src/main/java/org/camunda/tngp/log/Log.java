@@ -15,4 +15,5 @@ public class Log
     {
         return writeBuffer;
     }
+
 }

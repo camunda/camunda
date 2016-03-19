@@ -4,18 +4,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-public class LogFragementAppender
+public class SegmentAppender
 {
 
     public int append(
-            final AppendableLogFragment fragment,
+            final AppendableSegment fragment,
             final ByteBuffer block)
     {
         final FileChannel fileChannel = fragment.getFileChannel();
 
         final int blockLength = block.remaining();
         final int fragmentTail = fragment.getTailPosition();
-        final int available = fragment.getFragmentSize() - fragmentTail;
+        final int available = fragment.getSegmentSize() - fragmentTail;
 
         int newTail = -1;
 
@@ -31,6 +31,10 @@ public class LogFragementAppender
             {
                 e.printStackTrace();
             }
+        }
+        else
+        {
+            newTail = -2;
         }
 
         return newTail;

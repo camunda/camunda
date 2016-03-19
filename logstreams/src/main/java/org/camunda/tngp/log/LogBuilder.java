@@ -6,8 +6,8 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
-import org.camunda.tngp.log.appender.LogAllocationDescriptor;
-import org.camunda.tngp.log.appender.LogAppender;
+import org.camunda.tngp.log.appender.SegmentAllocationDescriptor;
+import org.camunda.tngp.log.appender.Appender;
 
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.LangUtil;
@@ -97,7 +97,7 @@ public class LogBuilder
     public Log build()
     {
         final LogContext logContext = new LogContext();
-        logContext.setLogAllocationDescriptor(new LogAllocationDescriptor(logFragmentSize, logRootPath));
+        logContext.setLogAllocationDescriptor(new SegmentAllocationDescriptor(logFragmentSize, logRootPath));
 
         final LogConductor logConductor = new LogConductor(logContext);
         Agent conductorAgent = logConductor;
@@ -109,6 +109,7 @@ public class LogBuilder
             writeBuffer = Dispatchers.create("log-write-buffer")
                     .bufferSize(writeBufferSize)
                     .context(dispatcherContext)
+                    .subscriberGroups(2)
                     .build();
 
             final DispatcherConductor dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
@@ -116,7 +117,7 @@ public class LogBuilder
         }
         logContext.setWriteBuffer(writeBuffer);
 
-        final LogAppender logAppender = new LogAppender(logContext);
+        final Appender logAppender = new Appender(logContext);
 
         AgentRunner[] agentRunners = null;
 

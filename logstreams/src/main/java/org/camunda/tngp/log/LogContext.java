@@ -1,17 +1,16 @@
 package org.camunda.tngp.log;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.log.appender.LogAllocationDescriptor;
+import org.camunda.tngp.log.appender.SegmentAllocationDescriptor;
 
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public class LogContext
 {
-
     protected OneToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue = new OneToOneConcurrentArrayQueue<>(10);
 
-    protected LogAllocationDescriptor logAllocationDescriptor;
+    protected SegmentAllocationDescriptor logAllocationDescriptor;
 
     protected Dispatcher writeBuffer;
 
@@ -24,12 +23,12 @@ public class LogContext
         return logConductorCmdQueue;
     }
 
-    public LogAllocationDescriptor getLogAllocationDescriptor()
+    public SegmentAllocationDescriptor getLogAllocationDescriptor()
     {
         return logAllocationDescriptor;
     }
 
-    public void setLogAllocationDescriptor(LogAllocationDescriptor logAllocationDescriptor)
+    public void setLogAllocationDescriptor(SegmentAllocationDescriptor logAllocationDescriptor)
     {
         this.logAllocationDescriptor = logAllocationDescriptor;
     }
@@ -54,7 +53,7 @@ public class LogContext
         return agentRunners;
     }
 
-    public int getInitialLogFragmentId()
+    public int getInitialLogSegementId()
     {
         return initialLogFragmentId;
     }
@@ -63,4 +62,5 @@ public class LogContext
     {
         this.initialLogFragmentId = initialLogFragmentId;
     }
+
 }
