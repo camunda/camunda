@@ -41,7 +41,7 @@ public class LogBuilder
 
     protected String logRootPath;
 
-    protected int logFragmentSize = 1024 * 1024 * 128;
+    protected int logSegmentSize = 1024 * 1024 * 128;
 
     protected int initialLogSegmentId = 0;
 
@@ -90,9 +90,9 @@ public class LogBuilder
         return this;
     }
 
-    public LogBuilder logFragementSize(int logFragementSize)
+    public LogBuilder logSegmentSize(int logSegmentSize)
     {
-        this.logFragmentSize = logFragementSize;
+        this.logSegmentSize = logSegmentSize;
         return this;
     }
 
@@ -103,7 +103,7 @@ public class LogBuilder
         File file = new File(logRootPath);
         file.mkdirs();
 
-        logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logFragmentSize, logRootPath, initialLogSegmentId));
+        logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logSegmentSize, logRootPath, initialLogSegmentId));
 
         final LogConductor logConductor = new LogConductor(logContext);
         Agent conductorAgent = logConductor;

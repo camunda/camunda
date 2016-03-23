@@ -4,7 +4,7 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.appender.LogAppenderCmd;
 import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
-import org.camunda.tngp.log.fs.AvailableSegments;
+import org.camunda.tngp.log.fs.LogSegments;
 
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -21,7 +21,7 @@ public class LogContext
 
     protected AgentRunner[] agentRunners;
 
-    protected AvailableSegments availableSegments = new AvailableSegments();
+    protected LogSegments logSegments = new LogSegments();
 
     public OneToOneConcurrentArrayQueue<LogConductorCmd> getLogConductorCmdQueue()
     {
@@ -58,14 +58,14 @@ public class LogContext
         return agentRunners;
     }
 
-    public AvailableSegments getAvailableSegments()
+    public LogSegments getLogSegments()
     {
-        return availableSegments;
+        return logSegments;
     }
 
-    public void setAvailableSegments(AvailableSegments availableSegments)
+    public void setAvailableSegments(LogSegments availableSegments)
     {
-        this.availableSegments = availableSegments;
+        this.logSegments = availableSegments;
     }
 
     public OneToOneConcurrentArrayQueue<LogAppenderCmd> getAppenderCmdQueue()

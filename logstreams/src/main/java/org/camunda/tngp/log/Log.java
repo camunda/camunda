@@ -5,11 +5,10 @@ import static org.camunda.tngp.log.fs.LogSegmentDescriptor.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
-import org.camunda.tngp.log.fs.AvailableSegments;
+import org.camunda.tngp.log.fs.LogSegments;
 import org.camunda.tngp.log.fs.ReadableLogSegment;
 
 import uk.co.real_logic.agrona.LangUtil;
@@ -19,13 +18,13 @@ public class Log
 {
     protected final OneToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue;
 
-    protected final AvailableSegments availableSegments;
+    protected final LogSegments logSegments;
 
     protected final Dispatcher writeBuffer;
 
     public Log(final LogContext logContext)
     {
-        this.availableSegments = logContext.getAvailableSegments();
+        this.logSegments = logContext.getLogSegments();
         writeBuffer = logContext.getWriteBuffer();
         logConductorCmdQueue = logContext.getLogConductorCmdQueue();
     }
@@ -89,14 +88,14 @@ public class Log
 
     public long getInitialPosition()
     {
-        return availableSegments.getInitialPosition();
+        return logSegments.getInitialPosition();
     }
 
     public long pollFragment(long position, LogFragmentHandler fragmentHandler)
     {
         final int segmentId = partitionId(position);
         final int segmentOffset = partitionOffset(position);
-        final ReadableLogSegment segment = availableSegments.getSegment(segmentId);
+        final ReadableLogSegment segment = logSegments.getSegment(segmentId);
 
         long nextPosition = -1;
 
@@ -122,7 +121,7 @@ public class Log
     {
         final int segmentId = partitionId(position);
         final int segmentOffset = partitionOffset(position);
-        final ReadableLogSegment segment = availableSegments.getSegment(segmentId);
+        final ReadableLogSegment segment = logSegments.getSegment(segmentId);
 
         long nextPosition = -1;
 

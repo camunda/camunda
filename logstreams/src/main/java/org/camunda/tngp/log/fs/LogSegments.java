@@ -4,7 +4,7 @@ import static org.camunda.tngp.log.fs.LogSegmentDescriptor.*;
 
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 
-public class AvailableSegments
+public class LogSegments
 {
     protected int initalSegmentId = -1;
 

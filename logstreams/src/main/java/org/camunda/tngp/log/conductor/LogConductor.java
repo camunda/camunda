@@ -14,7 +14,7 @@ import org.camunda.tngp.log.LogContext;
 import org.camunda.tngp.log.appender.LogAppenderCmd;
 import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.fs.AppendableLogSegment;
-import org.camunda.tngp.log.fs.AvailableSegments;
+import org.camunda.tngp.log.fs.LogSegments;
 import org.camunda.tngp.log.fs.ReadableLogSegment;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
@@ -28,7 +28,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
     protected final OneToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue;
 
     protected final LogSegmentAllocationDescriptor logAllocationDescriptor;
-    protected final AvailableSegments availableSegments;
+    protected final LogSegments availableSegments;
 
     protected Dispatcher writeBuffer;
     protected AgentRunner[] agentRunners;
@@ -39,7 +39,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         this.logContext = logContext;
         cmdQueue = logContext.getLogConductorCmdQueue();
         appenderCmdQueue = logContext.getAppenderCmdQueue();
-        availableSegments = logContext.getAvailableSegments();
+        availableSegments = logContext.getLogSegments();
         logAllocationDescriptor = logContext.getLogAllocationDescriptor();
     }
 

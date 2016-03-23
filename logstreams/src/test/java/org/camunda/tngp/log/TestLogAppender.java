@@ -13,10 +13,12 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class TestLogAppender
 {
+    private static final int MSG_SIZE = 1024;
 
     public class LogFragmentReader implements LogFragmentHandler
     {
-        private ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+
+        private ByteBuffer buffer = ByteBuffer.allocateDirect(MSG_SIZE);
         private UnsafeBuffer unsafeBuffer = new UnsafeBuffer(buffer);
 
         int lastId = -1;
@@ -45,12 +47,20 @@ public class TestLogAppender
     @Test
     public void shouldAppend() throws InterruptedException
     {
-        final Log log = createLog();
+        ensureLogDirCreated();
+
+        final Log log = Logs.createLog("foo")
+            .logRootPath("/tmp/logs")
+            .logSegmentSize(1024 * 1024 * 512)
+            .writeBufferSize(1024 * 1024 * 128)
+            .threadingMode(ThreadingMode.DEDICATED)
+            .build();
+
         log.startSync();
 
         final Dispatcher writeBuffer = log.getWriteBuffer();
 
-        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
 
         final LogFragmentReader logFragmentReader = new LogFragmentReader();
 
@@ -80,7 +90,7 @@ public class TestLogAppender
     }
 
 
-    private Log createLog()
+    private void ensureLogDirCreated()
     {
         final File logRoot = new File("/tmp/logs/foo");
         if(logRoot.exists())
@@ -95,13 +105,6 @@ public class TestLogAppender
         {
             logRoot.mkdirs();
         }
-
-        return Logs.createLog("foo")
-                .logRootPath("/tmp/logs")
-                .logFragementSize(1024 * 1024 * 512)
-                .writeBufferSize(1024 * 1024 * 128)
-                .threadingMode(ThreadingMode.DEDICATED)
-                .build();
     }
 
 }

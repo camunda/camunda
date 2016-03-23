@@ -55,8 +55,6 @@ public class LogSegmentDescriptor
         offset += SIZE_OF_INT;
 
         SEGMENT_SIZE_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         offset += (2* CACHE_LINE_LENGTH);
 
         SEGMENT_TAIL_OFFSET = offset;
