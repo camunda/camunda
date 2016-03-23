@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol;
+package org.camunda.tngp.transport.protocol.async;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;

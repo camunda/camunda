@@ -1,7 +1,8 @@
-package org.camunda.tngp.transport.protocol;
+package org.camunda.tngp.transport.protocol.async;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.transport.protocol.MessageHeaderDecoder;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;

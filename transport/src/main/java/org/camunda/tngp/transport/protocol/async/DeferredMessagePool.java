@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol;
+package org.camunda.tngp.transport.protocol.async;
 
 import java.nio.ByteBuffer;
 
