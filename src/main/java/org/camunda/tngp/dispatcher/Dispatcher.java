@@ -442,4 +442,9 @@ public class Dispatcher
         return publisherPosition.get();
     }
 
+    public int getSubscriberCount()
+    {
+        return subscriptions.length;
+    }
+
 }

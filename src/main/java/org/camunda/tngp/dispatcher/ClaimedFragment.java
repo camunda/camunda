@@ -36,6 +36,11 @@ public class ClaimedFragment
         return buffer.capacity() - HEADER_LENGTH;
     }
 
+    public int getFragmentLength()
+    {
+        return buffer.capacity();
+    }
+
     public MutableDirectBuffer getBuffer()
     {
         return buffer;
@@ -51,6 +56,11 @@ public class ClaimedFragment
     private static void reset(UnsafeBuffer fragmentWrapper)
     {
         fragmentWrapper.wrap(0,0);
+    }
+
+    public boolean isOpen()
+    {
+        return getFragmentLength() > 0;
     }
 
 }
