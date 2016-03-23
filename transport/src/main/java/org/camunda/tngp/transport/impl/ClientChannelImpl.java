@@ -6,6 +6,7 @@ import java.nio.channels.SocketChannel;
 
 import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.ChannelErrorHandler;
+import org.camunda.tngp.transport.ChannelReceiveHandler;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 

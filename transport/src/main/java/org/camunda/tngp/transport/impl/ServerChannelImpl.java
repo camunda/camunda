@@ -11,9 +11,9 @@ public class ServerChannelImpl extends BaseChannelImpl implements ServerChannel
     public ServerChannelImpl(
             final TransportContext transportContext,
             final SocketChannel media,
-            final ChannelErrorHandler errorHandler)
+            final ChannelErrorHandler channelErrorHandler)
     {
-        super(transportContext, errorHandler);
+        super(transportContext, channelErrorHandler);
         this.media = media;
         this.state = State.CONNECTED;
     }

@@ -6,6 +6,7 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
+import org.camunda.tngp.transport.impl.DefaultChannelReceiveHandler;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
@@ -33,6 +34,8 @@ public class TransportBuilder
     protected Dispatcher sendBuffer;
 
     protected Dispatcher receiveBuffer;
+
+    protected ChannelReceiveHandler channelReceiveHandler;
 
     protected int sendBufferSize = 1024 * 1024 * 16;
 
@@ -94,22 +97,28 @@ public class TransportBuilder
         return this;
     }
 
+    public TransportBuilder channelReceiveHandler(ChannelReceiveHandler handler)
+    {
+        channelReceiveHandler = handler;
+        return this;
+    }
+
     public Transport build()
     {
+        boolean hasReceiveBuffer = channelReceiveHandler == null;
 
         initTransportContext();
-        transportContext.setMaxMessageLength(maxMessageLength);
-        initBuffers();
-        initRecevier();
+        initBuffers(hasReceiveBuffer);
+        initReceiver();
         initSender();
         initConductor();
         startAgents();
-        startDispatchers();
+        startDispatchers(hasReceiveBuffer);
 
         return new Transport(transportContext);
     }
 
-    protected void startDispatchers()
+    protected void startDispatchers(boolean hasReceiveBuffer)
     {
         if(sendBuffer.getStatus() == Dispatcher.STATUS_NEW)
         {
@@ -122,7 +131,7 @@ public class TransportBuilder
                 LangUtil.rethrowUnchecked(e);
             }
         }
-        if(receiveBuffer.getStatus() == Dispatcher.STATUS_NEW)
+        if(hasReceiveBuffer && receiveBuffer.getStatus() == Dispatcher.STATUS_NEW)
         {
             try
             {
@@ -137,17 +146,19 @@ public class TransportBuilder
 
     protected void initConductor()
     {
-        this.transportConductor = new TransportConductor(transportContext);
-        this.dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
-        this.conductor = new CompositeAgent(transportConductor, dispatcherConductor);
+        transportConductor = new TransportConductor(transportContext);
+        dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
+        conductor = new CompositeAgent(transportConductor, dispatcherConductor);
     }
 
     protected void initTransportContext()
     {
-        this.transportContext = new TransportContext();
+        transportContext = new TransportContext();
+        transportContext.setChannelReceiveHandler(channelReceiveHandler);
+        transportContext.setMaxMessageLength(maxMessageLength);
     }
 
-    protected void initBuffers()
+    protected void initBuffers(boolean hasReceiveBuffer)
     {
         if(sendBuffer == null || receiveBuffer == null)
         {
@@ -164,13 +175,15 @@ public class TransportBuilder
             }
 
 
-            if(receiveBuffer == null)
+            if(hasReceiveBuffer && receiveBuffer == null)
             {
                 receiveBuffer = Dispatchers.create(name + ".receive-buffer")
                     .bufferSize(recevieBufferSize)
                     .context(dispatcherContext)
                     .countersManager(countersManager)
                     .build();
+
+                transportContext.setChannelReceiveHandler(new DefaultChannelReceiveHandler(receiveBuffer));
             }
 
         }
@@ -179,7 +192,7 @@ public class TransportBuilder
         transportContext.setReceiveBuffer(receiveBuffer);
     }
 
-    protected void initRecevier()
+    protected void initReceiver()
     {
         this.receiver = new Receiver(this.transportContext);
     }

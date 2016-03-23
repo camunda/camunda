@@ -39,7 +39,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
         workCount += cmdQueue.drain(this);
 
-        workCount += sendBuffer.pollBlock(this, 5, true);
+        workCount += sendBuffer.pollBlock(this, Integer.MAX_VALUE, true);
 
         workCount += sendControlFrames();
 

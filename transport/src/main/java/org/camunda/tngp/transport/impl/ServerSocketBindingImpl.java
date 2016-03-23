@@ -91,7 +91,8 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
             socketChannel.configureBlocking(false);
 
             channel = new ServerChannelImpl(
-                    transportContext, socketChannel,
+                    transportContext,
+                    socketChannel,
                     ChannelErrorHandler.DEFAULT_ERROR_HANDLER);
 
             if(channelHander != null)

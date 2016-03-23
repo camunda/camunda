@@ -15,9 +15,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
-import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.BaseChannel;
 import org.camunda.tngp.transport.ChannelErrorHandler;
+import org.camunda.tngp.transport.ChannelReceiveHandler;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 
@@ -62,8 +62,7 @@ public abstract class BaseChannelImpl implements BaseChannel
 
     protected int id;
 
-    protected final Dispatcher transportSendBuffer;
-    protected final Dispatcher transportReceiveBuffer;
+    protected final ChannelReceiveHandler channelReceiveHandler;
 
     protected final ByteBuffer channelReadBuffer;
     protected final UnsafeBuffer channelReadBufferView;
@@ -83,20 +82,13 @@ public abstract class BaseChannelImpl implements BaseChannel
             final TransportContext transportContext,
             final ChannelErrorHandler errorHandler)
     {
-        this.transportSendBuffer = transportContext.getSendBuffer();
-        this.transportReceiveBuffer = transportContext.getReceiveBuffer();
         this.maxMessageLength = transportContext.getMaxMessageLength();
+        this.channelReceiveHandler = transportContext.getChannelReceiveHandler();
 
         senderCmdQueue = transportContext.getSenderCmdQueue();
         receiverCmdQueue = transportContext.getReceiverCmdQueue();
 
         this.errorHandler = errorHandler;
-
-        if(transportSendBuffer.getMaxFrameLength() < maxMessageLength)
-        {
-            throw new RuntimeException("Cannot create Channel: max frame length in writeBuffer "
-                    +transportSendBuffer.getMaxFrameLength()+" is less than transport's '"+maxMessageLength+"'.");
-        }
 
         this.channelReadBuffer = ByteBuffer.allocateDirect(maxMessageLength * 2);
         this.channelReadBufferView = new UnsafeBuffer(channelReadBuffer);
@@ -104,7 +96,6 @@ public abstract class BaseChannelImpl implements BaseChannel
 
     public int receive()
     {
-
         final int bytesRead = mediaReceive(channelReadBuffer);
 
         if (bytesRead > 0)
@@ -125,19 +116,10 @@ public abstract class BaseChannelImpl implements BaseChannel
 
                     if (msgType == TYPE_MESSAGE)
                     {
-                        int attempts = 0;
-                        long publishResult = -1;
-                        do
-                        {
-                            publishResult = transportReceiveBuffer.offer(
-                                    channelReadBufferView,
-                                    HEADER_LENGTH,
-                                    msgLength,
-                                    id);
-
-                            attempts++;
-                        }
-                        while(publishResult == -2 || (publishResult == -1 && attempts < 25));
+                        long publishResult = channelReceiveHandler.onMessage(channelReadBufferView,
+                                HEADER_LENGTH,
+                                msgLength,
+                                id);
 
                         if(publishResult == -1)
                         {
@@ -207,11 +189,6 @@ public abstract class BaseChannelImpl implements BaseChannel
         {
             System.err.println("Recevied unhandled control frame of type "+msgType);
         }
-    }
-
-    public Dispatcher getWriteBuffer()
-    {
-        return transportSendBuffer;
     }
 
     public void writeMessage(ByteBuffer buffer, long messageId)

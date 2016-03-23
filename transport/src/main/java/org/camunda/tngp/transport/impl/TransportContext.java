@@ -1,6 +1,7 @@
 package org.camunda.tngp.transport.impl;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.transport.ChannelReceiveHandler;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
@@ -16,6 +17,7 @@ public class TransportContext
 
     protected Dispatcher sendBuffer;
     protected Dispatcher receiveBuffer;
+    protected ChannelReceiveHandler channelReceiveHandler;
 
     protected int maxMessageLength;
 
@@ -89,5 +91,15 @@ public class TransportContext
     public Dispatcher getReceiveBuffer()
     {
         return receiveBuffer;
+    }
+
+    public ChannelReceiveHandler getChannelReceiveHandler()
+    {
+        return channelReceiveHandler;
+    }
+
+    public void setChannelReceiveHandler(ChannelReceiveHandler channelReceiveHandler)
+    {
+        this.channelReceiveHandler = channelReceiveHandler;
     }
 }

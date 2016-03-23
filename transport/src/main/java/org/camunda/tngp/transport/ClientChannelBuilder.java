@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.impl.ClientChannelImpl;
+import org.camunda.tngp.transport.impl.DefaultChannelReceiveHandler;
 import org.camunda.tngp.transport.impl.TransportContext;
 
 import uk.co.real_logic.agrona.LangUtil;
@@ -35,7 +36,10 @@ public class ClientChannelBuilder
 
     public void connect(AsyncCompletionCallback<ClientChannel> completionCallback)
     {
-        new ClientChannelImpl(transportContext, channelErrorHandler, remoteAddress, completionCallback);
+        new ClientChannelImpl(transportContext,
+                channelErrorHandler,
+                remoteAddress,
+                completionCallback);
     }
 
     public ClientChannel connectSync()
