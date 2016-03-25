@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.dispatcher.Dispatcher;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
@@ -33,8 +33,8 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
 
     protected final List<Dispatcher> dispatchers = new ArrayList<>(10);
 
-    protected final Map<Dispatcher, AsyncCompletionCallback<Dispatcher>> closeCallbacks = new HashMap<>(10);
-    protected final Map<Dispatcher, AsyncCompletionCallback<Dispatcher>> startCallbacks = new HashMap<>(10);
+    protected final Map<Dispatcher, CompletableFuture<Dispatcher>> closeFutures = new HashMap<>(10);
+    protected final Map<Dispatcher, CompletableFuture<Dispatcher>> startFutures = new HashMap<>(10);
 
     protected final boolean isShared;
     protected final DispatcherContext context;
@@ -107,19 +107,19 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
     {
         dispatchers.remove(dispatcher);
 
-        final AsyncCompletionCallback<Dispatcher> closeCallback = closeCallbacks.remove(dispatcher);
-        if(closeCallback != null)
+        final CompletableFuture<Dispatcher> closeFuture = closeFutures.remove(dispatcher);
+        if(closeFuture != null)
         {
-            closeCallback.onComplete(null, dispatcher);
+            closeFuture.complete(dispatcher);
         }
     }
 
     protected void notifyActivate(Dispatcher dispatcher)
     {
-        final AsyncCompletionCallback<Dispatcher> startCallback = startCallbacks.remove(dispatcher);
-        if(startCallback != null)
+        final CompletableFuture<Dispatcher> startFuture = startFutures.remove(dispatcher);
+        if(startFuture != null)
         {
-            startCallback.onComplete(null, dispatcher);
+            startFuture.complete(dispatcher);
         }
     }
 
@@ -146,37 +146,37 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
         cmd.execute(this);
     }
 
-    public void requestStartDispatcher(Dispatcher dispatcher, AsyncCompletionCallback<Dispatcher> startCallback)
+    public void requestStartDispatcher(Dispatcher dispatcher, CompletableFuture<Dispatcher> startFuture)
     {
         final int status = dispatcher.getStatus();
         if(status == STATUS_NEW)
         {
             this.dispatchers.add(dispatcher);
-            this.startCallbacks.put(dispatcher, startCallback);
+            this.startFutures.put(dispatcher, startFuture);
         }
         else
         {
-            if(startCallback != null)
+            if(startFuture != null)
             {
-                startCallback.onComplete(new IllegalStateException("Cannot start this dispatcher, is not in state new"), dispatcher);
+                startFuture.completeExceptionally(new IllegalStateException("Cannot start this dispatcher, is not in state new"));
             }
         }
     }
 
-    public void requestCloseDispatcher(Dispatcher dispatcher, AsyncCompletionCallback<Dispatcher> closeCallback)
+    public void requestCloseDispatcher(Dispatcher dispatcher, CompletableFuture<Dispatcher> closeFuture)
     {
         final int status = dispatcher.getStatus();
 
         if(status == STATUS_ACTIVE)
         {
-            closeCallbacks.put(dispatcher, closeCallback);
+            closeFutures.put(dispatcher, closeFuture);
             dispatcher.setStateOrdered(STATUS_CLOSE_REQUESTED);
         }
         else
         {
-            if(closeCallback != null)
+            if(closeFuture != null)
             {
-                closeCallback.onComplete(new IllegalStateException("Cannot close dispatcher, dispatcher is in state "+status), dispatcher);
+                closeFuture.completeExceptionally(new IllegalStateException("Cannot close dispatcher, dispatcher is in state "+status));
             }
         }
     }

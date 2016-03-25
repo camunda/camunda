@@ -146,7 +146,7 @@ public class DispatcherBuilder
     {
         final Dispatcher dispatcher = build();
 
-        dispatcher.startSync();
+        dispatcher.start();
 
         return dispatcher;
     }

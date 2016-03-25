@@ -1,16 +1,14 @@
 package org.camunda.tngp.dispatcher;
 
-import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.Subscription;
-import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -79,33 +77,19 @@ public class Dispatcher
         return new Subscription(subscriberPosition);
     }
 
-    public void start(AsyncCompletionCallback<Dispatcher> startCallback)
+    public CompletableFuture<Dispatcher> startAsync()
     {
+        final CompletableFuture<Dispatcher> startFuture = new CompletableFuture<>();
+
         context.getDispatcherCommandQueue()
-            .add((conductor) -> conductor.requestStartDispatcher(this, startCallback));
+            .add((conductor) -> conductor.requestStartDispatcher(this, startFuture));
+
+        return startFuture;
     }
 
-    public void startSync() throws InterruptedException
+    public void start() throws InterruptedException
     {
-        final CompletableFuture<Dispatcher> future = new CompletableFuture<>();
-
-        start(completeFuture(future));
-
-        try
-        {
-            future.get();
-        }
-        catch (ExecutionException e)
-        {
-            if(e.getCause() instanceof RuntimeException)
-            {
-                throw (RuntimeException) e.getCause();
-            }
-            else
-            {
-                throw new RuntimeException("Exception while waiting for dispatcher to start", e.getCause());
-            }
-        }
+        startAsync().join();
     }
 
     public long offer(DirectBuffer msg)
@@ -341,32 +325,17 @@ public class Dispatcher
 
     public void close() throws InterruptedException
     {
-        final CompletableFuture<Dispatcher> future = new CompletableFuture<>();
-
-        closeAsync(completeFuture(future));
-
-        try
-        {
-            future.get();
-        }
-        catch (ExecutionException e)
-        {
-            Throwable cause = e.getCause();
-            if(cause instanceof RuntimeException)
-            {
-                throw (RuntimeException) cause;
-            }
-            else
-            {
-                throw new RuntimeException("Exception while waiting for dispatcher to close", e);
-            }
-        }
+        closeAsync().join();
     }
 
-    public void closeAsync(AsyncCompletionCallback<Dispatcher> closeCallback)
+    public CompletableFuture<Dispatcher> closeAsync()
     {
+        final CompletableFuture<Dispatcher> closeFuture = new CompletableFuture<>();
+
         context.getDispatcherCommandQueue()
-          .add((conductor) -> conductor.requestCloseDispatcher(this, closeCallback));
+          .add((conductor) -> conductor.requestCloseDispatcher(this, closeFuture));
+
+        return closeFuture;
     }
 
     public int updatePublisherLimit()
