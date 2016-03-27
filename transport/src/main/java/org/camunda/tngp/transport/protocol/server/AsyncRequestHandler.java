@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol.async;
+package org.camunda.tngp.transport.protocol.server;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 

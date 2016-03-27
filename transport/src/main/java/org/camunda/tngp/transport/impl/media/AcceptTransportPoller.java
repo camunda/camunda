@@ -55,7 +55,7 @@ public class AcceptTransportPoller extends TransportPoller
 
             cmdQueue.add((cc) ->
             {
-                cc.onChannelOpened(serverChannel);
+                cc.onServerChannelOpened(serverChannel);
             });
 
             return 1;

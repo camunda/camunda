@@ -1,8 +1,8 @@
 package org.camunda.tngp.transport.impl;
 
-import static org.camunda.tngp.transport.ChannelErrorHandler.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.*;
-import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
+import static org.camunda.tngp.transport.impl.StaticControlFrames.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,87 +11,64 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
-import org.camunda.tngp.transport.BaseChannel;
-import org.camunda.tngp.transport.ChannelErrorHandler;
-import org.camunda.tngp.transport.ChannelReceiveHandler;
+import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
+import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public abstract class BaseChannelImpl implements BaseChannel
+public abstract class TransportChannelImpl implements TransportChannel
 {
+    public final static int STATE_CONNECTING = 0;
+    public final static int STATE_CONNECTED = 1;
+    public final static int STATE_CLOSE_INITIATED = 2;
+    public final static int STATE_CLOSE_RECEIVED = 3;
+    public final static int STATE_CLOSED = 4;
 
-    protected static ByteBuffer CLOSE_FRAME = ByteBuffer.allocate(alignedLength(0));
-    protected static ByteBuffer END_OF_STREAM_FRAME = ByteBuffer.allocate(alignedLength(0));
+    protected static final AtomicIntegerFieldUpdater<TransportChannelImpl> STATE_FIELD
+        = AtomicIntegerFieldUpdater.newUpdater(TransportChannelImpl.class, "state");
 
-
-    static
-    {
-        UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0,0);
-
-        ctrMsgWriter.wrap(CLOSE_FRAME);
-        ctrMsgWriter.putInt(lengthOffset(0), 0);
-        ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_CLOSE);
-
-        ctrMsgWriter.wrap(END_OF_STREAM_FRAME);
-        ctrMsgWriter.putInt(lengthOffset(0), 0);
-        ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_END_OF_STREAM);
-
-    }
-
-    public static enum State
-    {
-        NEW,
-        CONNECTED,
-        CLOSE_INITIATED,
-        CLOSE_RECEIVED,
-        CLOSED;
-    }
-
-    protected static final AtomicReferenceFieldUpdater<BaseChannelImpl, State> STATE_UPDATER
-        = AtomicReferenceFieldUpdater.newUpdater(BaseChannelImpl.class, State.class, "state");
-
-    protected volatile State state = State.NEW;
+    protected volatile int state;
 
     protected int id;
 
-    protected final ChannelReceiveHandler channelReceiveHandler;
+    protected final boolean isServer = ServerChannelImpl.class.isAssignableFrom(getClass()); // wtf?
 
     protected final ByteBuffer channelReadBuffer;
     protected final UnsafeBuffer channelReadBufferView;
     protected final int maxMessageLength;
+    protected final TransportChannelHandler channelHandler;
+
     protected final ManyToOneConcurrentArrayQueue<SenderCmd> senderCmdQueue;
     protected final ManyToOneConcurrentArrayQueue<ReceiverCmd> receiverCmdQueue;
+    protected final ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue;
 
-
-    protected ChannelErrorHandler errorHandler;
+    protected CompletableFuture<TransportChannel> closeFuture;
 
     protected SocketChannel media;
+    protected ByteBuffer controlFrame;
 
-    /** set while the channel is in state {@link State#CLOSE_INITIATED} until it is closed */
-    protected AsyncCompletionCallback<Boolean> closeCallback;
-
-    public BaseChannelImpl(
+    public TransportChannelImpl(
             final TransportContext transportContext,
-            final ChannelErrorHandler errorHandler)
+            final TransportChannelHandler channelHandler)
     {
+        this.channelHandler = channelHandler;
         this.maxMessageLength = transportContext.getMaxMessageLength();
-        this.channelReceiveHandler = transportContext.getChannelReceiveHandler();
 
         senderCmdQueue = transportContext.getSenderCmdQueue();
         receiverCmdQueue = transportContext.getReceiverCmdQueue();
-
-        this.errorHandler = errorHandler;
+        conductorCmdQueue = transportContext.getConductorCmdQueue();
 
         this.channelReadBuffer = ByteBuffer.allocateDirect(maxMessageLength * 2);
         this.channelReadBufferView = new UnsafeBuffer(channelReadBuffer);
+
+        STATE_FIELD.set(this, STATE_CONNECTING);
     }
 
     public int receive()
@@ -111,25 +88,24 @@ public abstract class BaseChannelImpl implements BaseChannel
                 {
                     break;
                 }
-                else {
+                else
+                {
                     final int msgType = channelReadBufferView.getShort(typeOffset(0));
 
                     if (msgType == TYPE_MESSAGE)
                     {
-                        long publishResult = channelReceiveHandler.onMessage(channelReadBufferView,
+                        if(!channelHandler.onChannelReceive(this,
+                                channelReadBufferView,
                                 HEADER_LENGTH,
-                                msgLength,
-                                id);
-
-                        if(publishResult == -1)
+                                msgLength))
                         {
-                            // TODO: connection is backpressured
-                            System.out.println("connection backpressured");
+                            // TODO: channel is backpressured
+                            System.out.println("channel backpressured");
                         }
                     }
                     else
                     {
-                        handleControlFrame(msgType);
+                        handleControlFrame(msgType, frameLength);
                     }
 
                     channelReadBuffer.limit(available);
@@ -142,7 +118,14 @@ public abstract class BaseChannelImpl implements BaseChannel
         else if(bytesRead == -1)
         {
             // stream closed on the other side
+            final int state = STATE_FIELD.get(this);
+
             mediaClose();
+
+            if(state == STATE_CONNECTED)
+            {
+                notifyCloseException(null);
+            }
         }
 
         return bytesRead;
@@ -164,7 +147,7 @@ public abstract class BaseChannelImpl implements BaseChannel
         return bytesReceived;
     }
 
-    protected void handleControlFrame(final int msgType)
+    protected void handleControlFrame(final int msgType, final int frameLength)
     {
         if (msgType == TYPE_CONTROL_END_OF_STREAM)
         {
@@ -173,17 +156,20 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
         else if (msgType == TYPE_CONTROL_CLOSE)
         {
-            final boolean isServer = ServerChannelImpl.class.isAssignableFrom(getClass());
 
-            final State newState = STATE_UPDATER.updateAndGet(this, (state) -> (state == State.CONNECTED
-                                                                            || (state == State.CLOSE_INITIATED && isServer)) ? State.CLOSE_RECEIVED : state);
+            final int newState = STATE_FIELD.updateAndGet(this, (state) -> (state == STATE_CONNECTED
+                                                                            || (state == STATE_CLOSE_INITIATED && isServer)) ? STATE_CLOSE_RECEIVED : state);
 
-            if(newState == State.CLOSE_RECEIVED)
+            if(newState == STATE_CLOSE_RECEIVED)
             {
                 senderCmdQueue.add((sender) -> {
                     sender.sendControlFrame(this);
                 });
             }
+        }
+        else if(msgType == TYPE_PROTO_CONTROL_FRAME)
+        {
+            this.channelHandler.onControlFrame(this, channelReadBufferView, 0, frameLength);
         }
         else
         {
@@ -191,42 +177,54 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
     }
 
-    public void writeMessage(ByteBuffer buffer, long messageId)
+    @Override
+    public void sendControlFrame(ByteBuffer frame)
     {
-        final State state = this.state; // get volatile
+        this.controlFrame = frame.duplicate();
 
-        if(state == State.CONNECTED)
+        senderCmdQueue.add((s) ->
         {
-            try
-            {
-                while (buffer.hasRemaining())
-                {
-                    media.write(buffer);
-                }
-            }
-            catch (IOException e)
-            {
-                notifyError(SEND_ERROR, messageId);
-                closeForcibly(e);
-            }
-        }
-        else
+            s.sendControlFrame(this);
+        });
+
+    }
+
+    public boolean writeMessage(ByteBuffer buffer, long messageId)
+    {
+        boolean writeSuccess = false;
+
+        try
         {
-            notifyError(CHANNEL_CLOSED, messageId);
+            while (buffer.hasRemaining())
+            {
+                media.write(buffer);
+            }
+
+            writeSuccess = true;
         }
+        catch (IOException e)
+        {
+            closeForcibly(e);
+        }
+
+        return writeSuccess;
     }
 
     public void writeControlFrame()
     {
-        final State state = this.state; // get volatile
+        final int state = STATE_FIELD.get(this); // get volatile
 
-        if (state == State.CLOSE_INITIATED)
+        if (state == STATE_CLOSE_INITIATED)
         {
             writeControlFrame(CLOSE_FRAME);
         }
-        else if (state == State.CLOSE_RECEIVED)
+        else if (state == STATE_CLOSE_RECEIVED)
         {
             writeControlFrame(END_OF_STREAM_FRAME);
+        }
+        else if (controlFrame != null)
+        {
+            writeControlFrame(controlFrame);
         }
     }
 
@@ -249,28 +247,10 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
     }
 
-    protected void notifyError(int errorType, long messageId)
-    {
-        try
-        {
-            errorHandler.onChannelError(errorType, messageId);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public int getId()
     {
         return id;
-    }
-
-    @Override
-    public State getState()
-    {
-        return state;
     }
 
     public void registerSelector(Selector selector, int ops)
@@ -297,7 +277,7 @@ public abstract class BaseChannelImpl implements BaseChannel
 
     public void mediaClose()
     {
-        this.state = State.CLOSED;
+        STATE_FIELD.set(this, STATE_CLOSED);
 
         try
         {
@@ -320,68 +300,53 @@ public abstract class BaseChannelImpl implements BaseChannel
         }
     }
 
-    protected void close(AsyncCompletionCallback<Boolean> completionCallback)
+    @Override
+    public CompletableFuture<TransportChannel> closeAsync()
     {
-        if(STATE_UPDATER.compareAndSet(this, State.CONNECTED, State.CLOSE_INITIATED))
+        if(STATE_FIELD.compareAndSet(this, STATE_CONNECTED, STATE_CLOSE_INITIATED))
         {
-            this.closeCallback = completionCallback;
+            this.closeFuture = new CompletableFuture<>();
 
             senderCmdQueue.add((s) ->
             {
                 s.sendControlFrame(this);
             });
 
+            return this.closeFuture;
         }
         else
         {
-            notifyClosed();
+            return CompletableFuture.completedFuture(this);
         }
     }
 
     @Override
-    public Future<Boolean> close()
+    public void close()
     {
-        final CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-        close(completeFuture(future));
-
-        return future;
+        closeAsync().join();
     }
 
     public void closeForcibly(IOException originalException)
     {
+        originalException.printStackTrace();
         mediaClose();
         notifyCloseException(originalException);
     }
 
     protected void notifyCloseException(Exception e)
     {
-        if(closeCallback != null)
+        conductorCmdQueue.add((c) ->
         {
-            try
-            {
-                closeCallback.onComplete(e, null);
-            }
-            catch(Exception ex)
-            {
-                e.printStackTrace();
-            }
-        }
+           c.onChannelClosedExceptionally(this, closeFuture, e);
+        });
     }
 
     protected void notifyClosed()
     {
-        if(closeCallback != null)
+        conductorCmdQueue.add((c) ->
         {
-            try
-            {
-                closeCallback.onComplete(null, state == State.CLOSED);
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-        }
+           c.onChannelClosed(this, closeFuture);
+        });
     }
 
     public void setId(int id)
@@ -389,4 +354,8 @@ public abstract class BaseChannelImpl implements BaseChannel
         this.id = id;
     }
 
+    public TransportChannelHandler getChannelHandler()
+    {
+        return channelHandler;
+    }
 }

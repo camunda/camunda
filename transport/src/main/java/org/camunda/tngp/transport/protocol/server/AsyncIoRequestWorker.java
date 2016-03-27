@@ -1,15 +1,11 @@
-package org.camunda.tngp.transport.protocol.async;
+package org.camunda.tngp.transport.protocol.server;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.transport.protocol.MessageHeaderDecoder;
-
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 
 /**
- * Base class for implementing asynchronous protocols working in the following way:
+ * Base class for implementing asychronous requesr/response servers processing requests which block on i/o.
  *<p />
  * Setup:
  * <ul>
@@ -35,57 +31,19 @@ import uk.co.real_logic.agrona.concurrent.Agent;
  * <li>after that the response is committed</li>
  * </ul>
  */
-public abstract class AsyncProtocolWorker implements Agent
+public abstract class AsyncIoRequestWorker implements Agent
 {
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-
-    protected final Int2ObjectHashMap<AsyncRequestHandler> requestHandlers = new Int2ObjectHashMap<>();
-
     protected final Dispatcher requestBuffer;
     protected final Dispatcher asyncWorkBuffer;
     protected final DeferredMessagePool responsePool;
+    protected final FragmentHandler requestHandler;
 
-    protected final FragmentHandler inflowHandler = new FragmentHandler()
+    public AsyncIoRequestWorker(AsyncWorkerContext context, FragmentHandler inflowHandler)
     {
-        public void onFragment(DirectBuffer buffer, int offset, int length, int channelId)
-        {
-            headerDecoder.wrap(buffer, offset);
-
-            final int blockLength = headerDecoder.blockLength();
-            final int templateId = headerDecoder.templateId();
-            final int version = headerDecoder.version();
-            final long requestId = headerDecoder.requestId();
-
-            final AsyncRequestHandler msgHandler = requestHandlers.get(templateId);
-
-            if(msgHandler != null)
-            {
-                msgHandler.onRequest(
-                    requestId,
-                    channelId,
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    length - MessageHeaderDecoder.ENCODED_LENGTH,
-                    blockLength,
-                    version);
-            }
-            else
-            {
-                System.err.println("Unrecognized message templateId="+templateId);
-            }
-        }
-    };
-
-    public AsyncProtocolWorker(AsyncProtocolContext context)
-    {
+        this.requestHandler = inflowHandler;
         asyncWorkBuffer = context.getAsyncWorkBuffer();
         requestBuffer = context.getRequestBuffer();
         responsePool = context.getResponsePool();
-    }
-
-    protected void registerHandler(AsyncRequestHandler handler)
-    {
-        requestHandlers.put(handler.getTemplateId(), handler);
     }
 
     public int doWork() throws Exception
@@ -94,7 +52,7 @@ public abstract class AsyncProtocolWorker implements Agent
 
         int workCount = 0;
 
-        workCount += requestBuffer.poll(inflowHandler, 10);
+        workCount += requestBuffer.poll(requestHandler, 10);
 
         while(asyncWorkBuffer.pollBlock(subscriberId, responsePool, 1, false) > 0)
         {

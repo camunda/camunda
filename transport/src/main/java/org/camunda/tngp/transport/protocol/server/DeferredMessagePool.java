@@ -1,9 +1,10 @@
-package org.camunda.tngp.transport.protocol.async;
+package org.camunda.tngp.transport.protocol.server;
 
 import java.nio.ByteBuffer;
 
 import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.transport.util.BoundedArrayQueue;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
@@ -15,21 +16,21 @@ public class DeferredMessagePool implements BlockHandler
 {
     protected UnsafeBuffer flyweight = new UnsafeBuffer(0,0);
 
-    protected ArrayBuffer<DeferredMessage> pooled;
+    protected BoundedArrayQueue<DeferredMessage> pooled;
 
-    protected ArrayBuffer<DeferredMessage> deferred;
+    protected BoundedArrayQueue<DeferredMessage> deferred;
 
     protected final Dispatcher sendBuffer;
 
     public DeferredMessagePool(Dispatcher sendBuffer, int capacity)
     {
         this.sendBuffer = sendBuffer;
-        this.pooled = new ArrayBuffer<>(capacity);
-        this.deferred = new ArrayBuffer<>(capacity);
+        this.pooled = new BoundedArrayQueue<>(capacity);
+        this.deferred = new BoundedArrayQueue<>(capacity);
 
-        for(int i = 0; i < capacity; capacity++)
+        for(int i = 0; i < capacity; i++)
         {
-            pooled.put(new DeferredMessage(sendBuffer));
+            pooled.offer(new DeferredMessage(sendBuffer));
         }
     }
 
@@ -39,7 +40,7 @@ public class DeferredMessagePool implements BlockHandler
 
         if(request != null)
         {
-            deferred.put(request);
+            deferred.offer(request);
         }
 
         return request;
@@ -61,7 +62,7 @@ public class DeferredMessagePool implements BlockHandler
             if(msg.completionPosition <= blockPosition)
             {
                 deferred.take();
-                pooled.put(msg);
+                pooled.offer(msg);
 
                 int messageOffset = messageOffset(blockOffset);
                 int length = blockLength - HEADER_LENGTH;
@@ -69,6 +70,8 @@ public class DeferredMessagePool implements BlockHandler
                 flyweight.wrap(buffer, messageOffset, length);
 
                 msg.resolve(flyweight, messageOffset, length);
+
+                flyweight.wrap(0,0);
             }
             else
             {

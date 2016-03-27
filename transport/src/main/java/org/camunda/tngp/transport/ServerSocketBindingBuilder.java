@@ -1,64 +1,58 @@
 package org.camunda.tngp.transport;
 
-import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
-
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
-import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class ServerSocketBindingBuilder
 {
-
     protected final TransportContext transportContext;
 
     protected final InetSocketAddress bindAddress;
 
-    protected ServerChannelHandler channelHandler;
+    protected ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue;
 
-    public ServerSocketBindingBuilder serverChannelHandler(ServerChannelHandler channelHandler)
-    {
-        this.channelHandler = channelHandler;
-        return this;
-    }
+    protected TransportChannelHandler channelHandler;
 
     public ServerSocketBindingBuilder(TransportContext transportContext, InetSocketAddress bindAddress)
     {
         this.transportContext = transportContext;
         this.bindAddress = bindAddress;
+        this.conductorCmdQueue = transportContext.getConductorCmdQueue();
     }
 
-
-    public ServerSocketBinding bindSync()
+    public ServerSocketBindingBuilder transportChannelHandler(TransportChannelHandler channelHandler)
     {
-        final CompletableFuture<ServerSocketBinding> completableFuture = new CompletableFuture<>();
-
-        bind(completeFuture(completableFuture));
-
-        try
-        {
-            return completableFuture.get();
-        }
-        catch (InterruptedException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-        catch (ExecutionException e)
-        {
-            LangUtil.rethrowUnchecked((Exception) e.getCause());
-        }
-
-        return null;
+        this.channelHandler = channelHandler;
+        return this;
     }
 
-    public void bind(AsyncCompletionCallback<ServerSocketBinding> completionCallback)
+    public ServerSocketBinding bind()
     {
-        new ServerSocketBindingImpl(transportContext, channelHandler, bindAddress, completionCallback);
+        return bindAsync().join();
+    }
+
+    public CompletableFuture<ServerSocketBinding> bindAsync()
+    {
+        final CompletableFuture<ServerSocketBinding> bindFuture = new CompletableFuture<>();
+
+        final ServerSocketBindingImpl serverSocketBindingImpl = new ServerSocketBindingImpl(
+                transportContext,
+                bindAddress,
+                channelHandler);
+
+        conductorCmdQueue.add((cc) ->
+        {
+           cc.doBindServerSocket(serverSocketBindingImpl, bindFuture);
+        });
+
+        return bindFuture;
     }
 
 }

@@ -3,27 +3,33 @@
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.transport.impl.BaseChannelImpl;
+import org.camunda.tngp.transport.impl.TransportChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 {
-
     protected final ManyToOneConcurrentArrayQueue<SenderCmd> cmdQueue;
 
-    protected final Int2ObjectHashMap<BaseChannelImpl> channelMap;
+    protected final Int2ObjectHashMap<TransportChannelImpl> channelMap;
 
-    protected final List<BaseChannelImpl> channelsWithControlFrames;
+    protected final List<TransportChannelImpl> channelsWithControlFrames;
 
     protected final Dispatcher sendBuffer;
+
+    protected TransportChannelHandler channelHandler;
+
+    protected final UnsafeBuffer sendErrorBlock = new UnsafeBuffer(0,0);
 
     public Sender(TransportContext context)
     {
@@ -39,9 +45,9 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
         workCount += cmdQueue.drain(this);
 
-        workCount += sendBuffer.pollBlock(this, Integer.MAX_VALUE, true);
-
         workCount += sendControlFrames();
+
+        workCount += sendBuffer.pollBlock(this, Integer.MAX_VALUE, true);
 
         return workCount;
     }
@@ -50,7 +56,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
     {
         int workCount = 0;
 
-        for (BaseChannelImpl channel : channelsWithControlFrames)
+        for (TransportChannelImpl channel : channelsWithControlFrames)
         {
             channel.writeControlFrame();
         }
@@ -71,12 +77,13 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
         t.execute(this);
     }
 
-    public void registerChannel(BaseChannelImpl c)
+    public void registerChannel(TransportChannelImpl c, CompletableFuture<Void> future)
     {
         channelMap.put(c.getId(), c);
+        future.complete(null);
     }
 
-    public void removeChannel(BaseChannelImpl c)
+    public void removeChannel(TransportChannelImpl c)
     {
         channelMap.remove(c.getId());
         channelsWithControlFrames.remove(c);
@@ -87,25 +94,28 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
             final ByteBuffer buffer,
             final int blockOffset,
             final int blockLength,
-            final int streamId,
+            final int channelId,
             final long position)
     {
-        final BaseChannelImpl channel = channelMap.get(streamId);
+        boolean blockWritten = false;
 
-        if(channel != null)
+        final TransportChannelImpl channel = channelMap.get(channelId);
+
+        buffer.limit(blockOffset + blockLength);
+        buffer.position(blockOffset);
+
+        blockWritten = channel.writeMessage(buffer, position);
+
+        if(!blockWritten)
         {
-            buffer.limit(blockOffset + blockLength);
-            buffer.position(blockOffset);
-            channel.writeMessage(buffer, position);
-        }
-        else
-        {
-            // TODO
-            throw new RuntimeException("Cannot write to channel with id "+streamId + " channel not registered with sender");
+            sendErrorBlock.wrap(buffer);
+
+            channel.getChannelHandler()
+                .onChannelSendError(channel, sendErrorBlock, 0, blockLength);
         }
     }
 
-    public void sendControlFrame(BaseChannelImpl channel)
+    public void sendControlFrame(TransportChannelImpl channel)
     {
         channelsWithControlFrames.add(channel);
     }

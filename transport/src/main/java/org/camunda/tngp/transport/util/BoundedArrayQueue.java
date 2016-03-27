@@ -1,8 +1,11 @@
-package org.camunda.tngp.transport.protocol.async;
+package org.camunda.tngp.transport.util;
 
 import uk.co.real_logic.agrona.BitUtil;
 
-public class ArrayBuffer<P>
+/**
+ * Non concurrent array queue with fixed capacity.
+ */
+public class BoundedArrayQueue<P>
 {
     protected Object[] array;
 
@@ -11,11 +14,11 @@ public class ArrayBuffer<P>
     protected long head;
     protected long tail;
 
-    public ArrayBuffer(int capacity)
+    public BoundedArrayQueue(int capacity)
     {
         if(!BitUtil.isPowerOfTwo(capacity))
         {
-            throw new RuntimeException("Pool capacity must be a power of two.");
+            throw new RuntimeException("Queue capacity must be a power of two.");
         }
 
         this.capacity = capacity;
@@ -26,7 +29,7 @@ public class ArrayBuffer<P>
         array = new Object[capacity];
     }
 
-    public void put(P object)
+    public boolean offer(P object)
     {
         int remainingSpace = capacity - size();
 
@@ -37,6 +40,12 @@ public class ArrayBuffer<P>
             array[index] = object;
 
             ++tail;
+
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -52,6 +61,7 @@ public class ArrayBuffer<P>
             final int index = (int) (head & mask);
 
             object = array[index];
+            array[index] = null;
 
             ++head;
         }

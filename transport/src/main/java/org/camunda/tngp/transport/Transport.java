@@ -1,42 +1,54 @@
 package org.camunda.tngp.transport;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.transport.impl.BaseChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.protocol.client.TransportConnectionManager;
+import org.camunda.tngp.transport.protocol.client.TransportConnection;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-
-public class Transport
+public class Transport implements AutoCloseable
 {
-    protected TransportContext transportContext;
-    protected Int2ObjectHashMap<BaseChannelImpl> channelMap;
+    public final static int STATE_OPEN = 0;
+    public final static int STATE_CLOSING = 1;
+    public final static int STATE_CLOSED = 2;
 
-    protected final Dispatcher receiveBuffer;
+    protected final static AtomicIntegerFieldUpdater<Transport> STATE_FIELD
+        = AtomicIntegerFieldUpdater.newUpdater(Transport.class, "state");
+
+    protected final TransportContext transportContext;
     protected final Dispatcher sendBuffer;
+
+    protected volatile int state;
 
     public Transport(TransportContext transportContext)
     {
         this.transportContext = transportContext;
-        this.receiveBuffer = transportContext.getReceiveBuffer();
-        sendBuffer = transportContext.getSendBuffer();
+        this.sendBuffer = transportContext.getSendBuffer();
+
+        STATE_FIELD.set(this, STATE_OPEN);
     }
 
     public ClientChannelBuilder createClientChannel(InetSocketAddress remoteAddress)
     {
+        if(STATE_OPEN != STATE_FIELD.get(this))
+        {
+            throw new IllegalStateException("Cannot create client channel on "+this+", transport is not open.");
+        }
+
         return new ClientChannelBuilder(transportContext, remoteAddress);
     }
 
     public ServerSocketBindingBuilder createServerSocketBinding(InetSocketAddress addr)
     {
-        return new ServerSocketBindingBuilder(transportContext, addr);
-    }
+        if(STATE_OPEN != STATE_FIELD.get(this))
+        {
+            throw new IllegalStateException("Cannot create server socket on "+this+", transport is not open.");
+        }
 
-    public Dispatcher getReceiveBuffer()
-    {
-        return receiveBuffer;
+        return new ServerSocketBindingBuilder(transportContext, addr);
     }
 
     public Dispatcher getSendBuffer()
@@ -44,23 +56,28 @@ public class Transport
         return sendBuffer;
     }
 
+    public CompletableFuture<Transport> closeAsync()
+    {
+        if(STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
+        {
+            final CompletableFuture<Transport> closeFuture = new CompletableFuture<>();
+
+            transportContext.getConductorCmdQueue().add((c) ->
+            {
+                c.close(this, closeFuture);
+            });
+
+            return closeFuture;
+        }
+        else
+        {
+            return CompletableFuture.completedFuture(this);
+        }
+    }
+
     public void close()
     {
-        try
-        {
-            transportContext.getSendBuffer().close();
-        }
-        catch(InterruptedException e)
-        {
-            // TODO
-            e.printStackTrace();
-        }
-
-        final AgentRunner[] agentRunners = transportContext.getAgentRunners();
-        for (AgentRunner agentRunner : agentRunners)
-        {
-            agentRunner.close();
-        }
+        closeAsync().join();
     }
 
 }

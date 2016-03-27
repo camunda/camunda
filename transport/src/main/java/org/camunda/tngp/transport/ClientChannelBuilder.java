@@ -1,26 +1,25 @@
 package org.camunda.tngp.transport;
 
-import static org.camunda.tngp.dispatcher.AsyncCompletionCallback.*;
-
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
-import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.transport.impl.ClientChannelImpl;
-import org.camunda.tngp.transport.impl.DefaultChannelReceiveHandler;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 public class ClientChannelBuilder
 {
+    public final static DefaultClientChannelHandler DEFAULT_HANDLER = new DefaultClientChannelHandler();
 
     protected final TransportContext transportContext;
 
     protected final InetSocketAddress remoteAddress;
 
-    protected ChannelErrorHandler channelErrorHandler = ChannelErrorHandler.DEFAULT_ERROR_HANDLER;
+    protected boolean isProtocolChannel = true;
+
+    protected TransportChannelHandler channelHandler = DEFAULT_HANDLER;
 
     public ClientChannelBuilder(TransportContext transportContext, InetSocketAddress remoteAddress)
     {
@@ -28,40 +27,65 @@ public class ClientChannelBuilder
         this.remoteAddress = remoteAddress;
     }
 
-    public ClientChannelBuilder channelErrorHandler(ChannelErrorHandler errorHandler)
+    public ClientChannelBuilder transportChannelHandler(TransportChannelHandler channelHandler)
     {
-        this.channelErrorHandler = errorHandler;
+        this.channelHandler = channelHandler;
         return this;
     }
 
-    public void connect(AsyncCompletionCallback<ClientChannel> completionCallback)
+    public CompletableFuture<ClientChannel> connectAsync()
     {
-        new ClientChannelImpl(transportContext,
-                channelErrorHandler,
-                remoteAddress,
-                completionCallback);
+        final CompletableFuture<ClientChannel> future = new CompletableFuture<ClientChannel>();
+
+        final ClientChannelImpl channel = new ClientChannelImpl(transportContext, channelHandler, remoteAddress);
+
+        transportContext.getConductorCmdQueue().add((c) ->
+        {
+            c.doConnectChannel(channel, future);
+        });
+
+        return future;
     }
 
-    public ClientChannel connectSync()
+    public ClientChannel connect()
     {
-        final CompletableFuture<ClientChannel> future = new CompletableFuture<>();
+        return connectAsync().join();
+    }
 
-        connect(completeFuture(future));
+    public static class DefaultClientChannelHandler implements TransportChannelHandler
+    {
 
-        try
+        @Override
+        public void onChannelOpened(TransportChannel transportChannel)
         {
-            return future.get();
-        }
-        catch (InterruptedException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
-        catch (ExecutionException e)
-        {
-            LangUtil.rethrowUnchecked((Exception) e.getCause());
+            // no-op
         }
 
-        return null;
+        @Override
+        public void onChannelClosed(TransportChannel transportChannel)
+        {
+            // no-op
+        }
+
+        @Override
+        public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        {
+            System.err.println("onChannelSendError() on channel "+transportChannel+" ignored by "+DefaultClientChannelHandler.class.getName());
+        }
+
+        @Override
+        public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        {
+            System.err.println("received and dropped "+length+" bytes on channel "+transportChannel+" in "+ DefaultClientChannelHandler.class.getName());
+            return true;
+        }
+
+        @Override
+        public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        {
+            System.err.println("received and dropped control frame on channel "+transportChannel+" in "+ DefaultClientChannelHandler.class.getName());
+        }
+
     }
 
 }

@@ -2,20 +2,30 @@ package org.camunda.tngp.transport.impl;
 
 import java.nio.channels.SocketChannel;
 
-import org.camunda.tngp.transport.ChannelErrorHandler;
 import org.camunda.tngp.transport.ServerChannel;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-public class ServerChannelImpl extends BaseChannelImpl implements ServerChannel
+public class ServerChannelImpl extends TransportChannelImpl implements ServerChannel
 {
+
+    protected final ServerSocketBindingImpl serverSocketBinding;
 
     public ServerChannelImpl(
             final TransportContext transportContext,
+            final ServerSocketBindingImpl serverSocketBinding,
             final SocketChannel media,
-            final ChannelErrorHandler channelErrorHandler)
+            final TransportChannelHandler channelHandler)
     {
-        super(transportContext, channelErrorHandler);
+        super(transportContext, channelHandler);
+        this.serverSocketBinding = serverSocketBinding;
         this.media = media;
-        this.state = State.CONNECTED;
+
+        STATE_FIELD.set(this, STATE_CONNECTED);
+    }
+
+    public ServerSocketBindingImpl getServerSocketBinding()
+    {
+        return serverSocketBinding;
     }
 
 }

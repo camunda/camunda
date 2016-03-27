@@ -1,8 +1,8 @@
-package org.camunda.tngp.transport.protocol.async;
+package org.camunda.tngp.transport.protocol.server;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 
-public class AsyncProtocolContext
+public class AsyncWorkerContext
 {
     /**
      * The buffer on which incoming requests become available

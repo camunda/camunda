@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.junit.Test;
@@ -11,41 +12,8 @@ import org.junit.Test;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class RequestResponseTest
+public class ChannelRequestResponseTest
 {
-
-    static class EchoServer extends Thread implements FragmentHandler
-    {
-        protected volatile boolean exit = false;
-
-        protected final Dispatcher receiveBuffer;
-        protected final Dispatcher sendBuffer;
-
-        public EchoServer(Transport serverTransport)
-        {
-            receiveBuffer = serverTransport.getReceiveBuffer();
-            sendBuffer = serverTransport.getSendBuffer();
-        }
-
-        @Override
-        public void run()
-        {
-            while(!exit)
-            {
-                receiveBuffer.poll(this, Integer.MAX_VALUE);
-            }
-        }
-
-        @Override
-        public void onFragment(DirectBuffer buffer, int offset, int length, int streamId)
-        {
-            while(sendBuffer.offer(buffer, offset, length, streamId) < 0)
-            {
-                // spin
-            }
-        }
-
-    }
 
     static class ClientFragmentHandler implements FragmentHandler
     {
@@ -69,44 +37,46 @@ public class RequestResponseTest
     }
 
     @Test
-    public void shouldEchoMessages() throws InterruptedException
+    public void shouldEchoMessages() throws Exception
     {
         // 1K message
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
         final ClientFragmentHandler fragmentHandler = new ClientFragmentHandler();
         final InetSocketAddress addr = new InetSocketAddress("localhost", 8080);
 
+        final Dispatcher clientReceiveBuffer = Dispatchers.create("client-receive-buffer")
+                .bufferSize(16*1024*1024)
+                .buildAndStart();
+
         final Transport clientTransport = Transports.createTransport("client")
-            .thradingMode(ThreadingMode.SHARED)
+            .threadingMode(ThreadingMode.SHARED)
             .build();
 
         final Transport serverTransport = Transports.createTransport("server")
-            .thradingMode(ThreadingMode.SHARED)
+            .threadingMode(ThreadingMode.SHARED)
             .build();
 
         serverTransport.createServerSocketBinding(addr)
-            .bindSync();
-
-        final EchoServer echoServer = new EchoServer(serverTransport);
-        echoServer.start();
+            // echo server: use send buffer as receive buffer
+            .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
+            .bind();
 
         ClientChannel channel = clientTransport.createClientChannel(addr)
-            .connectSync();
+            .transportChannelHandler(new ReceiveBufferChannelHandler(clientReceiveBuffer))
+            .connect();
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
-        final Dispatcher receiveBuffer = clientTransport.getReceiveBuffer();
 
-        for(int i = 0; i < 1000; i++)
+        for(int i = 0; i < 1; i++)
         {
             msg.putInt(0, i);
             sendRequest(sendBuffer, msg, channel);
-            waitForResponse(receiveBuffer, fragmentHandler, i);
+            waitForResponse(clientReceiveBuffer, fragmentHandler, i);
         }
 
         channel.close();
         clientTransport.close();
-
-        closeServer(serverTransport, echoServer);
+        serverTransport.close();
     }
 
     protected void sendRequest(Dispatcher sendBuffer, UnsafeBuffer msg, ClientChannel channel)
@@ -125,11 +95,4 @@ public class RequestResponseTest
         }
     }
 
-
-    protected void closeServer(final Transport serverTransport, final EchoServer echoServer) throws InterruptedException
-    {
-        echoServer.exit = true;
-        echoServer.join();
-        serverTransport.close();
-    }
 }

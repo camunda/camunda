@@ -1,11 +1,11 @@
 package org.camunda.tngp.transport;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 
-public interface ServerSocketBinding
+public interface ServerSocketBinding extends AutoCloseable
 {
     InetSocketAddress getBindAddress();
 
-    void close();
-
+    CompletableFuture<ServerSocketBinding> closeAsync();
 }

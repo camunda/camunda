@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.camunda.tngp.transport.impl.BaseChannelImpl;
+import org.camunda.tngp.transport.impl.TransportChannelImpl;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 
@@ -16,7 +16,7 @@ import uk.co.real_logic.agrona.nio.TransportPoller;
 
 public class ReadTransportPoller extends TransportPoller
 {
-    protected final List<BaseChannelImpl> channels = new ArrayList<>(100);
+    protected final List<TransportChannelImpl> channels = new ArrayList<>(100);
 
     protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
 
@@ -33,7 +33,7 @@ public class ReadTransportPoller extends TransportPoller
 
         if(channels.size() <= ITERATION_THRESHOLD)
         {
-            for (BaseChannelImpl channel : channels)
+            for (TransportChannelImpl channel : channels)
             {
                 workCount += channel.receive();
             }
@@ -61,7 +61,7 @@ public class ReadTransportPoller extends TransportPoller
 
         if(key != null && key.isReadable())
         {
-            final BaseChannelImpl channel = (BaseChannelImpl) key.attachment();
+            final TransportChannelImpl channel = (TransportChannelImpl) key.attachment();
 
             workCount = channel.receive();
         }
@@ -69,13 +69,13 @@ public class ReadTransportPoller extends TransportPoller
         return workCount;
     }
 
-    public void addChannel(BaseChannelImpl channel)
+    public void addChannel(TransportChannelImpl channel)
     {
         channel.registerSelector(selector, SelectionKey.OP_READ);
         channels.add(channel);
     }
 
-    public void removeChannel(BaseChannelImpl channel)
+    public void removeChannel(TransportChannelImpl channel)
     {
         channel.removeSelector(selector);
         channels.remove(channel);

@@ -3,37 +3,35 @@ package org.camunda.tngp.transport.impl;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
-import org.camunda.tngp.transport.ChannelErrorHandler;
-import org.camunda.tngp.transport.ChannelReceiveHandler;
+import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
-public class ClientChannelImpl extends BaseChannelImpl implements ClientChannel
+public class ClientChannelImpl extends TransportChannelImpl implements ClientChannel
 {
-
     protected final ManyToOneConcurrentArrayQueue<TransportConductorCmd> toConcuctorCmdQue;
+
+    protected final Dispatcher sendBuffer;
+
+    protected final AtomicLong requestIdGenerator = new AtomicLong();
 
     protected InetSocketAddress remoteAddress;
 
     public ClientChannelImpl(
             final TransportContext transportContext,
-            final ChannelErrorHandler errorHandler,
-            final InetSocketAddress remoteAddress,
-            final AsyncCompletionCallback<ClientChannel> callback)
+            final TransportChannelHandler channelHandler,
+            final InetSocketAddress remoteAddress)
     {
-        super(transportContext, errorHandler);
+        super(transportContext, channelHandler);
         this.toConcuctorCmdQue = transportContext.getConductorCmdQueue();
         this.remoteAddress = remoteAddress;
-
-        toConcuctorCmdQue.add((cc) ->
-        {
-            cc.doConnectChannel(this, callback);
-        });
+        sendBuffer = transportContext.getSendBuffer();
     }
 
     public void finishConnect()
@@ -41,11 +39,11 @@ public class ClientChannelImpl extends BaseChannelImpl implements ClientChannel
         try
         {
             media.finishConnect();
-            state = State.CONNECTED;
         }
         catch (IOException e)
         {
-            LangUtil.rethrowUnchecked(e);
+            e.printStackTrace();
+            closeForcibly(e);
         }
     }
 
@@ -68,4 +66,8 @@ public class ClientChannelImpl extends BaseChannelImpl implements ClientChannel
         return remoteAddress;
     }
 
+    public void setConnected()
+    {
+        STATE_FIELD.compareAndSet(this, STATE_CONNECTING, STATE_CONNECTED);
+    }
 }
