@@ -1,11 +1,9 @@
-package org.camunda.tngp.transport.protocol.server;
+package org.camunda.tngp.transport.requestresponse.server;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public interface AsyncRequestHandler
 {
-    int getTemplateId();
-
     long onRequest(
             long requestId,
             int channelId,
@@ -14,11 +12,5 @@ public interface AsyncRequestHandler
             int length,
             int blockLength,
             int version);
-
-    void onAsyncWorkCompleted(
-            DeferredMessage deferredResponse,
-            DirectBuffer asyncWorkBuffer,
-            int offset,
-            int length);
 
 }

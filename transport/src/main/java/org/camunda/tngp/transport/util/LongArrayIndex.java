@@ -6,10 +6,12 @@ import uk.co.real_logic.agrona.BitUtil;
  * Array-based data structure holding a fixed number of objects,
  * assigning a unique long key to each object.
  *
- * Supports a single reader/writer for all mutating operations, ie. {@link #put(Object)}, {@link #remove(long)} and {{@link #reset()}.
+ * Supports a single reader/writer for all mutating operations,
+ * ie. {@link #put(Object)}, {@link #remove(long)} and {{@link #reset()}.
  *
- * Can be iterated concurrently by readers who read the size field prior to iteration.
- * The readers are then guaranteed to see the array's state corresponding to the size they read.
+ * Can be iterated concurrently by readers who read the size field prior
+ * to iteration. The readers are then guaranteed to see the array's state
+ * corresponding to the size they read or more.
  */
 public class LongArrayIndex<T>
 {
@@ -49,7 +51,7 @@ public class LongArrayIndex<T>
         for (int i = 0; i < capacity; i++)
         {
             indexedObjects[i] = null;
-            // NOTE: keys are not reset in order to not give out the same key twice even if the index is reused.
+            // keys are not reset in order to not give out the same key twice even if the index is reused.
         }
         size = 0; // volatile store
     }

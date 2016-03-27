@@ -1,28 +1,27 @@
-package org.camunda.tngp.transport.protocol.server;
+package org.camunda.tngp.transport.requestresponse.server;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public class DeferredMessage
+public class DeferredResponse
 {
     protected final Dispatcher sendBuffer;
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
-    protected long completionPosition;
-    protected AsyncRequestHandler handler;
+    protected long asyncOperationId;
+    protected ResponseCompletionHandler completionHandler;
+    protected Object attachement;
 
-    public DeferredMessage(Dispatcher sendBuffer)
+    public DeferredResponse(Dispatcher sendBuffer)
     {
         this.sendBuffer = sendBuffer;
     }
 
-    public boolean allocate(
-            int channelId,
-            int msgLength)
+    public boolean allocate(int channelId, int msgLength)
     {
-        this.completionPosition = -1;
+        this.asyncOperationId = -1;
         long claimedPosition = -1;
 
         do
@@ -34,10 +33,11 @@ public class DeferredMessage
         return claimedPosition >= 0;
     }
 
-    public DeferredMessage defer(final AsyncRequestHandler handler, final long asyncOperationPosition)
+    public DeferredResponse defer(final long asyncOperationId, ResponseCompletionHandler handler, Object attachement)
     {
-        this.completionPosition = asyncOperationPosition;
-        this.handler = handler;
+        this.asyncOperationId = asyncOperationId;
+        this.completionHandler = handler;
+        this.attachement = attachement;
         return this;
     }
 
@@ -45,9 +45,10 @@ public class DeferredMessage
     {
         if(claimedFragment.isOpen() && isDeferred())
         {
-            handler.onAsyncWorkCompleted(this, asyncWorkBuffer, offset, length);
-            this.completionPosition = -1;
-            handler = null;
+            completionHandler.onAsyncWorkCompleted(this, asyncWorkBuffer, offset, length, attachement);
+            this.asyncOperationId = -1;
+            this.completionHandler = null;
+            this.attachement = null;
         }
     }
 
@@ -63,13 +64,13 @@ public class DeferredMessage
     {
         if(claimedFragment.isOpen())
         {
-            //claimedFragment.abort();
+            claimedFragment.abort();
         }
     }
 
     public boolean isDeferred()
     {
-        return completionPosition >= 0;
+        return completionHandler != null;
     }
 
     public ClaimedFragment getClaimedFragment()

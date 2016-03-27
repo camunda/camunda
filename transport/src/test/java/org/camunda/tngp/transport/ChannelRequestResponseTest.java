@@ -67,7 +67,7 @@ public class ChannelRequestResponseTest
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
 
-        for(int i = 0; i < 1; i++)
+        for(int i = 0; i < 10000; i++)
         {
             msg.putInt(0, i);
             sendRequest(sendBuffer, msg, channel);

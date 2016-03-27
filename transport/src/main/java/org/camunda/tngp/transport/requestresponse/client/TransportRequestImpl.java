@@ -1,7 +1,7 @@
-package org.camunda.tngp.transport.protocol.client;
+package org.camunda.tngp.transport.requestresponse.client;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.camunda.tngp.transport.protocol.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -287,6 +287,12 @@ public class TransportRequestImpl implements TransportRequest
     public boolean isOpen()
     {
         return STATE_FIELD.get(this) == STATE_OPEN;
+    }
+
+    @Override
+    public boolean isResponseAvailable()
+    {
+        return STATE_FIELD.get(this) == STATE_RESPONSE_AVAILABLE;
     }
 
     public boolean processResponse(DirectBuffer buffer, int offset, int length, long requestId)

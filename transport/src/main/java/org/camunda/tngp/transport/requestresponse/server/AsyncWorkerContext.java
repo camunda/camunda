@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol.server;
+package org.camunda.tngp.transport.requestresponse.server;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 
@@ -23,7 +23,7 @@ public class AsyncWorkerContext
     /**
      * The pool from which deferred responses are allocated
      */
-    protected DeferredMessagePool responsePool;
+    protected DeferredResponsePool responsePool;
 
     public Dispatcher getRequestBuffer()
     {
@@ -55,12 +55,12 @@ public class AsyncWorkerContext
         this.asyncWorkBuffer = asyncWorkBuffer;
     }
 
-    public DeferredMessagePool getResponsePool()
+    public DeferredResponsePool getResponsePool()
     {
         return responsePool;
     }
 
-    public void setResponsePool(DeferredMessagePool responsePool)
+    public void setResponsePool(DeferredResponsePool responsePool)
     {
         this.responsePool = responsePool;
     }

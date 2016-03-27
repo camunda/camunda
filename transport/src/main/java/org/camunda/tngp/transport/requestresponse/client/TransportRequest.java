@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol.client;
+package org.camunda.tngp.transport.requestresponse.client;
 
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +19,8 @@ public interface TransportRequest extends AutoCloseable
 
     void abort();
 
+    void close();
+
     long getRequestTimeout();
 
     DirectBuffer getResponseBuffer();
@@ -31,4 +33,5 @@ public interface TransportRequest extends AutoCloseable
 
     boolean awaitResponse(long timeout, TimeUnit timeUnit);
 
+    boolean isResponseAvailable();
 }

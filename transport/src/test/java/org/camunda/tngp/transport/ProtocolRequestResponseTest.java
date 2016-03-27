@@ -2,82 +2,54 @@ package org.camunda.tngp.transport;
 
 import java.net.InetSocketAddress;
 
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
-import org.camunda.tngp.transport.protocol.client.RequestResponseChannelHandler;
-import org.camunda.tngp.transport.protocol.client.TransportConnection;
-import org.camunda.tngp.transport.protocol.client.TransportConnectionManager;
-import org.camunda.tngp.transport.protocol.client.TransportRequest;
-import org.camunda.tngp.transport.protocol.client.TransportRequestImpl;
+import org.camunda.tngp.transport.requestresponse.client.RequestQueue;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.transport.requestresponse.client.TransportRequest;
 import org.junit.Test;
-
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class ProtocolRequestResponseTest
 {
-
     @Test
     public void shouldEchoMessages() throws Exception
     {
-        // 1K message
         final InetSocketAddress addr = new InetSocketAddress("localhost", 8080);
 
-        final Transport clientTransport = Transports.createTransport("client")
-            .threadingMode(ThreadingMode.SHARED)
-            .build();
+        try (final Transport clientTransport = Transports.createTransport("client").build();
+             final Transport serverTransport = Transports.createTransport("server").build();
 
-        final Transport serverTransport = Transports.createTransport("server")
-            .threadingMode(ThreadingMode.SHARED)
-            .build();
+             final ServerSocketBinding socketBinding = serverTransport.createServerSocketBinding(addr)
+                // echo server: use send buffer as receive buffer
+                .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
+                .bind();
 
-        serverTransport.createServerSocketBinding(addr)
-            // echo server: use send buffer as receive buffer
-            .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
-            .bind();
-
-        int concurrentRequests = 16;
-        TransportConnectionManager connectionManager = new TransportConnectionManager(clientTransport, 2, concurrentRequests);
-        RequestResponseChannelHandler channelHandler = new RequestResponseChannelHandler(connectionManager);
-
-        ClientChannel channel = clientTransport.createClientChannel(addr)
-            .transportChannelHandler(channelHandler)
-            .connect();
-
-        TransportConnection connection = connectionManager.openConnection();
-
-        TransportRequest[] requestPool = new TransportRequest[concurrentRequests];
-        for (int i = 0; i < requestPool.length; i++)
+             final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
+             final ClientChannel channel = clientTransport.createClientChannel(addr).requestResponseChannel(connectionPool).connect();
+             final TransportConnection connection = connectionPool.openConnection())
         {
-            requestPool[i] = new TransportRequestImpl(1024, 5000);
-        }
+            final RequestQueue q = new RequestQueue(32);
 
-        for (int i = 0; i < 10000; i++)
-        {
-            for (int j = 0; j < concurrentRequests; j++)
+            int completedRequets = 0;
+            do
             {
-                TransportRequest request = requestPool[j];
-                if (connection.openRequest(request, channel.getId(), 1024))
+                if(q.hasCapacity())
                 {
-                    MutableDirectBuffer buffer = request.getClaimedRequestBuffer();
-                    buffer.putInt(request.getClaimedOffset(), i);
-                    request.commit();
+                    final TransportRequest request = connection.openRequest(channel.getId(), 1024);
+                    if(request != null)
+                    {
+                        request.commit();
+                        q.offer(request);
+                    }
+                }
+
+                TransportRequest request = null;
+                while((request = q.pollNextResponse()) != null)
+                {
+                    request.close();
+                    completedRequets++;
                 }
             }
-
-            for (int j = 0; j < concurrentRequests; j++)
-            {
-                TransportRequest request = requestPool[j];
-                if(request.isOpen())
-                {
-                    request.awaitResponse();
-                }
-                request.close();
-            }
+            while(completedRequets < 10000);
         }
-
-        connectionManager.closeAll();
-        clientTransport.close();
-        serverTransport.close();
     }
 }

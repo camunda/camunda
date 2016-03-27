@@ -1,6 +1,6 @@
-package org.camunda.tngp.transport.protocol.client;
+package org.camunda.tngp.transport.requestresponse.client;
 
-import static org.camunda.tngp.transport.protocol.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -26,20 +26,24 @@ public class TransportConnectionImpl implements TransportConnection
     protected volatile int state = STATE_POOLED;
     protected long id;
 
-    protected final TransportConnectionManager connectionManager;
+    protected final TransportConnectionPoolImpl connectionManager;
     protected final Dispatcher sendBuffer;
 
     protected final LongArrayIndex<TransportRequestImpl> openRequests;
+
+    protected TransportRequestPool requestPool;
 
     // set while the connection is in state #STATE_CLOSING
     protected CompletableFuture<TransportConnection> closeFuture;
 
     public TransportConnectionImpl(
             final Transport transport,
-            final TransportConnectionManager connectionManager,
+            final TransportConnectionPoolImpl connectionManager,
+            final TransportRequestPool transportRequestPool,
             final int maxRequests)
     {
         this.connectionManager = connectionManager;
+        this.requestPool = transportRequestPool;
         this.openRequests = new LongArrayIndex<>(maxRequests);
         this.sendBuffer = transport.getSendBuffer();
     }
@@ -51,12 +55,22 @@ public class TransportConnectionImpl implements TransportConnection
         STATE_FIELD.set(this, STATE_OPEN);
     }
 
-    /**
-     * Open a request on this connection. The request buffer is claimed in the transport's
-     * send buffer allowing for zero-copy writes to the transport's send buffer.
-     *
-     * Returns false if the request cannot be opened due to back pressure
-     */
+    @Override
+    public PooledTransportRequest openRequest(int channelId, int length)
+    {
+        final PooledTransportRequest request = requestPool.getRequest();
+
+        if(request != null)
+        {
+            if(openRequest(request, channelId, length))
+            {
+                return request;
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public boolean openRequest(
             final TransportRequest request,
@@ -137,11 +151,15 @@ public class TransportConnectionImpl implements TransportConnection
 
             if (openRequests.size() > 0)
             {
-                for (TransportRequestImpl request : openRequests.getObjects())
+                for (Object obj : openRequests.getObjects())
                 {
-                    if (!request.awaitResponse(10, TimeUnit.SECONDS))
+                    if(obj != null)
                     {
-                        request.close();
+                        final TransportRequestImpl request = (TransportRequestImpl) obj;
+                        if (!request.awaitResponse(10, TimeUnit.SECONDS))
+                        {
+                            request.close();
+                        }
                     }
                 }
             }
@@ -167,11 +185,11 @@ public class TransportConnectionImpl implements TransportConnection
     {
         if(openRequests.size() > 0)
         {
-            for (TransportRequestImpl request : openRequests.getObjects())
+            for (Object request : openRequests.getObjects())
             {
                 if(request != null)
                 {
-                    request.processChannelClosed(transportChannel);
+                    ((TransportRequestImpl)request).processChannelClosed(transportChannel);
                 }
             }
         }

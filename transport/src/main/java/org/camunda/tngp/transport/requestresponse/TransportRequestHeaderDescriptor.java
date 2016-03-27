@@ -1,10 +1,9 @@
-package org.camunda.tngp.transport.protocol;
+package org.camunda.tngp.transport.requestresponse;
 
 import static uk.co.real_logic.agrona.BitUtil.*;
 
 public class TransportRequestHeaderDescriptor
 {
-
     public final static int CONNECTION_ID_OFFSET;
     public final static int REQUEST_ID_OFFSET;
     public final static int HEADER_LENGTH;
@@ -41,5 +40,4 @@ public class TransportRequestHeaderDescriptor
     {
         return offset + REQUEST_ID_OFFSET;
     }
-
 }

@@ -5,6 +5,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.transport.impl.ClientChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.requestresponse.client.RequestResponseChannelHandler;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPoolImpl;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -31,6 +34,11 @@ public class ClientChannelBuilder
     {
         this.channelHandler = channelHandler;
         return this;
+    }
+
+    public ClientChannelBuilder requestResponseChannel(TransportConnectionPool connectionPool)
+    {
+        return transportChannelHandler(new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
     }
 
     public CompletableFuture<ClientChannel> connectAsync()

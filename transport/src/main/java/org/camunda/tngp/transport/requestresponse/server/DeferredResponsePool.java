@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol.server;
+package org.camunda.tngp.transport.requestresponse.server;
 
 import java.nio.ByteBuffer;
 
@@ -10,33 +10,37 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
 /**
- * Utility for deferring messages which wait on some asynchronous work (usually I/O) to complete.
+ * Utility for deferring responses which wait on some async processing (usually io)
+ * to complete before they are sent.
  */
-public class DeferredMessagePool implements BlockHandler
+public class DeferredResponsePool implements BlockHandler
 {
     protected UnsafeBuffer flyweight = new UnsafeBuffer(0,0);
 
-    protected BoundedArrayQueue<DeferredMessage> pooled;
+    protected BoundedArrayQueue<DeferredResponse> pooled;
 
-    protected BoundedArrayQueue<DeferredMessage> deferred;
+    protected BoundedArrayQueue<DeferredResponse> deferred;
 
     protected final Dispatcher sendBuffer;
 
-    public DeferredMessagePool(Dispatcher sendBuffer, int capacity)
+    protected int capacity;
+
+    public DeferredResponsePool(Dispatcher sendBuffer, int capacity)
     {
         this.sendBuffer = sendBuffer;
+        this.capacity = capacity;
         this.pooled = new BoundedArrayQueue<>(capacity);
         this.deferred = new BoundedArrayQueue<>(capacity);
 
         for(int i = 0; i < capacity; i++)
         {
-            pooled.offer(new DeferredMessage(sendBuffer));
+            pooled.offer(new DeferredResponse(sendBuffer));
         }
     }
 
-    public DeferredMessage takeNext()
+    public DeferredResponse takeNext()
     {
-        final DeferredMessage request = pooled.take();
+        final DeferredResponse request = pooled.poll();
 
         if(request != null)
         {
@@ -54,14 +58,13 @@ public class DeferredMessagePool implements BlockHandler
             final int streamId,
             final long blockPosition)
     {
-
         while(deferred.size() > 0)
         {
-            final DeferredMessage msg = deferred.peek();
+            final DeferredResponse msg = deferred.peek();
 
-            if(msg.completionPosition <= blockPosition)
+            if(msg.asyncOperationId <= blockPosition)
             {
-                deferred.take();
+                deferred.remove();
                 pooled.offer(msg);
 
                 int messageOffset = messageOffset(blockOffset);
@@ -77,8 +80,21 @@ public class DeferredMessagePool implements BlockHandler
             {
                 break;
             }
-
         }
     }
 
+    public int getCapacity()
+    {
+        return capacity;
+    }
+
+    public int getDeferredCount()
+    {
+        return deferred.size();
+    }
+
+    public int getPooledCount()
+    {
+        return pooled.size();
+    }
 }

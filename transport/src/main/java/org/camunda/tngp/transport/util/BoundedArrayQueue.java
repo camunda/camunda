@@ -1,11 +1,16 @@
 package org.camunda.tngp.transport.util;
 
-import uk.co.real_logic.agrona.BitUtil;
+import static uk.co.real_logic.agrona.BitUtil.findNextPositivePowerOfTwo;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 
 /**
- * Non concurrent array queue with fixed capacity.
+ * Non concurrent, garbage-free array queue with fixed capacity.
  */
-public class BoundedArrayQueue<P>
+public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
 {
     protected Object[] array;
 
@@ -14,19 +19,26 @@ public class BoundedArrayQueue<P>
     protected long head;
     protected long tail;
 
+    protected BoundedArrayQueueIterator<P> iterator = new BoundedArrayQueueIterator<>();
+
     public BoundedArrayQueue(int capacity)
     {
-        if(!BitUtil.isPowerOfTwo(capacity))
-        {
-            throw new RuntimeException("Queue capacity must be a power of two.");
-        }
-
-        this.capacity = capacity;
+        this.capacity = findNextPositivePowerOfTwo(capacity);
         this.mask = capacity -1;
 
         head = tail = 0;
 
         array = new Object[capacity];
+    }
+
+    public void clear()
+    {
+        head = tail = 0;
+        for (int i = 0; i < array.length; i++)
+        {
+            array[i] = null;
+        }
+        iterator.reset();
     }
 
     public boolean offer(P object)
@@ -50,7 +62,7 @@ public class BoundedArrayQueue<P>
     }
 
     @SuppressWarnings("unchecked")
-    public P take()
+    public P poll()
     {
         int size = size();
 
@@ -96,4 +108,158 @@ public class BoundedArrayQueue<P>
         return capacity;
     }
 
+    @Override
+    public Iterator<P> iterator()
+    {
+        iterator.open();
+        return iterator;
+    }
+
+
+    @Override
+    public boolean isEmpty()
+    {
+        return size() == 0;
+    }
+
+    @Override
+    public boolean contains(Object o)
+    {
+        boolean contains = false;
+
+        for (int i = 0; i < array.length; i++)
+        {
+            if(array[i] == o)
+            {
+                contains = true;
+                break;
+            }
+        }
+
+        return contains;
+    }
+
+    @Override
+    public Object[] toArray()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> T[] toArray(T[] a)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean remove(Object o)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends P> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean add(P e)
+    {
+        return offer(e);
+    }
+
+    @Override
+    public P remove()
+    {
+        final P poll = poll();
+
+        if(poll == null)
+        {
+            throw new NoSuchElementException();
+        }
+
+        return poll;
+    }
+
+    @Override
+    public P element()
+    {
+        final P peek = peek();
+
+        if(peek == null)
+        {
+            throw new NoSuchElementException();
+        }
+
+        return peek;
+    }
+
+    class BoundedArrayQueueIterator<U> implements Iterator<U>
+    {
+        protected long iteratorPosition;
+
+        public void reset()
+        {
+            iteratorPosition = 0;
+        }
+
+        public void open()
+        {
+            iteratorPosition = head;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public U next()
+        {
+            if(iteratorPosition == tail)
+            {
+                throw new NoSuchElementException();
+            }
+
+            final Object object = array[(int) iteratorPosition & mask];
+
+            ++iteratorPosition;
+
+            return (U) object;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iteratorPosition < tail;
+        }
+
+        @Override
+        public void remove()
+        {
+            if(iteratorPosition == tail)
+            {
+                throw new NoSuchElementException();
+            }
+
+            array[(int) iteratorPosition & mask] = null;
+
+            ++head;
+        }
+    }
 }

@@ -1,4 +1,4 @@
-package org.camunda.tngp.transport.protocol.client;
+package org.camunda.tngp.transport.requestresponse.client;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -8,39 +8,52 @@ import org.camunda.tngp.transport.TransportChannel;
 import uk.co.real_logic.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 
 /**
- * Manages a number of pooled connections.
- *
+ * Manages a number of pooled connections to be reused by different threads
  */
-public class TransportConnectionManager
+public class TransportConnectionPoolImpl implements TransportConnectionPool
 {
     protected final ManyToManyConcurrentArrayQueue<TransportConnectionImpl> connectionPool;
     protected final AtomicLong connectionIdSequence = new AtomicLong();
     protected final TransportConnectionImpl[] connections;
+    protected final TransportRequestPool requestPool;
 
-    /**
-     * @param numberOfConnections the maximum number of pooled connections
-     * @param maxNumberOfRequests the maximum number of concurrent in-flight requests per connection
-     */
-    public TransportConnectionManager(
-        final Transport transport,
-        final int numberOfConnections,
-        final int maxNumberOfRequests)
+    public TransportConnectionPoolImpl(
+            final Transport transport,
+            final int numberOfConnections,
+            final int maxNumberOfRequests)
     {
-        connectionPool = new ManyToManyConcurrentArrayQueue<>(numberOfConnections);
-        connections = new TransportConnectionImpl[numberOfConnections];
+        this(transport,
+                numberOfConnections,
+                TransportRequestPool.newBoundedPool(maxNumberOfRequests, 1024, 30000));
+    }
+
+    public TransportConnectionPoolImpl(
+            final Transport transport,
+            final int numberOfConnections,
+            final TransportRequestPool requestPool)
+    {
+        this.connectionPool = new ManyToManyConcurrentArrayQueue<>(numberOfConnections);
+        this.connections = new TransportConnectionImpl[numberOfConnections];
+        this.requestPool = requestPool;
 
         for (int i = 0; i < numberOfConnections; i++)
         {
             final TransportConnectionImpl connection = new TransportConnectionImpl(
                     transport,
                     this,
-                    maxNumberOfRequests);
+                    requestPool,
+                    requestPool.capacity());
 
             connections[i] = connection;
             connectionPool.offer(connection);
         }
     }
 
+    /**
+     * Non blocking attempt to open a connection.
+     * Returns null if no connection is immediately available.
+     */
+    @Override
     public TransportConnection openConnection()
     {
         final TransportConnectionImpl connection = connectionPool.poll();
@@ -71,7 +84,8 @@ public class TransportConnectionManager
         connectionPool.offer(connection);
     }
 
-    public void closeAll()
+    @Override
+    public void close()
     {
         for(int i = 0; i < connections.length; i++)
         {

@@ -1,8 +1,8 @@
-package org.camunda.tngp.transport.protocol.client;
+package org.camunda.tngp.transport.requestresponse.client;
 
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_PROTO_CONTROL_FRAME;
-import static org.camunda.tngp.transport.protocol.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
 
 import java.nio.ByteBuffer;
 
@@ -22,9 +22,9 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
 
     public final ByteBuffer upgradeFrame;
 
-    protected final TransportConnectionManager connectionManager;
+    protected final TransportConnectionPoolImpl connectionManager;
 
-    public RequestResponseChannelHandler(final TransportConnectionManager connectionManager)
+    public RequestResponseChannelHandler(final TransportConnectionPoolImpl connectionManager)
     {
         this.connectionManager = connectionManager;
 
