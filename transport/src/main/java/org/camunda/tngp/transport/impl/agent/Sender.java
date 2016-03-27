@@ -47,7 +47,8 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
         workCount += sendControlFrames();
 
-        workCount += sendBuffer.pollBlock(this, Integer.MAX_VALUE, true);
+        // 99 = totally arbitrary number.
+        workCount += sendBuffer.pollBlock(this, 99, true);
 
         return workCount;
     }

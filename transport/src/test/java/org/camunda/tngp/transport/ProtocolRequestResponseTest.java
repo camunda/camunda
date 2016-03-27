@@ -30,6 +30,7 @@ public class ProtocolRequestResponseTest
             final RequestQueue q = new RequestQueue(32);
 
             int completedRequets = 0;
+
             do
             {
                 if(q.hasCapacity())
@@ -46,10 +47,12 @@ public class ProtocolRequestResponseTest
                 while((request = q.pollNextResponse()) != null)
                 {
                     request.close();
-                    completedRequets++;
+                    ++completedRequets;
                 }
             }
-            while(completedRequets < 10000);
+            while(completedRequets < 100000);
+
+            q.closeAll();
         }
     }
 }

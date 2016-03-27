@@ -63,6 +63,7 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
         {
             try
             {
+                request.awaitResponse();
                 request.close();
             }
             catch(Exception e)
