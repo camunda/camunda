@@ -63,4 +63,10 @@ public class ClaimedFragment
         return getFragmentLength() > 0;
     }
 
+    public void abort()
+    {
+        System.err.println("abort() not implemented");
+        // TODO Auto-generated method stub
+    }
+
 }
