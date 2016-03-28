@@ -338,6 +338,12 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                     }
                 }
 
+                AgentRunner[] agentRunners = context.getAgentRunners();
+                for (AgentRunner agentRunner : agentRunners)
+                {
+                    agentRunner.close();
+                }
+
                 transportCloseFuture.complete(transport);
             }
         }

@@ -9,6 +9,8 @@ public interface TransportChannel extends AutoCloseable
 
     CompletableFuture<TransportChannel> closeAsync();
 
+    void close();
+
     void sendControlFrame(ByteBuffer frame);
 
 }

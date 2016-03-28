@@ -38,13 +38,14 @@ public class DeferredResponsePool implements BlockHandler
         }
     }
 
-    public DeferredResponse takeNext()
+    public DeferredResponse open(int channelId, long connectionId, long requestId)
     {
         final DeferredResponse request = pooled.poll();
 
         if(request != null)
         {
             deferred.offer(request);
+            request.open(channelId, connectionId, requestId);
         }
 
         return request;
@@ -65,16 +66,21 @@ public class DeferredResponsePool implements BlockHandler
             if(msg.asyncOperationId <= blockPosition)
             {
                 deferred.remove();
-                pooled.offer(msg);
+                try
+                {
+                    int messageOffset = messageOffset(blockOffset);
+                    int length = blockLength - HEADER_LENGTH;
 
-                int messageOffset = messageOffset(blockOffset);
-                int length = blockLength - HEADER_LENGTH;
+                    flyweight.wrap(buffer, messageOffset, length);
 
-                flyweight.wrap(buffer, messageOffset, length);
-
-                msg.resolve(flyweight, messageOffset, length);
-
-                flyweight.wrap(0,0);
+                    msg.resolve(flyweight, messageOffset, length);
+                }
+                finally
+                {
+                    flyweight.wrap(0,0);
+                    msg.reset();
+                    pooled.offer(msg);
+                }
             }
             else
             {
@@ -97,4 +103,5 @@ public class DeferredResponsePool implements BlockHandler
     {
         return pooled.size();
     }
+
 }

@@ -2,6 +2,7 @@ package org.camunda.tngp.transport.requestresponse.server;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
+
 import uk.co.real_logic.agrona.concurrent.Agent;
 
 /**
@@ -31,35 +32,51 @@ import uk.co.real_logic.agrona.concurrent.Agent;
  * <li>after that the response is committed</li>
  * </ul>
  */
-public abstract class AsyncWorker implements Agent
+public class AsyncWorker implements Agent
 {
+    protected final String name;
+
+    protected final FragmentHandler fragmentHandler;
     protected final Dispatcher requestBuffer;
     protected final Dispatcher asyncWorkBuffer;
     protected final DeferredResponsePool responsePool;
-    protected final FragmentHandler requestHandler;
-    final int subscriberId;
+    protected final int subscriberId;
 
-    public AsyncWorker(AsyncWorkerContext context, FragmentHandler inflowHandler)
+    public AsyncWorker(String name, AsyncWorkerContext context)
     {
-        this.requestHandler = inflowHandler;
-        asyncWorkBuffer = context.getAsyncWorkBuffer();
-        requestBuffer = context.getRequestBuffer();
-        responsePool = context.getResponsePool();
-        subscriberId = asyncWorkBuffer.getSubscriberCount() -1;
+        this.name = name;
+        this.fragmentHandler = new RequestFragmentHandler(context);
+        this.asyncWorkBuffer = context.getAsyncWorkBuffer();
+        this.requestBuffer = context.getRequestBuffer();
+        this.responsePool = context.getResponsePool();
+        this.subscriberId = asyncWorkBuffer.getSubscriberCount() -1;
     }
 
     public int doWork() throws Exception
     {
         int workCount = 0;
 
-        workCount += requestBuffer.poll(requestHandler, responsePool.getPooledCount());
+        final int pooledResponseCount = responsePool.getPooledCount();
 
+        if(pooledResponseCount > 0)
+        {
+            // poll for as many incoming requests as pooled responses are available
+            workCount += requestBuffer.poll(fragmentHandler, pooledResponseCount);
+        }
+
+        // poll for completion on the work buffer to send out deferred responses
         while(asyncWorkBuffer.pollBlock(subscriberId, responsePool, 1, false) > 0)
         {
             ++workCount;
         }
 
         return workCount;
+    }
+
+    @Override
+    public String roleName()
+    {
+        return name;
     }
 
 }

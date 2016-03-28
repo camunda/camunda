@@ -25,6 +25,8 @@ public class AsyncWorkerContext
      */
     protected DeferredResponsePool responsePool;
 
+    protected AsyncRequestHandler requestHandler;
+
     public Dispatcher getRequestBuffer()
     {
         return requestBuffer;
@@ -63,5 +65,15 @@ public class AsyncWorkerContext
     public void setResponsePool(DeferredResponsePool responsePool)
     {
         this.responsePool = responsePool;
+    }
+
+    public AsyncRequestHandler getRequestHandler()
+    {
+        return requestHandler;
+    }
+
+    public void setRequestHandler(AsyncRequestHandler requestHandler)
+    {
+        this.requestHandler = requestHandler;
     }
 }

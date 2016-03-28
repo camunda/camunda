@@ -41,4 +41,6 @@ public interface TransportConnection extends AutoCloseable
 
     boolean sendRequest(TransportRequest request, int channelId, int length);
 
+    void close();
+
 }
