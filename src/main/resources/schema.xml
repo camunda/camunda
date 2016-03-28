@@ -13,7 +13,6 @@
             <type name="templateId" primitiveType="uint16"/>
             <type name="schemaId" primitiveType="uint16"/>
             <type name="version" primitiveType="uint16"/>
-            <type name="requestId" primitiveType="uint64"/>
         </composite>
         <composite name="varDataEncoding">
             <type name="length" primitiveType="uint16"/>
@@ -65,7 +64,6 @@
     </sbe:message>
     
     <sbe:message name="Ack" id="6" description="An acknowledement">
-    	<field name="requestId" id="1" type="uint64" />
     	<field name="taskId" id="2" type="uint64" />
     </sbe:message>
     

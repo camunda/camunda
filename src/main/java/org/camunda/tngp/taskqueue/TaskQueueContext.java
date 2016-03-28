@@ -1,9 +1,9 @@
 package org.camunda.tngp.taskqueue;
 
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.transport.protocol.async.AsyncProtocolContext;
+import org.camunda.tngp.transport.requestresponse.server.AsyncWorkerContext;
 
-public class TaskQueueContext extends AsyncProtocolContext
+public class TaskQueueContext extends AsyncWorkerContext
 {
     protected Log log;
 
