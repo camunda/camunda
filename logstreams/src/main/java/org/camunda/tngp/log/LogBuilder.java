@@ -4,11 +4,14 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
+import org.camunda.tngp.hashindex.HashIndex;
 import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.conductor.LogConductor;
+import org.camunda.tngp.log.index.LogEntryIndexer;
 import org.camunda.tngp.log.appender.LogAppender;
 
 import uk.co.real_logic.agrona.ErrorHandler;
@@ -49,6 +52,8 @@ public class LogBuilder
 
     protected ThreadingMode threadingMode = ThreadingMode.SHARED;
 
+    protected DispatcherBuilder writeBufferBuilder;
+
     public LogBuilder(String name)
     {
         this.name = name;
@@ -63,6 +68,12 @@ public class LogBuilder
     public LogBuilder writeBufferSize(int writeBfferSize)
     {
         this.writeBufferSize = writeBfferSize;
+        return this;
+    }
+
+    public LogBuilder writeBufferBuilder(DispatcherBuilder dispatcherBuilder)
+    {
+        this.writeBufferBuilder = dispatcherBuilder;
         return this;
     }
 
@@ -105,22 +116,41 @@ public class LogBuilder
 
         logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logSegmentSize, logRootPath, initialLogSegmentId));
 
-        final LogConductor logConductor = new LogConductor(logContext);
-        Agent conductorAgent = logConductor;
+
+        DispatcherConductor dispatcherConductor = null;
 
         if(writeBuffer == null)
         {
             final DispatcherContext dispatcherContext = new DispatcherContext();
 
-            writeBuffer = Dispatchers.create("log-write-buffer")
-                    .bufferSize(writeBufferSize)
+            if(writeBufferBuilder == null)
+            {
+                writeBufferBuilder = Dispatchers
+                    .create("log-write-buffer")
+                    .bufferSize(writeBufferSize);
+            }
+
+            writeBuffer = writeBufferBuilder
                     .context(dispatcherContext)
                     .build();
 
-            final DispatcherConductor dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
-            conductorAgent = new CompositeAgent(logConductor, dispatcherConductor);
+            dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
+
         }
         logContext.setWriteBuffer(writeBuffer);
+
+
+        final LogConductor logConductor = new LogConductor(logContext);
+
+        Agent conductorAgent = null;
+        if(dispatcherConductor != null)
+        {
+            conductorAgent = new CompositeAgent(logConductor, dispatcherConductor);
+        }
+        else
+        {
+            conductorAgent = logConductor;
+        }
 
         final LogAppender logAppender = new LogAppender(logContext);
 
@@ -143,7 +173,7 @@ public class LogBuilder
         {
             try
             {
-                writeBuffer.startSync();
+                writeBuffer.start();
             }
             catch (InterruptedException e)
             {

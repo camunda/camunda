@@ -27,6 +27,12 @@
 			<artifactId>dispatcher</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.camunda.tngp</groupId>
+			<artifactId>hash-index</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>

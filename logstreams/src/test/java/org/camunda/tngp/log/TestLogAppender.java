@@ -56,7 +56,7 @@ public class TestLogAppender
             .threadingMode(ThreadingMode.DEDICATED)
             .build();
 
-        log.startSync();
+        log.start();
 
         final Dispatcher writeBuffer = log.getWriteBuffer();
 
@@ -86,7 +86,7 @@ public class TestLogAppender
             }
         }
 
-        log.closeSync();
+        log.close();
     }
 
 

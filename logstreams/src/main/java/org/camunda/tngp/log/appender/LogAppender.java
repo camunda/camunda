@@ -139,7 +139,10 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
     @Override
     public void onClose()
     {
-        currentSegment.closeSegment();
+        if(currentSegment != null)
+        {
+            currentSegment.closeSegment();
+        }
         if(nextSegment != null)
         {
             nextSegment.closeSegment();

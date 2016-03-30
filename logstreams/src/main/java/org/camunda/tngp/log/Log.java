@@ -4,14 +4,12 @@ import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 import static org.camunda.tngp.log.fs.LogSegmentDescriptor.*;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 import org.camunda.tngp.log.fs.LogSegments;
 import org.camunda.tngp.log.fs.ReadableLogSegment;
 
-import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 public class Log
@@ -29,7 +27,7 @@ public class Log
         logConductorCmdQueue = logContext.getLogConductorCmdQueue();
     }
 
-    public CompletableFuture<Log> start()
+    public CompletableFuture<Log> startAsync()
     {
         final CompletableFuture<Log> future = new CompletableFuture<>();
 
@@ -41,44 +39,26 @@ public class Log
         return future;
     }
 
-    public void startSync() throws InterruptedException
+    public void start() throws InterruptedException
     {
-        try
-        {
-            start().get();
-        }
-        catch (ExecutionException e)
-        {
-            LangUtil.rethrowUnchecked((Exception) e.getCause());
-        }
+        startAsync().join();
     }
 
-    public CompletableFuture<Boolean> close()
+    public CompletableFuture<Log> closeAsync()
     {
-        final CompletableFuture<Boolean> future = new CompletableFuture<>();
+        final CompletableFuture<Log> future = new CompletableFuture<>();
 
         logConductorCmdQueue.add((c) ->
         {
-            c.closeLog(future);
+            c.closeLog(this, future);
         });
 
         return future;
     }
 
-    public boolean closeSync() throws InterruptedException
+    public void close()
     {
-        boolean success = false;
-
-        try
-        {
-            success = close().get();
-        }
-        catch (ExecutionException e)
-        {
-            LangUtil.rethrowUnchecked((Exception) e.getCause());
-        }
-
-        return success;
+        closeAsync().join();
     }
 
     public Dispatcher getWriteBuffer()

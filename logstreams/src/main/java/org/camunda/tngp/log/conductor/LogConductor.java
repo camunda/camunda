@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.camunda.tngp.dispatcher.AsyncCompletionCallback;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogContext;
@@ -30,8 +29,6 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
     protected final LogSegmentAllocationDescriptor logAllocationDescriptor;
     protected final LogSegments availableSegments;
 
-    protected Dispatcher writeBuffer;
-    protected AgentRunner[] agentRunners;
     protected LogContext logContext;
 
     public LogConductor(LogContext logContext)
@@ -90,9 +87,6 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
     public void openLog(CompletableFuture<Log> future, Log log)
     {
-        writeBuffer = logContext.getWriteBuffer();
-        agentRunners = logContext.getAgentRunners();
-
         final String path = logAllocationDescriptor.getPath();
         final List<ReadableLogSegment> readableLogSegments = new ArrayList<>();
         final File logDir = new File(path);
@@ -172,18 +166,16 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         future.complete(log);
     }
 
-    public void closeLog(final CompletableFuture<Boolean> future)
+    public void closeLog(final Log log, final CompletableFuture<Log> future)
     {
-        this.writeBuffer.closeAsync(new AsyncCompletionCallback<Dispatcher>()
+        this.logContext.getWriteBuffer().closeAsync()
+        .whenComplete((d,t) ->
         {
-            public void onComplete(Throwable t, Dispatcher result)
-            {
-                cmdQueue.add((c) -> onWriteBufferClosed(future, t == null));
-            }
+            onWriteBufferClosed(future, log, t);
         });
     }
 
-    protected void onWriteBufferClosed(final CompletableFuture<Boolean> future, final boolean closedClean)
+    protected void onWriteBufferClosed(final CompletableFuture<Log> future, Log log, final Throwable writeBufferCloseException)
     {
         final Thread closeThread = new Thread("log-closer-thread")
         {
@@ -194,14 +186,21 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
                 {
                     availableSegments.closeAll();
 
-                    for (AgentRunner agentRunner : agentRunners)
+                    for (AgentRunner agentRunner : logContext.getAgentRunners())
                     {
                         agentRunner.close();
                     }
                 }
                 finally
                 {
-                    future.complete(closedClean);
+                    if(writeBufferCloseException == null)
+                    {
+                        future.complete(log);
+                    }
+                    else
+                    {
+                        future.completeExceptionally(writeBufferCloseException);
+                    }
                 }
             }
         };
