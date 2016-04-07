@@ -1,5 +1,6 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.camunda.tngp.transport.Transport;
@@ -24,7 +25,7 @@ public class TransportConnectionPoolImpl implements TransportConnectionPool
     {
         this(transport,
                 numberOfConnections,
-                TransportRequestPool.newBoundedPool(maxNumberOfRequests, 1024, 30000));
+                TransportRequestPool.newBoundedPool(maxNumberOfRequests, 1024, TimeUnit.SECONDS.toMillis(30)));
     }
 
     public TransportConnectionPoolImpl(

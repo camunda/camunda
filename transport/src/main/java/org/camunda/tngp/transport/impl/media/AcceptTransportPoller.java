@@ -35,7 +35,10 @@ public class AcceptTransportPoller extends TransportPoller
             try
             {
                 selector.selectNow();
-                workCount = selectedKeySet.forEach(processKeyFn);
+                if(!selectedKeySet.isEmpty())
+                {
+                    workCount = selectedKeySet.forEach(processKeyFn);
+                }
             }
             catch (IOException e)
             {

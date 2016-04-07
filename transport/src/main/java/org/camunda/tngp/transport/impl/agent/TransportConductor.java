@@ -36,7 +36,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     protected final List<ClientChannelImpl> clientChannels = new ArrayList<>();
     protected final List<ServerSocketBinding> serverSocketBindings = new ArrayList<>();
 
-    protected final Map<ClientChannelImpl, CompletableFuture<ClientChannel>> connectFutures = new HashMap<>();
+    protected final Map<ClientChannelImpl, CompletableFuture<TransportChannel>> connectFutures = new HashMap<>();
 
     protected int lastChannelId = 0;
 
@@ -91,7 +91,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         channel.setConnected();
         connectTransportPoller.removeChannel(channel);
 
-        final CompletableFuture<ClientChannel> connectFuture = connectFutures.get(channel);
+        final CompletableFuture<TransportChannel> connectFuture = connectFutures.get(channel);
 
         if(!isClosing)
         {
@@ -130,7 +130,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
     public CompletableFuture<Void> openAndRegisterChannel(final TransportChannelImpl channel)
     {
-        channel.setId(lastChannelId++);
+        channel.setId(++lastChannelId);
 
         final CompletableFuture<Void> receiverFuture = new CompletableFuture<>();
         final CompletableFuture<Void> senderFuture = new CompletableFuture<>();
@@ -174,7 +174,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
     public void doConnectChannel(
             final ClientChannelImpl channel,
-            final CompletableFuture<ClientChannel> future)
+            final CompletableFuture<TransportChannel> future)
     {
         if(!isClosing)
         {
@@ -254,6 +254,11 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     {
         removeChannel(channel);
 
+        if(closeFuture == null)
+        {
+            closeFuture = connectFutures.remove(channel);
+        }
+
         if(closeFuture != null)
         {
             if(e == null)
@@ -306,7 +311,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         acceptTransportPoller.close();
         connectTransportPoller.close();
 
-        new Thread("close-thread")
+        new Thread("transport-close-thread")
         {
             @Override
             public void run()
@@ -338,13 +343,16 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                     }
                 }
 
-                AgentRunner[] agentRunners = context.getAgentRunners();
-                for (AgentRunner agentRunner : agentRunners)
+                final AgentRunner[] agentRunners = context.getAgentRunners();
+                if(agentRunners != null)
                 {
-                    agentRunner.close();
-                }
+                    for (AgentRunner agentRunner : agentRunners)
+                    {
+                        agentRunner.close();
+                    }
 
-                transportCloseFuture.complete(transport);
+                    transportCloseFuture.complete(transport);
+                }
             }
         }
         .start();

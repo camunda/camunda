@@ -4,9 +4,9 @@ public class PooledTransportRequestImpl extends TransportRequestImpl implements 
 {
     protected final BoundedRequestPool pool;
 
-    public PooledTransportRequestImpl(BoundedRequestPool simpleRequestPool, int responseBufferSize, int capacity)
+    public PooledTransportRequestImpl(BoundedRequestPool simpleRequestPool, int responseBufferSize, long requestTimeoutMillis)
     {
-        super(responseBufferSize, capacity);
+        super(responseBufferSize, requestTimeoutMillis);
         this.pool = simpleRequestPool;
     }
 

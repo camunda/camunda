@@ -4,16 +4,15 @@ import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderD
 import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.headerLength;
 import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.requestIdOffset;
 
-import org.camunda.tngp.dispatcher.FragmentHandler;
-
-import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
 
 /**
- * {@link FragmentHandler} implementation for data fragments which constitute requests.
+ * {@link MessageHandler} implementation for data fragments which constitute requests.
  * Decodes the request headers, opens a deferred response and invokes the {@link AsyncRequestHandler}.
  *
  */
-class RequestFragmentHandler implements FragmentHandler
+class RequestFragmentHandler implements MessageHandler
 {
     protected final DeferredResponsePool responsePool;
     protected final AsyncRequestHandler asyncRequestHandler;
@@ -25,19 +24,34 @@ class RequestFragmentHandler implements FragmentHandler
     }
 
     @Override
-    public void onFragment(DirectBuffer buffer, int offset, int length, int channelId)
+    public void onMessage(int channelId, MutableDirectBuffer buffer, int index, int length)
     {
-        final long connectionId = buffer.getLong(connectionIdOffset(offset));
-        final long requestId = buffer.getLong(requestIdOffset(offset));
+        final long connectionId = buffer.getLong(connectionIdOffset(index));
+        final long requestId = buffer.getLong(requestIdOffset(index));
 
-        final int requestOffset = offset + headerLength();
+        final int requestOffset = index + headerLength();
         final int requestLength = length - headerLength();
 
         DeferredResponse response = responsePool.open(channelId, connectionId, requestId);
 
         if(response != null)
         {
-            asyncRequestHandler.onRequest(buffer, requestOffset, requestLength, response);
+            try
+            {
+                asyncRequestHandler.onRequest(buffer, requestOffset, requestLength, response);
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+            finally
+            {
+                if(!response.isDeferred())
+                {
+                    responsePool.reclaim(response);
+                }
+            }
+
         }
         else
         {

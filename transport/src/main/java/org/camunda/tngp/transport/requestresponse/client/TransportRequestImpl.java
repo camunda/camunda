@@ -209,7 +209,7 @@ public class TransportRequestImpl implements TransportRequest
     @Override
     public void awaitResponse()
     {
-        awaitResponse(30, TimeUnit.SECONDS);
+        awaitResponse(35, TimeUnit.SECONDS);
     }
 
     public long getId()

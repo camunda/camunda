@@ -2,6 +2,7 @@ package org.camunda.tngp.transport;
 
 import java.net.InetSocketAddress;
 
+import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.requestresponse.client.RequestQueue;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -29,7 +30,7 @@ public class ProtocolRequestResponseTest
         {
             final RequestQueue q = new RequestQueue(32);
 
-            int completedRequets = 0;
+            int completedRequests = 0;
 
             do
             {
@@ -47,10 +48,10 @@ public class ProtocolRequestResponseTest
                 while((request = q.pollNextResponse()) != null)
                 {
                     request.close();
-                    ++completedRequets;
+                    ++completedRequests;
                 }
             }
-            while(completedRequets < 1000000);
+            while(completedRequests < 1000000);
 
             q.closeAll();
         }

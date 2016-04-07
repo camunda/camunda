@@ -19,7 +19,7 @@ public interface TransportRequestPool
      */
     int capacity();
 
-    static TransportRequestPool newBoundedPool(int capacity, int responseBufferSize, int requestTimeout)
+    static TransportRequestPool newBoundedPool(int capacity, int responseBufferSize, long requestTimeout)
     {
         return new BoundedRequestPool(capacity, responseBufferSize, requestTimeout);
     }

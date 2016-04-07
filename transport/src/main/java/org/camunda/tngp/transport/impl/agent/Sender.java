@@ -105,14 +105,20 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
         buffer.limit(blockOffset + blockLength);
         buffer.position(blockOffset);
 
-        blockWritten = channel.writeMessage(buffer, position);
-
-        if(!blockWritten)
+        if(channel != null)
         {
-            sendErrorBlock.wrap(buffer);
+            blockWritten = channel.writeMessage(buffer, position);
+            if(!blockWritten)
+            {
+                sendErrorBlock.wrap(buffer);
 
-            channel.getChannelHandler()
-                .onChannelSendError(channel, sendErrorBlock, 0, blockLength);
+                channel.getChannelHandler()
+                    .onChannelSendError(channel, sendErrorBlock, 0, blockLength);
+            }
+        }
+        else
+        {
+            System.err.println("Cannel with id "+ channelId +" not open.");
         }
     }
 

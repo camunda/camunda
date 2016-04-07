@@ -4,6 +4,8 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
 /**
  * Base class for implementing asynchronous request/response server workers processing requests which block on i/o.
@@ -36,8 +38,8 @@ public class AsyncWorker implements Agent
 {
     protected final String name;
 
-    protected final FragmentHandler fragmentHandler;
-    protected final Dispatcher requestBuffer;
+    protected final MessageHandler fragmentHandler;
+    protected final OneToOneRingBuffer requestBuffer;
     protected final Dispatcher asyncWorkBuffer;
     protected final DeferredResponsePool responsePool;
     protected final int subscriberId;
@@ -61,11 +63,11 @@ public class AsyncWorker implements Agent
         if(pooledResponseCount > 0)
         {
             // poll for as many incoming requests as pooled responses are available
-            workCount += requestBuffer.poll(fragmentHandler, pooledResponseCount);
+            workCount += requestBuffer.read(fragmentHandler, pooledResponseCount);
         }
 
         // poll for completion on the work buffer to send out deferred responses
-        while(asyncWorkBuffer.pollBlock(subscriberId, responsePool, 1, false) > 0)
+        while(asyncWorkBuffer.pollBlock(subscriberId, responsePool, responsePool.getCapacity(), false) > 0)
         {
             ++workCount;
         }

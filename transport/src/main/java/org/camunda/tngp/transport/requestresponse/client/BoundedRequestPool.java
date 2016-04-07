@@ -11,7 +11,7 @@ public class BoundedRequestPool implements TransportRequestPool
     protected final PooledTransportRequest[] requests;
     protected final int capacity;
 
-    public BoundedRequestPool(int capacity, int responseBufferSize, int requestTimeout)
+    public BoundedRequestPool(int capacity, int responseBufferSize, long requestTimeout)
     {
         this.capacity = capacity;
         pooledRequests = new ManyToManyConcurrentArrayQueue<>(capacity);

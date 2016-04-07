@@ -40,15 +40,15 @@ public class DeferredResponsePool implements BlockHandler
 
     public DeferredResponse open(int channelId, long connectionId, long requestId)
     {
-        final DeferredResponse request = pooled.poll();
+        final DeferredResponse response = pooled.poll();
 
-        if(request != null)
+        if(response != null)
         {
-            deferred.offer(request);
-            request.open(channelId, connectionId, requestId);
+            deferred.offer(response);
+            response.open(channelId, connectionId, requestId);
         }
 
-        return request;
+        return response;
     }
 
     @Override
@@ -102,6 +102,13 @@ public class DeferredResponsePool implements BlockHandler
     public int getPooledCount()
     {
         return pooled.size();
+    }
+
+    public void reclaim(DeferredResponse response)
+    {
+        response.reset();
+        deferred.remove();
+        pooled.offer(response);
     }
 
 }

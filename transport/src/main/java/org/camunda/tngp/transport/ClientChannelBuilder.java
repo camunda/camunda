@@ -41,9 +41,10 @@ public class ClientChannelBuilder
         return transportChannelHandler(new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public CompletableFuture<ClientChannel> connectAsync()
     {
-        final CompletableFuture<ClientChannel> future = new CompletableFuture<ClientChannel>();
+        final CompletableFuture<TransportChannel> future = new CompletableFuture<>();
 
         final ClientChannelImpl channel = new ClientChannelImpl(transportContext, channelHandler, remoteAddress);
 
@@ -52,7 +53,7 @@ public class ClientChannelBuilder
             c.doConnectChannel(channel, future);
         });
 
-        return future;
+        return (CompletableFuture) future;
     }
 
     public ClientChannel connect()

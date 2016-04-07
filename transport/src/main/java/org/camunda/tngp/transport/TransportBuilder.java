@@ -3,9 +3,9 @@ package org.camunda.tngp.transport;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
-import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
@@ -42,12 +42,13 @@ public class TransportBuilder
 
     protected TransportContext transportContext;
 
+    protected boolean agentsExternallyManaged = false;
+    protected boolean sendBufferExternallyManaged = false;
+
+    protected TransportConductor transportConductor;
+    protected DispatcherConductor sendBufferConductor;
     protected Receiver receiver;
     protected Sender sender;
-    protected TransportConductor transportConductor;
-    protected DispatcherContext dispatcherContext;
-    protected DispatcherConductor dispatcherConductor;
-    protected Agent conductor;
 
     static ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
@@ -68,6 +69,7 @@ public class TransportBuilder
     public TransportBuilder sendBuffer(Dispatcher dispatcher)
     {
         this.sendBuffer = dispatcher;
+        this.sendBufferExternallyManaged = true;
         return this;
     }
 
@@ -89,6 +91,12 @@ public class TransportBuilder
         return this;
     }
 
+    public TransportBuilder agentsExternallyManaged()
+    {
+        this.agentsExternallyManaged = true;
+        return this;
+    }
+
     public Transport build()
     {
         initTransportContext();
@@ -104,31 +112,15 @@ public class TransportBuilder
 
     protected void startSendBuffer()
     {
-        if(sendBuffer.getStatus() == Dispatcher.STATUS_NEW)
+        if(!sendBufferExternallyManaged)
         {
-            try
-            {
-                sendBuffer.start();
-            }
-            catch (InterruptedException e)
-            {
-                LangUtil.rethrowUnchecked(e);
-            }
+            sendBuffer.start();
         }
     }
 
     protected void initConductor()
     {
         transportConductor = new TransportConductor(transportContext);
-        if(dispatcherContext != null)
-        {
-            dispatcherConductor = new DispatcherConductor(dispatcherContext, true);
-            conductor = new CompositeAgent(transportConductor, dispatcherConductor);
-        }
-        else
-        {
-            conductor = transportConductor;
-        }
     }
 
     protected void initTransportContext()
@@ -139,16 +131,16 @@ public class TransportBuilder
 
     protected void initSendBuffer()
     {
-        if(sendBuffer == null)
+        if(!sendBufferExternallyManaged)
         {
-            dispatcherContext = new DispatcherContext();
+            final DispatcherBuilder dispatcherBuilder = Dispatchers.create(name + ".write-buffer");
 
-            sendBuffer = Dispatchers.create(name + ".write-buffer")
-                .bufferSize(sendBufferSize)
-                .context(dispatcherContext)
+            this.sendBuffer = dispatcherBuilder.bufferSize(sendBufferSize)
                 .countersManager(countersManager)
+                .agentExternallyManaged()
                 .build();
 
+            this.sendBufferConductor = dispatcherBuilder.getConductorAgent();
         }
 
         transportContext.setSendBuffer(sendBuffer);
@@ -166,25 +158,44 @@ public class TransportBuilder
 
     protected void startAgents()
     {
-        AgentRunner[] agentRunners = null;
+        if(!agentsExternallyManaged)
+        {
+            AgentRunner[] agentRunners = null;
 
-        if(threadingMode == ThreadingMode.SHARED)
-        {
-            agentRunners = new AgentRunner[1];
-            agentRunners[0] = startAgents(conductor, receiver, sender);
+            if(threadingMode == ThreadingMode.SHARED)
+            {
+                agentRunners = new AgentRunner[1];
+
+                if(sendBufferExternallyManaged)
+                {
+                    agentRunners[0] = startAgents(transportConductor, receiver, sender);
+                }
+                else
+                {
+                    agentRunners[0] = startAgents(transportConductor, sendBufferConductor, receiver, sender);
+                }
+            }
+            else if(threadingMode == ThreadingMode.DEDICATED)
+            {
+                agentRunners = new AgentRunner[3];
+
+                if(sendBufferExternallyManaged)
+                {
+                    agentRunners[0] = startAgents(transportConductor);
+                }
+                else
+                {
+                    agentRunners[0] = startAgents(transportConductor, sendBufferConductor);
+                }
+                agentRunners[1] = startAgents(receiver);
+                agentRunners[2] = startAgents(sender);
+            }
+            else
+            {
+                throw new RuntimeException("unsupported threading mode " + threadingMode);
+            }
+            transportContext.setAgentRunners(agentRunners);
         }
-        else if(threadingMode == ThreadingMode.DEDICATED)
-        {
-            agentRunners = new AgentRunner[3];
-            agentRunners[0] = startAgents(conductor);
-            agentRunners[1] = startAgents(receiver);
-            agentRunners[2] = startAgents(sender);
-        }
-        else
-        {
-            throw new RuntimeException("unsupported threading mode " + threadingMode);
-        }
-        transportContext.setAgentRunners(agentRunners);
     }
 
 
@@ -202,7 +213,7 @@ public class TransportBuilder
             agentToRun = new CompositeAgent(agents);
         }
 
-        BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+        BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(5));
 
         AtomicCounter errorCounter = null;
         if(countersManager != null)
@@ -218,5 +229,18 @@ public class TransportBuilder
 
     }
 
+    public TransportConductor getTransportConductor()
+    {
+        return transportConductor;
+    }
 
+    public Sender getSender()
+    {
+        return sender;
+    }
+
+    public Receiver getReceiver()
+    {
+        return receiver;
+    }
 }

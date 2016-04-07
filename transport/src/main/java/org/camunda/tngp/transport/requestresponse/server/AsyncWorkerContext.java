@@ -2,12 +2,14 @@ package org.camunda.tngp.transport.requestresponse.server;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 
+import uk.co.real_logic.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
+
 public class AsyncWorkerContext
 {
     /**
      * The buffer on which incoming requests become available
      */
-    protected Dispatcher requestBuffer;
+    protected OneToOneRingBuffer requestBuffer;
 
     /**
      * The buffer to which responses are written. (Send buffer for responses)
@@ -27,14 +29,14 @@ public class AsyncWorkerContext
 
     protected AsyncRequestHandler requestHandler;
 
-    public Dispatcher getRequestBuffer()
+    public OneToOneRingBuffer getRequestBuffer()
     {
         return requestBuffer;
     }
 
-    public void setRequestBuffer(Dispatcher requestBuffer)
+    public void setRequestBuffer(OneToOneRingBuffer workerRequestBuffer)
     {
-        this.requestBuffer = requestBuffer;
+        this.requestBuffer = workerRequestBuffer;
     }
 
     public Dispatcher getResponseBuffer()

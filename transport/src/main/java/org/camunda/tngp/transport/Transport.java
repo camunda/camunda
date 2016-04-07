@@ -6,8 +6,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.impl.TransportContext;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPoolImpl;
 
 public class Transport implements AutoCloseable
 {

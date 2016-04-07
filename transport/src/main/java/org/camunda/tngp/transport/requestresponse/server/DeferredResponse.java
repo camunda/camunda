@@ -32,7 +32,6 @@ public class DeferredResponse
         this.connectionId = -1;
         this.requestId = -1;
         this.asyncOperationId = -1;
-        this.asyncOperationId = -1;
         this.completionHandler = null;
         this.attachement = null;
     }
