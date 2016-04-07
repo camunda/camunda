@@ -1,11 +1,9 @@
 package org.camunda.tngp.dispatcher.impl;
 
-import static org.camunda.tngp.dispatcher.Dispatcher.*;
+import static org.camunda.tngp.dispatcher.Dispatcher.STATUS_ACTIVE;
+import static org.camunda.tngp.dispatcher.Dispatcher.STATUS_CLOSE_REQUESTED;
+import static org.camunda.tngp.dispatcher.Dispatcher.STATUS_NEW;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -26,60 +24,57 @@ import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
  */
 public class DispatcherConductor implements Agent, Consumer<DispatcherConductorCommand>
 {
-
-    public static final String NAME = "net.long_running.dispatcher.conductor";
+    public static final String NAME_TEMPLATE = "%s.dispatcher-conductor";
 
     protected final ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> cmdQueue;
 
-    protected final List<Dispatcher> dispatchers = new ArrayList<>(10);
+    protected Dispatcher dispatcher;
+    protected CompletableFuture<Dispatcher> closeFuture;
+    protected CompletableFuture<Dispatcher> startFuture;
 
-    protected final Map<Dispatcher, CompletableFuture<Dispatcher>> closeFutures = new HashMap<>(10);
-    protected final Map<Dispatcher, CompletableFuture<Dispatcher>> startFutures = new HashMap<>(10);
-
-    protected final boolean isShared;
     protected final DispatcherContext context;
+    protected String name;
 
-    public DispatcherConductor(DispatcherContext dispatcherContext, boolean isShared)
+    public DispatcherConductor(String dispatcherName, DispatcherContext dispatcherContext)
     {
         this.cmdQueue = dispatcherContext.getDispatcherCommandQueue();
         this.context = dispatcherContext;
-        this.isShared = isShared;
+        this.name = String.format(NAME_TEMPLATE, dispatcherName);
     }
 
     public String roleName()
     {
-        return NAME;
+        return name;
     }
 
     public int doWork() throws Exception
     {
         int workCount = cmdQueue.drain(this);
 
-        for (Dispatcher dispatcher : dispatchers)
+        if(dispatcher != null)
         {
             final int dispatcherStatus = dispatcher.getStatus();
-
             switch (dispatcherStatus)
             {
-            case STATUS_CLOSE_REQUESTED:
-                workCount += trackDispatcherClose(dispatcher);
-                break;
+                case STATUS_CLOSE_REQUESTED:
+                    workCount += trackDispatcherClose();
+                    break;
 
-            case STATUS_NEW:
-                workCount += acivateDispatcher(dispatcher);
-                break;
+                case STATUS_NEW:
+                    workCount += acivateDispatcher();
+                    break;
 
-            case STATUS_ACTIVE:
-                workCount += dispatcher.updatePublisherLimit();
-                workCount += dispatcher.getLogBuffer().cleanPartitions();
-                break;
+                case STATUS_ACTIVE:
+                    workCount += dispatcher.updatePublisherLimit();
+                    workCount += dispatcher.getLogBuffer().cleanPartitions();
+                    break;
             }
         }
 
         return workCount;
     }
 
-    protected int trackDispatcherClose(final Dispatcher dispatcher)
+    protected int trackDispatcherClose()
     {
         dispatcher.setPublisherLimitOrdered(-1);
         if(dispatcher.isReadyToClose())
@@ -87,57 +82,29 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
             cmdQueue.add((cct) ->
             {
                 dispatcher.doClose();
-
-                if(!isShared)
-                {
-                    context.close();
-                }
-                else {
-                    notifyClose(dispatcher);
-                }
-
-
+                notifyClose();
             });
         }
-
         return 1;
     }
 
-    protected void notifyClose(final Dispatcher dispatcher)
+    protected void notifyClose()
     {
-        dispatchers.remove(dispatcher);
-
-        final CompletableFuture<Dispatcher> closeFuture = closeFutures.remove(dispatcher);
-        if(closeFuture != null)
-        {
-            closeFuture.complete(dispatcher);
-        }
+        closeFuture.thenRunAsync(() -> context.close());
+        closeFuture.complete(dispatcher);
     }
 
-    protected void notifyActivate(Dispatcher dispatcher)
+    protected void notifyActivate()
     {
-        final CompletableFuture<Dispatcher> startFuture = startFutures.remove(dispatcher);
-        if(startFuture != null)
-        {
-            startFuture.complete(dispatcher);
-        }
+        startFuture.complete(dispatcher);
     }
 
-    @Override
-    public void onClose()
-    {
-        if(!isShared)
-        {
-            notifyClose(dispatchers.get(0));
-        }
-    }
-
-    protected int acivateDispatcher(Dispatcher dispatcher)
+    protected int acivateDispatcher()
     {
         dispatcher.setStateOrdered(STATUS_ACTIVE);
         dispatcher.updatePublisherLimit();
-        notifyActivate(dispatcher);
-        return 2;
+        notifyActivate();
+        return 1;
     }
 
     @Override
@@ -151,8 +118,8 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
         final int status = dispatcher.getStatus();
         if(status == STATUS_NEW)
         {
-            this.dispatchers.add(dispatcher);
-            this.startFutures.put(dispatcher, startFuture);
+            this.dispatcher = dispatcher;
+            this.startFuture = startFuture;
         }
         else
         {
@@ -169,7 +136,7 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
 
         if(status == STATUS_ACTIVE)
         {
-            closeFutures.put(dispatcher, closeFuture);
+            this.closeFuture = closeFuture;
             dispatcher.setStateOrdered(STATUS_CLOSE_REQUESTED);
         }
         else

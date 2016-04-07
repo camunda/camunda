@@ -4,6 +4,7 @@ import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
@@ -19,6 +20,7 @@ import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.ErrorHandler;
+import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -55,9 +57,11 @@ public class DispatcherBuilder
 
     protected final String dispatcherName;
 
-    private UnsafeBuffer countersBuffer;
+    protected UnsafeBuffer countersBuffer;
 
-    protected DispatcherContext context;
+    protected boolean agentExternallyManaged = false;
+
+    protected DispatcherConductor conductorAgent;
 
     public DispatcherBuilder(String dispatcherName)
     {
@@ -99,6 +103,12 @@ public class DispatcherBuilder
         return this;
     }
 
+    public DispatcherBuilder agentExternallyManaged()
+    {
+        this.agentExternallyManaged = true;
+        return this;
+    }
+
     /**
      * The max length of the data section of a frame
      */
@@ -133,12 +143,6 @@ public class DispatcherBuilder
     {
         this.countersBuffer = countersBuffer;
         this.countersManager = new CountersManager(labelsBuffer, countersBuffer);
-        return this;
-    }
-
-    public DispatcherBuilder context(DispatcherContext context)
-    {
-        this.context = context;
         return this;
     }
 
@@ -220,13 +224,12 @@ public class DispatcherBuilder
 
         int bufferWindowLength = partitionSize / 4;
 
-        if(context == null)
-        {
-            // create local dispatcher context for this dispatcher
-            context = new DispatcherContext();
+        final DispatcherContext context = new DispatcherContext();
+        conductorAgent = new DispatcherConductor(dispatcherName, context);
 
-            DispatcherConductor conductor = new DispatcherConductor(context, true);
-            BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+        if(!agentExternallyManaged)
+        {
+            final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
 
             AtomicCounter errorCounter = null;
             if(countersManager != null)
@@ -234,9 +237,9 @@ public class DispatcherBuilder
                 errorCounter = countersManager.newCounter(String.format("net.long_running.dispatcher.%s.conductor.errorCounter", dispatcherName));
             }
 
-            AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductor);
-            context.setAgentRunner(conductorRunner);
+            AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductorAgent);
             AgentRunner.startOnThread(conductorRunner);
+            context.setAgentRunner(conductorRunner);
         }
 
         return new Dispatcher(
@@ -246,7 +249,13 @@ public class DispatcherBuilder
             publisherPosition,
             subscriberPositions,
             bufferWindowLength,
-            context);
+            context,
+            dispatcherName);
+    }
+
+    public DispatcherConductor getConductorAgent()
+    {
+        return conductorAgent;
     }
 
 }

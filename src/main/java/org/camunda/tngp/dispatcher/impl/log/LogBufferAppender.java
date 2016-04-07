@@ -77,7 +77,6 @@ public class LogBufferAppender
             buffer.putInt(streamIdOffset(frameOffset), streamId);
 
             claim.wrap(buffer, frameOffset, framedMessageLength);
-
             // Do not commit the message
         }
         else

@@ -5,7 +5,6 @@ import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class DispatcherContext
 {
-
     protected ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> dispatcherCommandQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected AgentRunner agentRunner;
 
@@ -14,13 +13,16 @@ public class DispatcherContext
         return dispatcherCommandQueue;
     }
 
-    public void close()
-    {
-        agentRunner.close();
-    }
-
     public void setAgentRunner(AgentRunner agentRunner)
     {
         this.agentRunner = agentRunner;
+    }
+
+    public void close()
+    {
+        if(agentRunner != null)
+        {
+            agentRunner.close();
+        }
     }
 }

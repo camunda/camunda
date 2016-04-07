@@ -48,6 +48,7 @@ public class LogBufferPartition
         this.partitionSize = dataBuffer.capacity();
         this.underlyingBuffer = underlyingBuffer;
         this.rawBufferOffset = rawBufferOffset;
+        dataBuffer.setMemory(0, partitionSize, (byte) 0);
     }
 
     public void clean()

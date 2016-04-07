@@ -77,7 +77,8 @@ public class DispatcherTest
                 publisherPosition,
                 new Position[] { null },
                 A_LOG_WINDOW_LENGTH,
-                null)
+                null,
+                "test")
         {
             @Override
             protected Subscription createSubscription(Position subscriberPosition) {

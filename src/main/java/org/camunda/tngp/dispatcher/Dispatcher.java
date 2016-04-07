@@ -43,6 +43,7 @@ public class Dispatcher
     protected final int partitionSize;
     protected final int initialPartitionId;
     protected int logWindowLength;
+    protected final String name;
 
     Dispatcher(
             LogBuffer logBuffer,
@@ -51,7 +52,8 @@ public class Dispatcher
             Position publisherPosition,
             Position[] subscriberPositions,
             int logWindowLength,
-            DispatcherContext context)
+            DispatcherContext context,
+            String name)
     {
         this.logBuffer = logBuffer;
         this.logAppender = logAppender;
@@ -59,6 +61,7 @@ public class Dispatcher
         this.publisherPosition = publisherPosition;
         this.logWindowLength = logWindowLength;
         this.context = context;
+        this.name = name;
 
         this.initialPartitionId = logBuffer.getInitialPartitionId();
         this.partitionSize = logBuffer.getPartitionSize();
@@ -87,7 +90,7 @@ public class Dispatcher
         return startFuture;
     }
 
-    public void start() throws InterruptedException
+    public void start()
     {
         startAsync().join();
     }
@@ -414,6 +417,12 @@ public class Dispatcher
     public int getSubscriberCount()
     {
         return subscriptions.length;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Dispatcher ["+name+"]";
     }
 
 }
