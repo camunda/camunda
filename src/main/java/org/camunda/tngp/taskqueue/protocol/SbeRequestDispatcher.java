@@ -36,6 +36,10 @@ public class SbeRequestDispatcher implements AsyncRequestHandler
 
             requestResult = handler.onRequest(buffer, messageBodyOffset, messageBodyLength, response, blockLength, schemaVersion);
         }
+        else
+        {
+            System.err.println("Dropping request, no handler defined");
+        }
 
         return requestResult;
     }

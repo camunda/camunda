@@ -4,7 +4,8 @@ import static org.camunda.tngp.taskqueue.protocol.TaskInstanceState.NEW;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.taskqueue.TaskQueueContext;
+import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.taskqueue.worker.TaskQueueContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
@@ -26,10 +27,15 @@ public class CreateTaskInstanceHandler implements SbeRequestHandler, ResponseCom
     protected final Dispatcher logWriteBuffer;
     protected final DeferredResponsePool responsePool;
 
+    protected byte[] taskTypeReadBuffer = new byte[1024];
+
+    protected IdGenerator taskInstanceIdGenerator;
+
     public CreateTaskInstanceHandler(final TaskQueueContext ctx)
     {
         logWriteBuffer = ctx.getLog().getWriteBuffer();
         responsePool = ctx.getResponsePool();
+        taskInstanceIdGenerator = ctx.getTaskInstanceIdGenerator();
     }
 
     public int getTemplateId()
@@ -45,26 +51,32 @@ public class CreateTaskInstanceHandler implements SbeRequestHandler, ResponseCom
         final int sbeBlockLength,
         final int sbeSchemaVersion)
     {
+        msgDecoder.wrap(msg, offset, sbeBlockLength, sbeSchemaVersion);
         long claimedLogPos = -1;
 
         try
         {
-            claimedLogPos = claimLogFragment(length, sbeBlockLength);
-            // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
-            claimedLogPos -= BitUtil.align(claimedLogFragment.getFragmentLength(), 8);
-
-            if(claimedLogPos >= 0)
+            if(response.allocate(ACK_LENGTH))
             {
-                final long taskInstanceId = claimedLogPos; // TODO: use id generator
+                claimedLogPos = claimLogFragment(length, sbeBlockLength);
+                // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
+                claimedLogPos -= BitUtil.align(claimedLogFragment.getFragmentLength(), 8);
 
-                writeTaskInstance(msg, offset, sbeBlockLength, sbeSchemaVersion, taskInstanceId);
-
-                if(response.allocate(ACK_LENGTH))
+                if (claimedLogPos >= 0)
                 {
+                    final long taskInstanceId = taskInstanceIdGenerator.nextId();
+
+                    writeTaskInstance(msg, offset, sbeBlockLength, sbeSchemaVersion, taskInstanceId);
+
                     writeAck(response, taskInstanceId);
                     response.defer(claimedLogPos, this, null);
+
                     claimedLogFragment.commit();
                 }
+            }
+            else
+            {
+                System.err.println("Could no allocate response");
             }
         }
         finally
@@ -103,19 +115,21 @@ public class CreateTaskInstanceHandler implements SbeRequestHandler, ResponseCom
 
         writeOffset += messageHeaderEncoder.encodedLength();
 
+        final int taskTypeLength = msgDecoder.taskTypeLength();
+        msgDecoder.getTaskType(taskTypeReadBuffer, 0, taskTypeLength);
+        final int taskTypeHashCode = TaskTypeHash.hashCode(taskTypeReadBuffer, taskTypeLength);
+
         taskInstanceEncoder.wrap(writeBuffer, writeOffset);
         taskInstanceEncoder
             .id(taskInstanceId)
             .version(1)
-            .state(NEW);
+            .state(NEW)
+            .taskTypeHash(taskTypeHashCode)
+            .putTaskType(taskTypeReadBuffer, 0, taskTypeLength);
 
         msgDecoder.wrap(msg, readOffset, sbeBlockLength, sbeSchemaVersion);
 
-        readOffset += sbeBlockLength + CreateTaskInstanceDecoder.taskTypeHeaderLength();
-
-        taskInstanceEncoder.putTaskType(msg, readOffset, msgDecoder.taskTypeLength());
-
-        readOffset += msgDecoder.taskTypeLength();
+        readOffset += sbeBlockLength + CreateTaskInstanceDecoder.taskTypeHeaderLength() + taskTypeLength;
 
         msgDecoder.limit(readOffset);
 
@@ -130,20 +144,20 @@ public class CreateTaskInstanceHandler implements SbeRequestHandler, ResponseCom
     {
 
         final MutableDirectBuffer buffer = response.getBuffer();
-        int offset = response.getClaimedOffset();
 
-        messageHeaderEncoder.wrap(buffer, offset);
+        int writeOffset = response.getClaimedOffset();
+
+        messageHeaderEncoder.wrap(buffer, writeOffset);
         messageHeaderEncoder
             .blockLength(ackEncoder.sbeBlockLength())
             .templateId(ackEncoder.sbeTemplateId())
             .schemaId(ackEncoder.sbeSchemaId())
             .version(ackEncoder.sbeSchemaVersion());
 
-        offset += messageHeaderEncoder.encodedLength();
+        writeOffset += messageHeaderEncoder.encodedLength();
 
-        ackEncoder.wrap(buffer, offset);
-        ackEncoder
-            .taskId(taskInstanceId);
+        ackEncoder.wrap(buffer, writeOffset);
+        ackEncoder.taskId(taskInstanceId);
     }
 
     private long claimLogFragment(final int length, final int sbeBlockLength)
@@ -151,7 +165,7 @@ public class CreateTaskInstanceHandler implements SbeRequestHandler, ResponseCom
         long claimedPos;
 
         final int encodedTaskInstanceLength =
-                (length - sbeBlockLength) // length of payload and task type
+                (length - sbeBlockLength) // length of payload and task type (including headers)
                 + taskInstanceEncoder.sbeBlockLength()
                 + messageHeaderEncoder.encodedLength();
 

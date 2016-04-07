@@ -1,95 +1,48 @@
 package org.camunda.tngp.taskqueue;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.camunda.tngp.taskqueue.client.ClientProperties.BROKER_CONTACTPOINT;
 
-import java.net.InetSocketAddress;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
-import static org.camunda.tngp.taskqueue.protocol.CreateTaskInstanceEncoder.*;
-
-import org.camunda.tngp.taskqueue.protocol.AckDecoder;
-import org.camunda.tngp.taskqueue.protocol.CreateTaskInstanceEncoder;
-import org.camunda.tngp.taskqueue.protocol.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.protocol.MessageHeaderEncoder;
-import org.camunda.tngp.transport.ClientChannel;
-import org.camunda.tngp.transport.Transport;
-import org.camunda.tngp.transport.Transports;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
-import org.camunda.tngp.transport.requestresponse.client.TransportRequest;
-
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.camunda.tngp.taskqueue.client.TngpClient;
+import org.camunda.tngp.taskqueue.client.cmd.LockedTask;
+import org.camunda.tngp.taskqueue.client.cmd.LockedTasksBatch;
 
 public class TaskClient
 {
 
     public static void main(String[] args)
     {
-        final CreateTaskInstanceEncoder createTaskInstanceEncoder = new CreateTaskInstanceEncoder();
-        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-        final AckDecoder ackDecoder = new AckDecoder();
-        final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+        final Properties properties = new Properties();
 
-        final Transport clientTransport = Transports.createTransport("client")
-                .build();
+        properties.put(BROKER_CONTACTPOINT, "127.0.0.1:8800");
 
-        final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
-
-        final ClientChannel channel = clientTransport.createClientChannel(new InetSocketAddress("localhost", 8080))
-                .requestResponseChannel(connectionPool)
-                .connect();
-
-        final byte[] taskType = "delete-order".getBytes(UTF_8);
-        final byte[] payload = "{}".getBytes(UTF_8);
-
-        try (final TransportConnection connection = connectionPool.openConnection())
+        try(TngpClient client = TngpClient.create(properties))
         {
-            try (final TransportRequest request = connection.openRequest(channel.getId(),
-                    headerEncoder.encodedLength() +
-                    taskTypeHeaderLength() + taskType.length +
-                    payloadHeaderLength() + payload.length))
-            {
-                if (request != null)
-                {
-                    final MutableDirectBuffer buffer = request.getClaimedRequestBuffer();
-                    int offset = request.getClaimedOffset();
+            client.connect();
 
-                    headerEncoder.wrap(buffer, offset);
-                    headerEncoder
-                            .blockLength(createTaskInstanceEncoder.sbeBlockLength())
-                            .schemaId(createTaskInstanceEncoder.sbeSchemaId())
-                            .templateId(createTaskInstanceEncoder.sbeTemplateId())
-                            .version(createTaskInstanceEncoder.sbeSchemaVersion());
+            Long taskId = client.createAsyncTask()
+                .taskType("create-booking")
+                .payload("{}")
+                .execute();
+            System.out.println("created task with id "+taskId);
 
-                    offset += headerEncoder.encodedLength();
+            LockedTasksBatch lockedTaskBatch = client.pollAndLockTasks()
+                .taskType("create-booking")
+                .lockTime(1, TimeUnit.MINUTES)
+                .maxTasks(1)
+                .execute();
 
-                    createTaskInstanceEncoder.wrap(buffer, offset);
-                    createTaskInstanceEncoder
-                            .putTaskType(taskType, 0, taskType.length)
-                            .putPayload(payload, 0, payload.length);
+            LockedTask lockedTask = lockedTaskBatch.getLockedTasks().get(0);
+            System.out.println("locked task with id "+lockedTask.getId() + " and payload "+lockedTask.getPayloadString());
 
-                    request.commit();
+            taskId = client.completeTask()
+                .taskId(lockedTask.getId())
+                .payload("{\"completed\": true}")
+                .execute();
+            System.out.println("Completed task with id "+taskId);
 
-                    request.awaitResponse();
-
-                    int readOffset = 0;
-
-                    headerDecoder.wrap(request.getResponseBuffer(), readOffset);
-
-                    readOffset += headerDecoder.encodedLength();
-
-                    if(headerDecoder.templateId() == AckDecoder.TEMPLATE_ID)
-                    {
-                        ackDecoder.wrap(request.getResponseBuffer(), readOffset, headerDecoder.blockLength(), headerDecoder.version());
-
-                        System.out.println("Ack for task "+ ackDecoder.taskId());
-                    }
-                }
-            }
-        }
-        finally
-        {
-            connectionPool.close();
-            clientTransport.close();
         }
 
     }

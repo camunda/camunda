@@ -33,6 +33,12 @@
 			<artifactId>transport</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.camunda.tngp</groupId>
+			<artifactId>log-idgenerator</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
 		
 		<dependency>
 			<groupId>uk.co.real-logic</groupId>
