@@ -2,8 +2,8 @@ package org.camunda.tngp.dispatcher;
 
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.Subscription;
@@ -12,23 +12,17 @@ import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 /**
  * Component for sending and receiving messages between different threads.
  *
  */
-public class Dispatcher
+public class Dispatcher implements AutoCloseable
 {
-    public final static int STATUS_NEW = 1;
-    public final static int STATUS_ACTIVE = 2;
-    public final static int STATUS_CLOSE_REQUESTED = 3;
-    public final static int STATUS_CLOSED = 4;
-
-    static final AtomicIntegerFieldUpdater<Dispatcher> STATE_UPDATER
-        = AtomicIntegerFieldUpdater.newUpdater(Dispatcher.class, "state");
-
-    protected volatile int state = STATUS_NEW;
+    public final static int MODE_PUB_SUB = 1;
+    public final static int MODE_PIPELINE = 2;
 
     final DispatcherContext context;
 
@@ -37,7 +31,7 @@ public class Dispatcher
 
     protected final Position publisherLimit;
     protected final Position publisherPosition;
-    protected final Subscription[] subscriptions;
+    protected Subscription[] subscriptions;
 
     protected final int maxFrameLength;
     protected final int partitionSize;
@@ -45,13 +39,15 @@ public class Dispatcher
     protected int logWindowLength;
     protected final String name;
 
+    protected final int mode;
+
     Dispatcher(
             LogBuffer logBuffer,
             LogBufferAppender logAppender,
             Position publisherLimit,
             Position publisherPosition,
-            Position[] subscriberPositions,
             int logWindowLength,
+            int mode,
             DispatcherContext context,
             String name)
     {
@@ -60,6 +56,7 @@ public class Dispatcher
         this.publisherLimit = publisherLimit;
         this.publisherPosition = publisherPosition;
         this.logWindowLength = logWindowLength;
+        this.mode = mode;
         this.context = context;
         this.name = name;
 
@@ -67,37 +64,17 @@ public class Dispatcher
         this.partitionSize = logBuffer.getPartitionSize();
         this.maxFrameLength = partitionSize / 16;
 
-        subscriptions = new Subscription[subscriberPositions.length];
-
-        for(int i = 0; i < subscriberPositions.length; i++)
-        {
-            subscriptions[i] = createSubscription(subscriberPositions[i]);
-        }
-    }
-
-    protected Subscription createSubscription(Position subscriberPosition)
-    {
-        return new Subscription(subscriberPosition);
-    }
-
-    public CompletableFuture<Dispatcher> startAsync()
-    {
-        final CompletableFuture<Dispatcher> startFuture = new CompletableFuture<>();
-
-        context.getDispatcherCommandQueue()
-            .add((conductor) -> conductor.requestStartDispatcher(this, startFuture));
-
-        return startFuture;
-    }
-
-    public void start()
-    {
-        startAsync().join();
+        subscriptions = new Subscription[0];
     }
 
     public long offer(DirectBuffer msg)
     {
         return offer(msg, 0, msg.capacity(), 0);
+    }
+
+    public long offer(DirectBuffer msg, int streamId)
+    {
+        return offer(msg, 0, msg.capacity(), streamId);
     }
 
     public long offer(DirectBuffer msg, int start, int length)
@@ -207,143 +184,53 @@ public class Dispatcher
         return newPosition;
     }
 
-    public int poll(FragmentHandler frgHandler, int maxNumOfFragments)
-    {
-        return poll(0, frgHandler, maxNumOfFragments);
-    }
-
-    public int poll(int subscriberId, FragmentHandler frgHandler, int maxNumOfFragments)
-    {
-        int fragmentsRead = 0;
-
-        final Subscription subscription = subscriptions[subscriberId];
-        final long currentPosition = subscription.getPosition();
-
-        final long limit = subscriberLimit(subscriberId, publisherPosition, subscriptions);
-
-        if(limit > currentPosition)
-        {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
-
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
-
-            fragmentsRead = subscription.pollFragments(partition,
-                    frgHandler,
-                    maxNumOfFragments,
-                    partitionId,
-                    partitionOffset);
-        }
-
-        return fragmentsRead;
-    }
-
-    public int pollBlock(BlockHandler blockHandler, int maxNumOfFragments)
-    {
-        return pollBlock(0, blockHandler, maxNumOfFragments, false);
-    }
-
-    public int pollBlock(BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
-    {
-        return pollBlock(0, blockHandler, maxNumOfFragments, isStreamAware);
-    }
-
-    public int pollBlock(int subscriberId, BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
-    {
-        int fragmentsRead = 0;
-
-        final Subscription subscription = subscriptions[subscriberId];
-        final long currentPosition = subscription.getPosition();
-
-        final long limit = subscriberLimit(subscriberId, publisherPosition, subscriptions);
-
-        if(limit > currentPosition)
-        {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
-
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
-
-            fragmentsRead = subscription.pollBlock(partition,
-                    blockHandler,
-                    maxNumOfFragments,
-                    partitionId,
-                    partitionOffset,
-                    isStreamAware);
-        }
-
-        return fragmentsRead;
-    }
-
-
-    public int peekBlock(
-            int subscriberId,
-            BlockPeek availableBlock,
-            int maxBlockSize,
-            boolean isStreamAware)
-    {
-        int bytesAvailable = 0;
-
-        final Subscription subscription = subscriptions[subscriberId];
-        final long currentPosition = subscription.getPosition();
-
-        final long limit = subscriberLimit(subscriberId, publisherPosition, subscriptions);
-
-        if(limit > currentPosition)
-        {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
-
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
-
-            bytesAvailable = subscription.peekBlock(partition,
-                    availableBlock,
-                    maxBlockSize,
-                    partitionId,
-                    partitionOffset,
-                    isStreamAware);
-        }
-
-        return bytesAvailable;
-    }
-
-    private static long subscriberLimit(
-            int subscriberId,
-            Position publisherPosition,
-            Subscription[] subscriptions)
+    public long subscriberLimit(Subscription subscription)
     {
         long limit = -1;
 
-        if(subscriberId == 0)
+        if(mode == MODE_PUB_SUB)
         {
             limit = publisherPosition.get();
         }
         else
         {
-            limit = subscriptions[subscriberId - 1].getPosition();
+            final int subscriberId = subscription.getSubscriberId();
+            if(subscriberId == 0)
+            {
+                limit = publisherPosition.get();
+            }
+            else
+            {
+                // in pipelining mode, a subscriber's limit is the position of the
+                // previous subscriber
+                limit = subscriptions[subscriberId - 1].getPosition();
+            }
         }
 
         return limit;
     }
 
-    public void close() throws InterruptedException
-    {
-        closeAsync().join();
-    }
-
-    public CompletableFuture<Dispatcher> closeAsync()
-    {
-        final CompletableFuture<Dispatcher> closeFuture = new CompletableFuture<>();
-
-        context.getDispatcherCommandQueue()
-          .add((conductor) -> conductor.requestCloseDispatcher(this, closeFuture));
-
-        return closeFuture;
-    }
-
     public int updatePublisherLimit()
     {
-        final long lastSubscriberPosition = subscriptions[subscriptions.length -1].getPosition();
+        long lastSubscriberPosition = -1;
+
+        if(subscriptions.length > 0)
+        {
+            lastSubscriberPosition = subscriptions[subscriptions.length -1].getPosition();
+
+            if (MODE_PUB_SUB == mode && subscriptions.length > 1)
+            {
+                for (int i = 0; i < subscriptions.length - 1; i++)
+                {
+                    lastSubscriberPosition = Math.min(lastSubscriberPosition, subscriptions[i].getPosition());
+                }
+            }
+        }
+        else
+        {
+            lastSubscriberPosition = publisherLimit.get() - logWindowLength;
+        }
+
         int partitionId = partitionId(lastSubscriberPosition);
         int partitionOffset = partitionOffset(lastSubscriberPosition) + logWindowLength;
         if(partitionOffset >= logBuffer.getPartitionSize())
@@ -362,19 +249,74 @@ public class Dispatcher
         return 0;
     }
 
+    public synchronized Subscription openSubscription()
+    {
+        return doOpenSubscription();
+    }
+
+    public Subscription doOpenSubscription()
+    {
+        final Subscription[] newSubscriptions = new Subscription[subscriptions.length + 1];
+        System.arraycopy(subscriptions, 0, newSubscriptions, 0, subscriptions.length);
+
+        final int subscriberId = newSubscriptions.length -1;
+        final Subscription subscription = new Subscription(new AtomicLongPosition(), subscriberId, this);
+
+        newSubscriptions[subscriberId] = subscription;
+
+        this.subscriptions = newSubscriptions;
+
+        return subscription;
+    }
+
+    public void doCloseSubscription(Subscription subscriptionToClose)
+    {
+        int index = subscriptionToClose.getSubscriberId();
+        int len = subscriptions.length;
+        if(mode == MODE_PIPELINE && index != len -1)
+        {
+            throw new RuntimeException("Cannot close subscriptions out of order when in pipelining mode");
+        }
+
+        for (int i = 0; i < len; i++)
+        {
+            if(subscriptionToClose == subscriptions[i])
+            {
+                index = i;
+                break;
+            }
+        }
+
+        Subscription[] newSubscriptions = null;
+
+        final int numMoved = len - index - 1;
+
+        if (numMoved == 0)
+        {
+            newSubscriptions = Arrays.copyOf(subscriptions, len - 1);
+        }
+        else
+        {
+            newSubscriptions = new Subscription[len - 1];
+            System.arraycopy(subscriptions, 0, newSubscriptions, 0, index);
+            System.arraycopy(subscriptions, index + 1, newSubscriptions, index, numMoved);
+        }
+
+        this.subscriptions = newSubscriptions;
+    }
+
+    public void closeSubscription(Subscription subscriptionToClose)
+    {
+       final CompletableFuture<Void> future = new CompletableFuture<Void>();
+
+       context.getDispatcherCommandQueue().add((d) -> d.closeSubscription(subscriptionToClose, future));
+
+       future.join();
+    }
+
     public LogBuffer getLogBuffer()
     {
         return logBuffer;
-    }
-
-    public int getStatus()
-    {
-        return state;
-    }
-
-    public void setStateOrdered(int state)
-    {
-        STATE_UPDATER.lazySet(this, state);
     }
 
     public void setPublisherLimitOrdered(int limit)
@@ -383,16 +325,8 @@ public class Dispatcher
 
     }
 
-    public boolean isReadyToClose()
+    public void close()
     {
-        final long lastSubscriberPosition = subscriptions[subscriptions.length -1].getPosition();
-        return lastSubscriberPosition == publisherPosition.getVolatile();
-    }
-
-    public void doClose()
-    {
-      setStateOrdered(STATUS_CLOSED);
-
       publisherLimit.close();
       publisherPosition.close();
 
@@ -402,6 +336,7 @@ public class Dispatcher
       }
 
       logBuffer.close();
+      context.close();
     }
 
     public int getMaxFrameLength()

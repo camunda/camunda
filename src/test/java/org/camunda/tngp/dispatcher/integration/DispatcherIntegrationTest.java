@@ -10,9 +10,9 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -65,9 +65,11 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
-                .buildAndStart();
+                .build();
 
         final Consumer consumer = new Consumer();
+
+        final Subscription subscription = dispatcher.openSubscription();
 
 
         final Thread consumerThread = new Thread(new Runnable()
@@ -78,7 +80,7 @@ public class DispatcherIntegrationTest
             {
                 while(consumer.counter < totalWork)
                 {
-                    dispatcher.poll(consumer, Integer.MAX_VALUE);
+                    subscription.poll(consumer, Integer.MAX_VALUE);
                 }
             }
         });
@@ -107,10 +109,11 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
-                .buildAndStart();
+                .build();
 
         final Consumer consumer = new Consumer();
 
+        final Subscription subscription = dispatcher.openSubscription();
 
         final Thread consumerThread = new Thread(new Runnable()
         {
@@ -120,7 +123,7 @@ public class DispatcherIntegrationTest
             {
                 while(consumer.counter < totalWork)
                 {
-                    dispatcher.poll(consumer, Integer.MAX_VALUE);
+                    subscription.poll(consumer, Integer.MAX_VALUE);
                 }
             }
         });
@@ -151,10 +154,11 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
-                .buildAndStart();
+                .build();
 
         final BlockConsumer consumer = new BlockConsumer();
 
+        final Subscription subscription = dispatcher.openSubscription();
 
         final Thread consumerThread = new Thread(new Runnable()
         {
@@ -164,7 +168,7 @@ public class DispatcherIntegrationTest
             {
                 while(consumer.counter < totalWork)
                 {
-                    dispatcher.pollBlock(consumer, 1, false);
+                    subscription.pollBlock(consumer, 1, false);
                 }
             }
         });
@@ -197,7 +201,9 @@ public class DispatcherIntegrationTest
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
-                .buildAndStart();
+                .build();
+
+        final Subscription subscription = dispatcher.openSubscription();
 
         final Thread consumerThread = new Thread(new Runnable()
         {
@@ -208,7 +214,7 @@ public class DispatcherIntegrationTest
                 int counter = 0;
                 while(counter < totalWork)
                 {
-                    while(dispatcher.peekBlock(0, blockPeek, alignedLength(64), false)==0)
+                    while(subscription.peekBlock(blockPeek, alignedLength(64), false)==0)
                     {
 
                     }

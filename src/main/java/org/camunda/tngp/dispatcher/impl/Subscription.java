@@ -7,8 +7,10 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 import java.nio.ByteBuffer;
 
 import org.camunda.tngp.dispatcher.BlockPeek;
+import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -17,10 +19,16 @@ import uk.co.real_logic.agrona.concurrent.status.Position;
 public class Subscription
 {
     protected final Position position;
+    protected final LogBuffer logBuffer;
+    protected final Dispatcher dispatcher;
+    protected final int subscriberId;
 
-    public Subscription(Position position)
+    public Subscription(Position position, int subscriberId, Dispatcher dispatcher)
     {
         this.position = position;
+        this.subscriberId = subscriberId;
+        this.dispatcher = dispatcher;
+        this.logBuffer = dispatcher.getLogBuffer();
     }
 
     public long getPosition()
@@ -28,7 +36,32 @@ public class Subscription
         return position.get();
     }
 
-    public int pollFragments(
+    public int poll(FragmentHandler frgHandler, int maxNumOfFragments)
+    {
+        int fragmentsRead = 0;
+
+        final long currentPosition = position.get();
+
+        final long limit = dispatcher.subscriberLimit(this);
+
+        if(limit > currentPosition)
+        {
+            final int partitionId = partitionId(currentPosition);
+            final int partitionOffset = partitionOffset(currentPosition);
+
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+
+            fragmentsRead = pollFragments(partition,
+                    frgHandler,
+                    maxNumOfFragments,
+                    partitionId,
+                    partitionOffset);
+        }
+
+        return fragmentsRead;
+    }
+
+    protected int pollFragments(
             final LogBufferPartition partition,
             final FragmentHandler frgHandler,
             final int maxNumOfFragments,
@@ -78,7 +111,38 @@ public class Subscription
         return fragmentsRead;
     }
 
-    public int pollBlock(
+    public int pollBlock(BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
+    {
+        return pollBlock(0, blockHandler, maxNumOfFragments, isStreamAware);
+    }
+
+    public int pollBlock(int subscriberId, BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
+    {
+        int fragmentsRead = 0;
+
+        final long currentPosition = position.get();
+
+        final long limit = dispatcher.subscriberLimit(this);
+
+        if(limit > currentPosition)
+        {
+            final int partitionId = partitionId(currentPosition);
+            final int partitionOffset = partitionOffset(currentPosition);
+
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+
+            fragmentsRead = pollBlock(partition,
+                    blockHandler,
+                    maxNumOfFragments,
+                    partitionId,
+                    partitionOffset,
+                    isStreamAware);
+        }
+
+        return fragmentsRead;
+    }
+
+    protected int pollBlock(
             final LogBufferPartition partition,
             final BlockHandler blockHandler,
             final int maxNumOfFragments,
@@ -166,10 +230,40 @@ public class Subscription
 
     public void close()
     {
+        dispatcher.closeSubscription(this);
         position.close();
     }
 
     public int peekBlock(
+            BlockPeek availableBlock,
+            int maxBlockSize,
+            boolean isStreamAware)
+    {
+        int bytesAvailable = 0;
+
+        final long currentPosition = position.get();
+
+        final long limit = dispatcher.subscriberLimit(this);
+
+        if(limit > currentPosition)
+        {
+            final int partitionId = partitionId(currentPosition);
+            final int partitionOffset = partitionOffset(currentPosition);
+
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+
+            bytesAvailable = peekBlock(partition,
+                    availableBlock,
+                    maxBlockSize,
+                    partitionId,
+                    partitionOffset,
+                    isStreamAware);
+        }
+
+        return bytesAvailable;
+    }
+
+    protected int peekBlock(
             final LogBufferPartition partition,
             final BlockPeek availableBlock,
             final int maxBlockSize,
@@ -254,4 +348,8 @@ public class Subscription
         return blockLength;
     }
 
+    public int getSubscriberId()
+    {
+        return subscriberId;
+    }
 }

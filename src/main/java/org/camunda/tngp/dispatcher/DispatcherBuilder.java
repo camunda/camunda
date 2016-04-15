@@ -4,7 +4,6 @@ import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
@@ -20,7 +19,6 @@ import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -51,11 +49,9 @@ public class DispatcherBuilder
 
     protected int frameMaxLength;
 
-    protected int subscriberGroupCount = 1;
-
     protected CountersManager countersManager;
 
-    protected final String dispatcherName;
+    protected String dispatcherName;
 
     protected UnsafeBuffer countersBuffer;
 
@@ -63,9 +59,17 @@ public class DispatcherBuilder
 
     protected DispatcherConductor conductorAgent;
 
+    protected int mode = Dispatcher.MODE_PUB_SUB;
+
     public DispatcherBuilder(String dispatcherName)
     {
         this.dispatcherName = dispatcherName;
+    }
+
+    public DispatcherBuilder name(String name)
+    {
+        this.dispatcherName = name;
+        return this;
     }
 
     /**
@@ -103,7 +107,7 @@ public class DispatcherBuilder
         return this;
     }
 
-    public DispatcherBuilder agentExternallyManaged()
+    public DispatcherBuilder conductorExternallyManaged()
     {
         this.agentExternallyManaged = true;
         return this;
@@ -124,21 +128,6 @@ public class DispatcherBuilder
         return this;
     }
 
-    /**
-     * The number of subscriber groups supported by this dispatcher
-     * For each subscriber group, the dispatcher maintains a position field, indicating the current position of that subscriber group.
-     * Subscribers within the same group are mutually exclusive: if multiple subscribers from the same group poll the dispatcher,
-     * each message will be received by exactly one of the subscribers.
-     *
-     * @param groupCount
-     * @return
-     */
-    public DispatcherBuilder subscriberGroups(int groupCount)
-    {
-        this.subscriberGroupCount = groupCount;
-        return this;
-    }
-
     public DispatcherBuilder countersBuffers(UnsafeBuffer labelsBuffer, UnsafeBuffer countersBuffer)
     {
         this.countersBuffer = countersBuffer;
@@ -146,13 +135,16 @@ public class DispatcherBuilder
         return this;
     }
 
-    public Dispatcher buildAndStart() throws InterruptedException
+    public DispatcherBuilder modePubSub()
     {
-        final Dispatcher dispatcher = build();
+        this.mode = Dispatcher.MODE_PUB_SUB;
+        return this;
+    }
 
-        dispatcher.start();
-
-        return dispatcher;
+    public DispatcherBuilder modePipeline()
+    {
+        this.mode = Dispatcher.MODE_PIPELINE;
+        return this;
     }
 
     public Dispatcher build()
@@ -191,17 +183,11 @@ public class DispatcherBuilder
 
         // allocate the counters
 
-        Position[] subscriberPositions = new Position[subscriberGroupCount];
         Position publisherLimit;
         Position publisherPosition;
 
         if(countersManager != null)
         {
-            for (int i = 0; i < subscriberPositions.length; i++)
-            {
-                int counterId = countersManager.allocate(String.format("net.long_running.dispatcher.%s.subsciber.%d.position", dispatcherName, i));
-                subscriberPositions[i] = new UnsafeBufferPosition(countersBuffer, counterId, countersManager);
-            }
             int publisherPositionCounter = countersManager.allocate(String.format("net.long_running.dispatcher.%s.publisher.position", dispatcherName));
             publisherPosition = new UnsafeBufferPosition(countersBuffer, publisherPositionCounter, countersManager);
             int publisherLimitCounter = countersManager.allocate(String.format("net.long_running.dispatcher.%s.publisher.limit", dispatcherName));
@@ -209,10 +195,6 @@ public class DispatcherBuilder
         }
         else
         {
-            for (int i = 0; i < subscriberPositions.length; i++)
-            {
-                subscriberPositions[i] = new AtomicLongPosition();
-            }
             publisherLimit = new AtomicLongPosition();
             publisherPosition = new AtomicLongPosition();
         }
@@ -225,7 +207,19 @@ public class DispatcherBuilder
         int bufferWindowLength = partitionSize / 4;
 
         final DispatcherContext context = new DispatcherContext();
-        conductorAgent = new DispatcherConductor(dispatcherName, context);
+
+
+        final Dispatcher dispatcher = new Dispatcher(
+            logBuffer,
+            logAppender,
+            publisherLimit,
+            publisherPosition,
+            bufferWindowLength,
+            mode,
+            context,
+            dispatcherName);
+
+        conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
 
         if(!agentExternallyManaged)
         {
@@ -242,15 +236,7 @@ public class DispatcherBuilder
             context.setAgentRunner(conductorRunner);
         }
 
-        return new Dispatcher(
-            logBuffer,
-            logAppender,
-            publisherLimit,
-            publisherPosition,
-            subscriberPositions,
-            bufferWindowLength,
-            context,
-            dispatcherName);
+        return dispatcher;
     }
 
     public DispatcherConductor getConductorAgent()
