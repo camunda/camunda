@@ -6,13 +6,13 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
+import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
 import org.camunda.tngp.transport.impl.agent.TransportConductor;
 
 import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -31,6 +31,7 @@ public class TransportBuilder
     protected final String name;
 
     protected Dispatcher sendBuffer;
+    protected Subscription senderSubscription;
 
     protected int sendBufferSize = 1024 * 1024 * 16;
 
@@ -73,6 +74,12 @@ public class TransportBuilder
         return this;
     }
 
+    public TransportBuilder senderSubscription(Subscription subscription)
+    {
+        this.senderSubscription = subscription;
+        return this;
+    }
+
     public TransportBuilder sendBufferSize(int writeBufferSize)
     {
         this.sendBufferSize = writeBufferSize;
@@ -105,17 +112,8 @@ public class TransportBuilder
         initSender();
         initConductor();
         startAgents();
-        startSendBuffer();
 
         return new Transport(transportContext);
-    }
-
-    protected void startSendBuffer()
-    {
-        if(!sendBufferExternallyManaged)
-        {
-            sendBuffer.start();
-        }
     }
 
     protected void initConductor()
@@ -137,13 +135,20 @@ public class TransportBuilder
 
             this.sendBuffer = dispatcherBuilder.bufferSize(sendBufferSize)
                 .countersManager(countersManager)
-                .agentExternallyManaged()
+                .conductorExternallyManaged()
                 .build();
 
             this.sendBufferConductor = dispatcherBuilder.getConductorAgent();
         }
 
         transportContext.setSendBuffer(sendBuffer);
+
+        if(senderSubscription == null)
+        {
+            senderSubscription = sendBuffer.openSubscription();
+        }
+
+        transportContext.setSenderSubscription(senderSubscription);
     }
 
     protected void initReceiver()

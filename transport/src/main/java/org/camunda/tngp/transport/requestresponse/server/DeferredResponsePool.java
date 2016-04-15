@@ -73,7 +73,7 @@ public class DeferredResponsePool implements BlockHandler
 
                     flyweight.wrap(buffer, messageOffset, length);
 
-                    msg.resolve(flyweight, messageOffset, length);
+                    msg.resolve(flyweight, messageOffset, length, blockPosition);
                 }
                 finally
                 {

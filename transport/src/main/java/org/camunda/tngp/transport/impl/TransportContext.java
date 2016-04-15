@@ -1,6 +1,7 @@
 package org.camunda.tngp.transport.impl;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
@@ -15,6 +16,7 @@ public class TransportContext
     protected ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
 
     protected Dispatcher sendBuffer;
+    protected Subscription senderSubscription;
 
     protected int maxMessageLength;
 
@@ -28,6 +30,16 @@ public class TransportContext
     public Dispatcher getSendBuffer()
     {
         return sendBuffer;
+    }
+
+    public Subscription getSenderSubscription()
+    {
+        return senderSubscription;
+    }
+
+    public void setSenderSubscription(Subscription senderSubscription)
+    {
+        this.senderSubscription = senderSubscription;
     }
 
     public ManyToOneConcurrentArrayQueue<ReceiverCmd> getReceiverCmdQueue()

@@ -77,11 +77,11 @@ public class DeferredResponse
         return this;
     }
 
-    public void resolve(DirectBuffer asyncWorkBuffer, int offset, int length)
+    public void resolve(DirectBuffer asyncWorkBuffer, int offset, int length, long blockPosition)
     {
         if(claimedFragment.isOpen() && isDeferred())
         {
-            completionHandler.onAsyncWorkCompleted(this, asyncWorkBuffer, offset, length, attachement);
+            completionHandler.onAsyncWorkCompleted(this, asyncWorkBuffer, offset, length, attachement, blockPosition);
         }
     }
 

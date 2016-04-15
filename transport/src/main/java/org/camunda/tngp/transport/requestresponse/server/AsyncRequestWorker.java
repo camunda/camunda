@@ -1,14 +1,12 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.dispatcher.impl.Subscription;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
 /**
- * Base class for implementing asynchronous request/response server workers processing requests which block on i/o.
+ * Base class for implementing asynchronous request/response server workers processing requests which need to wait on async i/o.
  *<p />
  * Setup:
  * <ul>
@@ -34,24 +32,28 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
  * <li>after that the response is committed</li>
  * </ul>
  */
-public class AsyncWorker implements Agent
+public class AsyncRequestWorker implements Agent
 {
     protected final String name;
 
-    protected final MessageHandler fragmentHandler;
-    protected final OneToOneRingBuffer requestBuffer;
-    protected final Dispatcher asyncWorkBuffer;
+    protected final FragmentHandler fragmentHandler;
+    protected final Subscription requestSubscription;
+    protected final Subscription asyncWorkCompletionSubscription;
     protected final DeferredResponsePool responsePool;
-    protected final int subscriberId;
 
-    public AsyncWorker(String name, AsyncWorkerContext context)
+    protected final WorkerTask[] workerTasks;
+
+    protected final AsyncRequestWorkerContext context;
+
+    public AsyncRequestWorker(String name, AsyncRequestWorkerContext context)
     {
         this.name = name;
+        this.context = context;
         this.fragmentHandler = new RequestFragmentHandler(context);
-        this.asyncWorkBuffer = context.getAsyncWorkBuffer();
-        this.requestBuffer = context.getRequestBuffer();
+        this.asyncWorkCompletionSubscription = context.getAsyncWorkBufferSubscription();
+        this.requestSubscription = context.getRequestBufferSubscription();
         this.responsePool = context.getResponsePool();
-        this.subscriberId = asyncWorkBuffer.getSubscriberCount() -1;
+        this.workerTasks = context.getWorkerTasks();
     }
 
     public int doWork() throws Exception
@@ -63,13 +65,22 @@ public class AsyncWorker implements Agent
         if(pooledResponseCount > 0)
         {
             // poll for as many incoming requests as pooled responses are available
-            workCount += requestBuffer.read(fragmentHandler, pooledResponseCount);
+            workCount += requestSubscription.poll(fragmentHandler, pooledResponseCount);
         }
 
         // poll for completion on the work buffer to send out deferred responses
-        while(asyncWorkBuffer.pollBlock(subscriberId, responsePool, responsePool.getCapacity(), false) > 0)
+        while(asyncWorkCompletionSubscription.pollBlock(responsePool, 1, false) > 0)
         {
             ++workCount;
+        }
+
+        // run additional tasks
+        if(workerTasks != null)
+        {
+            for (int i = 0; i < workerTasks.length; i++)
+            {
+                workCount += workerTasks[i].execute(context);
+            }
         }
 
         return workCount;

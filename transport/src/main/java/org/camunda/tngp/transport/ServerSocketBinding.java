@@ -8,4 +8,7 @@ public interface ServerSocketBinding extends AutoCloseable
     InetSocketAddress getBindAddress();
 
     CompletableFuture<ServerSocketBinding> closeAsync();
+
+    @Override
+    void close();
 }

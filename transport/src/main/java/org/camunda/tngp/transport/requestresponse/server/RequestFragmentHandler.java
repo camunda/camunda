@@ -1,10 +1,10 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.connectionIdOffset;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.headerLength;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.requestIdOffset;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.camunda.tngp.dispatcher.FragmentHandler;
+
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 
 /**
@@ -12,24 +12,24 @@ import uk.co.real_logic.agrona.concurrent.MessageHandler;
  * Decodes the request headers, opens a deferred response and invokes the {@link AsyncRequestHandler}.
  *
  */
-class RequestFragmentHandler implements MessageHandler
+class RequestFragmentHandler implements FragmentHandler
 {
     protected final DeferredResponsePool responsePool;
     protected final AsyncRequestHandler asyncRequestHandler;
 
-    public RequestFragmentHandler(AsyncWorkerContext context)
+    public RequestFragmentHandler(AsyncRequestWorkerContext context)
     {
         this.responsePool = context.getResponsePool();
         this.asyncRequestHandler = context.getRequestHandler();
     }
 
     @Override
-    public void onMessage(int channelId, MutableDirectBuffer buffer, int index, int length)
+    public void onFragment(DirectBuffer buffer, int offset, int length, int channelId)
     {
-        final long connectionId = buffer.getLong(connectionIdOffset(index));
-        final long requestId = buffer.getLong(requestIdOffset(index));
+        final long connectionId = buffer.getLong(connectionIdOffset(offset));
+        final long requestId = buffer.getLong(requestIdOffset(offset));
 
-        final int requestOffset = index + headerLength();
+        final int requestOffset = offset + headerLength();
         final int requestLength = length - headerLength();
 
         DeferredResponse response = responsePool.open(channelId, connectionId, requestId);

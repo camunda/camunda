@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.camunda.tngp.dispatcher.BlockHandler;
-import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.impl.TransportChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
@@ -25,7 +25,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
     protected final List<TransportChannelImpl> channelsWithControlFrames;
 
-    protected final Dispatcher sendBuffer;
+    protected final Subscription senderSubscription;
 
     protected TransportChannelHandler channelHandler;
 
@@ -34,7 +34,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
     public Sender(TransportContext context)
     {
         cmdQueue = context.getSenderCmdQueue();
-        sendBuffer = context.getSendBuffer();
+        senderSubscription = context.getSenderSubscription();
         channelMap = new Int2ObjectHashMap<>();
         channelsWithControlFrames = new ArrayList<>(10);
     }
@@ -48,7 +48,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
         workCount += sendControlFrames();
 
         // 99 = totally arbitrary number.
-        workCount += sendBuffer.pollBlock(this, 99, true);
+        workCount += senderSubscription.pollBlock(this, 99, true);
 
         return workCount;
     }

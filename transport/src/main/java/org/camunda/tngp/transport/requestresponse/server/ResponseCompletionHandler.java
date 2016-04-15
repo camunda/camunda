@@ -13,7 +13,8 @@ public interface ResponseCompletionHandler
             DirectBuffer asyncWorkBuffer,
             int offset,
             int length,
-            Object attachement);
+            Object attachement,
+            long blockPosition);
 
     void onAsyncWorkFailed(
             DeferredResponse response,
