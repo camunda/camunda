@@ -1,0 +1,38 @@
+# Default TNGP Config File. Used if no config file is provided to the broker.
+
+# Networking configuration ----------------------------
+
+[network]
+hostname = "0.0.0.0"
+sendBufferSize = 16
+
+[network.clientApi]
+port = 8880
+receiveBufferSize = 16
+
+# System Configuration --------------------------------
+
+[threading]
+numberOfThreads = 2
+
+# Log Configuration -----------------------------------
+
+[logs]
+writeBufferSize = 16
+defaultLogSegmentSize = 512
+
+[[log]]
+name = "default-task-queue-log"
+id = 0
+useTempLogDirectory = true
+
+# Task Queues ------------------------------------------
+
+[task-queues]
+numberOfWorkers = 1
+perWorkerResponsePoolCapacity = 32
+
+[[task-queue]]
+name = "default"
+id = 0
+logName = "default-task-queue-log"

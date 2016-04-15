@@ -20,3 +20,5 @@ faces-config.NavData
 
 *.DS_Store
 .gradle
+
+work/
