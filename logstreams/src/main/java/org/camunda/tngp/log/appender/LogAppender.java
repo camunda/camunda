@@ -1,41 +1,40 @@
 package org.camunda.tngp.log.appender;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.log.LogContext;
+import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogAgentContext;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 import org.camunda.tngp.log.fs.AppendableLogSegment;
 
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogAppender implements Agent, Consumer<LogAppenderCmd>
 {
     private static final String NAME = "log-appender";
 
-    protected final LogSegmentAllocationDescriptor logAllocationDescriptor;
+    protected final ManyToOneConcurrentArrayQueue<LogConductorCmd> toLogConductorCmdQueue;
 
-    protected final OneToOneConcurrentArrayQueue<LogConductorCmd> toLogConductorCmdQueue;
+    protected final ManyToOneConcurrentArrayQueue<LogAppenderCmd> cmdQueue;
 
-    protected final OneToOneConcurrentArrayQueue<LogAppenderCmd> cmdQueue;
+    protected final Int2ObjectHashMap<LogAppendHandler> appendHandlers = new Int2ObjectHashMap<>();
 
-    protected final Dispatcher writeBuffer;
+    protected Subscription appenderSubsciption;
 
     protected final BlockPeek blockPeek;
 
-    protected AppendableLogSegment currentSegment;
-    protected AppendableLogSegment nextSegment;
-
     protected int maxAppendSize = 1024 * 1024;
 
-    public LogAppender(LogContext context)
+    public LogAppender(LogAgentContext context)
     {
-        logAllocationDescriptor = context.getLogAllocationDescriptor();
         toLogConductorCmdQueue = context.getLogConductorCmdQueue();
         cmdQueue = context.getAppenderCmdQueue();
-        writeBuffer = context.getWriteBuffer();
+        appenderSubsciption = context.getWriteBuffer().openSubscription();
         blockPeek = new BlockPeek();
     }
 
@@ -52,35 +51,28 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
 
         workCount += cmdQueue.drain(this);
 
-        if(currentSegment != null)
-        {
-            workCount += doAppend();
-        }
+        workCount += poll();
 
         return workCount;
     }
 
-    protected int doAppend()
+    protected int poll()
     {
-        final int bytesAvailable = writeBuffer.peekBlock(0, blockPeek, maxAppendSize, false);
-
         int bytesWritten = 0;
+
+        final int bytesAvailable = appenderSubsciption.peekBlock(blockPeek, maxAppendSize, true);
 
         if(bytesAvailable > 0)
         {
-            int newTail = currentSegment.append(blockPeek.getBuffer());
+            final LogAppendHandler logAppendHandler = appendHandlers.get(blockPeek.getStreamId());
 
-            if(newTail == -2)
+            if(logAppendHandler != null)
             {
-                onSegmentFilled();
-            }
-            else if(newTail > 0)
-            {
-                blockPeek.markCompleted();
-                bytesWritten = bytesAvailable;
+                bytesWritten = logAppendHandler.append(blockPeek, this);
             }
             else
             {
+                System.err.println("Could not find append handler for log with id "+blockPeek.getStreamId());
                 blockPeek.markFailed();
             }
         }
@@ -88,46 +80,24 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
         return bytesWritten;
     }
 
-    protected void onSegmentFilled()
+    protected void requestAllocateNextSegment(Log log, int nextSegmentId)
     {
-        if(nextSegment != null)
-        {
-            final AppendableLogSegment filledSegement = currentSegment;
-            toLogConductorCmdQueue.add((c) ->
-            {
-                c.closeSegment(filledSegement);
-            });
-
-            currentSegment = nextSegment;
-
-            allocateNextSegment();
-        }
-    }
-
-    public void init(AppendableLogSegment appendableLogSegment)
-    {
-        currentSegment = appendableLogSegment;
-        allocateNextSegment();
-    }
-
-    protected void allocateNextSegment()
-    {
-        final int nextSegmentId = 1 + currentSegment.getSegmentId();
-
         toLogConductorCmdQueue.add((c) ->
         {
-           c.allocate(nextSegmentId);
+           c.allocateSegment(log, nextSegmentId);
         });
     }
 
-    public void onNextSegmentAllocated(AppendableLogSegment segment)
+    public void onNextSegmentAllocated(Log log, AppendableLogSegment segment)
     {
-        nextSegment = segment;
+        log.getLogAppendHandler()
+            .onNextSegmentAllocated(segment);
     }
 
-    public void onNextSegmentAllocationFailed()
+    public void onNextSegmentAllocationFailed(Log log)
     {
-        nextSegment = null;
+        log.getLogAppendHandler()
+            .onNextSegmentAllocationFailed();
     }
 
     @Override
@@ -136,17 +106,24 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
         t.execute(this);
     }
 
-    @Override
-    public void onClose()
+    public void onLogOpened(Log log)
     {
-        if(currentSegment != null)
+        final LogAppendHandler logAppendHandler = log.getLogAppendHandler();
+        this.appendHandlers.put(log.getId(), logAppendHandler);
+
+        logAppendHandler.allocateNextSegment(this);
+    }
+
+    public void onLogClosed(Log log, CompletableFuture<Log> future)
+    {
+        try
         {
-            currentSegment.closeSegment();
+            final LogAppendHandler appendHandler = this.appendHandlers.remove(log.getId());
+            appendHandler.close();
         }
-        if(nextSegment != null)
+        finally
         {
-            nextSegment.closeSegment();
-            nextSegment.delete();
+            future.complete(log);
         }
     }
 

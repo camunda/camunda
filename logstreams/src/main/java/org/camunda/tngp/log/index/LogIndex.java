@@ -10,11 +10,9 @@ import org.camunda.tngp.log.LogFragmentHandler;
  * A log index
  *
  */
-public class LogIndex
+public class LogIndex<I extends HashIndex>
 {
-    protected HashIndex index;
-
-    protected LogEntryIndexer indexer;
+    protected I index;
 
     protected long indexerPosition = 0;
 
@@ -29,7 +27,6 @@ public class LogIndex
         }
     };
 
-
     public LogIndex(
             final Log log,
             final LogEntryIndexer indexer,
@@ -38,6 +35,7 @@ public class LogIndex
         this.log = log;
         this.indexer = indexer;
         this.index = index;
+        this.indexerPosition = log.getInitialPosition();
     }
 
     public void setIndexerPosition(long indexerPosition)
@@ -62,6 +60,11 @@ public class LogIndex
         }
         while(pollPosition > 0);
 
+    }
+
+    public HashIndex getIndex()
+    {
+        return index;
     }
 
 }

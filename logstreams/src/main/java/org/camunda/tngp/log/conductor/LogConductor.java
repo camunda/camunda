@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogContext;
+import org.camunda.tngp.log.LogAgentContext;
 import org.camunda.tngp.log.appender.LogAppenderCmd;
 import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.fs.AppendableLogSegment;
@@ -18,26 +17,19 @@ import org.camunda.tngp.log.fs.ReadableLogSegment;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogConductor implements Agent, Consumer<LogConductorCmd>
 {
+    protected final ManyToOneConcurrentArrayQueue<LogConductorCmd> cmdQueue;
+    protected final ManyToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue;
+    protected final LogAgentContext agentContext;
 
-    protected final OneToOneConcurrentArrayQueue<LogConductorCmd> cmdQueue;
-    protected final OneToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue;
-
-    protected final LogSegmentAllocationDescriptor logAllocationDescriptor;
-    protected final LogSegments availableSegments;
-
-    protected LogContext logContext;
-
-    public LogConductor(LogContext logContext)
+    public LogConductor(LogAgentContext agentContext)
     {
-        this.logContext = logContext;
-        cmdQueue = logContext.getLogConductorCmdQueue();
-        appenderCmdQueue = logContext.getAppenderCmdQueue();
-        availableSegments = logContext.getLogSegments();
-        logAllocationDescriptor = logContext.getLogAllocationDescriptor();
+        this.agentContext = agentContext;
+        this.cmdQueue = agentContext.getLogConductorCmdQueue();
+        this.appenderCmdQueue = agentContext.getAppenderCmdQueue();
     }
 
     public int doWork() throws Exception
@@ -60,33 +52,32 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         c.execute(this);
     }
 
-    public void allocate(int segmentId)
+    public void allocateSegment(Log log, int segmentId)
     {
-        final String fileName = logAllocationDescriptor.fileName(segmentId);
+        final LogSegmentAllocationDescriptor allocationDescriptor = log.getAllocationDescriptor();
+        final LogSegments logSegements = log.getLogSegments();
+
+        final String fileName = allocationDescriptor.fileName(segmentId);
         final AppendableLogSegment appendableSegment = new AppendableLogSegment(fileName);
         final ReadableLogSegment readableSegment = new ReadableLogSegment(fileName);
 
-        if(appendableSegment.allocate(segmentId, logAllocationDescriptor.getSegmentSize())
+        if(appendableSegment.allocate(segmentId, allocationDescriptor.getSegmentSize())
                 && readableSegment.openSegment(false))
         {
-            appenderCmdQueue.add((a) ->
-            {
-                a.onNextSegmentAllocated(appendableSegment);
-            });
-
-            availableSegments.addSegment(readableSegment);
+            appenderCmdQueue.add((a) -> a.onNextSegmentAllocated(log, appendableSegment));
+            logSegements.addSegment(readableSegment);
         }
         else
         {
-            appenderCmdQueue.add((a) ->
-            {
-                a.onNextSegmentAllocationFailed();
-            });
+            appenderCmdQueue.add((a) -> a.onNextSegmentAllocationFailed(log));
         }
     }
 
     public void openLog(CompletableFuture<Log> future, Log log)
     {
+        final LogSegmentAllocationDescriptor logAllocationDescriptor = log.getAllocationDescriptor();
+        final LogSegments availableSegments = log.getLogSegments();
+
         final String path = logAllocationDescriptor.getPath();
         final List<ReadableLogSegment> readableLogSegments = new ArrayList<>();
         final File logDir = new File(path);
@@ -161,55 +152,63 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         final ReadableLogSegment[] segmentsArray = readableLogSegments.toArray(new ReadableLogSegment[0]);
         availableSegments.init(initialSegmentId, segmentsArray);
 
-        appenderCmdQueue.add(new InitAppenderCmd(appendableLogSegment));
+        log.getLogAppendHandler().init(appendableLogSegment);
+        appenderCmdQueue.add((a) -> a.onLogOpened(log));
 
         future.complete(log);
     }
 
-    public void closeLog(final Log log, final CompletableFuture<Log> future)
+    public void closeLog(Log log, final CompletableFuture<Log> future)
     {
-        this.logContext.getWriteBuffer().closeAsync()
-        .whenComplete((d,t) ->
+        try
         {
-            onWriteBufferClosed(future, log, t);
-        });
+            log.getLogSegments().closeAll();
+        }
+        finally
+        {
+            appenderCmdQueue.add((a) -> a.onLogClosed(log, future));
+        }
     }
 
-    protected void onWriteBufferClosed(final CompletableFuture<Log> future, Log log, final Throwable writeBufferCloseException)
+    public CompletableFuture<Void> close()
+    {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        cmdQueue.add((c) -> c.close(future));
+
+        return future;
+    }
+
+    public void close(final CompletableFuture<Void> future)
     {
         final Thread closeThread = new Thread("log-closer-thread")
         {
             @Override
             public void run() {
 
+                if(!agentContext.isWriteBufferExternallyManaged())
+                {
+                    agentContext.getWriteBuffer().close();
+                }
+
                 try
                 {
-                    availableSegments.closeAll();
-
-                    for (AgentRunner agentRunner : logContext.getAgentRunners())
+                    AgentRunner[] agentRunners = agentContext.getAgentRunners();
+                    if(agentRunners != null)
                     {
-                        agentRunner.close();
+                        for (AgentRunner agentRunner : agentRunners)
+                        {
+                            agentRunner.close();
+                        }
                     }
                 }
                 finally
                 {
-                    if(writeBufferCloseException == null)
-                    {
-                        future.complete(log);
-                    }
-                    else
-                    {
-                        future.completeExceptionally(writeBufferCloseException);
-                    }
+                    future.complete(null);
                 }
             }
         };
 
         closeThread.start();
-    }
-
-    public void closeSegment(AppendableLogSegment segment)
-    {
-        segment.closeSegment();
     }
 }

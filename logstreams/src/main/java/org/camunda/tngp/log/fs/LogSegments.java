@@ -10,15 +10,13 @@ public class LogSegments
 
     protected ReadableLogSegment[] segments = new ReadableLogSegment[0];
 
-    protected volatile boolean isInitialized = false;
+    protected volatile int segmentCount = 0;
 
     public void init(int initalSegmentId, ReadableLogSegment[] initialSegments)
     {
         this.segments = initialSegments;
         this.initalSegmentId = initalSegmentId;
-
-        // volatile store flushes both stores above
-        isInitialized = true;
+        this.segmentCount = initialSegments.length; // volatile store
     }
 
     /**
@@ -30,9 +28,9 @@ public class LogSegments
 
         System.arraycopy(segments, 0, newSegments, 0, segments.length);
         newSegments[segments.length] = segment;
+        this.segments = newSegments;
 
-        // lazy set the new segment array
-        segments = newSegments;
+        this.segmentCount = newSegments.length; // volatile store
     }
 
     public ReadableLogSegment getSegment(int segmentId)
@@ -41,7 +39,7 @@ public class LogSegments
 
         final int segmentIdx = segmentId - initalSegmentId;
 
-        if(0 <= segmentIdx && segmentIdx < segments.length)
+        if(0 <= segmentIdx && segmentIdx < segmentCount)
         {
             return segments[segmentIdx];
         }
@@ -51,37 +49,88 @@ public class LogSegments
         }
     }
 
+    public int getSegmentCount()
+    {
+        return segmentCount;
+    }
+
     public long getInitialPosition()
     {
         long initialPosition = -1;
 
-        if(isInitialized)
+        if(segmentCount > 0)
         {
             final ReadableLogSegment[] segments = this.segments;
-
-            if(segments.length > 0)
-            {
-                initialPosition = position(segments[0].getSegmentId(), METADATA_LENGTH);
-            }
+            initialPosition = position(segments[0].getSegmentId(), METADATA_LENGTH);
 
         }
         return initialPosition;
     }
 
+    public long getLastPosition()
+    {
+        final int segmentCount = this.segmentCount; // volatile load
+
+        long lastPosition = -1;
+
+        if(segmentCount > 0)
+        {
+            ReadableLogSegment lastSegment = this.segments[segmentCount - 1];
+            lastPosition = position(lastSegment.getSegmentId(), lastSegment.getTailVolatile());
+        }
+        return lastPosition;
+    }
+
     public boolean isInitialized()
     {
-        return isInitialized;
+        return segmentCount > 0;
     }
 
     public void closeAll()
     {
         final ReadableLogSegment[] segments = this.segments;
         this.segments = new ReadableLogSegment[0];
-        this.isInitialized = false;
+        this.segmentCount = 0;
 
         for (ReadableLogSegment readableLogSegment : segments)
         {
             readableLogSegment.closeSegment();
         }
+    }
+
+    public int[] getSegmentIds()
+    {
+        final int[] segmentIds = new int[segmentCount];
+
+        for (int i = 0; i < segmentIds.length; i++)
+        {
+            segmentIds[i] = segments[i].getSegmentId();
+        }
+
+        return segmentIds;
+    }
+
+    public long getFirstPosition(int segmentId)
+    {
+        final ReadableLogSegment segment = getSegment(segmentId);
+
+        if(segment != null)
+        {
+            return position(segment.getSegmentId(), METADATA_LENGTH);
+        }
+
+        return  -1;
+    }
+
+    public long getLastPosition(int segmentId)
+    {
+        final ReadableLogSegment segment = getSegment(segmentId);
+
+        if(segment != null)
+        {
+            return position(segment.getSegmentId(), segment.getTailVolatile());
+        }
+
+        return  -1;
     }
 }

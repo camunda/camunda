@@ -25,6 +25,10 @@ public class TestLogAppender
 
         public void onFragment(long position, FileChannel fileChannel, int offset, int length)
         {
+            if(length != MSG_SIZE)
+            {
+                throw new RuntimeException("length incorrect. Expected "+MSG_SIZE + " got "+length);
+            }
             buffer.position(0);
             buffer.limit(length);
             try
@@ -49,7 +53,7 @@ public class TestLogAppender
     {
         ensureLogDirCreated();
 
-        final Log log = Logs.createLog("foo")
+        final Log log = Logs.createLog("foo", 0)
             .logRootPath("/tmp/logs")
             .logSegmentSize(1024 * 1024 * 512)
             .writeBufferSize(1024 * 1024 * 128)
@@ -69,7 +73,7 @@ public class TestLogAppender
         for (int i = 0; i < totalWork; i++)
         {
             msg.putInt(0, i);
-            if(writeBuffer.offer(msg) < 0)
+            if(writeBuffer.offer(msg, log.getId()) < 0)
             {
                 i--;
             }

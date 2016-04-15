@@ -7,7 +7,6 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.camunda.tngp.log.util.FileChannelUtil;

@@ -1,31 +1,42 @@
 package org.camunda.tngp.log;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.log.appender.LogAppenderCmd;
+import org.camunda.tngp.log.appender.LogAppendHandler;
 import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 import org.camunda.tngp.log.fs.LogSegments;
 
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogContext
 {
-    protected OneToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue = new OneToOneConcurrentArrayQueue<>(10);
+    protected final int id;
+    protected final String name;
 
-    protected OneToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue = new OneToOneConcurrentArrayQueue<>(10);
+    protected ManyToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue;
 
     protected LogSegmentAllocationDescriptor logAllocationDescriptor;
 
     protected Dispatcher writeBuffer;
 
-    protected AgentRunner[] agentRunners;
-
     protected LogSegments logSegments = new LogSegments();
 
-    public OneToOneConcurrentArrayQueue<LogConductorCmd> getLogConductorCmdQueue()
+    protected LogAppendHandler logAppendHandler = new LogAppendHandler();
+
+    public LogContext(String name, int id)
+    {
+        this.name = name;
+        this.id = id;
+    }
+
+    public ManyToOneConcurrentArrayQueue<LogConductorCmd> getLogConductorCmdQueue()
     {
         return logConductorCmdQueue;
+    }
+
+    public void setLogConductorCmdQueue(ManyToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue)
+    {
+        this.logConductorCmdQueue = logConductorCmdQueue;
     }
 
     public LogSegmentAllocationDescriptor getLogAllocationDescriptor()
@@ -48,16 +59,6 @@ public class LogContext
         this.writeBuffer = writeBuffer;
     }
 
-    public void setAgentRunners(AgentRunner[] agentRunners)
-    {
-        this.agentRunners = agentRunners;
-    }
-
-    public AgentRunner[] getAgentRunners()
-    {
-        return agentRunners;
-    }
-
     public LogSegments getLogSegments()
     {
         return logSegments;
@@ -68,13 +69,18 @@ public class LogContext
         this.logSegments = availableSegments;
     }
 
-    public OneToOneConcurrentArrayQueue<LogAppenderCmd> getAppenderCmdQueue()
+    public String getName()
     {
-        return appenderCmdQueue;
+        return name;
     }
 
-    public void setAppenderCmdQueue(OneToOneConcurrentArrayQueue<LogAppenderCmd> appenderCmdQueue)
+    public int getId()
     {
-        this.appenderCmdQueue = appenderCmdQueue;
+        return id;
+    }
+
+    public LogAppendHandler getLogAppendHandler()
+    {
+        return logAppendHandler;
     }
 }

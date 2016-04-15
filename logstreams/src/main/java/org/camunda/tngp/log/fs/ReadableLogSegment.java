@@ -134,7 +134,7 @@ public class ReadableLogSegment extends LogSegment
     protected int notifyFragmentHandler(
             final int offset,
             final LogFragmentHandler fragmentHandler,
-            final int fragmentLength)
+            final int msgLength)
     {
         final int segmentId = getSegmentId();
         final int fragmentOffset = messageOffset(offset);
@@ -148,9 +148,9 @@ public class ReadableLogSegment extends LogSegment
                     fragmentPosition,
                     fileChannel,
                     fragmentOffset,
-                    fragmentLength);
+                    msgLength);
 
-            nextOffset = offset + alignedLength(fragmentLength);
+            nextOffset = offset + alignedLength(msgLength);
         }
         catch (Exception e)
         {
