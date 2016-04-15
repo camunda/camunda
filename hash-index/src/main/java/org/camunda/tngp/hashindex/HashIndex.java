@@ -1,93 +1,79 @@
 package org.camunda.tngp.hashindex;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-import static uk.co.real_logic.agrona.collections.Hashing.*;
-
-import org.camunda.tngp.hashindex.IndexValueReader.IntValueReader;
-import org.camunda.tngp.hashindex.IndexValueReader.LongValueReader;
-import org.camunda.tngp.hashindex.IndexValueWriter.IntValueWriter;
-import org.camunda.tngp.hashindex.IndexValueWriter.LongValueWriter;
-
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+
 /**
- * Simple index data structure with long keys and extensible hashing.
+ * Simple index data structure using extensible hashing.
  * Data structure is not threadsafe
  */
-public class HashIndex
+public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 {
     protected final MutableDirectBuffer indexBuffer;
     protected final MutableDirectBuffer blockBuffer;
 
     protected final PutVisitor putVisitor = new PutVisitor();
     protected final GetVisitor getVisitor = new GetVisitor();
-    protected final SplitVisitor splitVisitor = new SplitVisitor();
+    protected final SplitVisitor splitVisitor;
 
-    protected final IntValueReader intValueReader = new IntValueReader();
-    protected final IntValueWriter intValueWriter = new IntValueWriter();
-    protected final LongValueReader longValueReader = new LongValueReader();
-    protected final LongValueWriter longValueWriter = new LongValueWriter();
-
-    public HashIndex(MutableDirectBuffer indexBuffer, MutableDirectBuffer dataBuffer)
-    {
-        this.indexBuffer = indexBuffer;
-        this.blockBuffer = dataBuffer;
-    }
+    protected K keyHandler;
+    protected V valueHandler;
 
     public HashIndex(
+            Class<K> keyHandlerType,
+            Class<V> valueHandlerType,
             MutableDirectBuffer indexBuffer,
             MutableDirectBuffer dataBuffer,
             int indexSize,
             int blockLength,
+            int keyLength,
             int valueLength)
     {
-       this(indexBuffer, dataBuffer);
+        this.indexBuffer = indexBuffer;
+        this.blockBuffer = dataBuffer;
+        this.splitVisitor = new SplitVisitor(crateKeyHandlerInstance(keyHandlerType, keyLength));
+        this.keyHandler = crateKeyHandlerInstance(keyHandlerType, keyLength);
+        this.valueHandler = createInstance(valueHandlerType);
 
-       // init metadata
-       indexSize(indexSize);
-       blockLength(blockLength);
-       recordLength(framedRecordLength(valueLength));
+        // init metadata
+        indexSize(indexSize);
+        blockLength(blockLength);
+        recordKeyLength(keyLength);
+        recordValueLength(valueLength);
 
-       // create first block
-       blockFillCount(0, 0);
-       blockId(0, 0);
-       blockDepth(0, 0);
-       blockCount(1);
+        // create first block
+        blockFillCount(0, 0);
+        blockId(0, 0);
+        blockDepth(0, 0);
+        blockCount(1);
     }
 
-    public boolean get(long key, IndexValueReader valueReader)
+    private K crateKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)
     {
-        final int blockOffset = hashKeyToBlock(key);
-
-        getVisitor.init(valueReader, key);
-        scanBlock(blockOffset, getVisitor);
-
-        return getVisitor.wasRecordFound;
+        final K keyHandler = createInstance(keyHandlerType);
+        keyHandler.setKeyLength(keyLength);
+        return keyHandler;
     }
 
-    public long getLong(long key, long missingValue)
-    {
-        longValueReader.theValue = missingValue;
-        get(key, longValueReader);
-        return longValueReader.theValue;
+    private static <T> T createInstance(final Class<T> type){
+        try
+        {
+            return type.newInstance();
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            throw new RuntimeException("Could not instantiate "+type, e);
+        }
     }
 
-    public boolean put(long key, long value)
+    protected boolean put()
     {
-        longValueWriter.theValue = value;
-        return put(key, longValueWriter);
-    }
+        final int keyHashCode = keyHandler.keyHashCode();
+        final int blockOffset = blockForHashCode(keyHashCode);
 
-    /**
-     * Return true if the put updated an existing entry
-     */
-    public boolean put(long key, IndexValueWriter valueWriter)
-    {
-        final int blockOffset = hashKeyToBlock(key);
-
-        putVisitor.init(key, valueWriter, blockOffset);
+        putVisitor.init(keyHandler, valueHandler, blockOffset);
         scanBlock(blockOffset, putVisitor);
 
         final boolean updated = putVisitor.recordUpdated;
@@ -102,17 +88,35 @@ public class HashIndex
             {
                 // block is filled
                 splitBlock(putBlockOffset);
-                putBlockOffset = hashKeyToBlock(key);
+                putBlockOffset = blockForHashCode(keyHashCode);
                 // calculate put position (after the split, both blocks are compacted)
                 putPosition = blockDataOffset(putBlockOffset) + (recordLength * blockFillCount(putBlockOffset));
             }
 
             blockBuffer.putByte(recordTypeOffset(putPosition), TYPE_RECORD);
-            blockBuffer.putLong(recordKeyOffset(putPosition), key);
-            valueWriter.writeValue(blockBuffer, recordValueOffset(putPosition), recordValueLength(recordLength));
+            keyHandler.writeKey(blockBuffer, recordKeyOffset(putPosition));
+            valueHandler.writeValue(blockBuffer, recordValueOffset(putPosition, recordKeyLength()), recordValueLength());
             incrementBlockFillCount(putBlockOffset);
         }
         return updated;
+    }
+
+    protected boolean get()
+    {
+        final int keyHashCode = keyHandler.keyHashCode();
+        final int blockOffset = blockForHashCode(keyHashCode);
+
+        getVisitor.init();
+        scanBlock(blockOffset, getVisitor);
+
+        return getVisitor.wasRecordFound;
+    }
+
+    private int blockForHashCode(int keyHashCode)
+    {
+
+        final int mask = indexSize() -1;
+        return indexBuffer.getInt(indexEntryOffset(keyHashCode & mask));
     }
 
     public int blockLength()
@@ -127,12 +131,27 @@ public class HashIndex
 
     public int recordLength()
     {
-        return indexBuffer.getInt(RECORD_LENGHT_OFFSET);
+        return framedRecordLength(recordKeyLength(), recordValueLength());
     }
 
-    private void recordLength(int recordLength)
+    public int recordValueLength()
     {
-        indexBuffer.putInt(RECORD_LENGHT_OFFSET, recordLength);
+        return indexBuffer.getInt(RECORD_VALUE_LENGTH_OFFSET);
+    }
+
+    private void recordValueLength(int length)
+    {
+        indexBuffer.putInt(RECORD_VALUE_LENGTH_OFFSET, length);
+    }
+
+    public int recordKeyLength()
+    {
+        return indexBuffer.getInt(RECORD_KEY_LENGTH_OFFSET);
+    }
+
+    private void recordKeyLength(int recordKeyLength)
+    {
+        indexBuffer.putInt(RECORD_KEY_LENGTH_OFFSET, recordKeyLength);
     }
 
     public int indexSize()
@@ -153,16 +172,6 @@ public class HashIndex
     private void blockCount(int blockCount)
     {
         indexBuffer.putInt(BLOCK_COUNT_OFFSET, blockCount);
-    }
-
-    /**
-     * hashes a key to a block using the index
-     */
-    private int hashKeyToBlock(long key)
-    {
-        final int mask = indexSize() -1;
-        final int idx = hash(key, mask);
-        return indexBuffer.getInt(indexEntryOffset(idx));
     }
 
     /**
@@ -206,6 +215,10 @@ public class HashIndex
                     }
                 }
             }
+        }
+        else
+        {
+            throw new RuntimeException("Index full!!!");
         }
 
         return newBlockOffset;
@@ -295,9 +308,8 @@ public class HashIndex
         while (!visitorCompleted && scanPos < scanLimit && recordsVisited < fillCount)
         {
             final short recordType = blockBuffer.getByte(recordTypeOffset(scanPos));
-            final long recordKey = blockBuffer.getLong(recordKeyOffset(scanPos));
 
-            visitorCompleted = visitor.visitRecord(recordType, recordKey, scanPos, recordSize);
+            visitorCompleted = visitor.visitRecord(recordType, blockBuffer, scanPos, recordSize);
 
             ++recordsVisited;
             scanPos += recordSize;
@@ -306,28 +318,24 @@ public class HashIndex
 
     interface RecordVisitor
     {
-        boolean visitRecord(short recordType, long recordKey, int recordOffset, int recordLength);
+        boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength);
     }
 
     class GetVisitor implements RecordVisitor
     {
-        long keyToFind;
-        IndexValueReader reader;
         boolean wasRecordFound;
 
-        void init(IndexValueReader reader, long keyToFind)
+        void init()
         {
-            this.keyToFind = keyToFind;
-            this.reader = reader;
             this.wasRecordFound = false;
         }
 
         @Override
-        public boolean visitRecord(short recordType, long recordKey, int recordOffset, int recordLength)
+        public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
         {
-            if(recordType == TYPE_RECORD && recordKey == keyToFind)
+            if(recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
             {
-                reader.readValue(blockBuffer, recordValueOffset(recordOffset), recordValueLength(recordLength));
+                valueHandler.readValue(blockBuffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
                 wasRecordFound = true;
                 return true;
             }
@@ -340,15 +348,15 @@ public class HashIndex
 
     class PutVisitor implements RecordVisitor
     {
-        long keyToUpdate;
-        IndexValueWriter writer;
+        IndexKeyHandler keyHandler;
+        IndexValueHandler writer;
         int freeSlot;
         int blockOffset;
         boolean recordUpdated;
 
-        void init(long keyToUpdate, IndexValueWriter writer, int blockOffset)
+        void init(IndexKeyHandler keyHandler, IndexValueHandler writer, int blockOffset)
         {
-            this.keyToUpdate =keyToUpdate;
+            this.keyHandler = keyHandler;
             this.writer = writer;
             this.blockOffset = blockOffset;
             this.freeSlot = blockDataOffset(blockOffset);
@@ -356,13 +364,13 @@ public class HashIndex
         }
 
         @Override
-        public boolean visitRecord(short recordType, long recordKey, int recordOffset, int recordLength)
+        public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
         {
             if(recordType == TYPE_RECORD)
             {
-                if(recordKey == keyToUpdate)
+                if(keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
                 {
-                    writer.writeValue(blockBuffer, recordValueOffset(recordOffset), recordValueLength(recordLength));
+                    writer.writeValue(blockBuffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
                     incrementBlockFillCount(blockOffset);
                     recordUpdated = true;
                 }
@@ -377,11 +385,17 @@ public class HashIndex
 
     class SplitVisitor implements RecordVisitor
     {
+        final IndexKeyHandler keyHandler;
         int filledBlockPutOffset;
         int filledBlockFillCount;
         int newBlockPutOffset;
         int newBlockFillCount;
         int splitMask;
+
+        public SplitVisitor(IndexKeyHandler keyHandler)
+        {
+            this.keyHandler = keyHandler;
+        }
 
         void init(int filledBlockOffset, int newBlockOffset)
         {
@@ -393,9 +407,11 @@ public class HashIndex
         }
 
         @Override
-        public boolean visitRecord(short recordType, long recordKey, int recordOffset, int recordLength)
+        public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
         {
-            if((recordKey & splitMask) == splitMask)
+            keyHandler.readKey(buffer, recordKeyOffset(recordOffset));
+            int keyHashCode = keyHandler.keyHashCode();
+            if((keyHashCode & splitMask) == splitMask)
             {
                 // relocate record to the new block
                 blockBuffer.putBytes(newBlockPutOffset, blockBuffer, recordOffset, recordLength);

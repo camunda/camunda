@@ -1,13 +1,10 @@
 package org.camunda.tngp.log;
 
 import static uk.co.real_logic.agrona.BitUtil.*;
-import static org.mockito.Mockito.*;
 
 import java.nio.ByteBuffer;
 
-import org.camunda.tngp.hashindex.HashIndex;
-import org.camunda.tngp.hashindex.IndexValueReader;
-import org.camunda.tngp.hashindex.IndexValueWriter;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,13 +13,11 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 
-public class HashIndexLargeBlockSizeTest
+public class Long2LongHashIndexLargeBlockSizeTest
 {
     static long MISSING_VALUE = -2;
 
-    HashIndex index;
-    IndexValueReader indexValueReaderMock;
-    IndexValueWriter indexValueWriterMock;
+    Long2LongHashIndex index;
 
     UnsafeBuffer blockBuffer;
     UnsafeBuffer indexBuffer;
@@ -31,23 +26,19 @@ public class HashIndexLargeBlockSizeTest
     public void createIndex()
     {
         int indexSize = 16;
-        int blockLength = BLOCK_DATA_OFFSET  + 3 * framedRecordLength(SIZE_OF_LONG); // 3 entries fit into a block
-        int valuelenth = 8;
+        int blockLength = BLOCK_DATA_OFFSET  + 3 * framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG); // 3 entries fit into a block
 
         indexBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(requiredIndexBufferSize(indexSize)));
         blockBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(requiredBlockBufferSize(indexSize, blockLength)));
 
-        index = new HashIndex(indexBuffer, blockBuffer, indexSize, blockLength, valuelenth);
-
-        indexValueReaderMock = mock(IndexValueReader.class);
-        indexValueWriterMock = mock(IndexValueWriter.class);
+        index = new Long2LongHashIndex(indexBuffer, blockBuffer, indexSize, blockLength);
     }
 
     @Test
     public void shouldReturnMissingValueForEmptyMap()
     {
        // given that the map is empty
-       assertThat(index.getLong(0, MISSING_VALUE) == MISSING_VALUE);
+       assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -57,34 +48,7 @@ public class HashIndexLargeBlockSizeTest
        index.put(1, 1);
 
        // then
-       assertThat(index.getLong(0, MISSING_VALUE) == MISSING_VALUE);
-    }
-
-    @Test
-    public void shouldNotGetValueForEmptyMap()
-    {
-       // given that the map is empty
-
-       // if a get for a non existing key is attempted
-       boolean valueFound = index.get(0, indexValueReaderMock);
-
-       // then
-       assertThat(valueFound).isFalse();
-       verifyZeroInteractions(indexValueReaderMock);
-    }
-
-    @Test
-    public void shouldNotGetValueForNonExistingKey()
-    {
-       // given
-       index.put(1, 1);
-
-       // if a get for a non existing key is attempted
-       boolean valueFound = index.get(0, indexValueReaderMock);
-
-       // then
-       assertThat(valueFound).isFalse();
-       verifyZeroInteractions(indexValueReaderMock);
+       assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -94,21 +58,7 @@ public class HashIndexLargeBlockSizeTest
         index.put(1, 1);
 
         // if then
-        assertThat(index.getLong(1, MISSING_VALUE)).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldReadLongValueForKey()
-    {
-        // given
-        index.put(1, 1);
-
-        // if
-        boolean found = index.get(1, indexValueReaderMock);
-
-        // then
-        assertThat(found).isEqualTo(true);
-        verify(indexValueReaderMock).readValue(eq(blockBuffer), anyInt(), eq(SIZE_OF_LONG));
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -122,8 +72,8 @@ public class HashIndexLargeBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(1);
-        assertThat(index.getLong(0, MISSING_VALUE)).isEqualTo(0);
-        assertThat(index.getLong(1, MISSING_VALUE)).isEqualTo(1);
+        assertThat(index.get(0, MISSING_VALUE)).isEqualTo(0);
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -140,10 +90,10 @@ public class HashIndexLargeBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.getLong(1, MISSING_VALUE)).isEqualTo(1);
-        assertThat(index.getLong(2, MISSING_VALUE)).isEqualTo(2);
-        assertThat(index.getLong(3, MISSING_VALUE)).isEqualTo(3);
-        assertThat(index.getLong(4, MISSING_VALUE)).isEqualTo(4);
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
+        assertThat(index.get(2, MISSING_VALUE)).isEqualTo(2);
+        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
+        assertThat(index.get(4, MISSING_VALUE)).isEqualTo(4);
     }
 
     @Test
@@ -160,10 +110,10 @@ public class HashIndexLargeBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(3);
-        assertThat(index.getLong(1, MISSING_VALUE)).isEqualTo(1);
-        assertThat(index.getLong(3, MISSING_VALUE)).isEqualTo(3);
-        assertThat(index.getLong(5, MISSING_VALUE)).isEqualTo(5);
-        assertThat(index.getLong(7, MISSING_VALUE)).isEqualTo(7);
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
+        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
+        assertThat(index.get(5, MISSING_VALUE)).isEqualTo(5);
+        assertThat(index.get(7, MISSING_VALUE)).isEqualTo(7);
     }
 
     @Test
@@ -181,7 +131,7 @@ public class HashIndexLargeBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.getLong(i, MISSING_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(8);
@@ -197,7 +147,7 @@ public class HashIndexLargeBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.getLong(i, MISSING_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(8);

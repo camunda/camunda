@@ -4,7 +4,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 
 
 /**
- * The index has 2 Buffer: the "index buffer" and the "block buffer".
+ * The index has 2 Buffers: the "index buffer" and the "block buffer".
  *
  * Index Buffer layout
  *
@@ -12,16 +12,18 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                              SIZE                             |
- *  +---------------------------------------------------------------+
  *  |                          BLOCK LENGTH                         |
  *  +---------------------------------------------------------------+
- *  |                          RECORD LENGTH                        |
+ *  |                        RECORD KEY LENGTH                      |
+ *  +---------------------------------------------------------------+
+ *  |                       RECORD VALUE LENGTH                     |
+ *  +---------------------------------------------------------------+
+ *  |                              SIZE                             |
  *  +---------------------------------------------------------------+
  *  |                           BLOCK COUNT                         |
  *  +---------------------------------------------------------------+
  *  |                                                               |
- *  |                           INDEX DATA                        ...
+ *  |                           INDEX DATA                         ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
@@ -29,11 +31,12 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  * Explanation:
  *
  * <ul>
+ * <li>Block Length: length of a data block in bytes (immutable)</li>
+ * <li>Record Key Length: length of a record key in bytes (immutable)</li>
+ * <li>Record Value Length: length of a record value in bytes (immutable)</li>
  * <li>Size: the size of the index in bytes. Must be a power of 2.
  * Controls how many index entries there are</li>
- * <li>Block Length: length of a data block in bytes</li>
- * <li>Record Length: length of an individual record in bytes</li>
- * <li>Block Count: numbre of eyxisting blocks</li>
+ * <li>Block Count: number of used blocks</li>
  * </ul>
  *
  * Block Buffer layout
@@ -74,13 +77,11 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |  Record Type |               Key                              |
+ *  |  Record Type |                                               ...
+ *  +---------------               Key                              |
+ * ...                                                              |
  *  +---------------------------------------------------------------+
- *  |                              Key                              |
- *  +---------------------------------------------------------------+
- *  |    Key       |               Value                            |
- *  +---------------------------------------------------------------+
- *  |                              Value                           ...
+ *  |                             Value                            ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
@@ -89,9 +90,10 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  */
 public class HashIndexDescriptor
 {
-    public static final int INDEX_SIZE_OFFSET;
     public static final int BLOCK_LENGTH_OFFSET;
-    public static final int RECORD_LENGHT_OFFSET;
+    public static final int RECORD_KEY_LENGTH_OFFSET;
+    public static final int RECORD_VALUE_LENGTH_OFFSET;
+    public static final int INDEX_SIZE_OFFSET;
     public static final int BLOCK_COUNT_OFFSET;
     public static final int INDEX_OFFSET;
 
@@ -102,7 +104,6 @@ public class HashIndexDescriptor
 
     public static final int RECORD_TYPE_OFFSET;
     public static final int RECORD_KEY_OFFSET;
-    public static final int RECORD_VALUE_OFFSET;
 
     public static final byte TYPE_RECORD = 1;
     public static final byte TYPE_TOMBSTONE = 2;
@@ -111,13 +112,16 @@ public class HashIndexDescriptor
     {
         int offset = 0;
 
-        INDEX_SIZE_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         BLOCK_LENGTH_OFFSET = offset;
         offset += SIZE_OF_INT;
 
-        RECORD_LENGHT_OFFSET = offset;
+        RECORD_KEY_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        RECORD_VALUE_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        INDEX_SIZE_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         BLOCK_COUNT_OFFSET = offset;
@@ -144,9 +148,6 @@ public class HashIndexDescriptor
         offset += SIZE_OF_BYTE;
 
         RECORD_KEY_OFFSET = offset;
-        offset += SIZE_OF_LONG;
-
-        RECORD_VALUE_OFFSET = offset;
     }
 
     public static boolean blockMod(long key, int blockMask)
@@ -179,19 +180,14 @@ public class HashIndexDescriptor
         return dataEntryOffset + RECORD_TYPE_OFFSET;
     }
 
-    public static int recordValueLength(int recordLength)
+    public static int framedRecordLength(int keyLength, int valueLength)
     {
-        return recordLength - RECORD_VALUE_OFFSET;
+        return RECORD_KEY_OFFSET + keyLength + valueLength;
     }
 
-    public static int framedRecordLength(int valueLength)
+    public static int recordValueOffset(int entryOffset, int keyLength)
     {
-        return RECORD_VALUE_OFFSET + valueLength;
-    }
-
-    public static int recordValueOffset(int entryOffset)
-    {
-        return entryOffset + RECORD_VALUE_OFFSET;
+        return recordKeyOffset(entryOffset) + keyLength;
     }
 
     public static int recordKeyOffset(int entryOffset)
