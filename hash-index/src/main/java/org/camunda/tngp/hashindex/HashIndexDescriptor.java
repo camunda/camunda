@@ -2,6 +2,8 @@ package org.camunda.tngp.hashindex;
 
 import static uk.co.real_logic.agrona.BitUtil.*;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+
 
 /**
  * The index has 2 Buffers: the "index buffer" and the "block buffer".
@@ -18,7 +20,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *  +---------------------------------------------------------------+
  *  |                       RECORD VALUE LENGTH                     |
  *  +---------------------------------------------------------------+
- *  |                              SIZE                             |
+ *  |                           INDEX SIZE                          |
  *  +---------------------------------------------------------------+
  *  |                           BLOCK COUNT                         |
  *  +---------------------------------------------------------------+
@@ -150,31 +152,6 @@ public class HashIndexDescriptor
         RECORD_KEY_OFFSET = offset;
     }
 
-    public static boolean blockMod(long key, int blockMask)
-    {
-        return (((int) key)  & (Integer.MAX_VALUE >> Integer.numberOfLeadingZeros(blockMask))) == blockMask;
-    }
-
-    public static int blockIdOffset(int blockOffset)
-    {
-        return blockOffset + BLOCK_ID_OFFSET;
-    }
-
-    public static int blockDepthOffset(int blockOffset)
-    {
-        return blockOffset + BLOCK_DEPTH_OFFSET;
-    }
-
-    public static int blockFillCountOffset(int blockOffset)
-    {
-        return blockOffset + BLOCK_FILL_COUNT_OFFSET;
-    }
-
-    public static int blockDataOffset(int blockOffset)
-    {
-        return blockOffset + BLOCK_DATA_OFFSET;
-    }
-
     public static int recordTypeOffset(int dataEntryOffset)
     {
         return dataEntryOffset + RECORD_TYPE_OFFSET;
@@ -197,11 +174,51 @@ public class HashIndexDescriptor
 
     public static int requiredIndexBufferSize(int indexSize)
     {
-        return (indexSize * SIZE_OF_INT) + INDEX_OFFSET;
+        return (indexSize * SIZE_OF_LONG) + INDEX_OFFSET;
     }
 
-    public static int requiredBlockBufferSize(int indexSize, int blockSize)
+    public static void blockFillCount(MutableDirectBuffer buffer, int fillCount)
     {
-        return indexSize * (BLOCK_DATA_OFFSET + blockSize);
+        buffer.putInt(BLOCK_FILL_COUNT_OFFSET, fillCount);
+    }
+
+    public static int blockFillCount(MutableDirectBuffer buffer)
+    {
+        return buffer.getInt(BLOCK_FILL_COUNT_OFFSET);
+    }
+
+    public static int blockId(MutableDirectBuffer buffer)
+    {
+        return buffer.getInt(BLOCK_ID_OFFSET);
+    }
+
+    public static void blockId(MutableDirectBuffer buffer, int blockId)
+    {
+        buffer.putInt(BLOCK_ID_OFFSET, blockId);
+    }
+
+    public static int blockDepth(MutableDirectBuffer buffer)
+    {
+        return buffer.getInt(BLOCK_DEPTH_OFFSET);
+    }
+
+    public static void blockDepth(MutableDirectBuffer buffer, int blockDepth)
+    {
+        buffer.putInt(BLOCK_DEPTH_OFFSET, blockDepth);
+    }
+
+    public static void incrementBlockFillCount(MutableDirectBuffer buffer)
+    {
+        blockFillCount(buffer, blockFillCount(buffer) + 1);
+    }
+
+    public static void decrementBlockFillCount(MutableDirectBuffer buffer)
+    {
+        blockFillCount(buffer, blockFillCount(buffer) + 1);
+    }
+
+    public static int indexEntryOffset(int entryIdx)
+    {
+        return INDEX_OFFSET + (entryIdx * SIZE_OF_LONG);
     }
 }

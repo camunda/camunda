@@ -2,13 +2,11 @@ package org.camunda.tngp.log;
 
 import static uk.co.real_logic.agrona.BitUtil.*;
 
-import java.nio.ByteBuffer;
-
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
@@ -20,9 +18,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     byte[][] keys = new byte[16][64];
 
     Bytes2LongHashIndex index;
-
-    UnsafeBuffer blockBuffer;
-    UnsafeBuffer indexBuffer;
+    FileChannelIndexStore indexStore;
 
     @Before
     public void createIndex()
@@ -30,10 +26,9 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         int indexSize = 32;
         int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(64, SIZE_OF_LONG);
 
-        indexBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(requiredIndexBufferSize(indexSize)));
-        blockBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(requiredBlockBufferSize(indexSize, blockLength)));
-
-        index = new Bytes2LongHashIndex(indexBuffer, blockBuffer, indexSize, blockLength, 64);
+        indexStore = FileChannelIndexStore.tempFileIndexStore();
+        index = new Bytes2LongHashIndex(indexStore, indexSize, blockLength, 64);
+        index = new Bytes2LongHashIndex(indexStore);
 
         // generate keys
         for (int i = 0; i < keys.length; i++)
@@ -45,6 +40,12 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
                 keys[i][j] = val[j];
             }
         }
+    }
+
+    @After
+    public void close()
+    {
+        indexStore.close();
     }
 
     @Test
@@ -140,5 +141,37 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         assertThat(index.blockCount()).isEqualTo(16);
     }
+
+
+    @Test
+    public void shouldRemoveValueForKey()
+    {
+        // given
+        index.put(keys[1], 1);
+
+        // if
+        long removeResult = index.remove(keys[1], -1);
+
+        //then
+        assertThat(removeResult).isEqualTo(1);
+        assertThat(index.get(keys[1], -1)).isEqualTo(-1);
+    }
+
+    @Test
+    public void shouldNotRemoveValueForDifferentKey()
+    {
+        // given
+        index.put(keys[1], 1);
+        index.put(keys[2], 2);
+
+        // if
+        long removeResult = index.remove(keys[1], -1);
+
+        //then
+        assertThat(removeResult).isEqualTo(1);
+        assertThat(index.get(keys[1], -1)).isEqualTo(-1);
+        assertThat(index.get(keys[2], -1)).isEqualTo(2);
+    }
+
 
 }

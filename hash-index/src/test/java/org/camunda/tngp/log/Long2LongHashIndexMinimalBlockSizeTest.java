@@ -1,26 +1,21 @@
 package org.camunda.tngp.log;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
-
-import java.nio.ByteBuffer;
-
-import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.junit.Before;
-import org.junit.Test;
-
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
+import static uk.co.real_logic.agrona.BitUtil.*;
+
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class Long2LongHashIndexMinimalBlockSizeTest
 {
     static long MISSING_VALUE = -2;
 
     Long2LongHashIndex index;
-
-    UnsafeBuffer blockBuffer;
-    UnsafeBuffer indexBuffer;
+    FileChannelIndexStore indexStore;
 
     @Before
     public void createIndex()
@@ -28,10 +23,14 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         int indexSize = 16;
         int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG);
 
-        indexBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(requiredIndexBufferSize(indexSize)));
-        blockBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(requiredBlockBufferSize(indexSize, blockLength)));
+        indexStore = FileChannelIndexStore.tempFileIndexStore();
+        index = new Long2LongHashIndex(indexStore, indexSize, blockLength);
+    }
 
-        index = new Long2LongHashIndex(indexBuffer, blockBuffer, indexSize, blockLength);
+    @After
+    public void close()
+    {
+        indexStore.close();
     }
 
     @Test
@@ -59,6 +58,36 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         // if then
         assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldRemoveValueForKey()
+    {
+        // given
+        index.put(1, 1);
+
+        // if
+        long removeResult = index.remove(1, -1);
+
+        //then
+        assertThat(removeResult).isEqualTo(1);
+        assertThat(index.get(1, -1)).isEqualTo(-1);
+    }
+
+    @Test
+    public void shouldNotRemoveValueForDifferentKey()
+    {
+        // given
+        index.put(1, 1);
+        index.put(2, 2);
+
+        // if
+        long removeResult = index.remove(1, -1);
+
+        //then
+        assertThat(removeResult).isEqualTo(1);
+        assertThat(index.get(1, -1)).isEqualTo(-1);
+        assertThat(index.get(2, -1)).isEqualTo(2);
     }
 
     @Test
@@ -143,5 +172,21 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
+    }
+
+    @Test
+    public void cannotPutValueIfIndexFull()
+    {
+       // given
+       index.put(0, 0);
+       try
+       {
+           index.put(16, 0);
+           fail("Exception expected");
+       }
+       catch(RuntimeException e)
+       {
+           // expected
+       }
     }
 }
