@@ -22,6 +22,7 @@ import org.camunda.tngp.broker.transport.worker.BrokerRequestWorkerContextServic
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
+import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
 
 public class TaskQueueComponent implements Component
 {
@@ -59,6 +60,10 @@ public class TaskQueueComponent implements Component
         final TaskQueueWorkerContext workerContext = new TaskQueueWorkerContext();
         workerContext.setRequestHandler(taskQueueRequestDispatcher);
         workerContext.setTaskQueueManager(taskQueueManagerService);
+        workerContext.setWorkerTasks(new WorkerTask[]
+        {
+                new IndexWriteWorkerTask()
+        });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);
         final AsyncRequestWorkerService workerService = new AsyncRequestWorkerService();

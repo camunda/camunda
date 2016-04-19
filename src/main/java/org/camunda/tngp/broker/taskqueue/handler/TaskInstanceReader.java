@@ -12,13 +12,18 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class TaskInstanceReader
 {
-    public static final int TASK_TYPE_MAXLENGTH = 64;
+    public static final int TASK_TYPE_MAXLENGTH = 256;
+    public static final int PAYLOAD_MAXLENGTH = 1024 * 16;
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final TaskInstanceDecoder taskInstanceDecoder = new TaskInstanceDecoder();
 
-    protected final ByteBuffer readBuffer;
-    protected final UnsafeBuffer readBufferView;
+    protected final ByteBuffer blockReadBuffer;
+    protected final UnsafeBuffer blockReadBufferView;
+
+
+    protected final ByteBuffer payloadReadBuffer;
+    protected final UnsafeBuffer payloadReadBufferView;
 
     protected int length;
 
@@ -27,6 +32,10 @@ public class TaskInstanceReader
     protected int payloadLength;
     protected int payloadOffset;
 
+    protected long logPosition;
+    protected long offset;
+    protected FileChannel fileChannel;
+
     public TaskInstanceReader()
     {
         int readBufferLength = MessageHeaderDecoder.ENCODED_LENGTH +
@@ -34,53 +43,80 @@ public class TaskInstanceReader
                 TASK_TYPE_MAXLENGTH +
                 TaskInstanceDecoder.taskTypeHeaderLength();
 
-        this.readBuffer = ByteBuffer.allocateDirect(readBufferLength);
-        this.readBufferView = new UnsafeBuffer(readBuffer);
-        this.headerDecoder.wrap(readBufferView, 0);
+        this.blockReadBuffer = ByteBuffer.allocateDirect(readBufferLength);
+        this.blockReadBufferView = new UnsafeBuffer(blockReadBuffer);
+        this.headerDecoder.wrap(blockReadBufferView, 0);
+
+        this.payloadReadBuffer = ByteBuffer.allocateDirect(PAYLOAD_MAXLENGTH);
+        this.payloadReadBufferView = new UnsafeBuffer(payloadReadBuffer);
     }
 
     public void reset()
     {
         this.length = 0;
+        this.fileChannel = null;
+        this.offset = 0;
+        this.logPosition = 0;
     }
 
-    public boolean read(FileChannel fileChannel, long offset, int length)
+    public boolean readBlock(long position, FileChannel fileChannel, long offset, int length)
     {
+        this.logPosition = position;
+        this.fileChannel = fileChannel;
+        this.offset = offset;
         this.length = length;
-        readBuffer.clear();
-        readBuffer.position(0);
-        readBuffer.limit(length);
+        blockReadBuffer.position(0);
+        blockReadBuffer.limit(Math.min(length, blockReadBuffer.capacity()));
 
         boolean wasRead = false;
 
         try
         {
-            if(fileChannel.read(readBuffer, offset) == length)
+            fileChannel.read(blockReadBuffer, offset);
+
+            if(headerDecoder.templateId() == TaskInstanceDecoder.TEMPLATE_ID)
             {
-                if(headerDecoder.templateId() == TaskInstanceDecoder.TEMPLATE_ID)
-                {
-                    taskInstanceDecoder.wrap(readBufferView, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+                taskInstanceDecoder.wrap(blockReadBufferView, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-                    int limit = taskInstanceDecoder.limit();
+                int limit = taskInstanceDecoder.limit();
 
-                    taskTypeLength = taskInstanceDecoder.taskTypeLength();
+                taskTypeLength = taskInstanceDecoder.taskTypeLength();
 
-                    limit += TaskInstanceDecoder.taskTypeHeaderLength();
+                limit += TaskInstanceDecoder.taskTypeHeaderLength();
 
-                    taskTypeOffset = limit;
+                taskTypeOffset = limit;
 
-                    limit += taskTypeLength;
-                    taskInstanceDecoder.limit(limit);
+                limit += taskTypeLength;
+                taskInstanceDecoder.limit(limit);
 
-                    payloadLength = taskInstanceDecoder.payloadLength();
+                payloadLength = taskInstanceDecoder.payloadLength();
 
-                    limit += TaskInstanceDecoder.payloadHeaderLength();
+                limit += TaskInstanceDecoder.payloadHeaderLength();
 
-                    payloadOffset = limit;
+                payloadOffset = limit;
 
-                    wasRead = true;
-                }
+                wasRead = true;
             }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        return wasRead;
+    }
+
+    public boolean readPayload()
+    {
+        boolean wasRead = false;
+
+        payloadReadBuffer.position(0);
+        payloadReadBuffer.limit(payloadLength);
+
+        try
+        {
+            fileChannel.read(payloadReadBuffer, offset + payloadOffset);
+            wasRead = true;
         }
         catch (IOException e)
         {
@@ -95,9 +131,14 @@ public class TaskInstanceReader
         return taskInstanceDecoder;
     }
 
-    public DirectBuffer getReadBuffer()
+    public DirectBuffer getBlockBuffer()
     {
-        return readBufferView;
+        return blockReadBufferView;
+    }
+
+    public DirectBuffer getPayloadReadBuffer()
+    {
+        return payloadReadBufferView;
     }
 
     public static int getTaskTypeMaxlength()
@@ -113,11 +154,6 @@ public class TaskInstanceReader
     public TaskInstanceDecoder getTaskInstanceDecoder()
     {
         return taskInstanceDecoder;
-    }
-
-    public UnsafeBuffer getReadBufferView()
-    {
-        return readBufferView;
     }
 
     public int getLength()
@@ -144,5 +180,12 @@ public class TaskInstanceReader
     {
         return payloadOffset;
     }
+
+    public long getLogPosition()
+    {
+        return logPosition;
+    }
+
+
 
 }

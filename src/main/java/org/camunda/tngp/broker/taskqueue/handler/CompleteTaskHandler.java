@@ -5,10 +5,9 @@ import java.nio.channels.FileChannel;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.hashindex.HashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogFragmentHandler;
-import org.camunda.tngp.log.index.LogIndex;
 import org.camunda.tngp.protocol.taskqueue.AckEncoder;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
@@ -45,7 +44,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             final int sbeBlockLength,
             final int sbeSchemaVersion)
     {
-        final HashIndex taskInstanceIndex = ctx.getLockedTaskInstanceIndex();
+        final Long2LongHashIndex lockedTasksIndex = ctx.getLockedTaskInstanceIndex().getIndex();
         final Log log = ctx.getLog();
 
         final TaskInstanceReader taskInstanceReader = logReader.taskInstanceReader;
@@ -62,7 +61,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         {
             int errorCode = -1;
 
-            final long lastTaskPosition = taskInstanceIndex.getLong(taskId, -1);
+            final long lastTaskPosition = lockedTasksIndex.get(taskId, -1);
             if (lastTaskPosition != -1)
             {
                 taskInstanceReader.reset();
@@ -102,7 +101,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             }
             else
             {
-                // NACK: task not found
+                // NACK: task not found / task not locked
                 errorCode = 1;
             }
 
@@ -204,10 +203,11 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         taskInstanceEncoder
             .id(decoder.id())
             .version(decoder.version() + 1)
+            .prevVersionPosition(reader.getLogPosition())
             .state(TaskInstanceState.COMPLETED)
             .taskTypeHash(decoder.taskTypeHash());
 
-        taskInstanceEncoder.putTaskType(reader.getReadBuffer(), reader.getTaskTypeOffset(), reader.getTaskTypeLength());
+        taskInstanceEncoder.putTaskType(reader.getBlockBuffer(), reader.getTaskTypeOffset(), reader.getTaskTypeLength());
         taskInstanceEncoder.putPayload(payloadBuffer, payloadOffset, payloadLength);
 
         claimedLogFragment.commit();
@@ -228,11 +228,6 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             final long logPosition)
     {
         response.commit();
-
-        // remove completed task from index
-        final int readOffset = offset + MessageHeaderEncoder.ENCODED_LENGTH;
-        final long taskId = taskInstanceDecoder.wrap(buffer, readOffset, taskInstanceDecoder.sbeBlockLength(), taskInstanceDecoder.sbeSchemaVersion()).id();
-        ((TaskQueueContext)attachment).getLockedTaskInstanceIndex().remove(taskId);
     }
 
     @Override
@@ -253,7 +248,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         @Override
         public void onFragment(long position, FileChannel fileChannel, int offset, int length)
         {
-            taskInstanceReader.read(fileChannel, offset, length);
+            taskInstanceReader.readBlock(position, fileChannel, offset, length);
         }
 
         public void reset()

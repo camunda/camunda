@@ -22,7 +22,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
 {
     final static int ACK_LENGTH = AckEncoder.BLOCK_LENGTH + MessageHeaderEncoder.ENCODED_LENGTH;
 
-    protected final byte[] taskTypeReadBuffer = new byte[1024];
+    protected final byte[] taskTypeReadBuffer = new byte[256];
 
     protected final CreateTaskInstanceDecoder requestDecoder = new CreateTaskInstanceDecoder();
     protected final TaskInstanceEncoder taskInstanceEncoder = new TaskInstanceEncoder();

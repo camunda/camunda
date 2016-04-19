@@ -67,7 +67,7 @@ public class LogManagerService implements Service<LogManager>, LogManager
             if(logDirectory == null || logDirectory.isEmpty())
             {
                 int assignedLogDirectory = 0;
-                if(logComponentConfig.logDirectories.length ==0)
+                if(logComponentConfig.logDirectories.length == 0)
                 {
                     throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
                 }

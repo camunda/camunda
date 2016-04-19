@@ -42,6 +42,8 @@ public class SystemContext implements AutoCloseable
             try
             {
                 brokerComponent.init(this);
+                // explicitly run gc after startup
+                for(int i = 0; i<5; i++)    System.gc();
             }
             catch(RuntimeException e)
             {

@@ -1,11 +1,11 @@
 package org.camunda.tngp.broker.taskqueue;
 
 import org.camunda.tngp.log.idgenerator.spi.LogFragmentIdReader;
+import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.sbe.ir.generated.MessageHeaderDecoder;
 
 public class TaskInstanceIdReader implements LogFragmentIdReader
 {

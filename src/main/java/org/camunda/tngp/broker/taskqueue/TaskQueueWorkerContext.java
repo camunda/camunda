@@ -4,7 +4,6 @@ import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerConte
 
 public class TaskQueueWorkerContext extends AsyncRequestWorkerContext
 {
-
     protected TaskQueueManager taskQueueManager;
 
     public TaskQueueManager getTaskQueueManager()

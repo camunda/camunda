@@ -33,6 +33,7 @@
 	<sbe:message name="TaskInstance" id="1" description="A task Instance">
 		<field name="id" id="1" type="uint64" />
 		<field name="version" id="2" type="uint16" />
+		<field name="prevVersionPosition" id="2" type="uint64" />
 		<field name="state" id="3" type="TaskInstanceState" />
 		<field name="lockTime" id="4" type="uint64" />
 		<field name="lockOwnerId" id="5" type="uint32" />

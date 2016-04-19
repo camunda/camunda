@@ -1,7 +1,9 @@
 package org.camunda.tngp.broker.taskqueue;
 
+import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.hashindex.HashIndex;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
@@ -13,11 +15,13 @@ public class TaskQueueContext implements ResourceContext
 
     protected Log log;
 
-    protected HashIndex lockedTaskInstanceIndex;
+    protected HashIndexManager<Long2LongHashIndex> lockedTaskInstanceIndex;
 
-    protected HashIndex taskTypePositionIndex;
+    protected HashIndexManager<Bytes2LongHashIndex> taskTypePositionIndex;
 
     protected IdGenerator taskInstanceIdGenerator;
+
+    protected TaskQueueIndexWriter taskQueueIndexWriter;
 
     public TaskQueueContext(String taskQueueName, int taskQueueId)
     {
@@ -45,22 +49,22 @@ public class TaskQueueContext implements ResourceContext
         this.log = log;
     }
 
-    public HashIndex getLockedTaskInstanceIndex()
+    public HashIndexManager<Long2LongHashIndex> getLockedTaskInstanceIndex()
     {
         return lockedTaskInstanceIndex;
     }
 
-    public HashIndex getTaskTypePositionIndex()
+    public HashIndexManager<Bytes2LongHashIndex> getTaskTypePositionIndex()
     {
         return taskTypePositionIndex;
     }
 
-    public void setLockedTaskInstanceIndex(HashIndex lockedTaskInstanceIndex)
+    public void setLockedTaskInstanceIndex(HashIndexManager<Long2LongHashIndex> lockedTaskInstanceIndex)
     {
         this.lockedTaskInstanceIndex = lockedTaskInstanceIndex;
     }
 
-    public void setTaskTypePositionIndex(HashIndex taskTypePositionIndex)
+    public void setTaskTypePositionIndex(HashIndexManager<Bytes2LongHashIndex> taskTypePositionIndex)
     {
         this.taskTypePositionIndex = taskTypePositionIndex;
     }
@@ -87,4 +91,13 @@ public class TaskQueueContext implements ResourceContext
         return taskQueueName;
     }
 
+    public TaskQueueIndexWriter getTaskQueueIndexWriter()
+    {
+        return taskQueueIndexWriter;
+    }
+
+    public void setTaskQueueIndexWriter(TaskQueueIndexWriter taskQueueIndexWriter)
+    {
+        this.taskQueueIndexWriter = taskQueueIndexWriter;
+    }
 }

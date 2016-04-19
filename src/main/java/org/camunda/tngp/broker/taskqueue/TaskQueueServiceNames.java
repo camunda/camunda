@@ -1,8 +1,10 @@
 package org.camunda.tngp.broker.taskqueue;
 
 import org.camunda.tngp.broker.servicecontainer.ServiceName;
+import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.log.index.LogIndex;
 
 public class TaskQueueServiceNames
 {
@@ -18,9 +20,16 @@ public class TaskQueueServiceNames
         return ServiceName.newServiceName(String.format("taskqueue.%s.id-generator", taskQueueName), IdGenerator.class);
     }
 
-    public final static ServiceName<LogIndex> taskQueueLogIdIndexName(String taskQueueName)
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public final static ServiceName<HashIndexManager<Long2LongHashIndex>> taskQueueLockedTasksIndexServiceName(String taskQueueName)
     {
-        return ServiceName.newServiceName(String.format("taskqueue.%s.id-index", taskQueueName), LogIndex.class);
+        return (ServiceName) ServiceName.newServiceName(String.format("taskqueue.%s.index.lockedTasks", taskQueueName), HashIndexManager.class);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public final static ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndex(String taskQueueName)
+    {
+        return (ServiceName) ServiceName.newServiceName(String.format("taskqueue.%s.index.taskTypePosition", taskQueueName), HashIndexManager.class);
     }
 
 }

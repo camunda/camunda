@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker;
 
 import java.util.Scanner;
+import static java.lang.Runtime.*;
 
 public class StandaloneBroker
 {
@@ -9,7 +10,7 @@ public class StandaloneBroker
     {
         final Broker taskBroker = new Broker(null);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 taskBroker.close();

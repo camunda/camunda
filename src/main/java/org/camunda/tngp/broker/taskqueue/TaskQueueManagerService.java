@@ -11,13 +11,16 @@ import org.camunda.tngp.broker.servicecontainer.Service;
 import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.broker.servicecontainer.ServiceListener;
 import org.camunda.tngp.broker.servicecontainer.ServiceName;
+import org.camunda.tngp.broker.services.Bytes2LongIndexManagerService;
+import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
-import org.camunda.tngp.broker.services.LogIndexService;
+import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.log.index.LogIndex;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
@@ -60,22 +63,29 @@ public class TaskQueueManagerService implements
         }
 
         final ServiceName<Log> logServiceName = logServiceName(logName);
-        final ServiceName<LogIndex> idIndexName = taskQueueLogIdIndexName(taskQueueName);
+        final ServiceName<HashIndexManager<Long2LongHashIndex>> lockedTasksIndexServiceName = taskQueueLockedTasksIndexServiceName(taskQueueName);
+        final ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndexName = taskQueueTaskTypePositionIndex(taskQueueName);
         final ServiceName<IdGenerator> idGeneratorName = taskQueueIdGeneratorName(taskQueueName);
-
-        final LogIndexService logIndexService = new LogIndexService(new TaskInstanceIndexer(), 32, 1024 * 128);
-        serviceContext.installService(idIndexName, logIndexService)
-            .dependency(logServiceName, logIndexService.getLogInjector())
-            .done();
 
         final LogIdGeneratorService logIdGeneratorService = new LogIdGeneratorService(new TaskInstanceIdReader());
         serviceContext.installService(idGeneratorName, logIdGeneratorService)
             .dependency(logServiceName, logIdGeneratorService.getLogInjector())
             .done();
 
+        final Long2LongIndexManagerService lockedTasksIndexManagerService = new Long2LongIndexManagerService(2048, 64 * 1024);
+        serviceContext.installService(lockedTasksIndexServiceName, lockedTasksIndexManagerService)
+            .dependency(logServiceName, lockedTasksIndexManagerService.getLogInjector())
+            .done();
+
+        final Bytes2LongIndexManagerService taskTypePositionIndex = new Bytes2LongIndexManagerService(64, 32*1024, 256);
+        serviceContext.installService(taskQueueTaskTypePositionIndexName, taskTypePositionIndex)
+            .dependency(logServiceName, taskTypePositionIndex.getLogInjector())
+            .done();
+
         final TaskQueueContextService taskQueueContextService = new TaskQueueContextService(taskQueueName, taskQueueId);
         serviceContext.installService(taskQueueContextServiceName(taskQueueName), taskQueueContextService)
-            .dependency(idIndexName, taskQueueContextService.getTaskInstanceIdIndexInjector())
+            .dependency(taskQueueTaskTypePositionIndexName, taskQueueContextService.getTaskTypeIndexServiceInjector())
+            .dependency(lockedTasksIndexServiceName, taskQueueContextService.getLockedTasksIndexServiceInjector())
             .dependency(logServiceName, taskQueueContextService.getLogInjector())
             .dependency(idGeneratorName, taskQueueContextService.getTaskInstanceIdGeneratorInjector())
             .listener(this)
