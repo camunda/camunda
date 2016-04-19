@@ -1,7 +1,5 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import java.util.concurrent.Callable;
-
 import org.camunda.tngp.dispatcher.impl.Subscription;
 
 public class AsyncRequestWorkerContext
