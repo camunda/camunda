@@ -1,5 +1,6 @@
 package org.camunda.tngp.hashindex.store;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -9,9 +10,8 @@ import java.util.Arrays;
 
 import uk.co.real_logic.agrona.LangUtil;
 
-public class FileChannelIndexStore implements IndexStore
+public class FileChannelIndexStore implements IndexStore, Closeable
 {
-
     protected final FileChannel fileChannel;
 
     protected long allocatedLength;
@@ -40,7 +40,7 @@ public class FileChannelIndexStore implements IndexStore
     {
         try
         {
-            fileChannel.force(true);
+            flush();
             fileChannel.close();
         }
         catch (IOException e)
@@ -80,6 +80,7 @@ public class FileChannelIndexStore implements IndexStore
     {
         final long previousLength = allocatedLength;
 
+        // partly stolen from uk.co.real_logic.agrona.IoUtil.fill(FileChannel, long, long, byte)
         try
         {
             fileChannel.position(previousLength);

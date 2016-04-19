@@ -10,6 +10,11 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
     public byte[] theKey;
     public int keyLength;
 
+    public void setKey(byte[] key)
+    {
+        System.arraycopy(key, 0, this.theKey, 0, this.theKey.length);
+    }
+
     @Override
     public void setKeyLength(int keyLength)
     {

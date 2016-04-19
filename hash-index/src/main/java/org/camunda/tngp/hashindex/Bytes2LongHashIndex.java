@@ -29,7 +29,7 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
             throw new IllegalArgumentException("Illegal byte array length: expected "+recordKeyLength() + " got "+ key.length);
         }
 
-        keyHandler.theKey = key;
+        keyHandler.setKey(key);
         valueHandler.theValue = missingValue;
         get();
         return valueHandler.theValue;
@@ -42,7 +42,7 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
             throw new IllegalArgumentException("Illegal byte array length: expected "+recordKeyLength() + " got "+ key.length);
         }
 
-        keyHandler.theKey = key;
+        keyHandler.setKey(key);
         valueHandler.theValue = value;
         return put();
     }
@@ -54,7 +54,7 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
             throw new IllegalArgumentException("Illegal byte array length: expected "+recordKeyLength() + " got "+ key.length);
         }
 
-        keyHandler.theKey = key;
+        keyHandler.setKey(key);
         valueHandler.theValue = missingValue;
         remove();
         return valueHandler.theValue;

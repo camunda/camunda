@@ -260,8 +260,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             final int newBlockId = 1 << blockDepth | filledBlockId;
             final int newBlockDepth = blockDepth + 1;
 
-            // create new block
-
+            // create new blocks
             newBlockOffset = allocateBlock();
             loadedSplitWorkBuffer.ensureLoaded(newBlockOffset, blockLength());
             MutableDirectBuffer splitBuffer = loadedSplitWorkBuffer.getBuffer();
@@ -311,12 +310,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     {
         blockCount(blockCount() + 1);
     }
-
-    private int framedBlockSize()
-    {
-        return blockLength() + BLOCK_DATA_OFFSET;
-    }
-
 
     // block scanning and visitors /////////////////////////////////////////////
 
@@ -452,10 +445,8 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
                     return false;
                 }
             }
-
             return false;
         }
-
     }
 
     class SplitVisitor implements RecordVisitor
