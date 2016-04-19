@@ -1,4 +1,4 @@
-package org.camunda.tngp.dispatcher;
+package org.camunda.tngp.dispatcher.impl;
 
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
+import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
@@ -43,7 +44,7 @@ public class SubscriptionPollFragmentsTest
 
         mockSubscriberPosition = mock(Position.class);
         mockFragmentHandler = mock(FragmentHandler.class);
-        subscription = new Subscription(mockSubscriberPosition);
+        subscription = new Subscription(mockSubscriberPosition, 0, mock(Dispatcher.class));
     }
 
     @Test

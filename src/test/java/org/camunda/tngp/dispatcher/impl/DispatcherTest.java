@@ -1,4 +1,4 @@
-package org.camunda.tngp.dispatcher;
+package org.camunda.tngp.dispatcher.impl;
 
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
@@ -13,6 +13,7 @@ import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
@@ -43,10 +44,11 @@ public class DispatcherTest
     LogBufferAppender logAppender;
     Position publisherLimit;
     Position publisherPosition;
-    Subscription subscription;
+    Subscription subscriptionSpy;
     FragmentHandler fragmentHandler;
     BlockHandler blockHandler;
     ClaimedFragment claimedFragment;
+    Position subscriberPosition;
 
     @Before
     public void setup()
@@ -67,22 +69,24 @@ public class DispatcherTest
         publisherLimit = mock(Position.class);
         publisherPosition = mock(Position.class);
         fragmentHandler = mock(FragmentHandler.class);
-        subscription = mock(Subscription.class);
         claimedFragment = mock(ClaimedFragment.class);
         blockHandler = mock(BlockHandler.class);
+        subscriberPosition = mock(Position.class);
 
         dispatcher = new Dispatcher(logBuffer,
                 logAppender,
                 publisherLimit,
                 publisherPosition,
-                new Position[] { null },
                 A_LOG_WINDOW_LENGTH,
-                null,
+                Dispatcher.MODE_PUB_SUB,
+                mock(DispatcherContext.class),
                 "test")
         {
             @Override
-            protected Subscription createSubscription(Position subscriberPosition) {
-                return subscription;
+            protected Subscription newSubscription(int subscriberId)
+            {
+                subscriptionSpy = spy(new Subscription(subscriberPosition, subscriberId, dispatcher));
+                return subscriptionSpy;
             }
         };
     }
@@ -251,60 +255,61 @@ public class DispatcherTest
     public void shouldReadFragmentsFromPartition()
     {
         // given
-        when(subscription.getPosition()).thenReturn(0l);
+        dispatcher.openSubscription();
+        when(subscriberPosition.get()).thenReturn(0l);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(subscription.pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0)).thenReturn(1);
+        doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
 
         // if
-        int fragmentsRead = dispatcher.poll(fragmentHandler, 2);
+        int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 2);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
-        verify(subscription).getPosition();
-        verify(subscription).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
+        verify(subscriberPosition).get();
+        verify(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
     }
 
     @Test
     public void shouldReadBlockFromPartition()
     {
         // given
-        when(subscription.getPosition()).thenReturn(0l);
+        dispatcher.openSubscription();
+        when(subscriberPosition.get()).thenReturn(0l);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        when(subscription.pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true)).thenReturn(1);
+        doReturn(1).when(subscriptionSpy).pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true);
 
         // if
-        int fragmentsRead = dispatcher.pollBlock(blockHandler, 2, true);
+        int fragmentsRead = subscriptionSpy.pollBlock(blockHandler, 2, true);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
-        verify(subscription).getPosition();
-        verify(subscription).pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true);
+        verify(subscriberPosition).get();
+        verify(subscriptionSpy).pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true);
     }
 
     @Test
     public void shouldNotReadBeyondPublisherPosition()
     {
         // given
-        when(subscription.getPosition()).thenReturn(0l);
+        dispatcher.openSubscription();
+        when(subscriptionSpy.getPosition()).thenReturn(0l);
         when(publisherPosition.get()).thenReturn(0l);
 
         // if
-        int fragmentsRead = dispatcher.poll(fragmentHandler, 1);
+        int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 1);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
-
-        verify(subscription).getPosition();
-        verifyNoMoreInteractions(subscription);
     }
 
     @Test
     public void shouldUpdatePublisherLimit()
     {
-        when(subscription.getPosition()).thenReturn(position(10, 100));
+        when(subscriberPosition.get()).thenReturn(position(10, 100));
 
+        dispatcher.openSubscription();
         dispatcher.updatePublisherLimit();
 
         verify(publisherLimit).proposeMaxOrdered(position(10, 100 + A_LOG_WINDOW_LENGTH));
@@ -313,8 +318,9 @@ public class DispatcherTest
     @Test
     public void shouldUpdatePublisherLimitToNextPartition()
     {
-        when(subscription.getPosition()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
+        when(subscriberPosition.get()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
 
+        dispatcher.openSubscription();
         dispatcher.updatePublisherLimit();
 
         verify(publisherLimit).proposeMaxOrdered(position(11, A_LOG_WINDOW_LENGTH));

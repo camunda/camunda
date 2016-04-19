@@ -41,7 +41,7 @@ public class Dispatcher implements AutoCloseable
 
     protected final int mode;
 
-    Dispatcher(
+    public Dispatcher(
             LogBuffer logBuffer,
             LogBufferAppender logAppender,
             Position publisherLimit,
@@ -260,13 +260,18 @@ public class Dispatcher implements AutoCloseable
         System.arraycopy(subscriptions, 0, newSubscriptions, 0, subscriptions.length);
 
         final int subscriberId = newSubscriptions.length -1;
-        final Subscription subscription = new Subscription(new AtomicLongPosition(), subscriberId, this);
+        final Subscription subscription = newSubscription(subscriberId);
 
         newSubscriptions[subscriberId] = subscription;
 
         this.subscriptions = newSubscriptions;
 
         return subscription;
+    }
+
+    protected Subscription newSubscription(final int subscriberId)
+    {
+        return new Subscription(new AtomicLongPosition(), subscriberId, this);
     }
 
     public void doCloseSubscription(Subscription subscriptionToClose)
