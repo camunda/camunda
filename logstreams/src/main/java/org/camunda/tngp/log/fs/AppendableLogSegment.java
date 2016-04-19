@@ -121,7 +121,7 @@ public class AppendableLogSegment extends LogSegment
         {
             int written = fileChannel.write(buff, position);
 
-            // TODO: fsync?
+            // TODO: make configurable
 //            fileChannel.force(false);
 
             bytesWritten = written;

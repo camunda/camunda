@@ -111,7 +111,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
             final ReadableLogSegment secondLastSegment = readableLogSegments.get(Math.max(0, existingSegments -2));
 
             ReadableLogSegment lastSegment = readableLogSegments.get(existingSegments - 1);
-            if(!secondLastSegment.isFilled())
+            if(!secondLastSegment.isFilled() && lastSegment != secondLastSegment)
             {
                 // remove last pre-allocated segment
                 lastSegment = secondLastSegment;
