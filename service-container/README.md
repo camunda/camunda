@@ -134,7 +134,7 @@ serviceContainer.remove(newServiceName("requestCounter", Counter.class));
 When remoing a service, all services depending on the service, either directly or transitively, are stopped before the method
 returns.
 
-# Best Practices
+# Best Practice
 
 In order to keep business logic testable, it is discouraged to put the actual business logic into the
 class implementing the `Service` interface. Rather, you are encouraged to seperate it out into a seperate class:
