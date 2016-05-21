@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.servicecontainer;
+package org.camunda.tngp.servicecontainer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.camunda.tngp.broker.servicecontainer.impl.ServiceContainerImpl;
+import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
 
 public class ServiceBuilder<S>
 {

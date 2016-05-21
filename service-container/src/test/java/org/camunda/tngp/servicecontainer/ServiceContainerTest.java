@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.kernel;
+package org.camunda.tngp.servicecontainer;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -6,11 +6,11 @@ import org.mockito.InOrder;
 
 import static org.mockito.Mockito.*;
 
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContainer;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
-import org.camunda.tngp.broker.servicecontainer.impl.ServiceContainerImpl;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
 
 import static org.assertj.core.api.Assertions.*;
 

@@ -1,15 +1,15 @@
-package org.camunda.tngp.broker.servicecontainer.impl;
+package org.camunda.tngp.servicecontainer.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceBuilder;
-import org.camunda.tngp.broker.servicecontainer.ServiceContainer;
-import org.camunda.tngp.broker.servicecontainer.ServiceListener;
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceBuilder;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.ServiceListener;
+import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class ServiceContainerImpl implements ServiceContainer
 {

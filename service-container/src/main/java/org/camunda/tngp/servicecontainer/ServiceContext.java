@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.servicecontainer;
+package org.camunda.tngp.servicecontainer;
 
 public interface ServiceContext
 {
