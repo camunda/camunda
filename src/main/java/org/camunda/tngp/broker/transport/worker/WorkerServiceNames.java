@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.transport.worker;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorker;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;

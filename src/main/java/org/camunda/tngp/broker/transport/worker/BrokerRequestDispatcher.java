@@ -54,8 +54,8 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
 
                 if(handler != null)
                 {
-                    final int taskQueueId = decoderFlyweight.resourceId();
-                    final C ctx = contextProvider.getContextForResource(taskQueueId);
+                    final int resourceId = decoderFlyweight.resourceId();
+                    final C ctx = contextProvider.getContextForResource(resourceId);
                     // TODO: shard
 
                     if(ctx != null)

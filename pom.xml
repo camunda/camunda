@@ -27,7 +27,7 @@
 			<artifactId>log</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.camunda.tngp</groupId>
 			<artifactId>protocol</artifactId>
@@ -45,19 +45,31 @@
 			<artifactId>log-idgenerator</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.camunda.tngp</groupId>
 			<artifactId>hash-index</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
-		  <groupId>com.moandjiezana.toml</groupId>
-		  <artifactId>toml4j</artifactId>
-		  <version>0.5.1</version>
+			<groupId>org.camunda.tngp</groupId>
+			<artifactId>compact-graph-bpmn</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
 		
+		<dependency>
+			<groupId>org.camunda.tngp</groupId>
+			<artifactId>service-container</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.moandjiezana.toml</groupId>
+			<artifactId>toml4j</artifactId>
+			<version>0.5.1</version>
+		</dependency>
+
 		<dependency>
 			<groupId>uk.co.real-logic</groupId>
 			<artifactId>sbe-all</artifactId>
@@ -98,6 +110,19 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+		    <plugin>
+		      <artifactId>maven-assembly-plugin</artifactId>
+		      <configuration>
+		        <archive>
+		          <manifest>
+		            <mainClass>org.camunda.tngp.broker.StandaloneBroker</mainClass>
+		          </manifest>
+		        </archive>
+		        <descriptorRefs>
+		          <descriptorRef>jar-with-dependencies</descriptorRef>
+		        </descriptorRefs>
+		      </configuration>
+		    </plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>

@@ -22,7 +22,9 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         }
         else
         {
-            toml = new Toml().read(new File(configFileLocation));
+            final File file = new File(configFileLocation);
+            System.out.println("Using config file " + file.getAbsolutePath());
+            toml = new Toml().read(file);
         }
     }
 

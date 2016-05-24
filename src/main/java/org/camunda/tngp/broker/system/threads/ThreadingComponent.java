@@ -13,8 +13,8 @@ public class ThreadingComponent implements Component
         final AgentRunnterServiceImpl service = new AgentRunnterServiceImpl(context.getConfigurationManager());
 
         context.getServiceContainer()
-            .installService(AGENT_RUNNER_SERVICE, service)
-            .done();
+            .createService(AGENT_RUNNER_SERVICE, service)
+            .install();
     }
 
 }

@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.transport;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;
 

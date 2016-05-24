@@ -8,7 +8,13 @@ public class StandaloneBroker
 
     public static void main(String[] args)
     {
-        final Broker taskBroker = new Broker(null);
+        String configFile = null;
+        if(args.length == 1)
+        {
+            configFile = args[0];
+        }
+
+        final Broker taskBroker = new Broker(configFile);
 
         getRuntime().addShutdownHook(new Thread() {
             @Override

@@ -164,7 +164,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
 
         do
         {
-            claimedPos = log.getWriteBuffer().claim(claimedLogFragment, encodedTaskInstanceLength);
+            claimedPos = log.getWriteBuffer().claim(claimedLogFragment, encodedTaskInstanceLength, log.getId());
         }
         while(claimedPos == -2);
 

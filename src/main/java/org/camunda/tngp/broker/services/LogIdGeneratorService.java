@@ -1,14 +1,14 @@
 package org.camunda.tngp.broker.services;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.LastLoggedIdReader;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.log.idgenerator.spi.LogFragmentIdReader;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class LogIdGeneratorService implements Service<IdGenerator>
 {

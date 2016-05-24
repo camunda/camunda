@@ -1,30 +1,30 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueContextServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueIdGeneratorName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockedTasksIndexServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
-import org.camunda.tngp.broker.servicecontainer.ServiceListener;
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.broker.services.Bytes2LongIndexManagerService;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
 import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
+import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceListener;
+import org.camunda.tngp.servicecontainer.ServiceName;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-
-public class TaskQueueManagerService implements
+public class TaskQueueManagerService extends AbstractResourceContextProvider<TaskQueueContext> implements
     Service<TaskQueueManager>,
     TaskQueueManager,
     ServiceListener
@@ -33,11 +33,9 @@ public class TaskQueueManagerService implements
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
 
-    protected Int2ObjectHashMap<TaskQueueContext> taskQueueContextMap = new Int2ObjectHashMap<>();
-    protected TaskQueueContext[] taskQueueContexts = new TaskQueueContext[0];
-
     public TaskQueueManagerService(ConfigurationManager configurationManager)
     {
+        super(TaskQueueContext.class);
         taskQueueCfgs = configurationManager.readList("task-queue", TaskQueueCfg.class);
     }
 
@@ -68,28 +66,28 @@ public class TaskQueueManagerService implements
         final ServiceName<IdGenerator> idGeneratorName = taskQueueIdGeneratorName(taskQueueName);
 
         final LogIdGeneratorService logIdGeneratorService = new LogIdGeneratorService(new TaskInstanceIdReader());
-        serviceContext.installService(idGeneratorName, logIdGeneratorService)
+        serviceContext.createService(idGeneratorName, logIdGeneratorService)
             .dependency(logServiceName, logIdGeneratorService.getLogInjector())
-            .done();
+            .install();
 
         final Long2LongIndexManagerService lockedTasksIndexManagerService = new Long2LongIndexManagerService(2048, 64 * 1024);
-        serviceContext.installService(lockedTasksIndexServiceName, lockedTasksIndexManagerService)
+        serviceContext.createService(lockedTasksIndexServiceName, lockedTasksIndexManagerService)
             .dependency(logServiceName, lockedTasksIndexManagerService.getLogInjector())
-            .done();
+            .install();
 
         final Bytes2LongIndexManagerService taskTypePositionIndex = new Bytes2LongIndexManagerService(64, 32*1024, 256);
-        serviceContext.installService(taskQueueTaskTypePositionIndexName, taskTypePositionIndex)
+        serviceContext.createService(taskQueueTaskTypePositionIndexName, taskTypePositionIndex)
             .dependency(logServiceName, taskTypePositionIndex.getLogInjector())
-            .done();
+            .install();
 
         final TaskQueueContextService taskQueueContextService = new TaskQueueContextService(taskQueueName, taskQueueId);
-        serviceContext.installService(taskQueueContextServiceName(taskQueueName), taskQueueContextService)
+        serviceContext.createService(taskQueueContextServiceName(taskQueueName), taskQueueContextService)
             .dependency(taskQueueTaskTypePositionIndexName, taskQueueContextService.getTaskTypeIndexServiceInjector())
             .dependency(lockedTasksIndexServiceName, taskQueueContextService.getLockedTasksIndexServiceInjector())
             .dependency(logServiceName, taskQueueContextService.getLogInjector())
             .dependency(idGeneratorName, taskQueueContextService.getTaskInstanceIdGeneratorInjector())
             .listener(this)
-            .done();
+            .install();
     }
 
     @Override
@@ -115,37 +113,4 @@ public class TaskQueueManagerService implements
         return this;
     }
 
-    @Override
-    public synchronized <S> void onServiceStarted(ServiceName<S> name, S service)
-    {
-        final TaskQueueContext taskQueueContext = (TaskQueueContext) service;
-        taskQueueContextMap.put(taskQueueContext.getTaskQueueId(), taskQueueContext);
-
-        final List<TaskQueueContext> list = new ArrayList<TaskQueueContext>(Arrays.asList(taskQueueContexts));
-        list.add(taskQueueContext);
-        this.taskQueueContexts = list.toArray(new TaskQueueContext[list.size()]);
-    }
-
-    @Override
-    public synchronized <S> void onServiceStopping(ServiceName<S> name, S service)
-    {
-        final TaskQueueContext taskQueueContext = (TaskQueueContext) service;
-        taskQueueContextMap.remove(taskQueueContext.getTaskQueueId());
-
-        final List<TaskQueueContext> list = new ArrayList<TaskQueueContext>(Arrays.asList(taskQueueContexts));
-        list.remove(taskQueueContext);
-        this.taskQueueContexts = list.toArray(new TaskQueueContext[list.size()]);
-    }
-
-    @Override
-    public TaskQueueContext getContextForResource(int id)
-    {
-        return taskQueueContextMap.get(id);
-    }
-
-    @Override
-    public TaskQueueContext[] getTaskQueueContexts()
-    {
-        return taskQueueContexts;
-    }
 }

@@ -1,10 +1,10 @@
 package org.camunda.tngp.broker.transport.worker;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 

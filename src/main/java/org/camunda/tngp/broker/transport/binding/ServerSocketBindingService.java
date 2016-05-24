@@ -2,10 +2,10 @@ package org.camunda.tngp.broker.transport.binding;
 
 import java.net.InetSocketAddress;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;

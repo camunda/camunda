@@ -5,8 +5,6 @@ import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import java.net.InetSocketAddress;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceContainer;
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.SystemContext;
@@ -14,6 +12,8 @@ import org.camunda.tngp.broker.transport.binding.ServerSocketBindingService;
 import org.camunda.tngp.broker.transport.cfg.SocketBindingCfg;
 import org.camunda.tngp.broker.transport.cfg.TransportComponentCfg;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class TransportComponent implements Component
 {
@@ -25,15 +25,15 @@ public class TransportComponent implements Component
 
         final int sendBufferSize = transportComponentCfg.sendBufferSize * 1024 * 1024;
         final DispatcherService sendBufferService = new DispatcherService(sendBufferSize);
-        serviceContainer.installService(TRANSPORT_SEND_BUFFER, sendBufferService)
+        serviceContainer.createService(TRANSPORT_SEND_BUFFER, sendBufferService)
             .dependency(AGENT_RUNNER_SERVICE, sendBufferService.getAgentRunnerInjector())
-            .done();
+            .install();
 
         final TransportService transportService = new TransportService();
-        serviceContainer.installService(TRANSPORT, transportService)
+        serviceContainer.createService(TRANSPORT, transportService)
             .dependency(TRANSPORT_SEND_BUFFER, transportService.getSendBufferInjector())
             .dependency(AGENT_RUNNER_SERVICE, transportService.getAgentRunnerInjector())
-            .done();
+            .install();
 
         bindClientApi(serviceContainer, transportComponentCfg);
     }
@@ -69,14 +69,14 @@ public class TransportComponent implements Component
         }
 
         final DispatcherService receiveBufferService = new DispatcherService(receiveBufferSize);
-        final ServiceName<Dispatcher> receiveBufferName = serviceContainer.installService(serverSocketBindingReceiveBufferName(bindingName), receiveBufferService)
+        final ServiceName<Dispatcher> receiveBufferName = serviceContainer.createService(serverSocketBindingReceiveBufferName(bindingName), receiveBufferService)
             .dependency(AGENT_RUNNER_SERVICE, receiveBufferService.getAgentRunnerInjector())
-            .done();
+            .install();
 
         final ServerSocketBindingService socketBindingService = new ServerSocketBindingService(bindingName, bindAddr);
-        serviceContainer.installService(serverSocketBindingServiceName(bindingName), socketBindingService)
+        serviceContainer.createService(serverSocketBindingServiceName(bindingName), socketBindingService)
             .dependency(TRANSPORT, socketBindingService.getTransportInjector())
             .dependency(receiveBufferName, socketBindingService.getReceiveBufferInjector())
-            .done();
+            .install();
     }
 }

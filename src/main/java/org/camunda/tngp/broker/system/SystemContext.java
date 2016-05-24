@@ -3,8 +3,8 @@ package org.camunda.tngp.broker.system;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceContainer;
-import org.camunda.tngp.broker.servicecontainer.impl.ServiceContainerImpl;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
 
 public class SystemContext implements AutoCloseable
 {

@@ -1,9 +1,9 @@
 package org.camunda.tngp.broker.transport.worker;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.broker.system.threads.AgentRunnerService;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorker;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 

@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.system;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.broker.system.threads.AgentRunnerService;
+import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class SystemServiceNames
 {

@@ -1,13 +1,13 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 
 public class TaskQueueContextService implements Service<TaskQueueContext>
 {

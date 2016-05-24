@@ -1,11 +1,11 @@
 package org.camunda.tngp.broker.log;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogAgentContext;
 import org.camunda.tngp.log.LogBuilder;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 
 public class LogService implements Service<Log>
 {

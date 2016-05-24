@@ -11,14 +11,14 @@ import java.util.Random;
 
 import org.camunda.tngp.broker.log.cfg.LogCfg;
 import org.camunda.tngp.broker.log.cfg.LogComponentCfg;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.log.LogBuilder;
 import org.camunda.tngp.log.Logs;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 
 public class LogManagerService implements Service<LogManager>, LogManager
 {
@@ -91,9 +91,9 @@ public class LogManagerService implements Service<LogManager>, LogManager
             .logSegmentSize(logSegmentSize);
 
         final LogService logService = new LogService(logBuilder);
-        serviceContext.installService(logServiceName(logName), logService)
+        serviceContext.createService(logServiceName(logName), logService)
             .dependency(LOG_AGENT_CONTEXT_SERVICE, logService.getLogAgentContext())
-            .done();
+            .install();
     }
 
     @Override
@@ -108,15 +108,15 @@ public class LogManagerService implements Service<LogManager>, LogManager
                 .modePipeline(); // log write buffer is in pipeline mode
 
         final DispatcherService logWriteBufferService = new DispatcherService(writeBufferBuilder);
-        serviceContext.installService(LOG_WRITE_BUFFER_SERVICE, logWriteBufferService)
+        serviceContext.createService(LOG_WRITE_BUFFER_SERVICE, logWriteBufferService)
             .dependency(AGENT_RUNNER_SERVICE, logWriteBufferService.getAgentRunnerInjector())
-            .done();
+            .install();
 
         final LogAgentContextService logAgentContextService = new LogAgentContextService();
-        serviceContext.installService(LOG_AGENT_CONTEXT_SERVICE, logAgentContextService)
+        serviceContext.createService(LOG_AGENT_CONTEXT_SERVICE, logAgentContextService)
             .dependency(LOG_WRITE_BUFFER_SERVICE, logAgentContextService.getLogWriteBufferInjector())
             .dependency(AGENT_RUNNER_SERVICE, logAgentContextService.getAgentRunnerServiceInjector())
-            .done();
+            .install();
 
         for (LogCfg logCfg : logCfgs)
         {

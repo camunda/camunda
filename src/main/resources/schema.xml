@@ -10,6 +10,8 @@
 			<type name="templateId" primitiveType="uint16" />
 			<type name="schemaId" primitiveType="uint16" />
 			<type name="version" primitiveType="uint16" />
+			<type name="resourceId" primitiveType="uint16" />
+			<type name="shardId" primitiveType="uint16" />
 		</composite>
 		<composite name="varDataEncoding">
 			<type name="length" primitiveType="uint16" />
@@ -28,6 +30,17 @@
 			<validValue name="LOCKED">1</validValue>
 			<validValue name="COMPLETED">2</validValue>
 		</enum>
+		<enum name="WorkflowInstanceEventType" encodingType="uint8">
+			<validValue name="NEW">0</validValue>
+			<validValue name="ACTIVE">1</validValue>
+			<validValue name="COMPLETED">2</validValue>
+		</enum>
+		<enum name="AvtivityInstanceEventType" encodingType="uint8">
+			<validValue name="NEW">0</validValue>
+			<validValue name="ACTIVE">1</validValue>
+			<validValue name="COMPLETED">2</validValue>
+		</enum>
+		<type name="Date" primitiveType="uint64" semanticType="Date"/>
 	</types>
 
 	<sbe:message name="TaskInstance" id="1" description="A task Instance">
@@ -41,5 +54,23 @@
 		<data name="taskType" id="7" type="varDataEncoding" />
 		<data name="payload" id="8" type="varDataEncoding" />
 	</sbe:message>
-
+	
+	<sbe:message name="WfType" id="2" description="A Workflow Type">
+		<field name="id" id="1" type="uint64" />
+		<field name="version" id="2" type="uint16" />
+		<field name="prevVersionPosition" id="3" type="uint64" />
+		<data name="typeKey" id="4" type="varDataEncoding" />
+		<data name="resource" id="5" type="varDataEncoding" />
+	</sbe:message>
+	
+	<sbe:message name="FlowElementExecutionEvent" id="3">
+		<field name="key" id="1" type="uint64" />
+		<field name="event" id="2" type="uint16" />
+		<field name="processId" id="3" type="uint64" />
+		<field name="processInstanceId" id="4" type="uint64" />
+		<field name="flowElementId" id="5" type="uint16" />
+		<field name="flowElementType" id="6" type="uint16" />
+		<field name="parentFlowElementInstanceId" id="7" type="uint64" />
+	</sbe:message>
+	
 </sbe:messageSchema>

@@ -3,26 +3,23 @@ package org.camunda.tngp.broker.services;
 import static org.camunda.tngp.broker.services.CloseUtil.closeSilently;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
-import org.camunda.tngp.broker.servicecontainer.Injector;
-import org.camunda.tngp.broker.servicecontainer.Service;
-import org.camunda.tngp.broker.servicecontainer.ServiceContext;
 import org.camunda.tngp.hashindex.HashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContext;
 
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 
 public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implements Service<HashIndexManager<I>>, HashIndexManager<I>
 {
-
     private final Injector<Log> logInjector = new Injector<>();
 
     protected final int blockLength;

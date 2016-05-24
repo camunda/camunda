@@ -6,8 +6,6 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
 import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceContainer;
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.broker.services.DeferredResponsePoolService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -20,6 +18,8 @@ import org.camunda.tngp.broker.transport.worker.AsyncRequestWorkerService;
 import org.camunda.tngp.broker.transport.worker.BrokerRequestDispatcher;
 import org.camunda.tngp.broker.transport.worker.BrokerRequestWorkerContextService;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
@@ -34,8 +34,8 @@ public class TaskQueueComponent implements Component
         final TaskQueueComponentCfg cfg = configurationManager.readEntry("task-queues", TaskQueueComponentCfg.class);
 
         final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService(configurationManager);
-        final ServiceName<TaskQueueManager> taskQueueManagerServiceName = serviceContainer.installService(TASK_QUEUE_MANAGER, taskQueueManagerService)
-            .done();
+        final ServiceName<TaskQueueManager> taskQueueManagerServiceName = serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
+            .install();
 
         startWorkers(serviceContainer, cfg, taskQueueManagerService, taskQueueManagerServiceName);
     }
@@ -62,7 +62,7 @@ public class TaskQueueComponent implements Component
         workerContext.setTaskQueueManager(taskQueueManagerService);
         workerContext.setWorkerTasks(new WorkerTask[]
         {
-                new IndexWriteWorkerTask()
+                new TaskQueueIndexWriteWorkerTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);
@@ -71,21 +71,21 @@ public class TaskQueueComponent implements Component
 
         final String workerName = "task-queue-worker.0";
 
-        final ServiceName<DeferredResponsePool> responsePoolServiceName = serviceContainer.installService(workerResponsePoolServiceName(workerName), responsePoolService)
+        final ServiceName<DeferredResponsePool> responsePoolServiceName = serviceContainer.createService(workerResponsePoolServiceName(workerName), responsePoolService)
             .dependency(TRANSPORT_SEND_BUFFER, responsePoolService.getSendBufferInector())
-            .done();
+            .install();
 
-        final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.installService(workerContextServiceName(workerName), workerContextService)
+        final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.createService(workerContextServiceName(workerName), workerContextService)
             .dependency(responsePoolServiceName, workerContextService.getResponsePoolInjector())
             .dependency(LOG_WRITE_BUFFER_SERVICE, workerContextService.getAsyncWorkBufferInjector())
             .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), workerContextService.getRequestBufferInjector())
-            .done();
+            .install();
 
-        serviceContainer.installService(workerServiceName(workerName), workerService)
+        serviceContainer.createService(workerServiceName(workerName), workerService)
             .dependency(workerContextServiceName, workerService.getWorkerContextInjector())
             .dependency(AGENT_RUNNER_SERVICE, workerService.getAgentRunnerInjector())
             .dependency(taskQueueManagerServiceName)
-            .done();
+            .install();
     }
 
 }

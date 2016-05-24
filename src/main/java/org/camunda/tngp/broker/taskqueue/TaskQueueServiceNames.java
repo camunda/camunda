@@ -1,10 +1,10 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.servicecontainer.ServiceName;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class TaskQueueServiceNames
 {

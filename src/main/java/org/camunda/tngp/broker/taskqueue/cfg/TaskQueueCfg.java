@@ -5,7 +5,6 @@ public class TaskQueueCfg
     public String name;
     public int id = -1;
     public String logName;
-    public String socketBindingName;
 
 }
 

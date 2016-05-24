@@ -13,8 +13,8 @@ public class LogComponent implements Component
     {
         final LogManagerService logManager = new LogManagerService(context.getConfigurationManager());
 
-        context.getServiceContainer().installService(LOG_MANAGER_SERVICE, logManager)
-            .done();
+        context.getServiceContainer().createService(LOG_MANAGER_SERVICE, logManager)
+            .install();
     }
 
 }

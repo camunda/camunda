@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.taskqueue;
 
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
 
-public class IndexWriteWorkerTask implements WorkerTask<TaskQueueWorkerContext>
+public class TaskQueueIndexWriteWorkerTask implements WorkerTask<TaskQueueWorkerContext>
 {
     @Override
     public int execute(TaskQueueWorkerContext context)
@@ -11,11 +11,11 @@ public class IndexWriteWorkerTask implements WorkerTask<TaskQueueWorkerContext>
 
         int workCount = 0;
 
-        final TaskQueueContext[] taskQueueContexts = context.getTaskQueueManager().getTaskQueueContexts();
+        final TaskQueueContext[] taskQueueContexts = context.getTaskQueueManager().getContexts();
 
-        for (TaskQueueContext taskQueueContext : taskQueueContexts)
+        for (int i = 0; i < taskQueueContexts.length; i++)
         {
-            workCount += taskQueueContext.getTaskQueueIndexWriter().update(maxEntries);
+            workCount += taskQueueContexts[i].getTaskQueueIndexWriter().update(maxEntries);
         }
 
         return workCount;
