@@ -10,6 +10,7 @@ import org.camunda.tngp.broker.services.LogIdGeneratorService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
+import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Service;
