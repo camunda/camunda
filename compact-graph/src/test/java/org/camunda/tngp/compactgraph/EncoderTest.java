@@ -10,14 +10,14 @@ public class EncoderTest
 
     GraphBuilder graphBuilder;
     Graph graph;
-    GraphNavigator graphNavigator;
+    NodeVisitor graphNavigator;
 
     @Before
     public void setup()
     {
         graphBuilder = new GraphBuilder();
         graph = new Graph();
-        graphNavigator = new GraphNavigator();
+        graphNavigator = new NodeVisitor();
     }
 
     @Test
@@ -41,7 +41,7 @@ public class EncoderTest
         graphNavigator.init(graph)
             .moveToNode(0);
 
-        assertThat(graphNavigator.getNodeId()).isEqualTo(0);
+        assertThat(graphNavigator.nodeId()).isEqualTo(0);
     }
 
     @Test
@@ -62,10 +62,10 @@ public class EncoderTest
 
         // traverse edge
         assertThat(graphNavigator.edgeCount(0)).isEqualTo(1);
-        assertThat(graphNavigator.traverseEdge(0).getNodeId()).isEqualTo(1);
+        assertThat(graphNavigator.traverseEdge(0).nodeId()).isEqualTo(1);
         // traverse back
         assertThat(graphNavigator.edgeCount(0)).isEqualTo(1);
-        assertThat(graphNavigator.traverseEdge(0).getNodeId()).isEqualTo(0);
+        assertThat(graphNavigator.traverseEdge(0).nodeId()).isEqualTo(0);
 
     }
 
@@ -88,12 +88,12 @@ public class EncoderTest
         // traverse edge
         assertThat(graphNavigator.edgeCount(0)).isEqualTo(1);
         assertThat(graphNavigator.edgeCount(1)).isEqualTo(0);
-        assertThat(graphNavigator.traverseEdge(0).getNodeId()).isEqualTo(1);
+        assertThat(graphNavigator.traverseEdge(0).nodeId()).isEqualTo(1);
 
         // traverse back
         assertThat(graphNavigator.edgeCount(0)).isEqualTo(0);
         assertThat(graphNavigator.edgeCount(1)).isEqualTo(1);
-        assertThat(graphNavigator.traverseEdge(1).getNodeId()).isEqualTo(0);
+        assertThat(graphNavigator.traverseEdge(1).nodeId()).isEqualTo(0);
 
     }
 }

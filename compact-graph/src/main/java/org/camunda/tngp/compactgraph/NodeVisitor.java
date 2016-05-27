@@ -6,20 +6,20 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class GraphNavigator
+public class NodeVisitor
 {
     protected UnsafeBuffer buffer;
     protected int offset = -1;
     protected Graph graph;
 
-    public GraphNavigator init(Graph graph)
+    public NodeVisitor init(Graph graph)
     {
         this.graph = graph;
         this.buffer = graph.getBuffer();
         return this;
     }
 
-    public GraphNavigator moveToNode(int nodeId)
+    public NodeVisitor moveToNode(int nodeId)
     {
         setOffset(graph.nodeOffset(nodeId));
         return this;
@@ -30,7 +30,7 @@ public class GraphNavigator
         this.offset = nodeOffset;
     }
 
-    public int getNodeId()
+    public int nodeId()
     {
         return buffer.getInt(nodeIdOffset(offset));
     }
@@ -69,12 +69,12 @@ public class GraphNavigator
         return buffer.getShort(edgeCountOffset((short) edgeType));
     }
 
-    public GraphNavigator traverseEdge(int edgeType)
+    public NodeVisitor traverseEdge(int edgeType)
     {
         return traverseEdge(edgeType, 0);
     }
 
-    public GraphNavigator traverseEdge(int edgeType, int edgeIndex)
+    public NodeVisitor traverseEdge(int edgeType, int edgeIndex)
     {
         final int edgeCountOffset = edgeCountOffset((short) edgeType);
         final short edgeCount = buffer.getShort(edgeCountOffset);
