@@ -2,6 +2,7 @@ package org.camunda.tngp.transport.impl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -110,6 +111,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
             try
             {
                 final SocketChannel socketChannel = media.accept();
+                socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
                 socketChannel.configureBlocking(false);
 
                 channel = new ServerChannelImpl(

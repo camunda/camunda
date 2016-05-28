@@ -2,6 +2,7 @@ package org.camunda.tngp.transport.impl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -52,6 +53,7 @@ public class ClientChannelImpl extends TransportChannelImpl implements ClientCha
         try
         {
             media = SocketChannel.open();
+            media.setOption(StandardSocketOptions.TCP_NODELAY, true);
             media.configureBlocking(false);
             media.connect(remoteAddress);
         }
