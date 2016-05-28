@@ -53,6 +53,14 @@ public class ClaimedFragment
         reset(buffer);
     }
 
+    public void abort()
+    {
+        // abort the message by setting type to padding and writing the positive length
+        buffer.putInt(typeOffset(0), TYPE_PADDING);
+        buffer.putIntOrdered(0, buffer.capacity() - HEADER_LENGTH);
+        reset(buffer);
+    }
+
     private static void reset(UnsafeBuffer fragmentWrapper)
     {
         fragmentWrapper.wrap(0,0);
@@ -61,12 +69,6 @@ public class ClaimedFragment
     public boolean isOpen()
     {
         return getFragmentLength() > 0;
-    }
-
-    public void abort()
-    {
-        System.err.println("abort() not implemented");
-        // TODO Auto-generated method stub
     }
 
 }

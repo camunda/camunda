@@ -64,7 +64,6 @@ public class SubscriptionPollBlockTest
         int fragOffset = 0;
 
         long subscriberPosition = position(A_PARTITION_ID, fragOffset);
-        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
@@ -88,7 +87,6 @@ public class SubscriptionPollBlockTest
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
         long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
-        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -121,7 +119,6 @@ public class SubscriptionPollBlockTest
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
         long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
-        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -154,7 +151,6 @@ public class SubscriptionPollBlockTest
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
         long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
-        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -181,11 +177,10 @@ public class SubscriptionPollBlockTest
     }
 
     @Test
-    public void shouldRollOverPartitionOnPadding()
+    public void shouldRollOverPartitionOnPaddingIfEndOfPArtition()
     {
-        int fragOffset = 0;
+        int fragOffset = A_PARTITION_LENGTH - A_FRAGMENT_LENGTH;
 
-        when(mockSubscriberPosition.get()).thenReturn(position(A_PARTITION_ID, fragOffset));
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
@@ -203,11 +198,10 @@ public class SubscriptionPollBlockTest
     @Test
     public void shouldRollOverIfHitsPadding()
     {
-        int firstFragOffset = 0;
+        int firstFragOffset = A_PARTITION_LENGTH - (2 * A_FRAGMENT_LENGTH);
         int secondFragOffset = nextFragmentOffset(firstFragOffset);
 
         long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
-        when(mockSubscriberPosition.get()).thenReturn(subscriberPosition);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -229,6 +223,55 @@ public class SubscriptionPollBlockTest
 
         // and the position was rolled over to the next partition
         verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID + 1, 0));
+    }
+
+    @Test
+    public void shouldNotRollOverPartitionOnPaddingIfNotEndOfPArtition()
+    {
+        int fragOffset = 0;
+
+        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
+
+        // when
+        int fragmentsRead = subscription.pollBlock(logBufferPartition, mockBlockHandler, 2, A_PARTITION_ID, fragOffset, true);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(0);
+        // the block handler was not handed any fragments
+        verifyNoMoreInteractions(mockBlockHandler);
+        // the position was set to the beginning of the next partition
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+    }
+
+    @Test
+    public void shouldNotRollOverIfHitsPaddingNotAtAndOfPartition()
+    {
+        int firstFragOffset = 0;
+        int secondFragOffset = nextFragmentOffset(firstFragOffset);
+
+        long subscriberPosition = position(A_PARTITION_ID, firstFragOffset);
+
+        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
+
+        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_PADDING);
+
+        // when
+        int fragmentsRead = subscription.pollBlock(logBufferPartition, mockBlockHandler, 2, A_PARTITION_ID, firstFragOffset, true);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+
+        // the block handler was handed only one fragment in as block
+        InOrder inOrder = inOrder(mockBlockHandler);
+        inOrder.verify(mockBlockHandler).onBlockAvailable(eq(rawBufferMock), eq(A_PARTITION_DATA_SECTION_OFFSET + firstFragOffset), eq(A_FRAGMENT_LENGTH), eq(A_STREAM_ID), eq(subscriberPosition));
+        inOrder.verifyNoMoreInteractions();
+
+        // and the position was rolled over to the next fragement after the padding
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(secondFragOffset)));
     }
 
     @Test

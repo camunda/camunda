@@ -83,9 +83,14 @@ public class Subscription
             final short type = buffer.getShort(typeOffset(fragmentOffset));
             if(type == TYPE_PADDING)
             {
-                ++partitionId;
-                fragmentOffset = 0;
-                break;
+                fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+
+                if(fragmentOffset >= partition.getPartitionSize())
+                {
+                    ++partitionId;
+                    fragmentOffset = 0;
+                    break;
+                }
             }
             else
             {
@@ -174,8 +179,14 @@ public class Subscription
             final short type = buffer.getShort(typeOffset(partitionOffset));
             if(type == TYPE_PADDING)
             {
-                ++partitionId;
-                partitionOffset = 0;
+                partitionOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+
+                if(partitionOffset >= partition.getPartitionSize())
+                {
+                    ++partitionId;
+                    partitionOffset = 0;
+                }
+
                 break;
             }
             else
@@ -292,10 +303,20 @@ public class Subscription
             final short type = buffer.getShort(typeOffset(partitionOffset));
             if(type == TYPE_PADDING)
             {
+                partitionOffset += alignedLength(length);
+
                 if(blockLength == 0)
                 {
-                    position.proposeMaxOrdered(position(1 + partitionId, 0));
+                    if(partitionOffset >= partition.getPartitionSize())
+                    {
+                        position.proposeMaxOrdered(position(1 + partitionId, 0));
+                    }
+                    else
+                    {
+                        position.proposeMaxOrdered(position(partitionId, partitionOffset));
+                    }
                 }
+
                 break;
             }
             else
@@ -336,13 +357,13 @@ public class Subscription
             final int absoluteOffset = bufferOffset + firstFragmentOffset;
 
             availableBlock.setBlock(
-                    rawBuffer,
-                    position,
-                    initialStreamId,
-                    partitionId,
-                    firstFragmentOffset,
-                    absoluteOffset,
-                    blockLength);
+                rawBuffer,
+                position,
+                initialStreamId,
+                partitionId,
+                firstFragmentOffset,
+                absoluteOffset,
+                blockLength);
         }
 
         return blockLength;

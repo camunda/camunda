@@ -59,9 +59,9 @@ public class DispatcherIntegrationTest
     @Test
     public void testOffer() throws Exception
     {
-        // 1 million 10 K messages
+        // 1 million messages
         final int totalWork = 1000000;
-        UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(1024*10));
+        UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
@@ -130,15 +130,23 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1; i <= totalWork; i++)
+        for(int i = 1, committed = 1; committed <= totalWork; i++)
         {
             while (dispatcher.claim(claimedFragment, 64) <= 0)
             {
                 // spin
             }
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            buffer.putInt(claimedFragment.getOffset(), i);
-            claimedFragment.commit();
+            if(i % 5 != 0)
+            {
+                buffer.putInt(claimedFragment.getOffset(), committed);
+                claimedFragment.commit();
+                committed++;
+            }
+            else
+            {
+                claimedFragment.abort();
+            }
         }
 
         consumerThread.join();
@@ -175,15 +183,23 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1; i <= totalWork; i++)
+        for(int i = 1, committed = 1; committed <= totalWork; i++)
         {
-            while (dispatcher.claim(claimedFragment, 64) <= 0)
+            while (dispatcher.claim(claimedFragment, 59) <= 0)
             {
                 // spin
             }
-            final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(i));
-            claimedFragment.commit();
+            if(i % 5 != 0)
+            {
+                final MutableDirectBuffer buffer = claimedFragment.getBuffer();
+                buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(committed));
+                claimedFragment.commit();
+                committed++;
+            }
+            else
+            {
+                claimedFragment.abort();
+            }
         }
 
         consumerThread.join();
@@ -231,15 +247,23 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1; i <= totalWork; i++)
+        for(int i = 1, committed = 1; committed <= totalWork; i++)
         {
-            while (dispatcher.claim(claimedFragment, 64) <= 0)
+            while (dispatcher.claim(claimedFragment, 59) <= 0)
             {
                 // spin
             }
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(i));
-            claimedFragment.commit();
+            if(i % 5 != 0)
+            {
+                buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(committed));
+                claimedFragment.commit();
+                committed++;
+            }
+            else
+            {
+                claimedFragment.abort();
+            }
         }
 
         consumerThread.join();
