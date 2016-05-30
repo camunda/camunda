@@ -38,8 +38,8 @@ public class TransportService implements Service<Transport>
 
         final AgentRunnerService agentRunnerService = agentRunnerInjector.getValue();
         agentRunnerService.runConductorAgent(transportConductor);
-        agentRunnerService.runIoAgent(receiver);
-        agentRunnerService.runIoAgent(sender);
+        agentRunnerService.runNetworkingAgent(receiver);
+        agentRunnerService.runNetworkingAgent(sender);
     }
 
     @Override
@@ -47,8 +47,8 @@ public class TransportService implements Service<Transport>
     {
         final AgentRunnerService agentRunnerService = agentRunnerInjector.getValue();
         agentRunnerService.removeConductorAgent(transportConductor);
-        agentRunnerService.removeIoAgent(sender);
-        agentRunnerService.removeIoAgent(receiver);
+        agentRunnerService.removeNetworkingAgent(sender);
+        agentRunnerService.removeNetworkingAgent(receiver);
     }
 
     @Override

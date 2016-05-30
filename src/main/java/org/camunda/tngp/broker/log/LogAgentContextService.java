@@ -2,7 +2,6 @@ package org.camunda.tngp.broker.log;
 
 import org.camunda.tngp.broker.system.threads.AgentRunnerService;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.log.LogAgentContext;
 import org.camunda.tngp.log.appender.LogAppender;
 import org.camunda.tngp.log.conductor.LogConductor;
@@ -38,7 +37,7 @@ public class LogAgentContextService implements Service<LogAgentContext>
         logAppender = new LogAppender(agentContext);
 
         agentRunnerService.runConductorAgent(logConductor);
-        agentRunnerService.runIoAgent(logAppender);
+        agentRunnerService.runLogAgent(logAppender);
     }
 
     @Override
@@ -53,7 +52,7 @@ public class LogAgentContextService implements Service<LogAgentContext>
         finally
         {
             agentRunnerService.removeConductorAgent(logConductor);
-            agentRunnerService.removeIoAgent(logAppender);
+            agentRunnerService.removeLogAgent(logAppender);
         }
     }
 

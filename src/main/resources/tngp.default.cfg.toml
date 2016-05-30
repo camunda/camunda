@@ -4,7 +4,7 @@
 
 [network]
 hostname = "0.0.0.0"
-sendBufferSize = 16
+sendBufferSize = 128
 
 [network.clientApi]
 port = 8880
@@ -18,7 +18,7 @@ numberOfThreads = 2
 # Log Configuration -----------------------------------
 
 [logs]
-writeBufferSize = 16
+logWriteBufferSize = 256
 defaultLogSegmentSize = 512
 
 [[log]]

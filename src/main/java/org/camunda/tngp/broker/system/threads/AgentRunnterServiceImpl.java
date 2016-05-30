@@ -18,7 +18,8 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
 {
     static int maxThreadCount = Runtime.getRuntime().availableProcessors() + 1;
 
-    protected final AgentGroup ioAgents = new AgentGroup("io");
+    protected final AgentGroup logAgents = new AgentGroup("log");
+    protected final AgentGroup networkingAgents = new AgentGroup("networking");
     protected final AgentGroup conductorAgents = new AgentGroup("conductor");
     protected final AgentGroup workerAgents = new AgentGroup("workers");
 
@@ -27,7 +28,7 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
 
     public AgentRunnterServiceImpl(ConfigurationManager configurationManager)
     {
-        ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
+        final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
 
         int numberOfThreads = cfg.numberOfThreads;
 
@@ -37,31 +38,38 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
             numberOfThreads = maxThreadCount;
         }
 
-        int availableThreads = numberOfThreads;
+        final int availableThreads = numberOfThreads;
 
         // TODO: implement this in a better way !!!
 
-        if(availableThreads >= 3)
+        if(availableThreads >= 4)
         {
-            agentRunners.add(createAgentRunner(ioAgents));
+            agentRunners.add(createAgentRunner(logAgents));
+            agentRunners.add(createAgentRunner(networkingAgents));
             agentRunners.add(createAgentRunner(workerAgents));
-            agentRunners.add(createAgentRunner(conductorAgents));
+            agentRunners.add(createAgentRunner(networkingAgents));
+        }
+        else if(availableThreads == 3)
+        {
+            agentRunners.add(createAgentRunner(logAgents));
+            agentRunners.add(createAgentRunner(networkingAgents));
+            agentRunners.add(createAgentRunner(new CompositeAgent(conductorAgents, workerAgents)));
         }
         else if(availableThreads == 2)
         {
-            agentRunners.add(createAgentRunner(ioAgents));
-            agentRunners.add(createAgentRunner(new CompositeAgent(conductorAgents, workerAgents)));
+            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, conductorAgents, workerAgents)));
+            agentRunners.add(createAgentRunner(logAgents));
         }
         else
         {
-            agentRunners.add(createAgentRunner(new CompositeAgent(ioAgents, conductorAgents, workerAgents)));
+            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, logAgents, conductorAgents, workerAgents)));
         }
 
     }
 
     private AgentRunner createAgentRunner(Agent agent)
     {
-        BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(200));
+        final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
         return new AgentRunner(idleStrategy, (t)-> t.printStackTrace(), null, agent);
     }
 
@@ -90,9 +98,15 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
     }
 
     @Override
-    public void runIoAgent(Agent agent)
+    public void runNetworkingAgent(Agent agent)
     {
-        ioAgents.addAgent(agent);
+        networkingAgents.addAgent(agent);
+    }
+
+    @Override
+    public void runLogAgent(Agent agent)
+    {
+        logAgents.addAgent(agent);
     }
 
     @Override
@@ -108,9 +122,15 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
     }
 
     @Override
-    public void removeIoAgent(Agent agent)
+    public void removeNetworkingAgent(Agent agent)
     {
-        ioAgents.removeAgent(agent);
+        networkingAgents.removeAgent(agent);
+    }
+
+    @Override
+    public void removeLogAgent(Agent agent)
+    {
+        logAgents.removeAgent(agent);
     }
 
     @Override
