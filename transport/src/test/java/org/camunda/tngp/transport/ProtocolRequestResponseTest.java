@@ -2,7 +2,6 @@ package org.camunda.tngp.transport;
 
 import java.net.InetSocketAddress;
 
-import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.requestresponse.client.RequestQueue;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;

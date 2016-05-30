@@ -74,11 +74,10 @@ public abstract class TransportChannelImpl implements TransportChannel
     public int receive()
     {
         final int bytesRead = mediaReceive(channelReadBuffer);
+        int available = channelReadBuffer.position();
 
-        if (bytesRead > 0)
+        if(bytesRead != -1)
         {
-            int available = channelReadBuffer.position();
-
             while(available >= HEADER_LENGTH)
             {
                 final int msgLength = channelReadBufferView.getInt(lengthOffset(0));
@@ -92,26 +91,32 @@ public abstract class TransportChannelImpl implements TransportChannel
                 {
                     final int msgType = channelReadBufferView.getShort(typeOffset(0));
 
+                    boolean handled = false;
+
                     if (msgType == TYPE_MESSAGE)
                     {
-                        if(!channelHandler.onChannelReceive(this,
+                        handled = channelHandler.onChannelReceive(this,
                                 channelReadBufferView,
                                 HEADER_LENGTH,
-                                msgLength))
-                        {
-                            // TODO: channel is backpressured
-                            System.out.println("channel backpressured");
-                        }
+                                msgLength);
                     }
                     else
                     {
                         handleControlFrame(msgType, frameLength);
+                        handled = true;
                     }
 
-                    channelReadBuffer.limit(available);
-                    channelReadBuffer.position(frameLength);
-                    channelReadBuffer.compact();
-                    available -= frameLength;
+                    if(handled)
+                    {
+                        channelReadBuffer.limit(available);
+                        channelReadBuffer.position(frameLength);
+                        channelReadBuffer.compact();
+                        available -= frameLength;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -189,25 +194,20 @@ public abstract class TransportChannelImpl implements TransportChannel
 
     }
 
-    public boolean writeMessage(ByteBuffer buffer, long messageId)
+    public int write(ByteBuffer buffer)
     {
-        boolean writeSuccess = false;
+        int bytesWritten = -1;
 
         try
         {
-            while (buffer.hasRemaining())
-            {
-                media.write(buffer);
-            }
-
-            writeSuccess = true;
+            bytesWritten = media.write(buffer);
         }
         catch (IOException e)
         {
             closeForcibly(e);
         }
 
-        return writeSuccess;
+        return bytesWritten;
     }
 
     public void writeControlFrame()

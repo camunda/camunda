@@ -1,23 +1,20 @@
  package org.camunda.tngp.transport.impl.agent;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.impl.TransportChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
-import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
+public class Sender implements Agent, Consumer<SenderCmd>
 {
     protected final ManyToOneConcurrentArrayQueue<SenderCmd> cmdQueue;
 
@@ -27,9 +24,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
     protected final Subscription senderSubscription;
 
-    protected TransportChannelHandler channelHandler;
-
-    protected final UnsafeBuffer sendErrorBlock = new UnsafeBuffer(0,0);
+    protected final SenderBlockPeek blockPeek = new SenderBlockPeek();
 
     public Sender(TransportContext context)
     {
@@ -47,8 +42,8 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
 
         workCount += sendControlFrames();
 
-        // 99 = totally arbitrary number.
-        workCount += senderSubscription.pollBlock(this, 99, true);
+        workCount += blockPeek.peek(senderSubscription, channelMap);
+        workCount += blockPeek.doSend();
 
         return workCount;
     }
@@ -88,38 +83,7 @@ public class Sender implements Agent, Consumer<SenderCmd>, BlockHandler
     {
         channelMap.remove(c.getId());
         channelsWithControlFrames.remove(c);
-    }
-
-    @Override
-    public void onBlockAvailable(
-            final ByteBuffer buffer,
-            final int blockOffset,
-            final int blockLength,
-            final int channelId,
-            final long position)
-    {
-        boolean blockWritten = false;
-
-        final TransportChannelImpl channel = channelMap.get(channelId);
-
-        buffer.limit(blockOffset + blockLength);
-        buffer.position(blockOffset);
-
-        if(channel != null)
-        {
-            blockWritten = channel.writeMessage(buffer, position);
-            if(!blockWritten)
-            {
-                sendErrorBlock.wrap(buffer);
-
-                channel.getChannelHandler()
-                    .onChannelSendError(channel, sendErrorBlock, 0, blockLength);
-            }
-        }
-        else
-        {
-            System.err.println("Cannel with id "+ channelId +" not open.");
-        }
+        blockPeek.onChannelRemoved(c);
     }
 
     public void sendControlFrame(TransportChannelImpl channel)

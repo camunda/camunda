@@ -47,9 +47,9 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
         {
             offerPosition = receiveBuffer.offer(buffer, offset, length, transportChannel.getId());
         }
-        while(offerPosition <= 0);
+        while(offerPosition == -2);
 
-        return true;
+        return offerPosition >= 0;
     }
 
     @Override
