@@ -35,12 +35,13 @@ public class BlockPeek
         this.partitionOffset = partitionOffset;
         this.bufferOffset = bufferOffset;
         this.blockLength = blockLength;
+
+        byteBuffer.limit(bufferOffset + blockLength);
+        byteBuffer.position(bufferOffset);
     }
 
     public ByteBuffer getBuffer()
     {
-        byteBuffer.limit(bufferOffset + blockLength);
-        byteBuffer.position(bufferOffset);
         return byteBuffer;
     }
 
