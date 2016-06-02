@@ -20,6 +20,7 @@ import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
@@ -53,7 +54,7 @@ public class DispatcherBuilder
 
     protected String dispatcherName;
 
-    protected UnsafeBuffer countersBuffer;
+    protected AtomicBuffer countersBuffer;
 
     protected boolean agentExternallyManaged = false;
 
@@ -128,10 +129,9 @@ public class DispatcherBuilder
         return this;
     }
 
-    public DispatcherBuilder countersBuffers(UnsafeBuffer labelsBuffer, UnsafeBuffer countersBuffer)
+    public DispatcherBuilder countersBuffer(AtomicBuffer countersBuffer)
     {
         this.countersBuffer = countersBuffer;
-        this.countersManager = new CountersManager(labelsBuffer, countersBuffer);
         return this;
     }
 
@@ -188,10 +188,10 @@ public class DispatcherBuilder
 
         if(countersManager != null)
         {
-            int publisherPositionCounter = countersManager.allocate(String.format("net.long_running.dispatcher.%s.publisher.position", dispatcherName));
-            publisherPosition = new UnsafeBufferPosition(countersBuffer, publisherPositionCounter, countersManager);
-            int publisherLimitCounter = countersManager.allocate(String.format("net.long_running.dispatcher.%s.publisher.limit", dispatcherName));
-            publisherLimit = new UnsafeBufferPosition(countersBuffer, publisherLimitCounter, countersManager);
+            int publisherPositionCounter = countersManager.allocate(String.format("%s.publisher.position", dispatcherName));
+            publisherPosition = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherPositionCounter, countersManager);
+            int publisherLimitCounter = countersManager.allocate(String.format("%s.publisher.limit", dispatcherName));
+            publisherLimit = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherLimitCounter, countersManager);
         }
         else
         {
