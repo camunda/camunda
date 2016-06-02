@@ -12,6 +12,7 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 public class DispatcherService implements Service<Dispatcher>
 {
     protected final Injector<AgentRunnerService> agentRunnerInjector = new Injector<>();
+    protected final Injector<Counters> countersInjector = new Injector<>();
 
     protected DispatcherBuilder dispatcherBuilder;
     protected Dispatcher dispatcher;
@@ -30,9 +31,13 @@ public class DispatcherService implements Service<Dispatcher>
     @Override
     public void start(ServiceContext serviceContext)
     {
+        final Counters counters = countersInjector.getValue();
+
         dispatcher = dispatcherBuilder
                 .name(serviceContext.getName())
                 .conductorExternallyManaged()
+                .countersManager(counters.getCountersManager())
+                .countersBuffer(counters.getCountersBuffer())
                 .build();
 
         dispatcherConductor = dispatcherBuilder.getConductorAgent();
@@ -62,5 +67,10 @@ public class DispatcherService implements Service<Dispatcher>
     public Injector<AgentRunnerService> getAgentRunnerInjector()
     {
         return agentRunnerInjector;
+    }
+
+    public Injector<Counters> getCountersManagerInjector()
+    {
+        return countersInjector;
     }
 }

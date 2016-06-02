@@ -4,27 +4,36 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.camunda.tngp.broker.services.Counters;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.threads.cfg.ThreadingCfg;
+import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.CompositeAgent;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public class AgentRunnterServiceImpl implements AgentRunnerService, Service<AgentRunnerService>
 {
     static int maxThreadCount = Runtime.getRuntime().availableProcessors() + 1;
+
+    protected final Injector<Counters> countersInjector = new Injector<>();
 
     protected final AgentGroup logAgents = new AgentGroup("log");
     protected final AgentGroup networkingAgents = new AgentGroup("networking");
     protected final AgentGroup conductorAgents = new AgentGroup("conductor");
     protected final AgentGroup workerAgents = new AgentGroup("workers");
 
+    protected final int availableThreads;
+
     protected final List<AgentRunner> agentRunners = new ArrayList<>();
 
+    protected final List<AtomicCounter> errorCounters = new ArrayList<>();
 
     public AgentRunnterServiceImpl(ConfigurationManager configurationManager)
     {
@@ -38,44 +47,48 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
             numberOfThreads = maxThreadCount;
         }
 
-        final int availableThreads = numberOfThreads;
-
-        // TODO: implement this in a better way !!!
-
-        if(availableThreads >= 4)
-        {
-            agentRunners.add(createAgentRunner(logAgents));
-            agentRunners.add(createAgentRunner(networkingAgents));
-            agentRunners.add(createAgentRunner(workerAgents));
-            agentRunners.add(createAgentRunner(networkingAgents));
-        }
-        else if(availableThreads == 3)
-        {
-            agentRunners.add(createAgentRunner(logAgents));
-            agentRunners.add(createAgentRunner(networkingAgents));
-            agentRunners.add(createAgentRunner(new CompositeAgent(conductorAgents, workerAgents)));
-        }
-        else if(availableThreads == 2)
-        {
-            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, conductorAgents, workerAgents)));
-            agentRunners.add(createAgentRunner(logAgents));
-        }
-        else
-        {
-            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, logAgents, conductorAgents, workerAgents)));
-        }
-
+        availableThreads = numberOfThreads;
     }
 
-    private AgentRunner createAgentRunner(Agent agent)
+    private AgentRunner createAgentRunner(Agent agent, CountersManager countersManager)
     {
         final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
-        return new AgentRunner(idleStrategy, (t)-> t.printStackTrace(), null, agent);
+        final String errorCounterName = String.format("%s.errorCounter", agent.roleName());
+        final AtomicCounter errorCounter = countersManager.newCounter(errorCounterName);
+        errorCounters.add(errorCounter);
+        return new AgentRunner(idleStrategy, (t)-> t.printStackTrace(), errorCounter, agent);
     }
 
     @Override
     public void start(ServiceContext serviceContext)
     {
+        final CountersManager countersManager = countersInjector.getValue().getCountersManager();
+
+        // TODO: implement this in a better way !!!
+
+        if(availableThreads >= 4)
+        {
+            agentRunners.add(createAgentRunner(logAgents, countersManager));
+            agentRunners.add(createAgentRunner(networkingAgents, countersManager));
+            agentRunners.add(createAgentRunner(workerAgents, countersManager));
+            agentRunners.add(createAgentRunner(networkingAgents, countersManager));
+        }
+        else if(availableThreads == 3)
+        {
+            agentRunners.add(createAgentRunner(logAgents, countersManager));
+            agentRunners.add(createAgentRunner(networkingAgents, countersManager));
+            agentRunners.add(createAgentRunner(new CompositeAgent(conductorAgents, workerAgents), countersManager));
+        }
+        else if(availableThreads == 2)
+        {
+            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, conductorAgents, workerAgents), countersManager));
+            agentRunners.add(createAgentRunner(logAgents, countersManager));
+        }
+        else
+        {
+            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, logAgents, conductorAgents, workerAgents), countersManager));
+        }
+
         for (AgentRunner agentRunner : agentRunners)
         {
             AgentRunner.startOnThread(agentRunner);
@@ -88,6 +101,10 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
         for (AgentRunner agentRunner : agentRunners)
         {
             agentRunner.close();
+        }
+        for (AtomicCounter atomicCounter : errorCounters)
+        {
+            atomicCounter.close();
         }
     }
 
@@ -143,6 +160,11 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
     public AgentRunnerService get()
     {
         return this;
+    }
+
+    public Injector<Counters> getCountersManagerInjector()
+    {
+        return countersInjector;
     }
 
 }

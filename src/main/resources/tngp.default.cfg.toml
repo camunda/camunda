@@ -15,6 +15,9 @@ receiveBufferSize = 16
 [threading]
 numberOfThreads = 2
 
+[metrics]
+useTempCountersFile = true
+
 # Log Configuration -----------------------------------
 
 [logs]

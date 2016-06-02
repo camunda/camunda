@@ -110,6 +110,7 @@ public class LogManagerService implements Service<LogManager>, LogManager
         final DispatcherService logWriteBufferService = new DispatcherService(writeBufferBuilder);
         serviceContext.createService(LOG_WRITE_BUFFER_SERVICE, logWriteBufferService)
             .dependency(AGENT_RUNNER_SERVICE, logWriteBufferService.getAgentRunnerInjector())
+            .dependency(COUNTERS_MANAGER_SERVICE, logWriteBufferService.getCountersManagerInjector())
             .install();
 
         final LogAgentContextService logAgentContextService = new LogAgentContextService();

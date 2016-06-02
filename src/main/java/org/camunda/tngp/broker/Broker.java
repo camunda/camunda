@@ -2,10 +2,10 @@ package org.camunda.tngp.broker;
 
 import org.camunda.tngp.broker.log.LogComponent;
 import org.camunda.tngp.broker.system.SystemContext;
+import org.camunda.tngp.broker.system.metrics.MetricsComponent;
 import org.camunda.tngp.broker.system.threads.ThreadingComponent;
 import org.camunda.tngp.broker.taskqueue.TaskQueueComponent;
 import org.camunda.tngp.broker.transport.TransportComponent;
-import org.camunda.tngp.broker.wf.WfComponent;
 
 public class Broker implements AutoCloseable
 {
@@ -17,6 +17,7 @@ public class Broker implements AutoCloseable
 
         brokerContext = new SystemContext(configFileLocation);
 
+        brokerContext.addComponent(new MetricsComponent());
         brokerContext.addComponent(new ThreadingComponent());
         brokerContext.addComponent(new TransportComponent());
         brokerContext.addComponent(new LogComponent());

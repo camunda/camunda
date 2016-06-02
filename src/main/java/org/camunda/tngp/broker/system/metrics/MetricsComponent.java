@@ -1,21 +1,22 @@
-package org.camunda.tngp.broker.system.threads;
+package org.camunda.tngp.broker.system.metrics;
 
 import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 
+import org.camunda.tngp.broker.services.CountersManagerService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.SystemContext;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 
-public class ThreadingComponent implements Component
+public class MetricsComponent implements Component
 {
+
     @Override
     public void init(SystemContext context)
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final AgentRunnterServiceImpl service = new AgentRunnterServiceImpl(context.getConfigurationManager());
-        serviceContainer.createService(AGENT_RUNNER_SERVICE, service)
-            .dependency(COUNTERS_MANAGER_SERVICE, service.getCountersManagerInjector())
+        final CountersManagerService service = new CountersManagerService(context.getConfigurationManager());
+        serviceContainer.createService(COUNTERS_MANAGER_SERVICE, service)
             .install();
     }
 
