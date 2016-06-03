@@ -90,7 +90,7 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
             agentRunners.add(createAgentRunner(logAgents, countersManager));
             agentRunners.add(createAgentRunner(networkingAgents, countersManager));
             agentRunners.add(createAgentRunner(workerAgents, countersManager));
-            agentRunners.add(createAgentRunner(networkingAgents, countersManager));
+            agentRunners.add(createAgentRunner(conductorAgents, countersManager));
         }
         else if(availableThreads == 3)
         {
