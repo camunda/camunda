@@ -23,7 +23,7 @@ import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 
 public class AgentRunnterServiceImpl implements AgentRunnerService, Service<AgentRunnerService>
 {
-    static int maxThreadCount = Runtime.getRuntime().availableProcessors() + 1;
+    static int maxThreadCount = Runtime.getRuntime().availableProcessors() - 1;
 
     protected final Injector<Counters> countersInjector = new Injector<>();
 
@@ -95,8 +95,8 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
         else if(availableThreads == 3)
         {
             agentRunners.add(createAgentRunner(logAgents, countersManager));
-            agentRunners.add(createAgentRunner(networkingAgents, countersManager));
-            agentRunners.add(createAgentRunner(new CompositeAgent(conductorAgents, workerAgents), countersManager));
+            agentRunners.add(createAgentRunner(conductorAgents, countersManager));
+            agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, workerAgents), countersManager));
         }
         else if(availableThreads == 2)
         {
