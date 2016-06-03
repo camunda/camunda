@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import org.camunda.tngp.broker.services.Counters;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.threads.cfg.ThreadingCfg;
+import org.camunda.tngp.broker.system.threads.cfg.ThreadingCfg.BrokerIdleStrategy;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -17,6 +18,8 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.CompositeAgent;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 
 public class AgentRunnterServiceImpl implements AgentRunnerService, Service<AgentRunnerService>
 {
@@ -35,6 +38,9 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
 
     protected final List<AtomicCounter> errorCounters = new ArrayList<>();
 
+    protected final BrokerIdleStrategy idleStrategy;
+    protected final int maxIdleTimeMs;
+
     public AgentRunnterServiceImpl(ConfigurationManager configurationManager)
     {
         final ThreadingCfg cfg = configurationManager.readEntry("threading", ThreadingCfg.class);
@@ -48,11 +54,24 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
         }
 
         availableThreads = numberOfThreads;
+        idleStrategy = cfg.idleStrategy;
+        maxIdleTimeMs = cfg.maxIdleTimeMs;
     }
 
     private AgentRunner createAgentRunner(Agent agent, CountersManager countersManager)
     {
-        final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+        final IdleStrategy idleStrategy;
+
+        switch (this.idleStrategy)
+        {
+        case BUSY_SPIN:
+            idleStrategy = new NoOpIdleStrategy();
+            break;
+
+        default:
+            idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
+        }
+
         final String errorCounterName = String.format("%s.errorCounter", agent.roleName());
         final AtomicCounter errorCounter = countersManager.newCounter(errorCounterName);
         errorCounters.add(errorCounter);
