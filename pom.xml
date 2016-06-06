@@ -189,14 +189,6 @@
 				</dependencies>
 			</plugin>
 		</plugins>
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-			</resource>
-			<resource>
-				<directory>target/generated-sources</directory>
-			</resource>
-		</resources>
 	</build>
 
 </project>
