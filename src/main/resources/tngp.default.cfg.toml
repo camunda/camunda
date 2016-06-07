@@ -66,5 +66,5 @@ logName = "default-wf-type-log"
 [[workflow-runtime]]
 name = "default"
 id = 0
-workflowRepository = "default" 
+repositoryName = "default" 
 logName = "default-wf-instance-log"
