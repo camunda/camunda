@@ -28,6 +28,8 @@ public class WfTypeLogEntryWriter
 
         offset += headerEncoder.encodedLength();
 
+        encoder.wrap(buffer, offset);
+
         return this;
     }
 
@@ -39,7 +41,7 @@ public class WfTypeLogEntryWriter
 
     public WfTypeLogEntryWriter shardId(final int shardId)
     {
-        headerEncoder.resourceId(shardId);
+        headerEncoder.shardId(shardId);
         return this;
     }
 
@@ -69,13 +71,13 @@ public class WfTypeLogEntryWriter
 
     public WfTypeLogEntryWriter wfType(byte[] bytes, int offset, int length)
     {
-        payloadBuffer.wrap(bytes, offset, length);
+        wfTypeBuffer.wrap(bytes, offset, length);
         return this;
     }
 
     public WfTypeLogEntryWriter wfType(DirectBuffer buffer, int offset, int length)
     {
-        payloadBuffer.wrap(buffer, offset, length);
+        wfTypeBuffer.wrap(buffer, offset, length);
         return this;
     }
 
