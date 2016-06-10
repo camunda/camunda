@@ -1,11 +1,10 @@
 package org.camunda.tngp.broker.wf.repository.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
 import org.camunda.tngp.taskqueue.data.WfTypeEncoder;
-import org.junit.Before;
 import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -14,32 +13,33 @@ public class WfTypeLogEntryWriterTest
 {
 
     protected static final byte[] PAYLOAD = new byte[] {0, 0, 0, 1, 2, 3, 4, 0};
-    protected static final byte[] TYPE = new byte[] {0, 0, 0, 0, 0, 0, 0, 5, 6, 0};
-
+    protected static final byte[] TYPE = new byte[] {5, 6};
 
     @Test
     public void testWriting()
     {
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
+
         // given
-        UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
-        WfTypeLogEntryWriter writer = new WfTypeLogEntryWriter();
-
-        writer.wrap(buffer, 0);
-
-        // when
-        writer
+        final WfTypeWriter writer = new WfTypeWriter()
             .resourceId(42)
             .shardId(53)
             .id(1)
             .version(2)
             .prevVersionPosition(3)
-            .wfType(new UnsafeBuffer(TYPE), 7, 2)
-            .payload(new UnsafeBuffer(PAYLOAD), 3, 4)
-            .flush();
+            .wfTypeKey(TYPE)
+            .resource(new UnsafeBuffer(PAYLOAD), 3, 4);
+
+        // when
+        writer.write(buffer, 0);
 
         // then
-        MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-        headerDecoder.wrap(buffer, 0);
+        final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+        final WfTypeDecoder decoder = new WfTypeDecoder();
+
+        int readOffset = 0;
+
+        headerDecoder.wrap(buffer, readOffset);
 
         assertThat(headerDecoder.blockLength()).isEqualTo(WfTypeEncoder.BLOCK_LENGTH);
         assertThat(headerDecoder.templateId()).isEqualTo(WfTypeEncoder.TEMPLATE_ID);
@@ -48,8 +48,9 @@ public class WfTypeLogEntryWriterTest
         assertThat(headerDecoder.resourceId()).isEqualTo(42);
         assertThat(headerDecoder.shardId()).isEqualTo(53);
 
-        WfTypeDecoder decoder = new WfTypeDecoder();
-        decoder.wrap(buffer, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        readOffset += headerDecoder.encodedLength();
+
+        decoder.wrap(buffer, readOffset, headerDecoder.blockLength(), headerDecoder.version());
 
         assertThat(decoder.id()).isEqualTo(1);
         assertThat(decoder.version()).isEqualTo(2);
@@ -68,15 +69,12 @@ public class WfTypeLogEntryWriterTest
     public void testWriteVariableLengthFieldsInReverseOrder() {
         // given
         UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
-        WfTypeLogEntryWriter writer = new WfTypeLogEntryWriter();
-
-        writer.wrap(buffer, 0);
+        WfTypeWriter writer = new WfTypeWriter()
+                .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
+                .wfTypeKey(TYPE);
 
         // when
-        writer
-            .payload(new UnsafeBuffer(PAYLOAD), 3, 4)
-            .wfType(new UnsafeBuffer(TYPE), 7, 2)
-            .flush();
+        writer.write(buffer, 0);
 
         // then
         MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
