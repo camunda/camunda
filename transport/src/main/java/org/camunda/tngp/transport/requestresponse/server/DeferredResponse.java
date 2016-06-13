@@ -4,6 +4,7 @@ import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderD
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.FragmentWriter;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -69,12 +70,40 @@ public class DeferredResponse
         return isAllocated;
     }
 
-    public DeferredResponse defer(final long asyncOperationId, ResponseCompletionHandler handler, Object attachement)
+    public boolean allocateAndWrite(final FragmentWriter writer)
     {
-        this.asyncOperationId = asyncOperationId;
-        this.completionHandler = handler;
-        this.attachement = attachement;
-        return this;
+        final int length = writer.getLength();
+
+        boolean isAllocated = allocate(length);
+
+        if(isAllocated)
+        {
+            final MutableDirectBuffer writeBuffer = getBuffer();
+            final int claimedOffset = getClaimedOffset();
+
+            writer.write(writeBuffer, claimedOffset);
+        }
+
+        return isAllocated;
+    }
+
+    public int defer(final long asyncOperationId, ResponseCompletionHandler handler, Object attachement)
+    {
+        int result = -1;
+
+        if(asyncOperationId >= 0)
+        {
+            this.asyncOperationId = asyncOperationId;
+            this.completionHandler = handler;
+            this.attachement = attachement;
+            result = 1;
+        }
+        else
+        {
+            abort();
+        }
+
+        return result;
     }
 
     public void resolve(DirectBuffer asyncWorkBuffer, int offset, int length, long blockPosition)
