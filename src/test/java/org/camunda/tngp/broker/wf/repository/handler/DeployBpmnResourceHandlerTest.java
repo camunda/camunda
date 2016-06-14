@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
+import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
 import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceErrorResponseWriter;
@@ -25,6 +26,8 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class DeployBpmnResourceHandlerTest
 {
     WfTypeWriter wfTypeWriterMock;
+    WfTypeReader wfTypeReaderMock;
+
     DeployBpmnResourceAckResponse responseWriterMock;
     DeployBpmnResourceErrorResponseWriter errorResponseWriterMock;
 
@@ -46,6 +49,7 @@ public class DeployBpmnResourceHandlerTest
         when(deferredResponseMock.getBuffer()).thenReturn(new UnsafeBuffer(new byte[2048]));
 
         wfTypeWriterMock = mock(WfTypeWriter.class, new FluentAnswer());
+        wfTypeReaderMock = mock(WfTypeReader.class);
         responseWriterMock = mock(DeployBpmnResourceAckResponse.class, new FluentAnswer());
         errorResponseWriterMock = mock(DeployBpmnResourceErrorResponseWriter.class, new FluentAnswer());
         logEntryWriterMock = mock(LogEntryWriter.class);
@@ -53,6 +57,7 @@ public class DeployBpmnResourceHandlerTest
         handler = new DeployBpmnResourceHandler();
 
         handler.wfTypeWriter = wfTypeWriterMock;
+        handler.wfTypeReader = wfTypeReaderMock;
         handler.responseWriter = responseWriterMock;
         handler.errorResponseWriter = errorResponseWriterMock;
         handler.logEntryWriter = logEntryWriterMock;
@@ -71,6 +76,7 @@ public class DeployBpmnResourceHandlerTest
 
         when(context.getWfTypeIdGenerator().nextId()).thenReturn(typeId);
         when(context.getWfTypeKeyIndex().getIndex().get(any(byte[].class), anyLong())).thenReturn(-1l);
+        when(context.getWfTypeIdIndex().getIndex().get(anyLong(), anyLong())).thenReturn(-1l);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
         when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
@@ -91,6 +97,88 @@ public class DeployBpmnResourceHandlerTest
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
         verify(deferredResponseMock).defer(0l, handler, null);
+    }
+
+    @Test
+    public void shouldDeploySecondVersion()
+    {
+        final long typeId = 101l;
+        final String procesId = "someProcessId";
+        final byte[] processIdBytes = procesId.getBytes(StandardCharsets.UTF_8);
+
+        final byte[] resource = asByteArray(Bpmn.createExecutableProcess(procesId).startEvent().done());
+        final DirectBuffer msgBuffer = writeRequest(resource);
+        final int msgLength = msgBuffer.capacity();
+
+        when(context.getWfTypeIdGenerator().nextId()).thenReturn(typeId);
+        when(context.getWfTypeKeyIndex().getIndex().get(any(byte[].class), eq(-1l))).thenReturn(100l);
+        when(context.getWfTypeIdIndex().getIndex().get(100l, -1)).thenReturn(200l);
+
+        when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
+        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
+        when(deferredResponseMock.defer(0l, handler, null)).thenReturn(1);
+        when(wfTypeReaderMock.version()).thenReturn(4);
+
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+
+        assertThat(result).isEqualTo(1);
+
+        verify(wfTypeWriterMock).id(typeId);
+        verify(wfTypeWriterMock).version(5);
+        verify(wfTypeWriterMock).wfTypeKey(processIdBytes);
+        verify(wfTypeWriterMock).prevVersionPosition(200l);
+        verify(wfTypeWriterMock).resource(msgBuffer, DeployBpmnResourceEncoder.BLOCK_LENGTH + DeployBpmnResourceEncoder.resourceHeaderLength(), resource.length);
+        verify(logEntryWriterMock).write(context.getWfTypeLog(), wfTypeWriterMock);
+
+        verify(responseWriterMock).wfTypeId(typeId);
+        verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
+
+        verify(deferredResponseMock).defer(0l, handler, null);
+    }
+
+    @Test
+    public void shouldRejectInvalidProcess()
+    {
+        final byte[] resource = "not-bpmn".getBytes(StandardCharsets.UTF_8);
+        final DirectBuffer msgBuffer = writeRequest(resource);
+        final int msgLength = msgBuffer.capacity();
+
+        when(deferredResponseMock.allocateAndWrite(errorResponseWriterMock)).thenReturn(true);
+
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+
+        assertThat(result).isEqualTo(1);
+
+        verify(errorResponseWriterMock).errorMessage(any(byte[].class));
+        verify(deferredResponseMock).allocateAndWrite(errorResponseWriterMock);
+        verify(deferredResponseMock).commit();
+    }
+
+    @Test
+    public void shouldRejectIfIdExceedsMaxLength()
+    {
+        String procesId = "some-l";
+
+        while(procesId.getBytes(StandardCharsets.UTF_8).length < DeployBpmnResourceHandler.WF_TYPE_KEY_MAX_LENGTH)
+        {
+            procesId += "o";
+        }
+
+        procesId += "ng-process-id";
+
+        final byte[] resource = asByteArray(Bpmn.createExecutableProcess(procesId).startEvent().done());
+        final DirectBuffer msgBuffer = writeRequest(resource);
+        final int msgLength = msgBuffer.capacity();
+
+        when(deferredResponseMock.allocateAndWrite(errorResponseWriterMock)).thenReturn(true);
+
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+
+        assertThat(result).isEqualTo(1);
+
+        verify(errorResponseWriterMock).errorMessage(any(byte[].class));
+        verify(deferredResponseMock).allocateAndWrite(errorResponseWriterMock);
+        verify(deferredResponseMock).commit();
     }
 
     private static byte[] asByteArray(final BpmnModelInstance bpmnModelInstance)

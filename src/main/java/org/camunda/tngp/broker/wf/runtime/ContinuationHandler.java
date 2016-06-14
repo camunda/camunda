@@ -10,24 +10,23 @@ public class ContinuationHandler
 
     protected final Log log;
 
-    protected final LogReader logReader;
+    protected  LogReader logReader;
 
     public ContinuationHandler(WfRuntimeContext context)
     {
         this.log = context.getLog();
-        this.logReader = new LogReader(log, executionEventReader);
     }
 
-    public int poll()
+    public void poll()
     {
-        int workCount = logReader.read(1);
-
-        if(workCount == 1)
-        {
-            handleEvent();
-        }
-
-        return workCount;
+//        int workCount = logReader.read(1);
+//
+//        if(workCount == 1)
+//        {
+//            handleEvent();
+//        }
+//
+//        return workCount;
     }
 
     protected void handleEvent()

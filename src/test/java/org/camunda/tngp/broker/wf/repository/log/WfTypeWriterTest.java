@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class WfTypeLogEntryWriterTest
+public class WfTypeWriterTest
 {
 
     protected static final byte[] PAYLOAD = new byte[] {0, 0, 0, 1, 2, 3, 4, 0};

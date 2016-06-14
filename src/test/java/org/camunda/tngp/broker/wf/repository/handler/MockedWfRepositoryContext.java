@@ -4,6 +4,7 @@ import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
@@ -25,11 +26,17 @@ public class MockedWfRepositoryContext extends WfRepositoryContext
         HashIndexManager keyIndexManagerMock = mock(HashIndexManager.class);
         when(keyIndexManagerMock.getIndex()).thenReturn(keyIndexMock);
 
+        Long2LongHashIndex idIndexMock = mock(Long2LongHashIndex.class);
+
+        HashIndexManager idIndexManagerMock = mock(HashIndexManager.class);
+        when(idIndexManagerMock.getIndex()).thenReturn(idIndexMock);
+
         IdGenerator idGeneratorMock = mock(IdGenerator.class);
 
         setWfTypeLog(logMock);
         setWfTypeKeyIndex(keyIndexManagerMock);
         setWfTypeIdGenerator(idGeneratorMock);
+        setWfTypeIdIndex(idIndexManagerMock);
     }
 
 }

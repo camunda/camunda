@@ -1,16 +1,16 @@
 package org.camunda.tngp.broker.wf.repository;
 
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.LogFragmentHandler;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
 
-public class WfTypeIndexWriter implements LogFragmentHandler
+import uk.co.real_logic.agrona.DirectBuffer;
+
+public class WfTypeIndexWriter
 {
     protected final static byte[] wfTypeBuffer = new byte[256];
 
@@ -24,7 +24,7 @@ public class WfTypeIndexWriter implements LogFragmentHandler
     {
         wfTypeKeyIndexManager = context.getWfTypeKeyIndex();
         wfTypeIdIndexManager = context.getWfTypeIdIndex();
-        logReader = new LogReader(context.getWfTypeLog(), this);
+        logReader = new LogReader(context.getWfTypeLog(), WfTypeReader.MAX_LENGTH);
 
         final long lastCheckpointPosition = Math.min(wfTypeKeyIndexManager.getLastCheckpointPosition(), wfTypeIdIndexManager.getLastCheckpointPosition());
         if(lastCheckpointPosition != -1)
@@ -35,7 +35,25 @@ public class WfTypeIndexWriter implements LogFragmentHandler
 
     public int update(int maxFragments)
     {
-        return logReader.read(maxFragments);
+        int fragmentsIndexed = 0;
+
+        do
+        {
+            final long position = logReader.getPosition();
+
+            if(logReader.read(reader))
+            {
+                updateIndex(position);
+                ++fragmentsIndexed;
+            }
+            else
+            {
+                break;
+            }
+        }
+        while(fragmentsIndexed < maxFragments);
+
+        return fragmentsIndexed;
     }
 
     public void writeCheckpoints()
@@ -45,21 +63,20 @@ public class WfTypeIndexWriter implements LogFragmentHandler
         wfTypeIdIndexManager.writeCheckPoint(position);
     }
 
-    @Override
-    public void onFragment(long position, FileChannel fileChannel, int offset, int length)
+    protected void updateIndex(final long position)
     {
         final Long2LongHashIndex wfTypeIdIndex = wfTypeIdIndexManager.getIndex();
         final Bytes2LongHashIndex wfTypeKeyIndex = wfTypeKeyIndexManager.getIndex();
 
-        reader.onFragment(position, fileChannel, offset, length);
-
-        final WfTypeDecoder decoder = reader.getDecoder();
-        final long id = decoder.id();
+        final long id = reader.id();
 
         wfTypeIdIndex.put(id, position);
 
-        final int taskTypeLength = reader.getWfTypeKeyLength();
-        reader.getBlockBuffer().getBytes(reader.getWfTypeKeyOffset(), wfTypeBuffer, 0, taskTypeLength);
+        final DirectBuffer typeKey = reader.getTypeKey();
+        final int taskTypeLength = typeKey.capacity();
+
+        typeKey.getBytes(0, wfTypeBuffer);
+
         if (taskTypeLength < wfTypeBuffer.length)
         {
             Arrays.fill(wfTypeBuffer, taskTypeLength, wfTypeBuffer.length, (byte) 0);

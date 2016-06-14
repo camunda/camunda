@@ -20,8 +20,8 @@ public class WfTypeWriter implements FragmentWriter
     protected int version;
     protected long prevVersionPosition;
 
-    protected UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0,0);
-    protected UnsafeBuffer resourceBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0,0);
 
     @Override
     public int getLength()

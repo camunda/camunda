@@ -1,19 +1,18 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.taskqueue.handler.TaskInstanceReader;
+import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.LogFragmentHandler;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
-public class TaskQueueIndexWriter implements LogFragmentHandler
+import uk.co.real_logic.agrona.DirectBuffer;
+
+public class TaskQueueIndexWriter
 {
     protected final static byte[] taskTypeBuffer = new byte[256];
 
@@ -26,7 +25,7 @@ public class TaskQueueIndexWriter implements LogFragmentHandler
     {
         lockedTasksIndexManager = taskQueueContext.getLockedTaskInstanceIndex();
         taskTypeIndexManager = taskQueueContext.getTaskTypePositionIndex();
-        logReader = new LogReader(taskQueueContext.getLog(), this);
+        logReader = new LogReader(taskQueueContext.getLog(), TaskInstanceReader.MAX_LENGTH);
 
         final long lastCheckpointPosition = Math.min(lockedTasksIndexManager.getLastCheckpointPosition(), taskTypeIndexManager.getLastCheckpointPosition());
         if(lastCheckpointPosition != -1)
@@ -37,7 +36,25 @@ public class TaskQueueIndexWriter implements LogFragmentHandler
 
     public int update(int maxFragments)
     {
-        return logReader.read(maxFragments);
+        int fragmentsIndexed = 0;
+
+        do
+        {
+            final long position = logReader.getPosition();
+
+            if(logReader.read(taskInstanceReader))
+            {
+                updateIndex(position);
+                ++fragmentsIndexed;
+            }
+            else
+            {
+                break;
+            }
+        }
+        while(fragmentsIndexed < maxFragments);
+
+        return fragmentsIndexed;
     }
 
     public void writeCheckpoints()
@@ -46,41 +63,42 @@ public class TaskQueueIndexWriter implements LogFragmentHandler
         taskTypeIndexManager.writeCheckPoint(logReader.getPosition());
     }
 
-    @Override
-    public void onFragment(long position, FileChannel fileChannel, int offset, int length)
+
+    protected void updateIndex(long position)
     {
-        if(taskInstanceReader.readBlock(position, fileChannel, offset, length))
+        final long id = taskInstanceReader.id();
+        final TaskInstanceState state = taskInstanceReader.state();
+
+        if(state == TaskInstanceState.LOCKED)
         {
-            final TaskInstanceDecoder decoder = taskInstanceReader.getDecoder();
+            lockedTasksIndexManager.getIndex().put(id, position);
 
-            final long id = decoder.id();
-            final TaskInstanceState state = decoder.state();
+            final DirectBuffer taskType = taskInstanceReader.getTaskType();
+            final int taskTypeLength = taskType.capacity();
 
-            if(state == TaskInstanceState.LOCKED)
+            taskType.getBytes(0, taskTypeBuffer, 0, taskTypeLength);
+
+            if(taskTypeLength < taskTypeBuffer.length)
             {
-                lockedTasksIndexManager.getIndex().put(id, position);
-
-                final int taskTypeLength = taskInstanceReader.getTaskTypeLength();
-                taskInstanceReader.getBlockBuffer().getBytes(taskInstanceReader.getTaskTypeOffset(), taskTypeBuffer, 0, taskTypeLength);
-                if(taskTypeLength < taskTypeBuffer.length)
-                {
-                    Arrays.fill(taskTypeBuffer, taskTypeLength, taskTypeBuffer.length, (byte)0);
-                }
-
-                final Bytes2LongHashIndex taskTypePositionIndex = taskTypeIndexManager.getIndex();
-                long currentPosition = taskTypePositionIndex.get(taskTypeBuffer, -1);
-                long newPosition = decoder.prevVersionPosition() + DataFrameDescriptor.alignedLength(length); // hmmm...
-                // TODO: put if larger
-                if(newPosition > currentPosition)
-                {
-                    taskTypePositionIndex.put(taskTypeBuffer, newPosition);
-                }
+                Arrays.fill(taskTypeBuffer, taskTypeLength, taskTypeBuffer.length, (byte)0);
             }
-            else if(state == TaskInstanceState.COMPLETED)
+
+            final Bytes2LongHashIndex taskTypePositionIndex = taskTypeIndexManager.getIndex();
+            long currentPosition = taskTypePositionIndex.get(taskTypeBuffer, -1);
+
+            // TODO: this is next line is completely broken and only works if the previous version has the exact same length as this entry
+            // SEE: https://github.com/camunda-tngp/broker/issues/4
+            long newPosition = taskInstanceReader.prevVersionPosition() + DataFrameDescriptor.alignedLength(taskInstanceReader.length());
+
+            // TODO: put if larger
+            if(newPosition > currentPosition)
             {
-                lockedTasksIndexManager.getIndex().remove(id, -1);
+                taskTypePositionIndex.put(taskTypeBuffer, newPosition);
             }
         }
+        else if(state == TaskInstanceState.COMPLETED)
+        {
+            lockedTasksIndexManager.getIndex().remove(id, -1);
+        }
     }
-
 }

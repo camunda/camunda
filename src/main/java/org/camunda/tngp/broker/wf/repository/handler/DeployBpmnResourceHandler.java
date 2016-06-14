@@ -8,16 +8,17 @@ import java.nio.charset.StandardCharsets;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
-import org.camunda.tngp.broker.wf.repository.WfTypeReader;
+import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
 import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogEntryReader;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceDecoder;
-import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
@@ -29,13 +30,15 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
     protected final byte[] keyBuffer = new byte[WF_TYPE_KEY_MAX_LENGTH];
 
     protected LogEntryWriter logEntryWriter = new LogEntryWriter();
+    protected LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
 
     protected WfTypeWriter wfTypeWriter = new WfTypeWriter();
+    protected WfTypeReader wfTypeReader = new WfTypeReader();
+
     protected DeployBpmnResourceAckResponse responseWriter = new DeployBpmnResourceAckResponse();
     protected DeployBpmnResourceErrorResponseWriter errorResponseWriter = new DeployBpmnResourceErrorResponseWriter();
 
     protected final DeployBpmnResourceDecoder requestDecoder = new DeployBpmnResourceDecoder();
-    protected final WfTypeReader prevVersionReader = new WfTypeReader();
 
     @Override
     public long onRequest(
@@ -102,11 +105,10 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         final Log wfTypeLog = context.getWfTypeLog();
         final IdGenerator wfTypeIdGenerator = context.getWfTypeIdGenerator();
         final Bytes2LongHashIndex wfTypeKeyIndex = context.getWfTypeKeyIndex().getIndex();
+        final Long2LongHashIndex wfIdIndex = context.getWfTypeIdIndex().getIndex();
 
         final long typeId = wfTypeIdGenerator.nextId();
         responseWriter.wfTypeId(typeId);
-
-        int version = 0;
 
         final int keyLength = wfTypeKeyBytes.length;
         if(keyLength <= WF_TYPE_KEY_MAX_LENGTH)
@@ -115,12 +117,15 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
             fill(keyBuffer, keyLength, WF_TYPE_KEY_MAX_LENGTH, (byte) 0);
         }
 
-        final long prevVersionPos = wfTypeKeyIndex.get(keyBuffer, -1);
+        int version = 0;
+
+        final long previousVersionId = wfTypeKeyIndex.get(keyBuffer, -1);
+        final long prevVersionPos = wfIdIndex.get(previousVersionId, -1);
+
         if(prevVersionPos != -1)
         {
-            wfTypeLog.pollFragment(prevVersionPos, prevVersionReader);
-            final WfTypeDecoder prevVersionDecoder = prevVersionReader.getDecoder();
-            version = 1 + prevVersionDecoder.version();
+            logEntryReader.read(wfTypeLog, prevVersionPos, wfTypeReader);
+            version = 1 + wfTypeReader.version();
         }
 
         wfTypeWriter
