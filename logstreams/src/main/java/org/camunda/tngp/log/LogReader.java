@@ -7,32 +7,19 @@ package org.camunda.tngp.log;
 public class LogReader
 {
     protected Log log;
-    protected LogFragmentHandler fragmentHandler;
 
     /**
      * The current position of the reader
      */
     protected long position;
 
-    public LogReader(Log log, LogFragmentHandler fragmentHandler)
-    {
-        setLog(log);
-        setFragmentHandler(fragmentHandler);
-    }
+    protected final LogEntryReader entryReader;
 
-    public LogReader()
-    {
-    }
-
-    public void setLog(Log log)
+    public LogReader(final Log log, final int readBufferSize)
     {
         this.log = log;
         this.position = log.getInitialPosition();
-    }
-
-    public void setFragmentHandler(LogFragmentHandler fragmentHandler)
-    {
-        this.fragmentHandler = fragmentHandler;
+        entryReader = new LogEntryReader(readBufferSize);
     }
 
     public void setPosition(long position)
@@ -40,31 +27,19 @@ public class LogReader
         this.position = position;
     }
 
-    public int read(int maxRecords)
+    public boolean read(FragmentReader reader)
     {
-        if(maxRecords < 0)
-        {
-            throw new IllegalArgumentException("Cannot read from log: maxRecords needs to be a positive number.");
-        }
+       final long nextPosition = entryReader.read(log, position, reader);
 
-        int recordRead = 0;
+       boolean hasNext = false;
 
-        while(recordRead < maxRecords)
-        {
-            long nextPosition = log.pollFragment(position, fragmentHandler);
+       if(nextPosition != -1)
+       {
+           this.position = nextPosition;
+           hasNext = true;
+       }
 
-            if(nextPosition == -1)
-            {
-                break;
-            }
-            else
-            {
-                position = nextPosition;
-                ++recordRead;
-            }
-        }
-
-        return recordRead;
+       return hasNext;
     }
 
     public long getPosition()

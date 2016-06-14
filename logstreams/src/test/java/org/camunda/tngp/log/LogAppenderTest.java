@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class TestLogAppender
+public class LogAppenderTest
 {
     private static final int MSG_SIZE = 1024;
 
