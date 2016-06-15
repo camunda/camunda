@@ -4,7 +4,7 @@ import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderD
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.FragmentWriter;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -70,7 +70,7 @@ public class DeferredResponse
         return isAllocated;
     }
 
-    public boolean allocateAndWrite(final FragmentWriter writer)
+    public boolean allocateAndWrite(final BufferWriter writer)
     {
         final int length = writer.getLength();
 
