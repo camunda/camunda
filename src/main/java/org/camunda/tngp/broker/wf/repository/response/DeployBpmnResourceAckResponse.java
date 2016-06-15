@@ -1,12 +1,12 @@
 package org.camunda.tngp.broker.wf.repository.response;
 
-import org.camunda.tngp.dispatcher.FragmentWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckEncoder;
 import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public class DeployBpmnResourceAckResponse implements FragmentWriter
+public class DeployBpmnResourceAckResponse implements BufferWriter
 {
     protected final DeployBpmnResourceAckEncoder encoder = new DeployBpmnResourceAckEncoder();
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();

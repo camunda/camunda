@@ -1,14 +1,14 @@
 package org.camunda.tngp.broker.taskqueue.log;
 
-import org.camunda.tngp.log.FragmentReader;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.util.buffer.BufferReader;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class TaskInstanceReader implements FragmentReader
+public class TaskInstanceReader implements BufferReader
 {
     public static final int TASK_TYPE_MAXLENGTH = 256;
     public static final int PAYLOAD_MAXLENGTH = 1024 * 16;

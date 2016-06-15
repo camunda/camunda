@@ -2,16 +2,16 @@ package org.camunda.tngp.broker.wf.repository.log;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.log.FragmentReader;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
+import org.camunda.tngp.util.buffer.BufferReader;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.io.DirectBufferInputStream;
 
-public class WfTypeReader implements FragmentReader
+public class WfTypeReader implements BufferReader
 {
     public final static int MAX_LENGTH = 1024 * 1024 * 2;
 

@@ -1,14 +1,14 @@
 package org.camunda.tngp.broker.wf.repository.log;
 
-import org.camunda.tngp.dispatcher.FragmentWriter;
 import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.camunda.tngp.taskqueue.data.WfTypeEncoder;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class WfTypeWriter implements FragmentWriter
+public class WfTypeWriter implements BufferWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final WfTypeEncoder encoder = new WfTypeEncoder();
