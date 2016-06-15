@@ -2,8 +2,8 @@ package org.camunda.tngp.log;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.FragmentWriter;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 /**
  * Used to write a log entry. Reusable but not thradsafe.
@@ -13,7 +13,7 @@ public class LogEntryWriter
 {
     protected ClaimedFragment claimedFragment = new ClaimedFragment();
 
-    public long write(final Log log, final FragmentWriter writer)
+    public long write(final Log log, final BufferWriter writer)
     {
         final Dispatcher writeBuffer = log.getWriteBuffer();
         final int length = writer.getLength();

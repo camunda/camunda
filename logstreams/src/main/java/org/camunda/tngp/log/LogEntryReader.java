@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.camunda.tngp.util.buffer.BufferReader;
+
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class LogEntryReader
@@ -22,7 +24,7 @@ public class LogEntryReader
         this.readBufferView = new UnsafeBuffer(readBuffer);
     }
 
-    public long read(final Log log, final long position, final FragmentReader fragmentReader)
+    public long read(final Log log, final long position, final BufferReader fragmentReader)
     {
         final long nextFragmentOffset = log.pollFragment(position, pollHandler);
         final int entryLength = pollHandler.bytesRead;

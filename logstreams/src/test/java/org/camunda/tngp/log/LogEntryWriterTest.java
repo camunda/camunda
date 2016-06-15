@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.FragmentWriter;
+import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -16,7 +16,7 @@ public class LogEntryWriterTest
 {
     Log logMock;
     Dispatcher logBufferMock;
-    FragmentWriter writerMock;
+    BufferWriter writerMock;
 
     LogEntryWriter logEntryWriter;
     ClaimedFragment claimedFragmentMock;
@@ -29,7 +29,7 @@ public class LogEntryWriterTest
 
         when(logMock.getWriteBuffer()).thenReturn(logBufferMock);
 
-        writerMock = mock(FragmentWriter.class);
+        writerMock = mock(BufferWriter.class);
 
         claimedFragmentMock = mock(ClaimedFragment.class);
         logEntryWriter = new LogEntryWriter();

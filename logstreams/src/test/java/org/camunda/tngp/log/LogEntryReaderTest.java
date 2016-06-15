@@ -1,18 +1,22 @@
 package org.camunda.tngp.log;
 
-import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import org.camunda.tngp.util.buffer.BufferReader;
 import org.junit.Before;
 import org.junit.Test;
 
 public class LogEntryReaderTest
 {
     Log logMock;
-    FragmentReader readerMock;
+    BufferReader readerMock;
 
     LogEntryReader logEntryReader;
     FileChannel fileChannelMock;
@@ -23,7 +27,7 @@ public class LogEntryReaderTest
         logMock = mock(Log.class);
         fileChannelMock = mock(FileChannel.class);
 
-        readerMock = mock(FragmentReader.class);
+        readerMock = mock(BufferReader.class);
         logEntryReader = new LogEntryReader(512);
     }
 

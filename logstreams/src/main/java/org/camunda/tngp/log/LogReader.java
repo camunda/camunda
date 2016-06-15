@@ -1,5 +1,7 @@
 package org.camunda.tngp.log;
 
+import org.camunda.tngp.util.buffer.BufferReader;
+
 /**
  * Utitilty class for incrementally reading the log in a sequential fashion.
  * Maintains a position which is kept between calls to {@link #read(int)}.
@@ -27,7 +29,7 @@ public class LogReader
         this.position = position;
     }
 
-    public boolean read(FragmentReader reader)
+    public boolean read(BufferReader reader)
     {
        final long nextPosition = entryReader.read(log, position, reader);
 
