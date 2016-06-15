@@ -39,10 +39,8 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
     {
         decoderFlyweight.wrap(buffer, offset);
 
-        final int blockLength = decoderFlyweight.blockLength();
         final int templateId = decoderFlyweight.templateId();
         final int schemaId = decoderFlyweight.schemaId();
-        final int schemaVersion = decoderFlyweight.version();
 
         long requestResult = -1;
 
@@ -60,17 +58,12 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
 
                     if(ctx != null)
                     {
-                        final int messageBodyOffset = offset + decoderFlyweight.encodedLength();
-                        final int messageBodyLength = length - decoderFlyweight.encodedLength();
-
                         requestResult = handler.onRequest(
                                 ctx,
                                 buffer,
-                                messageBodyOffset,
-                                messageBodyLength,
-                                response,
-                                blockLength,
-                                schemaVersion);
+                                offset,
+                                length,
+                                response);
                     }
                 }
             }

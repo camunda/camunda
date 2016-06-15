@@ -46,14 +46,14 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             final DirectBuffer buffer,
             final int offset,
             final int length,
-            final DeferredResponse response,
-            final int sbeBlockLength,
-            final int sbeSchemaVersion)
+            final DeferredResponse response)
     {
         final Bytes2LongHashIndex taskTypePositionIndex = ctx.getTaskTypePositionIndex().getIndex();
         final Log log = ctx.getLog();
 
-        requestDecoder.wrap(buffer, offset, sbeBlockLength, sbeSchemaVersion);
+        headerDecoder.wrap(buffer, offset);
+
+        requestDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         final long consumerId = requestDecoder.consumerId();
         final long lockTime = requestDecoder.lockTime();

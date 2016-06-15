@@ -10,6 +10,7 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogFragmentHandler;
 import org.camunda.tngp.protocol.taskqueue.AckEncoder;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskDecoder;
+import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.taskqueue.NackEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
@@ -24,6 +25,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContext>, ResponseCompletionHandler
 {
+    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final CompleteTaskDecoder requestDecoder = new CompleteTaskDecoder();
     protected final TaskInstanceEncoder taskInstanceEncoder = new TaskInstanceEncoder();
     protected final TaskInstanceDecoder taskInstanceDecoder = new TaskInstanceDecoder();
@@ -40,9 +42,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             final DirectBuffer msg,
             final int offset,
             final int length,
-            final DeferredResponse response,
-            final int sbeBlockLength,
-            final int sbeSchemaVersion)
+            final DeferredResponse response)
     {
         final Long2LongHashIndex lockedTasksIndex = ctx.getLockedTaskInstanceIndex().getIndex();
         final Log log = ctx.getLog();
@@ -50,7 +50,8 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         final TaskInstanceReader taskInstanceReader = logReader.taskInstanceReader;
         final TaskInstanceDecoder taskInstanceDecoder = taskInstanceReader.getDecoder();
 
-        requestDecoder.wrap(msg, offset, sbeBlockLength, sbeSchemaVersion);
+        headerDecoder.wrap(msg, offset);
+        requestDecoder.wrap(msg, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         final long taskId = requestDecoder.taskId();
         final long clientId = 0; // TODO

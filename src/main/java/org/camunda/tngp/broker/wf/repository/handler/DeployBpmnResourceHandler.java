@@ -10,6 +10,7 @@ import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
+import org.camunda.tngp.broker.wf.repository.request.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
@@ -18,7 +19,6 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.protocol.wf.DeployBpmnResourceDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
@@ -38,7 +38,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
     protected DeployBpmnResourceAckResponse responseWriter = new DeployBpmnResourceAckResponse();
     protected DeployBpmnResourceErrorResponseWriter errorResponseWriter = new DeployBpmnResourceErrorResponseWriter();
 
-    protected final DeployBpmnResourceDecoder requestDecoder = new DeployBpmnResourceDecoder();
+    protected final DeployBpmnResourceRequestReader requestReader = new DeployBpmnResourceRequestReader();
 
     @Override
     public long onRequest(
@@ -46,19 +46,15 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
             final DirectBuffer msg,
             final int offset,
             final int length,
-            final DeferredResponse response,
-            final int sbeBlockLength,
-            final int sbeSchemaVersion)
+            final DeferredResponse response)
     {
         long result = -1;
 
-        requestDecoder.wrap(msg, offset, sbeBlockLength, sbeSchemaVersion);
+        requestReader.wrap(msg, offset, length);
 
-        final int resourceLength = requestDecoder.resourceLength();
-        final int resourceOffset = requestDecoder.limit() + DeployBpmnResourceDecoder.resourceHeaderLength();
-
+        DirectBuffer resourceBuffer = requestReader.getResource();
         final BpmnDeploymentValidator bpmnProcessValidator = new BpmnDeploymentValidator()
-                .validate(msg, resourceOffset, resourceLength);
+                .validate(resourceBuffer, 0, resourceBuffer.capacity());
 
         String errorMessage = bpmnProcessValidator.getErrorMessage();
         final Process executableProcess = bpmnProcessValidator.getExecutableProcess();
@@ -69,7 +65,8 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
             if (wfTypeKeyBytes.length <= WF_TYPE_KEY_MAX_LENGTH)
             {
-                result = doDeploy(context, wfTypeKeyBytes, response, msg, resourceOffset, resourceLength);
+                // TODO: hand over requestReader here
+                result = doDeploy(context, wfTypeKeyBytes, response, resourceBuffer, 0, resourceBuffer.capacity());
             }
             else
             {

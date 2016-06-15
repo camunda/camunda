@@ -9,6 +9,7 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.taskqueue.AckEncoder;
 import org.camunda.tngp.protocol.taskqueue.CreateTaskInstanceDecoder;
+import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
@@ -24,6 +25,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
 
     protected final byte[] taskTypeReadBuffer = new byte[256];
 
+    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final CreateTaskInstanceDecoder requestDecoder = new CreateTaskInstanceDecoder();
     protected final TaskInstanceEncoder taskInstanceEncoder = new TaskInstanceEncoder();
     protected final ClaimedFragment claimedLogFragment = new ClaimedFragment();
@@ -35,21 +37,22 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
         final DirectBuffer msg,
         final int offset,
         final int length,
-        final DeferredResponse response,
-        final int sbeBlockLength,
-        final int sbeSchemaVersion)
+        final DeferredResponse response)
     {
         final IdGenerator taskInstanceIdGenerator = ctx.getTaskInstanceIdGenerator();
         final Log log = ctx.getLog();
 
-        requestDecoder.wrap(msg, offset, sbeBlockLength, sbeSchemaVersion);
+        headerDecoder.wrap(msg, offset);
+        final int bodyOffset = offset + headerDecoder.encodedLength();
+
+        requestDecoder.wrap(msg, bodyOffset, headerDecoder.blockLength(), headerDecoder.version());
         long claimedLogPos = -1;
 
         try
         {
             if(response.allocate(ACK_LENGTH))
             {
-                claimedLogPos = claimLogFragment(log, length, sbeBlockLength);
+                claimedLogPos = claimLogFragment(log, length - headerDecoder.encodedLength(), headerDecoder.blockLength());
                 // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
                 claimedLogPos -= BitUtil.align(claimedLogFragment.getFragmentLength(), 8);
 
@@ -57,7 +60,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
                 {
                     final long taskInstanceId = taskInstanceIdGenerator.nextId();
 
-                    writeTaskInstance(msg, offset, sbeBlockLength, sbeSchemaVersion, ctx, taskInstanceId);
+                    writeTaskInstance(msg, bodyOffset, headerDecoder.blockLength(), headerDecoder.version(), ctx, taskInstanceId);
 
                     writeAck(response, taskInstanceId);
                     response.defer(claimedLogPos, this, null);

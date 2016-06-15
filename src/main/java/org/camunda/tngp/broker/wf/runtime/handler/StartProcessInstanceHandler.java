@@ -11,6 +11,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseEncoder;
@@ -24,6 +25,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRuntimeContext>, ResponseCompletionHandler
 {
+    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final StartWorkflowInstanceDecoder requestDecoder = new StartWorkflowInstanceDecoder();
     protected final StartWorkflowInstanceResponseEncoder responseEncoder = new StartWorkflowInstanceResponseEncoder();
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -42,16 +44,16 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
             final DirectBuffer msg,
             final int offset,
             final int length,
-            final DeferredResponse response,
-            final int sbeBlockLength,
-            final int sbeSchemaVersion)
+            final DeferredResponse response)
     {
         final WfTypeCacheService wfTypeCache = context.getWfTypeCacheService();
         final IdGenerator idGenerator = context.getIdGenerator();
         final Log log = context.getLog();
         final Dispatcher logWriteBuffer = log.getWriteBuffer();
 
-        requestDecoder.wrap(msg, offset, sbeBlockLength, sbeSchemaVersion);
+        headerDecoder.wrap(msg, offset);
+
+        requestDecoder.wrap(msg, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
         final ProcessGraph processGraph = findProcessGraph(wfTypeCache);
 
         if(response.allocate(MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.sbeBlockLength()))

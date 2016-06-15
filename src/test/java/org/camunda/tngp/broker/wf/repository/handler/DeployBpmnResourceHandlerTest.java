@@ -2,12 +2,14 @@ package org.camunda.tngp.broker.wf.repository.handler;
 
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.broker.test.util.BufferMatcher.*;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.broker.test.util.BufferMatcher;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
@@ -16,6 +18,7 @@ import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceErrorRes
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,7 +85,7 @@ public class DeployBpmnResourceHandlerTest
         when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
         when(deferredResponseMock.defer(0l, handler, null)).thenReturn(1);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -90,7 +93,10 @@ public class DeployBpmnResourceHandlerTest
         verify(wfTypeWriterMock).version(0);
         verify(wfTypeWriterMock).wfTypeKey(processIdBytes);
         verify(wfTypeWriterMock).prevVersionPosition(-1);
-        verify(wfTypeWriterMock).resource(msgBuffer, DeployBpmnResourceEncoder.BLOCK_LENGTH + DeployBpmnResourceEncoder.resourceHeaderLength(), resource.length);
+        verify(wfTypeWriterMock).resource(
+                argThat(hasBytes(resource).atPosition(0)),
+                eq(0),
+                eq(resource.length));
         verify(logEntryWriterMock).write(context.getWfTypeLog(), wfTypeWriterMock);
 
         verify(responseWriterMock).wfTypeId(typeId);
@@ -119,7 +125,7 @@ public class DeployBpmnResourceHandlerTest
         when(deferredResponseMock.defer(0l, handler, null)).thenReturn(1);
         when(wfTypeReaderMock.version()).thenReturn(4);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -127,7 +133,10 @@ public class DeployBpmnResourceHandlerTest
         verify(wfTypeWriterMock).version(5);
         verify(wfTypeWriterMock).wfTypeKey(processIdBytes);
         verify(wfTypeWriterMock).prevVersionPosition(200l);
-        verify(wfTypeWriterMock).resource(msgBuffer, DeployBpmnResourceEncoder.BLOCK_LENGTH + DeployBpmnResourceEncoder.resourceHeaderLength(), resource.length);
+        verify(wfTypeWriterMock).resource(
+                argThat(hasBytes(resource).atPosition(0)),
+                eq(0),
+                eq(resource.length));
         verify(logEntryWriterMock).write(context.getWfTypeLog(), wfTypeWriterMock);
 
         verify(responseWriterMock).wfTypeId(typeId);
@@ -145,7 +154,7 @@ public class DeployBpmnResourceHandlerTest
 
         when(deferredResponseMock.allocateAndWrite(errorResponseWriterMock)).thenReturn(true);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -172,7 +181,7 @@ public class DeployBpmnResourceHandlerTest
 
         when(deferredResponseMock.allocateAndWrite(errorResponseWriterMock)).thenReturn(true);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock, DeployBpmnResourceEncoder.BLOCK_LENGTH, DeployBpmnResourceEncoder.SCHEMA_VERSION);
+        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -191,15 +200,26 @@ public class DeployBpmnResourceHandlerTest
 
     private DirectBuffer writeRequest(final byte[] resource)
     {
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+
         final DeployBpmnResourceEncoder reqEncoder = new DeployBpmnResourceEncoder();
 
-        final int msgLength = reqEncoder.sbeBlockLength()
+        final int msgLength =
+                MessageHeaderEncoder.ENCODED_LENGTH
+                + reqEncoder.sbeBlockLength()
                 + DeployBpmnResourceEncoder.resourceHeaderLength()
                 + resource.length;
-
         final UnsafeBuffer msgBuffer = new UnsafeBuffer(new byte[msgLength]);
 
-        reqEncoder.wrap(msgBuffer, 0)
+        headerEncoder.wrap(msgBuffer, 0)
+            .blockLength(reqEncoder.sbeBlockLength())
+            .resourceId(425252)
+            .schemaId(reqEncoder.sbeSchemaId())
+            .shardId(526285)
+            .templateId(reqEncoder.sbeTemplateId())
+            .version(reqEncoder.sbeSchemaVersion());
+
+        reqEncoder.wrap(msgBuffer, MessageHeaderEncoder.ENCODED_LENGTH)
             .putResource(resource, 0, resource.length);
 
         return msgBuffer;

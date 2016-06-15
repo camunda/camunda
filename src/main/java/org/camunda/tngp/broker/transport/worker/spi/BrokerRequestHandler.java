@@ -12,8 +12,6 @@ public interface BrokerRequestHandler<C extends ResourceContext>
              DirectBuffer msg,
              int offset,
              int length,
-             DeferredResponse response,
-             int sbeBlockLength,
-             int sbeSchemaVersion);
+             DeferredResponse response);
 
 }
