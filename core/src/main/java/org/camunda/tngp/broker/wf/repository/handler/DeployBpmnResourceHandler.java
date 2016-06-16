@@ -10,15 +10,15 @@ import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
-import org.camunda.tngp.broker.wf.repository.request.DeployBpmnResourceRequestReader;
-import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceAckResponse;
-import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceErrorResponseWriter;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 

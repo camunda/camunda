@@ -9,15 +9,14 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.broker.test.util.BufferMatcher;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
-import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceAckResponse;
-import org.camunda.tngp.broker.wf.repository.response.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.log.LogEntryWriter;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
