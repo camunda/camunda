@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.wf.repository;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
+import org.camunda.tngp.broker.wf.repository.idx.WfTypeIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;

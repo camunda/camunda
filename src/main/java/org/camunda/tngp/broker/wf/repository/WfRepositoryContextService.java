@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.wf.repository;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.wf.repository.idx.WfTypeIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -39,7 +40,7 @@ public class WfRepositoryContextService implements Service<WfRepositoryContext>
     public void stop()
     {
         final WfTypeIndexWriter wfTypeIndexWriter = context.getWfTypeIndexWriter();
-        wfTypeIndexWriter.update(Integer.MAX_VALUE);
+        wfTypeIndexWriter.update();
         wfTypeIndexWriter.writeCheckpoints();
     }
 

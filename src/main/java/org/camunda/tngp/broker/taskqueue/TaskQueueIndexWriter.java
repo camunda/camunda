@@ -40,7 +40,7 @@ public class TaskQueueIndexWriter
 
         do
         {
-            final long position = logReader.getPosition();
+            final long position = logReader.position();
 
             if(logReader.read(taskInstanceReader))
             {
@@ -59,8 +59,8 @@ public class TaskQueueIndexWriter
 
     public void writeCheckpoints()
     {
-        lockedTasksIndexManager.writeCheckPoint(logReader.getPosition());
-        taskTypeIndexManager.writeCheckPoint(logReader.getPosition());
+        lockedTasksIndexManager.writeCheckPoint(logReader.position());
+        taskTypeIndexManager.writeCheckPoint(logReader.position());
     }
 
 

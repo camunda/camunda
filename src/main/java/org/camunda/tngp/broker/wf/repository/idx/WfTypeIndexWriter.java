@@ -1,8 +1,9 @@
-package org.camunda.tngp.broker.wf.repository;
+package org.camunda.tngp.broker.wf.repository.idx;
 
 import java.util.Arrays;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
@@ -12,18 +13,25 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class WfTypeIndexWriter
 {
-    protected final static byte[] wfTypeBuffer = new byte[256];
+    protected final static byte[] WF_TYPE_BUFFER = new byte[256];
 
-    protected final LogReader logReader;
     protected final HashIndexManager<Bytes2LongHashIndex> wfTypeKeyIndexManager;
     protected final HashIndexManager<Long2LongHashIndex> wfTypeIdIndexManager;
 
-    protected final WfTypeReader reader = new WfTypeReader();
+    protected final Long2LongHashIndex wfTypeIdIndex;
+    protected final Bytes2LongHashIndex wfTypeKeyIndex;
+
+    protected LogReader logReader;
+    protected WfTypeReader reader = new WfTypeReader();
 
     public WfTypeIndexWriter(WfRepositoryContext context)
     {
         wfTypeKeyIndexManager = context.getWfTypeKeyIndex();
         wfTypeIdIndexManager = context.getWfTypeIdIndex();
+
+        wfTypeIdIndex = wfTypeIdIndexManager.getIndex();
+        wfTypeKeyIndex = wfTypeKeyIndexManager.getIndex();
+
         logReader = new LogReader(context.getWfTypeLog(), WfTypeReader.MAX_LENGTH);
 
         final long lastCheckpointPosition = Math.min(wfTypeKeyIndexManager.getLastCheckpointPosition(), wfTypeIdIndexManager.getLastCheckpointPosition());
@@ -33,41 +41,38 @@ public class WfTypeIndexWriter
         }
     }
 
-    public int update(int maxFragments)
+    public int update()
     {
         int fragmentsIndexed = 0;
 
+        boolean hasEntry = false;
+
         do
         {
-            final long position = logReader.getPosition();
+            final long position = logReader.position();
 
-            if(logReader.read(reader))
+            hasEntry = logReader.read(reader);
+
+            if(hasEntry)
             {
                 updateIndex(position);
                 ++fragmentsIndexed;
             }
-            else
-            {
-                break;
-            }
         }
-        while(fragmentsIndexed < maxFragments);
+        while(hasEntry);
 
         return fragmentsIndexed;
     }
 
     public void writeCheckpoints()
     {
-        final long position = logReader.getPosition();
+        final long position = logReader.position();
         wfTypeKeyIndexManager.writeCheckPoint(position);
         wfTypeIdIndexManager.writeCheckPoint(position);
     }
 
     protected void updateIndex(final long position)
     {
-        final Long2LongHashIndex wfTypeIdIndex = wfTypeIdIndexManager.getIndex();
-        final Bytes2LongHashIndex wfTypeKeyIndex = wfTypeKeyIndexManager.getIndex();
-
         final long id = reader.id();
 
         wfTypeIdIndex.put(id, position);
@@ -75,14 +80,14 @@ public class WfTypeIndexWriter
         final DirectBuffer typeKey = reader.getTypeKey();
         final int taskTypeLength = typeKey.capacity();
 
-        typeKey.getBytes(0, wfTypeBuffer, 0, taskTypeLength);
+        typeKey.getBytes(0, WF_TYPE_BUFFER, 0, taskTypeLength);
 
-        if (taskTypeLength < wfTypeBuffer.length)
+        if (taskTypeLength < WF_TYPE_BUFFER.length)
         {
-            Arrays.fill(wfTypeBuffer, taskTypeLength, wfTypeBuffer.length, (byte) 0);
+            Arrays.fill(WF_TYPE_BUFFER, taskTypeLength, WF_TYPE_BUFFER.length, (byte) 0);
         }
 
-        wfTypeKeyIndex.put(wfTypeBuffer, id);
+        wfTypeKeyIndex.put(WF_TYPE_BUFFER, id);
     }
 
 }
