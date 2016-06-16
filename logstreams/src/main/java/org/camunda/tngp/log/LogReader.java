@@ -44,7 +44,7 @@ public class LogReader
        return hasNext;
     }
 
-    public long getPosition()
+    public long position()
     {
         return position;
     }
