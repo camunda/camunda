@@ -160,6 +160,8 @@ public class DeployBpmnResourceHandlerTest
         verify(errorResponseWriterMock).errorMessage(any(byte[].class));
         verify(deferredResponseMock).allocateAndWrite(errorResponseWriterMock);
         verify(deferredResponseMock).commit();
+
+        verify(wfTypeWriterMock, never()).write(any(), anyInt());
     }
 
     @Test
@@ -187,6 +189,8 @@ public class DeployBpmnResourceHandlerTest
         verify(errorResponseWriterMock).errorMessage(any(byte[].class));
         verify(deferredResponseMock).allocateAndWrite(errorResponseWriterMock);
         verify(deferredResponseMock).commit();
+
+        verify(wfTypeWriterMock, never()).write(any(), anyInt());
     }
 
     private static byte[] asByteArray(final BpmnModelInstance bpmnModelInstance)
