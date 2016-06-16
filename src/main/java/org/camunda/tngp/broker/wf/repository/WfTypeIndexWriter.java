@@ -75,7 +75,7 @@ public class WfTypeIndexWriter
         final DirectBuffer typeKey = reader.getTypeKey();
         final int taskTypeLength = typeKey.capacity();
 
-        typeKey.getBytes(0, wfTypeBuffer);
+        typeKey.getBytes(0, wfTypeBuffer, 0, taskTypeLength);
 
         if (taskTypeLength < wfTypeBuffer.length)
         {

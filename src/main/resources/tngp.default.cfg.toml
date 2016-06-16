@@ -52,7 +52,7 @@ name = "default"
 id = 0
 logName = "default-task-queue-log"
 
-# Workflow Repositories ---------------------------------
+# Workflow ---------------------------------------------
 
 [workflow]
 numberOfWorkers = 1

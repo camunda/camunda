@@ -54,16 +54,22 @@ public class WfComponent implements Component
         }
         final int perWorkerResponsePoolCapacity = cfg.perWorkerResponsePoolCapacity;
 
-        final BrokerRequestDispatcher<WfRuntimeContext> runtimeDispatcher = new BrokerRequestDispatcher<>(wfRuntimeManagerService, 3, new BrokerRequestHandler[] {
+        final BrokerRequestDispatcher<WfRuntimeContext> runtimeDispatcher = new BrokerRequestDispatcher<>(wfRuntimeManagerService, 3, new BrokerRequestHandler[]
+        {
                 new StartProcessInstanceHandler()
         });
 
-        final BrokerRequestDispatcher<WfRepositoryContext> repositoryDispatcher = new BrokerRequestDispatcher<>(wfRepositoryManagerService, 2, new BrokerRequestHandler[] {
+        final BrokerRequestDispatcher<WfRepositoryContext> repositoryDispatcher = new BrokerRequestDispatcher<>(wfRepositoryManagerService, 2, new BrokerRequestHandler[]
+        {
                 new DeployBpmnResourceHandler()
         });
 
         final WfWorkerContext workerContext = new WfWorkerContext();
-        workerContext.setRequestHandler(new CompositeRequestDispatcher<>(new BrokerRequestDispatcher[] {
+        workerContext.setWfRepositoryManager(wfRepositoryManagerService);
+        workerContext.setWfRuntimeManager(wfRuntimeManagerService);
+
+        workerContext.setRequestHandler(new CompositeRequestDispatcher<>(new BrokerRequestDispatcher[]
+        {
                 runtimeDispatcher,
                 repositoryDispatcher
         }));

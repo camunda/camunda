@@ -80,7 +80,7 @@ public class WfRepositoryManagerService
 
         final Long2LongIndexManagerService wfTypeIdIndexManager = new Long2LongIndexManagerService(1024, 64);
         serviceContext.createService(wfTypeIdIndexServiceName, wfTypeIdIndexManager)
-            .dependency(wfTypeLogServiceName, wfTypeKeyIndexManager.getLogInjector())
+            .dependency(wfTypeLogServiceName, wfTypeIdIndexManager.getLogInjector())
             .install();
 
         final WfTypeCacheService wfTypeCacheService = new WfTypeCacheService(32, 16);
