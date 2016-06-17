@@ -26,7 +26,7 @@ public class Log implements AutoCloseable
     protected final LogSegments logSegments;
     protected final Dispatcher writeBuffer;
     protected final File logDirectory;
-
+    protected final boolean deleteOnClose;
     protected final LogAppendHandler logAppendHandler;
 
     public Log(final LogContext logContext)
@@ -36,6 +36,7 @@ public class Log implements AutoCloseable
         this.logSegments = logContext.getLogSegments();
         this.allocationDescriptor = logContext.getLogAllocationDescriptor();
         this.logAppendHandler = logContext.getLogAppendHandler();
+        this.deleteOnClose = logContext.isDeleteOnClose();
 
         logDirectory = new File(logContext.getLogAllocationDescriptor().getPath());
         writeBuffer = logContext.getWriteBuffer();
@@ -182,5 +183,10 @@ public class Log implements AutoCloseable
     public LogAppendHandler getLogAppendHandler()
     {
         return logAppendHandler;
+    }
+
+    public boolean isDeleteOnClose()
+    {
+        return deleteOnClose;
     }
 }

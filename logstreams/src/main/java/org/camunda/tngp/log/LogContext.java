@@ -23,6 +23,8 @@ public class LogContext
 
     protected LogAppendHandler logAppendHandler = new LogAppendHandler();
 
+    protected boolean deleteOnClose;
+
     public LogContext(String name, int id)
     {
         this.name = name;
@@ -82,5 +84,15 @@ public class LogContext
     public LogAppendHandler getLogAppendHandler()
     {
         return logAppendHandler;
+    }
+
+    public void setDeleteOnClose(boolean deleteOnClose)
+    {
+        this.deleteOnClose = deleteOnClose;
+    }
+
+    public boolean isDeleteOnClose()
+    {
+        return deleteOnClose;
     }
 }

@@ -1,13 +1,17 @@
-package org.camunda.tngp.log;
+package org.camunda.tngp.log.integration;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogBuilder.ThreadingMode;
+import org.camunda.tngp.log.LogFragmentHandler;
+import org.camunda.tngp.log.Logs;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -15,9 +19,11 @@ public class LogAppenderTest
 {
     private static final int MSG_SIZE = 1024;
 
+    @Rule
+    public TemporaryFolder temFolder = new TemporaryFolder();
+
     public class LogFragmentReader implements LogFragmentHandler
     {
-
         private ByteBuffer buffer = ByteBuffer.allocateDirect(MSG_SIZE);
         private UnsafeBuffer unsafeBuffer = new UnsafeBuffer(buffer);
 
@@ -51,12 +57,11 @@ public class LogAppenderTest
     @Test
     public void shouldAppend() throws InterruptedException
     {
-        ensureLogDirCreated();
+        String logPath = temFolder.getRoot().getAbsolutePath();
 
         final Log log = Logs.createLog("foo", 0)
-            .logRootPath("/tmp/logs")
-            .logSegmentSize(1024 * 1024 * 512)
-            .writeBufferSize(1024 * 1024 * 128)
+            .logRootPath(logPath)
+            .deleteOnClose(true)
             .threadingMode(ThreadingMode.DEDICATED)
             .build();
 
@@ -91,24 +96,6 @@ public class LogAppenderTest
         }
 
         log.close();
-    }
-
-
-    private void ensureLogDirCreated()
-    {
-        final File logRoot = new File("/tmp/logs/foo");
-        if(logRoot.exists())
-        {
-            File[] logFiles = logRoot.listFiles((f) -> f.getName().endsWith(".data"));
-            for (int i = 0; i < logFiles.length; i++)
-            {
-                logFiles[i].delete();
-            }
-        }
-        else
-        {
-            logRoot.mkdirs();
-        }
     }
 
 }

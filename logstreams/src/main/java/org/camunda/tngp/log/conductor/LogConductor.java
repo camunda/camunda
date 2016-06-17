@@ -14,6 +14,7 @@ import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.fs.AppendableLogSegment;
 import org.camunda.tngp.log.fs.LogSegments;
 import org.camunda.tngp.log.fs.ReadableLogSegment;
+import org.camunda.tngp.util.FileUtil;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
@@ -160,6 +161,19 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
     public void closeLog(Log log, final CompletableFuture<Log> future)
     {
+
+        if(log.isDeleteOnClose())
+        {
+            future.handle((e,f) ->
+            {
+                final LogSegmentAllocationDescriptor allocationDescriptor = log.getAllocationDescriptor();
+                final String logPath = allocationDescriptor.getPath();
+                FileUtil.deleteFolder(logPath);
+                return log;
+            });
+
+        }
+
         try
         {
             log.getLogSegments().closeAll();

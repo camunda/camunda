@@ -27,7 +27,7 @@ public class LogBuilder
         t.printStackTrace();
     };
 
-    static enum ThreadingMode
+    public static enum ThreadingMode
     {
         SHARED,
         DEDICATED;
@@ -57,6 +57,7 @@ public class LogBuilder
 
     protected LogConductor logConductor;
     protected LogAppender logAppender;
+    protected boolean deleteOnClose;
 
     public LogBuilder(String name, int id)
     {
@@ -120,6 +121,12 @@ public class LogBuilder
         return this;
     }
 
+    public LogBuilder deleteOnClose(boolean deleteOnClose)
+    {
+        this.deleteOnClose = deleteOnClose;
+        return this;
+    }
+
     public Log build()
     {
         final LogContext logContext = new LogContext(name, id);
@@ -131,6 +138,8 @@ public class LogBuilder
         file.mkdirs();
 
         logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logSegmentSize, logDirectory, initialLogSegmentId));
+
+        logContext.setDeleteOnClose(deleteOnClose);
 
         if (!agentsExternallyManaged)
         {
@@ -192,6 +201,11 @@ public class LogBuilder
     public LogConductor getLogConductor()
     {
         return logConductor;
+    }
+
+    public String getLogDirectory()
+    {
+        return logDirectory;
     }
 
     private AgentRunner startAgent(Agent agent)
