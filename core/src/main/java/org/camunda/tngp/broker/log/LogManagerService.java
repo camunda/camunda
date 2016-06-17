@@ -48,13 +48,14 @@ public class LogManagerService implements Service<LogManager>, LogManager
         }
 
         String logDirectory = config.logDirectory;
+        boolean deleteOnExit = false;
         if(config.useTempLogDirectory)
         {
+            deleteOnExit = true;
             try
             {
                 final File tempDir = Files.createTempDirectory("tngp-log-").toFile();
-                tempDir.deleteOnExit();
-                System.out.println("Created temp directory for log "+logName + " at location "+tempDir);
+                System.out.format("Created temp directory for log %s at location %s. Will be deleted on exit.\n", logName, tempDir);
                 logDirectory = tempDir.getAbsolutePath();
             }
             catch (IOException e)
@@ -87,6 +88,7 @@ public class LogManagerService implements Service<LogManager>, LogManager
         logSegmentSize = logSegmentSize * 1024 * 1024;
 
         LogBuilder logBuilder = Logs.createLog(logName, logId)
+            .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
             .logSegmentSize(logSegmentSize);
 
