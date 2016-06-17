@@ -12,7 +12,6 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -25,11 +24,9 @@ public class CountersManagerService implements Service<Counters>
     public final static int COUNTERS_BUFFER_SIZE = COUNTERS_FILE_SIZE - COUNTERS_BUFFER_OFFSET;
 
     protected final String countersFileName;
-
+    protected boolean deleteCountersFileOnExit;
     protected CountersManager countersManager;
-
     protected MappedByteBuffer mappedCountersFile;
-
     protected Counters counters;
 
     public CountersManagerService(ConfigurationManager configurationManager)
@@ -38,6 +35,8 @@ public class CountersManagerService implements Service<Counters>
 
         if(metricsCfg.useTempCountersFile)
         {
+            this.deleteCountersFileOnExit = true;
+
             try
             {
                 countersFileName = Files.createTempFile("tngp-counters", ".raw").toFile().getAbsolutePath();
@@ -82,6 +81,11 @@ public class CountersManagerService implements Service<Counters>
         });
 
         IoUtil.unmap(mappedCountersFile);
+
+        if(deleteCountersFileOnExit == true)
+        {
+            IoUtil.delete(new File(countersFileName), true);
+        }
     }
 
     @Override
