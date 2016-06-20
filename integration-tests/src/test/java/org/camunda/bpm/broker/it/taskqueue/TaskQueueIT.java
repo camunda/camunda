@@ -32,9 +32,9 @@ public class TaskQueueIT
     public void testCycle()
     {
         final TngpClient client = clientRule.getClient();
-        final AsyncTaskService taskService = client.getAsyncTaskService();
+        final AsyncTaskService taskService = client.tasks();
 
-        Long taskId = taskService.createAsyncTask()
+        Long taskId = taskService.create()
             .taskQueueId(0)
             .payload("foo")
             .taskType("bar")
@@ -42,7 +42,7 @@ public class TaskQueueIT
 
         assertThat(taskId).isGreaterThanOrEqualTo(0);
 
-        LockedTasksBatch lockedTasksBatch = taskService.pollAndLockAsyncTasks()
+        LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
           .taskQueueId(0)
           .taskType("bar")
           .execute();
@@ -52,7 +52,7 @@ public class TaskQueueIT
         LockedTask task = lockedTasksBatch.getLockedTasks().get(0);
         assertThat(task.getId()).isEqualTo(taskId);
 
-        Long completedTaskId = taskService.completeAsyncTask()
+        Long completedTaskId = taskService.complete()
             .taskId(taskId)
             .execute();
 

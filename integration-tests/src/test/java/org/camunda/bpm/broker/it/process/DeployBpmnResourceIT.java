@@ -4,7 +4,7 @@ import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowService;
+import org.camunda.tngp.client.ProcessService;
 import org.camunda.tngp.client.cmd.DeployedWorkflowType;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,9 +27,9 @@ public class DeployBpmnResourceIT
     public void shouldDeployModelInstance()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowService workflowService = client.getWorkflowService();
+        final ProcessService workflowService = client.processes();
 
-        final DeployedWorkflowType wfType = workflowService.deployBpmnResource()
+        final DeployedWorkflowType wfType = workflowService.deploy()
             .bpmnModelInstance(Bpmn.createExecutableProcess("anId").startEvent().done())
             .execute();
 
