@@ -9,14 +9,15 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.log.LogEntryWriter;
+import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
-import org.camunda.tngp.protocol.wf.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
@@ -31,7 +32,7 @@ public class DeployBpmnResourceHandlerTest
     WfTypeReader wfTypeReaderMock;
 
     DeployBpmnResourceAckResponse responseWriterMock;
-    DeployBpmnResourceErrorResponseWriter errorResponseWriterMock;
+    ErrorWriter errorResponseWriterMock;
 
     DeployBpmnResourceHandler handler;
 
@@ -53,7 +54,7 @@ public class DeployBpmnResourceHandlerTest
         wfTypeWriterMock = mock(WfTypeWriter.class, new FluentAnswer());
         wfTypeReaderMock = mock(WfTypeReader.class);
         responseWriterMock = mock(DeployBpmnResourceAckResponse.class, new FluentAnswer());
-        errorResponseWriterMock = mock(DeployBpmnResourceErrorResponseWriter.class, new FluentAnswer());
+        errorResponseWriterMock = mock(ErrorWriter.class, new FluentAnswer());
         logEntryWriterMock = mock(LogEntryWriter.class);
 
         handler = new DeployBpmnResourceHandler();
@@ -157,7 +158,9 @@ public class DeployBpmnResourceHandlerTest
 
         assertThat(result).isEqualTo(1);
 
-        verify(errorResponseWriterMock).errorMessage(any(byte[].class));
+        verify(errorResponseWriterMock).componentCode(WfErrors.COMPONENT_CODE);
+        verify(errorResponseWriterMock).detailCode(WfErrors.DEPLOYMENT_ERROR);
+        verify(errorResponseWriterMock).errorMessage(any(String.class));
         verify(deferredResponseMock).allocateAndWrite(errorResponseWriterMock);
         verify(deferredResponseMock).commit();
 
@@ -186,7 +189,9 @@ public class DeployBpmnResourceHandlerTest
 
         assertThat(result).isEqualTo(1);
 
-        verify(errorResponseWriterMock).errorMessage(any(byte[].class));
+        verify(errorResponseWriterMock).componentCode(WfErrors.COMPONENT_CODE);
+        verify(errorResponseWriterMock).detailCode(WfErrors.DEPLOYMENT_ERROR);
+        verify(errorResponseWriterMock).errorMessage(any(String.class));
         verify(deferredResponseMock).allocateAndWrite(errorResponseWriterMock);
         verify(deferredResponseMock).commit();
 

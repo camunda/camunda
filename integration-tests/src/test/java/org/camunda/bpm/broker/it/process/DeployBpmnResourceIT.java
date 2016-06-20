@@ -8,7 +8,6 @@ import org.camunda.tngp.client.ProcessService;
 import org.camunda.tngp.client.cmd.DeployedWorkflowType;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.runners.statements.ExpectException;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 

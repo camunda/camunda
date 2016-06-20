@@ -8,7 +8,6 @@ import org.camunda.tngp.log.idgenerator.spi.LogFragmentIdReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
-import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class LogIdGeneratorService implements Service<IdGenerator>
 {

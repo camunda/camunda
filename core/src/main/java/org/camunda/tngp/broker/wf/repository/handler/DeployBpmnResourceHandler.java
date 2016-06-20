@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
+import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
@@ -16,8 +17,8 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
-import org.camunda.tngp.protocol.wf.DeployBpmnResourceErrorResponseWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
@@ -36,7 +37,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
     protected WfTypeReader wfTypeReader = new WfTypeReader();
 
     protected DeployBpmnResourceAckResponse responseWriter = new DeployBpmnResourceAckResponse();
-    protected DeployBpmnResourceErrorResponseWriter errorResponseWriter = new DeployBpmnResourceErrorResponseWriter();
+    protected ErrorWriter errorResponseWriter = new ErrorWriter();
 
     protected final DeployBpmnResourceRequestReader requestReader = new DeployBpmnResourceRequestReader();
 
@@ -76,9 +77,10 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
         if(errorMessage != null)
         {
-            final byte[] errorMessageBytes = errorMessage.getBytes(StandardCharsets.UTF_8);
-
-            errorResponseWriter.errorMessage(errorMessageBytes);
+            errorResponseWriter
+              .componentCode(WfErrors.COMPONENT_CODE)
+              .detailCode(WfErrors.DEPLOYMENT_ERROR)
+              .errorMessage(errorMessage);
 
             if(response.allocateAndWrite(errorResponseWriter))
             {
