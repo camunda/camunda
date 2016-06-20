@@ -13,6 +13,7 @@ import java.nio.channels.FileChannel.MapMode;
 
 import org.camunda.tngp.log.util.FileChannelUtil;
 
+import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -23,6 +24,8 @@ public abstract class LogSegment
     protected FileChannel fileChannel;
 
     protected UnsafeBuffer metadataSection;
+
+    protected MappedByteBuffer mappedBuffer;
 
     public LogSegment(String fileName)
     {
@@ -37,7 +40,7 @@ public abstract class LogSegment
         {
             try
             {
-                MappedByteBuffer mappedBuffer = fileChannel.map(MapMode.READ_WRITE, 0, METADATA_LENGTH);
+                mappedBuffer = fileChannel.map(MapMode.READ_WRITE, 0, METADATA_LENGTH);
                 metadataSection = new UnsafeBuffer(mappedBuffer, 0, METADATA_LENGTH);
             }
             catch (IOException e)
@@ -56,6 +59,7 @@ public abstract class LogSegment
         try
         {
             this.metadataSection = null;
+            IoUtil.unmap(mappedBuffer);
             fileChannel.close();
         }
         catch (IOException e)
