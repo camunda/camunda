@@ -5,7 +5,11 @@ import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.ProcessService;
+import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.client.cmd.DeployedWorkflowType;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -50,8 +54,9 @@ public class DeployBpmnResourceIT
         final ProcessService workflowService = client.processes();
 
         // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot deploy Bpmn Resource");
+        exception.expect(BrokerRequestException.class);
+        exception.expectMessage("Failed request (1-1): Cannot deploy Bpmn Resource");
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
 
         // when
         workflowService.deploy()
