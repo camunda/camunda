@@ -163,7 +163,7 @@ public class TransportRequestImpl implements TransportRequest
             {
                 if(STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_TIMED_OUT))
                 {
-                    throw new RuntimeException("Response timed out");
+                    throw new RequestTimeoutException();
                 }
             }
         }
