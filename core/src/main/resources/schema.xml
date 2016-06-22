@@ -13,6 +13,11 @@
 			<type name="resourceId" primitiveType="uint16" />
 			<type name="shardId" primitiveType="uint16" />
 		</composite>
+		<composite name="bpmnEventHeader">
+            <type name="event" primitiveType="uint16" />
+            <type name="bpmnElementType" primitiveType="uint16" />
+            <type name="schemaId" primitiveType="uint16" />
+        </composite>
 		<composite name="varDataEncoding">
 			<type name="length" primitiveType="uint16" />
 			<type name="varData" primitiveType="uint8" length="0"
@@ -62,15 +67,21 @@
 		<data name="typeKey" id="4" type="varDataEncoding" />
 		<data name="resource" id="5" type="varDataEncoding" />
 	</sbe:message>
-	
-	<sbe:message name="FlowElementExecutionEvent" id="3">
-		<field name="key" id="1" type="uint64" />
-		<field name="event" id="2" type="uint16" />
-		<field name="processId" id="3" type="uint64" />
-		<field name="processInstanceId" id="4" type="uint64" />
-		<field name="flowElementId" id="5" type="uint16" />
-		<field name="flowElementType" id="6" type="uint16" />
-		<field name="parentFlowElementInstanceId" id="7" type="uint64" />
-	</sbe:message>
-	
+    
+    <sbe:message name="BpmnProcessEvent" id="4">
+        <field name="key" id="1" type="uint64" />
+        <field name="event" id="2" type="uint16" />
+        <field name="processId" id="3" type="uint64" />
+        <field name="processInstanceId" id="4" type="uint64" />
+        <field name="initialElementId" id="5" type="uint16" />
+    </sbe:message>
+    
+    <sbe:message name="BpmnFlowElementEvent" id="5">
+        <field name="key" id="1" type="uint64" />
+        <field name="event" id="2" type="uint16" />
+        <field name="processId" id="3" type="uint64" />
+        <field name="processInstanceId" id="4" type="uint64" />
+        <field name="flowElementId" id="5" type="uint16" />
+    </sbe:message>
+    
 </sbe:messageSchema>

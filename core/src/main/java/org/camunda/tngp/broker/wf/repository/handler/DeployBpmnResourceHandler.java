@@ -95,7 +95,8 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
     protected long doDeploy(
             final WfRepositoryContext context,
             final byte[] wfTypeKeyBytes,
-            final DeferredResponse response, DirectBuffer msg,
+            final DeferredResponse response,
+            final DirectBuffer msg,
             final int resourceOffset,
             final int resourceLength)
     {
