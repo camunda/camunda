@@ -98,6 +98,16 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         if (key != null)
         {
             key.cancel();
+
+            try
+            {
+                // required to reuse socket on windows, see https://github.com/kaazing/nuklei/issues/20
+                selector.select(1);
+            }
+            catch (IOException e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
         }
     }
 
