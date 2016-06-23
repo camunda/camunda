@@ -24,7 +24,7 @@ public class WfTypeIdReader implements LogFragmentIdReader
 
         headerDecoder.wrap(block, 0);
 
-        if(headerDecoder.templateId() == wfTypeDecoder.sbeTemplateId())
+        if (headerDecoder.templateId() == wfTypeDecoder.sbeTemplateId())
         {
             wfTypeDecoder.wrap(block, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
             id = wfTypeDecoder.id();

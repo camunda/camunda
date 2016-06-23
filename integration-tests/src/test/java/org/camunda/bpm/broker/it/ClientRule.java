@@ -30,7 +30,8 @@ public class ClientRule extends ExternalResource
     }
 
     @Override
-    protected void after() {
+    protected void after()
+    {
         client.close();
     }
 

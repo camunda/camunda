@@ -44,19 +44,19 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
 
         long requestResult = -1;
 
-        if(schemaId == this.schemaId)
+        if (schemaId == this.schemaId)
         {
-            if(templateId >= 0 && templateId < handlers.length)
+            if (templateId >= 0 && templateId < handlers.length)
             {
                 final BrokerRequestHandler<C> handler = handlers[templateId];
 
-                if(handler != null)
+                if (handler != null)
                 {
                     final int resourceId = decoderFlyweight.resourceId();
                     final C ctx = contextProvider.getContextForResource(resourceId);
                     // TODO: shard
 
-                    if(ctx != null)
+                    if (ctx != null)
                     {
                         requestResult = handler.onRequest(
                                 ctx,

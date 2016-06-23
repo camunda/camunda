@@ -30,16 +30,14 @@ public class CompositeRequestDispatcher<C extends ResourceContext> implements As
 
         final int schemaId = decoderFlyweight.schemaId();
 
-        long requestResult = -1;
-
         for (int i = 0; i < dispatchers.length; i++)
         {
-           if(dispatchers[i].schemaId == schemaId)
-           {
-               return dispatchers[i].onRequest(buffer, offset, length, response);
-           }
+            if (dispatchers[i].schemaId == schemaId)
+            {
+                return dispatchers[i].onRequest(buffer, offset, length, response);
+            }
         }
 
-        return requestResult;
+        return -1;
     }
 }

@@ -18,7 +18,7 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 
-public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implements Service<HashIndexManager<I>>, HashIndexManager<I>
+public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> implements Service<HashIndexManager<I>>, HashIndexManager<I>
 {
     private final Injector<Log> logInjector = new Injector<>();
 
@@ -52,7 +52,7 @@ public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implemen
             Files.deleteIfExists(indexWorkFilePath);
 
             final Path lastCheckpoint = getLastCheckpoint();
-            if(lastCheckpoint != null)
+            if (lastCheckpoint != null)
             {
                 Files.copy(lastCheckpoint, indexWorkFilePath);
             }
@@ -85,7 +85,7 @@ public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implemen
             final Path lastCheckpoint = getLastCheckpoint();
             final long lastCheckpointPosition = getLastCheckpointPosition();
 
-            if(lastCheckpointPosition < logPosition)
+            if (lastCheckpointPosition < logPosition)
             {
                 final Path newCheckpointPath = new File(String.format("%s.%s", indexWorkFilePath.toString(), logPosition)).toPath();
 
@@ -94,7 +94,7 @@ public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implemen
                 Files.copy(indexWorkFilePath, newCheckpointPath);
 
                 // delete previous checkpoint
-                if(lastCheckpoint != null)
+                if (lastCheckpoint != null)
                 {
                     Files.deleteIfExists(lastCheckpoint);
                 }
@@ -109,9 +109,9 @@ public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implemen
     protected Path getLastCheckpoint()
     {
         final String checkpointPattern = String.format("%s.\\d+", indexWorkFilePath.toFile().getName());
-        final String[] checkpoints = new File(indexDirPath).list((d,f) -> f.matches(checkpointPattern));
+        final String[] checkpoints = new File(indexDirPath).list((d, f) -> f.matches(checkpointPattern));
 
-        if(checkpoints.length > 0)
+        if (checkpoints.length > 0)
         {
             return new File(indexDirPath + File.separator + checkpoints[checkpoints.length - 1]).toPath().toAbsolutePath();
         }
@@ -129,9 +129,9 @@ public abstract class HashIndexManagerService<I extends HashIndex<?,?>> implemen
 
         long lastCheckpointPosition = -1;
 
-        if(lastCheckpoint != null)
+        if (lastCheckpoint != null)
         {
-            String pathString = lastCheckpoint.toString();
+            final String pathString = lastCheckpoint.toString();
             lastCheckpointPosition = Long.parseLong(pathString.substring(pathString.lastIndexOf(".") + 1));
         }
 

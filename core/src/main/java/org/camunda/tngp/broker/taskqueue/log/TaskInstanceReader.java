@@ -30,8 +30,8 @@ public class TaskInstanceReader implements BufferReader
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final TaskInstanceDecoder decoder = new TaskInstanceDecoder();
 
-    protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0,0);
-    protected final UnsafeBuffer payloadBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     protected int length;
 

@@ -69,7 +69,7 @@ public class DeployBpmnResourceHandlerTest
     @Test
     public void shouldDeployInitialVersion()
     {
-        final long typeId = 101l;
+        final long typeId = 101L;
         final String procesId = "someProcessId";
         final byte[] processIdBytes = procesId.getBytes(StandardCharsets.UTF_8);
 
@@ -78,14 +78,14 @@ public class DeployBpmnResourceHandlerTest
         final int msgLength = msgBuffer.capacity();
 
         when(context.getWfTypeIdGenerator().nextId()).thenReturn(typeId);
-        when(context.getWfTypeKeyIndex().getIndex().get(any(byte[].class), anyLong())).thenReturn(-1l);
-        when(context.getWfTypeIdIndex().getIndex().get(anyLong(), anyLong())).thenReturn(-1l);
+        when(context.getWfTypeKeyIndex().getIndex().get(any(byte[].class), anyLong())).thenReturn(-1L);
+        when(context.getWfTypeIdIndex().getIndex().get(anyLong(), anyLong())).thenReturn(-1L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
-        when(deferredResponseMock.defer(0l, handler, null)).thenReturn(1);
+        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0L);
+        when(deferredResponseMock.defer(0L, handler, null)).thenReturn(1);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
+        final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -102,13 +102,13 @@ public class DeployBpmnResourceHandlerTest
         verify(responseWriterMock).wfTypeId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
-        verify(deferredResponseMock).defer(0l, handler, null);
+        verify(deferredResponseMock).defer(0L, handler, null);
     }
 
     @Test
     public void shouldDeploySecondVersion()
     {
-        final long typeId = 101l;
+        final long typeId = 101L;
         final String procesId = "someProcessId";
         final byte[] processIdBytes = procesId.getBytes(StandardCharsets.UTF_8);
 
@@ -117,22 +117,22 @@ public class DeployBpmnResourceHandlerTest
         final int msgLength = msgBuffer.capacity();
 
         when(context.getWfTypeIdGenerator().nextId()).thenReturn(typeId);
-        when(context.getWfTypeKeyIndex().getIndex().get(any(byte[].class), eq(-1l))).thenReturn(100l);
-        when(context.getWfTypeIdIndex().getIndex().get(100l, -1)).thenReturn(200l);
+        when(context.getWfTypeKeyIndex().getIndex().get(any(byte[].class), eq(-1L))).thenReturn(100L);
+        when(context.getWfTypeIdIndex().getIndex().get(100L, -1)).thenReturn(200L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
-        when(deferredResponseMock.defer(0l, handler, null)).thenReturn(1);
+        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0L);
+        when(deferredResponseMock.defer(0L, handler, null)).thenReturn(1);
         when(wfTypeReaderMock.version()).thenReturn(4);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
+        final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
         verify(wfTypeWriterMock).id(typeId);
         verify(wfTypeWriterMock).version(5);
         verify(wfTypeWriterMock).wfTypeKey(processIdBytes);
-        verify(wfTypeWriterMock).prevVersionPosition(200l);
+        verify(wfTypeWriterMock).prevVersionPosition(200L);
         verify(wfTypeWriterMock).resource(
                 argThat(hasBytes(resource).atPosition(0)),
                 eq(0),
@@ -142,7 +142,7 @@ public class DeployBpmnResourceHandlerTest
         verify(responseWriterMock).wfTypeId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
-        verify(deferredResponseMock).defer(0l, handler, null);
+        verify(deferredResponseMock).defer(0L, handler, null);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class DeployBpmnResourceHandlerTest
 
         when(deferredResponseMock.allocateAndWrite(errorResponseWriterMock)).thenReturn(true);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
+        final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -172,7 +172,7 @@ public class DeployBpmnResourceHandlerTest
     {
         String procesId = "some-l";
 
-        while(procesId.getBytes(StandardCharsets.UTF_8).length < DeployBpmnResourceHandler.WF_TYPE_KEY_MAX_LENGTH)
+        while (procesId.getBytes(StandardCharsets.UTF_8).length < DeployBpmnResourceHandler.WF_TYPE_KEY_MAX_LENGTH)
         {
             procesId += "o";
         }
@@ -185,7 +185,7 @@ public class DeployBpmnResourceHandlerTest
 
         when(deferredResponseMock.allocateAndWrite(errorResponseWriterMock)).thenReturn(true);
 
-        long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
+        final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
         assertThat(result).isEqualTo(1);
 
@@ -213,10 +213,11 @@ public class DeployBpmnResourceHandlerTest
         final DeployBpmnResourceEncoder reqEncoder = new DeployBpmnResourceEncoder();
 
         final int msgLength =
-                MessageHeaderEncoder.ENCODED_LENGTH
-                + reqEncoder.sbeBlockLength()
-                + DeployBpmnResourceEncoder.resourceHeaderLength()
-                + resource.length;
+                MessageHeaderEncoder.ENCODED_LENGTH +
+                reqEncoder.sbeBlockLength() +
+                DeployBpmnResourceEncoder.resourceHeaderLength() +
+                resource.length;
+
         final UnsafeBuffer msgBuffer = new UnsafeBuffer(new byte[msgLength]);
 
         headerEncoder.wrap(msgBuffer, 0)

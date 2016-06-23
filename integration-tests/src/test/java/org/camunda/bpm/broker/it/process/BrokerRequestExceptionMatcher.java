@@ -12,7 +12,7 @@ public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestExce
 
     public static BrokerRequestExceptionMatcher brokerException(int expectedComponentCode, int expectedDetailCode)
     {
-        BrokerRequestExceptionMatcher matcher = new BrokerRequestExceptionMatcher();
+        final BrokerRequestExceptionMatcher matcher = new BrokerRequestExceptionMatcher();
         matcher.expectedComponentCode = expectedComponentCode;
         matcher.expectedDetailCode = expectedDetailCode;
         return matcher;
@@ -26,25 +26,16 @@ public class BrokerRequestExceptionMatcher extends BaseMatcher<BrokerRequestExce
             return false;
         }
 
-        BrokerRequestException exception = (BrokerRequestException) item;
+        final BrokerRequestException exception = (BrokerRequestException) item;
 
-        if (expectedComponentCode == exception.getComponentCode()
-                && expectedDetailCode == exception.getDetailCode())
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return expectedComponentCode == exception.getComponentCode() && expectedDetailCode == exception.getDetailCode();
     }
 
     @Override
     public void describeTo(Description description)
     {
         description.appendText(BrokerRequestException.class.getSimpleName());
-        description.appendText(" with component code " + expectedComponentCode
-                + " and detail code " + expectedDetailCode);
+        description.appendText(" with component code " + expectedComponentCode + " and detail code " + expectedDetailCode);
 
     }
 

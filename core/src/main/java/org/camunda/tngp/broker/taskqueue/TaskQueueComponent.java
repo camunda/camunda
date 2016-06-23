@@ -45,16 +45,17 @@ public class TaskQueueComponent implements Component
             final ServiceName<TaskQueueManager> taskQueueManagerServiceName)
     {
         final int numberOfWorkers = cfg.numberOfWorkers;
-        if(numberOfWorkers != 1)
+        if (numberOfWorkers != 1)
         {
-            throw new RuntimeException("Illegal value for config property 'task-queues.numberOfWorkers': "+numberOfWorkers+" only 1 is supported.");
+            throw new RuntimeException("Illegal value for config property 'task-queues.numberOfWorkers': " +
+                    numberOfWorkers + " only 1 is supported.");
         }
         final int perWorkerResponsePoolCapacity = cfg.perWorkerResponsePoolCapacity;
 
         final BrokerRequestDispatcher<TaskQueueContext> taskQueueRequestDispatcher = new BrokerRequestDispatcher<>(taskQueueManagerService, 1, new BrokerRequestHandler[] {
-                new CreateTaskInstanceHandler(),
-                new LockTaskBatchHandler(),
-                new CompleteTaskHandler()
+            new CreateTaskInstanceHandler(),
+            new LockTaskBatchHandler(),
+            new CompleteTaskHandler()
         });
 
         final TaskQueueWorkerContext workerContext = new TaskQueueWorkerContext();
@@ -62,7 +63,7 @@ public class TaskQueueComponent implements Component
         workerContext.setTaskQueueManager(taskQueueManagerService);
         workerContext.setWorkerTasks(new WorkerTask[]
         {
-                new TaskQueueIndexWriteWorkerTask()
+            new TaskQueueIndexWriteWorkerTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);

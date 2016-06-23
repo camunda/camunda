@@ -6,7 +6,7 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class SystemServiceNames
 {
-    public final static ServiceName<AgentRunnerService> AGENT_RUNNER_SERVICE = ServiceName.newServiceName("broker.agentrunner", AgentRunnerService.class);
+    public static final ServiceName<AgentRunnerService> AGENT_RUNNER_SERVICE = ServiceName.newServiceName("broker.agentrunner", AgentRunnerService.class);
 
-    public final static ServiceName<Counters> COUNTERS_MANAGER_SERVICE = ServiceName.newServiceName("broker.countersManager", Counters.class);
+    public static final ServiceName<Counters> COUNTERS_MANAGER_SERVICE = ServiceName.newServiceName("broker.countersManager", Counters.class);
 }

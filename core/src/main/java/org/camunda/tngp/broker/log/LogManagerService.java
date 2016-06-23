@@ -36,20 +36,20 @@ public class LogManagerService implements Service<LogManager>, LogManager
     public void createLog(LogCfg config)
     {
         final String logName = config.name;
-        if(logName == null || logName.isEmpty())
+        if (logName == null || logName.isEmpty())
         {
             throw new IllegalArgumentException("logName cannot be null");
         }
 
         final int logId = config.id;
-        if(logId < 0 || logId > Short.MAX_VALUE)
+        if (logId < 0 || logId > Short.MAX_VALUE)
         {
-            throw new IllegalArgumentException("log id cannot be null or greater than "+Short.MAX_VALUE);
+            throw new IllegalArgumentException("log id cannot be null or greater than " + Short.MAX_VALUE);
         }
 
         String logDirectory = config.logDirectory;
         boolean deleteOnExit = false;
-        if(config.useTempLogDirectory)
+        if (config.useTempLogDirectory)
         {
             deleteOnExit = true;
             try
@@ -60,34 +60,34 @@ public class LogManagerService implements Service<LogManager>, LogManager
             }
             catch (IOException e)
             {
-                throw new RuntimeException("Could not create temp directory for log "+logName, e);
+                throw new RuntimeException("Could not create temp directory for log " + logName, e);
             }
         }
         else
         {
-            if(logDirectory == null || logDirectory.isEmpty())
+            if (logDirectory == null || logDirectory.isEmpty())
             {
                 int assignedLogDirectory = 0;
-                if(logComponentConfig.logDirectories.length == 0)
+                if (logComponentConfig.logDirectories.length == 0)
                 {
                     throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
                 }
-                else if(logComponentConfig.logDirectories.length > 1)
+                else if (logComponentConfig.logDirectories.length > 1)
                 {
-                    assignedLogDirectory = new Random().nextInt(logComponentConfig.logDirectories.length -1);
+                    assignedLogDirectory = new Random().nextInt(logComponentConfig.logDirectories.length - 1);
                 }
                 logDirectory = logComponentConfig.logDirectories[assignedLogDirectory] + File.separator + logName;
             }
         }
 
         int logSegmentSize = config.logSegmentSize;
-        if(logSegmentSize == -1)
+        if (logSegmentSize == -1)
         {
             logSegmentSize = logComponentConfig.defaultLogSegmentSize;
         }
         logSegmentSize = logSegmentSize * 1024 * 1024;
 
-        LogBuilder logBuilder = Logs.createLog(logName, logId)
+        final LogBuilder logBuilder = Logs.createLog(logName, logId)
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
             .logSegmentSize(logSegmentSize);

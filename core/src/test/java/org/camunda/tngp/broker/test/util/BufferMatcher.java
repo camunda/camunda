@@ -14,14 +14,14 @@ public class BufferMatcher extends ArgumentMatcher<DirectBuffer>
     @Override
     public boolean matches(Object argument)
     {
-        if (argument == null || !(argument instanceof DirectBuffer)) {
+        if (argument == null || !(argument instanceof DirectBuffer))
+        {
             return false;
         }
 
+        final byte[] actualBytes = new byte[expectedBytes.length];
 
-        byte[] actualBytes = new byte[expectedBytes.length];
-
-        DirectBuffer buffer = (DirectBuffer) argument;
+        final DirectBuffer buffer = (DirectBuffer) argument;
 
         // TODO: try-catch in case buffer has not expected size
         buffer.getBytes(position, actualBytes, 0, actualBytes.length);
@@ -31,7 +31,7 @@ public class BufferMatcher extends ArgumentMatcher<DirectBuffer>
 
     public static BufferMatcher hasBytes(byte[] bytes)
     {
-        BufferMatcher matcher = new BufferMatcher();
+        final BufferMatcher matcher = new BufferMatcher();
 
         matcher.expectedBytes = bytes;
 

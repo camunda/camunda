@@ -17,11 +17,11 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class CountersManagerService implements Service<Counters>
 {
-    public final static int COUNTERS_FILE_SIZE = 1024 * 1024 * 4;
-    public final static int LABELS_BUFFER_OFFSET = 0;
-    public final static int LABELS_BUFFER_SIZE = (int) (COUNTERS_FILE_SIZE * 0.75);
-    public final static int COUNTERS_BUFFER_OFFSET = BitUtil.align(LABELS_BUFFER_SIZE, 8);
-    public final static int COUNTERS_BUFFER_SIZE = COUNTERS_FILE_SIZE - COUNTERS_BUFFER_OFFSET;
+    public static final int COUNTERS_FILE_SIZE = 1024 * 1024 * 4;
+    public static final int LABELS_BUFFER_OFFSET = 0;
+    public static final int LABELS_BUFFER_SIZE = (int) (COUNTERS_FILE_SIZE * 0.75);
+    public static final int COUNTERS_BUFFER_OFFSET = BitUtil.align(LABELS_BUFFER_SIZE, 8);
+    public static final int COUNTERS_BUFFER_SIZE = COUNTERS_FILE_SIZE - COUNTERS_BUFFER_OFFSET;
 
     protected final String countersFileName;
     protected boolean deleteCountersFileOnExit;
@@ -33,7 +33,7 @@ public class CountersManagerService implements Service<Counters>
     {
         final MetricsCfg metricsCfg = configurationManager.readEntry("metrics", MetricsCfg.class);
 
-        if(metricsCfg.useTempCountersFile)
+        if (metricsCfg.useTempCountersFile)
         {
             this.deleteCountersFileOnExit = true;
 
@@ -74,7 +74,7 @@ public class CountersManagerService implements Service<Counters>
     @Override
     public void stop()
     {
-        countersManager.forEach((id,label) ->
+        countersManager.forEach((id, label) ->
         {
             System.err.format("Freeing counter %s \n", label);
             countersManager.free(id);
@@ -82,7 +82,7 @@ public class CountersManagerService implements Service<Counters>
 
         IoUtil.unmap(mappedCountersFile);
 
-        if(deleteCountersFileOnExit == true)
+        if (deleteCountersFileOnExit)
         {
             IoUtil.delete(new File(countersFileName), true);
         }

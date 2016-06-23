@@ -15,7 +15,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
     public ConfigurationManagerImpl(String configFileLocation)
     {
         this.configFileLocation = configFileLocation;
-        if(configFileLocation == null)
+        if (configFileLocation == null)
         {
             System.out.println("No configuration file provided, using default configuration.");
             toml = new Toml().read(ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("tngp.default.cfg.toml"));
@@ -35,7 +35,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
 
         T configObject = null;
 
-        if(componentConfig != null)
+        if (componentConfig != null)
         {
             configObject = componentConfig.to(configObjectType);
         }

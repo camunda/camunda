@@ -25,11 +25,11 @@ public class TaskInstanceIdReader implements LogFragmentIdReader
 
         headerDecoder.wrap(block, 0);
 
-        if(headerDecoder.templateId() == taskInstanceDecoder.sbeTemplateId())
+        if (headerDecoder.templateId() == taskInstanceDecoder.sbeTemplateId())
         {
             taskInstanceDecoder.wrap(block, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-            if(taskInstanceDecoder.state() == TaskInstanceState.NEW)
+            if (taskInstanceDecoder.state() == TaskInstanceState.NEW)
             {
                 id = taskInstanceDecoder.id();
             }

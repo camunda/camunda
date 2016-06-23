@@ -9,24 +9,26 @@ public class StandaloneBroker
     public static void main(String[] args)
     {
         String configFile = null;
-        if(args.length == 1)
+        if (args.length == 1)
         {
             configFile = args[0];
         }
 
         final Broker taskBroker = new Broker(configFile);
 
-        getRuntime().addShutdownHook(new Thread() {
+        getRuntime().addShutdownHook(new Thread()
+        {
             @Override
-            public void run() {
+            public void run()
+            {
                 taskBroker.close();
             }
         });
 
         try (Scanner scanner = new Scanner(System.in))
         {
-            String nextLine = scanner.nextLine();
-            if(nextLine.contains("exit")
+            final String nextLine = scanner.nextLine();
+            if (nextLine.contains("exit")
                     || nextLine.contains("close")
                     || nextLine.contains("quit")
                     || nextLine.contains("halt")

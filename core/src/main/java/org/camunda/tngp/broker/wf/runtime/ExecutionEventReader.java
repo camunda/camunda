@@ -4,18 +4,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.log.LogFragmentHandler;
 import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.FlowElementExecutionEventDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.io.DirectBufferInputStream;
 
 public class ExecutionEventReader implements LogFragmentHandler
 {
@@ -41,8 +37,7 @@ public class ExecutionEventReader implements LogFragmentHandler
 
     public ExecutionEventReader()
     {
-        int readBufferLength = MessageHeaderDecoder.ENCODED_LENGTH +
-                FlowElementExecutionEventDecoder.BLOCK_LENGTH;
+        final int readBufferLength = MessageHeaderDecoder.ENCODED_LENGTH + FlowElementExecutionEventDecoder.BLOCK_LENGTH;
 
         this.blockReadBuffer = ByteBuffer.allocateDirect(readBufferLength);
         this.blockReadBufferView = new UnsafeBuffer(blockReadBuffer);
@@ -74,7 +69,7 @@ public class ExecutionEventReader implements LogFragmentHandler
         {
             fileChannel.read(blockReadBuffer, offset);
 
-            if(headerDecoder.templateId() == TaskInstanceDecoder.TEMPLATE_ID)
+            if (headerDecoder.templateId() == TaskInstanceDecoder.TEMPLATE_ID)
             {
                 executionEventDecoder.wrap(blockReadBufferView, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 

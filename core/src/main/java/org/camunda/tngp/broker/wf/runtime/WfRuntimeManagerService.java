@@ -10,7 +10,6 @@ import org.camunda.tngp.broker.services.LogIdGeneratorService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Service;
@@ -41,27 +40,27 @@ public class WfRuntimeManagerService
     public void createRepository(WfRuntimeCfg cfg)
     {
         final String wfRuntimeName = cfg.name;
-        if(wfRuntimeName == null || wfRuntimeName.isEmpty())
+        if (wfRuntimeName == null || wfRuntimeName.isEmpty())
         {
-            throw new RuntimeException("Cannot start workflow runtime "+wfRuntimeName+": Configuration property 'name' cannot be null.");
+            throw new RuntimeException("Cannot start workflow runtime " + wfRuntimeName + ": Configuration property 'name' cannot be null.");
         }
 
         final int wfRuntimeId = cfg.id;
-        if(wfRuntimeId < 0 || wfRuntimeId > Short.MAX_VALUE)
+        if (wfRuntimeId < 0 || wfRuntimeId > Short.MAX_VALUE)
         {
-            throw new RuntimeException("Cannot start workflow runtime " + wfRuntimeName + ": Invalid value for config property id "+ wfRuntimeId+ ". Value must be in range [0,"+Short.MAX_VALUE+"]");
+            throw new RuntimeException("Cannot start workflow runtime " + wfRuntimeName + ": Invalid value for config property id " + wfRuntimeId + ". Value must be in range [0," + Short.MAX_VALUE + "]");
         }
 
         final String wfInstancelogName = cfg.logName;
-        if(wfInstancelogName == null || wfInstancelogName.isEmpty())
+        if (wfInstancelogName == null || wfInstancelogName.isEmpty())
         {
-            throw new RuntimeException("Cannot start workflow runtime "+wfRuntimeName+": Mandatory configuration property 'logName' is not set.");
+            throw new RuntimeException("Cannot start workflow runtime " + wfRuntimeName + ": Mandatory configuration property 'logName' is not set.");
         }
 
         final String wfRepositoryName = cfg.repositoryName;
-        if(wfRepositoryName == null || wfRepositoryName.isEmpty())
+        if (wfRepositoryName == null || wfRepositoryName.isEmpty())
         {
-            throw new RuntimeException("Cannot start workflow runtime "+wfRuntimeName+": Mandatory configuration property 'repositoryName' is not set.");
+            throw new RuntimeException("Cannot start workflow runtime " + wfRuntimeName + ": Mandatory configuration property 'repositoryName' is not set.");
         }
 
         final ServiceName<Log> wfInstanceLogServiceName = logServiceName(wfInstancelogName);

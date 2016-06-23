@@ -12,7 +12,7 @@ public class WfTypeIndexWriteWorkerTask implements WorkerTask<WfWorkerContext>
     {
         int workCount = 0;
 
-        WfRepositoryContext[] contexts = context.getWfRepositoryManager().getContexts();
+        final WfRepositoryContext[] contexts = context.getWfRepositoryManager().getContexts();
 
         for (int i = 0; i < contexts.length; i++)
         {

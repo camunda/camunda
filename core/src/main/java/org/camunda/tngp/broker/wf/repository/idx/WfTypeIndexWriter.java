@@ -13,7 +13,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class WfTypeIndexWriter
 {
-    protected final static byte[] WF_TYPE_BUFFER = new byte[256];
+    protected static final byte[] WF_TYPE_BUFFER = new byte[256];
 
     protected final HashIndexManager<Bytes2LongHashIndex> wfTypeKeyIndexManager;
     protected final HashIndexManager<Long2LongHashIndex> wfTypeIdIndexManager;
@@ -35,7 +35,7 @@ public class WfTypeIndexWriter
         logReader = new LogReader(context.getWfTypeLog(), WfTypeReader.MAX_LENGTH);
 
         final long lastCheckpointPosition = Math.min(wfTypeKeyIndexManager.getLastCheckpointPosition(), wfTypeIdIndexManager.getLastCheckpointPosition());
-        if(lastCheckpointPosition != -1)
+        if (lastCheckpointPosition != -1)
         {
             logReader.setPosition(lastCheckpointPosition);
         }
@@ -53,13 +53,13 @@ public class WfTypeIndexWriter
 
             hasEntry = logReader.read(reader);
 
-            if(hasEntry)
+            if (hasEntry)
             {
                 updateIndex(position);
                 ++fragmentsIndexed;
             }
         }
-        while(hasEntry);
+        while (hasEntry);
 
         return fragmentsIndexed;
     }

@@ -35,7 +35,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
     protected final FlowElementExecutionEventEncoder flowElementExecutionEventEncoder = new FlowElementExecutionEventEncoder();
     protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
-    public final static int WF_TYPE_KEY_MAX_LENGTH = 256;
+    public static final int WF_TYPE_KEY_MAX_LENGTH = 256;
     protected final byte[] keyBuffer = new byte[WF_TYPE_KEY_MAX_LENGTH];
 
     @Override
@@ -56,13 +56,13 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         requestDecoder.wrap(msg, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
         final ProcessGraph processGraph = findProcessGraph(wfTypeCache);
 
-        if(response.allocate(MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.sbeBlockLength()))
+        if (response.allocate(MessageHeaderEncoder.ENCODED_LENGTH + responseEncoder.sbeBlockLength()))
         {
-            if(processGraph != null)
+            if (processGraph != null)
             {
                 final long claimedOffset = claimLogEntry(requestDecoder.payloadLength(), logWriteBuffer);
 
-                if(claimedOffset >= 0)
+                if (claimedOffset >= 0)
                 {
                     final long processInstanceId = idGenerator.nextId();
 
@@ -99,11 +99,11 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         ProcessGraph processGraph = null;
 
         final long wfTypeId = requestDecoder.wfTypeId();
-        if(wfTypeId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
+        if (wfTypeId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
         {
             processGraph = wfTypeCache.getProcessGraphByTypeId(wfTypeId);
 
-            if(processGraph == null)
+            if (processGraph == null)
             {
                 // TODO: cannot find workflow type by id
             }
@@ -111,13 +111,13 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         else
         {
             final int payloadLength = requestDecoder.payloadLength();
-            if(payloadLength < WF_TYPE_KEY_MAX_LENGTH)
+            if (payloadLength < WF_TYPE_KEY_MAX_LENGTH)
             {
                 requestDecoder.getPayload(keyBuffer, 0, payloadLength);
                 Arrays.fill(keyBuffer, payloadLength, keyBuffer.length, (byte) 0);
                 processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(keyBuffer);
 
-                if(processGraph == null)
+                if (processGraph == null)
                 {
                     // TODO: cannot find workflow type by key
                 }
@@ -183,14 +183,14 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
 
     private long claimLogEntry(final int payloadLength, final Dispatcher logWriteBuffer)
     {
-        final int logEntryLength = MessageHeaderEncoder.ENCODED_LENGTH
-                + flowElementExecutionEventEncoder.sbeBlockLength();
+        final int logEntryLength = MessageHeaderEncoder.ENCODED_LENGTH + flowElementExecutionEventEncoder.sbeBlockLength();
+
         long claimedOffset = -1;
         do
         {
             claimedOffset = logWriteBuffer.claim(claimedFragment, logEntryLength);
         }
-        while(claimedOffset == -2);
+        while (claimedOffset == -2);
 
         claimedOffset -= BitUtil.align(claimedFragment.getFragmentLength(), 8);
 

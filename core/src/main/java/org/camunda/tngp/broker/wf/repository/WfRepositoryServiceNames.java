@@ -9,10 +9,9 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class WfRepositoryServiceNames
 {
+    public static final ServiceName<WfRepositoryManager> WF_REPOSITORY_MANAGER_NAME = ServiceName.newServiceName("wf.repository.manager", WfRepositoryManager.class);
 
-    public static ServiceName<WfRepositoryManager> WF_REPOSITORY_MANAGER_NAME = ServiceName.newServiceName("wf.repository.manager", WfRepositoryManager.class);
-
-    public final static ServiceName<IdGenerator> wfTypeIdGeneratorServiceName(String repositoryName)
+    public static ServiceName<IdGenerator> wfTypeIdGeneratorServiceName(String repositoryName)
     {
         return ServiceName.newServiceName(String.format("wf.repository.%s.type.id-generator", repositoryName), IdGenerator.class);
     }

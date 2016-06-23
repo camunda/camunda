@@ -21,7 +21,7 @@ public class ContinuationHandler
     {
 //        int workCount = logReader.read(1);
 //
-//        if(workCount == 1)
+//        if (workCount == 1)
 //        {
 //            handleEvent();
 //        }
@@ -32,6 +32,5 @@ public class ContinuationHandler
     protected void handleEvent()
     {
         final FlowElementExecutionEventDecoder decoder = executionEventReader.getDecoder();
-
     }
 }

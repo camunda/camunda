@@ -48,20 +48,20 @@ public class WfComponent implements Component
             .install();
 
         final int numberOfWorkers = cfg.numberOfWorkers;
-        if(numberOfWorkers != 1)
+        if (numberOfWorkers != 1)
         {
-            throw new RuntimeException("Illegal value for config property 'workflow.numberOfWorkers': "+numberOfWorkers+" only 1 is supported.");
+            throw new RuntimeException("Illegal value for config property 'workflow.numberOfWorkers': " + numberOfWorkers + " only 1 is supported.");
         }
         final int perWorkerResponsePoolCapacity = cfg.perWorkerResponsePoolCapacity;
 
         final BrokerRequestDispatcher<WfRuntimeContext> runtimeDispatcher = new BrokerRequestDispatcher<>(wfRuntimeManagerService, 3, new BrokerRequestHandler[]
         {
-                new StartProcessInstanceHandler()
+            new StartProcessInstanceHandler()
         });
 
         final BrokerRequestDispatcher<WfRepositoryContext> repositoryDispatcher = new BrokerRequestDispatcher<>(wfRepositoryManagerService, 2, new BrokerRequestHandler[]
         {
-                new DeployBpmnResourceHandler()
+            new DeployBpmnResourceHandler()
         });
 
         final WfWorkerContext workerContext = new WfWorkerContext();
@@ -70,13 +70,13 @@ public class WfComponent implements Component
 
         workerContext.setRequestHandler(new CompositeRequestDispatcher<>(new BrokerRequestDispatcher[]
         {
-                runtimeDispatcher,
-                repositoryDispatcher
+            runtimeDispatcher,
+            repositoryDispatcher
         }));
 
         workerContext.setWorkerTasks(new WorkerTask[]
         {
-                new WfTypeIndexWriteWorkerTask()
+            new WfTypeIndexWriteWorkerTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);

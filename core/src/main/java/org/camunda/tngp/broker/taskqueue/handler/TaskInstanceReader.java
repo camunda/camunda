@@ -38,7 +38,7 @@ public class TaskInstanceReader
 
     public TaskInstanceReader()
     {
-        int readBufferLength = MessageHeaderDecoder.ENCODED_LENGTH +
+        final int readBufferLength = MessageHeaderDecoder.ENCODED_LENGTH +
                 TaskInstanceDecoder.BLOCK_LENGTH +
                 TASK_TYPE_MAXLENGTH +
                 TaskInstanceDecoder.taskTypeHeaderLength();
@@ -74,7 +74,7 @@ public class TaskInstanceReader
         {
             fileChannel.read(blockReadBuffer, offset);
 
-            if(headerDecoder.templateId() == TaskInstanceDecoder.TEMPLATE_ID)
+            if (headerDecoder.templateId() == TaskInstanceDecoder.TEMPLATE_ID)
             {
                 taskInstanceDecoder.wrap(blockReadBufferView, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 

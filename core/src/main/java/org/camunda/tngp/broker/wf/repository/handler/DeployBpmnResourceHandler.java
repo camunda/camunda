@@ -27,7 +27,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>, ResponseCompletionHandler
 {
-    public final static int WF_TYPE_KEY_MAX_LENGTH = 256;
+    public static final int WF_TYPE_KEY_MAX_LENGTH = 256;
     protected final byte[] keyBuffer = new byte[WF_TYPE_KEY_MAX_LENGTH];
 
     protected LogEntryWriter logEntryWriter = new LogEntryWriter();
@@ -53,14 +53,14 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
         requestReader.wrap(msg, offset, length);
 
-        DirectBuffer resourceBuffer = requestReader.getResource();
+        final DirectBuffer resourceBuffer = requestReader.getResource();
         final BpmnDeploymentValidator bpmnProcessValidator = new BpmnDeploymentValidator()
                 .validate(resourceBuffer, 0, resourceBuffer.capacity());
 
         String errorMessage = bpmnProcessValidator.getErrorMessage();
         final Process executableProcess = bpmnProcessValidator.getExecutableProcess();
 
-        if(executableProcess != null)
+        if (executableProcess != null)
         {
             final byte[] wfTypeKeyBytes = executableProcess.getId().getBytes(StandardCharsets.UTF_8);
 
@@ -75,14 +75,14 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
             }
         }
 
-        if(errorMessage != null)
+        if (errorMessage != null)
         {
             errorResponseWriter
-              .componentCode(WfErrors.COMPONENT_CODE)
-              .detailCode(WfErrors.DEPLOYMENT_ERROR)
-              .errorMessage(errorMessage);
+                .componentCode(WfErrors.COMPONENT_CODE)
+                .detailCode(WfErrors.DEPLOYMENT_ERROR)
+                .errorMessage(errorMessage);
 
-            if(response.allocateAndWrite(errorResponseWriter))
+            if (response.allocateAndWrite(errorResponseWriter))
             {
                 response.commit();
                 result = 1;
@@ -110,7 +110,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         responseWriter.wfTypeId(typeId);
 
         final int keyLength = wfTypeKeyBytes.length;
-        if(keyLength <= WF_TYPE_KEY_MAX_LENGTH)
+        if (keyLength <= WF_TYPE_KEY_MAX_LENGTH)
         {
             arraycopy(wfTypeKeyBytes, 0, keyBuffer, 0, keyLength);
             fill(keyBuffer, keyLength, WF_TYPE_KEY_MAX_LENGTH, (byte) 0);
@@ -121,7 +121,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         final long previousVersionId = wfTypeKeyIndex.get(keyBuffer, -1);
         final long prevVersionPos = wfIdIndex.get(previousVersionId, -1);
 
-        if(prevVersionPos != -1)
+        if (prevVersionPos != -1)
         {
             logEntryReader.read(wfTypeLog, prevVersionPos, wfTypeReader);
             version = 1 + wfTypeReader.version();
@@ -135,7 +135,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
             .wfTypeKey(wfTypeKeyBytes)
             .resource(msg, resourceOffset, resourceLength);
 
-        if(response.allocateAndWrite(responseWriter))
+        if (response.allocateAndWrite(responseWriter))
         {
             final long logEntryOffset = logEntryWriter.write(wfTypeLog, wfTypeWriter);
             result = response.defer(logEntryOffset, this, null);

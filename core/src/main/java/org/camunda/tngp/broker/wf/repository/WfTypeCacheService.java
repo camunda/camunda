@@ -29,8 +29,12 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
     protected final LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
     protected final WfTypeReader reader = new WfTypeReader();
 
-    public WfTypeCacheService(int numSets, int setSize) {
-        cache = new Long2ObjectCache<>(numSets, setSize, (v) -> {});
+    public WfTypeCacheService(int numSets, int setSize)
+    {
+        cache = new Long2ObjectCache<>(numSets, setSize, (v) ->
+        {
+            // do nothing on eviction
+        });
     }
 
     @Override
@@ -58,7 +62,7 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
 
         ProcessGraph processGraph = null;
 
-        if(id != -1)
+        if (id != -1)
         {
             processGraph = getProcessGraphByTypeId(id);
         }
@@ -80,10 +84,10 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
 
         ProcessGraph graph = null;
 
-        if(position != -1)
+        if (position != -1)
         {
             logEntryReader.read(log, position, reader);
-            graph = transformer.transformSingleProcess(reader.asModelInstance());
+            graph = transformer.transformSingleProcess(reader.asModelInstance(), key);
         }
 
         return graph;

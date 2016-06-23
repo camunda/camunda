@@ -16,7 +16,7 @@ public class Bytes2LongIndexManagerService extends HashIndexManagerService<Bytes
     @Override
     protected Bytes2LongHashIndex createIndex(FileChannelIndexStore indexStore, boolean createNew)
     {
-        if(createNew)
+        if (createNew)
         {
             return new Bytes2LongHashIndex(indexStore, indexSize, blockLength, keyLength);
         }

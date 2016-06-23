@@ -34,7 +34,7 @@ public class TaskQueueIT
         final TngpClient client = clientRule.getClient();
         final AsyncTaskService taskService = client.tasks();
 
-        Long taskId = taskService.create()
+        final Long taskId = taskService.create()
             .taskQueueId(0)
             .payload("foo")
             .taskType("bar")
@@ -42,17 +42,17 @@ public class TaskQueueIT
 
         assertThat(taskId).isGreaterThanOrEqualTo(0);
 
-        LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
-          .taskQueueId(0)
-          .taskType("bar")
-          .execute();
+        final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
+            .taskQueueId(0)
+            .taskType("bar")
+            .execute();
 
         assertThat(lockedTasksBatch.getLockedTasks()).hasSize(1);
 
-        LockedTask task = lockedTasksBatch.getLockedTasks().get(0);
+        final LockedTask task = lockedTasksBatch.getLockedTasks().get(0);
         assertThat(task.getId()).isEqualTo(taskId);
 
-        Long completedTaskId = taskService.complete()
+        final Long completedTaskId = taskService.complete()
             .taskId(taskId)
             .execute();
 

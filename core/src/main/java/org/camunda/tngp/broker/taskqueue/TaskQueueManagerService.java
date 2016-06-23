@@ -43,21 +43,22 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
     public void startTaskQueue(TaskQueueCfg taskQueueCfg)
     {
         final String taskQueueName = taskQueueCfg.name;
-        if(taskQueueName == null || taskQueueName.isEmpty())
+        if (taskQueueName == null || taskQueueName.isEmpty())
         {
-            throw new RuntimeException("Cannot start task queue "+taskQueueName+": Configuration property 'name' cannot be null.");
+
+            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Configuration property 'name' cannot be null.");
         }
 
         final int taskQueueId = taskQueueCfg.id;
-        if(taskQueueId < 0 || taskQueueId > Short.MAX_VALUE)
+        if (taskQueueId < 0 || taskQueueId > Short.MAX_VALUE)
         {
-            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Invalid value for task queue id "+ taskQueueId+ ". Value must be in range [0,"+Short.MAX_VALUE+"]");
+            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Invalid value for task queue id " + taskQueueId + ". Value must be in range [0," + Short.MAX_VALUE + "]");
         }
 
         final String logName = taskQueueCfg.logName;
-        if(logName == null || logName.isEmpty())
+        if (logName == null || logName.isEmpty())
         {
-            throw new RuntimeException("Cannot start task queue "+taskQueueName+": Mandatory configuration property 'logName' is not set.");
+            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Mandatory configuration property 'logName' is not set.");
         }
 
         final ServiceName<Log> logServiceName = logServiceName(logName);
@@ -75,7 +76,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             .dependency(logServiceName, lockedTasksIndexManagerService.getLogInjector())
             .install();
 
-        final Bytes2LongIndexManagerService taskTypePositionIndex = new Bytes2LongIndexManagerService(64, 32*1024, 256);
+        final Bytes2LongIndexManagerService taskTypePositionIndex = new Bytes2LongIndexManagerService(64, 32 * 1024, 256);
         serviceContext.createService(taskQueueTaskTypePositionIndexName, taskTypePositionIndex)
             .dependency(logServiceName, taskTypePositionIndex.getLogInjector())
             .install();

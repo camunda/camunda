@@ -106,7 +106,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
                 errorCode = 1;
             }
 
-            if(errorCode > 0)
+            if (errorCode > 0)
             {
                 writeNack(response, taskId);
                 response.commit();
@@ -170,7 +170,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         {
             claimedPosition = log.getWriteBuffer().claim(claimedFragment, taskInstanceLength);
         }
-        while(claimedPosition == -2);
+        while (claimedPosition == -2);
 
         // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
         claimedPosition -= BitUtil.align(claimedFragment.getFragmentLength(), 8);

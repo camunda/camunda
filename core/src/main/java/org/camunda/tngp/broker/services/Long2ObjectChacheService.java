@@ -26,7 +26,8 @@ public class Long2ObjectChacheService<V> implements Service<Long2ObjectCache<V>>
     }
 
     @Override
-    public void start(ServiceContext serviceContext) {
+    public void start(ServiceContext serviceContext)
+    {
         theCache = new Long2ObjectCache<>(numSets, setSize, evictionConsumer);
     }
 

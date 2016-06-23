@@ -47,9 +47,10 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
 
         int numberOfThreads = cfg.numberOfThreads;
 
-        if(numberOfThreads > maxThreadCount)
+        if (numberOfThreads > maxThreadCount)
         {
-            System.err.println("WARNING: configured thread count ("+numberOfThreads+") is larger than maxThreadCount "+maxThreadCount+"). Falling back max thread count.");
+            System.err.println("WARNING: configured thread count (" + numberOfThreads +
+                    ") is larger than maxThreadCount " + maxThreadCount + "). Falling back max thread count.");
             numberOfThreads = maxThreadCount;
         }
 
@@ -64,18 +65,18 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
 
         switch (this.idleStrategy)
         {
-        case BUSY_SPIN:
-            idleStrategy = new NoOpIdleStrategy();
-            break;
+            case BUSY_SPIN:
+                idleStrategy = new NoOpIdleStrategy();
+                break;
 
-        default:
-            idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
+            default:
+                idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
         }
 
         final String errorCounterName = String.format("%s.errorCounter", agent.roleName());
         final AtomicCounter errorCounter = countersManager.newCounter(errorCounterName);
         errorCounters.add(errorCounter);
-        return new AgentRunner(idleStrategy, (t)-> t.printStackTrace(), errorCounter, agent);
+        return new AgentRunner(idleStrategy, (t) -> t.printStackTrace(), errorCounter, agent);
     }
 
     @Override
@@ -85,20 +86,20 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
 
         // TODO: implement this in a better way !!!
 
-        if(availableThreads >= 4)
+        if (availableThreads >= 4)
         {
             agentRunners.add(createAgentRunner(logAgents, countersManager));
             agentRunners.add(createAgentRunner(networkingAgents, countersManager));
             agentRunners.add(createAgentRunner(workerAgents, countersManager));
             agentRunners.add(createAgentRunner(conductorAgents, countersManager));
         }
-        else if(availableThreads == 3)
+        else if (availableThreads == 3)
         {
             agentRunners.add(createAgentRunner(logAgents, countersManager));
             agentRunners.add(createAgentRunner(conductorAgents, countersManager));
             agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, workerAgents), countersManager));
         }
-        else if(availableThreads == 2)
+        else if (availableThreads == 2)
         {
             agentRunners.add(createAgentRunner(new CompositeAgent(networkingAgents, conductorAgents, workerAgents), countersManager));
             agentRunners.add(createAgentRunner(logAgents, countersManager));

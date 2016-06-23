@@ -56,7 +56,7 @@ public class TransportComponent implements Component
         final int port = socketBindingCfg.port;
 
         String hostname = socketBindingCfg.hostname;
-        if(hostname == null || hostname.isEmpty())
+        if (hostname == null || hostname.isEmpty())
         {
             hostname = transportComponentCfg.hostname;
         }
@@ -64,7 +64,7 @@ public class TransportComponent implements Component
         final InetSocketAddress bindAddr = new InetSocketAddress(hostname, port);
 
         int receiveBufferSize = socketBindingCfg.receiveBufferSize * 1024 * 1024;
-        if(receiveBufferSize == -1)
+        if (receiveBufferSize == -1)
         {
             receiveBufferSize = transportComponentCfg.defaultReceiveBufferSize;
         }

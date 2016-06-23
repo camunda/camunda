@@ -20,18 +20,18 @@ public class WfTypeWriter implements BufferWriter
     protected int version;
     protected long prevVersionPosition;
 
-    protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0,0);
-    protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public int getLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH
-               + WfTypeEncoder.BLOCK_LENGTH
-               + WfTypeEncoder.typeKeyHeaderLength()
-               + typeKeyBuffer.capacity()
-               + WfTypeEncoder.resourceHeaderLength()
-               + resourceBuffer.capacity();
+        return MessageHeaderEncoder.ENCODED_LENGTH +
+               WfTypeEncoder.BLOCK_LENGTH +
+               WfTypeEncoder.typeKeyHeaderLength() +
+               typeKeyBuffer.capacity() +
+               WfTypeEncoder.resourceHeaderLength() +
+               resourceBuffer.capacity();
     }
 
     @Override
@@ -54,8 +54,8 @@ public class WfTypeWriter implements BufferWriter
             .putTypeKey(typeKeyBuffer, 0, typeKeyBuffer.capacity())
             .putResource(resourceBuffer, 0, resourceBuffer.capacity());
 
-        typeKeyBuffer.wrap(0,0);
-        resourceBuffer.wrap(0,0);
+        typeKeyBuffer.wrap(0, 0);
+        resourceBuffer.wrap(0, 0);
     }
 
     public WfTypeWriter resourceId(final int value)
@@ -84,7 +84,7 @@ public class WfTypeWriter implements BufferWriter
 
     public WfTypeWriter prevVersionPosition(long value)
     {
-        if(value < 0)
+        if (value < 0)
         {
             value = WfTypeEncoder.prevVersionPositionNullValue();
         }

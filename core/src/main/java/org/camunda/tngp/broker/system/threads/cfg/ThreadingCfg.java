@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.system.threads.cfg;
 
 public class ThreadingCfg
 {
-    public static enum BrokerIdleStrategy
+    public enum BrokerIdleStrategy
     {
         BACKOFF, BUSY_SPIN;
     }

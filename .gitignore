@@ -1,6 +1,7 @@
 .idea
 target
 .classpath
+.checkstyle
 .project
 .settings
 build.properties
@@ -20,5 +21,3 @@ faces-config.NavData
 
 *.DS_Store
 .gradle
-
-work/

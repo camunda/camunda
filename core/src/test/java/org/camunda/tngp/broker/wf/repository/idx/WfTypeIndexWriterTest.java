@@ -63,9 +63,9 @@ public class WfTypeIndexWriterTest
         final DirectBuffer typeBufferMock = mock(DirectBuffer.class);
 
         when(logReaderMock.read(wfTypeReaderMock)).thenReturn(true, false);
-        when(logReaderMock.position()).thenReturn(123l);
+        when(logReaderMock.position()).thenReturn(123L);
         when(wfTypeReaderMock.getTypeKey()).thenReturn(typeBufferMock);
-        when(wfTypeReaderMock.id()).thenReturn(19l);
+        when(wfTypeReaderMock.id()).thenReturn(19L);
 
         when(typeBufferMock.capacity()).thenReturn(key.length);
 
@@ -80,7 +80,7 @@ public class WfTypeIndexWriterTest
 
         assertThat(fragmentsIndexed).isEqualTo(1);
 
-        verify(wfTypeIndexWriter.wfTypeIdIndex).put(19l, 123l);
+        verify(wfTypeIndexWriter.wfTypeIdIndex).put(19L, 123L);
         verify(wfTypeIndexWriter.wfTypeKeyIndex).put(expectedIndexKey, 19);
     }
 
@@ -91,21 +91,21 @@ public class WfTypeIndexWriterTest
         final DirectBuffer typeBufferMock = mock(DirectBuffer.class);
 
         when(logReaderMock.read(wfTypeReaderMock)).thenReturn(true, true, false);
-        when(logReaderMock.position()).thenReturn(123l, 456l);
+        when(logReaderMock.position()).thenReturn(123L, 456L);
         when(wfTypeReaderMock.getTypeKey()).thenReturn(typeBufferMock);
-        when(wfTypeReaderMock.id()).thenReturn(19l, 20l);
+        when(wfTypeReaderMock.id()).thenReturn(19L, 20L);
 
         final int fragmentsIndexed = wfTypeIndexWriter.update();
 
         assertThat(fragmentsIndexed).isEqualTo(2);
 
-        InOrder idIndexInOrder = inOrder(wfTypeIndexWriter.wfTypeIdIndex);
-        InOrder keyIndexInOrder = inOrder(wfTypeIndexWriter.wfTypeKeyIndex);
+        final InOrder idIndexInOrder = inOrder(wfTypeIndexWriter.wfTypeIdIndex);
+        final InOrder keyIndexInOrder = inOrder(wfTypeIndexWriter.wfTypeKeyIndex);
 
-        idIndexInOrder.verify(wfTypeIndexWriter.wfTypeIdIndex).put(19l, 123l);
-        idIndexInOrder.verify(wfTypeIndexWriter.wfTypeIdIndex).put(20l, 456l);
+        idIndexInOrder.verify(wfTypeIndexWriter.wfTypeIdIndex).put(19L, 123L);
+        idIndexInOrder.verify(wfTypeIndexWriter.wfTypeIdIndex).put(20L, 456L);
 
-        keyIndexInOrder.verify(wfTypeIndexWriter.wfTypeKeyIndex).put(WfTypeIndexWriter.WF_TYPE_BUFFER, 19l);
-        keyIndexInOrder.verify(wfTypeIndexWriter.wfTypeKeyIndex).put(WfTypeIndexWriter.WF_TYPE_BUFFER, 20l);
+        keyIndexInOrder.verify(wfTypeIndexWriter.wfTypeKeyIndex).put(WfTypeIndexWriter.WF_TYPE_BUFFER, 19L);
+        keyIndexInOrder.verify(wfTypeIndexWriter.wfTypeKeyIndex).put(WfTypeIndexWriter.WF_TYPE_BUFFER, 20L);
     }
 }

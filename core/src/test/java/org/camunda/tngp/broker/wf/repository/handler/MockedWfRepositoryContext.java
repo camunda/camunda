@@ -21,17 +21,17 @@ public class MockedWfRepositoryContext extends WfRepositoryContext
         final Log logMock = mock(Log.class);
         when(logMock.getWriteBuffer()).thenReturn(logWriteBufferMock);
 
-        Bytes2LongHashIndex keyIndexMock = mock(Bytes2LongHashIndex.class);
+        final Bytes2LongHashIndex keyIndexMock = mock(Bytes2LongHashIndex.class);
 
-        HashIndexManager keyIndexManagerMock = mock(HashIndexManager.class);
+        final HashIndexManager keyIndexManagerMock = mock(HashIndexManager.class);
         when(keyIndexManagerMock.getIndex()).thenReturn(keyIndexMock);
 
-        Long2LongHashIndex idIndexMock = mock(Long2LongHashIndex.class);
+        final Long2LongHashIndex idIndexMock = mock(Long2LongHashIndex.class);
 
-        HashIndexManager idIndexManagerMock = mock(HashIndexManager.class);
+        final HashIndexManager idIndexManagerMock = mock(HashIndexManager.class);
         when(idIndexManagerMock.getIndex()).thenReturn(idIndexMock);
 
-        IdGenerator idGeneratorMock = mock(IdGenerator.class);
+        final IdGenerator idGeneratorMock = mock(IdGenerator.class);
 
         setWfTypeLog(logMock);
         setWfTypeKeyIndex(keyIndexManagerMock);

@@ -13,13 +13,13 @@ import uk.co.real_logic.agrona.io.DirectBufferInputStream;
 
 public class WfTypeReader implements BufferReader
 {
-    public final static int MAX_LENGTH = 1024 * 1024 * 2;
+    public static final int MAX_LENGTH = 1024 * 1024 * 2;
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final WfTypeDecoder decoder = new WfTypeDecoder();
 
-    protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0,0);
-    protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0, 0);
 
     public void wrap(final DirectBuffer buffer, int offset, final int length)
     {

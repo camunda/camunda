@@ -8,26 +8,26 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class TaskQueueServiceNames
 {
-    public final static ServiceName<TaskQueueManager> TASK_QUEUE_MANAGER = ServiceName.newServiceName("taskqueue.manager", TaskQueueManager.class);
+    public static final ServiceName<TaskQueueManager> TASK_QUEUE_MANAGER = ServiceName.newServiceName("taskqueue.manager", TaskQueueManager.class);
 
-    public final static ServiceName<TaskQueueContext> taskQueueContextServiceName(String taskQueueName)
+    public static ServiceName<TaskQueueContext> taskQueueContextServiceName(String taskQueueName)
     {
         return ServiceName.newServiceName(String.format("taskqueue.%s.context", taskQueueName), TaskQueueContext.class);
     }
 
-    public final static ServiceName<IdGenerator> taskQueueIdGeneratorName(String taskQueueName)
+    public static ServiceName<IdGenerator> taskQueueIdGeneratorName(String taskQueueName)
     {
         return ServiceName.newServiceName(String.format("taskqueue.%s.id-generator", taskQueueName), IdGenerator.class);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public final static ServiceName<HashIndexManager<Long2LongHashIndex>> taskQueueLockedTasksIndexServiceName(String taskQueueName)
+    public static ServiceName<HashIndexManager<Long2LongHashIndex>> taskQueueLockedTasksIndexServiceName(String taskQueueName)
     {
         return (ServiceName) ServiceName.newServiceName(String.format("taskqueue.%s.index.lockedTasks", taskQueueName), HashIndexManager.class);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public final static ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndex(String taskQueueName)
+    public static ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndex(String taskQueueName)
     {
         return (ServiceName) ServiceName.newServiceName(String.format("taskqueue.%s.index.taskTypePosition", taskQueueName), HashIndexManager.class);
     }

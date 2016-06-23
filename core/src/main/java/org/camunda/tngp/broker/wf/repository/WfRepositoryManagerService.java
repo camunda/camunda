@@ -44,21 +44,21 @@ public class WfRepositoryManagerService
     public void createRepository(WfRepositoryCfg cfg)
     {
         final String wfRepositoryName = cfg.name;
-        if(wfRepositoryName == null || wfRepositoryName.isEmpty())
+        if (wfRepositoryName == null || wfRepositoryName.isEmpty())
         {
-            throw new RuntimeException("Cannot start workflow repository "+wfRepositoryName+": Configuration property 'name' cannot be null.");
+            throw new RuntimeException("Cannot start workflow repository " + wfRepositoryName + ": Configuration property 'name' cannot be null.");
         }
 
         final int wfRepositoryId = cfg.id;
-        if(wfRepositoryId < 0 || wfRepositoryId > Short.MAX_VALUE)
+        if (wfRepositoryId < 0 || wfRepositoryId > Short.MAX_VALUE)
         {
-            throw new RuntimeException("Cannot start workflow repository " + wfRepositoryName + ": Invalid value for config property id "+ wfRepositoryId+ ". Value must be in range [0,"+Short.MAX_VALUE+"]");
+            throw new RuntimeException("Cannot start workflow repository " + wfRepositoryName + ": Invalid value for config property id " + wfRepositoryId + ". Value must be in range [0," + Short.MAX_VALUE + "]");
         }
 
         final String wfTypelogName = cfg.logName;
-        if(wfTypelogName == null || wfTypelogName.isEmpty())
+        if (wfTypelogName == null || wfTypelogName.isEmpty())
         {
-            throw new RuntimeException("Cannot start workflow repository "+wfRepositoryName+": Mandatory configuration property 'wfTypelogName' is not set.");
+            throw new RuntimeException("Cannot start workflow repository " + wfRepositoryName + ": Mandatory configuration property 'wfTypelogName' is not set.");
         }
 
         final ServiceName<Log> wfTypeLogServiceName = logServiceName(wfTypelogName);
@@ -73,7 +73,7 @@ public class WfRepositoryManagerService
             .dependency(wfTypeLogServiceName, wfTypeIdGeneratorService.getLogInjector())
             .install();
 
-        final Bytes2LongIndexManagerService wfTypeKeyIndexManager = new Bytes2LongIndexManagerService(512, 32*1024, 256);
+        final Bytes2LongIndexManagerService wfTypeKeyIndexManager = new Bytes2LongIndexManagerService(512, 32 * 1024, 256);
         serviceContext.createService(wfTypeKeyIndexServiceName, wfTypeKeyIndexManager)
             .dependency(wfTypeLogServiceName, wfTypeKeyIndexManager.getLogInjector())
             .install();

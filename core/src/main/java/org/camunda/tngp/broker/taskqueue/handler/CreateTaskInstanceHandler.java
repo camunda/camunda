@@ -21,7 +21,7 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueueContext>, ResponseCompletionHandler
 {
-    final static int ACK_LENGTH = AckEncoder.BLOCK_LENGTH + MessageHeaderEncoder.ENCODED_LENGTH;
+    static final int ACK_LENGTH = AckEncoder.BLOCK_LENGTH + MessageHeaderEncoder.ENCODED_LENGTH;
 
     protected final byte[] taskTypeReadBuffer = new byte[256];
 
@@ -50,7 +50,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
 
         try
         {
-            if(response.allocate(ACK_LENGTH))
+            if (response.allocate(ACK_LENGTH))
             {
                 claimedLogPos = claimLogFragment(log, length - headerDecoder.encodedLength(), headerDecoder.blockLength());
                 // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
@@ -75,12 +75,12 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
         }
         finally
         {
-            if(claimedLogFragment.isOpen())
+            if (claimedLogFragment.isOpen())
             {
                 claimedLogFragment.abort();
                 claimedLogPos = -1;
             }
-            if(!response.isDeferred())
+            if (!response.isDeferred())
             {
                 response.abort();
             }
@@ -161,15 +161,15 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
         long claimedPos;
 
         final int encodedTaskInstanceLength =
-                (length - sbeBlockLength) // length of payload and task type (including headers)
-                + taskInstanceEncoder.sbeBlockLength()
-                + messageHeaderEncoder.encodedLength();
+                (length - sbeBlockLength) + // length of payload and task type (including headers)
+                taskInstanceEncoder.sbeBlockLength() +
+                messageHeaderEncoder.encodedLength();
 
         do
         {
             claimedPos = log.getWriteBuffer().claim(claimedLogFragment, encodedTaskInstanceLength, log.getId());
         }
-        while(claimedPos == -2);
+        while (claimedPos == -2);
 
         return claimedPos;
     }

@@ -7,17 +7,17 @@ import org.camunda.tngp.transport.Transport;
 
 public class TransportServiceNames
 {
-    public final static ServiceName<Transport> TRANSPORT = ServiceName.newServiceName("transport", Transport.class);
-    public final static ServiceName<Dispatcher> TRANSPORT_SEND_BUFFER = ServiceName.newServiceName("transport.sendbuffer", Dispatcher.class);
+    public static final ServiceName<Transport> TRANSPORT = ServiceName.newServiceName("transport", Transport.class);
+    public static final ServiceName<Dispatcher> TRANSPORT_SEND_BUFFER = ServiceName.newServiceName("transport.sendbuffer", Dispatcher.class);
 
-    public final static String CLIENT_API_SOCKET_BINDING_NAME = "clientApi";
+    public static final String CLIENT_API_SOCKET_BINDING_NAME = "clientApi";
 
-    public final static ServiceName<ServerSocketBinding> serverSocketBindingServiceName(String bindingName)
+    public static ServiceName<ServerSocketBinding> serverSocketBindingServiceName(String bindingName)
     {
         return ServiceName.newServiceName(String.format("transport.server-socket-binding.%s", bindingName), ServerSocketBinding.class);
     }
 
-    public final static ServiceName<Dispatcher> serverSocketBindingReceiveBufferName(String bindingName)
+    public static ServiceName<Dispatcher> serverSocketBindingReceiveBufferName(String bindingName)
     {
         return ServiceName.newServiceName(String.format("transport.server-socket-binding.%s.receive-buffer", bindingName), Dispatcher.class);
     }

@@ -56,20 +56,21 @@ public class WfTypeWriterTest
         assertThat(decoder.version()).isEqualTo(2);
         assertThat(decoder.prevVersionPosition()).isEqualTo(3);
 
-        byte[] typeKey = new byte[2];
+        final byte[] typeKey = new byte[2];
         decoder.getTypeKey(typeKey, 0, 2);
         assertThat(typeKey).containsExactly((byte) 5, (byte) 6);
 
-        byte[] payload = new byte[4];
+        final byte[] payload = new byte[4];
         decoder.getResource(payload, 0, 4);
         assertThat(payload).containsExactly((byte) 1, (byte) 2, (byte) 3, (byte) 4);
     }
 
     @Test
-    public void testWriteVariableLengthFieldsInReverseOrder() {
+    public void testWriteVariableLengthFieldsInReverseOrder()
+    {
         // given
-        UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
-        WfTypeWriter writer = new WfTypeWriter()
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
+        final WfTypeWriter writer = new WfTypeWriter()
                 .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
                 .wfTypeKey(TYPE);
 
@@ -77,20 +78,19 @@ public class WfTypeWriterTest
         writer.write(buffer, 0);
 
         // then
-        MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+        final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
         headerDecoder.wrap(buffer, 0);
 
-        WfTypeDecoder decoder = new WfTypeDecoder();
+        final WfTypeDecoder decoder = new WfTypeDecoder();
         decoder.wrap(buffer, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-        byte[] typeKey = new byte[2];
+        final byte[] typeKey = new byte[2];
         decoder.getTypeKey(typeKey, 0, 2);
         assertThat(typeKey).containsExactly((byte) 5, (byte) 6);
 
-        byte[] payload = new byte[4];
+        final byte[] payload = new byte[4];
         decoder.getResource(payload, 0, 4);
         assertThat(payload).containsExactly((byte) 1, (byte) 2, (byte) 3, (byte) 4);
     }
 
-    // TODO: test when not all properties are written
 }

@@ -61,7 +61,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
 
         final int taskTypeLength = requestDecoder.taskTypeLength();
         requestDecoder.getTaskType(taskTypeBuff, 0, TASK_TYPE_MAXLENGTH);
-        int taskTypeHash = TaskTypeHash.hashCode(taskTypeBuff, taskTypeLength);
+        final int taskTypeHash = TaskTypeHash.hashCode(taskTypeBuff, taskTypeLength);
 
         final long now = System.currentTimeMillis();
         final long lockTimeout = now + lockTime;
@@ -76,9 +76,9 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             scanPos = log.pollFragment(scanPos, lockableTaskFinder);
             lockableTaskPosition = lockableTaskFinder.lockableTaskPosition;
         }
-        while(scanPos > 0 && lockableTaskPosition == -1);
+        while (scanPos > 0 && lockableTaskPosition == -1);
 
-        if(lockableTaskPosition != -1)
+        if (lockableTaskPosition != -1)
         {
             try
             {
@@ -86,11 +86,11 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             }
             finally
             {
-                if(claimedLogFragment.isOpen())
+                if (claimedLogFragment.isOpen())
                 {
                     claimedLogFragment.abort();
                 }
-                if(!response.isDeferred())
+                if (!response.isDeferred())
                 {
                     response.abort();
                 }
@@ -98,7 +98,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
         }
         else
         {
-            if(response.allocate(emptyResponseLength()))
+            if (response.allocate(emptyResponseLength()))
             {
                 writeCommonResponse(ctx, response, consumerId, lockTimeout);
                 responseEncoder.tasksCount(0);
@@ -179,7 +179,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
         {
             claimedPosition = log.getWriteBuffer().claim(claimedLogFragment, taskInstanceReader.getLength());
         }
-        while(claimedPosition == -2);
+        while (claimedPosition == -2);
 
         return claimedPosition;
     }
@@ -268,7 +268,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
 
         long lockableTaskPosition;
 
-        public LockableTaskFinder()
+        LockableTaskFinder()
         {
             reader = new TaskInstanceReader();
         }
@@ -287,7 +287,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
         @Override
         public void onFragment(long position, FileChannel fileChannel, int offset, int length)
         {
-            if(reader.readBlock(position, fileChannel, offset, length))
+            if (reader.readBlock(position, fileChannel, offset, length))
             {
                 final TaskInstanceDecoder decoder = reader.getDecoder();
 
@@ -304,7 +304,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             }
             else
             {
-                System.err.println("could not task instance at log position "+position);
+                System.err.println("could not task instance at log position " + position);
             }
         }
 
@@ -318,7 +318,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             final int taskTypeOffset = reader.getTaskTypeOffset();
             final int taskTypeLength = reader.getTaskTypeLength();
 
-            if(taskTypeToPollLength == taskTypeLength)
+            if (taskTypeToPollLength == taskTypeLength)
             {
                 boolean taskTypeEqual = true;
 

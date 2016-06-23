@@ -26,7 +26,7 @@ public class WfInstanceIdReader implements LogFragmentIdReader
 
         headerDecoder.wrap(block, 0);
 
-        if(headerDecoder.templateId() == decoder.sbeTemplateId())
+        if (headerDecoder.templateId() == decoder.sbeTemplateId())
         {
             decoder.wrap(block, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
@@ -34,7 +34,7 @@ public class WfInstanceIdReader implements LogFragmentIdReader
             final int flowElementType = decoder.flowElementType();
             final int event = decoder.event();
 
-            if(isProcessInstanceStart(flowElementType, event))
+            if (isProcessInstanceStart(flowElementType, event))
             {
                 id = key;
             }

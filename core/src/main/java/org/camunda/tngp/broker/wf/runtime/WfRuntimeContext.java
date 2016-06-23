@@ -20,19 +20,23 @@ public class WfRuntimeContext implements ResourceContext
         this.name = name;
     }
 
-    public IdGenerator getIdGenerator() {
+    public IdGenerator getIdGenerator()
+    {
         return idGenerator;
     }
 
-    public void setIdGenerator(IdGenerator idGenerator) {
+    public void setIdGenerator(IdGenerator idGenerator)
+    {
         this.idGenerator = idGenerator;
     }
 
-    public Log getLog() {
+    public Log getLog()
+    {
         return log;
     }
 
-    public void setLog(Log log) {
+    public void setLog(Log log)
+    {
         this.log = log;
     }
 

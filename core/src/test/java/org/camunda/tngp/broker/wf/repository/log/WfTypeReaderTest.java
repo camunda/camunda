@@ -35,11 +35,11 @@ public class WfTypeReaderTest
         assertThat(reader.version()).isEqualTo(2);
         assertThat(reader.prevVersionPosition()).isEqualTo(3);
 
-        byte[] typeKey = new byte[2];
+        final byte[] typeKey = new byte[2];
         reader.getTypeKey().getBytes(0, typeKey);
         assertThat(typeKey).containsExactly((byte) 5, (byte) 6);
 
-        byte[] payload = new byte[4];
+        final byte[] payload = new byte[4];
         reader.getResource().getBytes(0, payload);
         assertThat(payload).containsExactly((byte) 1, (byte) 2, (byte) 3, (byte) 4);
     }
