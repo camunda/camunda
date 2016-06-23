@@ -30,12 +30,12 @@ public class AcceptTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if(bindingCount > 0)
+        if (bindingCount > 0)
         {
             try
             {
                 selector.selectNow();
-                if(!selectedKeySet.isEmpty())
+                if (!selectedKeySet.isEmpty())
                 {
                     workCount = selectedKeySet.forEach(processKeyFn);
                 }
@@ -49,9 +49,10 @@ public class AcceptTransportPoller extends TransportPoller
         return workCount;
     }
 
-    protected int processKey(SelectionKey key) {
+    protected int processKey(SelectionKey key)
+    {
 
-        if(key != null)
+        if (key != null)
         {
             final ServerSocketBindingImpl serverSocketBinding = (ServerSocketBindingImpl) key.attachment();
             final ServerChannelImpl serverChannel = serverSocketBinding.accept();

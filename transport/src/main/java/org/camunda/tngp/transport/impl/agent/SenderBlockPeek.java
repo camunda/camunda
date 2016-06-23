@@ -9,9 +9,9 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class SenderBlockPeek extends BlockPeek
 {
-    protected final UnsafeBuffer sendErrorBlock = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer sendErrorBlock = new UnsafeBuffer(0, 0);
 
-    private final static int maxBlockSize = 1024 * 1024;
+    private static final int MAX_BLOCK_SIZE = 1024 * 1024;
 
     protected TransportChannelImpl currentChannel;
     protected boolean hasAvailable = false;
@@ -20,20 +20,20 @@ public class SenderBlockPeek extends BlockPeek
     {
         int available = 0;
 
-        if(!hasAvailable)
+        if (!hasAvailable)
         {
-            available = senderSubscription.peekBlock(this, maxBlockSize, true);
+            available = senderSubscription.peekBlock(this, MAX_BLOCK_SIZE, true);
 
-            if(available > 0)
+            if (available > 0)
             {
                 final int channelId = getStreamId();
 
                 currentChannel = channelMap.get(channelId);
 
-                if(currentChannel == null)
+                if (currentChannel == null)
                 {
                     markFailed();
-                    System.err.println("Cannel with id "+ channelId +" not open.");
+                    System.err.println("Cannel with id " + channelId + " not open.");
                 }
                 else
                 {
@@ -50,17 +50,17 @@ public class SenderBlockPeek extends BlockPeek
     {
         int bytesSent = 0;
 
-        if(hasAvailable)
+        if (hasAvailable)
         {
             bytesSent = currentChannel.write(byteBuffer);
 
-            if(!byteBuffer.hasRemaining())
+            if (!byteBuffer.hasRemaining())
             {
                 markCompleted();
                 hasAvailable = false;
                 currentChannel = null;
             }
-            else if(bytesSent == -1)
+            else if (bytesSent == -1)
             {
                 try
                 {
@@ -84,7 +84,7 @@ public class SenderBlockPeek extends BlockPeek
 
     public void onChannelRemoved(TransportChannelImpl c)
     {
-        if(currentChannel == c)
+        if (currentChannel == c)
         {
             markFailed();
             hasAvailable = false;

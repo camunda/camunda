@@ -49,7 +49,7 @@ public class ServerSocketBindingBuilder
 
         conductorCmdQueue.add((cc) ->
         {
-           cc.doBindServerSocket(serverSocketBindingImpl, bindFuture);
+            cc.doBindServerSocket(serverSocketBindingImpl, bindFuture);
         });
 
         return bindFuture;

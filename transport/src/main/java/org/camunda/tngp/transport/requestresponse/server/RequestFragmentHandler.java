@@ -5,14 +5,13 @@ import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderD
 import org.camunda.tngp.dispatcher.FragmentHandler;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
 
 /**
  * {@link MessageHandler} implementation for data fragments which constitute requests.
  * Decodes the request headers, opens a deferred response and invokes the {@link AsyncRequestHandler}.
  *
  */
-class RequestFragmentHandler implements FragmentHandler
+public class RequestFragmentHandler implements FragmentHandler
 {
     protected final DeferredResponsePool responsePool;
     protected final AsyncRequestHandler asyncRequestHandler;
@@ -32,21 +31,21 @@ class RequestFragmentHandler implements FragmentHandler
         final int requestOffset = offset + headerLength();
         final int requestLength = length - headerLength();
 
-        DeferredResponse response = responsePool.open(channelId, connectionId, requestId);
+        final DeferredResponse response = responsePool.open(channelId, connectionId, requestId);
 
-        if(response != null)
+        if (response != null)
         {
             try
             {
                 asyncRequestHandler.onRequest(buffer, requestOffset, requestLength, response);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
             finally
             {
-                if(!response.isDeferred())
+                if (!response.isDeferred())
                 {
                     responsePool.reclaim(response);
                 }
@@ -55,7 +54,7 @@ class RequestFragmentHandler implements FragmentHandler
         }
         else
         {
-            System.err.println("Dropping frame on channel "+channelId+", deferred response leak?");
+            System.err.println("Dropping frame on channel " + channelId + ", deferred response leak?");
         }
     }
 }

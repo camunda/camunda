@@ -35,7 +35,7 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
     @Override
     public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
-        System.err.println("send error on channel "+transportChannel);
+        System.err.println("send error on channel " + transportChannel);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
         {
             offerPosition = receiveBuffer.offer(buffer, offset, length, transportChannel.getId());
         }
-        while(offerPosition == -2);
+        while (offerPosition == -2);
 
         return offerPosition >= 0;
     }

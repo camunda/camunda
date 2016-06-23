@@ -18,7 +18,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
  */
 public class RequestResponseChannelHandler implements TransportChannelHandler
 {
-    public final static short PROTOCOL_ID = 1;
+    public static final short PROTOCOL_ID = 1;
 
     public final ByteBuffer upgradeFrame;
 
@@ -29,7 +29,7 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
         this.connectionManager = connectionManager;
 
         upgradeFrame = ByteBuffer.allocate(alignedLength(BitUtil.SIZE_OF_SHORT));
-        UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0,0);
+        final UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0, 0);
         ctrMsgWriter.wrap(upgradeFrame);
         ctrMsgWriter.putInt(lengthOffset(0), BitUtil.SIZE_OF_SHORT);
         ctrMsgWriter.putShort(typeOffset(0), TYPE_PROTO_CONTROL_FRAME);
@@ -71,24 +71,24 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
 
             try
             {
-                if(connection != null)
+                if (connection != null)
                 {
                     isHandled = connection.processSendError(requestId);
                 }
 
-                if(!isHandled)
+                if (!isHandled)
                 {
-                    System.err.println("Unhandled error of request "+requestId+" on connection "+connectionId);
+                    System.err.println("Unhandled error of request " + requestId + " on connection " + connectionId);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
 
             scanOffset += alignedLength(dataFragmentLength);
         }
-        while(scanOffset < blockLength);
+        while (scanOffset < blockLength);
     }
 
     @Override
@@ -103,14 +103,14 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
 
         boolean isHandled = false;
 
-        if(connection != null)
+        if (connection != null)
         {
             isHandled = connection.processResponse(buffer, offset, length);
         }
 
-        if(!isHandled)
+        if (!isHandled)
         {
-            System.err.println("Dropping protocol frame on connection "+connectionId);
+            System.err.println("Dropping protocol frame on connection " + connectionId);
         }
 
         return isHandled;

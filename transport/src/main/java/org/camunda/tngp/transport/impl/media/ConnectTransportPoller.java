@@ -29,7 +29,7 @@ public class ConnectTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if(channelCount > 0)
+        if (channelCount > 0)
         {
 
             try
@@ -46,16 +46,16 @@ public class ConnectTransportPoller extends TransportPoller
         return workCount;
     }
 
-    protected int processKey(SelectionKey key) {
-
-        if(key != null)
+    protected int processKey(SelectionKey key)
+    {
+        if (key != null)
         {
             final ClientChannelImpl channel = (ClientChannelImpl) key.attachment();
             channel.finishConnect();
 
             cmdQueue.add((cc) ->
             {
-               cc.onClientChannelConnected(channel);
+                cc.onClientChannelConnected(channel);
             });
 
             return 1;

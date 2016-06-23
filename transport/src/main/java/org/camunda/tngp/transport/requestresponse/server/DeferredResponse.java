@@ -53,11 +53,11 @@ public class DeferredResponse
         {
             claimedPosition = sendBuffer.claim(claimedFragment, framedLength, channelId);
         }
-        while(claimedPosition == -2);
+        while (claimedPosition == -2);
 
         final boolean isAllocated = claimedPosition >= 0;
 
-        if(isAllocated)
+        if (isAllocated)
         {
             // write header
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
@@ -74,9 +74,9 @@ public class DeferredResponse
     {
         final int length = writer.getLength();
 
-        boolean isAllocated = allocate(length);
+        final boolean isAllocated = allocate(length);
 
-        if(isAllocated)
+        if (isAllocated)
         {
             final MutableDirectBuffer writeBuffer = getBuffer();
             final int claimedOffset = getClaimedOffset();
@@ -91,7 +91,7 @@ public class DeferredResponse
     {
         int result = -1;
 
-        if(asyncOperationId >= 0)
+        if (asyncOperationId >= 0)
         {
             this.asyncOperationId = asyncOperationId;
             this.completionHandler = handler;
@@ -108,7 +108,7 @@ public class DeferredResponse
 
     public void resolve(DirectBuffer asyncWorkBuffer, int offset, int length, long blockPosition)
     {
-        if(claimedFragment.isOpen() && isDeferred())
+        if (claimedFragment.isOpen() && isDeferred())
         {
             completionHandler.onAsyncWorkCompleted(this, asyncWorkBuffer, offset, length, attachement, blockPosition);
         }
@@ -116,7 +116,7 @@ public class DeferredResponse
 
     public void commit()
     {
-        if(claimedFragment.isOpen())
+        if (claimedFragment.isOpen())
         {
             claimedFragment.commit();
         }
@@ -124,7 +124,7 @@ public class DeferredResponse
 
     public void abort()
     {
-        if(claimedFragment.isOpen())
+        if (claimedFragment.isOpen())
         {
             claimedFragment.abort();
         }

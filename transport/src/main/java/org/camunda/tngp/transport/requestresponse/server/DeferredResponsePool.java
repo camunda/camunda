@@ -15,7 +15,7 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
  */
 public class DeferredResponsePool implements BlockHandler
 {
-    protected UnsafeBuffer flyweight = new UnsafeBuffer(0,0);
+    protected UnsafeBuffer flyweight = new UnsafeBuffer(0, 0);
 
     protected BoundedArrayQueue<DeferredResponse> pooled;
 
@@ -32,7 +32,7 @@ public class DeferredResponsePool implements BlockHandler
         this.pooled = new BoundedArrayQueue<>(capacity);
         this.deferred = new BoundedArrayQueue<>(capacity);
 
-        for(int i = 0; i < capacity; i++)
+        for (int i = 0; i < capacity; i++)
         {
             pooled.offer(new DeferredResponse(sendBuffer));
         }
@@ -42,7 +42,7 @@ public class DeferredResponsePool implements BlockHandler
     {
         final DeferredResponse response = pooled.poll();
 
-        if(response != null)
+        if (response != null)
         {
             deferred.offer(response);
             response.open(channelId, connectionId, requestId);
@@ -59,17 +59,17 @@ public class DeferredResponsePool implements BlockHandler
             final int streamId,
             final long blockPosition)
     {
-        while(deferred.size() > 0)
+        while (deferred.size() > 0)
         {
             final DeferredResponse msg = deferred.peek();
 
-            if(msg.asyncOperationId <= blockPosition)
+            if (msg.asyncOperationId <= blockPosition)
             {
                 deferred.remove();
                 try
                 {
-                    int messageOffset = messageOffset(blockOffset);
-                    int length = blockLength - HEADER_LENGTH;
+                    final int messageOffset = messageOffset(blockOffset);
+                    final int length = blockLength - HEADER_LENGTH;
 
                     flyweight.wrap(buffer, messageOffset, length);
 
@@ -77,7 +77,7 @@ public class DeferredResponsePool implements BlockHandler
                 }
                 finally
                 {
-                    flyweight.wrap(0,0);
+                    flyweight.wrap(0, 0);
                     msg.reset();
                     pooled.offer(msg);
                 }

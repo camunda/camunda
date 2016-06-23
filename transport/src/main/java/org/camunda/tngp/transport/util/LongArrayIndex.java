@@ -25,9 +25,9 @@ public class LongArrayIndex<T>
 
     protected volatile int size;
 
-    public LongArrayIndex(int capacity)
+    public LongArrayIndex(final int capacity)
     {
-        if(!BitUtil.isPowerOfTwo(capacity))
+        if (!BitUtil.isPowerOfTwo(capacity))
         {
             throw new RuntimeException("Pool capacity must be a power of two.");
         }
@@ -35,7 +35,7 @@ public class LongArrayIndex<T>
         indexedObjects = new Object[capacity];
         keys = new long[capacity];
         this.capacity = capacity;
-        this.mask = capacity -1;
+        this.mask = capacity - 1;
 
         // assign initial keys.
         for (int i = 0; i < capacity; i++)
@@ -60,16 +60,16 @@ public class LongArrayIndex<T>
      * Puts an object into the array returning the key under which it
      * can be retrieved.
      */
-    public long put(T object)
+    public long put(final T object)
     {
         int slot = -1;
         long key = -1;
 
-        if(size < capacity)
+        if (size < capacity)
         {
             for (int i = 0; i < capacity; i++)
             {
-                if(indexedObjects[i] == null)
+                if (indexedObjects[i] == null)
                 {
                     slot = i;
                     break;
@@ -89,11 +89,11 @@ public class LongArrayIndex<T>
      * by the array.
      */
     @SuppressWarnings("unchecked")
-    public T remove(long key, T objectToRemove)
+    public T remove(final long key, final T objectToRemove)
     {
-        int index = (int) (key & mask);
-        Object object = indexedObjects[index];
-        if(object == objectToRemove)
+        final int index = (int) (key & mask);
+        final Object object = indexedObjects[index];
+        if (object == objectToRemove)
         {
             indexedObjects[index] = null;
             size--;  // volatile store
@@ -109,11 +109,11 @@ public class LongArrayIndex<T>
      * Retrieve without removing the object for the given index
      */
     @SuppressWarnings("unchecked")
-    public T poll(long key)
+    public T poll(final long key)
     {
-        if(size > 0) // volatile load
+        if (size > 0) // volatile load
         {
-            int index = (int) (key & mask);
+            final int index = (int) (key & mask);
             return (T) indexedObjects[index];
         }
         else

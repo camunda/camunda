@@ -8,7 +8,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.camunda.tngp.transport.TransportChannel;
-import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.impl.TransportChannelImpl;
@@ -60,7 +59,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
         workCount += cmdQueue.drain(this);
 
-        if(!isClosing)
+        if (!isClosing)
         {
             workCount += connectTransportPoller.pollNow();
             workCount += acceptTransportPoller.pollNow();
@@ -93,13 +92,13 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
         final CompletableFuture<TransportChannel> connectFuture = connectFutures.get(channel);
 
-        if(!isClosing)
+        if (!isClosing)
         {
             clientChannels.add(channel);
 
-            CompletableFuture<Void> openFuture = openAndRegisterChannel(channel);
+            final CompletableFuture<Void> openFuture = openAndRegisterChannel(channel);
 
-            openFuture.whenComplete((v,t) ->
+            openFuture.whenComplete((v, t) ->
             {
                 notifyChannelHandlerOpen(channel);
                 connectFuture.complete(channel);
@@ -114,10 +113,9 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
     public void onServerChannelOpened(ServerChannelImpl serverChannel)
     {
-        if(!isClosing)
+        if (!isClosing)
         {
-            openAndRegisterChannel(serverChannel)
-            .whenComplete((c,t) ->
+            openAndRegisterChannel(serverChannel).whenComplete((c, t) ->
             {
                 notifyChannelHandlerOpen(serverChannel);
             });
@@ -154,7 +152,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         {
             channel.getChannelHandler().onChannelOpened(channel);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -166,7 +164,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         {
             channel.getChannelHandler().onChannelClosed(channel);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -176,7 +174,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
             final ClientChannelImpl channel,
             final CompletableFuture<TransportChannel> future)
     {
-        if(!isClosing)
+        if (!isClosing)
         {
             try
             {
@@ -184,7 +182,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                 connectTransportPoller.addChannel(channel);
                 connectFutures.put(channel, future);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 future.completeExceptionally(e);
             }
@@ -199,7 +197,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
             final ServerSocketBindingImpl serverSocketBinding,
             final CompletableFuture<ServerSocketBinding> bindFuture)
     {
-        if(!isClosing)
+        if (!isClosing)
         {
             try
             {
@@ -208,7 +206,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                 bindFuture.complete(serverSocketBinding);
                 serverSocketBindings.add(serverSocketBinding);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 bindFuture.completeExceptionally(e);
             }
@@ -241,7 +239,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     {
         removeChannel(channel);
 
-        if(closeFuture != null)
+        if (closeFuture != null)
         {
             closeFuture.complete(channel);
         }
@@ -254,14 +252,14 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     {
         removeChannel(channel);
 
-        if(closeFuture == null)
+        if (closeFuture == null)
         {
             closeFuture = connectFutures.remove(channel);
         }
 
-        if(closeFuture != null)
+        if (closeFuture != null)
         {
-            if(e == null)
+            if (e == null)
             {
                 e = new RuntimeException("Channel closed exceptionally.");
             }
@@ -284,20 +282,20 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
             // 2. gracefully close all open server channels
             serverSocketBinding.closeAllChannels();
         })
-        .thenRun(() ->
-        {
-            // 3. close the socket binding
-            serverSocketBinding.closeMedia();
-        })
-        .whenComplete((v,t) ->
-        {
-            if(t != null)
+            .thenRun(() ->
             {
-                t.printStackTrace();
-            }
-            serverSocketBindings.remove(serverSocketBinding);
-            completableFuture.complete(serverSocketBinding);
-        });
+                // 3. close the socket binding
+                serverSocketBinding.closeMedia();
+            })
+                .whenComplete((v, t) ->
+                {
+                    if (t != null)
+                    {
+                        t.printStackTrace();
+                    }
+                    serverSocketBindings.remove(serverSocketBinding);
+                    completableFuture.complete(serverSocketBinding);
+                });
     }
 
     @SuppressWarnings("rawtypes")
@@ -326,7 +324,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                     }
                     CompletableFuture.allOf(channelCloseFutures).join();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     e.printStackTrace();
                 }
@@ -337,14 +335,14 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                     {
                         serverSocketBinding.close();
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         e.printStackTrace();
                     }
                 }
 
                 final AgentRunner[] agentRunners = context.getAgentRunners();
-                if(agentRunners != null)
+                if (agentRunners != null)
                 {
                     for (AgentRunner agentRunner : agentRunners)
                     {
@@ -354,8 +352,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
                     transportCloseFuture.complete(transport);
                 }
             }
-        }
-        .start();
+        }.start();
     }
 
 }

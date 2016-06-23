@@ -31,7 +31,7 @@ public class ReadTransportPoller extends TransportPoller
     {
         int workCount = 0;
 
-        if(channels.size() <= ITERATION_THRESHOLD)
+        if (channels.size() <= ITERATION_THRESHOLD)
         {
             for (TransportChannelImpl channel : channels)
             {
@@ -55,14 +55,13 @@ public class ReadTransportPoller extends TransportPoller
         return workCount;
     }
 
-    protected int processKey(SelectionKey key) {
-
+    protected int processKey(SelectionKey key)
+    {
         int workCount = 0;
 
-        if(key != null && key.isReadable())
+        if (key != null && key.isReadable())
         {
             final TransportChannelImpl channel = (TransportChannelImpl) key.attachment();
-
             workCount = channel.receive();
         }
 

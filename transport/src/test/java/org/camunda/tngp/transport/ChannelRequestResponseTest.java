@@ -21,7 +21,7 @@ public class ChannelRequestResponseTest
 
         int lastMsgIdReceived;
 
-        public ClientFragmentHandler()
+        ClientFragmentHandler()
         {
             reset();
         }
@@ -46,7 +46,7 @@ public class ChannelRequestResponseTest
         final InetSocketAddress addr = new InetSocketAddress("localhost", 8080);
 
         final Dispatcher clientReceiveBuffer = Dispatchers.create("client-receive-buffer")
-                .bufferSize(16*1024*1024)
+                .bufferSize(16 * 1024 * 1024)
                 .build();
 
         final Transport clientTransport = Transports.createTransport("client")
@@ -62,14 +62,14 @@ public class ChannelRequestResponseTest
             .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
             .bind();
 
-        ClientChannel channel = clientTransport.createClientChannel(addr)
+        final ClientChannel channel = clientTransport.createClientChannel(addr)
             .transportChannelHandler(new ReceiveBufferChannelHandler(clientReceiveBuffer))
             .connect();
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
         final Subscription clientReceiveBufferSubscription = clientReceiveBuffer.openSubscription();
 
-        for(int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             msg.putInt(0, i);
             sendRequest(sendBuffer, msg, channel);
@@ -83,7 +83,7 @@ public class ChannelRequestResponseTest
 
     protected void sendRequest(Dispatcher sendBuffer, UnsafeBuffer msg, ClientChannel channel)
     {
-        while(sendBuffer.offer(msg, 0, msg.capacity(), channel.getId()) < 0)
+        while (sendBuffer.offer(msg, 0, msg.capacity(), channel.getId()) < 0)
         {
             // spin
         }
@@ -91,7 +91,7 @@ public class ChannelRequestResponseTest
 
     protected void waitForResponse(Subscription clientReceiveBufferSubscription, ClientFragmentHandler fragmentHandler, int msg)
     {
-        while(fragmentHandler.lastMsgIdReceived != msg)
+        while (fragmentHandler.lastMsgIdReceived != msg)
         {
             clientReceiveBufferSubscription.poll(fragmentHandler, 1);
         }

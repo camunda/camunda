@@ -21,23 +21,22 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
  */
 public class TransportRequestImpl implements TransportRequest
 {
-    public final static int STATE_CLOSED = 0;
-    public final static int STATE_OPENING = 1;
-    public final static int STATE_OPEN = 2;
-    public final static int STATE_RESPONSE_AVAILABLE = 3;
-    public final static int STATE_FAILED = 4;
-    public final static int STATE_TIMED_OUT = 5;
+    public static final int STATE_CLOSED = 0;
+    public static final int STATE_OPENING = 1;
+    public static final int STATE_OPEN = 2;
+    public static final int STATE_RESPONSE_AVAILABLE = 3;
+    public static final int STATE_FAILED = 4;
+    public static final int STATE_TIMED_OUT = 5;
 
-    public final static AtomicIntegerFieldUpdater<TransportRequestImpl> STATE_FIELD
-        = AtomicIntegerFieldUpdater.newUpdater(TransportRequestImpl.class, "state");
+    public static final AtomicIntegerFieldUpdater<TransportRequestImpl> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportRequestImpl.class, "state");
 
     protected volatile int state;
 
-    protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(0, 0);
 
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
-    protected final UnsafeBuffer responseBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer responseBuffer = new UnsafeBuffer(0, 0);
 
     protected final IdleStrategy responseAwaitIdleStrategy;
 
@@ -70,7 +69,7 @@ public class TransportRequestImpl implements TransportRequest
             final int channelId,
             final long now)
     {
-        if(STATE_FIELD.compareAndSet(this, STATE_CLOSED, STATE_OPENING))
+        if (STATE_FIELD.compareAndSet(this, STATE_CLOSED, STATE_OPENING))
         {
             this.connection = connection;
             this.connectionId = connection.getId();
@@ -87,9 +86,9 @@ public class TransportRequestImpl implements TransportRequest
 
     public void commit()
     {
-        if(STATE_FIELD.compareAndSet(this, STATE_OPENING, STATE_OPEN))
+        if (STATE_FIELD.compareAndSet(this, STATE_OPENING, STATE_OPEN))
         {
-            if(claimedFragment.isOpen())
+            if (claimedFragment.isOpen())
             {
                 claimedFragment.commit();
             }
@@ -103,7 +102,7 @@ public class TransportRequestImpl implements TransportRequest
 
     public void abort()
     {
-        if(claimedFragment.isOpen())
+        if (claimedFragment.isOpen())
         {
             claimedFragment.abort();
         }
@@ -115,7 +114,7 @@ public class TransportRequestImpl implements TransportRequest
     public void close()
     {
         // close() should be idempotent and failsafe
-        if(connection != null)
+        if (connection != null)
         {
             connection.onRequestClosed(this);
         }
@@ -149,25 +148,25 @@ public class TransportRequestImpl implements TransportRequest
 
         boolean isResponseAvailable = false;
 
-        if(state == STATE_RESPONSE_AVAILABLE)
+        if (state == STATE_RESPONSE_AVAILABLE)
         {
             isResponseAvailable = true;
         }
-        else if(state == STATE_FAILED)
+        else if (state == STATE_FAILED)
         {
             throw new RuntimeException("Request failed, channel closed");
         }
-        else if(state == STATE_OPEN)
+        else if (state == STATE_OPEN)
         {
-            if(requestTime + requestTimeout < now)
+            if (requestTime + requestTimeout < now)
             {
-                if(STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_TIMED_OUT))
+                if (STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_TIMED_OUT))
                 {
                     throw new RequestTimeoutException();
                 }
             }
         }
-        else if(state == STATE_CLOSED)
+        else if (state == STATE_CLOSED)
         {
             throw new IllegalStateException("Cannot poll response, request is closed.");
         }
@@ -190,7 +189,7 @@ public class TransportRequestImpl implements TransportRequest
     {
         boolean isResponseAvailable = pollResponse();
 
-        if(!isResponseAvailable)
+        if (!isResponseAvailable)
         {
             final long endAwait = System.currentTimeMillis() + timeUnit.toMillis(timeout);
 
@@ -200,7 +199,7 @@ public class TransportRequestImpl implements TransportRequest
                 responseAwaitIdleStrategy.idle();
                 isResponseAvailable = pollResponse();
             }
-            while(!isResponseAvailable && System.currentTimeMillis() < endAwait);
+            while (!isResponseAvailable && System.currentTimeMillis() < endAwait);
         }
 
         return isResponseAvailable;
@@ -259,9 +258,9 @@ public class TransportRequestImpl implements TransportRequest
 
     public void processChannelClosed(TransportChannel transportChannel)
     {
-        if(STATE_FIELD.get(this) == STATE_OPEN)
+        if (STATE_FIELD.get(this) == STATE_OPEN)
         {
-            if(transportChannel.getId() == channelId)
+            if (transportChannel.getId() == channelId)
             {
                 STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_FAILED);
             }
@@ -272,9 +271,9 @@ public class TransportRequestImpl implements TransportRequest
     {
         boolean isHandled = false;
 
-        if(STATE_FIELD.get(this) == STATE_OPEN)
+        if (STATE_FIELD.get(this) == STATE_OPEN)
         {
-            if(id == requestId)
+            if (id == requestId)
             {
                 isHandled = STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_FAILED);
             }
@@ -299,13 +298,13 @@ public class TransportRequestImpl implements TransportRequest
     {
         boolean isResponseHandled = false;
 
-        if(isOpen())
+        if (isOpen())
         {
-            if(id == requestId)
+            if (id == requestId)
             {
                 this.responseLength = length - headerLength();
 
-                if(responseBuffer.capacity() < responseLength)
+                if (responseBuffer.capacity() < responseLength)
                 {
                     responseBuffer.wrap(ByteBuffer.allocateDirect(responseLength));
                 }

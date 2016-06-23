@@ -24,7 +24,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
     public BoundedArrayQueue(int capacity)
     {
         this.capacity = findNextPositivePowerOfTwo(capacity);
-        this.mask = capacity -1;
+        this.mask = capacity - 1;
 
         head = tail = 0;
 
@@ -43,9 +43,9 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
 
     public boolean offer(P object)
     {
-        int remainingSpace = capacity - size();
+        final int remainingSpace = capacity - size();
 
-        if(remainingSpace > 0)
+        if (remainingSpace > 0)
         {
             final int index = (int) (tail & mask);
 
@@ -64,11 +64,11 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
     @SuppressWarnings("unchecked")
     public P poll()
     {
-        int size = size();
+        final int size = size();
 
         Object object = null;
 
-        if(size > 0)
+        if (size > 0)
         {
             final int index = (int) (head & mask);
 
@@ -84,11 +84,11 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
     @SuppressWarnings("unchecked")
     public P peek()
     {
-        int size = size();
+        final int size = size();
 
         Object object = null;
 
-        if(size > 0)
+        if (size > 0)
         {
             final int index = (int) (head & mask);
 
@@ -129,7 +129,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
 
         for (int i = 0; i < array.length; i++)
         {
-            if(array[i] == o)
+            if (array[i] == o)
             {
                 contains = true;
                 break;
@@ -192,7 +192,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
     {
         final P poll = poll();
 
-        if(poll == null)
+        if (poll == null)
         {
             throw new NoSuchElementException();
         }
@@ -205,7 +205,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
     {
         final P peek = peek();
 
-        if(peek == null)
+        if (peek == null)
         {
             throw new NoSuchElementException();
         }
@@ -231,7 +231,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
         @SuppressWarnings("unchecked")
         public U next()
         {
-            if(iteratorPosition == tail)
+            if (iteratorPosition == tail)
             {
                 throw new NoSuchElementException();
             }
@@ -252,7 +252,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P>
         @Override
         public void remove()
         {
-            if(iteratorPosition == tail)
+            if (iteratorPosition == tail)
             {
                 throw new NoSuchElementException();
             }

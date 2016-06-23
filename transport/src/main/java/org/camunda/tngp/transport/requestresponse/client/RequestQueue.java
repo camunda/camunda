@@ -18,7 +18,7 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
     {
         final TransportRequest request = poll();
 
-        if(request != null)
+        if (request != null)
         {
             request.awaitResponse();
         }
@@ -30,9 +30,9 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
     {
         final TransportRequest request = peek();
 
-        if(request != null)
+        if (request != null)
         {
-            if(request.pollResponse())
+            if (request.pollResponse())
             {
                 remove();
                 return request;
@@ -50,7 +50,7 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
             {
                 request.awaitResponse();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -66,7 +66,7 @@ public class RequestQueue extends BoundedArrayQueue<TransportRequest>
                 request.awaitResponse();
                 request.close();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }

@@ -38,7 +38,8 @@ public class BoundedRequestPool implements TransportRequestPool
             try
             {
                 requests[i].close();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 e.printStackTrace();
             }

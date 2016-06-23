@@ -25,14 +25,13 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public abstract class TransportChannelImpl implements TransportChannel
 {
-    public final static int STATE_CONNECTING = 0;
-    public final static int STATE_CONNECTED = 1;
-    public final static int STATE_CLOSE_INITIATED = 2;
-    public final static int STATE_CLOSE_RECEIVED = 3;
-    public final static int STATE_CLOSED = 4;
+    public static final int STATE_CONNECTING = 0;
+    public static final int STATE_CONNECTED = 1;
+    public static final int STATE_CLOSE_INITIATED = 2;
+    public static final int STATE_CLOSE_RECEIVED = 3;
+    public static final int STATE_CLOSED = 4;
 
-    protected static final AtomicIntegerFieldUpdater<TransportChannelImpl> STATE_FIELD
-        = AtomicIntegerFieldUpdater.newUpdater(TransportChannelImpl.class, "state");
+    protected static final AtomicIntegerFieldUpdater<TransportChannelImpl> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportChannelImpl.class, "state");
 
     protected volatile int state;
 
@@ -76,14 +75,14 @@ public abstract class TransportChannelImpl implements TransportChannel
         final int bytesRead = mediaReceive(channelReadBuffer);
         int available = channelReadBuffer.position();
 
-        if(bytesRead != -1)
+        if (bytesRead != -1)
         {
-            while(available >= HEADER_LENGTH)
+            while (available >= HEADER_LENGTH)
             {
                 final int msgLength = channelReadBufferView.getInt(lengthOffset(0));
                 final int frameLength = alignedLength(msgLength);
 
-                if(available < frameLength)
+                if (available < frameLength)
                 {
                     break;
                 }
@@ -106,7 +105,7 @@ public abstract class TransportChannelImpl implements TransportChannel
                         handled = true;
                     }
 
-                    if(handled)
+                    if (handled)
                     {
                         channelReadBuffer.limit(available);
                         channelReadBuffer.position(frameLength);
@@ -120,14 +119,14 @@ public abstract class TransportChannelImpl implements TransportChannel
                 }
             }
         }
-        else if(bytesRead == -1)
+        else if (bytesRead == -1)
         {
             // stream closed on the other side
             final int state = STATE_FIELD.get(this);
 
             mediaClose();
 
-            if(state == STATE_CONNECTED)
+            if (state == STATE_CONNECTED)
             {
                 notifyCloseException(null);
             }
@@ -165,20 +164,21 @@ public abstract class TransportChannelImpl implements TransportChannel
             final int newState = STATE_FIELD.updateAndGet(this, (state) -> (state == STATE_CONNECTED
                                                                             || (state == STATE_CLOSE_INITIATED && isServer)) ? STATE_CLOSE_RECEIVED : state);
 
-            if(newState == STATE_CLOSE_RECEIVED)
+            if (newState == STATE_CLOSE_RECEIVED)
             {
-                senderCmdQueue.add((sender) -> {
+                senderCmdQueue.add((sender) ->
+                {
                     sender.sendControlFrame(this);
                 });
             }
         }
-        else if(msgType == TYPE_PROTO_CONTROL_FRAME)
+        else if (msgType == TYPE_PROTO_CONTROL_FRAME)
         {
             this.channelHandler.onControlFrame(this, channelReadBufferView, 0, frameLength);
         }
         else
         {
-            System.err.println("Recevied unhandled control frame of type "+msgType);
+            System.err.println("Recevied unhandled control frame of type " + msgType);
         }
     }
 
@@ -237,7 +237,7 @@ public abstract class TransportChannelImpl implements TransportChannel
                 media.write(controlFrame);
             }
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             closeForcibly(e);
         }
@@ -269,7 +269,7 @@ public abstract class TransportChannelImpl implements TransportChannel
     public void removeSelector(Selector selector)
     {
         final SelectionKey key = media.keyFor(selector);
-        if(key != null)
+        if (key != null)
         {
             key.cancel();
         }
@@ -303,7 +303,7 @@ public abstract class TransportChannelImpl implements TransportChannel
     @Override
     public CompletableFuture<TransportChannel> closeAsync()
     {
-        if(STATE_FIELD.compareAndSet(this, STATE_CONNECTED, STATE_CLOSE_INITIATED))
+        if (STATE_FIELD.compareAndSet(this, STATE_CONNECTED, STATE_CLOSE_INITIATED))
         {
             this.closeFuture = new CompletableFuture<>();
 
@@ -337,7 +337,7 @@ public abstract class TransportChannelImpl implements TransportChannel
     {
         conductorCmdQueue.add((c) ->
         {
-           c.onChannelClosedExceptionally(this, closeFuture, e);
+            c.onChannelClosedExceptionally(this, closeFuture, e);
         });
     }
 
@@ -345,7 +345,7 @@ public abstract class TransportChannelImpl implements TransportChannel
     {
         conductorCmdQueue.add((c) ->
         {
-           c.onChannelClosed(this, closeFuture);
+            c.onChannelClosed(this, closeFuture);
         });
     }
 

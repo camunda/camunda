@@ -4,9 +4,9 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 
 public class TransportRequestHeaderDescriptor
 {
-    public final static int CONNECTION_ID_OFFSET;
-    public final static int REQUEST_ID_OFFSET;
-    public final static int HEADER_LENGTH;
+    public static final int CONNECTION_ID_OFFSET;
+    public static final int REQUEST_ID_OFFSET;
+    public static final int HEADER_LENGTH;
 
     static
     {

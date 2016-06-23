@@ -9,12 +9,12 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class StaticControlFrames
 {
-    public static ByteBuffer CLOSE_FRAME = ByteBuffer.allocate(alignedLength(0));
-    public static ByteBuffer END_OF_STREAM_FRAME = ByteBuffer.allocate(alignedLength(0));
+    public static final ByteBuffer CLOSE_FRAME = ByteBuffer.allocate(alignedLength(0));
+    public static final ByteBuffer END_OF_STREAM_FRAME = ByteBuffer.allocate(alignedLength(0));
 
     static
     {
-        UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0,0);
+        final UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0, 0);
 
         ctrMsgWriter.wrap(CLOSE_FRAME);
         ctrMsgWriter.putInt(lengthOffset(0), 0);

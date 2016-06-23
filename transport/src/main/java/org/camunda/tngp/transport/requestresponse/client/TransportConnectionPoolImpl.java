@@ -59,10 +59,9 @@ public class TransportConnectionPoolImpl implements TransportConnectionPool
     {
         final TransportConnectionImpl connection = connectionPool.poll();
 
-        if(connection != null)
+        if (connection != null)
         {
-            long connectionId = connectionIdSequence.getAndIncrement();
-
+            final long connectionId = connectionIdSequence.getAndIncrement();
             connection.open(connectionId);
         }
 
@@ -73,7 +72,7 @@ public class TransportConnectionPoolImpl implements TransportConnectionPool
     {
         for (TransportConnectionImpl c : connections)
         {
-            if(c != null)
+            if (c != null)
             {
                 c.processChannelClosed(transportChannel);
             }
@@ -88,7 +87,7 @@ public class TransportConnectionPoolImpl implements TransportConnectionPool
     @Override
     public void close()
     {
-        for(int i = 0; i < connections.length; i++)
+        for (int i = 0; i < connections.length; i++)
         {
             connections[i].close();
             connections[i] = null;
@@ -100,7 +99,7 @@ public class TransportConnectionPoolImpl implements TransportConnectionPool
     {
         for (TransportConnectionImpl connection : connections)
         {
-            if(connection.isOpen() && connection.getId() == connectionId)
+            if (connection.isOpen() && connection.getId() == connectionId)
             {
                 return connection;
             }

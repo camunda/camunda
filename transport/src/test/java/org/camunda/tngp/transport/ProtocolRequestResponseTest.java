@@ -33,10 +33,10 @@ public class ProtocolRequestResponseTest
 
             do
             {
-                if(q.hasCapacity())
+                if (q.hasCapacity())
                 {
                     final TransportRequest request = connection.openRequest(channel.getId(), 1024);
-                    if(request != null)
+                    if (request != null)
                     {
                         request.commit();
                         q.offer(request);
@@ -44,13 +44,13 @@ public class ProtocolRequestResponseTest
                 }
 
                 TransportRequest request = null;
-                while((request = q.pollNextResponse()) != null)
+                while ((request = q.pollNextResponse()) != null)
                 {
                     request.close();
                     ++completedRequests;
                 }
             }
-            while(completedRequests < 1000000);
+            while (completedRequests < 1000000);
 
             q.closeAll();
         }

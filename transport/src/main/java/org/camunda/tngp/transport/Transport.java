@@ -9,12 +9,11 @@ import org.camunda.tngp.transport.impl.TransportContext;
 
 public class Transport implements AutoCloseable
 {
-    public final static int STATE_OPEN = 0;
-    public final static int STATE_CLOSING = 1;
-    public final static int STATE_CLOSED = 2;
+    public static final int STATE_OPEN = 0;
+    public static final int STATE_CLOSING = 1;
+    public static final int STATE_CLOSED = 2;
 
-    protected final static AtomicIntegerFieldUpdater<Transport> STATE_FIELD
-        = AtomicIntegerFieldUpdater.newUpdater(Transport.class, "state");
+    protected static final AtomicIntegerFieldUpdater<Transport> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(Transport.class, "state");
 
     protected final TransportContext transportContext;
     protected final Dispatcher sendBuffer;
@@ -31,9 +30,9 @@ public class Transport implements AutoCloseable
 
     public ClientChannelBuilder createClientChannel(InetSocketAddress remoteAddress)
     {
-        if(STATE_OPEN != STATE_FIELD.get(this))
+        if (STATE_OPEN != STATE_FIELD.get(this))
         {
-            throw new IllegalStateException("Cannot create client channel on "+this+", transport is not open.");
+            throw new IllegalStateException("Cannot create client channel on " + this + ", transport is not open.");
         }
 
         return new ClientChannelBuilder(transportContext, remoteAddress);
@@ -41,9 +40,9 @@ public class Transport implements AutoCloseable
 
     public ServerSocketBindingBuilder createServerSocketBinding(InetSocketAddress addr)
     {
-        if(STATE_OPEN != STATE_FIELD.get(this))
+        if (STATE_OPEN != STATE_FIELD.get(this))
         {
-            throw new IllegalStateException("Cannot create server socket on "+this+", transport is not open.");
+            throw new IllegalStateException("Cannot create server socket on " + this + ", transport is not open.");
         }
 
         return new ServerSocketBindingBuilder(transportContext, addr);
@@ -56,7 +55,7 @@ public class Transport implements AutoCloseable
 
     public CompletableFuture<Transport> closeAsync()
     {
-        if(STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
+        if (STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
         {
             final CompletableFuture<Transport> closeFuture = new CompletableFuture<>();
 

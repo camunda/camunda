@@ -6,7 +6,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.camunda.tngp.transport.impl.TransportChannelImpl;
-import org.camunda.tngp.transport.impl.ClientChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.media.ReadTransportPoller;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionImpl;

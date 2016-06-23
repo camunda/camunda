@@ -22,7 +22,7 @@ import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public class TransportBuilder
 {
-    public static enum ThreadingMode
+    public enum ThreadingMode
     {
         SHARED,
         DEDICATED;
@@ -51,7 +51,7 @@ public class TransportBuilder
     protected Receiver receiver;
     protected Sender sender;
 
-    static ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
+    static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
         t.printStackTrace();
     };
@@ -129,7 +129,7 @@ public class TransportBuilder
 
     protected void initSendBuffer()
     {
-        if(!sendBufferExternallyManaged)
+        if (!sendBufferExternallyManaged)
         {
             final DispatcherBuilder dispatcherBuilder = Dispatchers.create(name + ".write-buffer");
 
@@ -143,7 +143,7 @@ public class TransportBuilder
 
         transportContext.setSendBuffer(sendBuffer);
 
-        if(senderSubscription == null)
+        if (senderSubscription == null)
         {
             senderSubscription = sendBuffer.openSubscription();
         }
@@ -163,15 +163,15 @@ public class TransportBuilder
 
     protected void startAgents()
     {
-        if(!agentsExternallyManaged)
+        if (!agentsExternallyManaged)
         {
             AgentRunner[] agentRunners = null;
 
-            if(threadingMode == ThreadingMode.SHARED)
+            if (threadingMode == ThreadingMode.SHARED)
             {
                 agentRunners = new AgentRunner[1];
 
-                if(sendBufferExternallyManaged)
+                if (sendBufferExternallyManaged)
                 {
                     agentRunners[0] = startAgents(transportConductor, receiver, sender);
                 }
@@ -180,11 +180,11 @@ public class TransportBuilder
                     agentRunners[0] = startAgents(transportConductor, sendBufferConductor, receiver, sender);
                 }
             }
-            else if(threadingMode == ThreadingMode.DEDICATED)
+            else if (threadingMode == ThreadingMode.DEDICATED)
             {
                 agentRunners = new AgentRunner[3];
 
-                if(sendBufferExternallyManaged)
+                if (sendBufferExternallyManaged)
                 {
                     agentRunners[0] = startAgents(transportConductor);
                 }
@@ -209,7 +209,7 @@ public class TransportBuilder
 
         Agent agentToRun = null;
 
-        if(agents.length == 1)
+        if (agents.length == 1)
         {
             agentToRun = agents[0];
         }
@@ -218,10 +218,10 @@ public class TransportBuilder
             agentToRun = new CompositeAgent(agents);
         }
 
-        BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(5));
+        final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(5));
 
         AtomicCounter errorCounter = null;
-        if(countersManager != null)
+        if (countersManager != null)
         {
             errorCounter = countersManager.newCounter(String.format("net.long_running.transport.%s.errorCounter", name));
         }

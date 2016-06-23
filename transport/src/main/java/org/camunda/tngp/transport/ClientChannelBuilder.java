@@ -14,7 +14,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class ClientChannelBuilder
 {
-    public final static DefaultClientChannelHandler DEFAULT_HANDLER = new DefaultClientChannelHandler();
+    public static final DefaultClientChannelHandler DEFAULT_HANDLER = new DefaultClientChannelHandler();
 
     protected final TransportContext transportContext;
 
@@ -79,20 +79,20 @@ public class ClientChannelBuilder
         @Override
         public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
         {
-            System.err.println("onChannelSendError() on channel "+transportChannel+" ignored by "+DefaultClientChannelHandler.class.getName());
+            System.err.println("onChannelSendError() on channel " + transportChannel + " ignored by " + DefaultClientChannelHandler.class.getName());
         }
 
         @Override
         public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
         {
-            System.err.println("received and dropped "+length+" bytes on channel "+transportChannel+" in "+ DefaultClientChannelHandler.class.getName());
+            System.err.println("received and dropped " + length + " bytes on channel " + transportChannel + " in " + DefaultClientChannelHandler.class.getName());
             return true;
         }
 
         @Override
         public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
         {
-            System.err.println("received and dropped control frame on channel "+transportChannel+" in "+ DefaultClientChannelHandler.class.getName());
+            System.err.println("received and dropped control frame on channel " + transportChannel + " in " + DefaultClientChannelHandler.class.getName());
         }
 
     }

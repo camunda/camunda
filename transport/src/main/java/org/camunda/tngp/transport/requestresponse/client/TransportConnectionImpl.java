@@ -16,12 +16,11 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class TransportConnectionImpl implements TransportConnection
 {
-    public static int STATE_POOLED = 1;
-    public static int STATE_OPEN = 2;
-    public static int STATE_CLOSING = 3;
+    public static final int STATE_POOLED = 1;
+    public static final int STATE_OPEN = 2;
+    public static final int STATE_CLOSING = 3;
 
-    public final static AtomicIntegerFieldUpdater<TransportConnectionImpl> STATE_FIELD
-        = AtomicIntegerFieldUpdater.newUpdater(TransportConnectionImpl.class, "state");
+    public static final AtomicIntegerFieldUpdater<TransportConnectionImpl> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportConnectionImpl.class, "state");
 
     protected volatile int state = STATE_POOLED;
     protected long id;
@@ -60,9 +59,9 @@ public class TransportConnectionImpl implements TransportConnection
     {
         final PooledTransportRequest request = requestPool.getRequest();
 
-        if(request != null)
+        if (request != null)
         {
-            if(openRequest(request, channelId, length))
+            if (openRequest(request, channelId, length))
             {
                 return request;
             }
@@ -77,9 +76,9 @@ public class TransportConnectionImpl implements TransportConnection
             final int channelId,
             final int msgLength)
     {
-        if(STATE_FIELD.get(this) != STATE_OPEN)
+        if (STATE_FIELD.get(this) != STATE_OPEN)
         {
-            throw new IllegalStateException("Cannot open request on "+this+", connection is not open.");
+            throw new IllegalStateException("Cannot open request on " + this + ", connection is not open.");
         }
 
         final TransportRequestImpl requestImpl = (TransportRequestImpl) request;
@@ -90,7 +89,7 @@ public class TransportConnectionImpl implements TransportConnection
 
         long claimedPosition = 0;
 
-        if(requestId >= 0)
+        if (requestId >= 0)
         {
             requestImpl.begin(this, requestId, channelId, now);
 
@@ -98,9 +97,9 @@ public class TransportConnectionImpl implements TransportConnection
             {
                 claimedPosition = sendBuffer.claim(requestImpl.getClaimedFragment(), framedLength, channelId);
             }
-            while(claimedPosition == -2);
+            while (claimedPosition == -2);
 
-            if(claimedPosition >= 0)
+            if (claimedPosition >= 0)
             {
                 requestImpl.writeHeader();
             }
@@ -119,9 +118,9 @@ public class TransportConnectionImpl implements TransportConnection
             final int channelId,
             final int msgLength)
     {
-        boolean isOpen = openRequest(request, channelId, msgLength);
+        final boolean isOpen = openRequest(request, channelId, msgLength);
 
-        if(isOpen)
+        if (isOpen)
         {
             try
             {
@@ -130,7 +129,7 @@ public class TransportConnectionImpl implements TransportConnection
                 claimedBuffer.putBytes(claimedOffset, request.getRequestBuffer(), 0, msgLength);
                 request.commit();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 request.abort();
                 e.printStackTrace();
@@ -153,7 +152,7 @@ public class TransportConnectionImpl implements TransportConnection
             {
                 for (Object obj : openRequests.getObjects())
                 {
-                    if(obj != null)
+                    if (obj != null)
                     {
                         final TransportRequestImpl request = (TransportRequestImpl) obj;
                         if (!request.awaitResponse(10, TimeUnit.SECONDS))
@@ -183,11 +182,11 @@ public class TransportConnectionImpl implements TransportConnection
     // invoked in conductor thread
     public void processChannelClosed(TransportChannel transportChannel)
     {
-        if(openRequests.size() > 0)
+        if (openRequests.size() > 0)
         {
             for (Object request : openRequests.getObjects())
             {
-                if(request != null)
+                if (request != null)
                 {
                     ((TransportRequestImpl)request).processChannelClosed(transportChannel);
                 }
@@ -204,7 +203,7 @@ public class TransportConnectionImpl implements TransportConnection
 
         final TransportRequestImpl request = openRequests.poll(requestId);
 
-        if(request != null)
+        if (request != null)
         {
             isHandled = request.processResponse(buffer, offset, length, requestId);
         }
@@ -230,7 +229,7 @@ public class TransportConnectionImpl implements TransportConnection
 
     public void onRequestClosed(TransportRequestImpl request)
     {
-        if(STATE_FIELD.get(this) == STATE_OPEN)
+        if (STATE_FIELD.get(this) == STATE_OPEN)
         {
             openRequests.remove(request.getId(), request);
         }

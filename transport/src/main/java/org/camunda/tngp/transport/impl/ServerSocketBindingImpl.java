@@ -22,13 +22,12 @@ import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class ServerSocketBindingImpl implements ServerSocketBinding
 {
-    public final static int STATE_NEW = -1;
-    public final static int STATE_OPEN = 0;
-    public final static int STATE_CLOSING = 1;
-    public final static int STATE_CLOSED = 2;
+    public static final int STATE_NEW = -1;
+    public static final int STATE_OPEN = 0;
+    public static final int STATE_CLOSING = 1;
+    public static final int STATE_CLOSED = 2;
 
-    private final static AtomicIntegerFieldUpdater<ServerSocketBindingImpl> STATE_UPDATER
-        = AtomicIntegerFieldUpdater.newUpdater(ServerSocketBindingImpl.class, "state");
+    private static final AtomicIntegerFieldUpdater<ServerSocketBindingImpl> STATE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ServerSocketBindingImpl.class, "state");
 
     protected volatile int state;
 
@@ -51,7 +50,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
         this.conductorCmdQueue = transportContext.getConductorCmdQueue();
         this.bindAddress = bindAddress;
 
-        if(bindAddress == null)
+        if (bindAddress == null)
         {
             throw new IllegalArgumentException("bindAddress cannot be null");
         }
@@ -96,7 +95,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
     public void removeSelector(Selector selector)
     {
         final SelectionKey key = media.keyFor(selector);
-        if(key != null)
+        if (key != null)
         {
             key.cancel();
         }
@@ -106,7 +105,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
     {
         ServerChannelImpl channel = null;
 
-        if(STATE_UPDATER.get(this) == STATE_OPEN)
+        if (STATE_UPDATER.get(this) == STATE_OPEN)
         {
             try
             {
@@ -134,13 +133,13 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
 
     public CompletableFuture<ServerSocketBinding> closeAsync()
     {
-        if(STATE_UPDATER.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
+        if (STATE_UPDATER.compareAndSet(this, STATE_OPEN, STATE_CLOSING))
         {
             final CompletableFuture<ServerSocketBinding> completableFuture = new CompletableFuture<>();
 
             conductorCmdQueue.add((c) ->
             {
-               c.closeServerSocketBinding(this, completableFuture);
+                c.closeServerSocketBinding(this, completableFuture);
             });
 
             return completableFuture;
@@ -180,7 +179,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
     {
         try
         {
-            ArrayList<ServerChannelImpl> openChannelsCopy = new ArrayList<>(openChannels);
+            final ArrayList<ServerChannelImpl> openChannelsCopy = new ArrayList<>(openChannels);
 
             final CompletableFuture[] completableFutures = new CompletableFuture[openChannelsCopy.size()];
 
@@ -191,7 +190,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
 
             CompletableFuture.allOf(completableFutures);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }

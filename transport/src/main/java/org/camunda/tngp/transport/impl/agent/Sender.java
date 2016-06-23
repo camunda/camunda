@@ -1,4 +1,4 @@
- package org.camunda.tngp.transport.impl.agent;
+package org.camunda.tngp.transport.impl.agent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,6 @@ import org.camunda.tngp.transport.impl.TransportContext;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class Sender implements Agent, Consumer<SenderCmd>
 {
@@ -55,6 +54,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         for (TransportChannelImpl channel : channelsWithControlFrames)
         {
             channel.writeControlFrame();
+            workCount++;
         }
 
         channelsWithControlFrames.clear();
