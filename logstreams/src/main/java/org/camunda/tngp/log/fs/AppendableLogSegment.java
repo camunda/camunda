@@ -18,8 +18,8 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
  */
 public class AppendableLogSegment extends LogSegment
 {
-    final static ByteBuffer PADDING_BUFFER = ByteBuffer.allocateDirect(HEADER_LENGTH);
-    final static UnsafeBuffer PADDING = new UnsafeBuffer(PADDING_BUFFER);
+    static final ByteBuffer PADDING_BUFFER = ByteBuffer.allocateDirect(HEADER_LENGTH);
+    static final UnsafeBuffer PADDING = new UnsafeBuffer(PADDING_BUFFER);
 
     static
     {
@@ -45,7 +45,7 @@ public class AppendableLogSegment extends LogSegment
             final File file = new File(fileName);
             final long availableSpace = FileChannelUtil.getAvailableSpace(file.getParentFile());
 
-            if(availableSpace > segmentSize)
+            if (availableSpace > segmentSize)
             {
                 openSegment(true);
 
@@ -56,7 +56,7 @@ public class AppendableLogSegment extends LogSegment
                 allocated = true;
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -79,9 +79,9 @@ public class AppendableLogSegment extends LogSegment
 
         int newTail = -1;
 
-        if(currentTail + blockLength + HEADER_LENGTH  <= segmentSize)
+        if (currentTail + blockLength + HEADER_LENGTH  <= segmentSize)
         {
-            if(writeToChannel(currentTail, block) == blockLength)
+            if (writeToChannel(currentTail, block) == blockLength)
             {
                 newTail = currentTail + blockLength;
                 setTailOrdered(newTail);
@@ -104,7 +104,7 @@ public class AppendableLogSegment extends LogSegment
 
         int newTail = -1;
 
-        if(writeToChannel(currentTail, PADDING_BUFFER) == HEADER_LENGTH)
+        if (writeToChannel(currentTail, PADDING_BUFFER) == HEADER_LENGTH)
         {
             setTailVolatile(getSegmentSize());
             newTail = -2;
@@ -119,7 +119,7 @@ public class AppendableLogSegment extends LogSegment
 
         try
         {
-            int written = fileChannel.write(buff, position);
+            final int written = fileChannel.write(buff, position);
 
             // TODO: make configurable
 //            fileChannel.force(false);

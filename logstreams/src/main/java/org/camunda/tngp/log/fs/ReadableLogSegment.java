@@ -38,23 +38,23 @@ public class ReadableLogSegment extends LogSegment
 
         int nextOffset = -1;
 
-        if(offset < limit)
+        if (offset < limit)
         {
             final int read = readHeader(offset, fileChannel, headerBuffer);
 
-            if(read == HEADER_LENGTH)
+            if (read == HEADER_LENGTH)
             {
                 final int fragmentLength = header.getInt(lengthOffset(0));
                 final short type = header.getShort(typeOffset(0));
 
-                if(type == TYPE_MESSAGE)
+                if (type == TYPE_MESSAGE)
                 {
                     nextOffset = notifyFragmentHandler(
                             offset,
                             fragmentHandler,
                             fragmentLength);
                 }
-                else if(type == TYPE_PADDING)
+                else if (type == TYPE_PADDING)
                 {
                     nextOffset = -2;
                 }
@@ -78,21 +78,21 @@ public class ReadableLogSegment extends LogSegment
 
         int blockLength = 0;
 
-        while(offset + blockLength < limit && blockLength < maxBlockSize)
+        while (offset + blockLength < limit && blockLength < maxBlockSize)
         {
-            int read = readHeader(offset, fileChannel, headerBuffer);
-            if(read == HEADER_LENGTH)
+            final int read = readHeader(offset, fileChannel, headerBuffer);
+            if (read == HEADER_LENGTH)
             {
                 final int fragLength = header.getInt(lengthOffset(0));
                 final short fragType = header.getShort(typeOffset(0));
 
-                if(fragType == TYPE_MESSAGE)
+                if (fragType == TYPE_MESSAGE)
                 {
                     blockLength += alignedLength(fragLength);
                 }
                 else
                 {
-                    if(blockLength == 0)
+                    if (blockLength == 0)
                     {
                         blockLength = -2;
                     }
@@ -108,7 +108,7 @@ public class ReadableLogSegment extends LogSegment
         }
 
 
-        if(blockLength > 0)
+        if (blockLength > 0)
         {
             try
             {
@@ -121,7 +121,7 @@ public class ReadableLogSegment extends LogSegment
                         offset,
                         blockLength);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 blockLength = -1;
                 e.printStackTrace();
@@ -172,7 +172,7 @@ public class ReadableLogSegment extends LogSegment
             buffer.clear();
             bytesRead = fileChannel.read(buffer, offset);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -182,14 +182,14 @@ public class ReadableLogSegment extends LogSegment
 
     private int getReaderLimit()
     {
-        if(isFilled)
+        if (isFilled)
         {
             return getSegmentSize();
         }
         else
         {
-            int tail = getTailVolatile();
-            if(tail == getSegmentSize())
+            final int tail = getTailVolatile();
+            if (tail == getSegmentSize())
             {
                 isFilled = true;
             }

@@ -31,20 +31,23 @@ public class LogAppenderTest
 
         public void onFragment(long position, FileChannel fileChannel, int offset, int length)
         {
-            if(length != MSG_SIZE)
+            if (length != MSG_SIZE)
             {
-                throw new RuntimeException("length incorrect. Expected "+MSG_SIZE + " got "+length);
+                throw new RuntimeException("length incorrect. Expected " + MSG_SIZE + " got " + length);
             }
             buffer.position(0);
             buffer.limit(length);
             try
             {
                 fileChannel.read(buffer, offset);
-                int lastId = unsafeBuffer.getInt(0);
-                if(lastId != this.lastId + 1)
+
+                final int lastId = unsafeBuffer.getInt(0);
+
+                if (lastId != this.lastId + 1)
                 {
-                    System.err.println("out of order: "+this.lastId + " "+lastId);
+                    System.err.println("out of order: " + this.lastId + " " + lastId);
                 }
+
                 this.lastId = lastId;
             }
             catch (IOException e)
@@ -57,13 +60,10 @@ public class LogAppenderTest
     @Test
     public void shouldAppend() throws InterruptedException
     {
-        String logPath = temFolder.getRoot().getAbsolutePath();
+        final String logPath = temFolder.getRoot().getAbsolutePath();
 
-        final Log log = Logs.createLog("foo", 0)
-            .logRootPath(logPath)
-            .deleteOnClose(true)
-            .threadingMode(ThreadingMode.DEDICATED)
-            .build();
+        final Log log = Logs.createLog("foo", 0).logRootPath(logPath).deleteOnClose(true)
+                .threadingMode(ThreadingMode.DEDICATED).build();
 
         log.start();
 
@@ -78,7 +78,7 @@ public class LogAppenderTest
         for (int i = 0; i < totalWork; i++)
         {
             msg.putInt(0, i);
-            if(writeBuffer.offer(msg, log.getId()) < 0)
+            if (writeBuffer.offer(msg, log.getId()) < 0)
             {
                 i--;
             }
@@ -86,10 +86,10 @@ public class LogAppenderTest
 
         long pos = log.getInitialPosition();
 
-        while(logFragmentReader.lastId != totalWork -1)
+        while (logFragmentReader.lastId != totalWork - 1)
         {
-            long nextPosition = log.pollFragment(pos, logFragmentReader);
-            if(nextPosition > 0)
+            final long nextPosition = log.pollFragment(pos, logFragmentReader);
+            if (nextPosition > 0)
             {
                 pos = nextPosition;
             }

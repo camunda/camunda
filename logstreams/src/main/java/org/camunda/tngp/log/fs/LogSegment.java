@@ -36,7 +36,7 @@ public abstract class LogSegment
     {
         fileChannel = FileChannelUtil.openChannel(fileName, create);
 
-        if(fileChannel != null)
+        if (fileChannel != null)
         {
             try
             {
@@ -70,8 +70,8 @@ public abstract class LogSegment
 
     public void delete()
     {
-        File file = new File(fileName);
-        if(file.exists())
+        final File file = new File(fileName);
+        if (file.exists())
         {
             file.delete();
         }

@@ -62,7 +62,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         final AppendableLogSegment appendableSegment = new AppendableLogSegment(fileName);
         final ReadableLogSegment readableSegment = new ReadableLogSegment(fileName);
 
-        if(appendableSegment.allocate(segmentId, allocationDescriptor.getSegmentSize())
+        if (appendableSegment.allocate(segmentId, allocationDescriptor.getSegmentSize())
                 && readableSegment.openSegment(false))
         {
             appenderCmdQueue.add((a) -> a.onNextSegmentAllocated(log, appendableSegment));
@@ -86,16 +86,16 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
         logFiles.forEach((file) ->
         {
-           final ReadableLogSegment readableLogSegment = new ReadableLogSegment(file.getAbsolutePath());
-           if(readableLogSegment.openSegment(false))
-           {
-               readableLogSegments.add(readableLogSegment);
-           }
-           else
-           {
-               future.completeExceptionally(new RuntimeException("Cannot open log segment " + file));
-               return;
-           }
+            final ReadableLogSegment readableLogSegment = new ReadableLogSegment(file.getAbsolutePath());
+            if (readableLogSegment.openSegment(false))
+            {
+                readableLogSegments.add(readableLogSegment);
+            }
+            else
+            {
+                future.completeExceptionally(new RuntimeException("Cannot open log segment " + file));
+                return;
+            }
 
         });
 
@@ -106,13 +106,13 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         int initialSegmentId = 0;
 
         int existingSegments = readableLogSegments.size();
-        if(existingSegments > 0)
+        if (existingSegments > 0)
         {
             final ReadableLogSegment firstSegment = readableLogSegments.get(0);
-            final ReadableLogSegment secondLastSegment = readableLogSegments.get(Math.max(0, existingSegments -2));
+            final ReadableLogSegment secondLastSegment = readableLogSegments.get(Math.max(0, existingSegments - 2));
 
             ReadableLogSegment lastSegment = readableLogSegments.get(existingSegments - 1);
-            if(!secondLastSegment.isFilled() && lastSegment != secondLastSegment)
+            if (!secondLastSegment.isFilled() && lastSegment != secondLastSegment)
             {
                 // remove last pre-allocated segment
                 lastSegment = secondLastSegment;
@@ -123,7 +123,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
             initialSegmentId = firstSegment.getSegmentId();
             appendableLogSegment = new AppendableLogSegment(lastSegment.getFileName());
 
-            if(!appendableLogSegment.openSegment(false))
+            if (!appendableLogSegment.openSegment(false))
             {
                 future.completeExceptionally(new RuntimeException("Cannot open log segemtn " + appendableLogSegment.getFileName()));
                 return;
@@ -134,14 +134,14 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
             final String initialSegmentName = logAllocationDescriptor.fileName(initialSegmentId);
             appendableLogSegment = new AppendableLogSegment(initialSegmentName);
 
-            if(!appendableLogSegment.allocate(initialSegmentId, logAllocationDescriptor.getSegmentSize()))
+            if (!appendableLogSegment.allocate(initialSegmentId, logAllocationDescriptor.getSegmentSize()))
             {
                 future.completeExceptionally(new RuntimeException("Cannot allocate initial segment"));
                 return;
             }
 
             final ReadableLogSegment readableLogSegment = new ReadableLogSegment(initialSegmentName);
-            if(!readableLogSegment.openSegment(false))
+            if (!readableLogSegment.openSegment(false))
             {
                 future.completeExceptionally(new RuntimeException("Cannot open initial segment"));
                 return;
@@ -159,28 +159,46 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         future.complete(log);
     }
 
-    public void closeLog(Log log, final CompletableFuture<Log> future)
+    public void closeLog(final Log log, final CompletableFuture<Log> closeFuture)
     {
-
-        if(log.isDeleteOnClose())
-        {
-            future.handle((e,f) ->
-            {
-                final LogSegmentAllocationDescriptor allocationDescriptor = log.getAllocationDescriptor();
-                final String logPath = allocationDescriptor.getPath();
-                FileUtil.deleteFolder(logPath);
-                return log;
-            });
-
-        }
 
         try
         {
             log.getLogSegments().closeAll();
         }
-        finally
+        catch (Exception e)
         {
-            appenderCmdQueue.add((a) -> a.onLogClosed(log, future));
+            System.out.println("Exception while closing log:");
+            e.printStackTrace();
+        }
+
+        final CompletableFuture<Log> appenderCloseFuture = new CompletableFuture<>();
+
+        appenderCloseFuture.whenComplete((l, t) ->
+        {
+            if (log.isDeleteOnClose())
+            {
+                deleteLogFolder(log);
+            }
+
+            closeFuture.complete(log);
+        });
+
+        appenderCmdQueue.add((a) -> a.onLogClosed(log, appenderCloseFuture));
+    }
+
+    private static void deleteLogFolder(Log log)
+    {
+        try
+        {
+            final LogSegmentAllocationDescriptor allocationDescriptor = log.getAllocationDescriptor();
+            final String logPath = allocationDescriptor.getPath();
+            FileUtil.deleteFolder(logPath);
+        }
+        catch (Exception e)
+        {
+            System.out.println("Exception while closing log:");
+            e.printStackTrace();
         }
     }
 
@@ -198,17 +216,18 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
         final Thread closeThread = new Thread("log-closer-thread")
         {
             @Override
-            public void run() {
+            public void run()
+            {
 
-                if(!agentContext.isWriteBufferExternallyManaged())
+                if (!agentContext.isWriteBufferExternallyManaged())
                 {
                     agentContext.getWriteBuffer().close();
                 }
 
                 try
                 {
-                    AgentRunner[] agentRunners = agentContext.getAgentRunners();
-                    if(agentRunners != null)
+                    final AgentRunner[] agentRunners = agentContext.getAgentRunners();
+                    if (agentRunners != null)
                     {
                         for (AgentRunner agentRunner : agentRunners)
                         {

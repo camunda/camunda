@@ -29,7 +29,7 @@ public class LogEntryReader
         final long nextFragmentOffset = log.pollFragment(position, pollHandler);
         final int entryLength = pollHandler.bytesRead;
 
-        if(entryLength > 0)
+        if (entryLength > 0)
         {
             fragmentReader.wrap(readBufferView, 0, entryLength);
         }

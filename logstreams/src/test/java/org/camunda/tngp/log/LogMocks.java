@@ -31,7 +31,7 @@ public class LogMocks
 
         public Long answer(InvocationOnMock invocation) throws Throwable
         {
-            if(fileChannel != null)
+            if (fileChannel != null)
             {
                 final long position = (long) invocation.getArguments()[0];
                 final LogFragmentHandler logFragmentHandler = (LogFragmentHandler) invocation.getArguments()[1];

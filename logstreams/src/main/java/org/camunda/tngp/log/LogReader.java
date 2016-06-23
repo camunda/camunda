@@ -31,17 +31,17 @@ public class LogReader
 
     public boolean read(BufferReader reader)
     {
-       final long nextPosition = entryReader.read(log, position, reader);
+        final long nextPosition = entryReader.read(log, position, reader);
 
-       boolean hasNext = false;
+        boolean hasNext = false;
 
-       if(nextPosition != -1)
-       {
-           this.position = nextPosition;
-           hasNext = true;
-       }
+        if (nextPosition != -1)
+        {
+            this.position = nextPosition;
+            hasNext = true;
+        }
 
-       return hasNext;
+        return hasNext;
     }
 
     public long position()

@@ -21,13 +21,12 @@ import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public class LogBuilder
 {
-
-    static ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
+    static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
         t.printStackTrace();
     };
 
-    public static enum ThreadingMode
+    public enum ThreadingMode
     {
         SHARED,
         DEDICATED;
@@ -130,11 +129,11 @@ public class LogBuilder
     public Log build()
     {
         final LogContext logContext = new LogContext(name, id);
-        if(logDirectory == null)
+        if (logDirectory == null)
         {
             logDirectory = logRootPath + File.separatorChar + name + File.separatorChar;
         }
-        File file = new File(logDirectory);
+        final File file = new File(logDirectory);
         file.mkdirs();
 
         logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logSegmentSize, logDirectory, initialLogSegmentId));
@@ -168,17 +167,20 @@ public class LogBuilder
                 if (writeBufferExternallyManaged)
                 {
                     agentRunners[1] = startAgent(logConductor);
-                } else
+                }
+                else
                 {
                     agentRunners[1] = startAgent(new CompositeAgent(logConductor, writeBufferConductor));
                 }
-            } else
+            }
+            else
             {
                 agentRunners = new AgentRunner[1];
                 if (writeBufferExternallyManaged)
                 {
                     agentRunners[0] = startAgent(new CompositeAgent(logAppender, logConductor));
-                } else
+                }
+                else
                 {
                     agentRunners[0] = startAgent(new CompositeAgent(logAppender, logConductor, writeBufferConductor));
                 }
@@ -211,13 +213,13 @@ public class LogBuilder
     private AgentRunner startAgent(Agent agent)
     {
         AtomicCounter errorCounter = null;
-        if(countersManager != null)
+        if (countersManager != null)
         {
             errorCounter = countersManager.newCounter(String.format("%s.errorCounter", agent.roleName()));
         }
 
-        BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
-        AgentRunner agentRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, agent);
+        final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+        final AgentRunner agentRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, agent);
         AgentRunner.startOnThread(agentRunner);
 
         return agentRunner;

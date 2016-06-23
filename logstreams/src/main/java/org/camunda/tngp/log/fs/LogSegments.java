@@ -39,7 +39,7 @@ public class LogSegments
 
         final int segmentIdx = segmentId - initalSegmentId;
 
-        if(0 <= segmentIdx && segmentIdx < segmentCount)
+        if (0 <= segmentIdx && segmentIdx < segmentCount)
         {
             return segments[segmentIdx];
         }
@@ -58,7 +58,7 @@ public class LogSegments
     {
         long initialPosition = -1;
 
-        if(segmentCount > 0)
+        if (segmentCount > 0)
         {
             final ReadableLogSegment[] segments = this.segments;
             initialPosition = position(segments[0].getSegmentId(), METADATA_LENGTH);
@@ -73,9 +73,9 @@ public class LogSegments
 
         long lastPosition = -1;
 
-        if(segmentCount > 0)
+        if (segmentCount > 0)
         {
-            ReadableLogSegment lastSegment = this.segments[segmentCount - 1];
+            final ReadableLogSegment lastSegment = this.segments[segmentCount - 1];
             lastPosition = position(lastSegment.getSegmentId(), lastSegment.getTailVolatile());
         }
         return lastPosition;
@@ -114,7 +114,7 @@ public class LogSegments
     {
         final ReadableLogSegment segment = getSegment(segmentId);
 
-        if(segment != null)
+        if (segment != null)
         {
             return position(segment.getSegmentId(), METADATA_LENGTH);
         }
@@ -126,7 +126,7 @@ public class LogSegments
     {
         final ReadableLogSegment segment = getSegment(segmentId);
 
-        if(segment != null)
+        if (segment != null)
         {
             return position(segment.getSegmentId(), segment.getTailVolatile());
         }

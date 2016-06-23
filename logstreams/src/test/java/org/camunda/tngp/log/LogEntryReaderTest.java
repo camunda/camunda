@@ -37,7 +37,7 @@ public class LogEntryReaderTest
         when(fileChannelMock.read(logEntryReader.readBuffer, 55)).thenReturn(10);
         when(logMock.pollFragment(1234, logEntryReader.pollHandler)).thenAnswer(new LogMocks.LogPollAnswer(1244, fileChannelMock, 55, 88));
 
-        long nextFragment = logEntryReader.read(logMock, 1234, readerMock);
+        final long nextFragment = logEntryReader.read(logMock, 1234, readerMock);
 
         assertThat(nextFragment).isEqualTo(1244);
         verify(logMock).pollFragment(1234, logEntryReader.pollHandler);
@@ -49,7 +49,7 @@ public class LogEntryReaderTest
     {
         when(logMock.pollFragment(1234, logEntryReader.pollHandler)).thenAnswer(new LogMocks.LogPollAnswer(-1));
 
-        long nextFragment = logEntryReader.read(logMock, 1234, readerMock);
+        final long nextFragment = logEntryReader.read(logMock, 1234, readerMock);
 
         assertThat(nextFragment).isEqualTo(-1);
 

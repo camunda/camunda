@@ -36,9 +36,9 @@ public class FileChannelUtil
         try
         {
             final File file = new File(filename);
-            if(!file.exists())
+            if (!file.exists())
             {
-                if(create)
+                if (create)
                 {
                     file.createNewFile();
                 }

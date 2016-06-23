@@ -24,9 +24,9 @@ public class LogEntryWriter
         {
             claimedOffset = writeBuffer.claim(claimedFragment, length, log.getId());
         }
-        while(claimedOffset == -2);
+        while (claimedOffset == -2);
 
-        if(claimedOffset >= 0)
+        if (claimedOffset >= 0)
         {
             writer.write(claimedFragment.getBuffer(), claimedFragment.getOffset());
             claimedFragment.commit();

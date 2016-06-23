@@ -62,17 +62,17 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
 
         final int bytesAvailable = appenderSubsciption.peekBlock(blockPeek, maxAppendSize, true);
 
-        if(bytesAvailable > 0)
+        if (bytesAvailable > 0)
         {
             final LogAppendHandler logAppendHandler = appendHandlers.get(blockPeek.getStreamId());
 
-            if(logAppendHandler != null)
+            if (logAppendHandler != null)
             {
                 bytesWritten = logAppendHandler.append(blockPeek, this);
             }
             else
             {
-                System.err.println("Could not find append handler for log with id "+blockPeek.getStreamId());
+                System.err.println("Could not find append handler for log with id " + blockPeek.getStreamId());
                 blockPeek.markFailed();
             }
         }
@@ -84,7 +84,7 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
     {
         toLogConductorCmdQueue.add((c) ->
         {
-           c.allocateSegment(log, nextSegmentId);
+            c.allocateSegment(log, nextSegmentId);
         });
     }
 
@@ -120,10 +120,11 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
         {
             final LogAppendHandler appendHandler = this.appendHandlers.remove(log.getId());
             appendHandler.close();
-        }
-        finally
-        {
             future.complete(log);
+        }
+        catch (Exception e)
+        {
+            future.completeExceptionally(e);
         }
     }
 

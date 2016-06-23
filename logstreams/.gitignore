@@ -1,6 +1,7 @@
 .idea
 target
 .classpath
+.checkstyle
 .project
 .settings
 build.properties

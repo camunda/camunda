@@ -37,12 +37,12 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 public class LogSegmentDescriptor
 {
 
-    public final static int SEGMENT_ID_OFFSET;
-    public final static int VERSION_OFFSET;
-    public final static int SEGMENT_SIZE_OFFSET;
-    public final static int SEGMENT_TAIL_OFFSET;
+    public static final int SEGMENT_ID_OFFSET;
+    public static final int VERSION_OFFSET;
+    public static final int SEGMENT_SIZE_OFFSET;
+    public static final int SEGMENT_TAIL_OFFSET;
 
-    public final static int METADATA_LENGTH;
+    public static final int METADATA_LENGTH;
 
     static
     {
@@ -55,10 +55,10 @@ public class LogSegmentDescriptor
         offset += SIZE_OF_INT;
 
         SEGMENT_SIZE_OFFSET = offset;
-        offset += (2* CACHE_LINE_LENGTH);
+        offset += (2 * CACHE_LINE_LENGTH);
 
         SEGMENT_TAIL_OFFSET = offset;
-        offset += (2* CACHE_LINE_LENGTH);
+        offset += (2 * CACHE_LINE_LENGTH);
 
         METADATA_LENGTH = align(offset, 8);
     }

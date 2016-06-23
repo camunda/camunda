@@ -15,13 +15,13 @@ public class LogAppendHandler
     {
         int bytesWritten = 0;
 
-        int newTail = currentSegment.append(blockPeek.getBuffer());
+        final int newTail = currentSegment.append(blockPeek.getBuffer());
 
-        if(newTail == -2)
+        if (newTail == -2)
         {
             onSegmentFilled(logAppender);
         }
-        else if(newTail > 0)
+        else if (newTail > 0)
         {
             blockPeek.markCompleted();
             bytesWritten = blockPeek.getBlockLength();
@@ -36,7 +36,7 @@ public class LogAppendHandler
 
     protected void onSegmentFilled(LogAppender logAppender)
     {
-        if(nextSegment != null)
+        if (nextSegment != null)
         {
             currentSegment.closeSegment();
             currentSegment = nextSegment;
@@ -67,11 +67,11 @@ public class LogAppendHandler
 
     public void close()
     {
-        if(currentSegment != null)
+        if (currentSegment != null)
         {
             currentSegment.closeSegment();
         }
-        if(nextSegment != null)
+        if (nextSegment != null)
         {
             nextSegment.closeSegment();
             nextSegment.delete();

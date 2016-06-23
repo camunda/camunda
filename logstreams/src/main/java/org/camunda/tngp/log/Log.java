@@ -112,15 +112,15 @@ public class Log implements AutoCloseable
 
         long nextPosition = -1;
 
-        if(null != segment)
+        if (null != segment)
         {
             final int nextOffset = segment.pollFragment(segmentOffset, fragmentHandler);
 
-            if(nextOffset > segmentOffset)
+            if (nextOffset > segmentOffset)
             {
                 nextPosition = position(segmentId, nextOffset);
             }
-            else if(nextOffset == -2)
+            else if (nextOffset == -2)
             {
                 nextPosition = position(1 + segmentId, METADATA_LENGTH);
             }
@@ -143,15 +143,15 @@ public class Log implements AutoCloseable
 
         long nextPosition = -1;
 
-        if(null != segment)
+        if (null != segment)
         {
             final int blockLength = segment.pollBlock(segmentOffset, blockHandler, maxBlockSize);
 
-            if(blockLength > 0)
+            if (blockLength > 0)
             {
                 nextPosition = position(segmentId, segmentOffset + blockLength);
             }
-            else if(blockLength == -2)
+            else if (blockLength == -2)
             {
                 nextPosition = position(1 + segmentId, METADATA_LENGTH);
             }
