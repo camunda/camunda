@@ -16,20 +16,22 @@ public class FileUtil
 
     public static void deleteFolder(String path)
     {
-        Path directory = Paths.get(path);
+        final Path directory = Paths.get(path);
 
         try
         {
-            Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-
+            Files.walkFileTree(directory, new SimpleFileVisitor<Path>()
+            {
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+                {
                     Files.delete(file);
                     return CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException
+                {
                     Files.delete(dir);
                     return CONTINUE;
                 }
@@ -40,7 +42,6 @@ public class FileUtil
         {
             LangUtil.rethrowUnchecked(e);
         }
-
     }
 
 }

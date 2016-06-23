@@ -9,8 +9,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
  * tells the writer <em>which object</em> to write but not <em>what value</em>. The value is only
  * determined at the time of writing, so that value changes happening between setter and <em>#write</em>
  * invocations affect the writer.
- *
- * @author Lindhauer
  */
 public interface BufferWriter
 {

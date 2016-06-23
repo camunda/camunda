@@ -7,7 +7,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
  * the buffer that is read. The reader is a <em>view</em> on the buffer
  * Any concurrent changes to the underlying buffer become immediately visible to the reader.
  *
- * @author Lindhauer
  */
 public interface BufferReader
 {
