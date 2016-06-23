@@ -2,22 +2,18 @@ package org.camunda.tngp.log;
 
 import static uk.co.real_logic.agrona.BitUtil.*;
 
-import java.nio.ByteBuffer;
-
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 
 public class Long2LongHashIndexLargeBlockSizeTest
 {
-    static long MISSING_VALUE = -2;
+    static final long MISSING_VALUE = -2;
 
     Long2LongHashIndex index;
     FileChannelIndexStore indexStore;
@@ -25,8 +21,8 @@ public class Long2LongHashIndexLargeBlockSizeTest
     @Before
     public void createIndex()
     {
-        int indexSize = 16;
-        int blockLength = BLOCK_DATA_OFFSET  + 3 * framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG); // 3 entries fit into a block
+        final int indexSize = 16;
+        final int blockLength = BLOCK_DATA_OFFSET  + 3 * framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG); // 3 entries fit into a block
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
         index = new Long2LongHashIndex(indexStore, indexSize, blockLength);
@@ -41,18 +37,18 @@ public class Long2LongHashIndexLargeBlockSizeTest
     @Test
     public void shouldReturnMissingValueForEmptyMap()
     {
-       // given that the map is empty
-       assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        // given that the map is empty
+        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
     public void shouldReturnMissingValueForNonExistingKey()
     {
-       // given
-       index.put(1, 1);
+        // given
+        index.put(1, 1);
 
-       // then
-       assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        // then
+        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -72,7 +68,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
         index.put(1, 1);
 
         // if
-        long removeResult = index.remove(1, -1);
+        final long removeResult = index.remove(1, -1);
 
         //then
         assertThat(removeResult).isEqualTo(1);
@@ -87,7 +83,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
         index.put(2, 2);
 
         // if
-        long removeResult = index.remove(1, -1);
+        final long removeResult = index.remove(1, -1);
 
         //then
         assertThat(removeResult).isEqualTo(1);

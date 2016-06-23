@@ -18,7 +18,7 @@ public class LongKeyHandler implements IndexKeyHandler
     @Override
     public int keyHashCode()
     {
-        int hash = (int)theKey ^ (int)(theKey >>> 32);
+        final int hash = (int)theKey ^ (int)(theKey >>> 32);
         return hash ^ (hash >>> 16);
     }
 

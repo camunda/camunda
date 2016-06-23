@@ -86,7 +86,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
         // update index
         blockCount(1);
-        for(int i = 0; i < indexSize; i++)
+        for (int i = 0; i < indexSize; i++)
         {
             loadedIndexBuffer.getBuffer()
                 .putLong(indexEntryOffset(i), firstBlockOffset);
@@ -103,14 +103,15 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         return keyHandler;
     }
 
-    private static <T> T createInstance(final Class<T> type){
+    private static <T> T createInstance(final Class<T> type)
+    {
         try
         {
             return type.newInstance();
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new RuntimeException("Could not instantiate "+type, e);
+            throw new RuntimeException("Could not instantiate " + type, e);
         }
     }
 
@@ -122,15 +123,15 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         putVisitor.init(keyHandler, valueHandler);
         scanBlock(blockOffset, putVisitor);
 
-        boolean updated = putVisitor.recordUpdated;
+        final boolean updated = putVisitor.recordUpdated;
 
-        if(!updated)
+        if (!updated)
         {
             final int recordLength = recordLength();
             int putPosition = putVisitor.freeSlot;
             long putBlockOffset = blockOffset;
 
-            while(blockLength() < putPosition + recordLength)
+            while (blockLength() < putPosition + recordLength)
             {
                 // block is filled
                 splitBlock(putBlockOffset);
@@ -172,7 +173,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         removeVisitor.init(keyHandler, valueHandler);
         scanBlock(blockOffset, removeVisitor);
 
-        if(removeVisitor.wasRecordRemoved)
+        if (removeVisitor.wasRecordRemoved)
         {
             loadedBlockBuffer.write();
         }
@@ -182,7 +183,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
     private long blockForHashCode(int keyHashCode)
     {
-        final int mask = indexSize() -1;
+        final int mask = indexSize() - 1;
         return loadedIndexBuffer.getBuffer().getLong(indexEntryOffset(keyHashCode & mask));
     }
 
@@ -250,7 +251,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         final int indexSize = indexSize();
 
         long newBlockOffset = -1;
-        if(blockCount < indexSize)
+        if (blockCount < indexSize)
         {
             loadedBlockBuffer.ensureLoaded(filledBlockOffset, blockLength());
             final MutableDirectBuffer filledBlockBuffer = loadedBlockBuffer.getBuffer();
@@ -263,7 +264,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             // create new blocks
             newBlockOffset = allocateBlock();
             loadedSplitWorkBuffer.ensureLoaded(newBlockOffset, blockLength());
-            MutableDirectBuffer splitBuffer = loadedSplitWorkBuffer.getBuffer();
+            final MutableDirectBuffer splitBuffer = loadedSplitWorkBuffer.getBuffer();
             blockId(splitBuffer, newBlockId);
             blockDepth(filledBlockBuffer, newBlockDepth);
             blockDepth(splitBuffer, newBlockDepth);
@@ -277,12 +278,12 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
             // update index
             final MutableDirectBuffer indexBuffer = loadedIndexBuffer.getBuffer();
-            for(int idx = 0; idx < indexSize; idx++)
+            for (int idx = 0; idx < indexSize; idx++)
             {
                 final int offset = indexEntryOffset(idx);
-                if(indexBuffer.getLong(offset) == filledBlockOffset)
+                if (indexBuffer.getLong(offset) == filledBlockOffset)
                 {
-                    if((idx & newBlockId) == newBlockId)
+                    if ((idx & newBlockId) == newBlockId)
                     {
                         indexBuffer.putLong(offset, newBlockOffset);
                     }
@@ -332,7 +333,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
             visitorCompleted = visitor.visitRecord(recordType, blockBuffer, scanPos, recordSize);
 
-            if(recordType == TYPE_RECORD)
+            if (recordType == TYPE_RECORD)
             {
                 ++recordsVisited;
             }
@@ -342,7 +343,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
     private void ensureBlockLoaded(long blockPosition)
     {
-        if(loadedBlockBuffer.getPosition() != blockPosition)
+        if (loadedBlockBuffer.getPosition() != blockPosition)
         {
             loadedBlockBuffer.load(blockPosition, blockLength());
         }
@@ -365,7 +366,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         @Override
         public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
         {
-            if(recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
+            if (recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
             {
                 valueHandler.readValue(buffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
                 wasRecordFound = true;
@@ -396,15 +397,15 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         @Override
         public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
         {
-            if(recordType == TYPE_RECORD)
+            if (recordType == TYPE_RECORD)
             {
-                if(keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
+                if (keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
                 {
                     valueHandler.writeValue(buffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
                     incrementBlockFillCount(buffer);
                     recordUpdated = true;
                 }
-                if(freeSlot == recordOffset)
+                if (freeSlot == recordOffset)
                 {
                     freeSlot += recordLength;
                 }
@@ -430,9 +431,9 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         @Override
         public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
         {
-            if(recordType == TYPE_RECORD)
+            if (recordType == TYPE_RECORD)
             {
-                if(recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
+                if (recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
                 {
                     valueHandler.readValue(buffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
                     buffer.putByte(recordTypeOffset(recordOffset), TYPE_TOMBSTONE);
@@ -458,7 +459,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         int newBlockFillCount;
         int splitMask;
 
-        public SplitVisitor(IndexKeyHandler keyHandler)
+        SplitVisitor(IndexKeyHandler keyHandler)
         {
             this.keyHandler = keyHandler;
         }
@@ -477,7 +478,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         {
             keyHandler.readKey(buffer, recordKeyOffset(recordOffset));
             final int keyHashCode = keyHandler.keyHashCode();
-            if((keyHashCode & splitMask) == splitMask)
+            if ((keyHashCode & splitMask) == splitMask)
             {
                 // relocate record to the new block
                 loadedSplitWorkBuffer.getBuffer().putBytes(newBlockPutOffset, buffer, recordOffset, recordLength);
@@ -490,7 +491,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             }
             else
             {
-                if(filledBlockPutOffset > 0)
+                if (filledBlockPutOffset > 0)
                 {
                     // compact existing block
                     buffer.putBytes(filledBlockPutOffset, buffer, recordOffset, recordLength);

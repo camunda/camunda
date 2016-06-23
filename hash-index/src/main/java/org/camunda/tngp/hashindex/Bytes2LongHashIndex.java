@@ -24,9 +24,9 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long get(byte[] key, long missingValue)
     {
-        if(key.length < recordKeyLength())
+        if (key.length < recordKeyLength())
         {
-            throw new IllegalArgumentException("Illegal byte array length: expected "+recordKeyLength() + " got "+ key.length);
+            throw new IllegalArgumentException("Illegal byte array length: expected " + recordKeyLength() + " got " + key.length);
         }
 
         keyHandler.setKey(key);
@@ -37,9 +37,9 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public boolean put(byte[] key, long value)
     {
-        if(key.length < recordKeyLength())
+        if (key.length < recordKeyLength())
         {
-            throw new IllegalArgumentException("Illegal byte array length: expected "+recordKeyLength() + " got "+ key.length);
+            throw new IllegalArgumentException("Illegal byte array length: expected " + recordKeyLength() + " got " + key.length);
         }
 
         keyHandler.setKey(key);
@@ -49,9 +49,9 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long remove(byte[] key, long missingValue)
     {
-        if(key.length < recordKeyLength())
+        if (key.length < recordKeyLength())
         {
-            throw new IllegalArgumentException("Illegal byte array length: expected "+recordKeyLength() + " got "+ key.length);
+            throw new IllegalArgumentException("Illegal byte array length: expected " + recordKeyLength() + " got " + key.length);
         }
 
         keyHandler.setKey(key);

@@ -35,9 +35,9 @@ public class LoadedBuffer
 
         ByteBuffer byteBuffer = buffer.byteBuffer();
 
-        if(byteBuffer == null || byteBuffer.capacity() < length)
+        if (byteBuffer == null || byteBuffer.capacity() < length)
         {
-            if(isDirect)
+            if (isDirect)
             {
                 byteBuffer = ByteBuffer.allocateDirect(length);
             }
@@ -57,7 +57,7 @@ public class LoadedBuffer
 
     public void ensureLoaded(long position, int length)
     {
-        if(this.position != position || this.buffer.capacity() != length)
+        if (this.position != position || this.buffer.capacity() != length)
         {
             load(position, length);
         }

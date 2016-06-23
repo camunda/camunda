@@ -14,7 +14,7 @@ public class LongValueHandler implements IndexValueHandler
     @Override
     public void readValue(DirectBuffer buffer, int offset, int length)
     {
-        if(length < SIZE_OF_LONG)
+        if (length < SIZE_OF_LONG)
         {
             throw new IllegalArgumentException("Cannot get long, length out of bounds.");
         }
@@ -24,7 +24,7 @@ public class LongValueHandler implements IndexValueHandler
     @Override
     public void writeValue(MutableDirectBuffer buffer, int offset, int length)
     {
-        if(length < SIZE_OF_LONG)
+        if (length < SIZE_OF_LONG)
         {
             throw new IllegalArgumentException("Cannot write long value: long size out of bounds");
         }

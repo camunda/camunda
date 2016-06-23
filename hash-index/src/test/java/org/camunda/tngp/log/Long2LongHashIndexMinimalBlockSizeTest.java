@@ -12,7 +12,7 @@ import org.junit.Test;
 
 public class Long2LongHashIndexMinimalBlockSizeTest
 {
-    static long MISSING_VALUE = -2;
+    static final long MISSING_VALUE = -2;
 
     Long2LongHashIndex index;
     FileChannelIndexStore indexStore;
@@ -20,8 +20,8 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     @Before
     public void createIndex()
     {
-        int indexSize = 16;
-        int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG);
+        final int indexSize = 16;
+        final int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG);
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
         index = new Long2LongHashIndex(indexStore, indexSize, blockLength);
@@ -36,18 +36,18 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     @Test
     public void shouldReturnMissingValueForEmptyMap()
     {
-       // given that the map is empty
-       assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        // given that the map is empty
+        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
     public void shouldReturnMissingValueForNonExistingKey()
     {
-       // given
-       index.put(1, 1);
+        // given
+        index.put(1, 1);
 
-       // then
-       assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        // then
+        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         index.put(1, 1);
 
         // if
-        long removeResult = index.remove(1, -1);
+        final long removeResult = index.remove(1, -1);
 
         //then
         assertThat(removeResult).isEqualTo(1);
@@ -82,7 +82,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         index.put(2, 2);
 
         // if
-        long removeResult = index.remove(1, -1);
+        final long removeResult = index.remove(1, -1);
 
         //then
         assertThat(removeResult).isEqualTo(1);
@@ -177,16 +177,16 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     @Test
     public void cannotPutValueIfIndexFull()
     {
-       // given
-       index.put(0, 0);
-       try
-       {
-           index.put(16, 0);
-           fail("Exception expected");
-       }
-       catch(RuntimeException e)
-       {
-           // expected
-       }
+        // given
+        index.put(0, 0);
+        try
+        {
+            index.put(16, 0);
+            fail("Exception expected");
+        }
+        catch (final RuntimeException e)
+        {
+            // expected
+        }
     }
 }

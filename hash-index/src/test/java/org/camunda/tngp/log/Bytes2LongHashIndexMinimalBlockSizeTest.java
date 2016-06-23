@@ -13,7 +13,7 @@ import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 
 public class Bytes2LongHashIndexMinimalBlockSizeTest
 {
-    static long MISSING_VALUE = -2;
+    static final long MISSING_VALUE = -2;
 
     byte[][] keys = new byte[16][64];
 
@@ -23,8 +23,8 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     @Before
     public void createIndex()
     {
-        int indexSize = 32;
-        int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(64, SIZE_OF_LONG);
+        final int indexSize = 32;
+        final int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(64, SIZE_OF_LONG);
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
         index = new Bytes2LongHashIndex(indexStore, indexSize, blockLength, 64);
@@ -51,18 +51,18 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     @Test
     public void shouldReturnMissingValueForEmptyMap()
     {
-       // given that the map is empty
-       assertThat(index.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
+        // given that the map is empty
+        assertThat(index.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
     public void shouldReturnMissingValueForNonExistingKey()
     {
-       // given
-       index.put(keys[1], 1);
+        // given
+        index.put(keys[1], 1);
 
-       // then
-       assertThat(index.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
+        // then
+        assertThat(index.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -150,7 +150,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         index.put(keys[1], 1);
 
         // if
-        long removeResult = index.remove(keys[1], -1);
+        final long removeResult = index.remove(keys[1], -1);
 
         //then
         assertThat(removeResult).isEqualTo(1);
@@ -165,7 +165,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         index.put(keys[2], 2);
 
         // if
-        long removeResult = index.remove(keys[1], -1);
+        final long removeResult = index.remove(keys[1], -1);
 
         //then
         assertThat(removeResult).isEqualTo(1);

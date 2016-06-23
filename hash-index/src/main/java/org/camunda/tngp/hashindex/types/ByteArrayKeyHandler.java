@@ -50,9 +50,9 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
     @Override
     public boolean keyEquals(DirectBuffer buffer, int offset)
     {
-        for(int i = 0; i < keyLength; i++)
+        for (int i = 0; i < keyLength; i++)
         {
-            if(theKey[i] != buffer.getByte(offset + i))
+            if (theKey[i] != buffer.getByte(offset + i))
             {
                 return false;
             }
