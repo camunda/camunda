@@ -17,7 +17,7 @@ import org.junit.rules.RuleChain;
  *
  * @author Lindhauer
  */
-public class TaskQueueIT
+public class TaskQueueTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 

@@ -10,8 +10,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 public class BpmnProcessEventWriter implements BufferWriter
 {
 
-    protected MessageHeaderEncoder headerEncoder;
-    protected BpmnProcessEventEncoder bodyEncoder;
+    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    protected final BpmnProcessEventEncoder bodyEncoder = new BpmnProcessEventEncoder();
 
     protected long key;
     protected long processId;

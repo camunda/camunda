@@ -13,6 +13,7 @@ public class WfRuntimeContext implements ResourceContext
     protected IdGenerator idGenerator;
     protected WfTypeCacheService wfTypeCacheService;
     protected Log log;
+    protected BpmnEventHandler bpmnEventHandler;
 
     public WfRuntimeContext(int id, String name)
     {
@@ -48,6 +49,16 @@ public class WfRuntimeContext implements ResourceContext
     public void setWfTypeCacheService(WfTypeCacheService wfTypeCacheService)
     {
         this.wfTypeCacheService = wfTypeCacheService;
+    }
+
+    public void setBpmnEventHandler(BpmnEventHandler bpmnEventHandler)
+    {
+        this.bpmnEventHandler = bpmnEventHandler;
+    }
+
+    public BpmnEventHandler getBpmnEventHandler()
+    {
+        return bpmnEventHandler;
     }
 
     @Override

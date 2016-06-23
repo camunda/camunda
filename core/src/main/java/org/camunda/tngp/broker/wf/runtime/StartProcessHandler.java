@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryWriter;
@@ -27,6 +28,12 @@ public class StartProcessHandler implements BpmnFlowElementEventHandler
             // TODO: throw exception; could not write event
         }
 
+    }
+
+    @Override
+    public BpmnAspect getHandledBpmnAspect()
+    {
+        return BpmnAspect.START_PROCESS;
     }
 
 }

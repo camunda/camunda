@@ -26,6 +26,8 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setWfTypeCacheService(wfTypeChacheInjector.getValue());
         wfRuntimeContext.setIdGenerator(idGeneratorInjector.getValue());
         wfRuntimeContext.setLog(logInjector.getValue());
+        // TODO: is it good to instantiate the handler here?
+        wfRuntimeContext.setBpmnEventHandler(new BpmnEventHandler(wfTypeChacheInjector.getValue(), logInjector.getValue()));
     }
 
     @Override

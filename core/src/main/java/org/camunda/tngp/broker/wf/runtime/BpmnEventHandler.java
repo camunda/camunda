@@ -28,13 +28,13 @@ public class BpmnEventHandler implements LogFragmentHandler
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
-    protected Int2ObjectHashMap<BpmnFlowElementEventHandler> flowElementEventHandlers;
-    protected Int2ObjectHashMap<BpmnProcessEventHandler> processEventHandlers;
+    protected final Int2ObjectHashMap<BpmnFlowElementEventHandler> flowElementEventHandlers = new Int2ObjectHashMap<BpmnFlowElementEventHandler>();
+    protected final Int2ObjectHashMap<BpmnProcessEventHandler> processEventHandlers = new Int2ObjectHashMap<BpmnProcessEventHandler>();
 
     protected final BpmnFlowElementEventReader flowElementEventReader = new BpmnFlowElementEventReader();
 
     protected final WfTypeCacheService processCache;
-    protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
+    protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
     protected final Log log;
     protected long logPosition;
@@ -44,6 +44,13 @@ public class BpmnEventHandler implements LogFragmentHandler
         this.processCache = processCache;
         this.log = log;
         this.logPosition = log.getInitialPosition();
+
+        addFlowElementHandler(new StartProcessHandler());
+    }
+
+    protected void addFlowElementHandler(BpmnFlowElementEventHandler handler)
+    {
+        flowElementEventHandlers.put(handler.getHandledBpmnAspect().value(), handler);
     }
 
     public int doWork()
@@ -73,7 +80,7 @@ public class BpmnEventHandler implements LogFragmentHandler
         readBuffer.limit(length);
         try
         {
-            int bytesRead = fileChannel.read(readBuffer, position + offset);
+            int bytesRead = fileChannel.read(readBuffer, offset);
             if (bytesRead < length)
             {
                 throw new RuntimeException("Less bytes read than expected");

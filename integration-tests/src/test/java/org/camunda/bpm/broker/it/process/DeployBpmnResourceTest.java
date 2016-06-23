@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class DeployBpmnResourceIT
+public class DeployBpmnResourceTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 

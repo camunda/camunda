@@ -77,7 +77,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
                 .key(eventId)
                 .processInstanceId(processInstanceId)
                 .processId(processGraph.id())
-                .eventType(ExecutionEventType.PROC_INST_CREATED)
+                .eventType(ExecutionEventType.EVT_OCCURRED)
                 .flowElementId(processGraph.intialFlowNodeId());
 
             responseWriter.processInstanceId(processInstanceId);

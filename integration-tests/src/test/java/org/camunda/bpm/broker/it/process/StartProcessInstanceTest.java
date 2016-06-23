@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class StartProcessInstanceIT
+public class StartProcessInstanceTest
 {
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -44,7 +44,7 @@ public class StartProcessInstanceIT
     }
 
     @Test
-    public void shouldStartProcessById()
+    public void shouldStartProcessById() throws InterruptedException
     {
         final TngpClient client = clientRule.getClient();
         final ProcessService workflowService = client.processes();
