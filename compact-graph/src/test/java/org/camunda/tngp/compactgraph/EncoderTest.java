@@ -23,7 +23,7 @@ public class EncoderTest
     @Test
     public void shouldEncodeEmptyGraph()
     {
-        GraphEncoder encoder = new GraphEncoder(graphBuilder);
+        final GraphEncoder encoder = new GraphEncoder(graphBuilder);
         graph.wrap(encoder.encode());
         assertThat(graph.nodeCount()).isEqualTo(0);
     }
@@ -32,7 +32,7 @@ public class EncoderTest
     public void shouldEncodeSingleNode()
     {
         graphBuilder.newNode();
-        GraphEncoder encoder = new GraphEncoder(graphBuilder);
+        final GraphEncoder encoder = new GraphEncoder(graphBuilder);
 
         graph.wrap(encoder.encode());
         assertThat(graph.nodeCount()).isEqualTo(1);
@@ -52,7 +52,7 @@ public class EncoderTest
             .newNode().done()
             .newNode().connect(0, 0, 0);
 
-        GraphEncoder encoder = new GraphEncoder(graphBuilder);
+        final GraphEncoder encoder = new GraphEncoder(graphBuilder);
 
         graph.wrap(encoder.encode());
         assertThat(graph.nodeCount()).isEqualTo(2);
@@ -77,7 +77,7 @@ public class EncoderTest
             .newNode().done()
             .newNode().connect(0, 1, 0);
 
-        GraphEncoder encoder = new GraphEncoder(graphBuilder);
+        final GraphEncoder encoder = new GraphEncoder(graphBuilder);
 
         graph.wrap(encoder.encode());
         assertThat(graph.nodeCount()).isEqualTo(2);

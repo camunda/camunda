@@ -7,7 +7,7 @@ import static org.camunda.tngp.compactgraph.GraphMetadataDescriptor.*;
 
 public class Graph
 {
-    protected UnsafeBuffer buffer = new UnsafeBuffer(0,0);
+    protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
     protected int nodeCount;
     protected int dataOffset;

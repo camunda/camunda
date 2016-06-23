@@ -54,7 +54,7 @@ public class NodeVisitor
     {
         int offset = nodeEdgePointersOffset(this.offset);
 
-        for(short i = 0; i < edgeType; i++)
+        for (short i = 0; i < edgeType; i++)
         {
             final short pointersCountByType = buffer.getShort(offset);
             offset += SIZE_OF_SHORT;
@@ -78,9 +78,10 @@ public class NodeVisitor
     {
         final int edgeCountOffset = edgeCountOffset((short) edgeType);
         final short edgeCount = buffer.getShort(edgeCountOffset);
-        if(edgeIndex < 0 || edgeIndex >= edgeCount)
+        if (edgeIndex < 0 || edgeIndex >= edgeCount)
         {
-            throw new IllegalArgumentException("No edge with type "+edgeType +" and index "+edgeIndex);
+            final String exceptionMessage = String.format("No edge with type %s and index %s" + edgeIndex, edgeType, edgeIndex);
+            throw new IllegalArgumentException(exceptionMessage);
         }
         setOffset(buffer.getInt(edgeCountOffset + SIZE_OF_SHORT + (edgeIndex * SIZE_OF_INT)));
 

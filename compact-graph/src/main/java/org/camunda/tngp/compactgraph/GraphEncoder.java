@@ -20,7 +20,7 @@ public class GraphEncoder
     protected int metadataLength;
     protected int dataLength;
 
-    protected UnsafeBuffer buffer = new UnsafeBuffer(0,0);
+    protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
     public GraphEncoder(GraphBuilder builder)
     {
@@ -45,7 +45,7 @@ public class GraphEncoder
     {
         final byte[] graphData = graphBuilder.getGraphData();
         buffer.putShort(graphDataLengthOffset(graphBuilder.nodeCount()), (short) graphData.length);
-        buffer.putBytes(graphDataOffset(graphBuilder.nodeCount()), graphData, 0 , graphData.length);
+        buffer.putBytes(graphDataOffset(graphBuilder.nodeCount()), graphData, 0, graphData.length);
     }
 
     protected void writeNodeIndex()
@@ -57,7 +57,8 @@ public class GraphEncoder
         {
             final NodeBuilder nodeBuilder = nodeIterator.next();
             buffer.putInt(nodeIndexOffset(nodeBuilder.id()), writeOffset);
-            writeOffset += nodeLength(graphBuilder.edgeTypeCount(), nodeBuilder.edgeCount(), nodeBuilder.nodeDataLength());
+            writeOffset += nodeLength(graphBuilder.edgeTypeCount(), nodeBuilder.edgeCount(),
+                    nodeBuilder.nodeDataLength());
         }
     }
 
@@ -75,9 +76,10 @@ public class GraphEncoder
     {
         buffer.putInt(nodeIdOffset(nodeOffset), nodeBuilder.id());
 
+        final int edgeTypeCount = graphBuilder.edgeTypeCount();
+
         int edgeWriteIndex = nodeEdgePointersOffset(nodeOffset);
-        int edgeTypeCount = graphBuilder.edgeTypeCount();
-        for(short i = 0; i < edgeTypeCount; i++)
+        for (short i = 0; i < edgeTypeCount; i++)
         {
             final List<NodeBuilder> edgesForType = nodeBuilder.edges(i);
             buffer.putShort(edgeWriteIndex, (short) edgesForType.size());
@@ -120,7 +122,7 @@ public class GraphEncoder
     {
         int size = 0;
 
-        Iterator<NodeBuilder> nodeIterator = graphBuilder.nodeIterator();
+        final Iterator<NodeBuilder> nodeIterator = graphBuilder.nodeIterator();
         while (nodeIterator.hasNext())
         {
             final NodeBuilder nodeBuilder = nodeIterator.next();

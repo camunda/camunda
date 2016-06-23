@@ -23,9 +23,9 @@ public class GraphBuilder
     {
         final NodeBuilder nodeBuilder = nodeBuilders.get(id);
 
-        if(nodeBuilder == null)
+        if (nodeBuilder == null)
         {
-            throw new IllegalArgumentException("Node with id "+id +" is not defined");
+            throw new IllegalArgumentException(String.format("Node with id %s is not defined", id));
         }
 
         return nodeBuilder;
@@ -33,7 +33,7 @@ public class GraphBuilder
 
     public GraphBuilder edgeTypeCount(int edgeTyes)
     {
-        if(edgeTyes < 0 || edgeTyes > Short.MAX_VALUE)
+        if (edgeTyes < 0 || edgeTyes > Short.MAX_VALUE)
         {
             throw new IllegalArgumentException("Edge type count must be withing the positive short range");
         }

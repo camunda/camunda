@@ -4,11 +4,11 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 
 public class GraphMetadataDescriptor
 {
-    public final static int NODE_COUNT_OFFSET;
+    public static final int NODE_COUNT_OFFSET;
 
-    public final static int NODE_INDEX_OFFSET;
+    public static final int NODE_INDEX_OFFSET;
 
-    public final static int GRAPH_DATA_HEADER_LENGTH = SIZE_OF_SHORT;
+    public static final int GRAPH_DATA_HEADER_LENGTH = SIZE_OF_SHORT;
 
     static
     {

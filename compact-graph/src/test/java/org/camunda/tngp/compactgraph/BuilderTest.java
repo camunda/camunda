@@ -43,7 +43,7 @@ public class BuilderTest
     @Test
     public void shouldSetNodeDataLengthOnNodeBuilder()
     {
-        NodeBuilder node = graphBuilder.newNode();
+        final NodeBuilder node = graphBuilder.newNode();
         node.nodeData(new byte[64]);
         assertThat(node.nodeDataLength()).isSameAs(64);
     }

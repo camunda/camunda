@@ -4,15 +4,15 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 
 public class NodeDescriptor
 {
-    public final static int NODE_ID_OFFSET;
+    public static final int NODE_ID_OFFSET;
 
-    public final static int NODE_DATA_POINTER_OFFSET;
+    public static final int NODE_DATA_POINTER_OFFSET;
 
-    public final static int NODE_EDGE_POINTERS_OFFSET;
+    public static final int NODE_EDGE_POINTERS_OFFSET;
 
-    public final static int NODE_BLOCK_LENGTH;
+    public static final int NODE_BLOCK_LENGTH;
 
-    public final static int NODE_DATA_HEADER_LENGTH = SIZE_OF_SHORT;
+    public static final int NODE_DATA_HEADER_LENGTH = SIZE_OF_SHORT;
 
     static
     {

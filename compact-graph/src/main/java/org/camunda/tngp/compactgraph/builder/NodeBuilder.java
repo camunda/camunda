@@ -28,9 +28,9 @@ public class NodeBuilder
 
     public NodeBuilder nodeData(byte[] data)
     {
-        if(data.length > Short.MAX_VALUE)
+        if (data.length > Short.MAX_VALUE)
         {
-            throw new IllegalArgumentException("Node data cannot be larger than "+Short.MAX_VALUE);
+            throw new IllegalArgumentException(String.format("Node data cannot be larger than %s", +Short.MAX_VALUE));
         }
         this.nodeData = data;
         return this;
@@ -53,14 +53,14 @@ public class NodeBuilder
 
     public NodeBuilder connectTo(final int nodeId, final int edgeType)
     {
-        if(edgeType < 0 || edgeType >= graphBuilder.edgeTypeCount())
+        if (edgeType < 0 || edgeType >= graphBuilder.edgeTypeCount())
         {
-            throw new IllegalArgumentException("Edge type "+edgeType+ " does not exist.");
+            throw new IllegalArgumentException(String.format("Edge type %s does not exist.", edgeType));
         }
 
         List<NodeBuilder> edgesForType = edges.get(edgeType);
 
-        if(edgesForType == null)
+        if (edgesForType == null)
         {
             edgesForType = new ArrayList<>();
             edges.put(edgeType, edgesForType);
@@ -85,7 +85,7 @@ public class NodeBuilder
     public List<NodeBuilder> edges(int edgeType)
     {
         List<NodeBuilder> edgesByType = edges.get(edgeType);
-        if(edgesByType == null)
+        if (edgesByType == null)
         {
             edgesByType = Collections.emptyList();
         }
