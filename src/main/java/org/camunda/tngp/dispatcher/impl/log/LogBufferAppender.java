@@ -28,7 +28,7 @@ public class LogBufferAppender
 
         int newTail = frameOffset + alignedFrameLength;
 
-        if(newTail <= (partitionSize - HEADER_LENGTH))
+        if (newTail <= (partitionSize - HEADER_LENGTH))
         {
             final UnsafeBuffer buffer = partition.getDataBuffer();
 
@@ -66,7 +66,7 @@ public class LogBufferAppender
 
         int newTail = frameOffset + alignedFrameLength;
 
-        if(newTail <= (partitionSize - HEADER_LENGTH))
+        if (newTail <= (partitionSize - HEADER_LENGTH))
         {
             final UnsafeBuffer buffer = partition.getDataBuffer();
 
@@ -87,13 +87,13 @@ public class LogBufferAppender
         return newTail;
     }
 
-    protected int onEndOfPartition (final LogBufferPartition partition, final int partitionOffset)
+    protected int onEndOfPartition(final LogBufferPartition partition, final int partitionOffset)
     {
         int newTail = -1;
 
         final int padLength = partition.getPartitionSize() - partitionOffset - HEADER_LENGTH;
 
-        if(padLength >= 0)
+        if (padLength >= 0)
         {
             // this message tripped the end of the partition, fill buffer with padding
             final UnsafeBuffer buffer = partition.getDataBuffer();

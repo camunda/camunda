@@ -10,8 +10,6 @@ import static uk.co.real_logic.agrona.BitUtil.*;
 import java.nio.charset.Charset;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
-import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -70,7 +68,7 @@ public class LogBufferAppenderClaimTest
         verifyNoMoreInteractions(metadataBufferMock);
 
         // the negative header was written and the claimed fragment now wraps the buffer section
-        InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
+        final InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
         inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
@@ -97,7 +95,7 @@ public class LogBufferAppenderClaimTest
         verifyNoMoreInteractions(metadataBufferMock);
 
         // the negative header was written and the claimed fragment now wraps the buffer section
-        InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
+        final InOrder inOrder = inOrder(dataBufferMock, claimedFragmentMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
         inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
@@ -109,11 +107,12 @@ public class LogBufferAppenderClaimTest
     {
         // given
         // that the message + next message header do NOT fit into the buffer
-        final int currentTail = A_PARTITION_LENGTH - HEADER_LENGTH - A_FRAGMENT_LENGTH +1;
+        final int currentTail = A_PARTITION_LENGTH - HEADER_LENGTH - A_FRAGMENT_LENGTH + 1;
 
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
-        // if
+        // if        throw new RuntimeException("File " + bufferFileName + " does not exist");
+
         final int newTail = logBufferAppender.claim(logBufferPartition, A_PARTITION_ID, claimedFragmentMock, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
@@ -125,7 +124,7 @@ public class LogBufferAppenderClaimTest
 
         // and the buffer is filled with padding
         final int padLength = A_PARTITION_LENGTH - currentTail - HEADER_LENGTH;
-        InOrder inOrder = inOrder(dataBufferMock);
+        final InOrder inOrder = inOrder(dataBufferMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
         inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);
@@ -152,7 +151,7 @@ public class LogBufferAppenderClaimTest
 
         // and the buffer is filled with padding
         final int padLength = 0;
-        InOrder inOrder = inOrder(dataBufferMock);
+        final InOrder inOrder = inOrder(dataBufferMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
         inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);

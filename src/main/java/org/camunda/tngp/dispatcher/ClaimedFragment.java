@@ -18,7 +18,7 @@ public class ClaimedFragment
 
     public ClaimedFragment()
     {
-        buffer = new UnsafeBuffer(0,0);
+        buffer = new UnsafeBuffer(0, 0);
     }
 
     public void wrap(UnsafeBuffer underlyingbuffer, int fragmentOffset, int fragmentLength)
@@ -63,7 +63,7 @@ public class ClaimedFragment
 
     private static void reset(UnsafeBuffer fragmentWrapper)
     {
-        fragmentWrapper.wrap(0,0);
+        fragmentWrapper.wrap(0, 0);
     }
 
     public boolean isOpen()

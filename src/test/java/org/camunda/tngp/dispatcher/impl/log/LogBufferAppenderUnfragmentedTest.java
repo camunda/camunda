@@ -1,7 +1,5 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
-import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -65,7 +63,7 @@ public class LogBufferAppenderUnfragmentedTest
         verifyNoMoreInteractions(metadataBufferMock);
 
         // and the message is appended to the buffer
-        InOrder inOrder = inOrder(dataBufferMock);
+        final InOrder inOrder = inOrder(dataBufferMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
         inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
@@ -93,7 +91,7 @@ public class LogBufferAppenderUnfragmentedTest
         verifyNoMoreInteractions(metadataBufferMock);
 
         // and the message is appended to the buffer
-        InOrder inOrder = inOrder(dataBufferMock);
+        final InOrder inOrder = inOrder(dataBufferMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -A_MSG_PAYLOAD_LENGTH);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_MESSAGE);
         inOrder.verify(dataBufferMock).putInt(streamIdOffset(currentTail), A_STREAM_ID);
@@ -105,7 +103,7 @@ public class LogBufferAppenderUnfragmentedTest
     {
         // given
         // that the message + next message header do NOT fit into the buffer
-        final int currentTail = A_PARTITION_LENGTH - HEADER_LENGTH - A_FRAGMENT_LENGTH +1;
+        final int currentTail = A_PARTITION_LENGTH - HEADER_LENGTH - A_FRAGMENT_LENGTH + 1;
 
         when(metadataBufferMock.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, A_FRAGMENT_LENGTH)).thenReturn(currentTail);
 
@@ -121,7 +119,7 @@ public class LogBufferAppenderUnfragmentedTest
 
         // and the buffer is filled with padding
         final int padLength = A_PARTITION_LENGTH - currentTail - HEADER_LENGTH;
-        InOrder inOrder = inOrder(dataBufferMock);
+        final InOrder inOrder = inOrder(dataBufferMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
         inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);
@@ -148,7 +146,7 @@ public class LogBufferAppenderUnfragmentedTest
 
         // and the buffer is filled with padding
         final int padLength = 0;
-        InOrder inOrder = inOrder(dataBufferMock);
+        final InOrder inOrder = inOrder(dataBufferMock);
         inOrder.verify(dataBufferMock).putIntOrdered(currentTail, -padLength);
         inOrder.verify(dataBufferMock).putShort(typeOffset(currentTail), TYPE_PADDING);
         inOrder.verify(dataBufferMock).putIntOrdered(lengthOffset(currentTail), padLength);

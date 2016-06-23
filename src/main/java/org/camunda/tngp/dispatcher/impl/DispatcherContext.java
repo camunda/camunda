@@ -20,7 +20,7 @@ public class DispatcherContext
 
     public void close()
     {
-        if(agentRunner != null)
+        if (agentRunner != null)
         {
             agentRunner.close();
         }

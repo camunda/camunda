@@ -26,10 +26,10 @@ public class DispatcherIntegrationTest
         int counter = 0;
 
         @Override
-        public void onFragment(DirectBuffer buffer, int offset, int length, int streamId)
+        public void onFragment(final DirectBuffer buffer, final int offset, final int length, final int streamId)
         {
-            int newCounter = buffer.getInt(offset);
-            if(newCounter  - 1 != counter)
+            final int newCounter = buffer.getInt(offset);
+            if (newCounter  - 1 != counter)
             {
                 throw new RuntimeException();
             }
@@ -46,8 +46,8 @@ public class DispatcherIntegrationTest
         @Override
         public void onBlockAvailable(ByteBuffer buffer, int blockOffset, int blockLength, int streamId, long position)
         {
-            int newCounter = buffer.getInt(messageOffset(blockOffset));
-            if(newCounter  - 1 != counter)
+            final int newCounter = buffer.getInt(messageOffset(blockOffset));
+            if (newCounter  - 1 != counter)
             {
                 throw new RuntimeException();
             }
@@ -61,7 +61,7 @@ public class DispatcherIntegrationTest
     {
         // 1 million messages
         final int totalWork = 1000000;
-        UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
         final Dispatcher dispatcher = Dispatchers.create("default")
                 .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
@@ -78,7 +78,7 @@ public class DispatcherIntegrationTest
             @Override
             public void run()
             {
-                while(consumer.counter < totalWork)
+                while (consumer.counter < totalWork)
                 {
                     subscription.poll(consumer, Integer.MAX_VALUE);
                 }
@@ -87,7 +87,7 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1; i <= totalWork; i++)
+        for (int i = 1; i <= totalWork; i++)
         {
             msg.putInt(0, i);
             while (dispatcher.offer(msg) <= 0)
@@ -121,7 +121,7 @@ public class DispatcherIntegrationTest
             @Override
             public void run()
             {
-                while(consumer.counter < totalWork)
+                while (consumer.counter < totalWork)
                 {
                     subscription.poll(consumer, Integer.MAX_VALUE);
                 }
@@ -130,14 +130,14 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1, committed = 1; committed <= totalWork; i++)
+        for (int i = 1, committed = 1; committed <= totalWork; i++)
         {
             while (dispatcher.claim(claimedFragment, 64) <= 0)
             {
                 // spin
             }
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            if(i % 5 != 0)
+            if (i % 5 != 0)
             {
                 buffer.putInt(claimedFragment.getOffset(), committed);
                 claimedFragment.commit();
@@ -174,7 +174,7 @@ public class DispatcherIntegrationTest
             @Override
             public void run()
             {
-                while(consumer.counter < totalWork)
+                while (consumer.counter < totalWork)
                 {
                     subscription.pollBlock(consumer, 1, false);
                 }
@@ -183,13 +183,13 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1, committed = 1; committed <= totalWork; i++)
+        for (int i = 1, committed = 1; committed <= totalWork; i++)
         {
             while (dispatcher.claim(claimedFragment, 59) <= 0)
             {
                 // spin
             }
-            if(i % 5 != 0)
+            if (i % 5 != 0)
             {
                 final MutableDirectBuffer buffer = claimedFragment.getBuffer();
                 buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(committed));
@@ -228,14 +228,14 @@ public class DispatcherIntegrationTest
             public void run()
             {
                 int counter = 0;
-                while(counter < totalWork)
+                while (counter < totalWork)
                 {
-                    while(subscription.peekBlock(blockPeek, alignedLength(64), false)==0)
+                    while (subscription.peekBlock(blockPeek, alignedLength(64), false) == 0)
                     {
 
                     }
-                    int newCounter = blockPeek.getBuffer().getInt(messageOffset(blockPeek.getBufferOffset()));
-                    if(newCounter  - 1 != counter)
+                    final int newCounter = blockPeek.getBuffer().getInt(messageOffset(blockPeek.getBufferOffset()));
+                    if (newCounter  - 1 != counter)
                     {
                         throw new RuntimeException();
                     }
@@ -247,14 +247,14 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for(int i = 1, committed = 1; committed <= totalWork; i++)
+        for (int i = 1, committed = 1; committed <= totalWork; i++)
         {
             while (dispatcher.claim(claimedFragment, 59) <= 0)
             {
                 // spin
             }
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            if(i % 5 != 0)
+            if (i % 5 != 0)
             {
                 buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(committed));
                 claimedFragment.commit();

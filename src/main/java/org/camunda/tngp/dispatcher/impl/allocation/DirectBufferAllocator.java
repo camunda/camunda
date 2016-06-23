@@ -8,7 +8,7 @@ public class DirectBufferAllocator implements BufferAllocator<AllocationDescript
     public AllocatedBuffer allocate(AllocationDescriptor configuration)
     {
 
-        int bufferCapacity = (int) configuration.getCapacity();
+        final int bufferCapacity = (int) configuration.getCapacity();
 
         return new ExternallyAllocatedBuffer(ByteBuffer.allocateDirect(bufferCapacity));
     }

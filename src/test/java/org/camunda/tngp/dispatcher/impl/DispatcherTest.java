@@ -13,8 +13,6 @@ import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.impl.DispatcherContext;
-import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
@@ -102,7 +100,7 @@ public class DispatcherTest
         when(publisherLimit.getVolatile()).thenReturn(position(0, 0));
 
         // if
-        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newPosition).isEqualTo(-1);
@@ -126,7 +124,7 @@ public class DispatcherTest
         when(publisherLimit.getVolatile()).thenReturn(position(0, 0));
 
         // if
-        long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
+        final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newPosition).isEqualTo(-1);
@@ -152,7 +150,7 @@ public class DispatcherTest
         when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
 
         // if
-        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
@@ -180,7 +178,7 @@ public class DispatcherTest
         when(logAppender.claim(logBufferPartition0, 0, claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(A_FRAGMENT_LENGTH);
 
         // if
-        long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+        final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
@@ -208,7 +206,7 @@ public class DispatcherTest
         when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-2);
 
         // if
-        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
         // then
         assertThat(newPosition).isEqualTo(-2);
@@ -236,7 +234,7 @@ public class DispatcherTest
         when(logAppender.appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID)).thenReturn(-1);
 
         // if
-        long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
+        final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
 
         // then
         assertThat(newPosition).isEqualTo(-1);
@@ -256,13 +254,13 @@ public class DispatcherTest
     {
         // given
         dispatcher.openSubscription();
-        when(subscriberPosition.get()).thenReturn(0l);
+        when(subscriberPosition.get()).thenReturn(0L);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
         doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
 
         // if
-        int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 2);
+        final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 2);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
@@ -275,13 +273,13 @@ public class DispatcherTest
     {
         // given
         dispatcher.openSubscription();
-        when(subscriberPosition.get()).thenReturn(0l);
+        when(subscriberPosition.get()).thenReturn(0L);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
         doReturn(1).when(subscriptionSpy).pollBlock(logBufferPartition0, blockHandler, 2, 0, 0, true);
 
         // if
-        int fragmentsRead = subscriptionSpy.pollBlock(blockHandler, 2, true);
+        final int fragmentsRead = subscriptionSpy.pollBlock(blockHandler, 2, true);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
@@ -294,11 +292,11 @@ public class DispatcherTest
     {
         // given
         dispatcher.openSubscription();
-        when(subscriptionSpy.getPosition()).thenReturn(0l);
-        when(publisherPosition.get()).thenReturn(0l);
+        when(subscriptionSpy.getPosition()).thenReturn(0L);
+        when(publisherPosition.get()).thenReturn(0L);
 
         // if
-        int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 1);
+        final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 1);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);

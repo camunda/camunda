@@ -21,8 +21,8 @@ import uk.co.real_logic.agrona.concurrent.status.Position;
  */
 public class Dispatcher implements AutoCloseable
 {
-    public final static int MODE_PUB_SUB = 1;
-    public final static int MODE_PIPELINE = 2;
+    public static final int MODE_PUB_SUB = 1;
+    public static final int MODE_PIPELINE = 2;
 
     final DispatcherContext context;
 
@@ -96,9 +96,9 @@ public class Dispatcher implements AutoCloseable
 
         long newPosition = -1;
 
-        if(position < limit)
+        if (position < limit)
         {
-            int newOffset;
+            final int newOffset;
 
             if (length < maxFrameLength)
             {
@@ -111,7 +111,9 @@ public class Dispatcher implements AutoCloseable
             }
             else
             {
-                throw new RuntimeException("Message length of "+length+" is larger than max frame length of "+maxFrameLength);
+                final String exceptionMessage = String.format("Message length of %s is larger than max frame length of %s",
+                        length, maxFrameLength);
+                throw new RuntimeException(exceptionMessage);
             }
 
             newPosition = updatePublisherPosition(initialPartitionId, activePartitionId, newOffset);
@@ -141,9 +143,9 @@ public class Dispatcher implements AutoCloseable
 
         long newPosition = -1;
 
-        if(position < limit)
+        if (position < limit)
         {
-            int newOffset;
+            final int newOffset;
 
             if (length < maxFrameLength)
             {
@@ -155,7 +157,7 @@ public class Dispatcher implements AutoCloseable
             }
             else
             {
-                throw new RuntimeException("Cannot claim more than "+maxFrameLength+ " bytes.");
+                throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
             }
 
             newPosition = updatePublisherPosition(initialPartitionId, activePartitionId, newOffset);
@@ -171,11 +173,11 @@ public class Dispatcher implements AutoCloseable
     {
         long newPosition = -1;
 
-        if(newOffset > 0)
+        if (newOffset > 0)
         {
             newPosition = position(activePartitionId, newOffset);
         }
-        else if(newOffset == -2)
+        else if (newOffset == -2)
         {
             logBuffer.onActiveParitionFilled(activePartitionId);
             newPosition = -2;
@@ -188,14 +190,14 @@ public class Dispatcher implements AutoCloseable
     {
         long limit = -1;
 
-        if(mode == MODE_PUB_SUB)
+        if (mode == MODE_PUB_SUB)
         {
             limit = publisherPosition.get();
         }
         else
         {
             final int subscriberId = subscription.getSubscriberId();
-            if(subscriberId == 0)
+            if (subscriberId == 0)
             {
                 limit = publisherPosition.get();
             }
@@ -214,9 +216,9 @@ public class Dispatcher implements AutoCloseable
     {
         long lastSubscriberPosition = -1;
 
-        if(subscriptions.length > 0)
+        if (subscriptions.length > 0)
         {
-            lastSubscriberPosition = subscriptions[subscriptions.length -1].getPosition();
+            lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
 
             if (MODE_PUB_SUB == mode && subscriptions.length > 1)
             {
@@ -233,7 +235,7 @@ public class Dispatcher implements AutoCloseable
 
         int partitionId = partitionId(lastSubscriberPosition);
         int partitionOffset = partitionOffset(lastSubscriberPosition) + logWindowLength;
-        if(partitionOffset >= logBuffer.getPartitionSize())
+        if (partitionOffset >= logBuffer.getPartitionSize())
         {
             ++partitionId;
             partitionOffset = logWindowLength;
@@ -241,7 +243,7 @@ public class Dispatcher implements AutoCloseable
         }
         final long proposedPublisherLimit = position(partitionId, partitionOffset);
 
-        if(publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
+        if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
         {
             return 1;
         }
@@ -259,7 +261,7 @@ public class Dispatcher implements AutoCloseable
         final Subscription[] newSubscriptions = new Subscription[subscriptions.length + 1];
         System.arraycopy(subscriptions, 0, newSubscriptions, 0, subscriptions.length);
 
-        final int subscriberId = newSubscriptions.length -1;
+        final int subscriberId = newSubscriptions.length - 1;
         final Subscription subscription = newSubscription(subscriberId);
 
         newSubscriptions[subscriberId] = subscription;
@@ -276,16 +278,16 @@ public class Dispatcher implements AutoCloseable
 
     public void doCloseSubscription(Subscription subscriptionToClose)
     {
+        final int len = subscriptions.length;
         int index = subscriptionToClose.getSubscriberId();
-        int len = subscriptions.length;
-        if(mode == MODE_PIPELINE && index != len -1)
+        if (mode == MODE_PIPELINE && index != len - 1)
         {
             throw new RuntimeException("Cannot close subscriptions out of order when in pipelining mode");
         }
 
         for (int i = 0; i < len; i++)
         {
-            if(subscriptionToClose == subscriptions[i])
+            if (subscriptionToClose == subscriptions[i])
             {
                 index = i;
                 break;
@@ -312,11 +314,11 @@ public class Dispatcher implements AutoCloseable
 
     public void closeSubscription(Subscription subscriptionToClose)
     {
-       final CompletableFuture<Void> future = new CompletableFuture<Void>();
+        final CompletableFuture<Void> future = new CompletableFuture<Void>();
 
-       context.getDispatcherCommandQueue().add((d) -> d.closeSubscription(subscriptionToClose, future));
+        context.getDispatcherCommandQueue().add((d) -> d.closeSubscription(subscriptionToClose, future));
 
-       future.join();
+        future.join();
     }
 
     public LogBuffer getLogBuffer()
@@ -332,16 +334,16 @@ public class Dispatcher implements AutoCloseable
 
     public void close()
     {
-      publisherLimit.close();
-      publisherPosition.close();
+        publisherLimit.close();
+        publisherPosition.close();
 
-      for (Subscription subscription : subscriptions)
-      {
-          subscription.close();
-      }
+        for (Subscription subscription : subscriptions)
+        {
+            subscription.close();
+        }
 
-      logBuffer.close();
-      context.close();
+        logBuffer.close();
+        context.close();
     }
 
     public int getMaxFrameLength()
@@ -362,7 +364,7 @@ public class Dispatcher implements AutoCloseable
     @Override
     public String toString()
     {
-        return "Dispatcher ["+name+"]";
+        return "Dispatcher [" + name + "]";
     }
 
 }

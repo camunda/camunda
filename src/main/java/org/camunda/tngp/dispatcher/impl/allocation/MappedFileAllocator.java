@@ -17,7 +17,7 @@ public class MappedFileAllocator implements BufferAllocator<MappedFileAllocation
     {
         final File file = descriptor.getFile();
         final long logCapacity = descriptor.getCapacity();
-        long startProsition = descriptor.getStartPosition();
+        final long startProsition = descriptor.getStartPosition();
 
         RandomAccessFile raf = null;
 
@@ -31,7 +31,7 @@ public class MappedFileAllocator implements BufferAllocator<MappedFileAllocation
         }
         catch (Exception e)
         {
-            if(raf != null)
+            if (raf != null)
             {
                 try
                 {
@@ -43,7 +43,7 @@ public class MappedFileAllocator implements BufferAllocator<MappedFileAllocation
                 }
             }
 
-            throw new RuntimeException("Could not map file "+file+" into memory: "+e.getMessage(), e);
+            throw new RuntimeException("Could not map file " + file + " into memory: " + e.getMessage(), e);
         }
 
     }

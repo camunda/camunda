@@ -146,7 +146,8 @@ public class LogBufferDescriptor
     /**
      * Calculates the required capacity for a log buffer which can hold up to the provided bytes of data.
      */
-    public static int requiredCapacity(int partitionSize) {
+    public static int requiredCapacity(int partitionSize)
+    {
         return (PARTITION_COUNT * (partitionSize + PARTITION_META_DATA_LENGTH)) + LOG_META_DATA_LENGTH;
     }
 

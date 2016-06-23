@@ -7,7 +7,6 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 
 /**
  * The conductor performs maintenance operations on the dispatcher
@@ -72,7 +71,7 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
             dispatcher.doCloseSubscription(subscriptionToClose);
             future.complete(null);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             future.completeExceptionally(e);
         }
@@ -84,7 +83,7 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
         {
             future.complete(dispatcher.doOpenSubscription());
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             future.completeExceptionally(e);
         }

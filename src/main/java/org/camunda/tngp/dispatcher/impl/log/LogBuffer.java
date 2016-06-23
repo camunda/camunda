@@ -71,7 +71,7 @@ public class LogBuffer
         int workCount = 0;
         for (LogBufferPartition partition : partitions)
         {
-            if(partition.getStatusVolatile() == PARTITION_NEEDS_CLEANING)
+            if (partition.getStatusVolatile() == PARTITION_NEEDS_CLEANING)
             {
                 partition.clean();
                 ++workCount;

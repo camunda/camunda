@@ -35,8 +35,8 @@ import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
  */
 public class DispatcherBuilder
 {
-
-    static ErrorHandler DEFAULT_ERROR_HANDLER = (t) -> {
+    private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
+    {
         t.printStackTrace();
     };
 
@@ -62,12 +62,12 @@ public class DispatcherBuilder
 
     protected int mode = Dispatcher.MODE_PUB_SUB;
 
-    public DispatcherBuilder(String dispatcherName)
+    public DispatcherBuilder(final String dispatcherName)
     {
         this.dispatcherName = dispatcherName;
     }
 
-    public DispatcherBuilder name(String name)
+    public DispatcherBuilder name(final String name)
     {
         this.dispatcherName = name;
         return this;
@@ -80,7 +80,7 @@ public class DispatcherBuilder
      *
      * @see DispatcherBuilder#allocateInFile(String)
      */
-    public DispatcherBuilder allocateInBuffer(ByteBuffer rawBuffer)
+    public DispatcherBuilder allocateInBuffer(final ByteBuffer rawBuffer)
     {
         this.allocateInMemory = false;
         this.rawBuffer = rawBuffer;
@@ -91,7 +91,7 @@ public class DispatcherBuilder
      * Allocate the dispatcher's buffer in the provided file by mapping it into memory. The file must exist.
      * The dispatcher will place it's buffer at the beginning of the file.
      */
-    public DispatcherBuilder allocateInFile(String fileName)
+    public DispatcherBuilder allocateInFile(final String fileName)
     {
         this.allocateInMemory = false;
         this.bufferFileName = fileName;
@@ -102,7 +102,7 @@ public class DispatcherBuilder
      * The number of bytes the buffer is be able to contain. Represents the size of the data section.
      * Additional space will be allocated for the meta-data sections
      */
-    public DispatcherBuilder bufferSize(int size)
+    public DispatcherBuilder bufferSize(final int size)
     {
         this.bufferSize = size;
         return this;
@@ -117,19 +117,19 @@ public class DispatcherBuilder
     /**
      * The max length of the data section of a frame
      */
-    public DispatcherBuilder frameMaxLength(int frameMaxLength)
+    public DispatcherBuilder frameMaxLength(final int frameMaxLength)
     {
         this.frameMaxLength = frameMaxLength;
         return this;
     }
 
-    public DispatcherBuilder countersManager(CountersManager countersManager)
+    public DispatcherBuilder countersManager(final CountersManager countersManager)
     {
         this.countersManager = countersManager;
         return this;
     }
 
-    public DispatcherBuilder countersBuffer(AtomicBuffer countersBuffer)
+    public DispatcherBuilder countersBuffer(final AtomicBuffer countersBuffer)
     {
         this.countersBuffer = countersBuffer;
         return this;
@@ -156,24 +156,26 @@ public class DispatcherBuilder
         // allocate the buffer
 
         AllocatedBuffer allocatedBuffer = null;
-        if(allocateInMemory)
+        if (allocateInMemory)
         {
             allocatedBuffer = new DirectBufferAllocator().allocate(new AllocationDescriptor(requiredCapacity));
         }
-        else {
-            if(rawBuffer != null)
+        else
+        {
+            if (rawBuffer != null)
             {
-                if(rawBuffer.remaining() < requiredCapacity)
+                if (rawBuffer.remaining() < requiredCapacity)
                 {
-                    throw new RuntimeException("Buffer size below required capacity of "+requiredCapacity);
+                    throw new RuntimeException("Buffer size below required capacity of " + requiredCapacity);
                 }
                 allocatedBuffer = new ExternallyAllocatedBuffer(rawBuffer);
             }
-            else {
-                File bufferFile = new File(bufferFileName);
-                if(!bufferFile.exists())
+            else
+            {
+                final File bufferFile = new File(bufferFileName);
+                if (!bufferFile.exists())
                 {
-                    throw new RuntimeException("File "+bufferFileName + " does not exist");
+                    throw new RuntimeException("File " + bufferFileName + " does not exist");
                 }
 
                 allocatedBuffer = new MappedFileAllocator()
@@ -183,14 +185,14 @@ public class DispatcherBuilder
 
         // allocate the counters
 
-        Position publisherLimit;
-        Position publisherPosition;
+        Position publisherLimit = null;
+        Position publisherPosition = null;
 
-        if(countersManager != null)
+        if (countersManager != null)
         {
-            int publisherPositionCounter = countersManager.allocate(String.format("%s.publisher.position", dispatcherName));
+            final int publisherPositionCounter = countersManager.allocate(String.format("%s.publisher.position", dispatcherName));
             publisherPosition = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherPositionCounter, countersManager);
-            int publisherLimitCounter = countersManager.allocate(String.format("%s.publisher.limit", dispatcherName));
+            final int publisherLimitCounter = countersManager.allocate(String.format("%s.publisher.limit", dispatcherName));
             publisherLimit = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherLimitCounter, countersManager);
         }
         else
@@ -204,7 +206,7 @@ public class DispatcherBuilder
         final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize);
         final LogBufferAppender logAppender = new LogBufferAppender();
 
-        int bufferWindowLength = partitionSize / 4;
+        final int bufferWindowLength = partitionSize / 4;
 
         final DispatcherContext context = new DispatcherContext();
 
@@ -221,17 +223,17 @@ public class DispatcherBuilder
 
         conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
 
-        if(!agentExternallyManaged)
+        if (!agentExternallyManaged)
         {
             final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
 
             AtomicCounter errorCounter = null;
-            if(countersManager != null)
+            if (countersManager != null)
             {
                 errorCounter = countersManager.newCounter(String.format("net.long_running.dispatcher.%s.conductor.errorCounter", dispatcherName));
             }
 
-            AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductorAgent);
+            final AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductorAgent);
             AgentRunner.startOnThread(conductorRunner);
             context.setAgentRunner(conductorRunner);
         }

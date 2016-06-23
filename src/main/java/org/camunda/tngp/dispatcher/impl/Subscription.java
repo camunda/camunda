@@ -44,7 +44,7 @@ public class Subscription
 
         final long limit = dispatcher.subscriberLimit(this);
 
-        if(limit > currentPosition)
+        if (limit > currentPosition)
         {
             final int partitionId = partitionId(currentPosition);
             final int partitionOffset = partitionOffset(currentPosition);
@@ -75,17 +75,17 @@ public class Subscription
         do
         {
             final int length = buffer.getIntVolatile(lengthOffset(fragmentOffset));
-            if(length <= 0)
+            if (length <= 0)
             {
                 break;
             }
 
             final short type = buffer.getShort(typeOffset(fragmentOffset));
-            if(type == TYPE_PADDING)
+            if (type == TYPE_PADDING)
             {
                 fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
 
-                if(fragmentOffset >= partition.getPartitionSize())
+                if (fragmentOffset >= partition.getPartitionSize())
                 {
                     ++partitionId;
                     fragmentOffset = 0;
@@ -99,7 +99,7 @@ public class Subscription
                 {
                     frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId);
                 }
-                catch(RuntimeException e)
+                catch (RuntimeException e)
                 {
                     // TODO!
                     e.printStackTrace();
@@ -109,7 +109,7 @@ public class Subscription
                 ++fragmentsRead;
             }
         }
-        while(fragmentsRead < maxNumOfFragments);
+        while (fragmentsRead < maxNumOfFragments);
 
         position.setOrdered(position(partitionId, fragmentOffset));
 
@@ -129,7 +129,7 @@ public class Subscription
 
         final long limit = dispatcher.subscriberLimit(this);
 
-        if(limit > currentPosition)
+        if (limit > currentPosition)
         {
             final int partitionId = partitionId(currentPosition);
             final int partitionOffset = partitionOffset(currentPosition);
@@ -163,7 +163,7 @@ public class Subscription
 
         int fragmentsRead = 0;
 
-        int firstFragmentOffset = partitionOffset;
+        final int firstFragmentOffset = partitionOffset;
         int blockLength = 0;
         int initialStreamId = -1;
 
@@ -171,17 +171,17 @@ public class Subscription
         do
         {
             final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
-            if(length <= 0)
+            if (length <= 0)
             {
                 break;
             }
 
             final short type = buffer.getShort(typeOffset(partitionOffset));
-            if(type == TYPE_PADDING)
+            if (type == TYPE_PADDING)
             {
                 partitionOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
 
-                if(partitionOffset >= partition.getPartitionSize())
+                if (partitionOffset >= partition.getPartitionSize())
                 {
                     ++partitionId;
                     partitionOffset = 0;
@@ -191,16 +191,16 @@ public class Subscription
             }
             else
             {
-                if(isStreamAware)
+                if (isStreamAware)
                 {
                     final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
-                    if(fragmentsRead == 0)
+                    if (fragmentsRead == 0)
                     {
                         initialStreamId = streamId;
                     }
                     else
                     {
-                        if(streamId != initialStreamId)
+                        if (streamId != initialStreamId)
                         {
                             break;
                         }
@@ -213,9 +213,9 @@ public class Subscription
                 ++fragmentsRead;
             }
         }
-        while(fragmentsRead < maxNumOfFragments);
+        while (fragmentsRead < maxNumOfFragments);
 
-        if(fragmentsRead > 0)
+        if (fragmentsRead > 0)
         {
             final int absoluteOffset = bufferOffset + firstFragmentOffset;
             try
@@ -227,7 +227,7 @@ public class Subscription
                         initialStreamId,
                         blockPosition);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 // TODO!
                 e.printStackTrace();
@@ -256,7 +256,7 @@ public class Subscription
 
         final long limit = dispatcher.subscriberLimit(this);
 
-        if(limit > currentPosition)
+        if (limit > currentPosition)
         {
             final int partitionId = partitionId(currentPosition);
             final int partitionOffset = partitionOffset(currentPosition);
@@ -287,7 +287,7 @@ public class Subscription
         final int bufferOffset = partition.getUnderlyingBufferOffset();
         final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
 
-        int firstFragmentOffset = partitionOffset;
+        final int firstFragmentOffset = partitionOffset;
         int blockLength = 0;
         int initialStreamId = -1;
 
@@ -295,19 +295,19 @@ public class Subscription
         do
         {
             final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
-            if(length <= 0)
+            if (length <= 0)
             {
                 break;
             }
 
             final short type = buffer.getShort(typeOffset(partitionOffset));
-            if(type == TYPE_PADDING)
+            if (type == TYPE_PADDING)
             {
                 partitionOffset += alignedLength(length);
 
-                if(blockLength == 0)
+                if (blockLength == 0)
                 {
-                    if(partitionOffset >= partition.getPartitionSize())
+                    if (partitionOffset >= partition.getPartitionSize())
                     {
                         position.proposeMaxOrdered(position(1 + partitionId, 0));
                     }
@@ -321,16 +321,16 @@ public class Subscription
             }
             else
             {
-                if(isStreamAware)
+                if (isStreamAware)
                 {
                     final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
-                    if(blockLength == 0)
+                    if (blockLength == 0)
                     {
                         initialStreamId = streamId;
                     }
                     else
                     {
-                        if(streamId != initialStreamId)
+                        if (streamId != initialStreamId)
                         {
                             break;
                         }
@@ -339,7 +339,7 @@ public class Subscription
 
                 final int alignedFrameLength = alignedLength(length);
 
-                if(alignedFrameLength <= maxBlockSize - blockLength)
+                if (alignedFrameLength <= maxBlockSize - blockLength)
                 {
                     partitionOffset += alignedFrameLength;
                     blockLength += alignedFrameLength;
@@ -350,9 +350,9 @@ public class Subscription
                 }
             }
         }
-        while(maxBlockSize - blockLength > HEADER_LENGTH);
+        while (maxBlockSize - blockLength > HEADER_LENGTH);
 
-        if(blockLength > 0)
+        if (blockLength > 0)
         {
             final int absoluteOffset = bufferOffset + firstFragmentOffset;
 
