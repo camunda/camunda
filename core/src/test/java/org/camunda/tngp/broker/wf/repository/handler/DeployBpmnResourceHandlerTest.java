@@ -1,8 +1,16 @@
 package org.camunda.tngp.broker.wf.repository.handler;
 
-import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.broker.test.util.BufferMatcher.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.test.util.BufferMatcher.hasBytes;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,8 +25,8 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
-import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
-import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
+import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
 import org.junit.Test;

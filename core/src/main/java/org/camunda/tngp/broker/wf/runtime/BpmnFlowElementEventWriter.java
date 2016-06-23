@@ -10,8 +10,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 public class BpmnFlowElementEventWriter implements BufferWriter
 {
 
-    protected MessageHeaderEncoder headerEncoder;
-    protected BpmnFlowElementEventEncoder bodyEncoder;
+    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    protected final BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
 
     protected long key;
     protected long processId;
@@ -76,5 +76,4 @@ public class BpmnFlowElementEventWriter implements BufferWriter
         this.flowElementId = flowElementId;
         return this;
     }
-
 }

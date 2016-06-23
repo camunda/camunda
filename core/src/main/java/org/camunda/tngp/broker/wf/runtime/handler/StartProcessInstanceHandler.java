@@ -12,7 +12,7 @@ import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
+import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 

@@ -85,7 +85,7 @@ public class WfRepositoryManagerService
 
         final WfTypeCacheService wfTypeCacheService = new WfTypeCacheService(32, 16);
         serviceContext.createService(wfTypeCacheServiceName, wfTypeCacheService)
-            .dependency(wfTypeLogServiceName, wfTypeKeyIndexManager.getLogInjector())
+            .dependency(wfTypeLogServiceName, wfTypeCacheService.getWfTypeLogInjector())
             .dependency(wfTypeKeyIndexServiceName, wfTypeCacheService.getWfTypeKeyIndexInjector())
             .dependency(wfTypeIdIndexServiceName, wfTypeCacheService.getWfTypeIdIndexInjector())
             .install();

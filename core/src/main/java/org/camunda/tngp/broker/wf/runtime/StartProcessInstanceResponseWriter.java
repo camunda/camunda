@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseEncoder;
+import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseEncoder;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -9,8 +9,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 public class StartProcessInstanceResponseWriter implements BufferWriter
 {
 
-    protected MessageHeaderEncoder headerEncoder;
-    protected StartWorkflowInstanceResponseEncoder bodyEncoder;
+    protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    protected StartWorkflowInstanceResponseEncoder bodyEncoder = new StartWorkflowInstanceResponseEncoder();
 
     protected long processInstanceId;
 

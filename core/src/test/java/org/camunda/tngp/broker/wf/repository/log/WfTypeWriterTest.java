@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.wf.repository.log;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
+import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
 import org.camunda.tngp.taskqueue.data.WfTypeEncoder;
 import org.junit.Test;

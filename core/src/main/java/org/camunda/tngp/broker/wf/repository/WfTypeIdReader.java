@@ -12,12 +12,6 @@ public class WfTypeIdReader implements LogFragmentIdReader
     protected final WfTypeDecoder wfTypeDecoder = new WfTypeDecoder();
 
     @Override
-    public int blockLength()
-    {
-        return headerDecoder.encodedLength() + wfTypeDecoder.sbeBlockLength();
-    }
-
-    @Override
     public long getId(DirectBuffer block)
     {
         long id = 0;

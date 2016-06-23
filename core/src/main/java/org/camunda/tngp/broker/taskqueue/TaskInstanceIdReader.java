@@ -13,12 +13,6 @@ public class TaskInstanceIdReader implements LogFragmentIdReader
     protected final TaskInstanceDecoder taskInstanceDecoder = new TaskInstanceDecoder();
 
     @Override
-    public int blockLength()
-    {
-        return headerDecoder.encodedLength() + taskInstanceDecoder.sbeBlockLength();
-    }
-
-    @Override
     public long getId(DirectBuffer block)
     {
         long id = 0;
