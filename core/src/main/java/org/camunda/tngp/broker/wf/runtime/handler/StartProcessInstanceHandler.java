@@ -1,17 +1,17 @@
 package org.camunda.tngp.broker.wf.runtime.handler;
 
-import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
+import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
 import org.camunda.tngp.broker.wf.runtime.BpmnFlowElementEventWriter;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceResponseWriter;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogEntryWriter;
+import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
@@ -21,14 +21,12 @@ import uk.co.real_logic.agrona.DirectBuffer;
 public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRuntimeContext>, ResponseCompletionHandler
 {
 
-    protected final StartProcessInstanceRequestReader requestReader = new StartProcessInstanceRequestReader();
-    protected final StartProcessInstanceResponseWriter responseWriter = new StartProcessInstanceResponseWriter();
+    protected StartProcessInstanceRequestReader requestReader = new StartProcessInstanceRequestReader();
+    protected StartProcessInstanceResponseWriter responseWriter = new StartProcessInstanceResponseWriter();
 
-    protected final BpmnFlowElementEventWriter flowElementEventWriter = new BpmnFlowElementEventWriter();
+    protected ErrorWriter errorWriter = new ErrorWriter();
 
-    protected final LogEntryWriter logEntryWriter = new LogEntryWriter();
-
-    protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
+    protected BpmnFlowElementEventWriter flowElementEventWriter = new BpmnFlowElementEventWriter();
 
     public static final int WF_TYPE_KEY_MAX_LENGTH = 256;
     protected final byte[] keyBuffer = new byte[WF_TYPE_KEY_MAX_LENGTH];
@@ -43,36 +41,72 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
     {
         final WfTypeCacheService wfTypeCache = context.getWfTypeCacheService();
         final IdGenerator idGenerator = context.getIdGenerator();
-        final Log log = context.getLog();
+        final LogWriter logWriter = context.getLogWriter();
 
         requestReader.wrap(msg, offset, length);
 
-        final ProcessGraph processGraph = findProcessGraph(wfTypeCache);
+        ProcessGraph processGraph = null;
+        String errorMessage = null;
 
-        if(processGraph != null)
+        final long processId = requestReader.wfTypeId();
+        if(processId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
         {
-            startProcess(response, log, processGraph, idGenerator);
+            processGraph = wfTypeCache.getProcessGraphByTypeId(processId);
+
+            if(processGraph == null)
+            {
+                errorMessage = "Cannot find process with id";
+            }
         }
         else
         {
-            // TODO: wf type with id not found / not deployed
-            // send error response
+            byte[] wfTypeKey = requestReader.wfTypeKey();
+            processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(wfTypeKey);
+
+            if(processGraph == null)
+            {
+                errorMessage = "Cannot find process with key";
+            }
         }
 
-        return 0;
+        if(processGraph != null)
+        {
+            return startProcess(response, logWriter, processGraph, idGenerator);
+            // TODO: return 1, if response could be deferred
+            // TODO: return -1 else
+        }
+        else
+        {
+            errorWriter
+                .componentCode(WfErrors.COMPONENT_CODE)
+                .detailCode(WfErrors.PROCESS_NOT_FOUND_ERROR)
+                .errorMessage(errorMessage);
+
+            if(response.allocateAndWrite(errorWriter))
+            {
+                response.commit();
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
+        }
     }
 
-    protected void startProcess(
+    protected int startProcess(
             DeferredResponse response,
-            Log log,
+            LogWriter logWriter,
             ProcessGraph processGraph,
             IdGenerator idGenerator)
     {
+        final long processInstanceId = idGenerator.nextId();
+        final long eventId = idGenerator.nextId();
+
+        responseWriter.processInstanceId(processInstanceId);
+
         if (response.allocateAndWrite(responseWriter))
         {
-            final long processInstanceId = idGenerator.nextId();
-            final long eventId = idGenerator.nextId();
-
             flowElementEventWriter
                 .key(eventId)
                 .processInstanceId(processInstanceId)
@@ -80,60 +114,24 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
                 .eventType(ExecutionEventType.EVT_OCCURRED)
                 .flowElementId(processGraph.intialFlowNodeId());
 
-            responseWriter.processInstanceId(processInstanceId);
 
-            long logEntryOffset = logEntryWriter.write(log, flowElementEventWriter);
-
-            response.defer(logEntryOffset, this, null);
-        }
-    }
-
-    protected ProcessGraph findProcessGraph(final WfTypeCacheService wfTypeCache)
-    {
-        ProcessGraph processGraph = null;
-
-        final long processId = requestReader.wfTypeId();
-        if(processId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
-        {
-            processGraph = wfTypeCache.getProcessGraphByTypeId(processId);
-
-            if (processGraph == null)
-            {
-                // TODO: cannot find workflow type by id
-            }
+            long logEntryOffset = logWriter.write(flowElementEventWriter);
+            return response.defer(logEntryOffset, this);
         }
         else
         {
-            processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(requestReader.wfTypeKey());
-
-            if(processGraph == null)
-            {
-                // TODO: cannot find workflow type by key
-            }
+            return -1;
         }
-
-        return processGraph;
     }
 
     @Override
-    public void onAsyncWorkCompleted(
-            DeferredResponse response,
-            DirectBuffer asyncWorkBuffer,
-            int offset,
-            int length,
-            Object attachement,
-            long blockPosition)
+    public void onAsyncWorkCompleted(DeferredResponse response)
     {
         response.commit();
     }
 
     @Override
-    public void onAsyncWorkFailed(
-            DeferredResponse response,
-            DirectBuffer asyncWorkBuffer,
-            int offset,
-            int length,
-            Object attachement)
+    public void onAsyncWorkFailed(DeferredResponse response)
     {
         response.abort();
     }

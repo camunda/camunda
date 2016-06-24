@@ -86,7 +86,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
                                 payloadLength);
 
                         writeAck(ctx, response, taskId);
-                        response.defer(claimedPosition, this, ctx);
+                        response.defer(claimedPosition, this);
                     }
                     else
                     {
@@ -220,24 +220,13 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
     }
 
     @Override
-    public void onAsyncWorkCompleted(
-            final DeferredResponse response,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Object attachment,
-            final long logPosition)
+    public void onAsyncWorkCompleted(final DeferredResponse response)
     {
         response.commit();
     }
 
     @Override
-    public void onAsyncWorkFailed(
-            final DeferredResponse response,
-            final DirectBuffer asyncWorkBuffer,
-            final int offset,
-            final int length,
-            final Object attachement)
+    public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
     }

@@ -142,7 +142,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
                         .taskId(taskInstanceReader.getDecoder().id())
                         .putPayload(taskInstanceReader.getPayloadReadBuffer(), 0, taskInstanceReader.getPayloadLength());
 
-                response.defer(claimedLogPosition, this, null);
+                response.defer(claimedLogPosition, this);
                 claimedLogFragment.commit();
             }
         }
@@ -235,24 +235,13 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
     }
 
     @Override
-    public void onAsyncWorkCompleted(
-            final DeferredResponse response,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Object attachment,
-            final long logPosition)
+    public void onAsyncWorkCompleted(final DeferredResponse response)
     {
         response.commit();
     }
 
     @Override
-    public void onAsyncWorkFailed(
-            final DeferredResponse response,
-            final DirectBuffer asyncWorkBuffer,
-            final int offset,
-            final int length,
-            final Object attachement)
+    public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
     }

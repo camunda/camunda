@@ -1,5 +1,8 @@
 package org.camunda.tngp.broker.wf.repository.handler;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -7,8 +10,6 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-
-import static org.mockito.Mockito.*;
 
 public class MockedWfRepositoryContext extends WfRepositoryContext
 {

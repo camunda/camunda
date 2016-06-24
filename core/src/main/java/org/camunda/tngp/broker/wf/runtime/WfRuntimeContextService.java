@@ -2,6 +2,8 @@ package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -9,6 +11,10 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 
 public class WfRuntimeContextService implements Service<WfRuntimeContext>
 {
+
+    // TODO: move somewhere else?
+    protected static final int READ_BUFFER_SIZE = 1024 * 1024;
+
     protected final Injector<WfTypeCacheService> wfTypeChacheInjector = new Injector<>();
     protected final Injector<IdGenerator> idGeneratorInjector = new Injector<>();
     protected final Injector<Log> logInjector = new Injector<>();
@@ -25,9 +31,16 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     {
         wfRuntimeContext.setWfTypeCacheService(wfTypeChacheInjector.getValue());
         wfRuntimeContext.setIdGenerator(idGeneratorInjector.getValue());
-        wfRuntimeContext.setLog(logInjector.getValue());
+
+        Log log = logInjector.getValue();
+        LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
+        LogWriter logWriter = new LogWriter(log);
+
+        wfRuntimeContext.setLogReader(logReader);
+        wfRuntimeContext.setLogWriter(logWriter);
+
         // TODO: is it good to instantiate the handler here?
-        wfRuntimeContext.setBpmnEventHandler(new BpmnEventHandler(wfTypeChacheInjector.getValue(), logInjector.getValue()));
+        wfRuntimeContext.setBpmnEventHandler(new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter));
     }
 
     @Override

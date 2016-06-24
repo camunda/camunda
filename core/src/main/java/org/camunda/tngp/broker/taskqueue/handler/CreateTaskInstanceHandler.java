@@ -63,7 +63,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
                     writeTaskInstance(msg, bodyOffset, headerDecoder.blockLength(), headerDecoder.version(), ctx, taskInstanceId);
 
                     writeAck(response, taskInstanceId);
-                    response.defer(claimedLogPos, this, null);
+                    response.defer(claimedLogPos, this);
 
                     claimedLogFragment.commit();
                 }
@@ -175,24 +175,13 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
     }
 
     @Override
-    public void onAsyncWorkCompleted(
-            final DeferredResponse response,
-            final DirectBuffer asyncWorkBuffer,
-            final int offset,
-            final int length,
-            final Object attachement,
-            final long logPosition)
+    public void onAsyncWorkCompleted(final DeferredResponse response)
     {
         response.commit();
     }
 
     @Override
-    public void onAsyncWorkFailed(
-            final DeferredResponse response,
-            final DirectBuffer asyncWorkBuffer,
-            final int offset,
-            final int length,
-            final Object attachement)
+    public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
     }

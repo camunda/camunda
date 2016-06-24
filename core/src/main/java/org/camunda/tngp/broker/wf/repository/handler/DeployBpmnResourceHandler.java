@@ -139,31 +139,20 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         if (response.allocateAndWrite(responseWriter))
         {
             final long logEntryOffset = logEntryWriter.write(wfTypeLog, wfTypeWriter);
-            result = response.defer(logEntryOffset, this, null);
+            result = response.defer(logEntryOffset, this);
         }
 
         return result;
     }
 
     @Override
-    public void onAsyncWorkCompleted(
-            final DeferredResponse response,
-            final DirectBuffer asyncWorkBuffer,
-            final int offset,
-            final int length,
-            final Object attachement,
-            final long blockPosition)
+    public void onAsyncWorkCompleted(final DeferredResponse response)
     {
         response.commit();
     }
 
     @Override
-    public void onAsyncWorkFailed(
-            final DeferredResponse response,
-            final DirectBuffer asyncWorkBuffer,
-            final int offset,
-            final int length,
-            final Object attachement)
+    public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
     }

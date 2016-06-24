@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.wf.runtime.worker;
 
 import org.camunda.tngp.broker.wf.WfWorkerContext;
-import org.camunda.tngp.broker.wf.runtime.BpmnEventHandler;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManager;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;

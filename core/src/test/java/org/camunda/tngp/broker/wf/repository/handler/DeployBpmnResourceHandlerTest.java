@@ -21,7 +21,6 @@ import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
@@ -36,19 +35,18 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class DeployBpmnResourceHandlerTest
 {
-    WfTypeWriter wfTypeWriterMock;
-    WfTypeReader wfTypeReaderMock;
+    protected WfTypeWriter wfTypeWriterMock;
+    protected WfTypeReader wfTypeReaderMock;
 
-    DeployBpmnResourceAckResponse responseWriterMock;
-    ErrorWriter errorResponseWriterMock;
+    protected DeployBpmnResourceAckResponse responseWriterMock;
+    protected ErrorWriter errorResponseWriterMock;
 
-    DeployBpmnResourceHandler handler;
+    protected DeployBpmnResourceHandler handler;
 
-    WfRepositoryContext context;
-    DeferredResponse deferredResponseMock;
+    protected WfRepositoryContext context;
+    protected DeferredResponse deferredResponseMock;
 
-    ClaimedFragment claimedLogFragment;
-    LogEntryWriter logEntryWriterMock;
+    protected LogEntryWriter logEntryWriterMock;
 
     @Before
     public void setup()
@@ -90,8 +88,8 @@ public class DeployBpmnResourceHandlerTest
         when(context.getWfTypeIdIndex().getIndex().get(anyLong(), anyLong())).thenReturn(-1L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0L);
-        when(deferredResponseMock.defer(0L, handler, null)).thenReturn(1);
+        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
+        when(deferredResponseMock.defer(0l, handler)).thenReturn(1);
 
         final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
@@ -110,7 +108,11 @@ public class DeployBpmnResourceHandlerTest
         verify(responseWriterMock).wfTypeId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
+<<<<<<< HEAD
         verify(deferredResponseMock).defer(0L, handler, null);
+=======
+        verify(deferredResponseMock).defer(0l, handler);
+>>>>>>> test start process instance handling
     }
 
     @Test
@@ -129,8 +131,13 @@ public class DeployBpmnResourceHandlerTest
         when(context.getWfTypeIdIndex().getIndex().get(100L, -1)).thenReturn(200L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
+<<<<<<< HEAD
         when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0L);
         when(deferredResponseMock.defer(0L, handler, null)).thenReturn(1);
+=======
+        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
+        when(deferredResponseMock.defer(0l, handler)).thenReturn(1);
+>>>>>>> test start process instance handling
         when(wfTypeReaderMock.version()).thenReturn(4);
 
         final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
@@ -150,7 +157,11 @@ public class DeployBpmnResourceHandlerTest
         verify(responseWriterMock).wfTypeId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
+<<<<<<< HEAD
         verify(deferredResponseMock).defer(0L, handler, null);
+=======
+        verify(deferredResponseMock).defer(0l, handler);
+>>>>>>> test start process instance handling
     }
 
     @Test
