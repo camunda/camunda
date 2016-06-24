@@ -20,7 +20,6 @@ public class DeferredResponse
 
     protected long asyncOperationId;
     protected ResponseCompletionHandler completionHandler;
-    protected Object attachement;
 
     public DeferredResponse(Dispatcher sendBuffer)
     {
@@ -34,7 +33,6 @@ public class DeferredResponse
         this.requestId = -1;
         this.asyncOperationId = -1;
         this.completionHandler = null;
-        this.attachement = null;
     }
 
     public void open(int channelId, long connectionId, long requestId)
@@ -87,7 +85,7 @@ public class DeferredResponse
         return isAllocated;
     }
 
-    public int defer(final long asyncOperationId, ResponseCompletionHandler handler, Object attachement)
+    public int defer(final long asyncOperationId, ResponseCompletionHandler handler)
     {
         int result = -1;
 
@@ -95,7 +93,6 @@ public class DeferredResponse
         {
             this.asyncOperationId = asyncOperationId;
             this.completionHandler = handler;
-            this.attachement = attachement;
             result = 1;
         }
         else
@@ -110,7 +107,7 @@ public class DeferredResponse
     {
         if (claimedFragment.isOpen() && isDeferred())
         {
-            completionHandler.onAsyncWorkCompleted(this, asyncWorkBuffer, offset, length, attachement, blockPosition);
+            completionHandler.onAsyncWorkCompleted(this);
         }
     }
 
