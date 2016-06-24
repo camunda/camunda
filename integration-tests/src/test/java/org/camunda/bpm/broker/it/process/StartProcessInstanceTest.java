@@ -44,7 +44,7 @@ public class StartProcessInstanceTest
     }
 
     @Test
-    public void shouldStartProcessById() throws InterruptedException
+    public void shouldStartProcessById()
     {
         final TngpClient client = clientRule.getClient();
         final ProcessService workflowService = client.processes();
@@ -52,6 +52,20 @@ public class StartProcessInstanceTest
         // when
         final WorkflowInstance processInstance = workflowService.start()
             .workflowTypeId(process.getWorkflowTypeId())
+            .execute();
+
+        assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    public void shouldStartProcessByKey()
+    {
+        final TngpClient client = clientRule.getClient();
+        final ProcessService workflowService = client.processes();
+
+        // when
+        final WorkflowInstance processInstance = workflowService.start()
+            .workflowTypeKey("anId")
             .execute();
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);

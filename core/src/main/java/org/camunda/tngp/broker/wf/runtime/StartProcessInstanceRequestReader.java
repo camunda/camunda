@@ -1,13 +1,11 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import java.util.Arrays;
-
-import org.camunda.tngp.broker.wf.runtime.handler.StartProcessInstanceHandler;
 import org.camunda.tngp.protocol.wf.runtime.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class StartProcessInstanceRequestReader implements BufferReader
 {
@@ -15,7 +13,7 @@ public class StartProcessInstanceRequestReader implements BufferReader
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected StartWorkflowInstanceDecoder bodyDecoder = new StartWorkflowInstanceDecoder();
 
-    protected byte[] wfTypeKey = new byte[StartProcessInstanceHandler.WF_TYPE_KEY_MAX_LENGTH];
+    protected final UnsafeBuffer keyBuffer = new UnsafeBuffer(0,0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -27,12 +25,11 @@ public class StartProcessInstanceRequestReader implements BufferReader
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
         int wfTypeKeyLength = bodyDecoder.wfTypeKeyLength();
-        // TODO: check max length
 
-        offset += wfTypeKeyLength;
+        offset += bodyDecoder.encodedLength();
+        offset += StartWorkflowInstanceDecoder.wfTypeKeyHeaderLength();
 
-        buffer.getBytes(offset, wfTypeKey, 0, wfTypeKeyLength);
-        Arrays.fill(wfTypeKey, wfTypeKeyLength, wfTypeKey.length, (byte) 0);
+        keyBuffer.wrap(buffer, offset, wfTypeKeyLength);
     }
 
     public long wfTypeId()
@@ -40,9 +37,9 @@ public class StartProcessInstanceRequestReader implements BufferReader
         return bodyDecoder.wfTypeId();
     }
 
-    public byte[] wfTypeKey()
+    public DirectBuffer wfTypeKey()
     {
-        return wfTypeKey;
+        return keyBuffer;
     }
 
 }

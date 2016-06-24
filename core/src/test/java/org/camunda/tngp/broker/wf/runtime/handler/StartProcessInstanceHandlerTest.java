@@ -17,13 +17,13 @@ import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
 import org.camunda.tngp.broker.wf.repository.handler.FluentAnswer;
 import org.camunda.tngp.broker.wf.runtime.BpmnFlowElementEventWriter;
+import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceResponseWriter;
-import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogWriter;
-import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
+import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
@@ -36,14 +36,15 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class StartProcessInstanceHandlerTest
 {
 
-    @Mock
-    protected WfRuntimeContext context;
-
-    @Mock
+    protected MockWfRuntimeContext mockContext;
+    protected LogReader logReader;
+    protected LogWriter logWriter;
+    protected IdGenerator idGenerator;
     protected WfTypeCacheService processCache;
 
     @Mock
@@ -54,12 +55,6 @@ public class StartProcessInstanceHandlerTest
 
     @Mock
     protected DirectBuffer requestBuffer;
-
-    @Mock
-    protected LogWriter logWriter;
-
-    @Mock
-    protected LogReader logReader;
 
     @Mock
     protected StartProcessInstanceRequestReader requestReader;
@@ -78,11 +73,11 @@ public class StartProcessInstanceHandlerTest
         flowElementEventWriter = mock(BpmnFlowElementEventWriter.class, new FluentAnswer());
         errorWriter = mock(ErrorWriter.class, new FluentAnswer());
 
-        when(context.getLogReader()).thenReturn(logReader);
-        when(context.getLogWriter()).thenReturn(logWriter);
-        when(context.getIdGenerator()).thenReturn(new PrivateIdGenerator(0));
-
-        when(context.getWfTypeCacheService()).thenReturn(processCache);
+        mockContext = new MockWfRuntimeContext();
+        logReader = mockContext.getLogReader();
+        logWriter = mockContext.getLogWriter();
+        idGenerator = mockContext.getIdGenerator();
+        processCache = mockContext.getWfTypeCacheService();
 
         when(processCache.getProcessGraphByTypeId(1234L)).thenReturn(process);
 
@@ -106,7 +101,7 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(context, requestBuffer, 1234, 4567, response);
+        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
@@ -140,14 +135,14 @@ public class StartProcessInstanceHandlerTest
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
         when(requestReader.wfTypeId()).thenReturn(StartWorkflowInstanceDecoder.wfTypeIdNullValue());
-        when(requestReader.wfTypeKey()).thenReturn(new byte[]{ 1, 2, 3});
+        when(requestReader.wfTypeKey()).thenReturn(new UnsafeBuffer(new byte[]{ 1, 2, 3 }));
         when(processCache.getProcessGraphByTypeId(anyLong())).thenReturn(null);
-        when(processCache.getLatestProcessGraphByTypeKey(any(byte[].class))).thenReturn(process);
+        when(processCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(process);
 
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(context, requestBuffer, 1234, 4567, response);
+        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
@@ -187,7 +182,7 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(context, requestBuffer, 1234, 4567, response);
+        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
@@ -214,14 +209,14 @@ public class StartProcessInstanceHandlerTest
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
         when(requestReader.wfTypeId()).thenReturn(StartWorkflowInstanceDecoder.wfTypeIdNullValue());
-        when(requestReader.wfTypeKey()).thenReturn(new byte[]{ 1, 2, 3});
+        when(requestReader.wfTypeKey()).thenReturn(new UnsafeBuffer(new byte[]{ 1, 2, 3 }));
         when(processCache.getProcessGraphByTypeId(anyLong())).thenReturn(null);
-        when(processCache.getLatestProcessGraphByTypeKey(any(byte[].class))).thenReturn(null);
+        when(processCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(null);
 
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(context, requestBuffer, 1234, 4567, response);
+        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
@@ -253,7 +248,7 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(false);
 
         // when
-        long result = startHandler.onRequest(context, requestBuffer, 0, 0, response);
+        long result = startHandler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
         assertThat(result).isLessThan(0);
@@ -278,7 +273,7 @@ public class StartProcessInstanceHandlerTest
         when(response.defer(anyLong(), any())).thenReturn(-1);
 
         // when
-        long result = startHandler.onRequest(context, requestBuffer, 0, 0, response);
+        long result = startHandler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
         assertThat(result).isEqualTo(-1);

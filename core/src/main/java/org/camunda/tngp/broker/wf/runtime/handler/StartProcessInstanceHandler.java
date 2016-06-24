@@ -60,8 +60,8 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         }
         else
         {
-            byte[] wfTypeKey = requestReader.wfTypeKey();
-            processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(wfTypeKey);
+            DirectBuffer wfTypeKey = requestReader.wfTypeKey();
+            processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(wfTypeKey, 0, wfTypeKey.capacity());
 
             if(processGraph == null)
             {

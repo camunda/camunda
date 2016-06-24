@@ -19,7 +19,8 @@ public class BpmnEventReader implements BufferReader
     {
         headerDecoder.wrap(buffer, offset);
 
-        switch (headerDecoder.templateId())
+        int templateId = headerDecoder.templateId();
+        switch (templateId)
         {
             case BpmnProcessEventDecoder.TEMPLATE_ID:
                 break;
@@ -27,7 +28,7 @@ public class BpmnEventReader implements BufferReader
                 flowElementEventReader.wrap(buffer, offset, length);
                 break;
             default:
-                throw new RuntimeException("foo");
+                throw new RuntimeException("Unsupported template " + templateId);
         }
     }
 

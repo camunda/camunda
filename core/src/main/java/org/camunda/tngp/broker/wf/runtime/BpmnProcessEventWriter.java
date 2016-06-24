@@ -43,7 +43,8 @@ public class BpmnProcessEventWriter implements BufferWriter
             .key(key)
             .processId(processId)
             .processInstanceId(processInstanceId)
-            .event(event.value());
+            .event(event.value())
+            .initialElementId(initialElementId);
 
     }
 
