@@ -88,8 +88,8 @@ public class DeployBpmnResourceHandlerTest
         when(context.getWfTypeIdIndex().getIndex().get(anyLong(), anyLong())).thenReturn(-1L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
-        when(deferredResponseMock.defer(0l, handler)).thenReturn(1);
+        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0L);
+        when(deferredResponseMock.defer(0L, handler)).thenReturn(1);
 
         final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
 
@@ -108,11 +108,7 @@ public class DeployBpmnResourceHandlerTest
         verify(responseWriterMock).wfTypeId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
-<<<<<<< HEAD
-        verify(deferredResponseMock).defer(0L, handler, null);
-=======
-        verify(deferredResponseMock).defer(0l, handler);
->>>>>>> test start process instance handling
+        verify(deferredResponseMock).defer(0L, handler);
     }
 
     @Test
@@ -131,13 +127,8 @@ public class DeployBpmnResourceHandlerTest
         when(context.getWfTypeIdIndex().getIndex().get(100L, -1)).thenReturn(200L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-<<<<<<< HEAD
         when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0L);
-        when(deferredResponseMock.defer(0L, handler, null)).thenReturn(1);
-=======
-        when(logEntryWriterMock.write(context.getWfTypeLog(), wfTypeWriterMock)).thenReturn(0l);
-        when(deferredResponseMock.defer(0l, handler)).thenReturn(1);
->>>>>>> test start process instance handling
+        when(deferredResponseMock.defer(0L, handler)).thenReturn(1);
         when(wfTypeReaderMock.version()).thenReturn(4);
 
         final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
@@ -157,11 +148,7 @@ public class DeployBpmnResourceHandlerTest
         verify(responseWriterMock).wfTypeId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
 
-<<<<<<< HEAD
-        verify(deferredResponseMock).defer(0L, handler, null);
-=======
-        verify(deferredResponseMock).defer(0l, handler);
->>>>>>> test start process instance handling
+        verify(deferredResponseMock).defer(0L, handler);
     }
 
     @Test

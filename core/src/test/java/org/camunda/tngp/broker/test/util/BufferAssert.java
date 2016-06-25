@@ -23,7 +23,7 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
     {
         isNotNull();
 
-        byte[] actualBytes = new byte[expected.length];
+        final byte[] actualBytes = new byte[expected.length];
 
         // TODO: try-catch in case buffer has not expected size
         actual.getBytes(position, actualBytes, 0, actualBytes.length);

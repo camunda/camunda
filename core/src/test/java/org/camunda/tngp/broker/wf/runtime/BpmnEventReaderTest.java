@@ -22,8 +22,8 @@ public class BpmnEventReaderTest
     public void testReadBpmnFlowElementEvent()
     {
         // given
-        BpmnEventReader eventReader = new BpmnEventReader();
-        BpmnFlowElementEventWriter writer = new BpmnFlowElementEventWriter();
+        final BpmnEventReader eventReader = new BpmnEventReader();
+        final BpmnFlowElementEventWriter writer = new BpmnFlowElementEventWriter();
 
         writer
             .eventType(ExecutionEventType.EVT_OCCURRED)
@@ -39,7 +39,7 @@ public class BpmnEventReaderTest
         // then
         assertThat(eventReader.templateId()).isEqualTo(BpmnFlowElementEventDecoder.TEMPLATE_ID);
 
-        BpmnFlowElementEventReader flowElementEvent = eventReader.flowElementEvent();
+        final BpmnFlowElementEventReader flowElementEvent = eventReader.flowElementEvent();
 
         assertThat(flowElementEvent.event()).isEqualTo(ExecutionEventType.EVT_OCCURRED);
         assertThat(flowElementEvent.flowElementId()).isEqualTo(123);
@@ -52,8 +52,8 @@ public class BpmnEventReaderTest
     public void testReadUnknownTemplate()
     {
         // given
-        BpmnEventReader eventReader = new BpmnEventReader();
-        WfTypeWriter writer = new WfTypeWriter();
+        final BpmnEventReader eventReader = new BpmnEventReader();
+        final WfTypeWriter writer = new WfTypeWriter();
 
         writer
             .prevVersionPosition(1)

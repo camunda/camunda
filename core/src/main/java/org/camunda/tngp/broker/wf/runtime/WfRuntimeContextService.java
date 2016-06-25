@@ -11,7 +11,6 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 
 public class WfRuntimeContextService implements Service<WfRuntimeContext>
 {
-
     // TODO: move somewhere else?
     protected static final int READ_BUFFER_SIZE = 1024 * 1024;
 
@@ -32,9 +31,9 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setWfTypeCacheService(wfTypeChacheInjector.getValue());
         wfRuntimeContext.setIdGenerator(idGeneratorInjector.getValue());
 
-        Log log = logInjector.getValue();
-        LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
-        LogWriter logWriter = new LogWriter(log);
+        final Log log = logInjector.getValue();
+        final LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
+        final LogWriter logWriter = new LogWriter(log);
 
         wfRuntimeContext.setLogReader(logReader);
         wfRuntimeContext.setLogWriter(logWriter);

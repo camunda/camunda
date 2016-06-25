@@ -8,7 +8,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class StartProcessInstanceResponseWriter implements BufferWriter
 {
-
     protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected StartWorkflowInstanceResponseEncoder bodyEncoder = new StartWorkflowInstanceResponseEncoder();
 
@@ -17,8 +16,7 @@ public class StartProcessInstanceResponseWriter implements BufferWriter
     @Override
     public int getLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH
-                + StartWorkflowInstanceResponseEncoder.BLOCK_LENGTH;
+        return MessageHeaderEncoder.ENCODED_LENGTH + StartWorkflowInstanceResponseEncoder.BLOCK_LENGTH;
     }
     @Override
     public void write(MutableDirectBuffer buffer, int offset)

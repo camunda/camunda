@@ -43,10 +43,10 @@ public class BpmnEventHandler
 
     public int doWork()
     {
-        int workCount = 0;
+        final int workCount = 0;
 
-        boolean hasNext = logReader.read(eventReader);
-        if(hasNext)
+        final boolean hasNext = logReader.read(eventReader);
+        if (hasNext)
         {
             handleBpmnEvent(eventReader);
         }
@@ -56,9 +56,10 @@ public class BpmnEventHandler
 
     protected void handleBpmnEvent(BpmnEventReader eventReader)
     {
+        final int bpmnEventType = eventReader.templateId();
 
-        int bpmnEventType = eventReader.templateId();
-        switch (bpmnEventType) {
+        switch (bpmnEventType)
+        {
             case BpmnProcessEventDecoder.TEMPLATE_ID:
                 break;
             case BpmnFlowElementEventDecoder.TEMPLATE_ID:
@@ -71,11 +72,13 @@ public class BpmnEventHandler
 
     protected void handleBpmnFlowElementEvent(BpmnFlowElementEventReader flowElementEventReader)
     {
-        ProcessGraph process = processCache.getProcessGraphByTypeId(flowElementEventReader.processId());
+        final ProcessGraph process = processCache.getProcessGraphByTypeId(flowElementEventReader.processId());
+
         flowElementVisitor.init(process).moveToNode(flowElementEventReader.flowElementId());
 
-        BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(flowElementEventReader.event());
-        BpmnFlowElementEventHandler handler = flowElementEventHandlers.get(bpmnAspect.value());
+        final BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(flowElementEventReader.event());
+        final BpmnFlowElementEventHandler handler = flowElementEventHandlers.get(bpmnAspect.value());
+
         handler.handle(flowElementEventReader, process, logWriter);
     }
 

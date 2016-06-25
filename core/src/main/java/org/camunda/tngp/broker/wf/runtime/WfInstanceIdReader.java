@@ -15,7 +15,7 @@ public class WfInstanceIdReader implements LogFragmentIdReader
     @Override
     public long getId(DirectBuffer block)
     {
-        long id = 0;
+        final long id = 0;
 
         headerDecoder.wrap(block, 0);
 

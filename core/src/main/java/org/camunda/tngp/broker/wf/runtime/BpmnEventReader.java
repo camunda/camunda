@@ -19,7 +19,7 @@ public class BpmnEventReader implements BufferReader
     {
         headerDecoder.wrap(buffer, offset);
 
-        int templateId = headerDecoder.templateId();
+        final int templateId = headerDecoder.templateId();
         switch (templateId)
         {
             case BpmnProcessEventDecoder.TEMPLATE_ID:

@@ -14,7 +14,7 @@ public class ContinuationWorkerTask implements WorkerTask<WfWorkerContext>
         final WfRuntimeManager wfRuntimeManager = context.getWfRuntimeManager();
         final WfRuntimeContext[] contexts = wfRuntimeManager.getContexts();
 
-        final int workCount = 0;
+        int workCount = 0;
 
         for (int i = 0; i < contexts.length; i++)
         {

@@ -27,7 +27,7 @@ public class BpmnProcessEventWriterTest
     public void shouldWriteEvent()
     {
         // given
-        BpmnFlowElementEventWriter writer = new BpmnFlowElementEventWriter();
+        final BpmnFlowElementEventWriter writer = new BpmnFlowElementEventWriter();
 
         // when
         writer
@@ -39,8 +39,8 @@ public class BpmnProcessEventWriterTest
             .write(eventBuffer, 0);
 
         // then
-        MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-        BpmnFlowElementEventDecoder bodyDecoder = new BpmnFlowElementEventDecoder();
+        final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+        final BpmnFlowElementEventDecoder bodyDecoder = new BpmnFlowElementEventDecoder();
 
         headerDecoder.wrap(eventBuffer, 0);
         assertThat(headerDecoder.blockLength()).isEqualTo(BpmnFlowElementEventDecoder.BLOCK_LENGTH);
@@ -64,7 +64,7 @@ public class BpmnProcessEventWriterTest
     public void shouldEstimateWriteLength()
     {
         // given
-        BpmnFlowElementEventWriter writer = new BpmnFlowElementEventWriter();
+        final BpmnFlowElementEventWriter writer = new BpmnFlowElementEventWriter();
 
         writer
             .eventType(ExecutionEventType.EVT_OCCURRED)
@@ -75,7 +75,7 @@ public class BpmnProcessEventWriterTest
             .write(eventBuffer, 0);
 
         // when
-        int estimatedLength = writer.getLength();
+        final int estimatedLength = writer.getLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + BpmnFlowElementEventEncoder.BLOCK_LENGTH);

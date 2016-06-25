@@ -19,8 +19,8 @@ public class BpmnFlowElementEventReaderTest
     @Before
     public void writeEventToBuffer()
     {
-        MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-        BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+        final BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
 
         headerEncoder.wrap(eventBuffer, 0)
             .blockLength(bodyEncoder.sbeBlockLength())
@@ -44,7 +44,7 @@ public class BpmnFlowElementEventReaderTest
     public void shouldReadEvent()
     {
         // given
-        BpmnFlowElementEventReader reader = new BpmnFlowElementEventReader();
+        final BpmnFlowElementEventReader reader = new BpmnFlowElementEventReader();
 
         // when
         reader.wrap(eventBuffer, 0, eventLength);

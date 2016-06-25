@@ -49,27 +49,27 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         String errorMessage = null;
 
         final long processId = requestReader.wfTypeId();
-        if(processId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
+        if (processId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
         {
             processGraph = wfTypeCache.getProcessGraphByTypeId(processId);
 
-            if(processGraph == null)
+            if (processGraph == null)
             {
                 errorMessage = "Cannot find process with id";
             }
         }
         else
         {
-            DirectBuffer wfTypeKey = requestReader.wfTypeKey();
+            final DirectBuffer wfTypeKey = requestReader.wfTypeKey();
             processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(wfTypeKey, 0, wfTypeKey.capacity());
 
-            if(processGraph == null)
+            if (processGraph == null)
             {
                 errorMessage = "Cannot find process with key";
             }
         }
 
-        if(processGraph != null)
+        if (processGraph != null)
         {
             return startProcess(response, logWriter, processGraph, idGenerator);
             // TODO: return 1, if response could be deferred
@@ -82,7 +82,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
                 .detailCode(WfErrors.PROCESS_NOT_FOUND_ERROR)
                 .errorMessage(errorMessage);
 
-            if(response.allocateAndWrite(errorWriter))
+            if (response.allocateAndWrite(errorWriter))
             {
                 response.commit();
                 return 1;
@@ -115,7 +115,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
                 .flowElementId(processGraph.intialFlowNodeId());
 
 
-            long logEntryOffset = logWriter.write(flowElementEventWriter);
+            final long logEntryOffset = logWriter.write(flowElementEventWriter);
             return response.defer(logEntryOffset, this);
         }
         else

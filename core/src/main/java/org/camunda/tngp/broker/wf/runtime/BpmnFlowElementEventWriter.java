@@ -22,8 +22,7 @@ public class BpmnFlowElementEventWriter implements BufferWriter
     @Override
     public int getLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH
-                + BpmnFlowElementEventEncoder.BLOCK_LENGTH;
+        return MessageHeaderEncoder.ENCODED_LENGTH + BpmnFlowElementEventEncoder.BLOCK_LENGTH;
     }
 
     @Override

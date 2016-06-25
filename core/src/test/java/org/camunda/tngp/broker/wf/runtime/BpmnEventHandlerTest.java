@@ -82,7 +82,7 @@ public class BpmnEventHandlerTest
         eventHandler.doWork();
 
         // then
-        InOrder inOrder = Mockito.inOrder(logReader, handler);
+        final InOrder inOrder = Mockito.inOrder(logReader, handler);
 
         inOrder.verify(logReader).read(eventReader);
         inOrder.verify(handler).handle(flowElementEventReader, process, logWriter);

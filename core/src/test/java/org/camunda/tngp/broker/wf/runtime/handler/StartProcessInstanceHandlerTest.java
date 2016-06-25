@@ -91,7 +91,8 @@ public class StartProcessInstanceHandlerTest
     public void shouldStartProcessById()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+
         startHandler.requestReader = requestReader;
         startHandler.responseWriter = responseWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
@@ -101,19 +102,19 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
+        final long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
 
-        ArgumentCaptor<Long> processInstanceId = ArgumentCaptor.forClass(Long.class);
+        final ArgumentCaptor<Long> processInstanceId = ArgumentCaptor.forClass(Long.class);
 
         verify(flowElementEventWriter).eventType(ExecutionEventType.EVT_OCCURRED);
         verify(flowElementEventWriter).flowElementId(987);
         verify(flowElementEventWriter).processId(1234L);
         verify(flowElementEventWriter).processInstanceId(processInstanceId.capture());
 
-        InOrder inOrder = Mockito.inOrder(response, logWriter, requestReader, responseWriter);
+        final InOrder inOrder = Mockito.inOrder(response, logWriter, requestReader, responseWriter);
 
         inOrder.verify(requestReader).wrap(requestBuffer, 1234, 4567);
         inOrder.verify(responseWriter).processInstanceId(processInstanceId.getValue());
@@ -129,7 +130,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldStartProcessByKey()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.responseWriter = responseWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
@@ -142,12 +143,12 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
+        final long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
 
-        ArgumentCaptor<Long> processInstanceId = ArgumentCaptor.forClass(Long.class);
+        final ArgumentCaptor<Long> processInstanceId = ArgumentCaptor.forClass(Long.class);
 
         verify(flowElementEventWriter).eventType(ExecutionEventType.EVT_OCCURRED);
         verify(flowElementEventWriter).flowElementId(987);
@@ -155,7 +156,7 @@ public class StartProcessInstanceHandlerTest
         verify(flowElementEventWriter).processInstanceId(processInstanceId.capture());
 
 
-        InOrder inOrder = Mockito.inOrder(response, logWriter, requestReader, responseWriter);
+        final InOrder inOrder = Mockito.inOrder(response, logWriter, requestReader, responseWriter);
 
         inOrder.verify(requestReader).wrap(requestBuffer, 1234, 4567);
         inOrder.verify(responseWriter).processInstanceId(processInstanceId.getValue());
@@ -171,7 +172,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldWriteErrorWhenProcessNotFoundById()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
@@ -182,7 +183,7 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
+        final long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
@@ -191,7 +192,7 @@ public class StartProcessInstanceHandlerTest
         verify(errorWriter).detailCode(WfErrors.PROCESS_NOT_FOUND_ERROR);
         verify(errorWriter).errorMessage("Cannot find process with id");
 
-        InOrder inOrder = inOrder(response, errorWriter);
+        final InOrder inOrder = inOrder(response, errorWriter);
         inOrder.verify(errorWriter).componentCode(anyInt());
         inOrder.verify(response).allocateAndWrite(errorWriter);
         inOrder.verify(response).commit();
@@ -203,7 +204,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldWriteErrorWhenProcessNotFoundByKey()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
@@ -216,7 +217,7 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
-        long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
+        final long result = startHandler.onRequest(mockContext, requestBuffer, 1234, 4567, response);
 
         // then
         assertThat(result).isGreaterThan(0);
@@ -225,7 +226,7 @@ public class StartProcessInstanceHandlerTest
         verify(errorWriter).detailCode(WfErrors.PROCESS_NOT_FOUND_ERROR);
         verify(errorWriter).errorMessage("Cannot find process with key");
 
-        InOrder inOrder = inOrder(response, errorWriter);
+        final InOrder inOrder = inOrder(response, errorWriter);
         inOrder.verify(errorWriter).componentCode(anyInt());
         inOrder.verify(response).allocateAndWrite(errorWriter);
         inOrder.verify(response).commit();
@@ -237,7 +238,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldReturnFailureResultWhenResponseNotAllocated()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
@@ -248,7 +249,7 @@ public class StartProcessInstanceHandlerTest
         when(response.allocateAndWrite(any())).thenReturn(false);
 
         // when
-        long result = startHandler.onRequest(mockContext, requestBuffer, 0, 0, response);
+        final long result = startHandler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
         assertThat(result).isLessThan(0);
@@ -262,7 +263,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldReturnFailureResultWhenResponseNotDeferred()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
@@ -273,7 +274,7 @@ public class StartProcessInstanceHandlerTest
         when(response.defer(anyLong(), any())).thenReturn(-1);
 
         // when
-        long result = startHandler.onRequest(mockContext, requestBuffer, 0, 0, response);
+        final long result = startHandler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
         assertThat(result).isEqualTo(-1);
@@ -286,7 +287,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldCommitResponseWhenAsyncWorkComplete()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
 
         // when
         startHandler.onAsyncWorkCompleted(response);
@@ -300,7 +301,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldAbortResponseWhenAsyncWorkFailed()
     {
         // given
-        StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
 
         // when
         startHandler.onAsyncWorkFailed(response);

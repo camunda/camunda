@@ -26,7 +26,7 @@ public class StartProcessInstanceResponseWriterTest
     public void shouldWriteResponse()
     {
         // given
-        StartProcessInstanceResponseWriter writer = new StartProcessInstanceResponseWriter();
+        final StartProcessInstanceResponseWriter writer = new StartProcessInstanceResponseWriter();
 
         // when
         writer
@@ -34,8 +34,8 @@ public class StartProcessInstanceResponseWriterTest
             .write(eventBuffer, 12);
 
         // then
-        MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-        StartWorkflowInstanceResponseDecoder bodyDecoder = new StartWorkflowInstanceResponseDecoder();
+        final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+        final StartWorkflowInstanceResponseDecoder bodyDecoder = new StartWorkflowInstanceResponseDecoder();
 
         headerDecoder.wrap(eventBuffer, 12);
         assertThat(headerDecoder.blockLength()).isEqualTo(StartWorkflowInstanceResponseDecoder.BLOCK_LENGTH);
@@ -55,14 +55,14 @@ public class StartProcessInstanceResponseWriterTest
     public void shouldEstimateWriteLength()
     {
         // given
-        StartProcessInstanceResponseWriter writer = new StartProcessInstanceResponseWriter();
+        final StartProcessInstanceResponseWriter writer = new StartProcessInstanceResponseWriter();
 
         writer
             .processInstanceId(45678L)
             .write(eventBuffer, 0);
 
         // when
-        int estimatedLength = writer.getLength();
+        final int estimatedLength = writer.getLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + StartWorkflowInstanceResponseEncoder.BLOCK_LENGTH);

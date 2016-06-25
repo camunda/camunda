@@ -40,7 +40,7 @@ public class StartProcessHandlerTest
     public void shouldWriteStartProcessEvent()
     {
         // given
-        StartProcessHandler startProcessHandler = new StartProcessHandler();
+        final StartProcessHandler startProcessHandler = new StartProcessHandler();
         startProcessHandler.setEventWriter(eventWriter);
 
         when(flowElementEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
@@ -64,10 +64,10 @@ public class StartProcessHandlerTest
     public void shouldHandleStartProcessAspect()
     {
         // given
-        StartProcessHandler startProcessHandler = new StartProcessHandler();
+        final StartProcessHandler startProcessHandler = new StartProcessHandler();
 
         // when
-        BpmnAspect handledBpmnAspect = startProcessHandler.getHandledBpmnAspect();
+        final BpmnAspect handledBpmnAspect = startProcessHandler.getHandledBpmnAspect();
 
         // then
         assertThat(handledBpmnAspect).isEqualTo(BpmnAspect.START_PROCESS);

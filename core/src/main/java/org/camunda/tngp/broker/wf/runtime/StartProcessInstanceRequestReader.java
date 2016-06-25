@@ -9,11 +9,10 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class StartProcessInstanceRequestReader implements BufferReader
 {
-
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected StartWorkflowInstanceDecoder bodyDecoder = new StartWorkflowInstanceDecoder();
 
-    protected final UnsafeBuffer keyBuffer = new UnsafeBuffer(0,0);
+    protected final UnsafeBuffer keyBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -24,7 +23,7 @@ public class StartProcessInstanceRequestReader implements BufferReader
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        int wfTypeKeyLength = bodyDecoder.wfTypeKeyLength();
+        final int wfTypeKeyLength = bodyDecoder.wfTypeKeyLength();
 
         offset += bodyDecoder.encodedLength();
         offset += StartWorkflowInstanceDecoder.wfTypeKeyHeaderLength();

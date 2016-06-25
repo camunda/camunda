@@ -20,8 +20,8 @@ public class StartProcessInstanceRequestReaderTest
     @Before
     public void writeEventToBuffer()
     {
-        MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-        StartWorkflowInstanceEncoder bodyEncoder = new StartWorkflowInstanceEncoder();
+        final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+        final StartWorkflowInstanceEncoder bodyEncoder = new StartWorkflowInstanceEncoder();
 
         headerEncoder.wrap(eventBuffer, 0)
             .blockLength(bodyEncoder.sbeBlockLength())
@@ -32,8 +32,8 @@ public class StartProcessInstanceRequestReaderTest
             .version(bodyEncoder.sbeSchemaVersion());
 
         bodyEncoder.wrap(eventBuffer, headerEncoder.encodedLength())
-           .wfTypeId(123L)
-           .wfTypeKey("foo");
+            .wfTypeId(123L)
+            .wfTypeKey("foo");
 
         eventLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }
@@ -42,7 +42,7 @@ public class StartProcessInstanceRequestReaderTest
     public void shouldReadRequest()
     {
         // given
-        StartProcessInstanceRequestReader reader = new StartProcessInstanceRequestReader();
+        final StartProcessInstanceRequestReader reader = new StartProcessInstanceRequestReader();
 
         // when
         reader.wrap(eventBuffer, 0, eventLength);
