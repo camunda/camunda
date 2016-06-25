@@ -3,6 +3,7 @@ target
 .classpath
 .checkstyle
 .project
+.checkstyle
 .settings
 build.properties
 bin
@@ -21,3 +22,4 @@ faces-config.NavData
 
 *.DS_Store
 .gradle
+work/
