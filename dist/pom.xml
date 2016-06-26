@@ -1,0 +1,89 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>tngp-distribution</artifactId>
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>org.camunda.tngp</groupId>
+    <artifactId>tngp-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../parent</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>tngp-broker-core</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <version>1.10</version>
+        <configuration>
+          <configurationDirectory>conf</configurationDirectory>
+          <copyConfigurationDirectory>true</copyConfigurationDirectory>
+          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+          <extraJvmArguments>-Xms128m</extraJvmArguments>
+          <repositoryLayout>flat</repositoryLayout>
+          <useWildcardClassPath>true</useWildcardClassPath>
+          <repositoryName>lib</repositoryName>
+          <assembleDirectory>${project.build.directory}/tngp-broker</assembleDirectory>
+          <platforms>
+            <platform>windows</platform>
+            <platform>unix</platform>
+          </platforms>
+          <programs>
+            <program>
+              <mainClass>org.camunda.tngp.broker.StandaloneBroker</mainClass>
+              <id>broker</id>
+              <commandLineArguments>
+                <commandLineArgument>../conf/tngp.cfg.toml</commandLineArgument>
+              </commandLineArguments>
+            </program>
+          </programs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>assemble</id>
+            <phase>package</phase>
+            <goals>
+              <goal>assemble</goal>
+            </goals>
+            <configuration>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <attach>true</attach>
+          <appendAssemblyId>false</appendAssemblyId>
+          <finalName>camunda-tngp-broker</finalName>
+          <descriptors>
+            <descriptor>src/main/assembly.xml</descriptor>
+          </descriptors>
+        </configuration>
+        <executions>
+          <execution>
+            <id>assemble</id>
+            <phase>package</phase>
+            <goals>
+              <goal>assembly</goal>
+            </goals>
+            <configuration>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
+
