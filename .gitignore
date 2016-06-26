@@ -2,6 +2,7 @@
 target
 .classpath
 .project
+.checkstyle
 .settings
 build.properties
 bin
