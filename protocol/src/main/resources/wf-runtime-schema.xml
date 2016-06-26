@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
+	package="org.camunda.tngp.protocol.wf.runtime" id="3" version="1"
+	semanticVersion="0.1.0" description="Tngp Workflow Client Protocol" byteOrder="littleEndian">
+
+	<types>
+		<composite name="messageHeader"
+			description="Message identifiers and length of message root">
+			<type name="blockLength" primitiveType="uint16" />
+			<type name="templateId" primitiveType="uint16" />
+			<type name="schemaId" primitiveType="uint16" />
+			<type name="version" primitiveType="uint16" />
+			<type name="resourceId" primitiveType="uint16" />
+			<type name="shardId" primitiveType="uint16" />
+		</composite>
+		<composite name="varDataEncoding">
+			<type name="length" primitiveType="uint16" />
+			<type name="varData" primitiveType="uint8" length="0"
+				characterEncoding="UTF-8" />
+		</composite>
+		<composite name="groupSizeEncoding" description="Repeating group dimensions">
+			<type name="blockLength" primitiveType="uint16" />
+			<type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+		</composite>
+	</types>
+
+	<types>
+	</types>
+
+	<sbe:message name="StartWorkflowInstance" id="0" description="Starts a new workflow instance">
+		<field name="wfTypeId" id="1" type="uint64" />
+		<data name="wfTypeKey" id="2" type="varDataEncoding" />
+	</sbe:message>
+	
+	<sbe:message name="StartWorkflowInstanceResponse" id="200" description="A new workflow instance has been started">
+		<field name="wfInstanceId" id="1" type="uint64" />
+	</sbe:message>
+
+</sbe:messageSchema>

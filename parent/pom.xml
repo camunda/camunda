@@ -1,0 +1,188 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>tngp-parent</artifactId>
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>org.camunda.tngp</groupId>
+    <artifactId>tngp-root</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <properties>
+    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencyManagement>
+  
+    <dependencies>
+  
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>tngp-protocol</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>tngp-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>tngp-broker-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>dispatcher</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>log</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>transport</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>log-idgenerator</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>hash-index</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>compact-graph-bpmn</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>service-container</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.moandjiezana.toml</groupId>
+        <artifactId>toml4j</artifactId>
+        <version>0.5.1</version>
+      </dependency>
+
+      <dependency>
+        <groupId>uk.co.real-logic</groupId>
+        <artifactId>sbe-all</artifactId>
+        <version>1.3.3-RC3</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.bpm.model</groupId>
+        <artifactId>camunda-bpmn-model</artifactId>
+        <version>7.5.0</version>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>1.8.5</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>3.3.0</version>
+        <scope>test</scope>
+      </dependency>
+
+    </dependencies>
+
+  </dependencyManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>2.17</version>
+        <configuration>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <encoding>UTF-8</encoding>
+          <failOnViolation>true</failOnViolation>
+        </configuration>
+        <executions>
+          <execution>
+            <id>validate-java</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <inherited>true</inherited>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <versionRange>[1.3.2,)</versionRange>
+                    <goals>
+                      <goal>java</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore></ignore>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>
+
