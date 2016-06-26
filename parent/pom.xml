@@ -16,9 +16,9 @@
   </properties>
 
   <dependencyManagement>
-  
+
     <dependencies>
-  
+
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>tngp-protocol</artifactId>
@@ -185,4 +185,3 @@
   </build>
 
 </project>
-
