@@ -13,7 +13,7 @@ public class ProtocolRequestResponseTest
     @Test
     public void shouldEchoMessages() throws Exception
     {
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 8080);
+        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
 
         try (final Transport clientTransport = Transports.createTransport("client").build();
              final Transport serverTransport = Transports.createTransport("server").build();

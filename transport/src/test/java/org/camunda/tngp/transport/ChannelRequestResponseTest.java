@@ -43,7 +43,7 @@ public class ChannelRequestResponseTest
         // 1K message
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
         final ClientFragmentHandler fragmentHandler = new ClientFragmentHandler();
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 8080);
+        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
 
         final Dispatcher clientReceiveBuffer = Dispatchers.create("client-receive-buffer")
                 .bufferSize(16 * 1024 * 1024)
