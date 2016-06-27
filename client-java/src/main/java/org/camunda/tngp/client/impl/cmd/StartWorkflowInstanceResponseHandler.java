@@ -8,7 +8,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class StartWorkflowInstanceResponseHandler implements ClientResponseHandler<WorkflowInstance>
 {
-    protected StartWorkflowInstanceResponseReader responseReader;
+    protected StartWorkflowInstanceResponseReader responseReader = new StartWorkflowInstanceResponseReader();
 
     @Override
     public int getResponseSchemaId()
