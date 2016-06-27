@@ -1,0 +1,29 @@
+<!-- get tag from github -->
+<div class="panel-group gs-download-step-panel" id="git{{ .Get "tag" }}">
+  <div class="panel panel-success">
+    <div class="panel-heading">
+      <div class="pull-right">
+        <a class="btn btn-success gs-download-step-btn" href="https://github.com/camunda/{{ .Get "repo" }}/archive/{{ .Get "tag" }}.zip">
+          <span i class="glyphicon glyphicon-download-alt"></span>
+          Source Code {{ .Get "tag" }}
+        </a>
+      </div>
+      <h4>Catch up: Get the Sources of {{ .Get "tag" }}.</h4>
+      <p class="text-muted">
+        <a href="https://github.com/camunda/{{ .Get "repo" }}/archive/{{ .Get "tag" }}.zip">Download as .zip</a>
+        or checkout the corresponding tag with <a class="toggle-instructions">Git</a>.
+      </p>
+    </div>
+    <div class="panel-body">
+      <p>You can checkout the current state from the <a href="https://github.com/camunda/{{ .Get "repo" }}">GitHub repository</a>.</p>
+      <p>If you have not cloned the repository yet, please execute the following command:
+      <pre class="console">git clone https://github.com/camunda/{{ .Get "repo" }}.git</pre>
+      </p>
+      <p>
+      To checkout the current state of the process application please execute the following command:
+      <pre class="console">git checkout -f {{ .Get "tag" }}</pre>
+      Or download as archive from <a href="https://github.com/camunda/{{ .Get "repo" }}/releases/tag/{{ .Get "tag" }}">here</a>.
+      </p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,69 @@
+
+
+{{ define "find-current-menu-node" }}
+
+  {{ $ctx := . }}
+  {{ $thisPage := $ctx.Get "thisPage" }}
+  {{ $currentNode := $ctx.Get "currentNode" }}
+
+
+
+    {{ if $currentNode.HasChildren }}
+      {{ range $currentNode.Children }}
+
+        {{ if $thisPage.IsMenuCurrent "main" . }}
+          {{ $ctx.Set "menuItem" . }}
+        {{ else }}
+
+        {{ if $thisPage.HasMenuCurrent "main" . }}
+          {{ $ctx.Set "currentNode" . }}
+          {{ template "find-current-menu-node" $ctx }}
+        {{ end}}
+      {{ end }}
+    {{ end }}
+
+  {{ end }}
+
+{{ end }}
+
+
+{{ $ctx := .Scratch }}
+{{ $thisPage := .}}
+{{ $ctx.Set "thisPage" $thisPage }}
+
+{{ range .Site.Menus.main }}
+
+  {{ if $thisPage.IsMenuCurrent "main" . }}
+    {{ $ctx.Set "menuItem" . }}
+  {{ end }}
+
+  {{ if $thisPage.HasMenuCurrent "main" . }}
+    {{ $ctx.Set "currentNode" . }}
+    {{ template "find-current-menu-node" $ctx }}
+  {{ end}}
+
+{{ end}}
+
+
+{{ $menuItem := .Scratch.Get "menuItem"}}
+
+{{ if $menuItem.HasChildren }}
+
+  <dl>
+
+  {{ range $menuItem.Children }}
+
+    <dt>
+      <a href="{{.URL}}">{{ .Name }}</a>
+    </dt>
+    <dd>
+      {{ if .Pre}}
+        {{ trim .Pre "" | markdownify }}
+      {{ end }}
+    </dd>
+
+  {{ end }}
+
+  </dl>
+
+{{ end }}

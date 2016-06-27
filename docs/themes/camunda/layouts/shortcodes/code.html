@@ -1,0 +1,3 @@
+{{ $content := (printf "%s" .Inner) }}
+<pre {{ with .Get "line"}}data-line="{{.}}"{{ end }}
+  {{ with .Get "start"}}data-start="{{.}}"{{ end }}class="language-{{ .Get "language" }}{{ if .Get "line-numbers" }} line-numbers{{ end }}"><code>{{ trim $content "" }}</code></pre>

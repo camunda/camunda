@@ -1,0 +1,57 @@
+{{ define "menu-node" }}
+  <li>
+    {{ if .HasChildren }}
+      <a href="{{.URL}}" >{{ .Name }}</a>
+      <ul>
+        {{ range .Children }}
+          {{ template "menu-node" .}}
+        {{ end }}
+      </ul>
+    {{else}}
+      <a href="{{.URL}}" >{{ .Name }}</a>
+    {{end}}
+  </li>
+{{ end }}
+
+<!-- menu start -->
+
+<div class="version{{ if $.Site.Params.section.version }} versioned{{end}}">
+  {{ if $.Site.Params.section.version }}
+    {{range $.Site.Params.sections }}
+      {{ if eq $.Site.Params.section.id .id }} <span class="name">{{ .name }}</span> {{ end }}
+    {{ end }}
+
+    {{with $.Site.Params.section }}
+      <span class="number"><a>{{.version}}</a>
+        {{ if .versionAlias}}
+          ({{.versionAlias}})
+        {{ end }}
+      </span>
+    {{ end }}
+  {{ end }}
+</div>
+
+<ul class="site-menu-items">
+  {{ range .Site.Menus.main }}
+    {{ template "menu-node" . }}
+  {{end}}
+</ul>
+
+
+<div class="meta">
+  <h4 class="header">
+    <span class="toggle glyphicon glyphicon-chevron-up"></span>
+    Options
+  </h4>
+
+  <div class="content">
+    <label for="version-select">Version:</label>
+    <select id="version-select" data-basepath="/{{ $.Site.Params.section.id }}">
+      {{range $.Site.Params.section.versions }}
+        <option {{if eq $.Site.Params.section.version . }} selected {{end}}>{{.}}</option>
+      {{ end }}
+    </select>
+  </div>
+</div>
+
+<!-- menu end -->

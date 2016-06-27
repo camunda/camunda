@@ -1,0 +1,77 @@
+<script type="text/javascript">
+  var camDownloads = {};
+
+  camDownloads.branches = {};
+  {{ range $branch := sort $.Page.Params.downloads.branches "branch" "desc" }}
+  camDownloads.branches['{{ $branch.branch }}'] = [
+    {{ range $info := sort $branch.releases "date" "desc" }}{
+      number: '{{ $info.number }}',
+      note:   '{{ $info.note }}',
+      date:   '{{ $info.date }}'{{ if $info.excludeservers }},
+      excludeServers: [{{ range $info.excludeservers }}'{{ . }}',{{ end }}false]{{ end }}
+      {{ if $info.excludeformats }},
+      excludeFormats: [{{ range $info.excludeformats }}'{{ . }}',{{ end }}false]{{ end }}
+    },{{ end }}false
+  ];
+  {{ end }}
+
+
+  camDownloads.servers = {};
+  {{ range $info := sort $.Page.Params.downloads.servers "weight" }}
+  camDownloads.servers['{{ $info.path }}'] = '{{ $info.name }}';{{ end }}
+
+  camDownloads.formats = [];
+  {{ range $.Page.Params.downloads.formats }}
+  camDownloads.formats.push('{{ . }}');{{ end }}
+
+  camDownloads.selected = {
+    branch: '{{ $.Page.Params.downloads.selected.branch }}',
+    version: '{{ $.Page.Params.downloads.selected.version }}',
+    server: '{{ $.Page.Params.downloads.selected.server }}'
+  };
+</script>
+
+<section class="cam-downloads">
+  <ul class="major"></ul>
+
+  <div class="selected-major">
+    <div class="wrapper">
+      <ul class="patch"></ul>
+
+      <div class="selected-patch">
+        <div class="wrapper">
+          <ul class="server"></ul>
+
+          <div class="selected-server">
+            <div class="info">
+              <h3></h3>
+              Released on <span class="date"></span>, <a class="notes">release notes</a>.
+            </div>
+
+            <div class="full">
+              <h4>Full Distribution</h4>
+
+              <a class="details" href="/manual/latest/installation/full">What is the Full Distribution?</a>
+
+              <div class="links">
+                <a class="tar-gz btn btn-primary">.tar.gz</a>
+
+                <a class="zip btn btn-primary">.zip</a>
+              </div>
+            </div>
+
+            <div class="standalone">
+              <h4>Standalone Web Application</h4>
+
+              <a class="details" href="/manual/latest/installation/standalone-webapplication">What is the Standalone Webapplication Distribution?</a>
+
+              <div class="links">
+                <a class="war btn btn-primary">.war</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
