@@ -18,6 +18,7 @@ import org.camunda.tngp.log.LogEntryReader;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
@@ -27,8 +28,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>, ResponseCompletionHandler
 {
-    public static final int WF_TYPE_KEY_MAX_LENGTH = 256;
-    protected final byte[] keyBuffer = new byte[WF_TYPE_KEY_MAX_LENGTH];
+    protected final byte[] keyBuffer = new byte[Constants.WF_TYPE_KEY_MAX_LENGTH];
 
     protected LogEntryWriter logEntryWriter = new LogEntryWriter();
     protected LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
@@ -64,14 +64,14 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         {
             final byte[] wfTypeKeyBytes = executableProcess.getId().getBytes(StandardCharsets.UTF_8);
 
-            if (wfTypeKeyBytes.length <= WF_TYPE_KEY_MAX_LENGTH)
+            if (wfTypeKeyBytes.length <= Constants.WF_TYPE_KEY_MAX_LENGTH)
             {
                 // TODO: hand over requestReader here
                 result = doDeploy(context, wfTypeKeyBytes, response, resourceBuffer, 0, resourceBuffer.capacity());
             }
             else
             {
-                errorMessage = String.format("Id of process exceeds max length: %d.", WF_TYPE_KEY_MAX_LENGTH);
+                errorMessage = String.format("Id of process exceeds max length: %d.", Constants.WF_TYPE_KEY_MAX_LENGTH);
             }
         }
 
@@ -111,10 +111,10 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         responseWriter.wfTypeId(typeId);
 
         final int keyLength = wfTypeKeyBytes.length;
-        if (keyLength <= WF_TYPE_KEY_MAX_LENGTH)
+        if (keyLength <= Constants.WF_TYPE_KEY_MAX_LENGTH)
         {
             arraycopy(wfTypeKeyBytes, 0, keyBuffer, 0, keyLength);
-            fill(keyBuffer, keyLength, WF_TYPE_KEY_MAX_LENGTH, (byte) 0);
+            fill(keyBuffer, keyLength, Constants.WF_TYPE_KEY_MAX_LENGTH, (byte) 0);
         }
 
         int version = 0;

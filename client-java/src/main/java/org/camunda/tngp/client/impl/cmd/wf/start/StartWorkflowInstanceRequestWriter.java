@@ -2,6 +2,7 @@ package org.camunda.tngp.client.impl.cmd.wf.start;
 
 import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceEncoder;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -54,6 +55,11 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
         if (keySet && idSet || (!keySet && !idSet))
         {
             throw new RuntimeException("Must set either workflow type id or key");
+        }
+
+        if (wfTypeKey.capacity() > Constants.WF_TYPE_KEY_MAX_LENGTH)
+        {
+            throw new RuntimeException("Key must not be longer than " + Constants.WF_TYPE_KEY_MAX_LENGTH + " bytes");
         }
 
     }

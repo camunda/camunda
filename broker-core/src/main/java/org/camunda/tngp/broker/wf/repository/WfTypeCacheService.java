@@ -6,12 +6,12 @@ import java.util.function.LongFunction;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.repository.handler.DeployBpmnResourceHandler;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
+import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -32,7 +32,7 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
     protected final LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
     protected final WfTypeReader reader = new WfTypeReader();
 
-    protected byte[] keyBuffer = new byte[DeployBpmnResourceHandler.WF_TYPE_KEY_MAX_LENGTH];
+    protected byte[] keyBuffer = new byte[Constants.WF_TYPE_KEY_MAX_LENGTH];
 
     public WfTypeCacheService(int numSets, int setSize)
     {

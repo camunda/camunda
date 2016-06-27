@@ -171,4 +171,40 @@ public class StartWorkflowInstanceRequestWriterTest
         // when
         writer.validate();
     }
+
+    @Test
+    public void testValidateMessageKeyTooLong()
+    {
+        // given
+        final StartWorkflowInstanceRequestWriter writer = new StartWorkflowInstanceRequestWriter();
+
+        writer
+            .resourceId(52)
+            .shardId(8686)
+            .wfTypeKey(new byte[257]);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Key must not be longer than 256 bytes");
+
+        // when
+        writer.validate();
+    }
+
+    @Test
+    public void testValidateMessageKeyLongEnough()
+    {
+        // given
+        final StartWorkflowInstanceRequestWriter writer = new StartWorkflowInstanceRequestWriter();
+
+        writer
+            .resourceId(52)
+            .shardId(8686)
+            .wfTypeKey(new byte[256]);
+
+        // when
+        writer.validate();
+
+        // then no exception is thrown
+    }
 }

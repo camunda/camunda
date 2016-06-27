@@ -12,6 +12,7 @@ import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
@@ -28,8 +29,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
 
     protected BpmnFlowElementEventWriter flowElementEventWriter = new BpmnFlowElementEventWriter();
 
-    public static final int WF_TYPE_KEY_MAX_LENGTH = 256;
-    protected final byte[] keyBuffer = new byte[WF_TYPE_KEY_MAX_LENGTH];
+    protected final byte[] keyBuffer = new byte[Constants.WF_TYPE_KEY_MAX_LENGTH];
 
     @Override
     public long onRequest(
