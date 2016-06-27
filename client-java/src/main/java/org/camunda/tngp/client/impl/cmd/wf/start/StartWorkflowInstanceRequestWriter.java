@@ -16,7 +16,7 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
 
     protected int resourceId;
     protected int shardId;
-    protected long wfTypeId;
+    protected long wfTypeId = -1;
 
     @Override
     public int getLength()
@@ -48,12 +48,14 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
     @Override
     public void validate()
     {
-        // TODO
-    }
+        final boolean keySet = wfTypeKey.capacity() > 0;
+        final boolean idSet = wfTypeId >= 0;
 
-    public UnsafeBuffer getWfTypeKey()
-    {
-        return wfTypeKey;
+        if (keySet && idSet || (!keySet && !idSet))
+        {
+            throw new RuntimeException("Must set either workflow type id or key");
+        }
+
     }
 
     public StartWorkflowInstanceRequestWriter resourceId(int resourceId)
@@ -73,5 +75,12 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
         this.wfTypeId = id;
         return this;
     }
+
+    public StartWorkflowInstanceRequestWriter wfTypeKey(byte[] bytes)
+    {
+        wfTypeKey.wrap(bytes);
+        return this;
+    }
+
 
 }

@@ -14,11 +14,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
 public class DeployBpmnResourceResponseHandlerTest
 {
 
-    public static final int DEFAULT_SHARD_ID = 0;
-    public static final int DEFAULT_RESOURCE_ID = 0;
-
-    public static final byte[] RESOURCE = new byte[]{122, 52, 74};
-
     @Test
     public void testReadResponseBody()
     {

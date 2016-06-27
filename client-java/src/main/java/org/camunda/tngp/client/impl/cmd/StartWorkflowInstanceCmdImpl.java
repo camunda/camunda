@@ -8,7 +8,7 @@ import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceRequestWri
 public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstance>
     implements StartWorkflowInstanceCmd
 {
-    protected final StartWorkflowInstanceRequestWriter requestWriter = new StartWorkflowInstanceRequestWriter();
+    protected StartWorkflowInstanceRequestWriter requestWriter = new StartWorkflowInstanceRequestWriter();
 
     public StartWorkflowInstanceCmdImpl(final ClientCmdExecutor clientCmdExecutor)
     {
@@ -25,7 +25,7 @@ public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstan
     @Override
     public StartWorkflowInstanceCmd workflowTypeKey(byte[] key)
     {
-        requestWriter.getWfTypeKey().wrap(key);
+        requestWriter.wfTypeKey(key);
         return this;
     }
 
@@ -39,6 +39,11 @@ public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstan
     public ClientRequestWriter getRequestWriter()
     {
         return requestWriter;
+    }
+
+    public void setRequestWriter(StartWorkflowInstanceRequestWriter requestWriter)
+    {
+        this.requestWriter = requestWriter;
     }
 
 }
