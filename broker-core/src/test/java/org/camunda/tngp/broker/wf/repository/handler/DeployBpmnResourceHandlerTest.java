@@ -23,6 +23,7 @@ import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
 import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
 import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
@@ -178,7 +179,7 @@ public class DeployBpmnResourceHandlerTest
     {
         String procesId = "some-l";
 
-        while (procesId.getBytes(StandardCharsets.UTF_8).length < DeployBpmnResourceHandler.WF_TYPE_KEY_MAX_LENGTH)
+        while (procesId.getBytes(StandardCharsets.UTF_8).length < Constants.WF_TYPE_KEY_MAX_LENGTH)
         {
             procesId += "o";
         }
