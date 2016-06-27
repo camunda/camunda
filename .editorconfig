@@ -11,3 +11,10 @@ indent_size = 4
 
 [*.xml]
 indent_size = 2
+
+[*.html]
+indent_size = 2
+
+[*.md]
+indent_size = 2
+
