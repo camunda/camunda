@@ -30,10 +30,6 @@ public class BpmnEventHandler
         this.processCache = processCache;
         this.logReader = logReader;
         this.logWriter = logWriter;
-
-        // TODO: these should be listed in the wf component config
-        //   => makes this class easier testable
-        addFlowElementHandler(new StartProcessHandler());
     }
 
     public void addFlowElementHandler(BpmnFlowElementEventHandler handler)

@@ -23,7 +23,8 @@ public class StartProcessHandler implements BpmnFlowElementEventHandler
 
         if (logWriter.write(eventWriter) < 0)
         {
-            // TODO: throw exception; could not write event
+            // TODO: throw exception/backpressure; could not write event
+            System.err.println("Could not write process start event");
         }
 
     }

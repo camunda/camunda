@@ -38,8 +38,10 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setLogReader(logReader);
         wfRuntimeContext.setLogWriter(logWriter);
 
-        // TODO: is it good to instantiate the handler here?
-        wfRuntimeContext.setBpmnEventHandler(new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter));
+        final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter);
+        bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
+
+        wfRuntimeContext.setBpmnEventHandler(bpmnEventHandler);
     }
 
     @Override

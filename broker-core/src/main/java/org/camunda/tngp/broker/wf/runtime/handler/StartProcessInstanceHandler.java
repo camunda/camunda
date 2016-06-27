@@ -72,8 +72,6 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         if (processGraph != null)
         {
             return startProcess(response, logWriter, processGraph, idGenerator);
-            // TODO: return 1, if response could be deferred
-            // TODO: return -1 else
         }
         else
         {
