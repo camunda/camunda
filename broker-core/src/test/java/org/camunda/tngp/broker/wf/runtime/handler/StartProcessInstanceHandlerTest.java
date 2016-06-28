@@ -13,9 +13,9 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
-import org.camunda.tngp.broker.wf.repository.handler.FluentAnswer;
 import org.camunda.tngp.broker.wf.runtime.BpmnFlowElementEventWriter;
 import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceRequestReader;

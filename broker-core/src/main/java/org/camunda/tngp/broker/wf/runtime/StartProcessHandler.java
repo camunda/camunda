@@ -4,6 +4,7 @@ import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class StartProcessHandler implements BpmnFlowElementEventHandler
 {
@@ -11,7 +12,7 @@ public class StartProcessHandler implements BpmnFlowElementEventHandler
     protected BpmnProcessEventWriter eventWriter = new BpmnProcessEventWriter();
 
     @Override
-    public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter)
+    public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
     {
 
         eventWriter

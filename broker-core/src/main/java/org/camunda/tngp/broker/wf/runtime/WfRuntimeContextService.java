@@ -38,8 +38,15 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setLogReader(logReader);
         wfRuntimeContext.setLogWriter(logWriter);
 
-        final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter);
+        final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter, idGeneratorInjector.getValue());
         bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
+        bpmnEventHandler.addFlowElementHandler(new CreateActivityInstanceHandler());
+
+        bpmnEventHandler.addProcessHandler(new TakeInitialFlowsHandler());
+
+        final WaitEventHandler waitEventHandler = new WaitEventHandler();
+        bpmnEventHandler.addProcessHandler(waitEventHandler);
+        bpmnEventHandler.addFlowElementHandler(waitEventHandler);
 
         wfRuntimeContext.setBpmnEventHandler(bpmnEventHandler);
     }

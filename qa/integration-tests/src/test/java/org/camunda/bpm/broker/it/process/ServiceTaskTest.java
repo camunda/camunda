@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class StartProcessInstanceTest
+public class ServiceTaskTest
 {
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -42,13 +42,14 @@ public class StartProcessInstanceTest
             .bpmnModelInstance(
                     Bpmn.createExecutableProcess("anId")
                         .startEvent()
+                        .serviceTask()
                         .endEvent()
                         .done())
             .execute();
     }
 
     @Test
-    public void shouldStartProcessById()
+    public void shouldStartProcessWithServiceTask()
     {
         final TngpClient client = clientRule.getClient();
         final ProcessService workflowService = client.processes();
@@ -56,20 +57,6 @@ public class StartProcessInstanceTest
         // when
         final WorkflowInstance processInstance = workflowService.start()
             .workflowTypeId(process.getWorkflowTypeId())
-            .execute();
-
-        assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
-    }
-
-    @Test
-    public void shouldStartProcessByKey()
-    {
-        final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
-
-        // when
-        final WorkflowInstance processInstance = workflowService.start()
-            .workflowTypeKey("anId")
             .execute();
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);

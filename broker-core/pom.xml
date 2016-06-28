@@ -58,6 +58,12 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-all</artifactId>
     </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>junit</groupId>

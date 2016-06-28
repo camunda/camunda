@@ -6,10 +6,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
-import org.camunda.tngp.broker.wf.repository.handler.FluentAnswer;
+import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -27,6 +29,8 @@ public class StartProcessHandlerTest
     @Mock
     protected LogWriter logWriter;
 
+    protected IdGenerator idGenerator;
+
     protected BpmnProcessEventWriter eventWriter;
 
     @Before
@@ -34,6 +38,7 @@ public class StartProcessHandlerTest
     {
         MockitoAnnotations.initMocks(this);
         eventWriter = mock(BpmnProcessEventWriter.class, new FluentAnswer());
+        idGenerator = new PrivateIdGenerator(0);
     }
 
     @Test
@@ -50,7 +55,7 @@ public class StartProcessHandlerTest
         when(flowElementEventReader.processInstanceId()).thenReturn(1701L);
 
         // when
-        startProcessHandler.handle(flowElementEventReader, process, logWriter);
+        startProcessHandler.handle(flowElementEventReader, process, logWriter, idGenerator);
 
         // then
         verify(eventWriter).event(ExecutionEventType.PROC_INST_CREATED);
@@ -58,6 +63,8 @@ public class StartProcessHandlerTest
         verify(eventWriter).processInstanceId(1701L);
         verify(eventWriter).key(1701L);
         verify(eventWriter).initialElementId(42);
+
+        verify(logWriter).write(eventWriter);
     }
 
     @Test

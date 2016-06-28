@@ -10,14 +10,17 @@ import uk.co.real_logic.agrona.DirectBuffer;
 public class BpmnProcessEventReader implements BufferReader
 {
 
-
-    protected MessageHeaderDecoder headerDecoder;
-    protected BpmnProcessEventDecoder bodyDecoder;
+    protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    protected BpmnProcessEventDecoder bodyDecoder = new BpmnProcessEventDecoder();
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
-        // TODO Auto-generated method stub
+        headerDecoder.wrap(buffer, offset);
+
+        offset += headerDecoder.encodedLength();
+
+        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
     }
 

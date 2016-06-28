@@ -11,6 +11,7 @@ public class BpmnEventReader implements BufferReader
 {
 
     protected final BpmnFlowElementEventReader flowElementEventReader = new BpmnFlowElementEventReader();
+    protected final BpmnProcessEventReader processEventReader = new BpmnProcessEventReader();
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
@@ -23,6 +24,7 @@ public class BpmnEventReader implements BufferReader
         switch (templateId)
         {
             case BpmnProcessEventDecoder.TEMPLATE_ID:
+                processEventReader.wrap(buffer, offset, length);
                 break;
             case BpmnFlowElementEventDecoder.TEMPLATE_ID:
                 flowElementEventReader.wrap(buffer, offset, length);
@@ -40,6 +42,11 @@ public class BpmnEventReader implements BufferReader
     public BpmnFlowElementEventReader flowElementEvent()
     {
         return flowElementEventReader;
+    }
+
+    public BpmnProcessEventReader processEvent()
+    {
+        return processEventReader;
     }
 
 }

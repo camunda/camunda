@@ -6,12 +6,14 @@ import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
-import org.camunda.tngp.broker.wf.repository.handler.FluentAnswer;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventDecoder;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +48,8 @@ public class BpmnEventHandlerTest
     @Mock
     protected BpmnFlowElementEventReader flowElementEventReader;
 
+    protected IdGenerator idGenerator;
+
     protected FlowElementVisitor flowElementVisitor;
 
 
@@ -54,8 +58,9 @@ public class BpmnEventHandlerTest
     {
         MockitoAnnotations.initMocks(this);
         flowElementVisitor = mock(FlowElementVisitor.class, new FluentAnswer());
+        idGenerator = new PrivateIdGenerator(0);
 
-        eventHandler = new BpmnEventHandler(processCache, logReader, logWriter);
+        eventHandler = new BpmnEventHandler(processCache, logReader, logWriter, idGenerator);
         eventHandler.setEventReader(eventReader);
         eventHandler.setFlowElementVisitor(flowElementVisitor);
 
@@ -85,7 +90,7 @@ public class BpmnEventHandlerTest
         final InOrder inOrder = Mockito.inOrder(logReader, handler);
 
         inOrder.verify(logReader).read(eventReader);
-        inOrder.verify(handler).handle(flowElementEventReader, process, logWriter);
+        inOrder.verify(handler).handle(flowElementEventReader, process, logWriter, idGenerator);
     }
 
 }

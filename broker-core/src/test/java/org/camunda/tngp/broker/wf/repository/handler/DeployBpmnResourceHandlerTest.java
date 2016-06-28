@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
