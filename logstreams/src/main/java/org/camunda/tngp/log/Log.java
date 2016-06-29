@@ -29,6 +29,8 @@ public class Log implements AutoCloseable
     protected final boolean deleteOnClose;
     protected final LogAppendHandler logAppendHandler;
 
+    protected volatile boolean isClosed = false;
+
     public Log(final LogContext logContext)
     {
         this.name = logContext.getName();
@@ -188,5 +190,15 @@ public class Log implements AutoCloseable
     public boolean isDeleteOnClose()
     {
         return deleteOnClose;
+    }
+
+    public boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    public void setClosed(boolean isClosed)
+    {
+        this.isClosed = isClosed;
     }
 }

@@ -62,7 +62,10 @@ public class LogAppenderTest
     {
         final String logPath = temFolder.getRoot().getAbsolutePath();
 
-        final Log log = Logs.createLog("foo", 0).logRootPath(logPath).deleteOnClose(true)
+        final Log log = Logs.createLog("foo", 0)
+                .logRootPath(logPath)
+                .deleteOnClose(true)
+                .logSegmentSize(1024 * 1024 * 8)
                 .threadingMode(ThreadingMode.DEDICATED).build();
 
         log.start();
@@ -73,7 +76,7 @@ public class LogAppenderTest
 
         final LogFragmentReader logFragmentReader = new LogFragmentReader();
 
-        final int totalWork = 1024 * 1024;
+        final int totalWork = 1024 * 24;
 
         for (int i = 0; i < totalWork; i++)
         {

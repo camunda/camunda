@@ -55,22 +55,25 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
     public void allocateSegment(Log log, int segmentId)
     {
-        final LogSegmentAllocationDescriptor allocationDescriptor = log.getAllocationDescriptor();
-        final LogSegments logSegements = log.getLogSegments();
-
-        final String fileName = allocationDescriptor.fileName(segmentId);
-        final AppendableLogSegment appendableSegment = new AppendableLogSegment(fileName);
-        final ReadableLogSegment readableSegment = new ReadableLogSegment(fileName);
-
-        if (appendableSegment.allocate(segmentId, allocationDescriptor.getSegmentSize())
-                && readableSegment.openSegment(false))
+        if (!log.isClosed())
         {
-            appenderCmdQueue.add((a) -> a.onNextSegmentAllocated(log, appendableSegment));
-            logSegements.addSegment(readableSegment);
-        }
-        else
-        {
-            appenderCmdQueue.add((a) -> a.onNextSegmentAllocationFailed(log));
+            final LogSegmentAllocationDescriptor allocationDescriptor = log.getAllocationDescriptor();
+            final LogSegments logSegements = log.getLogSegments();
+
+            final String fileName = allocationDescriptor.fileName(segmentId);
+            final AppendableLogSegment appendableSegment = new AppendableLogSegment(fileName);
+            final ReadableLogSegment readableSegment = new ReadableLogSegment(fileName);
+
+            if (appendableSegment.allocate(segmentId, allocationDescriptor.getSegmentSize())
+                    && readableSegment.openSegment(false))
+            {
+                appenderCmdQueue.add((a) -> a.onNextSegmentAllocated(log, appendableSegment));
+                logSegements.addSegment(readableSegment);
+            }
+            else
+            {
+                appenderCmdQueue.add((a) -> a.onNextSegmentAllocationFailed(log));
+            }
         }
     }
 
@@ -161,6 +164,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
     public void closeLog(final Log log, final CompletableFuture<Log> closeFuture)
     {
+        log.setClosed(true);
 
         try
         {
