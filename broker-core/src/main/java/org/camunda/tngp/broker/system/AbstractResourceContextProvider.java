@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
+import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceListener;
 import org.camunda.tngp.servicecontainer.ServiceName;
 
@@ -27,23 +28,23 @@ public abstract class AbstractResourceContextProvider<C extends ResourceContext>
     }
 
     @Override
-    public synchronized <S> void onServiceStarted(ServiceName<S> name, S service)
+    public synchronized <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
     {
-        final C context = (C) service;
+        final C context = (C) service.get();
         contextMap.put(context.getResourceId(), context);
 
-        final List<C> list = new ArrayList<C>(Arrays.asList(contexts));
+        final List<C> list = new ArrayList<>(Arrays.asList(contexts));
         list.add(context);
         this.contexts = list.toArray((C[]) Array.newInstance(type, list.size()));
     }
 
     @Override
-    public synchronized <S> void onServiceStopping(ServiceName<S> name, S service)
+    public synchronized <S> void onServiceStopping(ServiceName<S> name, Service<S> service)
     {
-        final C context = (C) service;
+        final C context = (C) service.get();
         contextMap.remove(context.getResourceId(), context);
 
-        final List<C> list = new ArrayList<C>(Arrays.asList(contexts));
+        final List<C> list = new ArrayList<>(Arrays.asList(contexts));
         list.remove(context);
         this.contexts = list.toArray((C[]) Array.newInstance(type, list.size()));
     }

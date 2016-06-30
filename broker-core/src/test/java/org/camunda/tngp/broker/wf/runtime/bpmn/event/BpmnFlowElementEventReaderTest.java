@@ -1,19 +1,18 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.charset.StandardCharsets;
-
-import org.camunda.tngp.broker.test.util.BufferAssert;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceEncoder;
+import org.camunda.tngp.graph.bpmn.ExecutionEventType;
+import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventEncoder;
+import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class StartProcessInstanceRequestReaderTest
+public class BpmnFlowElementEventReaderTest
 {
+
     protected UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected int eventLength;
 
@@ -21,7 +20,7 @@ public class StartProcessInstanceRequestReaderTest
     public void writeEventToBuffer()
     {
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-        final StartWorkflowInstanceEncoder bodyEncoder = new StartWorkflowInstanceEncoder();
+        final BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
 
         headerEncoder.wrap(eventBuffer, 0)
             .blockLength(bodyEncoder.sbeBlockLength())
@@ -32,24 +31,29 @@ public class StartProcessInstanceRequestReaderTest
             .version(bodyEncoder.sbeSchemaVersion());
 
         bodyEncoder.wrap(eventBuffer, headerEncoder.encodedLength())
-            .wfTypeId(123L)
-            .wfTypeKey("foo");
+            .event(ExecutionEventType.EVT_OCCURRED.value())
+            .flowElementId(75)
+            .key(1234L)
+            .processId(8765L)
+            .processInstanceId(45678L);
 
         eventLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }
 
     @Test
-    public void shouldReadRequest()
+    public void shouldReadEvent()
     {
         // given
-        final StartProcessInstanceRequestReader reader = new StartProcessInstanceRequestReader();
+        final BpmnFlowElementEventReader reader = new BpmnFlowElementEventReader();
 
         // when
         reader.wrap(eventBuffer, 0, eventLength);
 
         // then
-        assertThat(reader.wfTypeId()).isEqualTo(123L);
-        BufferAssert.assertThatBuffer(reader.wfTypeKey()).hasBytes("foo".getBytes(StandardCharsets.UTF_8));
+        assertThat(reader.event()).isEqualTo(ExecutionEventType.EVT_OCCURRED);
+        assertThat(reader.flowElementId()).isEqualTo(75);
+        assertThat(reader.key()).isEqualTo(1234L);
+        assertThat(reader.processId()).isEqualTo(8765L);
+        assertThat(reader.processInstanceId()).isEqualTo(45678L);
     }
-
 }

@@ -37,7 +37,7 @@ public class WfRuntimeManagerService
     }
 
     @Override
-    public void createRepository(WfRuntimeCfg cfg)
+    public void createWorkflowInstanceQueue(WfRuntimeCfg cfg)
     {
         final String wfRuntimeName = cfg.name;
         if (wfRuntimeName == null || wfRuntimeName.isEmpty())
@@ -86,7 +86,7 @@ public class WfRuntimeManagerService
         this.serviceContext = serviceContext;
         for (WfRuntimeCfg wfRuntimeCfg : runtimeCfgs)
         {
-            createRepository(wfRuntimeCfg);
+            createWorkflowInstanceQueue(wfRuntimeCfg);
         }
     }
 

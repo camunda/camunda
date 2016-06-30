@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

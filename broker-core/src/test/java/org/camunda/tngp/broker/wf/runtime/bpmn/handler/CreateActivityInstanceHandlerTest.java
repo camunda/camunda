@@ -1,9 +1,15 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.test.util.BufferMatcher.hasBytes;
+import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrap;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -12,6 +18,8 @@ import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.test.util.FluentMock;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventWriter;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
@@ -25,7 +33,7 @@ import org.mockito.MockitoAnnotations;
 public class CreateActivityInstanceHandlerTest
 {
     @FluentMock
-    protected BpmnFlowElementEventWriter eventWriter;
+    protected BpmnActivityEventWriter eventWriter;
 
     @Mock
     protected BpmnFlowElementEventReader flowEventReader;
@@ -53,6 +61,8 @@ public class CreateActivityInstanceHandlerTest
                 .serviceTask("serviceTask")
                 .endEvent("endEvent")
                 .done();
+
+        wrap(model).taskAttributes("serviceTask", "foo", 6);
 
         process = new BpmnModelInstanceTransformer().transformSingleProcess(model, 0L);
         elementVisitor = new FlowElementVisitor();
@@ -84,6 +94,8 @@ public class CreateActivityInstanceHandlerTest
         verify(eventWriter).key(anyLong());
         verify(eventWriter).processId(467L);
         verify(eventWriter).processInstanceId(9876L);
+        verify(eventWriter).taskQueueId(6);
+        verify(eventWriter).taskType(argThat(hasBytes("foo".getBytes(StandardCharsets.UTF_8))), eq(0), eq(3));
 
         verify(logWriter).write(eventWriter);
     }

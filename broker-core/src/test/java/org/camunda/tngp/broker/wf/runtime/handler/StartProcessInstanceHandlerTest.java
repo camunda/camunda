@@ -16,12 +16,11 @@ import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
-import org.camunda.tngp.broker.wf.runtime.BpmnFlowElementEventWriter;
 import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceResponseWriter;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
@@ -42,7 +41,6 @@ public class StartProcessInstanceHandlerTest
 {
 
     protected MockWfRuntimeContext mockContext;
-    protected LogReader logReader;
     protected LogWriter logWriter;
     protected IdGenerator idGenerator;
     protected WfTypeCacheService processCache;
@@ -74,7 +72,6 @@ public class StartProcessInstanceHandlerTest
         errorWriter = mock(ErrorWriter.class, new FluentAnswer());
 
         mockContext = new MockWfRuntimeContext();
-        logReader = mockContext.getLogReader();
         logWriter = mockContext.getLogWriter();
         idGenerator = mockContext.getIdGenerator();
         processCache = mockContext.getWfTypeCacheService();

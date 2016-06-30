@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyLong;
@@ -12,6 +12,8 @@ import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.test.util.FluentMock;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;

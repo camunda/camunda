@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.wf.runtime;
 
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.idgenerator.spi.LogFragmentIdReader;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;

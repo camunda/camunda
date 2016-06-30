@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.taskqueue;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.services.LogEntryProcessorService;
+import org.camunda.tngp.broker.services.LogEntryProcessorService.LogEntryProcessor;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
@@ -30,6 +33,11 @@ public class TaskQueueServiceNames
     public static ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndex(String taskQueueName)
     {
         return (ServiceName) ServiceName.newServiceName(String.format("taskqueue.%s.index.taskTypePosition", taskQueueName), HashIndexManager.class);
+    }
+
+    public static ServiceName<LogEntryProcessor<BpmnEventReader>> workflowEventHandlerService(String wfInstanceLogName)
+    {
+        return (ServiceName) ServiceName.newServiceName(String.format("taskqueue.reader.%s", wfInstanceLogName), LogEntryProcessorService.class);
     }
 
 }

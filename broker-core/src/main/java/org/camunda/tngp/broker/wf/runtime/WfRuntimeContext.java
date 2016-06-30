@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
@@ -13,7 +13,6 @@ public class WfRuntimeContext implements ResourceContext
 
     protected IdGenerator idGenerator;
     protected WfTypeCacheService wfTypeCacheService;
-    protected LogReader logReader;
     protected LogWriter logWriter;
     protected BpmnEventHandler bpmnEventHandler;
 
@@ -31,16 +30,6 @@ public class WfRuntimeContext implements ResourceContext
     public void setIdGenerator(IdGenerator idGenerator)
     {
         this.idGenerator = idGenerator;
-    }
-
-    public LogReader getLogReader()
-    {
-        return logReader;
-    }
-
-    public void setLogReader(LogReader logReader)
-    {
-        this.logReader = logReader;
     }
 
     public LogWriter getLogWriter()

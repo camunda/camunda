@@ -1,6 +1,11 @@
 package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.CreateActivityInstanceHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.StartProcessHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TakeInitialFlowsHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.WaitEventHandler;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogWriter;
@@ -32,12 +37,11 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setIdGenerator(idGeneratorInjector.getValue());
 
         final Log log = logInjector.getValue();
-        final LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
         final LogWriter logWriter = new LogWriter(log);
 
-        wfRuntimeContext.setLogReader(logReader);
         wfRuntimeContext.setLogWriter(logWriter);
 
+        final LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
         final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter, idGeneratorInjector.getValue());
         bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
         bpmnEventHandler.addFlowElementHandler(new CreateActivityInstanceHandler());

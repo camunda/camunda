@@ -1,28 +1,28 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.event;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventEncoder;
+import org.camunda.tngp.taskqueue.data.BpmnProcessEventEncoder;
 import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public class BpmnFlowElementEventWriter implements BufferWriter
+public class BpmnProcessEventWriter implements BufferWriter
 {
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
+    protected final BpmnProcessEventEncoder bodyEncoder = new BpmnProcessEventEncoder();
 
     protected long key;
     protected long processId;
     protected long processInstanceId;
-    protected ExecutionEventType eventType;
-    protected int flowElementId;
+    protected ExecutionEventType event;
+    protected int initialElementId;
 
     @Override
     public int getLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH + BpmnFlowElementEventEncoder.BLOCK_LENGTH;
+        return MessageHeaderEncoder.ENCODED_LENGTH + BpmnProcessEventEncoder.BLOCK_LENGTH;
     }
 
     @Override
@@ -42,37 +42,39 @@ public class BpmnFlowElementEventWriter implements BufferWriter
             .key(key)
             .processId(processId)
             .processInstanceId(processInstanceId)
-            .event(eventType.value())
-            .flowElementId(flowElementId);
+            .event(event.value())
+            .initialElementId(initialElementId);
+
     }
 
-    public BpmnFlowElementEventWriter key(long key)
+    public BpmnProcessEventWriter key(long key)
     {
         this.key = key;
         return this;
     }
 
-    public BpmnFlowElementEventWriter processId(long processId)
+    public BpmnProcessEventWriter processId(long processId)
     {
         this.processId = processId;
         return this;
     }
 
-    public BpmnFlowElementEventWriter processInstanceId(long processInstanceId)
+    public BpmnProcessEventWriter processInstanceId(long processInstanceId)
     {
         this.processInstanceId = processInstanceId;
         return this;
     }
 
-    public BpmnFlowElementEventWriter eventType(ExecutionEventType eventType)
+    public BpmnProcessEventWriter event(ExecutionEventType event)
     {
-        this.eventType = eventType;
+        this.event = event;
         return this;
     }
 
-    public BpmnFlowElementEventWriter flowElementId(int flowElementId)
+    public BpmnProcessEventWriter initialElementId(int initialElementId)
     {
-        this.flowElementId = flowElementId;
+        this.initialElementId = initialElementId;
         return this;
     }
+
 }

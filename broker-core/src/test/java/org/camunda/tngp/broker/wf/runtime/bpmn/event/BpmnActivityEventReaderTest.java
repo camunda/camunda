@@ -1,16 +1,19 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+
+import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventEncoder;
+import org.camunda.tngp.taskqueue.data.BpmnActivityEventEncoder;
 import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class BpmnFlowElementEventReaderTest
+public class BpmnActivityEventReaderTest
 {
 
     protected UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -20,7 +23,7 @@ public class BpmnFlowElementEventReaderTest
     public void writeEventToBuffer()
     {
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-        final BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
+        final BpmnActivityEventEncoder bodyEncoder = new BpmnActivityEventEncoder();
 
         headerEncoder.wrap(eventBuffer, 0)
             .blockLength(bodyEncoder.sbeBlockLength())
@@ -35,7 +38,9 @@ public class BpmnFlowElementEventReaderTest
             .flowElementId(75)
             .key(1234L)
             .processId(8765L)
-            .processInstanceId(45678L);
+            .processInstanceId(45678L)
+            .taskQueueId(5)
+            .taskType("ping");
 
         eventLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }
@@ -44,7 +49,7 @@ public class BpmnFlowElementEventReaderTest
     public void shouldReadEvent()
     {
         // given
-        final BpmnFlowElementEventReader reader = new BpmnFlowElementEventReader();
+        final BpmnActivityEventReader reader = new BpmnActivityEventReader();
 
         // when
         reader.wrap(eventBuffer, 0, eventLength);
@@ -55,5 +60,9 @@ public class BpmnFlowElementEventReaderTest
         assertThat(reader.key()).isEqualTo(1234L);
         assertThat(reader.processId()).isEqualTo(8765L);
         assertThat(reader.processInstanceId()).isEqualTo(45678L);
+        assertThat(reader.taskQueueId()).isEqualTo(5);
+        assertThatBuffer(reader.getTaskType())
+            .hasCapacity(4)
+            .hasBytes("ping".getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -7,10 +7,12 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueL
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.camunda.tngp.broker.services.Bytes2LongIndexManagerService;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
+import org.camunda.tngp.broker.services.LogEntryProcessorService.LogEntryProcessor;
 import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -32,6 +34,8 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
     protected ServiceContext serviceContext;
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
+
+    protected final List<LogEntryProcessor<?>> inputLogProcessors = new CopyOnWriteArrayList<>();
 
     public TaskQueueManagerService(ConfigurationManager configurationManager)
     {
@@ -112,6 +116,18 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
     public TaskQueueManager get()
     {
         return this;
+    }
+
+    @Override
+    public List<LogEntryProcessor<?>> getInputLogProcessors()
+    {
+        return inputLogProcessors;
+    }
+
+    @Override
+    public void registerInputLogProcessor(LogEntryProcessor<?> logProcessor)
+    {
+        this.inputLogProcessors.add(logProcessor);
     }
 
 }

@@ -21,6 +21,13 @@
       <groupId>org.camunda.tngp</groupId>
       <artifactId>tngp-client-java</artifactId>
     </dependency>
+    
+    
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>test-util</artifactId>
+      <scope>provided</scope>
+    </dependency>
 
     <dependency>
       <groupId>junit</groupId>

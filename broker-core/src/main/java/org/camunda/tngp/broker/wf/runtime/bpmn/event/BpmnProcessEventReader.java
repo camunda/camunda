@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.event;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;

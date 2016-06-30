@@ -1,8 +1,10 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
@@ -34,7 +36,6 @@ public class TakeInitialFlowsHandler implements BpmnProcessEventHandler
             // TODO: throw exception/backpressure; could not write event
             System.err.println("cannot write sequence flow take event");
         }
-
     }
 
     @Override

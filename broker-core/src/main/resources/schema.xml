@@ -84,4 +84,14 @@
         <field name="flowElementId" id="5" type="uint16" />
     </sbe:message>
     
+    <sbe:message name="BpmnActivityEvent" id="6">
+        <field name="key" id="1" type="uint64" />
+        <field name="event" id="2" type="uint16" />
+        <field name="processId" id="3" type="uint64" />
+        <field name="processInstanceId" id="4" type="uint64" />
+        <field name="flowElementId" id="5" type="uint16" />
+        <field name="taskQueueId" id="6" type="uint16" />
+        <data name="taskType" id="7" type="varDataEncoding" />
+    </sbe:message>
+    
 </sbe:messageSchema>

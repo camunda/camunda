@@ -1,12 +1,17 @@
-package org.camunda.tngp.broker.wf.runtime;
+package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
 import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventDecoder;
 import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;
 
@@ -46,12 +51,13 @@ public class BpmnEventHandler
 
     public int doWork()
     {
-        final int workCount = 0;
+        int workCount = 0;
 
         final boolean hasNext = logReader.read(eventReader);
         if (hasNext)
         {
             handleBpmnEvent(eventReader);
+            workCount++;
         }
 
         return workCount;
@@ -68,6 +74,9 @@ public class BpmnEventHandler
                 break;
             case BpmnFlowElementEventDecoder.TEMPLATE_ID:
                 handleBpmnFlowElementEvent(eventReader.flowElementEvent());
+                break;
+            case BpmnActivityEventDecoder.TEMPLATE_ID:
+                handleBpmnActivityEvent(eventReader.activityEvent());
                 break;
             default:
                 throw new RuntimeException("No handler for event of type " + bpmnEventType);
@@ -98,6 +107,13 @@ public class BpmnEventHandler
 
         handler.handle(processEventReader, process, logWriter, idGenerator);
     }
+
+    private void handleBpmnActivityEvent(BpmnActivityEventReader activityEvent)
+    {
+        // TODO handle events
+
+    }
+
 
     public void setEventReader(BpmnEventReader eventReader)
     {

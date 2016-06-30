@@ -5,5 +5,5 @@ import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
 
 public interface WfRuntimeManager extends ResourceContextProvider<WfRuntimeContext>
 {
-    void createRepository(WfRuntimeCfg cfg);
+    void createWorkflowInstanceQueue(WfRuntimeCfg cfg);
 }
