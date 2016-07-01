@@ -1,10 +1,13 @@
 package org.camunda.tngp.broker.wf.repository.handler;
 
-import java.util.Collection;
+import java.io.StringWriter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.xml.validation.ValidationResults;
+import org.camunda.tngp.bpmn.graph.validation.BpmnExecutionValidators;
+import org.camunda.tngp.bpmn.graph.validation.BpmnValidationResultFormatter;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.io.DirectBufferInputStream;
@@ -34,25 +37,17 @@ public class BpmnDeploymentValidator
 
         if (bpmnModelInstance != null)
         {
-            final Collection<Process> processes = bpmnModelInstance.getModelElementsByType(Process.class);
-            for (Process process : processes)
+            final ValidationResults results = bpmnModelInstance.validate(BpmnExecutionValidators.VALIDATORS);
+
+            if (results.hasErrors())
             {
-                if (process.isExecutable())
-                {
-                    if (executableProcess == null)
-                    {
-                        executableProcess = process;
-                    }
-                    else
-                    {
-                        errorMessage = "Cannot deploy Bpmn Resource: bpmn file can only contain a single executable process. Contains multiple.";
-                        break;
-                    }
-                }
+                final StringWriter errorMessageWriter = new StringWriter();
+                results.write(errorMessageWriter, new BpmnValidationResultFormatter());
+                errorMessage = errorMessageWriter.toString();
             }
-            if (executableProcess == null)
+            else
             {
-                errorMessage = "Cannot deploy Bpmn Resource: bpmn file does not contain any executable processes.";
+                executableProcess = bpmnModelInstance.getModelElementsByType(Process.class).iterator().next();
             }
         }
 

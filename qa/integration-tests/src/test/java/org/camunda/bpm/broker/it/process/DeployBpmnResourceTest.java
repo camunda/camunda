@@ -1,6 +1,7 @@
 package org.camunda.bpm.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.*;
 
 import java.nio.charset.StandardCharsets;
 
@@ -44,7 +45,7 @@ public class DeployBpmnResourceTest
     }
 
     @Test
-    public void shouldNotDeployInvalidModel()
+    public void shouldNotDeployUnparsableModel()
     {
         // given
         final TngpClient client = clientRule.getClient();
@@ -58,6 +59,24 @@ public class DeployBpmnResourceTest
         // when
         workflowService.deploy()
             .resourceBytes("Foooo".getBytes(StandardCharsets.UTF_8))
+            .execute();
+    }
+
+    @Test
+    public void shouldNotDeployInvalidModel()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final ProcessService workflowService = client.processes();
+
+        // then
+        exception.expect(BrokerRequestException.class);
+        exception.expectMessage(containsString("ERROR 101"));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+
+        // when
+        workflowService.deploy()
+            .bpmnModelInstance(Bpmn.createExecutableProcess().done()) // does not have a start event
             .execute();
     }
 
