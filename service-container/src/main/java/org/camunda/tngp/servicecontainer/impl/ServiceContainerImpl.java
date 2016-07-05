@@ -76,7 +76,7 @@ public class ServiceContainerImpl implements ServiceContainer
                 final ServiceListener serviceListener = listeners.get(i);
                 try
                 {
-                    serviceListener.onServiceStarted(serviceController.name, serviceController.service.get());
+                    serviceListener.onServiceStarted(serviceController.name, serviceController.service);
                 }
                 catch(Exception e)
                 {
@@ -102,7 +102,7 @@ public class ServiceContainerImpl implements ServiceContainer
                 final ServiceListener serviceListener = listeners.get(i);
                 try
                 {
-                    serviceListener.onServiceStopping(serviceController.name, serviceController.service.get());
+                    serviceListener.onServiceStopping(serviceController.name, serviceController.service);
                 }
                 catch(Exception e)
                 {

@@ -68,17 +68,18 @@ public class ServiceController implements ServiceListener, ServiceContext
         if(injector != null)
         {
             injector.setValue(service);
+            injector.setInjectedServiceName(dependency);
         }
     }
 
     @Override
-    public <S> void onServiceStarted(ServiceName<S> name, S service)
+    public <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
     {
         if(state == NEW || state == UNRESOLVED)
         {
             if(dependencies.containsKey(name))
             {
-                resolve(name, service);
+                resolve(name, service.get());
                 --missingDependencies;
                 checkResolved();
             }
@@ -95,7 +96,7 @@ public class ServiceController implements ServiceListener, ServiceContext
     }
 
     @Override
-    public <S> void onServiceStopping(ServiceName<S> name, S service)
+    public <S> void onServiceStopping(ServiceName<S> name, Service<S> service)
     {
         if(dependencies.containsKey(name))
         {
