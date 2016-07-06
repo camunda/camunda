@@ -20,6 +20,7 @@
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- TODO: Move to common parent -->
     <agrona.version>0.4.11</agrona.version>
+    <camunda.version>7.6.0-SNAPSHOT</camunda.version>
   </properties>
 
   <dependencies>
@@ -28,6 +29,13 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>Agrona</artifactId>
       <version>${agrona.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-bpmn-model</artifactId>
+      <version>${camunda.version}</version>
       <scope>provided</scope>
     </dependency>
 

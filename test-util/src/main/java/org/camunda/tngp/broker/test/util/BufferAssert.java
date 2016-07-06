@@ -14,7 +14,7 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
         super(actual, BufferAssert.class);
     }
 
-    public static BufferAssert assertThat(DirectBuffer buffer)
+    public static BufferAssert assertThatBuffer(DirectBuffer buffer)
     {
         return new BufferAssert(buffer);
     }
@@ -39,6 +39,18 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
     public BufferAssert hasBytes(byte[] expected)
     {
         return hasBytes(expected, 0);
+    }
+
+    public BufferAssert hasCapacity(int expectedCapacity)
+    {
+        isNotNull();
+
+        if (expectedCapacity != actual.capacity())
+        {
+            failWithMessage("Expected capacity " + expectedCapacity + " but was " + actual.capacity());
+        }
+
+        return this;
     }
 
 }
