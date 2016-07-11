@@ -228,7 +228,9 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             .state(TaskInstanceState.LOCKED)
             .lockOwnerId(consumerId)
             .lockTime(lockTimeout)
-            .taskTypeHash(decoder.taskTypeHash());
+            .taskTypeHash(decoder.taskTypeHash())
+            .wfActivityInstanceEventKey(decoder.wfActivityInstanceEventKey())
+            .wfRuntimeResourceId(decoder.wfRuntimeResourceId());
 
         taskInstanceEncoder.putTaskType(reader.getBlockBuffer(), reader.getTaskTypeOffset(), reader.getTaskTypeLength());
         taskInstanceEncoder.putPayload(reader.getPayloadReadBuffer(), 0, reader.getPayloadLength());

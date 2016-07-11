@@ -12,6 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.ProcessService;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.DeployedWorkflowType;
+import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.junit.Before;
@@ -143,5 +144,37 @@ public class ServiceTaskTest
         assertThat(tasksBatch.getLockedTasks().get(0).getPayloadString()).isEmpty();
     }
 
-    // TODO: test that it is possible to complete such a task
+    @Test
+    public void shouldCompleteServiceTask()
+    {
+        final TngpClient client = clientRule.getClient();
+        final ProcessService workflowService = client.processes();
+
+        // given
+        workflowService.start()
+            .workflowTypeId(fooProcess.getWorkflowTypeId())
+            .execute();
+
+        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
+            client
+                .tasks()
+                .pollAndLock()
+                .taskQueueId(0)
+                .taskType("foo")
+                .lockTime(100000L)
+                .maxTasks(1)
+                .execute())
+            .until(
+                (tasks) -> !tasks.getLockedTasks().isEmpty());
+
+        // when
+        final LockedTask task = tasksBatch.getLockedTasks().get(0);
+        final Long result = client.tasks().complete()
+            .taskQueueId(0)
+            .taskId(task.getId())
+            .execute();
+
+        // then
+        assertThat(result).isEqualTo(task.getId());
+    }
 }

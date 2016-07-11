@@ -2,6 +2,8 @@ package org.camunda.tngp.broker.taskqueue;
 
 import java.util.Arrays;
 
+import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
@@ -12,14 +14,15 @@ import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public class TaskQueueIndexWriter
+public class TaskQueueIndexWriter implements LogEntryHandler<TaskInstanceReader>
 {
     protected static final byte[] TASK_TYPE_BUFFER = new byte[256];
 
     protected final LogReader logReader;
-    protected final TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
     protected final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager;
     protected final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager;
+
+    protected LogEntryProcessor<TaskInstanceReader> logEntryProcessor;
 
     public TaskQueueIndexWriter(TaskQueueContext taskQueueContext)
     {
@@ -32,29 +35,13 @@ public class TaskQueueIndexWriter
         {
             logReader.setPosition(lastCheckpointPosition);
         }
+
+        logEntryProcessor = new LogEntryProcessor<>(logReader, new TaskInstanceReader(), this);
     }
 
     public int update(int maxFragments)
     {
-        int fragmentsIndexed = 0;
-
-        do
-        {
-            final long position = logReader.position();
-
-            if (logReader.read(taskInstanceReader))
-            {
-                updateIndex(position);
-                ++fragmentsIndexed;
-            }
-            else
-            {
-                break;
-            }
-        }
-        while (fragmentsIndexed < maxFragments);
-
-        return fragmentsIndexed;
+        return logEntryProcessor.doWork(maxFragments);
     }
 
     public void writeCheckpoints()
@@ -63,17 +50,17 @@ public class TaskQueueIndexWriter
         taskTypeIndexManager.writeCheckPoint(logReader.position());
     }
 
-
-    protected void updateIndex(long position)
+    @Override
+    public void handle(long position, TaskInstanceReader reader)
     {
-        final long id = taskInstanceReader.id();
-        final TaskInstanceState state = taskInstanceReader.state();
+        final long id = reader.id();
+        final TaskInstanceState state = reader.state();
 
         if (state == TaskInstanceState.LOCKED)
         {
             lockedTasksIndexManager.getIndex().put(id, position);
 
-            final DirectBuffer taskType = taskInstanceReader.getTaskType();
+            final DirectBuffer taskType = reader.getTaskType();
             final int taskTypeLength = taskType.capacity();
 
             taskType.getBytes(0, TASK_TYPE_BUFFER, 0, taskTypeLength);
@@ -88,7 +75,7 @@ public class TaskQueueIndexWriter
 
             // TODO: this is next line is completely broken and only works if the previous version has the exact same length as this entry
             // SEE: https://github.com/camunda-tngp/broker/issues/4
-            final long newPosition = taskInstanceReader.prevVersionPosition() + DataFrameDescriptor.alignedLength(taskInstanceReader.length());
+            final long newPosition = reader.prevVersionPosition() + DataFrameDescriptor.alignedLength(reader.length());
 
             // TODO: put if larger
             if (newPosition > currentPosition)

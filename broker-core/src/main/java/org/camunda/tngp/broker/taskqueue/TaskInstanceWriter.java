@@ -19,6 +19,8 @@ public class TaskInstanceWriter implements BufferWriter
     protected TaskInstanceEncoder bodyEncoder = new TaskInstanceEncoder();
 
     protected long id;
+    protected long wfActivityInstanceEventKey;
+    protected int wfRuntimeResourceId;
     protected UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
 
     @Override
@@ -51,11 +53,14 @@ public class TaskInstanceWriter implements BufferWriter
 
         bodyEncoder.wrap(buffer, offset)
             .id(id)
-            .lockOwnerId(TaskInstanceEncoder.lockOwnerIdNullValue())
-            .lockTime(TaskInstanceEncoder.lockTimeNullValue())
-            .state(TaskInstanceState.NEW)
-            .taskTypeHash(taskTypeHashCode)
             .version(1)
+            .state(TaskInstanceState.NEW)
+            .lockTime(TaskInstanceEncoder.lockTimeNullValue())
+            .lockOwnerId(TaskInstanceEncoder.lockOwnerIdNullValue())
+            .prevVersionPosition(TaskInstanceEncoder.prevVersionPositionNullValue())
+            .taskTypeHash(taskTypeHashCode)
+            .wfActivityInstanceEventKey(wfActivityInstanceEventKey)
+            .wfRuntimeResourceId(wfRuntimeResourceId)
             .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
             .putPayload(PAYLOAD, 0, PAYLOAD.length);
     }
@@ -63,6 +68,18 @@ public class TaskInstanceWriter implements BufferWriter
     public TaskInstanceWriter id(long id)
     {
         this.id = id;
+        return this;
+    }
+
+    public TaskInstanceWriter wfRuntimeResourceId(int wfRuntimeResourceId)
+    {
+        this.wfRuntimeResourceId = wfRuntimeResourceId;
+        return this;
+    }
+
+    public TaskInstanceWriter wfActivityInstanceEventKey(long wfActivityInstanceEventKey)
+    {
+        this.wfActivityInstanceEventKey = wfActivityInstanceEventKey;
         return this;
     }
 

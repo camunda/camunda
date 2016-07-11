@@ -206,7 +206,9 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             .version(decoder.version() + 1)
             .prevVersionPosition(reader.getLogPosition())
             .state(TaskInstanceState.COMPLETED)
-            .taskTypeHash(decoder.taskTypeHash());
+            .taskTypeHash(decoder.taskTypeHash())
+            .wfActivityInstanceEventKey(decoder.wfActivityInstanceEventKey())
+            .wfRuntimeResourceId(decoder.wfRuntimeResourceId());
 
         taskInstanceEncoder.putTaskType(reader.getBlockBuffer(), reader.getTaskTypeOffset(), reader.getTaskTypeLength());
         taskInstanceEncoder.putPayload(payloadBuffer, payloadOffset, payloadLength);

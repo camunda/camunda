@@ -2,6 +2,8 @@ package org.camunda.tngp.broker.wf.repository.idx;
 
 import java.util.Arrays;
 
+import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
@@ -11,7 +13,7 @@ import org.camunda.tngp.log.LogReader;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public class WfTypeIndexWriter
+public class WfTypeIndexWriter implements LogEntryHandler<WfTypeReader>
 {
     protected static final byte[] WF_TYPE_BUFFER = new byte[256];
 
@@ -22,7 +24,8 @@ public class WfTypeIndexWriter
     protected final Bytes2LongHashIndex wfTypeKeyIndex;
 
     protected LogReader logReader;
-    protected WfTypeReader reader = new WfTypeReader();
+
+    protected LogEntryProcessor<WfTypeReader> logEntryProcessor;
 
     public WfTypeIndexWriter(WfRepositoryContext context)
     {
@@ -39,29 +42,13 @@ public class WfTypeIndexWriter
         {
             logReader.setPosition(lastCheckpointPosition);
         }
+
+        logEntryProcessor = new LogEntryProcessor<>(logReader, new WfTypeReader(), this);
     }
 
     public int update()
     {
-        int fragmentsIndexed = 0;
-
-        boolean hasEntry = false;
-
-        do
-        {
-            final long position = logReader.position();
-
-            hasEntry = logReader.read(reader);
-
-            if (hasEntry)
-            {
-                updateIndex(position);
-                ++fragmentsIndexed;
-            }
-        }
-        while (hasEntry);
-
-        return fragmentsIndexed;
+        return logEntryProcessor.doWork(Integer.MAX_VALUE);
     }
 
     public void writeCheckpoints()
@@ -71,7 +58,8 @@ public class WfTypeIndexWriter
         wfTypeIdIndexManager.writeCheckPoint(position);
     }
 
-    protected void updateIndex(final long position)
+    @Override
+    public void handle(long position, WfTypeReader reader)
     {
         final long id = reader.id();
 
@@ -88,6 +76,7 @@ public class WfTypeIndexWriter
         }
 
         wfTypeKeyIndex.put(WF_TYPE_BUFFER, id);
+
     }
 
 }

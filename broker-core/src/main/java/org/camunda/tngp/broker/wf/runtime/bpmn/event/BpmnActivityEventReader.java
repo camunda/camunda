@@ -61,6 +61,11 @@ public class BpmnActivityEventReader implements BufferReader
         return bodyDecoder.taskQueueId();
     }
 
+    public int resourceId()
+    {
+        return headerDecoder.resourceId();
+    }
+
     public DirectBuffer getTaskType()
     {
         return taskTypeBuffer;

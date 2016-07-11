@@ -1,16 +1,21 @@
 package org.camunda.tngp.broker.wf;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.*;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
-import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.LOG_WRITE_BUFFER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerContextServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerServiceName;
+import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.WF_REPOSITORY_MANAGER_NAME;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME;
 
 import org.camunda.tngp.broker.services.DeferredResponsePoolService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.SystemContext;
+import org.camunda.tngp.broker.taskqueue.TaskQueueContextService;
 import org.camunda.tngp.broker.transport.worker.AsyncRequestWorkerService;
 import org.camunda.tngp.broker.transport.worker.BrokerRequestDispatcher;
 import org.camunda.tngp.broker.transport.worker.BrokerRequestWorkerContextService;
@@ -21,12 +26,18 @@ import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryManagerService;
 import org.camunda.tngp.broker.wf.repository.handler.DeployBpmnResourceHandler;
 import org.camunda.tngp.broker.wf.repository.idx.WfTypeIndexWriteWorkerTask;
+import org.camunda.tngp.broker.wf.runtime.InputLogProcessingTask;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManagerService;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames;
 import org.camunda.tngp.broker.wf.runtime.handler.StartProcessInstanceHandler;
+import org.camunda.tngp.broker.wf.runtime.idx.ActivityInstanceIndexWriterWorkerTask;
 import org.camunda.tngp.broker.wf.runtime.worker.ContinuationWorkerTask;
+import org.camunda.tngp.log.Log;
+import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceTracker;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
@@ -78,7 +89,9 @@ public class WfComponent implements Component
         workerContext.setWorkerTasks(new WorkerTask[]
         {
             new WfTypeIndexWriteWorkerTask(),
-            new ContinuationWorkerTask()
+            new ContinuationWorkerTask(),
+            new InputLogProcessingTask(),
+            new ActivityInstanceIndexWriterWorkerTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);
@@ -103,6 +116,42 @@ public class WfComponent implements Component
             .dependency(WF_REPOSITORY_MANAGER_NAME)
             .dependency(WF_RUNTIME_MANAGER_NAME)
             .install();
+
+        serviceContainer.registerTracker(new ServiceTracker()
+        {
+            @Override
+            public <S> void onServiceStopping(ServiceName<S> name, Service<S> service)
+            {
+            }
+
+            @Override
+            public <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
+            {
+                listenToTaskQueueLog(service);
+            }
+
+            @Override
+            public <S> void onTrackerRegistration(ServiceName<S> name, Service<S> service)
+            {
+                listenToTaskQueueLog(service);
+            }
+
+            protected void listenToTaskQueueLog(Service<?> service)
+            {
+                if (service instanceof TaskQueueContextService)
+                {
+                    final ServiceName<Log> taskQueueLogName = ((TaskQueueContextService) service).getLogInjector().getInjectedServiceName();
+
+                    final TaskQueueLogProcessorService taskQueueLogReaderService = new TaskQueueLogProcessorService();
+
+                    serviceContainer
+                        .createService(WfRuntimeServiceNames.taskEventHandlerService(taskQueueLogName.toString()), taskQueueLogReaderService)
+                        .dependency(taskQueueLogName, taskQueueLogReaderService.getLogInjector())
+                        .dependency(WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME, taskQueueLogReaderService.getWfRuntimeManager())
+                        .install();
+                }
+            }
+        });
     }
 
 

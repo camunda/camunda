@@ -3,6 +3,8 @@ package org.camunda.tngp.broker.wf.runtime;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TaskEventHandler;
+import org.camunda.tngp.broker.wf.runtime.idx.ActivityInstanceIndexWriter;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
@@ -15,6 +17,9 @@ public class WfRuntimeContext implements ResourceContext
     protected WfTypeCacheService wfTypeCacheService;
     protected LogWriter logWriter;
     protected BpmnEventHandler bpmnEventHandler;
+    protected TaskEventHandler taskEventHandler;
+
+    protected ActivityInstanceIndexWriter activityInstanceIndexWriter;
 
     public WfRuntimeContext(int id, String name)
     {
@@ -60,6 +65,26 @@ public class WfRuntimeContext implements ResourceContext
     public BpmnEventHandler getBpmnEventHandler()
     {
         return bpmnEventHandler;
+    }
+
+    public ActivityInstanceIndexWriter getActivityInstanceIndexWriter()
+    {
+        return activityInstanceIndexWriter;
+    }
+
+    public void setActivityInstanceIndexWriter(ActivityInstanceIndexWriter activityInstanceIndexWriter)
+    {
+        this.activityInstanceIndexWriter = activityInstanceIndexWriter;
+    }
+
+    public void setTaskEventHandler(TaskEventHandler taskEventHandler)
+    {
+        this.taskEventHandler = taskEventHandler;
+    }
+
+    public TaskEventHandler getTaskEventHandler()
+    {
+        return taskEventHandler;
     }
 
     @Override

@@ -43,11 +43,6 @@
 
     <module name="UnusedImports" />
 
-    <module name="MethodLength">
-      <property name="tokens" value="METHOD_DEF" />
-      <property name="max" value="100" />
-    </module>
-
     <module name="EmptyForInitializerPad" />
 
     <module name="MethodParamPad" />

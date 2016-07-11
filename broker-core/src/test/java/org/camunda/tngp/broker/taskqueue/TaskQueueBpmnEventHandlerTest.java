@@ -10,15 +10,13 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
+import org.camunda.tngp.broker.util.mocks.BpmnEventMocks;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -62,51 +60,11 @@ public class TaskQueueBpmnEventHandlerTest
         when(taskQueueContextProvider.getContextForResource(3)).thenReturn(taskQueueContext);
     }
 
-    protected void mockActivityInstanceEvent()
-    {
-        when(activityEventReader.event()).thenReturn(ExecutionEventType.ACT_INST_CREATED);
-        when(activityEventReader.flowElementId()).thenReturn(1235);
-        when(activityEventReader.key()).thenReturn(6778L);
-        when(activityEventReader.processId()).thenReturn(8888L);
-        when(activityEventReader.processInstanceId()).thenReturn(9999L);
-
-        when(activityEventReader.taskQueueId()).thenReturn(3);
-        when(activityEventReader.getTaskType()).thenReturn(taskTypeBuffer);
-
-        when(bpmnEventReader.templateId()).thenReturn(BpmnActivityEventDecoder.TEMPLATE_ID);
-        when(bpmnEventReader.activityEvent()).thenReturn(activityEventReader);
-    }
-
-    protected void mockFlowElementEvent()
-    {
-        when(flowElementEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
-        when(flowElementEventReader.flowElementId()).thenReturn(1235);
-        when(flowElementEventReader.key()).thenReturn(6778L);
-        when(flowElementEventReader.processId()).thenReturn(8888L);
-        when(flowElementEventReader.processInstanceId()).thenReturn(9999L);
-
-        when(bpmnEventReader.templateId()).thenReturn(BpmnFlowElementEventDecoder.TEMPLATE_ID);
-        when(bpmnEventReader.flowElementEvent()).thenReturn(flowElementEventReader);
-    }
-
-    protected void mockProcessEvent()
-    {
-
-        when(processEventReader.event()).thenReturn(ExecutionEventType.PROC_INST_CREATED);
-        when(processEventReader.initialElementId()).thenReturn(1235);
-        when(processEventReader.key()).thenReturn(6778L);
-        when(processEventReader.processId()).thenReturn(8888L);
-        when(processEventReader.processInstanceId()).thenReturn(9999L);
-
-        when(bpmnEventReader.templateId()).thenReturn(BpmnProcessEventDecoder.TEMPLATE_ID);
-        when(bpmnEventReader.processEvent()).thenReturn(processEventReader);
-    }
-
     @Test
     public void shouldHandleActivityInstanceCreateEvent()
     {
         // given
-        mockActivityInstanceEvent();
+        BpmnEventMocks.mockActivityInstanceEvent(bpmnEventReader, activityEventReader, ExecutionEventType.ACT_INST_CREATED);
 
         final TaskQueueBpmnEventHandler handler = new TaskQueueBpmnEventHandler(taskQueueContextProvider);
         handler.setTaskInstanceWriter(taskInstanceWriter);
@@ -114,12 +72,14 @@ public class TaskQueueBpmnEventHandlerTest
         final LogWriter logWriter = taskQueueContext.getLogWriter();
 
         // when
-        handler.handle(bpmnEventReader);
+        handler.handle(0, bpmnEventReader);
 
         // then
         final InOrder inOrder = inOrder(taskInstanceWriter, logWriter);
         inOrder.verify(taskInstanceWriter).id(longThat(greaterThanOrEqualTo(0L)));
         inOrder.verify(taskInstanceWriter).taskType(taskTypeBuffer, 0, 3);
+        inOrder.verify(taskInstanceWriter).wfRuntimeResourceId(6);
+        inOrder.verify(taskInstanceWriter).wfActivityInstanceEventKey(23456789L);
         inOrder.verify(logWriter).write(taskInstanceWriter);
     }
 
@@ -127,7 +87,7 @@ public class TaskQueueBpmnEventHandlerTest
     public void shouldIgnoreFlowElementEvent()
     {
         // given
-        mockFlowElementEvent();
+        BpmnEventMocks.mockFlowElementEvent(bpmnEventReader, flowElementEventReader);
 
         final TaskQueueBpmnEventHandler handler = new TaskQueueBpmnEventHandler(taskQueueContextProvider);
         handler.setTaskInstanceWriter(taskInstanceWriter);
@@ -135,7 +95,7 @@ public class TaskQueueBpmnEventHandlerTest
         final LogWriter logWriter = taskQueueContext.getLogWriter();
 
         // when
-        handler.handle(bpmnEventReader);
+        handler.handle(0, bpmnEventReader);
 
         // then
         verifyZeroInteractions(taskInstanceWriter, logWriter);
@@ -145,7 +105,7 @@ public class TaskQueueBpmnEventHandlerTest
     public void shouldIgnoreProcessEvent()
     {
         // given
-        mockProcessEvent();
+        BpmnEventMocks.mockProcessEvent(bpmnEventReader, processEventReader);
 
         final TaskQueueBpmnEventHandler handler = new TaskQueueBpmnEventHandler(taskQueueContextProvider);
         handler.setTaskInstanceWriter(taskInstanceWriter);
@@ -153,7 +113,7 @@ public class TaskQueueBpmnEventHandlerTest
         final LogWriter logWriter = taskQueueContext.getLogWriter();
 
         // when
-        handler.handle(bpmnEventReader);
+        handler.handle(0, bpmnEventReader);
 
         // then
         verifyZeroInteractions(taskInstanceWriter, logWriter);

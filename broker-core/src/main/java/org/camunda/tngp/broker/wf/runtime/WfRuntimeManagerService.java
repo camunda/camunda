@@ -1,15 +1,22 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.*;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
+import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.wfTypeCacheServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfInstanceIdGeneratorServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeActivityInstanceEventIndexServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeContextServiceName;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.camunda.tngp.broker.log.LogEntryProcessor;
+import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
+import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Service;
@@ -28,6 +35,8 @@ public class WfRuntimeManagerService
     protected final List<WfRuntimeCfg> runtimeCfgs;
 
     protected ServiceContext serviceContext;
+
+    protected final List<LogEntryProcessor<?>> inputLogProcessors = new CopyOnWriteArrayList<>();
 
     public WfRuntimeManagerService(ConfigurationManager configurationManager)
     {
@@ -65,10 +74,16 @@ public class WfRuntimeManagerService
 
         final ServiceName<Log> wfInstanceLogServiceName = logServiceName(wfInstancelogName);
         final ServiceName<IdGenerator> wfInstanceIdGeneratorServiceName = wfInstanceIdGeneratorServiceName(wfRuntimeName);
+        final ServiceName<HashIndexManager<Long2LongHashIndex>> activityInstanceIndexServiceName = wfRuntimeActivityInstanceEventIndexServiceName(wfRuntimeName);
 
         final LogIdGeneratorService wfInstanceIdGeneratorService = new LogIdGeneratorService(new WfInstanceIdReader());
         serviceContext.createService(wfInstanceIdGeneratorServiceName, wfInstanceIdGeneratorService)
             .dependency(wfInstanceLogServiceName, wfInstanceIdGeneratorService.getLogInjector())
+            .install();
+
+        final Long2LongIndexManagerService activityInstanceIndexManagerService = new Long2LongIndexManagerService(2048, 64 * 1024);
+        serviceContext.createService(activityInstanceIndexServiceName, activityInstanceIndexManagerService)
+            .dependency(wfInstanceLogServiceName, activityInstanceIndexManagerService.getLogInjector())
             .install();
 
         final WfRuntimeContextService wfRuntimeContextService = new WfRuntimeContextService(wfRuntimeId, wfRuntimeName);
@@ -76,6 +91,7 @@ public class WfRuntimeManagerService
             .dependency(wfInstanceLogServiceName, wfRuntimeContextService.getLogInjector())
             .dependency(wfInstanceIdGeneratorServiceName, wfRuntimeContextService.getIdGeneratorInjector())
             .dependency(wfTypeCacheServiceName(wfRepositoryName), wfRuntimeContextService.getWfTypeChacheInjector())
+            .dependency(activityInstanceIndexServiceName, wfRuntimeContextService.getActivityInstanceIndexInjector())
             .listener(this)
             .install();
     }
@@ -100,6 +116,18 @@ public class WfRuntimeManagerService
     public WfRuntimeManager get()
     {
         return this;
+    }
+
+    @Override
+    public void registerInputLogProcessor(LogEntryProcessor<?> logReadHandler)
+    {
+        inputLogProcessors.add(logReadHandler);
+    }
+
+    @Override
+    public List<LogEntryProcessor<?>> getInputLogProcessors()
+    {
+        return inputLogProcessors;
     }
 
 }

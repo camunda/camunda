@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.services.LogEntryProcessorService.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
@@ -22,7 +22,7 @@ public class TaskQueueBpmnEventHandler implements LogEntryHandler<BpmnEventReade
     }
 
     @Override
-    public void handle(BpmnEventReader reader)
+    public void handle(long position, BpmnEventReader reader)
     {
         if (reader.templateId() == BpmnActivityEventDecoder.TEMPLATE_ID
                 && reader.activityEvent().event() == ExecutionEventType.ACT_INST_CREATED)
@@ -36,7 +36,9 @@ public class TaskQueueBpmnEventHandler implements LogEntryHandler<BpmnEventReade
             final DirectBuffer taskType = activityEventReader.getTaskType();
             taskInstanceWriter
                 .id(taskQueueIdGenerator.nextId())
-                .taskType(taskType, 0, taskType.capacity());
+                .taskType(taskType, 0, taskType.capacity())
+                .wfRuntimeResourceId(activityEventReader.resourceId())
+                .wfActivityInstanceEventKey(activityEventReader.key());
 
             logWriter.write(taskInstanceWriter);
         }

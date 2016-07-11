@@ -1,14 +1,17 @@
 package org.camunda.tngp.broker.wf.repository.idx;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 
-import static org.assertj.core.api.Assertions.*;
-
+import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.wf.repository.handler.MockedWfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
-import org.camunda.tngp.log.LogReader;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -20,8 +23,8 @@ public class WfTypeIndexWriterTest
 
     MockedWfRepositoryContext wfRepositoryCtx;
     WfTypeIndexWriter wfTypeIndexWriter;
-    LogReader logReaderMock;
     WfTypeReader wfTypeReaderMock;
+    LogEntryProcessor<WfTypeReader> logEntryProcessor;
 
     @Before
     public void setup()
@@ -29,28 +32,25 @@ public class WfTypeIndexWriterTest
         wfRepositoryCtx = new MockedWfRepositoryContext();
         wfTypeIndexWriter = new WfTypeIndexWriter(wfRepositoryCtx);
 
-        logReaderMock = mock(LogReader.class);
-        wfTypeIndexWriter.logReader = logReaderMock;
-
         wfTypeReaderMock = mock(WfTypeReader.class);
-        wfTypeIndexWriter.reader = wfTypeReaderMock;
+
+        logEntryProcessor = mock(LogEntryProcessor.class);
+        wfTypeIndexWriter.logEntryProcessor = logEntryProcessor;
     }
 
     @Test
-    public void shouldNotIndexIfNoneAvailable()
+    public void shouldDelegateToLogEntryProcessor()
     {
-        when(logReaderMock.read(wfTypeReaderMock)).thenReturn(false);
+        // when
+        wfTypeIndexWriter.update();
 
-        final int fragmentsIndexed = wfTypeIndexWriter.update();
-
-        assertThat(fragmentsIndexed).isEqualTo(0);
-
-        verifyNoMoreInteractions(wfTypeIndexWriter.wfTypeIdIndex);
-        verifyNoMoreInteractions(wfTypeIndexWriter.wfTypeKeyIndex);
+        // then
+        verify(logEntryProcessor).doWork(Integer.MAX_VALUE);
+        verifyNoMoreInteractions(logEntryProcessor);
     }
 
     @Test
-    public void shouldIndexSingleEntry()
+    public void shouldHandleSingleEntry()
     {
         final byte[] key = new byte[]{ 0, 0, 1, 2, 3, 4 };
         final byte[] expectedIndexKey = new byte[WfTypeIndexWriter.WF_TYPE_BUFFER.length];
@@ -62,8 +62,6 @@ public class WfTypeIndexWriterTest
 
         final DirectBuffer typeBufferMock = mock(DirectBuffer.class);
 
-        when(logReaderMock.read(wfTypeReaderMock)).thenReturn(true, false);
-        when(logReaderMock.position()).thenReturn(123L);
         when(wfTypeReaderMock.getTypeKey()).thenReturn(typeBufferMock);
         when(wfTypeReaderMock.id()).thenReturn(19L);
 
@@ -76,29 +74,28 @@ public class WfTypeIndexWriterTest
             return null;
         }).when(typeBufferMock).getBytes(0, WfTypeIndexWriter.WF_TYPE_BUFFER, 0, key.length);
 
-        final int fragmentsIndexed = wfTypeIndexWriter.update();
+        // when
+        wfTypeIndexWriter.handle(123L, wfTypeReaderMock);
 
-        assertThat(fragmentsIndexed).isEqualTo(1);
-
+        // then
         verify(wfTypeIndexWriter.wfTypeIdIndex).put(19L, 123L);
         verify(wfTypeIndexWriter.wfTypeKeyIndex).put(expectedIndexKey, 19);
     }
 
 
     @Test
-    public void shouldIndexMultipleEntries()
+    public void shouldHandleMultipleEntries()
     {
         final DirectBuffer typeBufferMock = mock(DirectBuffer.class);
 
-        when(logReaderMock.read(wfTypeReaderMock)).thenReturn(true, true, false);
-        when(logReaderMock.position()).thenReturn(123L, 456L);
         when(wfTypeReaderMock.getTypeKey()).thenReturn(typeBufferMock);
         when(wfTypeReaderMock.id()).thenReturn(19L, 20L);
 
-        final int fragmentsIndexed = wfTypeIndexWriter.update();
+        // when
+        wfTypeIndexWriter.handle(123L, wfTypeReaderMock);
+        wfTypeIndexWriter.handle(456L, wfTypeReaderMock);
 
-        assertThat(fragmentsIndexed).isEqualTo(2);
-
+        // then
         final InOrder idIndexInOrder = inOrder(wfTypeIndexWriter.wfTypeIdIndex);
         final InOrder keyIndexInOrder = inOrder(wfTypeIndexWriter.wfTypeKeyIndex);
 

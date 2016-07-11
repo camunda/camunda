@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.taskqueue.log;
 
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
+import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -107,6 +107,16 @@ public class TaskInstanceReader implements BufferReader
     public long taskTypeHash()
     {
         return decoder.taskTypeHash();
+    }
+
+    public long wfActivityInstanceEventKey()
+    {
+        return decoder.wfActivityInstanceEventKey();
+    }
+
+    public int wfRuntimeResourceId()
+    {
+        return decoder.wfRuntimeResourceId();
     }
 
     public DirectBuffer getPayload()

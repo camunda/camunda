@@ -9,10 +9,10 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueT
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.services.Bytes2LongIndexManagerService;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
-import org.camunda.tngp.broker.services.LogEntryProcessorService.LogEntryProcessor;
 import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;

@@ -25,8 +25,8 @@ import org.camunda.tngp.broker.wf.runtime.WfRuntimeContextService;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.servicecontainer.ServiceListener;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceTracker;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
@@ -97,7 +97,7 @@ public class TaskQueueComponent implements Component
             .dependency(taskQueueManagerServiceName)
             .install();
 
-        serviceContainer.registerListener(new ServiceListener()
+        serviceContainer.registerTracker(new ServiceTracker()
         {
             @Override
             public <S> void onServiceStopping(ServiceName<S> name, Service<S> service)
@@ -107,10 +107,20 @@ public class TaskQueueComponent implements Component
             @Override
             public <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
             {
+                listenToWorkflowRuntimeLog(service);
+            }
+
+            @Override
+            public <S> void onTrackerRegistration(ServiceName<S> name, Service<S> service)
+            {
+                listenToWorkflowRuntimeLog(service);
+            }
+
+            protected void listenToWorkflowRuntimeLog(Service<?> service)
+            {
                 if (service instanceof WfRuntimeContextService)
                 {
                     final ServiceName<Log> logName = ((WfRuntimeContextService) service).getLogInjector().getInjectedServiceName();
-
 
                     final WfInstanceLogProcessorService wfInstanceLogReaderService = new WfInstanceLogProcessorService();
 

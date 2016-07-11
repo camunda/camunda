@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.services;
 
-import org.camunda.tngp.broker.services.LogEntryProcessorService.LogEntryProcessor;
+import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -18,7 +19,6 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
 
     protected LogEntryProcessor<T> logEntryProcessor;
 
-    protected abstract int recoverLastReadPosition();
 
     public LogEntryProcessorService(T bufferReader)
     {
@@ -39,6 +39,8 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
 
     protected abstract LogEntryHandler<T> createEntryHandler();
 
+    protected abstract int recoverLastReadPosition();
+
     @Override
     public LogEntryProcessor<T> get()
     {
@@ -53,39 +55,6 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
     public Injector<Log> getLogInjector()
     {
         return logInjector;
-    }
-
-    public static class LogEntryProcessor<T extends BufferReader>
-    {
-        protected LogReader logReader;
-        protected T bufferReader;
-        protected LogEntryHandler<T> entryHandler;
-
-        public LogEntryProcessor(LogReader logReader, T bufferReader, LogEntryHandler<T> entryHandler)
-        {
-            this.bufferReader = bufferReader;
-            this.logReader = logReader;
-            this.entryHandler = entryHandler;
-        }
-
-        public int doWork()
-        {
-            int workCount = 0;
-
-            final boolean hasNext = logReader.read(bufferReader);
-            if (hasNext)
-            {
-                entryHandler.handle(bufferReader);
-                workCount++;
-            }
-
-            return workCount;
-        }
-    }
-
-    public interface LogEntryHandler<T extends BufferReader>
-    {
-        void handle(T reader);
     }
 
 }

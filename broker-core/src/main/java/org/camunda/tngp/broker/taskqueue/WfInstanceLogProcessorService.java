@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.taskqueue;
 
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.services.LogEntryProcessorService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.log.fs.LogSegmentDescriptor;

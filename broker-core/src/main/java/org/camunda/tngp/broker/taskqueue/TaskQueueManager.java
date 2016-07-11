@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.taskqueue;
 
 import java.util.List;
 
-import org.camunda.tngp.broker.services.LogEntryProcessorService.LogEntryProcessor;
+import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 
