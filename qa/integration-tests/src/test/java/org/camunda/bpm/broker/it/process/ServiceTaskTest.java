@@ -6,6 +6,7 @@ import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrapCopy;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
+import org.camunda.bpm.broker.it.TestUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.ProcessService;
@@ -14,7 +15,6 @@ import org.camunda.tngp.client.cmd.DeployedWorkflowType;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -80,7 +80,7 @@ public class ServiceTaskTest
     }
 
     @Test
-    public void shouldPollAndLockServiceTask()
+    public void shouldPollAndLockServiceTask() throws InterruptedException
     {
         final TngpClient client = clientRule.getClient();
         final ProcessService workflowService = client.processes();
@@ -91,16 +91,17 @@ public class ServiceTaskTest
             .execute();
 
         // when
-        // TODO: the task is not guaranteed to exist yet
-
-        final LockedTasksBatch tasksBatch = client
-            .tasks()
-            .pollAndLock()
-            .taskQueueId(0)
-            .taskType("foo")
-            .lockTime(100000L)
-            .maxTasks(1)
-            .execute();
+        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
+            client
+                .tasks()
+                .pollAndLock()
+                .taskQueueId(0)
+                .taskType("foo")
+                .lockTime(100000L)
+                .maxTasks(1)
+                .execute())
+            .until(
+                (tasks) -> !tasks.getLockedTasks().isEmpty());
 
         // then
         assertThat(tasksBatch.getLockedTasks()).hasSize(1);
@@ -109,7 +110,6 @@ public class ServiceTaskTest
     }
 
     @Test
-    @Ignore
     public void shouldNotLockServiceTaskOfDifferentType()
     {
         final TngpClient client = clientRule.getClient();
@@ -125,16 +125,17 @@ public class ServiceTaskTest
             .execute();
 
         // when
-        // TODO: the task is not guaranteed to exist yet
-
-        final LockedTasksBatch tasksBatch = client
-            .tasks()
-            .pollAndLock()
-            .taskQueueId(0)
-            .taskType("bar")
-            .lockTime(100000L)
-            .maxTasks(2)
-            .execute();
+        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
+            client
+                .tasks()
+                .pollAndLock()
+                .taskQueueId(0)
+                .taskType("bar")
+                .lockTime(100000L)
+                .maxTasks(2)
+                .execute())
+            .until(
+                (tasks) -> !tasks.getLockedTasks().isEmpty());
 
         // then
         assertThat(tasksBatch.getLockedTasks()).hasSize(1);
