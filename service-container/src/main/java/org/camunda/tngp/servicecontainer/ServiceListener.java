@@ -1,8 +1,5 @@
 package org.camunda.tngp.servicecontainer;
 
-public interface ServiceListener
+public interface ServiceListener extends ServiceLifecycleObserver
 {
-    <S> void onServiceStarted(ServiceName<S> name, Service<S> service);
-
-    <S> void onServiceStopping(ServiceName<S> name, Service<S> service);
 }

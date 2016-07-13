@@ -194,4 +194,9 @@ public class ServiceController implements ServiceListener, ServiceContext
         return new ServiceBuilder<>(name, service, container)
                 .dependency(this.name);
     }
+
+    public boolean isStarted()
+    {
+        return state == STARTED;
+    }
 }

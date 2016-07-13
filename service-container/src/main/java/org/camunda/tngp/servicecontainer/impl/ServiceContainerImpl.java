@@ -1,6 +1,7 @@
 package org.camunda.tngp.servicecontainer.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,8 +9,10 @@ import java.util.Map;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceBuilder;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.ServiceLifecycleObserver;
 import org.camunda.tngp.servicecontainer.ServiceListener;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceTracker;
 
 public class ServiceContainerImpl implements ServiceContainer
 {
@@ -17,6 +20,7 @@ public class ServiceContainerImpl implements ServiceContainer
 
     protected Map<ServiceName<?>, ServiceController> controllers = new HashMap<>();
     protected List<ServiceListener> listeners = new ArrayList<>();
+    protected List<ServiceTracker> trackers = new ArrayList<>();
 
     @Override
     public <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service)
@@ -40,7 +44,6 @@ public class ServiceContainerImpl implements ServiceContainer
 
     public void serviceStopped(ServiceController serviceController)
     {
-
     }
 
     public void serviceFailed(ServiceController serviceController)
@@ -60,20 +63,48 @@ public class ServiceContainerImpl implements ServiceContainer
         this.listeners.remove(listener);
     }
 
+    @Override
+    public void registerTracker(ServiceTracker tracker)
+    {
+        this.trackers.add(tracker);
+        invokeOnTrackerRegistered(tracker, controllers.values());
+    }
+
+    @Override
+    public void removeTracker(ServiceTracker tracker)
+    {
+        this.trackers.remove(tracker);
+    }
+
     public void serviceStarted(ServiceController serviceController)
     {
         invokeOnServiceStarted(serviceController, listeners);
         invokeOnServiceStarted(serviceController, serviceController.listeners);
+        invokeOnServiceStarted(serviceController, trackers);
     }
 
     @SuppressWarnings("unchecked")
-    private void invokeOnServiceStarted(ServiceController serviceController, List<ServiceListener> listeners)
+    protected void invokeOnTrackerRegistered(ServiceTracker tracker, Collection<ServiceController> serviceControllers)
+    {
+        List<ServiceController> controllers = new ArrayList<>(serviceControllers);
+        for (int i = 0; i < controllers.size(); i++)
+        {
+            ServiceController controller = controllers.get(i);
+            if (controller.isStarted())
+            {
+                tracker.onTrackerRegistration(controller.name, controller.service);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void invokeOnServiceStarted(ServiceController serviceController, List<? extends ServiceLifecycleObserver> listeners)
     {
         if(listeners != null)
         {
             for(int i = 0; i < listeners.size(); i++)
             {
-                final ServiceListener serviceListener = listeners.get(i);
+                final ServiceLifecycleObserver serviceListener = listeners.get(i);
                 try
                 {
                     serviceListener.onServiceStarted(serviceController.name, serviceController.service);
@@ -90,16 +121,17 @@ public class ServiceContainerImpl implements ServiceContainer
     {
         invokeOnServiceStopping(serviceController, listeners);
         invokeOnServiceStopping(serviceController, serviceController.listeners);
+        invokeOnServiceStopping(serviceController, trackers);
     }
 
     @SuppressWarnings("unchecked")
-    private void invokeOnServiceStopping(ServiceController serviceController, List<ServiceListener> listeners)
+    private void invokeOnServiceStopping(ServiceController serviceController, List<? extends ServiceLifecycleObserver> listeners)
     {
         if(listeners != null)
         {
             for(int i = 0; i < listeners.size(); i++)
             {
-                final ServiceListener serviceListener = listeners.get(i);
+                final ServiceLifecycleObserver serviceListener = listeners.get(i);
                 try
                 {
                     serviceListener.onServiceStopping(serviceController.name, serviceController.service);
