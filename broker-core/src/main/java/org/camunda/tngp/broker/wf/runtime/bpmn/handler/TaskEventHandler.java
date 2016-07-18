@@ -14,22 +14,22 @@ public class TaskEventHandler
 {
     protected final LogWriter logWriter;
     protected final LogReader logReader;
-    protected final Long2LongHashIndex activityInstanceIndex;
+    protected final Long2LongHashIndex workflowEventIndex;
 
     protected BpmnActivityEventReader latestEventReader = new BpmnActivityEventReader();
     protected BpmnActivityEventWriter eventWriter = new BpmnActivityEventWriter();
 
-    public TaskEventHandler(LogReader bpmnEventReader, LogWriter bpmnEventWriter, Long2LongHashIndex activityInstanceIndex)
+    public TaskEventHandler(LogReader bpmnEventReader, LogWriter bpmnEventWriter, Long2LongHashIndex workflowEventIndex)
     {
         this.logWriter = bpmnEventWriter;
         this.logReader = bpmnEventReader;
-        this.activityInstanceIndex = activityInstanceIndex;
+        this.workflowEventIndex = workflowEventIndex;
     }
 
     public void onComplete(TaskInstanceReader taskInstance)
     {
         final long activityInstanceId = taskInstance.wfActivityInstanceEventKey();
-        final long latestPosition = activityInstanceIndex.get(activityInstanceId, -1);
+        final long latestPosition = workflowEventIndex.get(activityInstanceId, -1);
 
         logReader.setPosition(latestPosition);
         logReader.read(latestEventReader);

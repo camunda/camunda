@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.wf.runtime;
 import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
 import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.wfTypeCacheServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfInstanceIdGeneratorServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeActivityInstanceEventIndexServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeWorkflowEventIndexServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeContextServiceName;
 
 import java.util.List;
@@ -74,7 +74,7 @@ public class WfRuntimeManagerService
 
         final ServiceName<Log> wfInstanceLogServiceName = logServiceName(wfInstancelogName);
         final ServiceName<IdGenerator> wfInstanceIdGeneratorServiceName = wfInstanceIdGeneratorServiceName(wfRuntimeName);
-        final ServiceName<HashIndexManager<Long2LongHashIndex>> activityInstanceIndexServiceName = wfRuntimeActivityInstanceEventIndexServiceName(wfRuntimeName);
+        final ServiceName<HashIndexManager<Long2LongHashIndex>> workflowEventIndexServiceName = wfRuntimeWorkflowEventIndexServiceName(wfRuntimeName);
 
         final LogIdGeneratorService wfInstanceIdGeneratorService = new LogIdGeneratorService(new WfInstanceIdReader());
         serviceContext.createService(wfInstanceIdGeneratorServiceName, wfInstanceIdGeneratorService)
@@ -82,7 +82,7 @@ public class WfRuntimeManagerService
             .install();
 
         final Long2LongIndexManagerService activityInstanceIndexManagerService = new Long2LongIndexManagerService(2048, 64 * 1024);
-        serviceContext.createService(activityInstanceIndexServiceName, activityInstanceIndexManagerService)
+        serviceContext.createService(workflowEventIndexServiceName, activityInstanceIndexManagerService)
             .dependency(wfInstanceLogServiceName, activityInstanceIndexManagerService.getLogInjector())
             .install();
 
@@ -91,7 +91,7 @@ public class WfRuntimeManagerService
             .dependency(wfInstanceLogServiceName, wfRuntimeContextService.getLogInjector())
             .dependency(wfInstanceIdGeneratorServiceName, wfRuntimeContextService.getIdGeneratorInjector())
             .dependency(wfTypeCacheServiceName(wfRepositoryName), wfRuntimeContextService.getWfTypeChacheInjector())
-            .dependency(activityInstanceIndexServiceName, wfRuntimeContextService.getActivityInstanceIndexInjector())
+            .dependency(workflowEventIndexServiceName, wfRuntimeContextService.getWorkflowEventIndexInjector())
             .listener(this)
             .install();
     }

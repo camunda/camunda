@@ -27,6 +27,7 @@ public class BpmnEventHandler
 
     protected final Int2ObjectHashMap<BpmnFlowElementEventHandler> flowElementEventHandlers = new Int2ObjectHashMap<>();
     protected final Int2ObjectHashMap<BpmnProcessEventHandler> processEventHandlers = new Int2ObjectHashMap<>();
+    protected final Int2ObjectHashMap<BpmnActivityInstanceEventHandler> activityEventHandlers = new Int2ObjectHashMap<>();
 
     protected final WfTypeCacheService processCache;
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
@@ -47,6 +48,11 @@ public class BpmnEventHandler
     public void addProcessHandler(BpmnProcessEventHandler handler)
     {
         processEventHandlers.put(handler.getHandledBpmnAspect().value(), handler);
+    }
+
+    public void addActivityHandler(BpmnActivityInstanceEventHandler handler)
+    {
+        activityEventHandlers.put(handler.getHandledBpmnAspect().value(), handler);
     }
 
     public int doWork()
@@ -108,12 +114,17 @@ public class BpmnEventHandler
         handler.handle(processEventReader, process, logWriter, idGenerator);
     }
 
-    private void handleBpmnActivityEvent(BpmnActivityEventReader activityEvent)
+    protected void handleBpmnActivityEvent(BpmnActivityEventReader activityEventReader)
     {
-        // TODO handle events
+        final ProcessGraph process = processCache.getProcessGraphByTypeId(activityEventReader.processId());
 
+        flowElementVisitor.init(process).moveToNode(activityEventReader.flowElementId());
+
+        final BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(activityEventReader.event());
+        final BpmnActivityInstanceEventHandler handler = activityEventHandlers.get(bpmnAspect.value());
+
+        handler.handle(activityEventReader, process, logWriter, idGenerator);
     }
-
 
     public void setEventReader(BpmnEventReader eventReader)
     {

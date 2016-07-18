@@ -29,9 +29,9 @@ public class WfRuntimeServiceNames
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static ServiceName<HashIndexManager<Long2LongHashIndex>> wfRuntimeActivityInstanceEventIndexServiceName(String runtimeName)
+    public static ServiceName<HashIndexManager<Long2LongHashIndex>> wfRuntimeWorkflowEventIndexServiceName(String runtimeName)
     {
-        return (ServiceName) ServiceName.newServiceName(String.format("wf.runtime.%s.index.activityInstances", runtimeName), HashIndexManager.class);
+        return (ServiceName) ServiceName.newServiceName(String.format("wf.runtime.%s.index.workflowEvents", runtimeName), HashIndexManager.class);
     }
 
 

@@ -47,14 +47,29 @@ public class BpmnEventReader implements BufferReader
         return headerDecoder.templateId();
     }
 
+    public boolean isFlowElementEvent()
+    {
+        return headerDecoder.templateId() == BpmnFlowElementEventDecoder.TEMPLATE_ID;
+    }
+
     public BpmnFlowElementEventReader flowElementEvent()
     {
         return flowElementEventReader;
     }
 
+    public boolean isProcessEvent()
+    {
+        return headerDecoder.templateId() == BpmnProcessEventDecoder.TEMPLATE_ID;
+    }
+
     public BpmnProcessEventReader processEvent()
     {
         return processEventReader;
+    }
+
+    public boolean isActivityEvent()
+    {
+        return headerDecoder.templateId() == BpmnActivityEventDecoder.TEMPLATE_ID;
     }
 
     public BpmnActivityEventReader activityEvent()

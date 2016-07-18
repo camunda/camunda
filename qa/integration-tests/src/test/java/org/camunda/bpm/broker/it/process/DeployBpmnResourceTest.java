@@ -71,7 +71,7 @@ public class DeployBpmnResourceTest
 
         // then
         exception.expect(BrokerRequestException.class);
-        exception.expectMessage(containsString("ERROR 101"));
+        exception.expectMessage(containsString("ERROR 201"));
         exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
 
         // when

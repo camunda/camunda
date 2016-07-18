@@ -4,32 +4,31 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
-import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
-import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.util.buffer.BufferReader;
 
-public class TakeInitialFlowsHandler implements BpmnProcessEventHandler
+public abstract class AbstractOutgoingFlowsHandler<T extends BufferReader>
 {
     protected BpmnFlowElementEventWriter eventWriter = new BpmnFlowElementEventWriter();
     protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
-    @Override
-    public void handle(BpmnProcessEventReader processEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public void handle(T eventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
     {
-        final int initialElementId = processEventReader.initialElementId();
-        flowElementVisitor.init(process).moveToNode(initialElementId);
+        final int elementId = getCurrentElementId(eventReader);
+        flowElementVisitor.init(process).moveToNode(elementId);
 
-        // TODO: fail if the event has no outgoing flow or should this be validated during deployment?
         flowElementVisitor.traverseEdge(BpmnEdgeTypes.NODE_OUTGOING_SEQUENCE_FLOWS);
 
         eventWriter
             .eventType(ExecutionEventType.SQF_EXECUTED)
             .flowElementId(flowElementVisitor.nodeId())
             .key(idGenerator.nextId())
-            .processId(processEventReader.processId())
-            .processInstanceId(processEventReader.processInstanceId());
+            .processId(getProcessId(eventReader))
+            .processInstanceId(getProcessInstanceId(eventReader));
+
+        System.out.println("Taking flow " + flowElementVisitor.nodeId());
 
         if (logWriter.write(eventWriter) < 0)
         {
@@ -38,15 +37,14 @@ public class TakeInitialFlowsHandler implements BpmnProcessEventHandler
         }
     }
 
-    @Override
-    public BpmnAspect getHandledBpmnAspect()
-    {
-        return BpmnAspect.TAKE_INITIAL_FLOWS;
-    }
+    protected abstract int getCurrentElementId(T eventReader);
+
+    protected abstract long getProcessId(T eventReader);
+
+    protected abstract long getProcessInstanceId(T eventReader);
 
     public void setEventWriter(BpmnFlowElementEventWriter eventWriter)
     {
         this.eventWriter = eventWriter;
     }
-
 }

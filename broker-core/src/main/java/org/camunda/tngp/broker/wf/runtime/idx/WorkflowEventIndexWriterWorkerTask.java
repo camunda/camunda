@@ -4,7 +4,7 @@ import org.camunda.tngp.broker.wf.WfWorkerContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
 
-public class ActivityInstanceIndexWriterWorkerTask implements WorkerTask<WfWorkerContext>
+public class WorkflowEventIndexWriterWorkerTask implements WorkerTask<WfWorkerContext>
 {
     @Override
     public int execute(WfWorkerContext context)

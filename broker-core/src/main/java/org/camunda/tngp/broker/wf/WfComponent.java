@@ -31,7 +31,7 @@ import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManagerService;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames;
 import org.camunda.tngp.broker.wf.runtime.handler.StartProcessInstanceHandler;
-import org.camunda.tngp.broker.wf.runtime.idx.ActivityInstanceIndexWriterWorkerTask;
+import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexWriterWorkerTask;
 import org.camunda.tngp.broker.wf.runtime.worker.ContinuationWorkerTask;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Service;
@@ -91,7 +91,7 @@ public class WfComponent implements Component
             new WfTypeIndexWriteWorkerTask(),
             new ContinuationWorkerTask(),
             new InputLogProcessingTask(),
-            new ActivityInstanceIndexWriterWorkerTask()
+            new WorkflowEventIndexWriterWorkerTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);

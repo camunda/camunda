@@ -40,7 +40,7 @@ public class TaskEventHandlerTest
     protected LogReader logReader;
 
     @Mock
-    protected Long2LongHashIndex activityInstanceIndex;
+    protected Long2LongHashIndex workflowEventIndex;
 
     @Mock
     protected BpmnActivityEventReader activityEventReader;
@@ -78,14 +78,14 @@ public class TaskEventHandlerTest
     public void shouldHandleCompleteEvent()
     {
         // given
-        final TaskEventHandler handler = new TaskEventHandler(logReader, logWriter, activityInstanceIndex);
+        final TaskEventHandler handler = new TaskEventHandler(logReader, logWriter, workflowEventIndex);
         handler.setEventWriter(activityEventWriter);
         handler.setLatestEventReader(activityEventReader);
 
         mockTaskInstanceEvent(TaskInstanceState.COMPLETED);
         BpmnEventMocks.mockActivityInstanceEvent(activityEventReader, ExecutionEventType.ACT_INST_CREATED);
 
-        when(activityInstanceIndex.get(eq(23456789L), anyLong())).thenReturn(748L);
+        when(workflowEventIndex.get(eq(23456789L), anyLong())).thenReturn(748L);
 
         // when
         handler.onComplete(taskInstanceReader);

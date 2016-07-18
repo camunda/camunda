@@ -38,6 +38,7 @@ public class ServiceTaskTest
 
     protected DeployedWorkflowType fooProcess;
     protected DeployedWorkflowType barProcess;
+    protected DeployedWorkflowType twoTasksProcess;
 
     @Before
     public void deployProcess()
@@ -64,6 +65,23 @@ public class ServiceTaskTest
                 .bpmnModelInstance(
                         barBpmnModel)
                 .execute();
+
+        final BpmnModelInstance twoTasksModel = Bpmn.createExecutableProcess("anId")
+            .startEvent()
+            .serviceTask("serviceTask1")
+            .serviceTask("serviceTask2")
+            .endEvent()
+            .done();
+
+        wrap(twoTasksModel)
+            .taskAttributes("serviceTask1", "foo", 0)
+            .taskAttributes("serviceTask2", "bar", 0);
+
+
+        twoTasksProcess = workflowService.deploy()
+            .bpmnModelInstance(
+                twoTasksModel)
+            .execute();
     }
 
     @Test
@@ -176,5 +194,62 @@ public class ServiceTaskTest
 
         // then
         assertThat(result).isEqualTo(task.getId());
+    }
+
+    @Test
+    public void shouldExecuteSequenceOfServiceTasks()
+    {
+        final TngpClient client = clientRule.getClient();
+        final ProcessService workflowService = client.processes();
+
+        // given
+        workflowService.start()
+            .workflowTypeId(twoTasksProcess.getWorkflowTypeId())
+            .execute();
+
+        final LockedTasksBatch task1Batch = TestUtil.doRepeatedly(() ->
+            client
+                .tasks()
+                .pollAndLock()
+                .taskQueueId(0)
+                .taskType("foo")
+                .lockTime(100000L)
+                .maxTasks(5)
+                .execute())
+            .until(
+                (tasks) -> !tasks.getLockedTasks().isEmpty());
+
+        final LockedTask task1 = task1Batch.getLockedTasks().get(0);
+        client.tasks().complete()
+            .taskQueueId(0)
+            .taskId(task1.getId())
+            .execute();
+
+
+        // when
+        final LockedTasksBatch task2Batch = TestUtil.doRepeatedly(() ->
+            client
+                .tasks()
+                .pollAndLock()
+                .taskQueueId(0)
+                .taskType("bar")
+                .lockTime(100000L)
+                .maxTasks(5)
+                .execute())
+            .until(
+                (tasks) -> !tasks.getLockedTasks().isEmpty());
+
+        // then
+        assertThat(task2Batch.getLockedTasks()).hasSize(1);
+
+        final LockedTask task2 = task2Batch.getLockedTasks().get(0);
+
+        final Long result = client.tasks().complete()
+            .taskQueueId(0)
+            .taskId(task2.getId())
+            .execute();
+
+        // then
+        assertThat(result).isEqualTo(task2.getId());
     }
 }

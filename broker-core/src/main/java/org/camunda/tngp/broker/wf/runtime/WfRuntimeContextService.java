@@ -4,11 +4,13 @@ import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.CreateActivityInstanceHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.EndProcessHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.StartProcessHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TakeInitialFlowsHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TakeOutgoingFlowsHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TaskEventHandler;
+import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TriggerNoneEventHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.WaitEventHandler;
-import org.camunda.tngp.broker.wf.runtime.idx.ActivityInstanceIndexWriter;
+import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexWriter;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
@@ -27,7 +29,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     protected final Injector<IdGenerator> idGeneratorInjector = new Injector<>();
     protected final Injector<Log> logInjector = new Injector<>();
 
-    protected final Injector<HashIndexManager<Long2LongHashIndex>> activityInstanceIndexInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Long2LongHashIndex>> workflowEventIndexInjector = new Injector<>();
 
     protected final WfRuntimeContext wfRuntimeContext;
 
@@ -44,32 +46,39 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
 
         final Log log = logInjector.getValue();
         final LogWriter logWriter = new LogWriter(log);
+        final Long2LongHashIndex workflowEventIndex = workflowEventIndexInjector.getValue().getIndex();
 
         wfRuntimeContext.setLogWriter(logWriter);
 
         final LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
         final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter, idGeneratorInjector.getValue());
-        bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
-        bpmnEventHandler.addFlowElementHandler(new CreateActivityInstanceHandler());
 
-        bpmnEventHandler.addProcessHandler(new TakeInitialFlowsHandler());
+        bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
+        bpmnEventHandler.addFlowElementHandler(new EndProcessHandler(new LogReader(log, READ_BUFFER_SIZE), workflowEventIndex));
+        bpmnEventHandler.addFlowElementHandler(new CreateActivityInstanceHandler());
+        bpmnEventHandler.addFlowElementHandler(new TriggerNoneEventHandler());
+
+        final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
+        bpmnEventHandler.addProcessHandler(takeOutgoingFlowsHandler);
+        bpmnEventHandler.addActivityHandler(takeOutgoingFlowsHandler);
 
         final WaitEventHandler waitEventHandler = new WaitEventHandler();
         bpmnEventHandler.addProcessHandler(waitEventHandler);
         bpmnEventHandler.addFlowElementHandler(waitEventHandler);
+        bpmnEventHandler.addActivityHandler(waitEventHandler);
 
         wfRuntimeContext.setBpmnEventHandler(bpmnEventHandler);
 
         final TaskEventHandler taskEventHandler = new TaskEventHandler(
                 new LogReader(log, READ_BUFFER_SIZE),
                 logWriter,
-                activityInstanceIndexInjector.getValue().getIndex());
+                workflowEventIndexInjector.getValue().getIndex());
         wfRuntimeContext.setTaskEventHandler(taskEventHandler);
 
         wfRuntimeContext.setActivityInstanceIndexWriter(
-                new ActivityInstanceIndexWriter(
+                new WorkflowEventIndexWriter(
                     new LogReader(log, READ_BUFFER_SIZE),
-                    activityInstanceIndexInjector.getValue().getIndex()));
+                    workflowEventIndexInjector.getValue().getIndex()));
     }
 
     @Override
@@ -99,9 +108,9 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         return logInjector;
     }
 
-    public Injector<HashIndexManager<Long2LongHashIndex>> getActivityInstanceIndexInjector()
+    public Injector<HashIndexManager<Long2LongHashIndex>> getWorkflowEventIndexInjector()
     {
-        return activityInstanceIndexInjector;
+        return workflowEventIndexInjector;
     }
 
 }
