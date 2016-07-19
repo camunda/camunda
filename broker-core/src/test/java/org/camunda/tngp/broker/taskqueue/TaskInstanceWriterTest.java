@@ -17,6 +17,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class TaskInstanceWriterTest
 {
     protected static final byte[] TASK_TYPE = "baz".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] PAYLOAD = "$$$".getBytes(StandardCharsets.UTF_8);
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected TaskInstanceDecoder bodyDecoder = new TaskInstanceDecoder();
@@ -34,6 +35,11 @@ public class TaskInstanceWriterTest
             .taskType(new UnsafeBuffer(TASK_TYPE), 0, TASK_TYPE.length)
             .wfActivityInstanceEventKey(9L)
             .wfRuntimeResourceId(123)
+            .lockOwner(135L)
+            .lockTime(12356L)
+            .payload(new UnsafeBuffer(PAYLOAD), 0, PAYLOAD.length)
+            .prevVersionPosition(9876)
+            .state(TaskInstanceState.LOCKED)
             .write(buffer, 67);
 
         // then
@@ -50,17 +56,19 @@ public class TaskInstanceWriterTest
         assertThat(bodyDecoder.encodedLength()).isEqualTo(TaskInstanceDecoder.BLOCK_LENGTH);
         assertThat(bodyDecoder.id()).isEqualTo(7L);
 
-        // workaround for https://github.com/camunda-tngp/tasks/issues/16
-        final long unsignedLockOwnerId = Integer.toUnsignedLong((int) bodyDecoder.lockOwnerId());
-        assertThat(unsignedLockOwnerId).isEqualTo(TaskInstanceDecoder.lockOwnerIdNullValue());
-        assertThat(bodyDecoder.lockTime()).isEqualTo(TaskInstanceDecoder.lockTimeNullValue());
-        assertThat(bodyDecoder.prevVersionPosition()).isEqualTo(TaskInstanceDecoder.prevVersionPositionNullValue());
-        assertThat(bodyDecoder.state()).isEqualTo(TaskInstanceState.NEW);
+        assertThat(bodyDecoder.lockOwnerId()).isEqualTo(135L);
+        assertThat(bodyDecoder.lockTime()).isEqualTo(12356L);
+        assertThat(bodyDecoder.prevVersionPosition()).isEqualTo(9876);
+        assertThat(bodyDecoder.state()).isEqualTo(TaskInstanceState.LOCKED);
         assertThat(bodyDecoder.taskTypeHash()).isEqualTo(TaskTypeHash.hashCode(TASK_TYPE, TASK_TYPE.length));
 
         final UnsafeBuffer decodedTaskType = new UnsafeBuffer(new byte[TASK_TYPE.length + 3]);
         bodyDecoder.getTaskType(decodedTaskType, 3, TASK_TYPE.length);
         assertThatBuffer(decodedTaskType).hasBytes(TASK_TYPE, 3);
+
+        final UnsafeBuffer decodedPayload = new UnsafeBuffer(new byte[PAYLOAD.length]);
+        bodyDecoder.getTaskType(decodedPayload, 0, PAYLOAD.length);
+        assertThatBuffer(decodedPayload).hasBytes(PAYLOAD, 0);
     }
 
     @Test
@@ -72,7 +80,12 @@ public class TaskInstanceWriterTest
             .id(7L)
             .taskType(new UnsafeBuffer(TASK_TYPE), 0, TASK_TYPE.length)
             .wfActivityInstanceEventKey(9L)
-            .wfRuntimeResourceId(123);
+            .wfRuntimeResourceId(123)
+            .lockOwner(135L)
+            .lockTime(12356L)
+            .payload(new UnsafeBuffer(PAYLOAD), 0, PAYLOAD.length)
+            .prevVersionPosition(9876)
+            .state(TaskInstanceState.LOCKED);
 
         // when
         final int length = writer.getLength();
@@ -82,7 +95,8 @@ public class TaskInstanceWriterTest
                 TaskInstanceDecoder.BLOCK_LENGTH +
                 TaskInstanceDecoder.payloadHeaderLength() +
                 TaskInstanceDecoder.taskTypeHeaderLength() +
-                TASK_TYPE.length);
+                TASK_TYPE.length +
+                PAYLOAD.length);
 
     }
 }

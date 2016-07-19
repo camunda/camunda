@@ -1,8 +1,5 @@
 package org.camunda.tngp.broker.wf.repository.handler;
 
-import static java.lang.System.arraycopy;
-import static java.util.Arrays.fill;
-
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.instance.Process;
@@ -28,8 +25,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>, ResponseCompletionHandler
 {
-    protected final byte[] keyBuffer = new byte[Constants.WF_TYPE_KEY_MAX_LENGTH];
-
     protected LogEntryWriter logEntryWriter = new LogEntryWriter();
     protected LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
 
@@ -110,16 +105,9 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
         final long typeId = wfTypeIdGenerator.nextId();
         responseWriter.wfTypeId(typeId);
 
-        final int keyLength = wfTypeKeyBytes.length;
-        if (keyLength <= Constants.WF_TYPE_KEY_MAX_LENGTH)
-        {
-            arraycopy(wfTypeKeyBytes, 0, keyBuffer, 0, keyLength);
-            fill(keyBuffer, keyLength, Constants.WF_TYPE_KEY_MAX_LENGTH, (byte) 0);
-        }
-
         int version = 0;
 
-        final long previousVersionId = wfTypeKeyIndex.get(keyBuffer, -1);
+        final long previousVersionId = wfTypeKeyIndex.get(wfTypeKeyBytes, -1);
         final long prevVersionPos = wfIdIndex.get(previousVersionId, -1);
 
         if (prevVersionPos != -1)

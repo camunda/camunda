@@ -45,5 +45,8 @@ public class LogEntryProcessor<T extends BufferReader>
         return workCount;
     }
 
-
+    public void setLogReader(LogReader logReader)
+    {
+        this.logReader = logReader;
+    }
 }

@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.wf.repository;
 
-import java.util.Arrays;
 import java.util.function.LongFunction;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
@@ -11,7 +10,6 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
-import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -31,8 +29,6 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
 
     protected final LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
     protected final WfTypeReader reader = new WfTypeReader();
-
-    protected byte[] keyBuffer = new byte[Constants.WF_TYPE_KEY_MAX_LENGTH];
 
     public WfTypeCacheService(int numSets, int setSize)
     {
@@ -64,15 +60,8 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
     {
         // TODO: throw exception if key longer
 
-        buffer.getBytes(offset, keyBuffer, 0, length);
-
-        if (length <= keyBuffer.length)
-        {
-            Arrays.fill(keyBuffer, length, keyBuffer.length, (byte) 0);
-        }
-
         final Bytes2LongHashIndex keyIndex = wfTypeKeyIndexInjector.getValue().getIndex();
-        final long id = keyIndex.get(keyBuffer, -1);
+        final long id = keyIndex.get(buffer, 0, length, -1);
 
         ProcessGraph processGraph = null;
 

@@ -63,12 +63,8 @@
 		</group>
 	</sbe:message>
 
-	<sbe:message name="Ack" id="200" description="An acknowledement that an operation on a task was successful">
+	<sbe:message name="SingleTaskAck" id="200">
 		<field name="taskId" id="1" type="uint64" />
-	</sbe:message>
-		
-	<sbe:message name="Nack" id="201" description="Marks a failed request">
-		<field name="errorCode" id="1" type="uint16" />
 	</sbe:message>
 	
 </sbe:messageSchema>

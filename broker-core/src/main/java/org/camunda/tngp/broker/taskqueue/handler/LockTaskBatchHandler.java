@@ -1,44 +1,33 @@
 package org.camunda.tngp.broker.taskqueue.handler;
 
-import java.nio.channels.FileChannel;
-
+import org.camunda.tngp.broker.taskqueue.LockedTaskBatchWriter;
+import org.camunda.tngp.broker.taskqueue.PollAndLockTaskRequestReader;
+import org.camunda.tngp.broker.taskqueue.TaskErrors;
+import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
+import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogFragmentHandler;
+import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
-import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder.TasksEncoder;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.taskqueue.PollAndLockTasksDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
+import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueContext>, ResponseCompletionHandler
 {
-    private static final int TASK_TYPE_MAXLENGTH = 256;
+    protected PollAndLockTaskRequestReader requestReader = new PollAndLockTaskRequestReader();
+    protected LockedTaskBatchWriter responseWriter = new LockedTaskBatchWriter();
+    protected TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
+    protected TaskInstanceWriter taskInstanceWriter = new TaskInstanceWriter();
+    protected ErrorWriter errorWriter = new ErrorWriter();
 
-    protected final PollAndLockTasksDecoder requestDecoder = new PollAndLockTasksDecoder();
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final LockedTaskBatchEncoder responseEncoder = new LockedTaskBatchEncoder();
-    protected final TaskInstanceEncoder taskInstanceEncoder = new TaskInstanceEncoder();
-    protected final TaskInstanceDecoder taskInstanceDecoder = new TaskInstanceDecoder();
-
-    protected final byte[] taskTypeBuff = new byte[TASK_TYPE_MAXLENGTH];
-
-    protected final TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
-    protected final ClaimedFragment claimedLogFragment = new ClaimedFragment();
-    protected final LockableTaskFinder lockableTaskFinder = new LockableTaskFinder();
+    protected LockableTaskFinder lockableTaskFinder = new LockableTaskFinder();
 
     @Override
     public long onRequest(
@@ -51,190 +40,145 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
         final Bytes2LongHashIndex taskTypePositionIndex = ctx.getTaskTypePositionIndex().getIndex();
         final Log log = ctx.getLog();
 
-        headerDecoder.wrap(buffer, offset);
+        requestReader.wrap(buffer, offset, length);
 
-        requestDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        final int consumerId = requestReader.consumerId();
+        if (consumerId == LockedTaskBatchEncoder.consumerIdNullValue())
+        {
+            return writeError(response, "Consumer id is required");
+        }
 
-        final long consumerId = requestDecoder.consumerId();
-        final long lockTime = requestDecoder.lockTime();
+
+        final long lockTime = requestReader.lockTime();
+        if (lockTime == LockedTaskBatchEncoder.lockTimeNullValue())
+        {
+            return writeError(response, "Lock time is required");
+        }
+
 //        final long maxTask = decoder.maxTasks();
 
-        final int taskTypeLength = requestDecoder.taskTypeLength();
-        requestDecoder.getTaskType(taskTypeBuff, 0, TASK_TYPE_MAXLENGTH);
-        final int taskTypeHash = TaskTypeHash.hashCode(taskTypeBuff, taskTypeLength);
+        final DirectBuffer taskType = requestReader.taskType();
+        if (taskType.capacity() == 0)
+        {
+            return writeError(response, "Task type is required");
+        }
+        if (taskType.capacity() > Constants.TASK_TYPE_MAX_LENGTH)
+        {
+            return writeError(response, "Task type is too long");
+        }
+
+        final int taskTypeHash = TaskTypeHash.hashCode(taskType, 0, taskType.capacity());
 
         final long now = System.currentTimeMillis();
         final long lockTimeout = now + lockTime;
 
         // scan the log for lockable tasks
-        lockableTaskFinder.init(taskTypeHash, taskTypeBuff, taskTypeLength);
-        long scanPos = Math.max(taskTypePositionIndex.get(taskTypeBuff, -1), log.getInitialPosition());
+        final long scanPos = Math.max(taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1), log.getInitialPosition());
+        lockableTaskFinder.init(log, scanPos, taskTypeHash, taskType);
 
-        long lockableTaskPosition = -1;
-        do
-        {
-            scanPos = log.pollFragment(scanPos, lockableTaskFinder);
-            lockableTaskPosition = lockableTaskFinder.lockableTaskPosition;
-        }
-        while (scanPos > 0 && lockableTaskPosition == -1);
+        final boolean lockableTaskFound = lockableTaskFinder.findNextLockableTask();
 
-        if (lockableTaskPosition != -1)
+        if (lockableTaskFound)
         {
-            try
-            {
-                lockTask(ctx, response, consumerId, lockTimeout, taskTypeLength);
-            }
-            finally
-            {
-                if (claimedLogFragment.isOpen())
-                {
-                    claimedLogFragment.abort();
-                }
-                if (!response.isDeferred())
-                {
-                    response.abort();
-                }
-            }
+            return lockTask(
+                    response,
+                    consumerId,
+                    lockTimeout,
+                    lockableTaskFinder.getLockableTask(),
+                    lockableTaskFinder.getLockableTaskPosition(),
+                    ctx.getLogWriter());
         }
         else
         {
-            if (response.allocate(emptyResponseLength()))
-            {
-                writeCommonResponse(ctx, response, consumerId, lockTimeout);
-                responseEncoder.tasksCount(0);
-                response.commit();
-            }
-            else
-            {
-                System.err.println("Could not allocate response");
-            }
+            return lockNoTask(response, consumerId, lockTimeout);
         }
-
-        return 0;
     }
 
-    protected void lockTask(
-            final TaskQueueContext ctx,
+    protected int writeError(DeferredResponse response, String errorMessage)
+    {
+        errorWriter
+            .componentCode(TaskErrors.COMPONENT_CODE)
+            .detailCode(TaskErrors.LOCK_TASKS_ERROR)
+            .errorMessage(errorMessage);
+
+        if (response.allocateAndWrite(errorWriter))
+        {
+            response.commit();
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    protected int lockTask(
             final DeferredResponse response,
-            final long consumerId,
+            final int consumerId,
             final long lockTimeout,
-            final int taskTypeLength)
+            TaskInstanceReader lockableTask,
+            long lockableTaskPosition,
+            LogWriter logWriter)
     {
-        final Log log = ctx.getLog();
-        final TaskInstanceReader taskInstanceReader = lockableTaskFinder.reader;
-        final int payloadLength = taskInstanceReader.getPayloadLength();
-        taskInstanceReader.readPayload();
+        final DirectBuffer taskPayload = lockableTask.getPayload();
 
-        long claimedLogPosition = claimLogFragment(log, taskInstanceReader);
-        // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
-        claimedLogPosition -= BitUtil.align(claimedLogFragment.getFragmentLength(), 8);
+        initResponse(consumerId, lockTimeout);
+        responseWriter
+            .appendTask(lockableTask.id(), taskPayload, 0, taskPayload.capacity());
 
-        if (claimedLogPosition >= 0)
+        if (response.allocateAndWrite(responseWriter))
         {
-            writeLockedTaskInstanceLogEntry(ctx, claimedLogFragment, taskInstanceReader, consumerId, lockTimeout);
+            final DirectBuffer taskType = lockableTask.getTaskType();
+            final DirectBuffer payload = lockableTask.getPayload();
 
-            if (response.allocate(lockTaskBatchResponseLength(taskTypeLength, payloadLength)))
-            {
-                writeCommonResponse(ctx, response, consumerId, lockTimeout);
+            taskInstanceWriter
+                .id(lockableTask.id())
+                .wfActivityInstanceEventKey(lockableTask.wfActivityInstanceEventKey())
+                .wfRuntimeResourceId(lockableTask.wfRuntimeResourceId())
+                .lockOwner(consumerId)
+                .lockTime(lockTimeout)
+                .state(TaskInstanceState.LOCKED)
+                .prevVersionPosition(lockableTaskPosition)
+                .payload(payload, 0, payload.capacity())
+                .taskType(taskType, 0, taskType.capacity());
 
-                responseEncoder.tasksCount(1)
-                    .next()
-                        .taskId(taskInstanceReader.getDecoder().id())
-                        .putPayload(taskInstanceReader.getPayloadReadBuffer(), 0, taskInstanceReader.getPayloadLength());
-
-                response.defer(claimedLogPosition, this);
-                claimedLogFragment.commit();
-            }
+            final long logEntryOffset = logWriter.write(taskInstanceWriter);
+            return response.defer(logEntryOffset, this);
+        }
+        else
+        {
+            return -1;
         }
     }
 
-    protected void writeCommonResponse(
-            final TaskQueueContext ctx,
-            final DeferredResponse response,
-            final long consumerId,
-            final long lockTime)
+    protected void initResponse(
+            final int consumerId,
+            final long lockTimeout)
     {
-        final MutableDirectBuffer responseBuffer = response.getBuffer();
-
-        int writeOffset = response.getClaimedOffset();
-
-        headerEncoder.wrap(responseBuffer, writeOffset)
-            .blockLength(responseEncoder.sbeBlockLength())
-            .templateId(responseEncoder.sbeTemplateId())
-            .schemaId(responseEncoder.sbeSchemaId())
-            .version(responseEncoder.sbeSchemaVersion())
-            .resourceId(ctx.getResourceId());
-
-        writeOffset += headerEncoder.encodedLength();
-
-        responseEncoder.wrap(responseBuffer, writeOffset)
-            .lockTime(lockTime);
-    }
-
-    protected long claimLogFragment(final Log log, final TaskInstanceReader taskInstanceReader)
-    {
-        long claimedPosition = -1;
-
-        do
-        {
-            claimedPosition = log.getWriteBuffer().claim(claimedLogFragment, taskInstanceReader.getLength());
-        }
-        while (claimedPosition == -2);
-
-        return claimedPosition;
-    }
-
-    private int lockTaskBatchResponseLength(int taskTypeLength, int payloadLength)
-    {
-        return emptyResponseLength() +
-               TasksEncoder.sbeBlockLength() +
-               TasksEncoder.payloadHeaderLength() +
-               payloadLength;
-    }
-
-    private static int emptyResponseLength()
-    {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-               LockedTaskBatchEncoder.BLOCK_LENGTH +
-               TasksEncoder.sbeHeaderSize();
-    }
-
-    private void writeLockedTaskInstanceLogEntry(
-            TaskQueueContext ctx,
-            ClaimedFragment claimedLogFragment,
-            TaskInstanceReader reader,
-            long consumerId,
-            long lockTimeout)
-    {
-        final MutableDirectBuffer writeBuffer = claimedLogFragment.getBuffer();
-        final TaskInstanceDecoder decoder = reader.getDecoder();
-
-        int writeOffset = claimedLogFragment.getOffset();
-
-        headerEncoder.wrap(writeBuffer, writeOffset)
-            .blockLength(taskInstanceEncoder.sbeBlockLength())
-            .templateId(taskInstanceEncoder.sbeTemplateId())
-            .schemaId(taskInstanceEncoder.sbeSchemaId())
-            .version(taskInstanceEncoder.sbeSchemaVersion())
-            .resourceId(ctx.getResourceId());
-
-        writeOffset += headerEncoder.encodedLength();
-
-        taskInstanceEncoder.wrap(writeBuffer, writeOffset);
-        taskInstanceEncoder
-            .id(decoder.id())
-            .version(decoder.version() + 1)
-            .prevVersionPosition(reader.getLogPosition())
-            .state(TaskInstanceState.LOCKED)
-            .lockOwnerId(consumerId)
+        responseWriter
+            .consumerId(consumerId)
             .lockTime(lockTimeout)
-            .taskTypeHash(decoder.taskTypeHash())
-            .wfActivityInstanceEventKey(decoder.wfActivityInstanceEventKey())
-            .wfRuntimeResourceId(decoder.wfRuntimeResourceId());
-
-        taskInstanceEncoder.putTaskType(reader.getBlockBuffer(), reader.getTaskTypeOffset(), reader.getTaskTypeLength());
-        taskInstanceEncoder.putPayload(reader.getPayloadReadBuffer(), 0, reader.getPayloadLength());
+            .newTasks();
     }
+
+    protected int lockNoTask(
+            final DeferredResponse response,
+            final int consumerId,
+            final long lockTimeout)
+    {
+        initResponse(consumerId, lockTimeout);
+
+        if (response.allocateAndWrite(responseWriter))
+        {
+            response.commit();
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
 
     @Override
     public void onAsyncWorkCompleted(final DeferredResponse response)
@@ -246,85 +190,5 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
     public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
-    }
-
-    static class LockableTaskFinder implements LogFragmentHandler
-    {
-        final TaskInstanceReader reader;
-
-        int taskTypeHashToPoll;
-        byte[] taskTypeToPoll;
-        int taskTypeToPollLength;
-        byte[] taskType = new byte[TASK_TYPE_MAXLENGTH];
-
-        long lockableTaskPosition;
-
-        LockableTaskFinder()
-        {
-            reader = new TaskInstanceReader();
-        }
-
-        void init(
-                int taskTypeHashToPoll,
-                byte[] taskTypeToPoll,
-                int taskTypeToPollLength)
-        {
-            this.taskTypeHashToPoll = taskTypeHashToPoll;
-            this.taskTypeToPoll = taskTypeToPoll;
-            this.taskTypeToPollLength = taskTypeToPollLength;
-            this.lockableTaskPosition = -1;
-        }
-
-        @Override
-        public void onFragment(long position, FileChannel fileChannel, int offset, int length)
-        {
-            if (reader.readBlock(position, fileChannel, offset, length))
-            {
-                final TaskInstanceDecoder decoder = reader.getDecoder();
-
-                final TaskInstanceState state = decoder.state();
-                final long taskTypeHash = decoder.taskTypeHash();
-
-                if (taskTypeHash == taskTypeHashToPoll && state == TaskInstanceState.NEW)
-                {
-                    if (taskTypeEqual(reader, taskTypeToPoll, taskTypeToPollLength))
-                    {
-                        lockableTaskPosition = position;
-                    }
-                }
-            }
-            else
-            {
-                System.err.println("could not task instance at log position " + position);
-            }
-        }
-
-        private static boolean taskTypeEqual(
-                TaskInstanceReader reader,
-                byte[] taskTypeToPoll,
-                int taskTypeToPollLength)
-        {
-
-            final DirectBuffer readBuffer = reader.getBlockBuffer();
-            final int taskTypeOffset = reader.getTaskTypeOffset();
-            final int taskTypeLength = reader.getTaskTypeLength();
-
-            if (taskTypeToPollLength == taskTypeLength)
-            {
-                boolean taskTypeEqual = true;
-
-                for (int i = 0; i < taskTypeToPollLength && taskTypeEqual; i++)
-                {
-                    taskTypeEqual &= taskTypeToPoll[i] == readBuffer.getByte(taskTypeOffset + i);
-                }
-
-                return taskTypeEqual;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
     }
 }

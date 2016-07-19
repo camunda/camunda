@@ -1,40 +1,37 @@
 package org.camunda.tngp.broker.taskqueue.handler;
 
-import java.nio.channels.FileChannel;
-
+import org.camunda.tngp.broker.taskqueue.CompleteTaskRequestReader;
+import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
+import org.camunda.tngp.broker.taskqueue.TaskErrors;
+import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
+import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogFragmentHandler;
-import org.camunda.tngp.protocol.taskqueue.AckEncoder;
-import org.camunda.tngp.protocol.taskqueue.CompleteTaskDecoder;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.taskqueue.NackEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
+import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.LogReaderImpl;
+import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContext>, ResponseCompletionHandler
 {
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final CompleteTaskDecoder requestDecoder = new CompleteTaskDecoder();
-    protected final TaskInstanceEncoder taskInstanceEncoder = new TaskInstanceEncoder();
-    protected final TaskInstanceDecoder taskInstanceDecoder = new TaskInstanceDecoder();
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final AckEncoder ackEncoder = new AckEncoder();
-    protected final NackEncoder nackEncoder = new NackEncoder();
+    protected CompleteTaskRequestReader requestReader = new CompleteTaskRequestReader();
+    protected SingleTaskAckResponseWriter responseWriter = new SingleTaskAckResponseWriter();
 
-    protected final ClaimedFragment claimedFragment = new ClaimedFragment();
-    protected final TaskInstanceLogFragementHandler logReader = new TaskInstanceLogFragementHandler();
+    protected TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
+    protected TaskInstanceWriter taskInstanceWriter = new TaskInstanceWriter();
+    protected ErrorWriter errorWriter = new ErrorWriter();
+
+    protected static final int READ_BUFFER_SIZE = 1024 * 1024;
+    protected LogReader logReader = new LogReaderImpl(READ_BUFFER_SIZE);
 
     @Override
     public long onRequest(
@@ -47,178 +44,85 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         final Long2LongHashIndex lockedTasksIndex = ctx.getLockedTaskInstanceIndex().getIndex();
         final Log log = ctx.getLog();
 
-        final TaskInstanceReader taskInstanceReader = logReader.taskInstanceReader;
-        final TaskInstanceDecoder taskInstanceDecoder = taskInstanceReader.getDecoder();
+        requestReader.wrap(msg, offset, length);
 
-        headerDecoder.wrap(msg, offset);
-        requestDecoder.wrap(msg, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
-
-        final long taskId = requestDecoder.taskId();
-        final long clientId = 0; // TODO
-        final int payloadLength = requestDecoder.payloadLength();
-        final int payloadOffset = requestDecoder.limit() + CompleteTaskDecoder.payloadHeaderLength();
-
-        if (response.allocate(ackResponseLength()))
+        final int consumerId = requestReader.consumerId();
+        if (consumerId == CompleteTaskEncoder.consumerIdNullValue())
         {
-            int errorCode = -1;
+            return writeError(response, "Consumer id is required");
+        }
 
-            final long lastTaskPosition = lockedTasksIndex.get(taskId, -1);
-            if (lastTaskPosition != -1)
+        final long taskId = requestReader.taskId();
+        if (taskId == CompleteTaskEncoder.taskIdNullValue())
+        {
+            return writeError(response, "Task id is required");
+        }
+
+        final long lastTaskPosition = lockedTasksIndex.get(taskId, -1);
+
+        if (lastTaskPosition >= 0)
+        {
+            logReader.setLogAndPosition(log, lastTaskPosition);
+            logReader.read(taskInstanceReader);
+
+            if (taskInstanceReader.lockOwnerId() != consumerId)
             {
-                taskInstanceReader.reset();
-                log.pollFragment(lastTaskPosition, logReader);
+                return writeError(response, "Task is currently not locked by the provided consumer");
+            }
 
-                final TaskInstanceState state = taskInstanceDecoder.state();
-                final long lockOwnerId = taskInstanceDecoder.lockOwnerId();
+            responseWriter.taskId(taskId);
 
-                if (state == TaskInstanceState.LOCKED && lockOwnerId == clientId)
-                {
-                    final long claimedPosition = claimLogFragment(log, payloadLength, taskInstanceReader);
+            if (response.allocateAndWrite(responseWriter))
+            {
 
-                    if (claimedPosition >= 0)
-                    {
-                        writeCompletedTaskInstanceLogEntry(
-                                ctx,
-                                claimedFragment,
-                                taskInstanceReader,
-                                msg,
-                                payloadOffset,
-                                payloadLength);
+                final DirectBuffer payload = taskInstanceReader.getPayload();
+                final DirectBuffer taskType = taskInstanceReader.getTaskType();
 
-                        writeAck(ctx, response, taskId);
-                        response.defer(claimedPosition, this);
-                    }
-                    else
-                    {
-                        // NACK: cannot complete, backpressured by log write buffer
-                        errorCode = 1;
-                    }
-                }
-                else
-                {
-                    // NACK: cannot complete, illegal state
-                    errorCode = 1;
-                }
+                taskInstanceWriter
+                    .id(taskInstanceReader.id())
+                    .lockOwner(TaskInstanceEncoder.lockOwnerIdNullValue())
+                    .lockTime(TaskInstanceEncoder.lockTimeNullValue())
+                    .payload(payload, 0, payload.capacity())
+                    .taskType(taskType, 0, taskType.capacity())
+                    .prevVersionPosition(lastTaskPosition)
+                    .state(TaskInstanceState.COMPLETED)
+                    .wfActivityInstanceEventKey(taskInstanceReader.wfActivityInstanceEventKey())
+                    .wfRuntimeResourceId(taskInstanceReader.wfRuntimeResourceId());
+
+                final LogWriter logWriter = ctx.getLogWriter();
+                final long logEntryOffset = logWriter.write(taskInstanceWriter);
+
+                return response.defer(logEntryOffset, this);
             }
             else
             {
-                // NACK: task not found / task not locked
-                errorCode = 1;
-            }
-
-            if (errorCode > 0)
-            {
-                writeNack(response, taskId);
-                response.commit();
+                // TODO: backpressure
+                return -1;
             }
         }
         else
         {
-            // TODO: cannot allocate response in response buffer
-            // backpressure channel
+            return writeError(response, "Task does not exist or is not locked");
         }
 
-        return 0;
     }
 
-    protected void writeAck(TaskQueueContext ctx, DeferredResponse response, long taskInstanceId)
+    protected int writeError(DeferredResponse response, String errorMessage)
     {
-        final MutableDirectBuffer buffer = response.getBuffer();
+        errorWriter
+            .componentCode(TaskErrors.COMPONENT_CODE)
+            .detailCode(TaskErrors.COMPLETE_TASK_ERROR)
+            .errorMessage(errorMessage);
 
-        int writeOffset = response.getClaimedOffset();
-
-        headerEncoder.wrap(buffer, writeOffset);
-        headerEncoder
-            .blockLength(ackEncoder.sbeBlockLength())
-            .templateId(ackEncoder.sbeTemplateId())
-            .schemaId(ackEncoder.sbeSchemaId())
-            .version(ackEncoder.sbeSchemaVersion())
-            .resourceId(ctx.getResourceId());
-
-        writeOffset += headerEncoder.encodedLength();
-
-        ackEncoder.wrap(buffer, writeOffset);
-        ackEncoder.taskId(taskInstanceId);
-    }
-
-    protected void writeNack(DeferredResponse response, long taskInstanceId)
-    {
-        final MutableDirectBuffer buffer = response.getBuffer();
-
-        int writeOffset = response.getClaimedOffset();
-
-        headerEncoder.wrap(buffer, writeOffset);
-        headerEncoder
-            .blockLength(nackEncoder.sbeBlockLength())
-            .templateId(nackEncoder.sbeTemplateId())
-            .schemaId(nackEncoder.sbeSchemaId())
-            .version(nackEncoder.sbeSchemaVersion());
-
-        writeOffset += headerEncoder.encodedLength();
-
-        nackEncoder.wrap(buffer, writeOffset);
-        // TODO: provide error code
-    }
-
-    protected long claimLogFragment(Log log, final int payloadLength, final TaskInstanceReader taskInstanceReader)
-    {
-        final int lengthMinusPayload = taskInstanceReader.getLength() - taskInstanceReader.getPayloadLength();
-        final int taskInstanceLength = lengthMinusPayload + TaskInstanceEncoder.payloadHeaderLength() + payloadLength;
-
-        long claimedPosition = -1;
-        do
+        if (response.allocateAndWrite(errorWriter))
         {
-            claimedPosition = log.getWriteBuffer().claim(claimedFragment, taskInstanceLength);
+            response.commit();
+            return 0;
         }
-        while (claimedPosition == -2);
-
-        // TODO: https://github.com/camunda-tngp/dispatcher/issues/5
-        claimedPosition -= BitUtil.align(claimedFragment.getFragmentLength(), 8);
-
-        return claimedPosition;
-    }
-
-    protected void writeCompletedTaskInstanceLogEntry(
-            final TaskQueueContext ctx,
-            final ClaimedFragment claimedLogFragment,
-            final TaskInstanceReader reader,
-            final DirectBuffer payloadBuffer,
-            final int payloadOffset,
-            final int payloadLength)
-    {
-        final MutableDirectBuffer writeBuffer = claimedLogFragment.getBuffer();
-        final TaskInstanceDecoder decoder = reader.getDecoder();
-
-        int writeOffset = claimedLogFragment.getOffset();
-
-        headerEncoder.wrap(writeBuffer, writeOffset)
-            .blockLength(taskInstanceEncoder.sbeBlockLength())
-            .templateId(taskInstanceEncoder.sbeTemplateId())
-            .schemaId(taskInstanceEncoder.sbeSchemaId())
-            .version(taskInstanceEncoder.sbeSchemaVersion())
-            .resourceId(ctx.getResourceId());
-
-        writeOffset += headerEncoder.encodedLength();
-
-        taskInstanceEncoder.wrap(writeBuffer, writeOffset);
-        taskInstanceEncoder
-            .id(decoder.id())
-            .version(decoder.version() + 1)
-            .prevVersionPosition(reader.getLogPosition())
-            .state(TaskInstanceState.COMPLETED)
-            .taskTypeHash(decoder.taskTypeHash())
-            .wfActivityInstanceEventKey(decoder.wfActivityInstanceEventKey())
-            .wfRuntimeResourceId(decoder.wfRuntimeResourceId());
-
-        taskInstanceEncoder.putTaskType(reader.getBlockBuffer(), reader.getTaskTypeOffset(), reader.getTaskTypeLength());
-        taskInstanceEncoder.putPayload(payloadBuffer, payloadOffset, payloadLength);
-
-        claimedLogFragment.commit();
-    }
-
-    private static int ackResponseLength()
-    {
-        return MessageHeaderEncoder.ENCODED_LENGTH + AckEncoder.BLOCK_LENGTH;
+        else
+        {
+            return -1;
+        }
     }
 
     @Override
@@ -231,23 +135,6 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
     public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
-    }
-
-    class TaskInstanceLogFragementHandler implements LogFragmentHandler
-    {
-        protected TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
-
-        @Override
-        public void onFragment(long position, FileChannel fileChannel, int offset, int length)
-        {
-            taskInstanceReader.readBlock(position, fileChannel, offset, length);
-        }
-
-        public void reset()
-        {
-            taskInstanceReader.reset();
-        }
-
     }
 
 }

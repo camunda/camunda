@@ -6,10 +6,12 @@ import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.AsyncTaskService;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 /**
@@ -27,6 +29,9 @@ public class TaskQueueTest
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
         .around(clientRule);
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void testCycle()
@@ -57,5 +62,27 @@ public class TaskQueueTest
             .execute();
 
         assertThat(completedTaskId).isEqualTo(taskId);
+    }
+
+    @Test
+    public void testCannotCompleteUnlockedTask()
+    {
+        final TngpClient client = clientRule.getClient();
+        final AsyncTaskService taskService = client.tasks();
+
+        final Long taskId = taskService.create()
+            .taskQueueId(0)
+            .payload("foo")
+            .taskType("bar")
+            .execute();
+
+        assertThat(taskId).isGreaterThanOrEqualTo(0);
+
+        exception.expect(BrokerRequestException.class);
+        exception.expectMessage("Task does not exist or is not locked");
+
+        taskService.complete()
+            .taskId(taskId)
+            .execute();
     }
 }

@@ -14,6 +14,7 @@ import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexWriter;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -50,11 +51,11 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
 
         wfRuntimeContext.setLogWriter(logWriter);
 
-        final LogReader logReader = new LogReader(log, READ_BUFFER_SIZE);
+        final LogReader logReader = new LogReaderImpl(log, READ_BUFFER_SIZE);
         final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter, idGeneratorInjector.getValue());
 
         bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
-        bpmnEventHandler.addFlowElementHandler(new EndProcessHandler(new LogReader(log, READ_BUFFER_SIZE), workflowEventIndex));
+        bpmnEventHandler.addFlowElementHandler(new EndProcessHandler(new LogReaderImpl(log, READ_BUFFER_SIZE), workflowEventIndex));
         bpmnEventHandler.addFlowElementHandler(new CreateActivityInstanceHandler());
         bpmnEventHandler.addFlowElementHandler(new TriggerNoneEventHandler());
 
@@ -70,14 +71,14 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setBpmnEventHandler(bpmnEventHandler);
 
         final TaskEventHandler taskEventHandler = new TaskEventHandler(
-                new LogReader(log, READ_BUFFER_SIZE),
+                new LogReaderImpl(log, READ_BUFFER_SIZE),
                 logWriter,
                 workflowEventIndexInjector.getValue().getIndex());
         wfRuntimeContext.setTaskEventHandler(taskEventHandler);
 
         wfRuntimeContext.setActivityInstanceIndexWriter(
                 new WorkflowEventIndexWriter(
-                    new LogReader(log, READ_BUFFER_SIZE),
+                    new LogReaderImpl(log, READ_BUFFER_SIZE),
                     workflowEventIndexInjector.getValue().getIndex()));
     }
 

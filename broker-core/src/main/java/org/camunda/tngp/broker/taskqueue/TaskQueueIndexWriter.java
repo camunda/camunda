@@ -1,7 +1,5 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import java.util.Arrays;
-
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.services.HashIndexManager;
@@ -10,14 +8,13 @@ import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
 public class TaskQueueIndexWriter implements LogEntryHandler<TaskInstanceReader>
 {
-    protected static final byte[] TASK_TYPE_BUFFER = new byte[256];
-
     protected final LogReader logReader;
     protected final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager;
     protected final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager;
@@ -28,7 +25,7 @@ public class TaskQueueIndexWriter implements LogEntryHandler<TaskInstanceReader>
     {
         lockedTasksIndexManager = taskQueueContext.getLockedTaskInstanceIndex();
         taskTypeIndexManager = taskQueueContext.getTaskTypePositionIndex();
-        logReader = new LogReader(taskQueueContext.getLog(), TaskInstanceReader.MAX_LENGTH);
+        logReader = new LogReaderImpl(taskQueueContext.getLog(), TaskInstanceReader.MAX_LENGTH);
 
         final long lastCheckpointPosition = Math.min(lockedTasksIndexManager.getLastCheckpointPosition(), taskTypeIndexManager.getLastCheckpointPosition());
         if (lastCheckpointPosition != -1)
@@ -63,15 +60,8 @@ public class TaskQueueIndexWriter implements LogEntryHandler<TaskInstanceReader>
             final DirectBuffer taskType = reader.getTaskType();
             final int taskTypeLength = taskType.capacity();
 
-            taskType.getBytes(0, TASK_TYPE_BUFFER, 0, taskTypeLength);
-
-            if (taskTypeLength < TASK_TYPE_BUFFER.length)
-            {
-                Arrays.fill(TASK_TYPE_BUFFER, taskTypeLength, TASK_TYPE_BUFFER.length, (byte)0);
-            }
-
             final Bytes2LongHashIndex taskTypePositionIndex = taskTypeIndexManager.getIndex();
-            final long currentPosition = taskTypePositionIndex.get(TASK_TYPE_BUFFER, -1);
+            final long currentPosition = taskTypePositionIndex.get(taskType, 0, taskTypeLength, -1);
 
             // TODO: this is next line is completely broken and only works if the previous version has the exact same length as this entry
             // SEE: https://github.com/camunda-tngp/broker/issues/4
@@ -80,7 +70,7 @@ public class TaskQueueIndexWriter implements LogEntryHandler<TaskInstanceReader>
             // TODO: put if larger
             if (newPosition > currentPosition)
             {
-                taskTypePositionIndex.put(TASK_TYPE_BUFFER, newPosition);
+                taskTypePositionIndex.put(taskType, 0, taskTypeLength, newPosition);
             }
         }
         else if (state == TaskInstanceState.COMPLETED)

@@ -13,15 +13,18 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class TaskInstanceWriter implements BufferWriter
 {
 
-    protected static final byte[] PAYLOAD = new byte[0];
-
     protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected TaskInstanceEncoder bodyEncoder = new TaskInstanceEncoder();
 
     protected long id;
     protected long wfActivityInstanceEventKey;
     protected int wfRuntimeResourceId;
+    protected long prevVersionPosition;
+    protected TaskInstanceState state;
+    protected long lockTime;
+    protected long lockOwner;
     protected UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
+    protected UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public int getLength()
@@ -31,7 +34,7 @@ public class TaskInstanceWriter implements BufferWriter
                TaskInstanceEncoder.taskTypeHeaderLength() +
                taskTypeBuffer.capacity() +
                TaskInstanceEncoder.payloadHeaderLength() +
-               PAYLOAD.length;
+               payloadBuffer.capacity();
     }
 
     @Override
@@ -54,15 +57,15 @@ public class TaskInstanceWriter implements BufferWriter
         bodyEncoder.wrap(buffer, offset)
             .id(id)
             .version(1)
-            .state(TaskInstanceState.NEW)
-            .lockTime(TaskInstanceEncoder.lockTimeNullValue())
-            .lockOwnerId(TaskInstanceEncoder.lockOwnerIdNullValue())
-            .prevVersionPosition(TaskInstanceEncoder.prevVersionPositionNullValue())
+            .state(state)
+            .lockTime(lockTime)
+            .lockOwnerId(lockOwner)
+            .prevVersionPosition(prevVersionPosition)
             .taskTypeHash(taskTypeHashCode)
             .wfActivityInstanceEventKey(wfActivityInstanceEventKey)
             .wfRuntimeResourceId(wfRuntimeResourceId)
             .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
-            .putPayload(PAYLOAD, 0, PAYLOAD.length);
+            .putPayload(payloadBuffer, 0, payloadBuffer.capacity());
     }
 
     public TaskInstanceWriter id(long id)
@@ -83,10 +86,42 @@ public class TaskInstanceWriter implements BufferWriter
         return this;
     }
 
+    public TaskInstanceWriter prevVersionPosition(long prevVersionPosition)
+    {
+        this.prevVersionPosition = prevVersionPosition;
+        return this;
+    }
+
+    public TaskInstanceWriter state(TaskInstanceState state)
+    {
+        this.state = state;
+        return this;
+    }
+
+    public TaskInstanceWriter lockTime(long lockTime)
+    {
+        this.lockTime = lockTime;
+        return this;
+    }
+
+    public TaskInstanceWriter lockOwner(long lockOwner)
+    {
+        this.lockOwner = lockOwner;
+        return this;
+    }
+
     public TaskInstanceWriter taskType(DirectBuffer buffer, int offset, int length)
     {
         taskTypeBuffer.wrap(buffer, offset, length);
         return this;
     }
+
+    public TaskInstanceWriter payload(DirectBuffer buffer, int offset, int length)
+    {
+        payloadBuffer.wrap(buffer, offset, length);
+        return this;
+    }
+
+
 
 }

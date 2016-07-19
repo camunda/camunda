@@ -8,6 +8,7 @@ import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
+import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
@@ -37,6 +38,7 @@ public class TaskQueueBpmnEventHandler implements LogEntryHandler<BpmnEventReade
             taskInstanceWriter
                 .id(taskQueueIdGenerator.nextId())
                 .taskType(taskType, 0, taskType.capacity())
+                .state(TaskInstanceState.NEW)
                 .wfRuntimeResourceId(activityEventReader.resourceId())
                 .wfActivityInstanceEventKey(activityEventReader.key());
 
