@@ -1,5 +1,7 @@
 package org.camunda.tngp.hashindex.types;
 
+import java.util.Arrays;
+
 import org.camunda.tngp.hashindex.IndexKeyHandler;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -12,7 +14,20 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
 
     public void setKey(byte[] key)
     {
-        System.arraycopy(key, 0, this.theKey, 0, this.theKey.length);
+        System.arraycopy(key, 0, this.theKey, 0, key.length);
+        if (key.length < this.keyLength)
+        {
+            Arrays.fill(this.theKey, key.length, this.keyLength, (byte) 0);
+        }
+    }
+
+    public void setKey(DirectBuffer buffer, int offset, int length)
+    {
+        buffer.getBytes(offset, this.theKey, 0, length);
+        if (length < this.keyLength)
+        {
+            Arrays.fill(this.theKey, length, this.keyLength, (byte) 0);
+        }
     }
 
     @Override

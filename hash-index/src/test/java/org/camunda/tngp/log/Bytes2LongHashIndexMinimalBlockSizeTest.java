@@ -1,6 +1,9 @@
 package org.camunda.tngp.log;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.framedRecordLength;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
@@ -8,8 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class Bytes2LongHashIndexMinimalBlockSizeTest
 {
@@ -76,6 +78,17 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     }
 
     @Test
+    public void shouldReturnLongValueForKeyFromBuffer()
+    {
+        // given
+        index.put(keys[1], 1);
+
+        // if then
+        final UnsafeBuffer keyBuffer = new UnsafeBuffer(keys[1]);
+        assertThat(index.get(keyBuffer, 0, keyBuffer.capacity(), MISSING_VALUE)).isEqualTo(1);
+    }
+
+    @Test
     public void shouldSplit()
     {
         // given
@@ -108,6 +121,17 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         {
             assertThat(index.get(keys[i], MISSING_VALUE) == i);
         }
+    }
+
+    @Test
+    public void shouldPutValueFromBuffer()
+    {
+        // when
+        final UnsafeBuffer keyBuffer = new UnsafeBuffer(keys[1]);
+        index.put(keyBuffer, 0, keyBuffer.capacity(), 1);
+
+        // then
+        assertThat(index.get(keys[1], -1L)).isEqualTo(1L);
     }
 
     @Test
@@ -158,6 +182,21 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     }
 
     @Test
+    public void shouldRemoveValueForKeyFromBuffer()
+    {
+        // given
+        index.put(keys[1], 1);
+
+        // if
+        final UnsafeBuffer keyBuffer = new UnsafeBuffer(keys[1]);
+        final long removeResult = index.remove(keyBuffer, 0, keyBuffer.capacity(), -1);
+
+        //then
+        assertThat(removeResult).isEqualTo(1);
+        assertThat(index.get(keys[1], -1)).isEqualTo(-1);
+    }
+
+    @Test
     public void shouldNotRemoveValueForDifferentKey()
     {
         // given
@@ -172,6 +211,5 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         assertThat(index.get(keys[1], -1)).isEqualTo(-1);
         assertThat(index.get(keys[2], -1)).isEqualTo(2);
     }
-
 
 }

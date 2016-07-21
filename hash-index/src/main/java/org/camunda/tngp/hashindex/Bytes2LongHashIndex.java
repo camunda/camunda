@@ -1,10 +1,12 @@
 package org.camunda.tngp.hashindex;
 
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.hashindex.types.ByteArrayKeyHandler;
 import org.camunda.tngp.hashindex.types.LongValueHandler;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValueHandler>
 {
@@ -24,10 +26,7 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
 
     public long get(byte[] key, long missingValue)
     {
-        if (key.length < recordKeyLength())
-        {
-            throw new IllegalArgumentException("Illegal byte array length: expected " + recordKeyLength() + " got " + key.length);
-        }
+        checkKeyLength(key.length);
 
         keyHandler.setKey(key);
         valueHandler.theValue = missingValue;
@@ -35,24 +34,37 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
         return valueHandler.theValue;
     }
 
+    public long get(DirectBuffer buffer, int offset, int length, long missingValue)
+    {
+        checkKeyLength(length);
+
+        keyHandler.setKey(buffer, offset, length);
+        valueHandler.theValue = missingValue;
+        get();
+        return valueHandler.theValue;
+    }
+
     public boolean put(byte[] key, long value)
     {
-        if (key.length < recordKeyLength())
-        {
-            throw new IllegalArgumentException("Illegal byte array length: expected " + recordKeyLength() + " got " + key.length);
-        }
+        checkKeyLength(key.length);
 
         keyHandler.setKey(key);
         valueHandler.theValue = value;
         return put();
     }
 
+    public boolean put(DirectBuffer buffer, int offset, int length, long value)
+    {
+        checkKeyLength(length);
+
+        keyHandler.setKey(buffer, offset, length);
+        valueHandler.theValue = value;
+        return put();
+    }
+
     public long remove(byte[] key, long missingValue)
     {
-        if (key.length < recordKeyLength())
-        {
-            throw new IllegalArgumentException("Illegal byte array length: expected " + recordKeyLength() + " got " + key.length);
-        }
+        checkKeyLength(key.length);
 
         keyHandler.setKey(key);
         valueHandler.theValue = missingValue;
@@ -60,4 +72,21 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
         return valueHandler.theValue;
     }
 
+    public long remove(DirectBuffer buffer, int offset, int length, long missingValue)
+    {
+        checkKeyLength(length);
+
+        keyHandler.setKey(buffer, offset, length);
+        valueHandler.theValue = missingValue;
+        remove();
+        return valueHandler.theValue;
+    }
+
+    protected void checkKeyLength(int providedKeyLength)
+    {
+        if (providedKeyLength > recordKeyLength())
+        {
+            throw new IllegalArgumentException("Illegal byte array length: expected at most " + recordKeyLength() + ", got " + providedKeyLength);
+        }
+    }
 }
