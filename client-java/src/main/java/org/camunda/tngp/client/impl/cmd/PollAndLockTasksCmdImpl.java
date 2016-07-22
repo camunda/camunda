@@ -14,7 +14,7 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
 {
     static final Charset CHARSET = Charset.forName(CreateTaskInstanceEncoder.taskTypeCharacterEncoding());
 
-    protected final PollAndLockRequestWriter requestWriter = new PollAndLockRequestWriter();
+    protected PollAndLockRequestWriter requestWriter = new PollAndLockRequestWriter();
 
     public PollAndLockTasksCmdImpl(ClientCmdExecutor cmdExecutor)
     {
@@ -32,7 +32,7 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     public PollAndLockTasksCmdImpl taskType(String taskType)
     {
         final byte[] taskTypeBytes = taskType.getBytes(CHARSET);
-        requestWriter.getTaskType().wrap(taskTypeBytes);
+        requestWriter.taskType(taskTypeBytes, 0, taskTypeBytes.length);
         return this;
     }
 
@@ -60,5 +60,10 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     public ClientRequestWriter getRequestWriter()
     {
         return requestWriter;
+    }
+
+    public void setRequestWriter(PollAndLockRequestWriter requestWriter)
+    {
+        this.requestWriter = requestWriter;
     }
 }

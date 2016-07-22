@@ -1,13 +1,16 @@
 package org.camunda.tngp.client.impl.cmd.taskqueue;
 
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
+import java.nio.ByteBuffer;
+
+import org.camunda.tngp.client.impl.cmd.PayloadRequestWriter;
 import org.camunda.tngp.protocol.taskqueue.CreateTaskInstanceEncoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class CreateTaskRequestWriter implements ClientRequestWriter
+public class CreateTaskRequestWriter implements PayloadRequestWriter
 {
     protected final UnsafeBuffer payload = new UnsafeBuffer(0, 0);
 
@@ -71,13 +74,28 @@ public class CreateTaskRequestWriter implements ClientRequestWriter
         return this;
     }
 
-    public UnsafeBuffer getPayload()
+    @Override
+    public void payload(byte[] bytes, int offset, int length)
     {
-        return payload;
+        payload.wrap(bytes, offset, length);
     }
 
-    public UnsafeBuffer getTaskType()
+    @Override
+    public void payload(ByteBuffer byteBuffer)
     {
-        return taskType;
+        payload.wrap(byteBuffer);
+
     }
+
+    @Override
+    public void payload(DirectBuffer buffer, int offset, int length)
+    {
+        payload.wrap(buffer, offset, length);
+    }
+
+    public void taskType(byte[] bytes)
+    {
+        taskType.wrap(bytes);
+    }
+
 }

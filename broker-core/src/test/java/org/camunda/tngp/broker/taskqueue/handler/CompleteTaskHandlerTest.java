@@ -20,6 +20,7 @@ import org.camunda.tngp.broker.taskqueue.TaskErrors;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
+import org.camunda.tngp.broker.test.util.BufferWriterMatcher;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.LogWriter;

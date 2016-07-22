@@ -7,7 +7,6 @@ import org.camunda.tngp.client.cmd.SetPayloadCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 @SuppressWarnings("unchecked")
 public abstract class AbstractSetPayloadCmd<R, C extends ClientCommand<R>>
@@ -33,24 +32,24 @@ public abstract class AbstractSetPayloadCmd<R, C extends ClientCommand<R>>
     @Override
     public C payload(byte[] payload, int offset, int length)
     {
-        getPayloadBuffer().wrap(payload, 0, length);
+        getRequestWriter().payload(payload, 0, length);
         return (C) this;
     }
 
     @Override
     public C payload(ByteBuffer byteBuffer)
     {
-        getPayloadBuffer().wrap(byteBuffer);
+        getRequestWriter().payload(byteBuffer);
         return (C) this;
     }
 
     @Override
     public C payload(DirectBuffer buffer, int offset, int length)
     {
-        getPayloadBuffer().wrap(buffer, offset, length);
+        getRequestWriter().payload(buffer, offset, length);
         return (C) this;
     }
 
-    protected abstract MutableDirectBuffer getPayloadBuffer();
+    public abstract PayloadRequestWriter getRequestWriter();
 
 }

@@ -4,12 +4,10 @@ import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CompleteTaskRequestWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-
 public class CompleteTaskCmdImpl extends AbstractSetPayloadCmd<Long, CompleteAsyncTaskCmd>
     implements CompleteAsyncTaskCmd
 {
-    protected final CompleteTaskRequestWriter requestWriter = new CompleteTaskRequestWriter();
+    protected CompleteTaskRequestWriter requestWriter = new CompleteTaskRequestWriter();
 
     public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor)
     {
@@ -30,14 +28,13 @@ public class CompleteTaskCmdImpl extends AbstractSetPayloadCmd<Long, CompleteAsy
         return this;
     }
 
-    @Override
-    protected MutableDirectBuffer getPayloadBuffer()
+    public void setRequestWriter(CompleteTaskRequestWriter requestWriter)
     {
-        return requestWriter.getPayload();
+        this.requestWriter = requestWriter;
     }
 
     @Override
-    public ClientRequestWriter getRequestWriter()
+    public PayloadRequestWriter getRequestWriter()
     {
         return requestWriter;
     }

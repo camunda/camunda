@@ -19,6 +19,11 @@ public class PollAndLockRequestWriter implements ClientRequestWriter
     protected long lockTimeMs;
     protected int maxTasks;
 
+    public PollAndLockRequestWriter()
+    {
+        reset();
+    }
+
     @Override
     public int getLength()
     {
@@ -26,6 +31,15 @@ public class PollAndLockRequestWriter implements ClientRequestWriter
                 requestEncoder.sbeBlockLength() +
                 PollAndLockTasksEncoder.taskTypeHeaderLength() +
                 taskType.capacity();
+    }
+
+    protected void reset()
+    {
+        resourceId = MessageHeaderEncoder.resourceIdNullValue();
+        shardId = MessageHeaderEncoder.shardIdNullValue();
+        lockTimeMs = PollAndLockTasksEncoder.lockTimeNullValue();
+        maxTasks = PollAndLockTasksEncoder.maxTasksNullValue();
+        taskType.wrap(0, 0);
     }
 
     @Override
@@ -37,22 +51,37 @@ public class PollAndLockRequestWriter implements ClientRequestWriter
             .templateId(requestEncoder.sbeTemplateId())
             .version(requestEncoder.sbeSchemaVersion())
             .resourceId(resourceId)
-            .shardId(0);
+            .shardId(shardId);
 
         offset += headerEncoder.encodedLength();
 
         requestEncoder.wrap(buffer, offset)
             .lockTime(lockTimeMs)
+            .consumerId(0)
             .maxTasks(maxTasks)
             .putTaskType(taskType, 0, taskType.capacity());
 
-        taskType.wrap(0, 0);
+        reset();
     }
 
     @Override
     public void validate()
     {
-        // TODO
+        if (taskType.capacity() == 0)
+        {
+            throw new RuntimeException("No task type specified");
+        }
+
+        if (maxTasks < 0)
+        {
+            throw new RuntimeException("maxTasks must greater than or equal to 0");
+        }
+
+
+        if (resourceId == MessageHeaderEncoder.resourceIdNullValue())
+        {
+            throw new RuntimeException("No task queue id set");
+        }
     }
 
 
@@ -68,9 +97,10 @@ public class PollAndLockRequestWriter implements ClientRequestWriter
         return this;
     }
 
-    public UnsafeBuffer getTaskType()
+    public PollAndLockRequestWriter taskType(byte[] bytes, int offset, int length)
     {
-        return taskType;
+        taskType.wrap(bytes, offset, length);
+        return this;
     }
 
     public PollAndLockRequestWriter lockTimeMs(long lockTimeMs)

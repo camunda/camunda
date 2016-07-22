@@ -39,6 +39,8 @@ public class TaskQueueTest
         final TngpClient client = clientRule.getClient();
         final AsyncTaskService taskService = client.tasks();
 
+        System.out.println("Creating task");
+
         final Long taskId = taskService.create()
             .taskQueueId(0)
             .payload("foo")
@@ -47,9 +49,12 @@ public class TaskQueueTest
 
         assertThat(taskId).isGreaterThanOrEqualTo(0);
 
+        System.out.println("Locking task");
+
         final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
             .taskQueueId(0)
             .taskType("bar")
+            .lockTime(100 * 1000)
             .execute();
 
         assertThat(lockedTasksBatch.getLockedTasks()).hasSize(1);
@@ -57,7 +62,10 @@ public class TaskQueueTest
         final LockedTask task = lockedTasksBatch.getLockedTasks().get(0);
         assertThat(task.getId()).isEqualTo(taskId);
 
+        System.out.println("Completing task");
+
         final Long completedTaskId = taskService.complete()
+            .taskQueueId(0)
             .taskId(taskId)
             .execute();
 
@@ -82,6 +90,7 @@ public class TaskQueueTest
         exception.expectMessage("Task does not exist or is not locked");
 
         taskService.complete()
+            .taskQueueId(0)
             .taskId(taskId)
             .execute();
     }

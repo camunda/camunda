@@ -50,6 +50,12 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 

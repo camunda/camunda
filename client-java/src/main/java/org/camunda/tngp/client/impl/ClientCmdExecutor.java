@@ -68,7 +68,7 @@ public class ClientCmdExecutor
             {
                 writeRequest(request, requestWriter);
                 request.commit();
-                return new ResponseFuture<R>(request, cmd.getResponseHandler());
+                return new ResponseFuture<>(request, cmd.getResponseHandler());
             }
             catch (Exception e)
             {
