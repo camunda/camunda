@@ -39,6 +39,9 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
             final int length,
             final DeferredResponse response)
     {
+        System.out.println();
+        System.out.println("Starting process instance");
+
         final WfTypeCacheService wfTypeCache = context.getWfTypeCacheService();
         final IdGenerator idGenerator = context.getIdGenerator();
         final LogWriter logWriter = context.getLogWriter();

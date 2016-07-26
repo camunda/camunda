@@ -2,7 +2,6 @@ package org.camunda.bpm.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrap;
-import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrapCopy;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
@@ -15,7 +14,6 @@ import org.camunda.tngp.client.cmd.DeployedWorkflowType;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,53 +34,24 @@ public class ServiceTaskTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    protected DeployedWorkflowType fooProcess;
-    protected DeployedWorkflowType barProcess;
-    protected DeployedWorkflowType twoTasksProcess;
-
-    @Before
-    public void deployProcess()
+    public static BpmnModelInstance oneTaskProcess(String taskType)
     {
-        final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
-
-        final BpmnModelInstance fooBpmnModel = Bpmn.createExecutableProcess("anId")
+        return wrap(Bpmn.createExecutableProcess("anId")
             .startEvent()
             .serviceTask("serviceTask")
-            .endEvent()
-            .done();
+            .endEvent("endEvent")
+            .done())
+        .taskAttributes("serviceTask", taskType, 0);
+    }
 
-        wrap(fooBpmnModel).taskAttributes("serviceTask", "foo", 0);
-
-        fooProcess = workflowService.deploy()
-            .bpmnModelInstance(
-                    fooBpmnModel)
-            .execute();
-
-        final BpmnModelInstance barBpmnModel = wrapCopy(fooBpmnModel).taskAttributes("serviceTask", "bar", 0);
-
-        barProcess = workflowService.deploy()
-                .bpmnModelInstance(
-                        barBpmnModel)
-                .execute();
-
-        final BpmnModelInstance twoTasksModel = Bpmn.createExecutableProcess("anId")
+    public static final BpmnModelInstance TWO_TASKS_PROCESS = wrap(Bpmn.createExecutableProcess("anId")
             .startEvent()
             .serviceTask("serviceTask1")
             .serviceTask("serviceTask2")
             .endEvent()
-            .done();
-
-        wrap(twoTasksModel)
-            .taskAttributes("serviceTask1", "foo", 0)
-            .taskAttributes("serviceTask2", "bar", 0);
-
-
-        twoTasksProcess = workflowService.deploy()
-            .bpmnModelInstance(
-                twoTasksModel)
-            .execute();
-    }
+            .done())
+        .taskAttributes("serviceTask1", "foo", 0)
+        .taskAttributes("serviceTask2", "bar", 0);
 
     @Test
     public void shouldStartProcessWithServiceTask()
@@ -90,9 +59,11 @@ public class ServiceTaskTest
         final TngpClient client = clientRule.getClient();
         final ProcessService workflowService = client.processes();
 
+        final DeployedWorkflowType workflow = clientRule.deployProcess(oneTaskProcess("foo"));
+
         // when
         final WorkflowInstance processInstance = workflowService.start()
-            .workflowTypeId(fooProcess.getWorkflowTypeId())
+            .workflowTypeId(workflow.getWorkflowTypeId())
             .execute();
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
@@ -104,9 +75,11 @@ public class ServiceTaskTest
         final TngpClient client = clientRule.getClient();
         final ProcessService workflowService = client.processes();
 
+        final DeployedWorkflowType workflow = clientRule.deployProcess(oneTaskProcess("foo"));
+
         // given
         workflowService.start()
-            .workflowTypeId(fooProcess.getWorkflowTypeId())
+            .workflowTypeId(workflow.getWorkflowTypeId())
             .execute();
 
         // when
@@ -135,12 +108,15 @@ public class ServiceTaskTest
         final ProcessService workflowService = client.processes();
 
         // given
+        final DeployedWorkflowType workflow1 = clientRule.deployProcess(oneTaskProcess("foo"));
+        final DeployedWorkflowType workflow2 = clientRule.deployProcess(oneTaskProcess("bar"));
+
         workflowService.start()
-            .workflowTypeId(fooProcess.getWorkflowTypeId())
+            .workflowTypeId(workflow1.getWorkflowTypeId())
             .execute();
 
         workflowService.start()
-            .workflowTypeId(barProcess.getWorkflowTypeId())
+            .workflowTypeId(workflow2.getWorkflowTypeId())
             .execute();
 
         // when
@@ -169,8 +145,10 @@ public class ServiceTaskTest
         final ProcessService workflowService = client.processes();
 
         // given
+        final DeployedWorkflowType workflow = clientRule.deployProcess(oneTaskProcess("foo"));
+
         workflowService.start()
-            .workflowTypeId(fooProcess.getWorkflowTypeId())
+            .workflowTypeId(workflow.getWorkflowTypeId())
             .execute();
 
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
@@ -203,8 +181,10 @@ public class ServiceTaskTest
         final ProcessService workflowService = client.processes();
 
         // given
+        final DeployedWorkflowType workflow = clientRule.deployProcess(TWO_TASKS_PROCESS);
+
         workflowService.start()
-            .workflowTypeId(twoTasksProcess.getWorkflowTypeId())
+            .workflowTypeId(workflow.getWorkflowTypeId())
             .execute();
 
         final LockedTasksBatch task1Batch = TestUtil.doRepeatedly(() ->
@@ -251,5 +231,50 @@ public class ServiceTaskTest
 
         // then
         assertThat(result).isEqualTo(task2.getId());
+    }
+
+    @Test
+    public void shouldExecuteServiceTaskWithoutOutgoingFlow()
+    {
+        final TngpClient client = clientRule.getClient();
+        final ProcessService workflowService = client.processes();
+
+        final DeployedWorkflowType workflow = clientRule.deployProcess(
+                wrap(oneTaskProcess("foo"))
+                    .removeFlowNode("endEvent"));
+
+        // given
+        workflowService.start()
+            .workflowTypeId(workflow.getWorkflowTypeId())
+            .execute();
+
+        // when
+        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
+            client
+                .tasks()
+                .pollAndLock()
+                .taskQueueId(0)
+                .taskType("foo")
+                .lockTime(100000L)
+                .maxTasks(1)
+                .execute())
+            .until(
+                (tasks) -> !tasks.getLockedTasks().isEmpty());
+
+        // then
+        assertThat(tasksBatch.getLockedTasks()).hasSize(1);
+
+        final LockedTask task = tasksBatch.getLockedTasks().get(0);
+        assertThat(task.getId()).isGreaterThan(0);
+        assertThat(task.getPayloadString()).isEmpty();
+
+        final Long result = client
+            .tasks()
+            .complete()
+            .taskQueueId(0)
+            .taskId(task.getId())
+            .execute();
+
+        assertThat(result).isEqualTo(task.getId());
     }
 }

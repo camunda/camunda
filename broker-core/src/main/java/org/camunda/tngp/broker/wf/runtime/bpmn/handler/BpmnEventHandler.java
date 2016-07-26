@@ -98,6 +98,8 @@ public class BpmnEventHandler
         final BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(flowElementEventReader.event());
         final BpmnFlowElementEventHandler handler = flowElementEventHandlers.get(bpmnAspect.value());
 
+        System.out.println("Handling event of type " + flowElementEventReader.event());
+
         handler.handle(flowElementEventReader, process, logWriter, idGenerator);
     }
 
@@ -111,6 +113,8 @@ public class BpmnEventHandler
         final BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(processEventReader.event());
         final BpmnProcessEventHandler handler = processEventHandlers.get(bpmnAspect.value());
 
+        System.out.println("Handling event of type " + processEventReader.event());
+
         handler.handle(processEventReader, process, logWriter, idGenerator);
     }
 
@@ -122,6 +126,8 @@ public class BpmnEventHandler
 
         final BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(activityEventReader.event());
         final BpmnActivityInstanceEventHandler handler = activityEventHandlers.get(bpmnAspect.value());
+
+        System.out.println("Handling event of type " + activityEventReader.event());
 
         handler.handle(activityEventReader, process, logWriter, idGenerator);
     }

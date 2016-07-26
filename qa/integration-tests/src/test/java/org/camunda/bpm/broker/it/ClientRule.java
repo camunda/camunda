@@ -2,7 +2,9 @@ package org.camunda.bpm.broker.it;
 
 import java.util.Properties;
 
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.cmd.DeployedWorkflowType;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -38,6 +40,15 @@ public class ClientRule extends ExternalResource
     public TngpClient getClient()
     {
         return client;
+    }
+
+    public DeployedWorkflowType deployProcess(BpmnModelInstance process)
+    {
+        return client
+            .processes()
+            .deploy()
+            .bpmnModelInstance(process)
+            .execute();
     }
 
 }
