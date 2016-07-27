@@ -2,7 +2,9 @@ package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
+import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogEntryProcessor;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
@@ -17,10 +19,9 @@ import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
-public class BpmnEventHandler
+public class BpmnEventHandler implements LogEntryHandler<BpmnEventReader>
 {
 
-    protected BpmnEventReader eventReader = new BpmnEventReader();
     protected final LogReader logReader;
     protected final LogWriter logWriter;
     protected final IdGenerator idGenerator;
@@ -29,15 +30,18 @@ public class BpmnEventHandler
     protected final Int2ObjectHashMap<BpmnProcessEventHandler> processEventHandlers = new Int2ObjectHashMap<>();
     protected final Int2ObjectHashMap<BpmnActivityInstanceEventHandler> activityEventHandlers = new Int2ObjectHashMap<>();
 
-    protected final WfDefinitionCacheService processCache;
+    protected final LogEntryProcessor<BpmnEventReader> logEntryProcessor;
+
+    protected final WfDefinitionCache processCache;
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
-    public BpmnEventHandler(WfDefinitionCacheService processCache, LogReader logReader, LogWriter logWriter, IdGenerator idGenerator)
+    public BpmnEventHandler(WfDefinitionCache processCache, LogReader logReader, LogWriter logWriter, IdGenerator idGenerator)
     {
         this.processCache = processCache;
         this.logReader = logReader;
         this.logWriter = logWriter;
         this.idGenerator = idGenerator;
+        this.logEntryProcessor = new LogEntryProcessor<>(logReader, new BpmnEventReader(), this);
     }
 
     public void addFlowElementHandler(BpmnFlowElementEventHandler handler)
@@ -57,39 +61,28 @@ public class BpmnEventHandler
 
     public int doWork()
     {
-        int workCount = 0;
-
-        final boolean hasNext = logReader.read(eventReader);
-        if (hasNext)
-        {
-            handleBpmnEvent(eventReader);
-            workCount++;
-        }
-
-        return workCount;
+        return logEntryProcessor.doWork(Integer.MAX_VALUE);
     }
 
-    protected void handleBpmnEvent(BpmnEventReader eventReader)
+    @Override
+    public int handle(long position, BpmnEventReader reader)
     {
-        final int bpmnEventType = eventReader.templateId();
+        final int bpmnEventType = reader.templateId();
 
         switch (bpmnEventType)
         {
             case BpmnProcessEventDecoder.TEMPLATE_ID:
-                handleBpmnProcessEvent(eventReader.processEvent());
-                break;
+                return handleBpmnProcessEvent(reader.processEvent());
             case BpmnFlowElementEventDecoder.TEMPLATE_ID:
-                handleBpmnFlowElementEvent(eventReader.flowElementEvent());
-                break;
+                return handleBpmnFlowElementEvent(reader.flowElementEvent());
             case BpmnActivityEventDecoder.TEMPLATE_ID:
-                handleBpmnActivityEvent(eventReader.activityEvent());
-                break;
+                return handleBpmnActivityEvent(reader.activityEvent());
             default:
                 throw new RuntimeException("No handler for event of type " + bpmnEventType);
         }
     }
 
-    protected void handleBpmnFlowElementEvent(BpmnFlowElementEventReader flowElementEventReader)
+    protected int handleBpmnFlowElementEvent(BpmnFlowElementEventReader flowElementEventReader)
     {
         final ProcessGraph process = processCache.getProcessGraphByTypeId(flowElementEventReader.wfDefinitionId());
 
@@ -100,10 +93,10 @@ public class BpmnEventHandler
 
         System.out.println("Handling event of type " + flowElementEventReader.event());
 
-        handler.handle(flowElementEventReader, process, logWriter, idGenerator);
+        return handler.handle(flowElementEventReader, process, logWriter, idGenerator);
     }
 
-    protected void handleBpmnProcessEvent(BpmnProcessEventReader processEventReader)
+    protected int handleBpmnProcessEvent(BpmnProcessEventReader processEventReader)
     {
         final ProcessGraph process = processCache.getProcessGraphByTypeId(processEventReader.processId());
 
@@ -115,10 +108,10 @@ public class BpmnEventHandler
 
         System.out.println("Handling event of type " + processEventReader.event());
 
-        handler.handle(processEventReader, process, logWriter, idGenerator);
+        return handler.handle(processEventReader, process, logWriter, idGenerator);
     }
 
-    protected void handleBpmnActivityEvent(BpmnActivityEventReader activityEventReader)
+    protected int handleBpmnActivityEvent(BpmnActivityEventReader activityEventReader)
     {
         final ProcessGraph process = processCache.getProcessGraphByTypeId(activityEventReader.wfDefinitionId());
 
@@ -129,16 +122,12 @@ public class BpmnEventHandler
 
         System.out.println("Handling event of type " + activityEventReader.event());
 
-        handler.handle(activityEventReader, process, logWriter, idGenerator);
-    }
-
-    public void setEventReader(BpmnEventReader eventReader)
-    {
-        this.eventReader = eventReader;
+        return handler.handle(activityEventReader, process, logWriter, idGenerator);
     }
 
     public void setFlowElementVisitor(FlowElementVisitor flowElementVisitor)
     {
         this.flowElementVisitor = flowElementVisitor;
     }
+
 }

@@ -2,6 +2,9 @@ package org.camunda.bpm.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.AsyncTasksClient;
@@ -93,5 +96,72 @@ public class TaskQueueTest
             .taskQueueId(0)
             .taskId(taskId)
             .execute();
+    }
+
+    @Test
+    public void testCannotCompleteTaskTwiceInParallel() throws InterruptedException
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final AsyncTasksClient taskClient = client.tasks();
+
+        final Long taskId = taskClient.create()
+            .taskQueueId(0)
+            .payload("foo")
+            .taskType("bar")
+            .execute();
+
+        taskClient.pollAndLock()
+            .taskQueueId(0)
+            .taskType("bar")
+            .lockTime(100 * 1000)
+            .execute();
+
+        final CompleteTaskRunnable r1 = new CompleteTaskRunnable(taskClient, taskId);
+        final CompleteTaskRunnable r2 = new CompleteTaskRunnable(taskClient, taskId);
+
+        final Thread t1 = new Thread(r1);
+        final Thread t2 = new Thread(r2);
+
+        // when
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        // then
+        final Set<Long> results = new HashSet<>();
+        results.add(r1.result);
+        results.add(r2.result);
+
+        assertThat(results).contains(taskId, null);
+    }
+
+    public static class CompleteTaskRunnable implements Runnable
+    {
+        protected AsyncTasksClient taskClient;
+        protected long taskId;
+        protected Long result;
+
+        public CompleteTaskRunnable(AsyncTasksClient taskClient, long taskId)
+        {
+            this.taskClient = taskClient;
+            this.taskId = taskId;
+        }
+
+        public void run()
+        {
+            result = taskClient.complete()
+                    .taskQueueId(0)
+                    .taskId(taskId)
+                    .execute();
+        }
+
+        public Long getResult()
+        {
+            return result;
+        }
+
     }
 }

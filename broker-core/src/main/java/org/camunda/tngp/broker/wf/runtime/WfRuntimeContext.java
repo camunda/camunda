@@ -1,10 +1,11 @@
 package org.camunda.tngp.broker.wf.runtime;
 
+import org.camunda.tngp.broker.idx.IndexWriter;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TaskEventHandler;
-import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexWriter;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
@@ -14,12 +15,12 @@ public class WfRuntimeContext implements ResourceContext
     protected final String name;
 
     protected IdGenerator idGenerator;
-    protected WfDefinitionCacheService wfDefinitionCacheService;
+    protected WfDefinitionCache wfDefinitionCache;
     protected LogWriter logWriter;
     protected BpmnEventHandler bpmnEventHandler;
     protected TaskEventHandler taskEventHandler;
 
-    protected WorkflowEventIndexWriter activityInstanceIndexWriter;
+    protected IndexWriter<BpmnEventReader> indexWriter;
 
     public WfRuntimeContext(int id, String name)
     {
@@ -47,14 +48,14 @@ public class WfRuntimeContext implements ResourceContext
         this.logWriter = logWriter;
     }
 
-    public WfDefinitionCacheService getwfDefinitionCacheService()
+    public WfDefinitionCache getWfDefinitionCache()
     {
-        return wfDefinitionCacheService;
+        return wfDefinitionCache;
     }
 
-    public void setwfDefinitionCacheService(WfDefinitionCacheService wfDefinitionCacheService)
+    public void setWfDefinitionCache(WfDefinitionCache wfDefinitionCache)
     {
-        this.wfDefinitionCacheService = wfDefinitionCacheService;
+        this.wfDefinitionCache = wfDefinitionCache;
     }
 
     public void setBpmnEventHandler(BpmnEventHandler bpmnEventHandler)
@@ -67,14 +68,14 @@ public class WfRuntimeContext implements ResourceContext
         return bpmnEventHandler;
     }
 
-    public WorkflowEventIndexWriter getActivityInstanceIndexWriter()
+    public IndexWriter<BpmnEventReader> getIndexWriter()
     {
-        return activityInstanceIndexWriter;
+        return indexWriter;
     }
 
-    public void setActivityInstanceIndexWriter(WorkflowEventIndexWriter activityInstanceIndexWriter)
+    public void setIndexWriter(IndexWriter<BpmnEventReader> indexWriter)
     {
-        this.activityInstanceIndexWriter = activityInstanceIndexWriter;
+        this.indexWriter = indexWriter;
     }
 
     public void setTaskEventHandler(TaskEventHandler taskEventHandler)

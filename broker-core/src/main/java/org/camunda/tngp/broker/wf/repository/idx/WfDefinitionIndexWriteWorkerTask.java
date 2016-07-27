@@ -16,7 +16,7 @@ public class WfDefinitionIndexWriteWorkerTask implements WorkerTask<WfWorkerCont
 
         for (int i = 0; i < contexts.length; i++)
         {
-            workCount += contexts[i].getWfDefinitionIndexWriter().update();
+            workCount += contexts[i].getIndexWriter().indexLogEntries();
         }
 
         return workCount;

@@ -30,6 +30,7 @@ public class StubLogReader implements LogReader
     public StubLogReader(long initialPosition, Log targetLog)
     {
         this.tailPosition = initialPosition;
+        this.position = initialPosition;
         this.targetLog = targetLog;
     }
 
@@ -65,7 +66,7 @@ public class StubLogReader implements LogReader
     {
         if (!logEntries.containsKey(position))
         {
-            throw new RuntimeException("There is no event at position " + position);
+            return false;
         }
 
         final BufferWriter entryAtPosition = logEntries.get(position);
@@ -76,7 +77,7 @@ public class StubLogReader implements LogReader
 
         position += writtenLength;
 
-        return logEntries.containsKey(position);
+        return true;
     }
 
     public StubLogReader addEntry(BufferWriter writer)

@@ -26,9 +26,9 @@ public class WfRepositoryServiceNames
         return (ServiceName) ServiceName.newServiceName(String.format("wf.repository.%s.definition.key-index", contextName), HashIndexManager.class);
     }
 
-    public static ServiceName<WfDefinitionCacheService> wfDefinitionCacheServiceName(String contextName)
+    public static ServiceName<WfDefinitionCache> wfDefinitionCacheServiceName(String contextName)
     {
-        return ServiceName.newServiceName(String.format("wf.repository.%s.definition.cache", contextName), WfDefinitionCacheService.class);
+        return ServiceName.newServiceName(String.format("wf.repository.%s.definition.cache", contextName), WfDefinitionCache.class);
     }
 
     public static ServiceName<WfRepositoryContext> wfRepositoryContextName(String contextName)

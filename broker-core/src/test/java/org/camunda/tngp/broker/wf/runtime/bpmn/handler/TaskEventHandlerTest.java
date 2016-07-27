@@ -1,13 +1,17 @@
 package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
+import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.util.mocks.BpmnEventMocks;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
@@ -85,7 +89,7 @@ public class TaskEventHandlerTest
         mockTaskInstanceEvent(TaskInstanceState.COMPLETED);
         BpmnEventMocks.mockActivityInstanceEvent(activityEventReader, ExecutionEventType.ACT_INST_CREATED);
 
-        when(workflowEventIndex.get(eq(23456789L), anyLong())).thenReturn(748L);
+        when(workflowEventIndex.get(eq(23456789L), anyLong(), anyLong())).thenReturn(748L);
 
         // when
         handler.onComplete(taskInstanceReader);
@@ -106,5 +110,27 @@ public class TaskEventHandlerTest
         verifyNoMoreInteractions(logReader);
         verifyNoMoreInteractions(logWriter);
 
+    }
+
+    @Test
+    public void shouldPostponeEventOnDirtyIndex()
+    {
+        // given
+        final TaskEventHandler handler = new TaskEventHandler(logReader, logWriter, workflowEventIndex);
+        handler.setEventWriter(activityEventWriter);
+        handler.setLatestEventReader(activityEventReader);
+
+        mockTaskInstanceEvent(TaskInstanceState.COMPLETED);
+        BpmnEventMocks.mockActivityInstanceEvent(activityEventReader, ExecutionEventType.ACT_INST_CREATED);
+
+        when(workflowEventIndex.get(anyLong(), anyLong(), anyLong())).thenAnswer(new ArgumentAnswer<>(2));
+
+        // when
+        final int result = handler.onComplete(taskInstanceReader);
+
+        // then
+        assertThat(result).isEqualTo(LogEntryHandler.POSTPONE_ENTRY_RESULT);
+
+        verifyZeroInteractions(logWriter);
     }
 }

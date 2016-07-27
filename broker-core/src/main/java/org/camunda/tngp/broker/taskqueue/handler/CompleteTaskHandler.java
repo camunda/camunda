@@ -16,6 +16,7 @@ import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
@@ -58,7 +59,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             return writeError(response, "Task id is required");
         }
 
-        final long lastTaskPosition = lockedTasksIndex.get(taskId, -1);
+        final long lastTaskPosition = lockedTasksIndex.get(taskId, -1, AsyncRequestHandler.POSTPONE_RESPONSE_CODE);
 
         if (lastTaskPosition >= 0)
         {
@@ -99,6 +100,10 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
                 // TODO: backpressure
                 return -1;
             }
+        }
+        else if (lastTaskPosition == AsyncRequestHandler.POSTPONE_RESPONSE_CODE)
+        {
+            return AsyncRequestHandler.POSTPONE_RESPONSE_CODE;
         }
         else
         {

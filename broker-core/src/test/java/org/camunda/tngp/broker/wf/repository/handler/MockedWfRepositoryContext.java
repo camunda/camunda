@@ -9,6 +9,7 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class MockedWfRepositoryContext extends WfRepositoryContext
@@ -21,6 +22,7 @@ public class MockedWfRepositoryContext extends WfRepositoryContext
 
         final Log logMock = mock(Log.class);
         when(logMock.getWriteBuffer()).thenReturn(logWriteBufferMock);
+
 
         final Bytes2LongHashIndex keyIndexMock = mock(Bytes2LongHashIndex.class);
 
@@ -38,6 +40,8 @@ public class MockedWfRepositoryContext extends WfRepositoryContext
         setWfDefinitionKeyIndex(keyIndexManagerMock);
         setWfDefinitionIdGenerator(idGeneratorMock);
         setWfDefinitionIdIndex(idIndexManagerMock);
+
+        setLogWriter(mock(LogWriter.class));
     }
 
 }

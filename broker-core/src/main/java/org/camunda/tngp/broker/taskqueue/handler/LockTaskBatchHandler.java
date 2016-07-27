@@ -14,6 +14,7 @@ import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
@@ -73,7 +74,13 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
         final long lockTimeout = now + lockTime;
 
         // scan the log for lockable tasks
-        final long scanPos = Math.max(taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1), log.getInitialPosition());
+        final long recentTaskTypePosition = taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1, AsyncRequestHandler.POSTPONE_RESPONSE_CODE);
+        if (recentTaskTypePosition == AsyncRequestHandler.POSTPONE_RESPONSE_CODE)
+        {
+            return AsyncRequestHandler.POSTPONE_RESPONSE_CODE;
+        }
+
+        final long scanPos = Math.max(recentTaskTypePosition, log.getInitialPosition());
         lockableTaskFinder.init(log, scanPos, taskTypeHash, taskType);
 
         final boolean lockableTaskFound = lockableTaskFinder.findNextLockableTask();

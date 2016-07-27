@@ -1,17 +1,17 @@
 package org.camunda.tngp.broker.wf.repository.idx;
 
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.broker.log.LogEntryProcessor;
-import org.camunda.tngp.broker.wf.repository.handler.MockedWfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -19,32 +19,25 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class WfDefinitionIndexWriterTest
 {
 
-    MockedWfRepositoryContext wfRepositoryCtx;
-    WfDefinitionIndexWriter wfDefinitionIndexWriter;
+    WfTypeIndexLogTracker wfDefinitionIndexWriter;
+
+    @Mock
     WfDefinitionReader wfDefinitionReaderMock;
-    LogEntryProcessor<WfDefinitionReader> logEntryProcessor;
+
+    @Mock
+    protected Long2LongHashIndex wfDefinitionIdIndex;
+
+    @Mock
+    protected Bytes2LongHashIndex wfDefinitionKeyIndex;
+
+
 
     @Before
     public void setup()
     {
-        wfRepositoryCtx = new MockedWfRepositoryContext();
-        wfDefinitionIndexWriter = new WfDefinitionIndexWriter(wfRepositoryCtx);
+        MockitoAnnotations.initMocks(this);
 
-        wfDefinitionReaderMock = mock(WfDefinitionReader.class);
-
-        logEntryProcessor = mock(LogEntryProcessor.class);
-        wfDefinitionIndexWriter.logEntryProcessor = logEntryProcessor;
-    }
-
-    @Test
-    public void shouldDelegateToLogEntryProcessor()
-    {
-        // when
-        wfDefinitionIndexWriter.update();
-
-        // then
-        verify(logEntryProcessor).doWork(Integer.MAX_VALUE);
-        verifyNoMoreInteractions(logEntryProcessor);
+        wfDefinitionIndexWriter = new WfTypeIndexLogTracker(wfDefinitionIdIndex, wfDefinitionKeyIndex);
     }
 
     @Test
@@ -58,11 +51,11 @@ public class WfDefinitionIndexWriterTest
         when(wfDefinitionReaderMock.id()).thenReturn(19L);
 
         // when
-        wfDefinitionIndexWriter.handle(123L, wfDefinitionReaderMock);
+        wfDefinitionIndexWriter.onLogEntryCommit(wfDefinitionReaderMock, 123L);
 
         // then
-        verify(wfDefinitionIndexWriter.wfDefinitionIdIndex).put(19L, 123L);
-        verify(wfDefinitionIndexWriter.wfDefinitionKeyIndex).put(typeBuffer, 0, key.length, 19);
+        verify(wfDefinitionIndexWriter.wfTypeIdIndex).put(19L, 123L);
+        verify(wfDefinitionIndexWriter.wfTypeKeyIndex).put(typeBuffer, 0, key.length, 19);
     }
 
 
@@ -76,17 +69,17 @@ public class WfDefinitionIndexWriterTest
         when(wfDefinitionReaderMock.getTypeKey()).thenReturn(typeBuffer);
 
         // when
-        wfDefinitionIndexWriter.handle(123L, wfDefinitionReaderMock);
-        wfDefinitionIndexWriter.handle(456L, wfDefinitionReaderMock);
+        wfDefinitionIndexWriter.onLogEntryCommit(wfDefinitionReaderMock, 123L);
+        wfDefinitionIndexWriter.onLogEntryCommit(wfDefinitionReaderMock, 456L);
 
         // then
-        final InOrder idIndexInOrder = inOrder(wfDefinitionIndexWriter.wfDefinitionIdIndex);
-        final InOrder keyIndexInOrder = inOrder(wfDefinitionIndexWriter.wfDefinitionKeyIndex);
+        final InOrder idIndexInOrder = inOrder(wfDefinitionIndexWriter.wfTypeIdIndex);
+        final InOrder keyIndexInOrder = inOrder(wfDefinitionIndexWriter.wfTypeKeyIndex);
 
-        idIndexInOrder.verify(wfDefinitionIndexWriter.wfDefinitionIdIndex).put(19L, 123L);
-        idIndexInOrder.verify(wfDefinitionIndexWriter.wfDefinitionIdIndex).put(20L, 456L);
+        idIndexInOrder.verify(wfDefinitionIndexWriter.wfTypeIdIndex).put(19L, 123L);
+        idIndexInOrder.verify(wfDefinitionIndexWriter.wfTypeIdIndex).put(20L, 456L);
 
-        keyIndexInOrder.verify(wfDefinitionIndexWriter.wfDefinitionKeyIndex).put(typeBuffer, 0, key.length, 19L);
-        keyIndexInOrder.verify(wfDefinitionIndexWriter.wfDefinitionKeyIndex).put(typeBuffer, 0, key.length, 20L);
+        keyIndexInOrder.verify(wfDefinitionIndexWriter.wfTypeKeyIndex).put(typeBuffer, 0, key.length, 19L);
+        keyIndexInOrder.verify(wfDefinitionIndexWriter.wfTypeKeyIndex).put(typeBuffer, 0, key.length, 20L);
     }
 }

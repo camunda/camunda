@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.taskqueue.handler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferMatcher.hasBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -20,6 +21,7 @@ import org.camunda.tngp.broker.taskqueue.TaskErrors;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
+import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.test.util.BufferWriterMatcher;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
@@ -30,6 +32,7 @@ import org.camunda.tngp.protocol.taskqueue.SingleTaskAckResponseReader;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,7 +90,7 @@ public class CompleteTaskHandlerTest
         when(requestReader.taskId()).thenReturn(9938L);
         when(requestReader.getPayload()).thenReturn(new UnsafeBuffer(PAYLOAD));
 
-        when(taskInstanceIndex.get(eq(9938L), anyLong())).thenReturn(9876L);
+        when(taskInstanceIndex.get(eq(9938L), anyLong(), anyLong())).thenReturn(9876L);
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 
@@ -205,7 +208,7 @@ public class CompleteTaskHandlerTest
         when(requestReader.taskId()).thenReturn(9938L);
         when(requestReader.getPayload()).thenReturn(new UnsafeBuffer(PAYLOAD));
 
-        when(taskInstanceIndex.get(eq(9938L), anyLong())).thenReturn(-1L);
+        when(taskInstanceIndex.get(eq(9938L), anyLong(), anyLong())).thenReturn(-1L);
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 
@@ -240,7 +243,7 @@ public class CompleteTaskHandlerTest
         when(requestReader.taskId()).thenReturn(9938L);
         when(requestReader.getPayload()).thenReturn(new UnsafeBuffer(PAYLOAD));
 
-        when(taskInstanceIndex.get(eq(9938L), anyLong())).thenReturn(9876L);
+        when(taskInstanceIndex.get(eq(9938L), anyLong(), anyLong())).thenReturn(9876L);
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 
@@ -265,6 +268,30 @@ public class CompleteTaskHandlerTest
         inOrder.verify(response).commit();
 
         verifyNoMoreInteractions(response);
+        verifyZeroInteractions(logWriter);
+    }
+
+    @Test
+    public void shouldPostponeRequestWhenIndexIsDirty()
+    {
+        // given
+        final CompleteTaskHandler handler = new CompleteTaskHandler();
+
+        when(requestReader.consumerId()).thenReturn(765);
+        when(requestReader.taskId()).thenReturn(9938L);
+        when(requestReader.getPayload()).thenReturn(new UnsafeBuffer(PAYLOAD));
+        handler.requestReader = requestReader;
+
+        when(taskInstanceIndex.get(anyLong(), anyLong(), anyLong()))
+            .thenAnswer(new ArgumentAnswer<>(2));
+
+        // when
+        final long result = handler.onRequest(taskContext, message, 123, 456, response);
+
+        // when
+        assertThat(result).isEqualTo(AsyncRequestHandler.POSTPONE_RESPONSE_CODE);
+
+        final LogWriter logWriter = taskContext.getLogWriter();
         verifyZeroInteractions(logWriter);
     }
 

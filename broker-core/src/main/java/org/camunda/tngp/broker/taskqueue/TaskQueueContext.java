@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.taskqueue;
 
+import org.camunda.tngp.broker.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
@@ -24,7 +26,7 @@ public class TaskQueueContext implements ResourceContext
 
     protected IdGenerator taskInstanceIdGenerator;
 
-    protected TaskQueueIndexWriter taskQueueIndexWriter;
+    protected IndexWriter<TaskInstanceReader> taskQueueIndexWriter;
 
     public TaskQueueContext(String taskQueueName, int taskQueueId)
     {
@@ -104,12 +106,12 @@ public class TaskQueueContext implements ResourceContext
         return taskQueueName;
     }
 
-    public TaskQueueIndexWriter getTaskQueueIndexWriter()
+    public IndexWriter<TaskInstanceReader> getIndexWriter()
     {
         return taskQueueIndexWriter;
     }
 
-    public void setTaskQueueIndexWriter(TaskQueueIndexWriter taskQueueIndexWriter)
+    public void setIndexWriter(IndexWriter<TaskInstanceReader> taskQueueIndexWriter)
     {
         this.taskQueueIndexWriter = taskQueueIndexWriter;
     }

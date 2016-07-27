@@ -9,7 +9,6 @@ import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
-import org.junit.Before;
 import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -21,10 +20,8 @@ public class TaskInstanceReaderTest
     protected static final byte[] PAYLOAD = "barr".getBytes(StandardCharsets.UTF_8);
 
     protected UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
-    protected int writtenLength;
 
-    @Before
-    public void encodeTaskInstance()
+    protected int encodeTaskInstance(byte[] payload, UnsafeBuffer buffer)
     {
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
         final TaskInstanceEncoder bodyEncoder = new TaskInstanceEncoder();
@@ -48,15 +45,16 @@ public class TaskInstanceReaderTest
             .wfActivityInstanceEventKey(90L)
             .wfRuntimeResourceId(5789)
             .putTaskType(TASK_TYPE, 0, TASK_TYPE.length)
-            .putPayload(PAYLOAD, 0, PAYLOAD.length);
+            .putPayload(payload, 0, payload.length);
 
-        writtenLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
+        return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }
 
     @Test
     public void shouldReadTaskInstance()
     {
         // given
+        final int writtenLength = encodeTaskInstance(PAYLOAD, buffer);
         final TaskInstanceReader reader = new TaskInstanceReader();
 
         // when
@@ -79,6 +77,26 @@ public class TaskInstanceReaderTest
         assertThatBuffer(reader.getPayload()).hasBytes(PAYLOAD);
         assertThatBuffer(reader.getTaskType()).hasCapacity(TASK_TYPE.length);
         assertThatBuffer(reader.getTaskType()).hasBytes(TASK_TYPE);
+    }
+
+    @Test
+    public void shouldReadTaskInstanceWithEmptyPayload()
+    {
+        // given
+        final int expectedCapacity = MessageHeaderEncoder.ENCODED_LENGTH +
+                TaskInstanceEncoder.BLOCK_LENGTH +
+                TaskInstanceEncoder.taskTypeHeaderLength() +
+                TASK_TYPE.length +
+                TaskInstanceEncoder.payloadHeaderLength();
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[expectedCapacity]);
+        encodeTaskInstance(new byte[0], buffer);
+        final TaskInstanceReader reader = new TaskInstanceReader();
+
+        // when
+        reader.wrap(buffer, 0, expectedCapacity);
+
+        // then
+        assertThatBuffer(reader.getPayload()).hasCapacity(0);
     }
 
 }

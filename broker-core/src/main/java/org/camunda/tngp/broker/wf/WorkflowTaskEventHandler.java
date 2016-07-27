@@ -17,7 +17,7 @@ public class WorkflowTaskEventHandler implements LogEntryHandler<TaskInstanceRea
     }
 
     @Override
-    public void handle(long position, TaskInstanceReader reader)
+    public int handle(long position, TaskInstanceReader reader)
     {
         if (TaskInstanceState.COMPLETED == reader.state())
         {
@@ -26,7 +26,11 @@ public class WorkflowTaskEventHandler implements LogEntryHandler<TaskInstanceRea
             final WfRuntimeContext wfRuntimeContext = wfRuntimeContextProvider.getContextForResource(wfRuntimeResourceId);
             // TODO: runtime context with id may not exist
 
-            wfRuntimeContext.getTaskEventHandler().onComplete(reader);
+            return wfRuntimeContext.getTaskEventHandler().onComplete(reader);
+        }
+        else
+        {
+            return LogEntryHandler.CONSUME_ENTRY_RESULT;
         }
 
     }

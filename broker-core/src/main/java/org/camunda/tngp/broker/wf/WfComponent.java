@@ -1,11 +1,15 @@
 package org.camunda.tngp.broker.wf;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
-import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.*;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.LOG_WRITE_BUFFER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerContextServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerServiceName;
+import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.WF_REPOSITORY_MANAGER_NAME;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME;
 
 import org.camunda.tngp.broker.services.DeferredResponsePoolService;
 import org.camunda.tngp.broker.system.Component;
@@ -24,10 +28,10 @@ import org.camunda.tngp.broker.wf.repository.handler.DeployBpmnResourceHandler;
 import org.camunda.tngp.broker.wf.repository.idx.WfDefinitionIndexWriteWorkerTask;
 import org.camunda.tngp.broker.wf.runtime.InputLogProcessingTask;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeIndexWorkerTask;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManagerService;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames;
 import org.camunda.tngp.broker.wf.runtime.handler.StartWorkflowInstanceHandler;
-import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexWriterWorkerTask;
 import org.camunda.tngp.broker.wf.runtime.worker.ContinuationWorkerTask;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Service;
@@ -87,7 +91,7 @@ public class WfComponent implements Component
             new WfDefinitionIndexWriteWorkerTask(),
             new ContinuationWorkerTask(),
             new InputLogProcessingTask(),
-            new WorkflowEventIndexWriterWorkerTask()
+            new WfRuntimeIndexWorkerTask(),
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);

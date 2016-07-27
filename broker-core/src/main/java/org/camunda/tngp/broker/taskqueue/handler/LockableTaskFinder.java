@@ -89,7 +89,7 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
     }
 
     @Override
-    public void handle(long position, TaskInstanceReader reader)
+    public int handle(long position, TaskInstanceReader reader)
     {
         if (reader.taskTypeHash() == taskTypeHashToPoll && reader.state() == TaskInstanceState.NEW)
         {
@@ -99,5 +99,7 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
                 lockableTaskPosition = position;
             }
         }
+
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 }

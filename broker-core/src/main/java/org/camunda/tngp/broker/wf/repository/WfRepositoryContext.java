@@ -1,11 +1,13 @@
 package org.camunda.tngp.broker.wf.repository;
 
+import org.camunda.tngp.broker.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.broker.wf.repository.idx.WfDefinitionIndexWriter;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class WfRepositoryContext implements ResourceContext
@@ -17,8 +19,10 @@ public class WfRepositoryContext implements ResourceContext
     protected IdGenerator wfDefinitionIdGenerator;
     protected HashIndexManager<Bytes2LongHashIndex> wfDefinitionKeyIndex;
     protected HashIndexManager<Long2LongHashIndex> wfDefinitionIdIndex;
-    protected WfDefinitionIndexWriter wfDefinitionIndexWriter;
-    protected WfDefinitionCacheService wfDefinitionCacheService;
+    protected WfDefinitionCache wfDefinitionCache;
+
+    protected IndexWriter<WfDefinitionReader> indexWriter;
+    protected LogWriter logWriter;
 
     public WfRepositoryContext(int id, String name)
     {
@@ -68,14 +72,14 @@ public class WfRepositoryContext implements ResourceContext
         this.wfDefinitionKeyIndex = wfDefinitionKeyIndex;
     }
 
-    public WfDefinitionIndexWriter getWfDefinitionIndexWriter()
+    public IndexWriter<WfDefinitionReader> getIndexWriter()
     {
-        return wfDefinitionIndexWriter;
+        return indexWriter;
     }
 
-    public void setWfDefinitionIndexWriter(WfDefinitionIndexWriter wfDefinitionIndexWriter)
+    public void setIndexWriter(IndexWriter<WfDefinitionReader> indexWriter)
     {
-        this.wfDefinitionIndexWriter = wfDefinitionIndexWriter;
+        this.indexWriter = indexWriter;
     }
 
     public HashIndexManager<Long2LongHashIndex> getWfDefinitionIdIndex()
@@ -88,13 +92,23 @@ public class WfRepositoryContext implements ResourceContext
         this.wfDefinitionIdIndex = wfDefinitionIdIndex;
     }
 
-    public WfDefinitionCacheService getWfDefinitionCacheService()
+    public WfDefinitionCache getWfDefinitionCache()
     {
-        return wfDefinitionCacheService;
+        return wfDefinitionCache;
     }
 
-    public void setWfDefinitionCacheService(WfDefinitionCacheService wfDefinitionCacheService)
+    public void setWfDefinitionCacheService(WfDefinitionCache wfDefinitionCache)
     {
-        this.wfDefinitionCacheService = wfDefinitionCacheService;
+        this.wfDefinitionCache = wfDefinitionCache;
+    }
+
+    public LogWriter getLogWriter()
+    {
+        return logWriter;
+    }
+
+    public void setLogWriter(LogWriter logWriter)
+    {
+        this.logWriter = logWriter;
     }
 }

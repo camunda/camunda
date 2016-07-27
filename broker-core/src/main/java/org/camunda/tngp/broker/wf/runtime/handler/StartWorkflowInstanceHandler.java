@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.wf.runtime.handler;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
@@ -42,7 +42,7 @@ public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRunt
         System.out.println();
         System.out.println("Starting process instance");
 
-        final WfDefinitionCacheService wfDefinitionCache = context.getwfDefinitionCacheService();
+        final WfDefinitionCache wfDefinitionCache = context.getWfDefinitionCache();
         final IdGenerator idGenerator = context.getIdGenerator();
         final LogWriter logWriter = context.getLogWriter();
 

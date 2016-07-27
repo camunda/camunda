@@ -23,7 +23,7 @@ public class TaskQueueBpmnEventHandler implements LogEntryHandler<BpmnEventReade
     }
 
     @Override
-    public void handle(long position, BpmnEventReader reader)
+    public int handle(long position, BpmnEventReader reader)
     {
         if (reader.templateId() == BpmnActivityEventDecoder.TEMPLATE_ID
                 && reader.activityEvent().event() == ExecutionEventType.ACT_INST_CREATED)
@@ -44,6 +44,8 @@ public class TaskQueueBpmnEventHandler implements LogEntryHandler<BpmnEventReade
 
             logWriter.write(taskInstanceWriter);
         }
+
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 
     public void setTaskInstanceWriter(TaskInstanceWriter taskInstanceWriter)

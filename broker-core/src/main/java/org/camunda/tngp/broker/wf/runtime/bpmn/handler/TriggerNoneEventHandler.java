@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
@@ -17,7 +18,7 @@ public class TriggerNoneEventHandler implements BpmnFlowElementEventHandler
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
     @Override
-    public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter,
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter,
             IdGenerator idGenerator)
     {
         flowElementVisitor.init(process).moveToNode(flowElementEventReader.flowElementId());
@@ -30,9 +31,13 @@ public class TriggerNoneEventHandler implements BpmnFlowElementEventHandler
             .processId(flowElementEventReader.wfDefinitionId())
             .workflowInstanceId(flowElementEventReader.wfInstanceId());
 
-        if (logWriter.write(eventWriter) < 0)
+        if (logWriter.write(eventWriter) >= 0)
         {
-            // TODO: could not write event
+            return LogEntryHandler.CONSUME_ENTRY_RESULT;
+        }
+        else
+        {
+            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
         }
     }
 

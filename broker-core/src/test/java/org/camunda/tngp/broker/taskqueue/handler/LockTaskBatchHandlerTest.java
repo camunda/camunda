@@ -31,6 +31,7 @@ import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
 import org.junit.Test;
@@ -113,7 +114,7 @@ public class LockTaskBatchHandlerTest
 
         mockTaskInstance(lockableTaskReader);
 
-        when(taskTypePositionIndex.get(argThat(hasBytes(TASK_TYPE)), anyInt(), anyInt(), anyLong())).thenReturn(55L);
+        when(taskTypePositionIndex.get(argThat(hasBytes(TASK_TYPE)), anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(55L);
 
         when(lockableTaskFinder.findNextLockableTask()).thenReturn(true, false);
         when(lockableTaskFinder.getLockableTask()).thenReturn(lockableTaskReader);
@@ -182,7 +183,7 @@ public class LockTaskBatchHandlerTest
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 
-        when(taskTypePositionIndex.get(argThat(hasBytes(TASK_TYPE)), anyInt(), anyInt(), anyLong())).thenReturn(55L);
+        when(taskTypePositionIndex.get(argThat(hasBytes(TASK_TYPE)), anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(55L);
 
         handler.lockableTaskFinder = lockableTaskFinder;
         handler.requestReader = requestReader;
@@ -352,5 +353,30 @@ public class LockTaskBatchHandlerTest
 
         verifyNoMoreInteractions(response);
         verifyZeroInteractions(lockableTaskFinder, logWriter);
+    }
+
+
+    @Test
+    public void shouldRetryRequestWhenIndexIsDirty()
+    {
+        // given
+        final LockTaskBatchHandler handler = new LockTaskBatchHandler();
+        when(requestReader.consumerId()).thenReturn(123);
+        when(requestReader.lockTime()).thenReturn(1234L);
+        when(requestReader.maxTasks()).thenReturn(5);
+        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(TASK_TYPE));
+        handler.requestReader = requestReader;
+
+        when(taskTypePositionIndex.get(any(), anyInt(), anyInt(), anyLong(), anyLong()))
+            .thenAnswer((i) -> i.getArguments()[4]);
+
+        // when
+        final long result = handler.onRequest(taskContext, requestBuffer, 123, 456, response);
+
+        // when
+        assertThat(result).isEqualTo(AsyncRequestHandler.POSTPONE_RESPONSE_CODE);
+
+        verifyZeroInteractions(logWriter);
+
     }
 }

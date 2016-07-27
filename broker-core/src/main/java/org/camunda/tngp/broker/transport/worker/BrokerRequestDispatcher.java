@@ -12,6 +12,8 @@ import uk.co.real_logic.agrona.DirectBuffer;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class BrokerRequestDispatcher<C extends ResourceContext> implements AsyncRequestHandler
 {
+    public static final long REQUEST_NOT_HANDLED_RESPONSE = -3L;
+
     protected final MessageHeaderDecoder decoderFlyweight = new MessageHeaderDecoder();
 
     protected final int schemaId;
@@ -71,7 +73,7 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
         else
         {
             // ignore
-            requestResult = -2;
+            requestResult = REQUEST_NOT_HANDLED_RESPONSE;
         }
 
         return requestResult;

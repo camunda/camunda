@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventWriter;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
@@ -19,7 +20,7 @@ public class CreateActivityInstanceHandler implements BpmnFlowElementEventHandle
     protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
     @Override
-    public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
     {
         final int sequenceFlowId = flowElementEventReader.flowElementId();
         flowElementVisitor.init(process).moveToNode(sequenceFlowId);
@@ -37,10 +38,14 @@ public class CreateActivityInstanceHandler implements BpmnFlowElementEventHandle
             .taskQueueId(flowElementVisitor.taskQueueId())
             .taskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
 
-        if (logWriter.write(eventWriter) < 0)
+        if (logWriter.write(eventWriter) >= 0)
         {
-            // TODO: throw exception/backpressure; could not write event
+            return LogEntryHandler.CONSUME_ENTRY_RESULT;
+        }
+        else
+        {
             System.err.println("cannot write activity instance create event");
+            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
         }
     }
 

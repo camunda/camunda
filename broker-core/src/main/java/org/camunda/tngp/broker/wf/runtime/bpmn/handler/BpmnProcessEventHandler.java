@@ -8,7 +8,10 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public interface BpmnProcessEventHandler
 {
-    void handle(BpmnProcessEventReader processEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator);
+    /**
+     * @return see constants defined in {@link LogEntryHandler}
+     */
+    int handle(BpmnProcessEventReader processEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator);
 
     BpmnAspect getHandledBpmnAspect();
 }

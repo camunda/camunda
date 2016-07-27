@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventWriter;
@@ -26,10 +27,15 @@ public class TaskEventHandler
         this.workflowEventIndex = workflowEventIndex;
     }
 
-    public void onComplete(TaskInstanceReader taskInstance)
+    public int onComplete(TaskInstanceReader taskInstance)
     {
         final long activityInstanceId = taskInstance.wfActivityInstanceEventKey();
-        final long latestPosition = workflowEventIndex.get(activityInstanceId, -1);
+        final long latestPosition = workflowEventIndex.get(activityInstanceId, -1, -2);
+
+        if (latestPosition == -2)
+        {
+            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
+        }
 
         logReader.setPosition(latestPosition);
         logReader.read(latestEventReader);
@@ -48,6 +54,8 @@ public class TaskEventHandler
             .taskType(taskType, 0, taskType.capacity());
 
         logWriter.write(eventWriter);
+
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 
     public void setLatestEventReader(BpmnActivityEventReader latestEventReader)

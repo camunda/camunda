@@ -65,7 +65,7 @@ public class WfRepositoryManagerService
         final ServiceName<IdGenerator> wfDefinitionIdGeneratorServiceName = wfDefinitionIdGeneratorServiceName(wfRepositoryName);
         final ServiceName<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexServiceName = wfDefinitionKeyIndexServiceName(wfRepositoryName);
         final ServiceName<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexServiceName = wfDefinitionIdIndexServiceName(wfRepositoryName);
-        final ServiceName<WfDefinitionCacheService> wfDefinitionCacheServiceName = wfDefinitionCacheServiceName(wfRepositoryName);
+        final ServiceName<WfDefinitionCache> wfDefinitionCacheServiceName = wfDefinitionCacheServiceName(wfRepositoryName);
         final ServiceName<WfRepositoryContext> wfRepositoryContextServiceName = wfRepositoryContextName(wfRepositoryName);
 
         final LogIdGeneratorService wfDefinitionIdGeneratorService = new LogIdGeneratorService(new WfDefinitionIdReader());
@@ -96,7 +96,7 @@ public class WfRepositoryManagerService
             .dependency(wfDefinitionIdGeneratorServiceName, wfRepositoryContextService.getWfDefinitionIdGeneratorInjector())
             .dependency(wfDefinitionKeyIndexServiceName, wfRepositoryContextService.getWfDefinitionKeyIndexInjector())
             .dependency(wfDefinitionIdIndexServiceName, wfRepositoryContextService.getWfDefinitionIdIndexInjector())
-            .dependency(wfDefinitionCacheServiceName, wfRepositoryContextService.getWfDefinitionCacheServiceInjector())
+            .dependency(wfDefinitionCacheServiceName, wfRepositoryContextService.getWfDefinitionCacheInjector())
             .listener(this)
             .install();
     }

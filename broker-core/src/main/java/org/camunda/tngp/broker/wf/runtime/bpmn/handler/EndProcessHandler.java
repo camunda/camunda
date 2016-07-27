@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
@@ -27,26 +28,26 @@ public class EndProcessHandler implements BpmnFlowElementEventHandler, BpmnActiv
     }
 
     @Override
-    public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
     {
-        writeProcessEndEvent(
+        return writeProcessEndEvent(
             flowElementEventReader.wfInstanceId(),
             logWriter);
     }
 
     @Override
-    public void handle(BpmnActivityEventReader activityEventReader, ProcessGraph process, LogWriter logWriter,
+    public int handle(BpmnActivityEventReader activityEventReader, ProcessGraph process, LogWriter logWriter,
             IdGenerator idGenerator)
     {
-        writeProcessEndEvent(
+        return writeProcessEndEvent(
             activityEventReader.wfInstanceId(),
             logWriter);
 
     }
 
-    protected void writeProcessEndEvent(long processInstanceId, LogWriter logWriter)
+    protected int writeProcessEndEvent(long processInstanceId, LogWriter logWriter)
     {
-        final long previousEventPosition = workflowEventIndex.get(processInstanceId, -1L);
+        final long previousEventPosition = workflowEventIndex.get(processInstanceId, -1L, -2L);
 
         logReader.setPosition(previousEventPosition);
         logReader.read(latestEventReader);
@@ -58,10 +59,14 @@ public class EndProcessHandler implements BpmnFlowElementEventHandler, BpmnActiv
             .initialElementId(latestEventReader.initialElementId())
             .key(latestEventReader.key());
 
-        if (logWriter.write(eventWriter) < 0)
+        if (logWriter.write(eventWriter) >= 0)
         {
-            // TODO: throw exception/backpressure; could not write event
+            return LogEntryHandler.CONSUME_ENTRY_RESULT;
+        }
+        else
+        {
             System.err.println("Could not write process start event");
+            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
         }
     }
 

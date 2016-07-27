@@ -10,6 +10,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
@@ -17,17 +18,21 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
-import org.camunda.tngp.log.LogEntryWriter;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
 import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
+import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +53,7 @@ public class DeployBpmnResourceHandlerTest
     protected WfRepositoryContext context;
     protected DeferredResponse deferredResponseMock;
 
-    protected LogEntryWriter logEntryWriterMock;
+    protected LogWriter logWriterMock;
 
     @Before
     public void setup()
@@ -63,7 +68,7 @@ public class DeployBpmnResourceHandlerTest
         wfDefinitionReaderMock = mock(WfDefinitionReader.class);
         responseWriterMock = mock(DeployBpmnResourceAckResponse.class, new FluentAnswer());
         errorResponseWriterMock = mock(ErrorWriter.class, new FluentAnswer());
-        logEntryWriterMock = mock(LogEntryWriter.class);
+        logWriterMock = context.getLogWriter();
 
         handler = new DeployBpmnResourceHandler();
 
@@ -71,7 +76,6 @@ public class DeployBpmnResourceHandlerTest
         handler.wfDefinitionReader = wfDefinitionReaderMock;
         handler.responseWriter = responseWriterMock;
         handler.errorResponseWriter = errorResponseWriterMock;
-        handler.logEntryWriter = logEntryWriterMock;
     }
 
     @Test
@@ -86,11 +90,11 @@ public class DeployBpmnResourceHandlerTest
         final int msgLength = msgBuffer.capacity();
 
         when(context.getWfDefinitionIdGenerator().nextId()).thenReturn(typeId);
-        when(context.getWfDefinitionKeyIndex().getIndex().get(any(byte[].class), anyLong())).thenReturn(-1L);
-        when(context.getWfDefinitionIdIndex().getIndex().get(anyLong(), anyLong())).thenReturn(-1L);
+        when(context.getWfDefinitionKeyIndex().getIndex().get(any(byte[].class), anyLong(), anyLong())).thenReturn(-1L);
+        when(context.getWfDefinitionIdIndex().getIndex().get(anyLong(), anyLong(), anyLong())).thenReturn(-1L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-        when(logEntryWriterMock.write(context.getWfDefinitionLog(), wfDefinitionWriterMock)).thenReturn(0L);
+        when(logWriterMock.write(wfDefinitionWriterMock)).thenReturn(0L);
         when(deferredResponseMock.defer(0L, handler)).thenReturn(1);
 
         final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
@@ -105,7 +109,7 @@ public class DeployBpmnResourceHandlerTest
                 argThat(hasBytes(resource).atPosition(0)),
                 eq(0),
                 eq(resource.length));
-        verify(logEntryWriterMock).write(context.getWfDefinitionLog(), wfDefinitionWriterMock);
+        verify(logWriterMock).write(wfDefinitionWriterMock);
 
         verify(responseWriterMock).wfDefinitionId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
@@ -125,11 +129,11 @@ public class DeployBpmnResourceHandlerTest
         final int msgLength = msgBuffer.capacity();
 
         when(context.getWfDefinitionIdGenerator().nextId()).thenReturn(typeId);
-        when(context.getWfDefinitionKeyIndex().getIndex().get(any(byte[].class), eq(-1L))).thenReturn(100L);
-        when(context.getWfDefinitionIdIndex().getIndex().get(100L, -1)).thenReturn(200L);
+        when(context.getWfDefinitionKeyIndex().getIndex().get(any(byte[].class), eq(-1L), anyLong())).thenReturn(100L);
+        when(context.getWfDefinitionIdIndex().getIndex().get(eq(100L), anyLong(), anyLong())).thenReturn(200L);
 
         when(deferredResponseMock.allocateAndWrite(responseWriterMock)).thenReturn(true);
-        when(logEntryWriterMock.write(context.getWfDefinitionLog(), wfDefinitionWriterMock)).thenReturn(0L);
+        when(logWriterMock.write(wfDefinitionWriterMock)).thenReturn(0L);
         when(deferredResponseMock.defer(0L, handler)).thenReturn(1);
         when(wfDefinitionReaderMock.version()).thenReturn(4);
 
@@ -145,7 +149,7 @@ public class DeployBpmnResourceHandlerTest
                 argThat(hasBytes(resource).atPosition(0)),
                 eq(0),
                 eq(resource.length));
-        verify(logEntryWriterMock).write(context.getWfDefinitionLog(), wfDefinitionWriterMock);
+        verify(logWriterMock).write(wfDefinitionWriterMock);
 
         verify(responseWriterMock).wfDefinitionId(typeId);
         verify(deferredResponseMock).allocateAndWrite(responseWriterMock);
@@ -204,6 +208,27 @@ public class DeployBpmnResourceHandlerTest
         verify(deferredResponseMock).commit();
 
         verify(wfDefinitionWriterMock, never()).write(any(), anyInt());
+    }
+
+    @Test
+    public void shouldPostponeRequestIfIndexEntryDirty()
+    {
+        // given
+        final byte[] resource = asByteArray(Bpmn.createExecutableProcess("foo").startEvent().done());
+        final DirectBuffer msgBuffer = writeRequest(resource);
+        final int msgLength = msgBuffer.capacity();
+
+        final Bytes2LongHashIndex wfDefinitionKeyIndex = context.getWfDefinitionKeyIndex().getIndex();
+        when(wfDefinitionKeyIndex.get(any(byte[].class), anyLong(), anyLong())).thenAnswer(new ArgumentAnswer<>(2));
+        final Long2LongHashIndex wfDefinitionIdIndex = context.getWfDefinitionIdIndex().getIndex();
+        when(wfDefinitionIdIndex.get(anyLong(), anyLong(), anyLong())).thenAnswer(new ArgumentAnswer<>(2));
+
+        // when
+        final long result = handler.onRequest(context, msgBuffer, 0, msgLength, deferredResponseMock);
+
+        // then
+        assertThat(result).isEqualTo(AsyncRequestHandler.POSTPONE_RESPONSE_CODE);
+        verifyZeroInteractions(logWriterMock, deferredResponseMock);
     }
 
     private static byte[] asByteArray(final BpmnModelInstance bpmnModelInstance)

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
@@ -43,7 +43,7 @@ public class StartWorkflowInstanceHandlerTest
     protected MockWfRuntimeContext mockContext;
     protected LogWriter logWriter;
     protected IdGenerator idGenerator;
-    protected WfDefinitionCacheService processCache;
+    protected WfDefinitionCache processCache;
 
     @Mock
     protected ProcessGraph process;
@@ -74,7 +74,7 @@ public class StartWorkflowInstanceHandlerTest
         mockContext = new MockWfRuntimeContext();
         logWriter = mockContext.getLogWriter();
         idGenerator = mockContext.getIdGenerator();
-        processCache = mockContext.getwfDefinitionCacheService();
+        processCache = mockContext.getWfDefinitionCache();
 
         when(processCache.getProcessGraphByTypeId(1234L)).thenReturn(process);
 
@@ -307,4 +307,5 @@ public class StartWorkflowInstanceHandlerTest
         verify(response).abort();
         verify(response, never()).commit();
     }
+
 }

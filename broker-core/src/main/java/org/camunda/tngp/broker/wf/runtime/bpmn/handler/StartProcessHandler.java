@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventWriter;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
@@ -14,7 +15,7 @@ public class StartProcessHandler implements BpmnFlowElementEventHandler
     protected BpmnProcessEventWriter eventWriter = new BpmnProcessEventWriter();
 
     @Override
-    public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
     {
 
         eventWriter
@@ -24,10 +25,14 @@ public class StartProcessHandler implements BpmnFlowElementEventHandler
             .initialElementId(flowElementEventReader.flowElementId())
             .key(flowElementEventReader.wfInstanceId());
 
-        if (logWriter.write(eventWriter) < 0)
+        if (logWriter.write(eventWriter) >= 0)
         {
-            // TODO: throw exception/backpressure; could not write event
+            return LogEntryHandler.CONSUME_ENTRY_RESULT;
+        }
+        else
+        {
             System.err.println("Could not write process start event");
+            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
         }
 
     }

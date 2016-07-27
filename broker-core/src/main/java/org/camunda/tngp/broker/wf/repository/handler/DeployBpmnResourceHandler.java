@@ -12,12 +12,12 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
-import org.camunda.tngp.log.LogEntryWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
+import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
@@ -25,7 +25,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
 
 public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>, ResponseCompletionHandler
 {
-    protected LogEntryWriter logEntryWriter = new LogEntryWriter();
     protected LogEntryReader logEntryReader = new LogEntryReader(WfDefinitionReader.MAX_LENGTH);
 
     protected WfDefinitionWriter wfDefinitionWriter = new WfDefinitionWriter();
@@ -107,8 +106,15 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
         int version = 0;
 
-        final long previousVersionId = wfDefinitionKeyIndex.get(wfDefinitionKeyBytes, -1);
-        final long prevVersionPos = wfIdIndex.get(previousVersionId, -1);
+        final long previousVersionId = wfDefinitionKeyIndex.get(wfDefinitionKeyBytes, -1, AsyncRequestHandler.POSTPONE_RESPONSE_CODE);
+        if (previousVersionId == AsyncRequestHandler.POSTPONE_RESPONSE_CODE)
+        {
+            return AsyncRequestHandler.POSTPONE_RESPONSE_CODE;
+        }
+
+        // don't need to handle dirty key result for this index: If
+        // wfTypeKeyIndex is not dirty, this index is also not dirty
+        final long prevVersionPos = wfIdIndex.get(previousVersionId, -1, -2);
 
         if (prevVersionPos != -1)
         {
@@ -126,7 +132,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
         if (response.allocateAndWrite(responseWriter))
         {
-            final long logEntryOffset = logEntryWriter.write(wfDefinitionLog, wfDefinitionWriter);
+            final long logEntryOffset = context.getLogWriter().write(wfDefinitionWriter);
             result = response.defer(logEntryOffset, this);
         }
 

@@ -12,8 +12,11 @@ import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
+import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.log.Log;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -37,24 +40,37 @@ public class WorkflowEventIndexWriterTest
     @Mock
     protected Long2LongHashIndex workflowEventIndex;
 
+    @Mock
+    protected Log log;
+
+    @Mock
+    protected Dispatcher dispatcher;
+
+    @Mock
+    protected Subscription subscription;
+
     @Before
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
+
+        when(log.getWriteBuffer()).thenReturn(dispatcher);
+        when(dispatcher.openSubscription()).thenReturn(subscription);
     }
 
     @Test
     public void shouldWriteIndexOnActivityEvent()
     {
         // given
-        final WorkflowEventIndexWriter indexWriter = new WorkflowEventIndexWriter(null, workflowEventIndex);
+        final WorkflowEventIndexLogTracker indexWriter = new WorkflowEventIndexLogTracker(workflowEventIndex);
         BpmnEventMocks.mockActivityInstanceEvent(bpmnEventReader, activityEventReader, ExecutionEventType.ACT_INST_CREATED);
 
         // when
-        indexWriter.handle(76L, bpmnEventReader);
+        indexWriter.onLogEntryCommit(bpmnEventReader, 76L);
 
         // then
         verify(workflowEventIndex).put(23456789L, 76L);
+        verify(workflowEventIndex).resolveDirty(23456789L);
         verifyNoMoreInteractions(workflowEventIndex);
 
     }
@@ -63,11 +79,11 @@ public class WorkflowEventIndexWriterTest
     public void shouldRemoveActivityInstanceOnComplete()
     {
         // given
-        final WorkflowEventIndexWriter indexWriter = new WorkflowEventIndexWriter(null, workflowEventIndex);
+        final WorkflowEventIndexLogTracker indexWriter = new WorkflowEventIndexLogTracker(workflowEventIndex);
         BpmnEventMocks.mockActivityInstanceEvent(bpmnEventReader, activityEventReader, ExecutionEventType.ACT_INST_COMPLETED);
 
         // when
-        indexWriter.handle(76L, bpmnEventReader);
+        indexWriter.onLogEntryCommit(bpmnEventReader, 76L);
 
         // then
         verify(workflowEventIndex).remove(eq(23456789L), anyLong());
@@ -77,11 +93,11 @@ public class WorkflowEventIndexWriterTest
     public void shouldNotWriteIndexOnEventEvent()
     {
         // given
-        final WorkflowEventIndexWriter indexWriter = new WorkflowEventIndexWriter(null, workflowEventIndex);
+        final WorkflowEventIndexLogTracker indexWriter = new WorkflowEventIndexLogTracker(workflowEventIndex);
         BpmnEventMocks.mockFlowElementEvent(bpmnEventReader, flowElementEventReader);
 
         // when
-        indexWriter.handle(76L, bpmnEventReader);
+        indexWriter.onLogEntryCommit(bpmnEventReader, 76L);
 
         // then
         verifyZeroInteractions(workflowEventIndex);
@@ -92,14 +108,15 @@ public class WorkflowEventIndexWriterTest
     public void shouldWriteIndexOnProcessEvent()
     {
         // given
-        final WorkflowEventIndexWriter indexWriter = new WorkflowEventIndexWriter(null, workflowEventIndex);
+        final WorkflowEventIndexLogTracker indexWriter = new WorkflowEventIndexLogTracker(workflowEventIndex);
         BpmnEventMocks.mockProcessEvent(bpmnEventReader, processEventReader);
 
         // when
-        indexWriter.handle(76L, bpmnEventReader);
+        indexWriter.onLogEntryCommit(bpmnEventReader, 76L);
 
         // then
         verify(workflowEventIndex).put(BpmnEventMocks.KEY, 76L);
+        verify(workflowEventIndex).resolveDirty(BpmnEventMocks.KEY);
         verifyNoMoreInteractions(workflowEventIndex);
     }
 
@@ -107,15 +124,16 @@ public class WorkflowEventIndexWriterTest
     public void shouldRemoveProcessEventOnComplete()
     {
         // given
-        final WorkflowEventIndexWriter indexWriter = new WorkflowEventIndexWriter(null, workflowEventIndex);
+        final WorkflowEventIndexLogTracker indexWriter = new WorkflowEventIndexLogTracker(workflowEventIndex);
         BpmnEventMocks.mockProcessEvent(bpmnEventReader, processEventReader);
         when(processEventReader.event()).thenReturn(ExecutionEventType.PROC_INST_COMPLETED);
 
         // when
-        indexWriter.handle(76L, bpmnEventReader);
+        indexWriter.onLogEntryCommit(bpmnEventReader, 76L);
 
         // then
         verify(workflowEventIndex).remove(BpmnEventMocks.KEY, -1L);
+        verify(workflowEventIndex).resolveDirty(BpmnEventMocks.KEY);
         verifyNoMoreInteractions(workflowEventIndex);
     }
 }

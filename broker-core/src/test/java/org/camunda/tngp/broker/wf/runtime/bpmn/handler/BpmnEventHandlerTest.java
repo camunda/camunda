@@ -1,27 +1,25 @@
 package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
+import org.camunda.tngp.broker.test.util.BufferWriterMatcher;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
-import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
-import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
+import org.camunda.tngp.broker.util.mocks.StubLogReader;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
+import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogWriter;
-import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventDecoder;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public class BpmnEventHandlerTest
@@ -30,29 +28,17 @@ public class BpmnEventHandlerTest
     protected BpmnEventHandler eventHandler;
 
     @Mock
-    protected WfDefinitionCacheService processCache;
+    protected WfDefinitionCache processCache;
 
     @Mock
     protected ProcessGraph process;
 
     @Mock
-    protected LogReader logReader;
-
-    @Mock
     protected LogWriter logWriter;
 
-    @Mock
-    protected BpmnFlowElementEventHandler handler;
-
-    @Mock
-    protected BpmnEventReader eventReader;
-
-    @Mock
-    protected BpmnFlowElementEventReader flowElementEventReader;
-
-    protected IdGenerator idGenerator;
-
     protected FlowElementVisitor flowElementVisitor;
+
+    protected StubLogReader logReader;
 
 
     @Before
@@ -60,10 +46,10 @@ public class BpmnEventHandlerTest
     {
         MockitoAnnotations.initMocks(this);
         flowElementVisitor = mock(FlowElementVisitor.class, new FluentAnswer());
-        idGenerator = new PrivateIdGenerator(0);
 
-        eventHandler = new BpmnEventHandler(processCache, logReader, logWriter, idGenerator);
-        eventHandler.setEventReader(eventReader);
+        logReader = new StubLogReader(null);
+
+        eventHandler = new BpmnEventHandler(processCache, logReader, logWriter, new PrivateIdGenerator(0));
         eventHandler.setFlowElementVisitor(flowElementVisitor);
 
         when(processCache.getProcessGraphByTypeId(1234L)).thenReturn(process);
@@ -73,26 +59,24 @@ public class BpmnEventHandlerTest
     public void testHandleFlowElementEvent()
     {
         // given
-        when(handler.getHandledBpmnAspect()).thenReturn(BpmnAspect.START_PROCESS);
-        eventHandler.addFlowElementHandler(handler);
+        logReader.addEntry(
+                new BpmnFlowElementEventWriter()
+                    .eventType(ExecutionEventType.EVT_OCCURRED)
+                    .flowElementId(123)
+                    .processId(1234L));
 
-        when(logReader.read(any())).thenReturn(true, false);
+        eventHandler.addFlowElementHandler(new StartProcessHandler());
 
-        when(eventReader.templateId()).thenReturn(BpmnFlowElementEventDecoder.TEMPLATE_ID);
-        when(eventReader.flowElementEvent()).thenReturn(flowElementEventReader);
-
-        when(flowElementEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
         when(flowElementVisitor.aspectFor(ExecutionEventType.EVT_OCCURRED)).thenReturn(BpmnAspect.START_PROCESS);
-        when(flowElementEventReader.wfDefinitionId()).thenReturn(1234L);
 
         // when
         eventHandler.doWork();
 
         // then
-        final InOrder inOrder = Mockito.inOrder(logReader, handler);
-
-        inOrder.verify(logReader).read(eventReader);
-        inOrder.verify(handler).handle(flowElementEventReader, process, logWriter, idGenerator);
+        verify(logWriter).write(
+                argThat(BufferWriterMatcher
+                    .writesProperties(BpmnProcessEventReader.class)
+                    .matching((e) -> e.event(), ExecutionEventType.PROC_INST_CREATED)));
     }
 
 }

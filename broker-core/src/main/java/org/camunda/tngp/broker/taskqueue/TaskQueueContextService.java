@@ -1,9 +1,12 @@
 package org.camunda.tngp.broker.taskqueue;
 
+import org.camunda.tngp.broker.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -28,18 +31,33 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     public void start(ServiceContext serviceContext)
     {
         taskQueueContext.setLog(logInjector.getValue());
-        taskQueueContext.setLogWriter(new LogWriter(logInjector.getValue()));
         taskQueueContext.setTaskInstanceIdGenerator(taskInstanceIdGeneratorInjector.getValue());
         taskQueueContext.setLockedTaskInstanceIndex(lockedTasksIndexServiceInjector.getValue());
         taskQueueContext.setTaskTypePositionIndex(taskTypeIndexServiceInjector.getValue());
-        taskQueueContext.setTaskQueueIndexWriter(new TaskQueueIndexWriter(taskQueueContext));
+
+        final Log log = logInjector.getValue();
+        final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager = taskQueueContext.getLockedTaskInstanceIndex();
+        final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager = taskQueueContext.getTaskTypePositionIndex();
+
+        final TaskQueueIndexLogTracker taskQueueIndexWriter =
+                new TaskQueueIndexLogTracker(lockedTasksIndexManager.getIndex(), taskTypeIndexManager.getIndex());
+        final IndexWriter<TaskInstanceReader> indexWriter = new IndexWriter<>(
+                new LogReaderImpl(log),
+                log.getWriteBuffer().openSubscription(),
+                log.getId(),
+                new TaskInstanceReader(),
+                taskQueueIndexWriter,
+                new HashIndexManager<?>[]{lockedTasksIndexManager, taskTypeIndexManager});
+        indexWriter.resetToLastCheckpointPosition();
+        taskQueueContext.setIndexWriter(indexWriter);
+        taskQueueContext.setLogWriter(new LogWriter(log, indexWriter));
     }
 
     @Override
     public void stop()
     {
-        final TaskQueueIndexWriter taskQueueIndexWriter = taskQueueContext.getTaskQueueIndexWriter();
-        taskQueueIndexWriter.update(Integer.MAX_VALUE);
+        final IndexWriter<TaskInstanceReader> taskQueueIndexWriter = taskQueueContext.getIndexWriter();
+        taskQueueIndexWriter.indexLogEntries();
         taskQueueIndexWriter.writeCheckpoints();
     }
 

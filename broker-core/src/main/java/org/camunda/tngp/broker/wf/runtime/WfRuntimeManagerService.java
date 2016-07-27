@@ -90,7 +90,7 @@ public class WfRuntimeManagerService
         serviceContext.createService(wfRuntimeContextServiceName(wfRuntimeName), wfRuntimeContextService)
             .dependency(wfInstanceLogServiceName, wfRuntimeContextService.getLogInjector())
             .dependency(wfInstanceIdGeneratorServiceName, wfRuntimeContextService.getIdGeneratorInjector())
-            .dependency(wfDefinitionCacheServiceName(wfRepositoryName), wfRuntimeContextService.getwfDefinitionChacheInjector())
+            .dependency(wfDefinitionCacheServiceName(wfRepositoryName), wfRuntimeContextService.getWfDefinitionChacheInjector())
             .dependency(workflowEventIndexServiceName, wfRuntimeContextService.getWorkflowEventIndexInjector())
             .listener(this)
             .install();

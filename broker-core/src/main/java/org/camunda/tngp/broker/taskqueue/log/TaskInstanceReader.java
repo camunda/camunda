@@ -61,7 +61,14 @@ public class TaskInstanceReader implements BufferReader
 
         offset += TaskInstanceDecoder.payloadHeaderLength();
 
-        payloadBuffer.wrap(buffer, offset, payloadLength);
+        if (payloadLength > 0)
+        {
+            payloadBuffer.wrap(buffer, offset, payloadLength);
+        }
+        else
+        {
+            payloadBuffer.wrap(0, 0);
+        }
     }
 
     public int resourceId()

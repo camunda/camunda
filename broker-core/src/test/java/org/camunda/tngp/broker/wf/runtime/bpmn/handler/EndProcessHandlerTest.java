@@ -105,7 +105,7 @@ public class EndProcessHandlerTest
 
         BpmnEventMocks.mockProcessEvent(null, processEventReader);
 
-        when(workflowEventIndex.get(eq(BpmnEventMocks.PROCESS_INSTANCE_ID), anyLong())).thenReturn(748L);
+        when(workflowEventIndex.get(eq(BpmnEventMocks.PROCESS_INSTANCE_ID), anyLong(), anyLong())).thenReturn(748L);
 
         final EndProcessHandler eventHandler = new EndProcessHandler(logReader, workflowEventIndex);
         eventHandler.setLatestEventReader(processEventReader);
@@ -143,7 +143,7 @@ public class EndProcessHandlerTest
 
         BpmnEventMocks.mockProcessEvent(null, processEventReader);
 
-        when(workflowEventIndex.get(eq(BpmnEventMocks.PROCESS_INSTANCE_ID), anyLong())).thenReturn(748L);
+        when(workflowEventIndex.get(eq(BpmnEventMocks.PROCESS_INSTANCE_ID), anyLong(), anyLong())).thenReturn(748L);
 
         final EndProcessHandler eventHandler = new EndProcessHandler(logReader, workflowEventIndex);
         eventHandler.setLatestEventReader(processEventReader);
