@@ -4,7 +4,10 @@ import java.util.Collection;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.impl.BpmnModelConstants;
+import org.camunda.bpm.model.bpmn.instance.Association;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
+import org.camunda.bpm.model.bpmn.instance.FlowNode;
+import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.instance.DomDocument;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -105,6 +108,32 @@ public class TngpModelInstance implements BpmnModelInstance
 
         task.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "taskType", taskType);
         task.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "taskQueueId", String.valueOf(taskQueueId));
+
+        return this;
+    }
+
+    public TngpModelInstance removeFlowNode(String flowNodeId)
+    {
+        final FlowNode flowNode = getModelElementById(flowNodeId);
+        final ModelElementInstance scope = flowNode.getParentElement();
+
+        for (SequenceFlow outgoingFlow : flowNode.getOutgoing())
+        {
+            scope.removeChildElement(outgoingFlow);
+        }
+        for (SequenceFlow incomingFlow : flowNode.getIncoming())
+        {
+            scope.removeChildElement(incomingFlow);
+        }
+        final Collection<Association> associations = scope.getChildElementsByType(Association.class);
+        for (Association association : associations)
+        {
+            if (flowNode.equals(association.getSource()) || flowNode.equals(association.getTarget()))
+            {
+                scope.removeChildElement(association);
+            }
+        }
+        scope.removeChildElement(flowNode);
 
         return this;
     }
