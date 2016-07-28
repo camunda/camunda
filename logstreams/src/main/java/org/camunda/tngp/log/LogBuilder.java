@@ -126,9 +126,14 @@ public class LogBuilder
         return this;
     }
 
+    protected LogContext newLogContext()
+    {
+        return new LogContext(name, id);
+    }
+
     public Log build()
     {
-        final LogContext logContext = new LogContext(name, id);
+        final LogContext logContext = newLogContext();
         if (logDirectory == null)
         {
             logDirectory = logRootPath + File.separatorChar + name + File.separatorChar;

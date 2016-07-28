@@ -15,7 +15,7 @@ public class LogAppendHandler
     {
         int bytesWritten = 0;
 
-        final int newTail = currentSegment.append(blockPeek.getBuffer());
+        final int newTail = currentSegment.append(blockPeek.getRawBuffer());
 
         if (newTail == -2)
         {

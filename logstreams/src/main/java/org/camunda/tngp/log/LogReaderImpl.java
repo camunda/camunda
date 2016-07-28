@@ -8,6 +8,8 @@ import org.camunda.tngp.util.buffer.BufferReader;
  */
 public class LogReaderImpl implements LogReader
 {
+    public static final int DEFAULT_SIZE = 1024 * 1024;
+
     protected Log log;
 
     /**
@@ -16,6 +18,11 @@ public class LogReaderImpl implements LogReader
     protected long position;
 
     protected final LogEntryReader entryReader;
+
+    public LogReaderImpl(final Log log)
+    {
+        this(log, DEFAULT_SIZE);
+    }
 
     public LogReaderImpl(final int readBufferSize)
     {
@@ -44,15 +51,15 @@ public class LogReaderImpl implements LogReader
     {
         final long nextPosition = entryReader.read(log, position, reader);
 
-        boolean hasNext = false;
+        boolean hasReadEntry = false;
 
         if (nextPosition != -1)
         {
             this.position = nextPosition;
-            hasNext = true;
+            hasReadEntry = true;
         }
 
-        return hasNext;
+        return hasReadEntry;
     }
 
     public long position()
