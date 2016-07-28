@@ -14,6 +14,7 @@ import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 public class Long2LongHashIndexLargeBlockSizeTest
 {
     static final long MISSING_VALUE = -2;
+    static final long DIRTY_VALUE = -3;
 
     Long2LongHashIndex index;
     FileChannelIndexStore indexStore;
@@ -38,7 +39,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
     public void shouldReturnMissingValueForEmptyMap()
     {
         // given that the map is empty
-        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        assertThat(index.get(0, MISSING_VALUE, DIRTY_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -48,7 +49,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
         index.put(1, 1);
 
         // then
-        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        assertThat(index.get(0, MISSING_VALUE, DIRTY_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -58,7 +59,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
         index.put(1, 1);
 
         // if then
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
+        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -72,7 +73,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(1, -1)).isEqualTo(-1);
+        assertThat(index.get(1, -1, -2)).isEqualTo(-1);
     }
 
     @Test
@@ -87,8 +88,8 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(1, -1)).isEqualTo(-1);
-        assertThat(index.get(2, -1)).isEqualTo(2);
+        assertThat(index.get(1, -1, -2)).isEqualTo(-1);
+        assertThat(index.get(2, -1, -2)).isEqualTo(2);
     }
 
     @Test
@@ -102,8 +103,8 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(1);
-        assertThat(index.get(0, MISSING_VALUE)).isEqualTo(0);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
+        assertThat(index.get(0, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(0);
+        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -120,10 +121,10 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
-        assertThat(index.get(2, MISSING_VALUE)).isEqualTo(2);
-        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
-        assertThat(index.get(4, MISSING_VALUE)).isEqualTo(4);
+        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(2, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(2);
+        assertThat(index.get(3, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(3);
+        assertThat(index.get(4, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(4);
     }
 
     @Test
@@ -140,10 +141,10 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(3);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
-        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
-        assertThat(index.get(5, MISSING_VALUE)).isEqualTo(5);
-        assertThat(index.get(7, MISSING_VALUE)).isEqualTo(7);
+        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(3, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(3);
+        assertThat(index.get(5, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(5);
+        assertThat(index.get(7, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(7);
     }
 
     @Test
@@ -161,7 +162,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE, DIRTY_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(8);
@@ -177,7 +178,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE, DIRTY_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(8);

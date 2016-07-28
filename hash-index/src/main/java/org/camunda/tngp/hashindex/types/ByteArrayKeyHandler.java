@@ -38,6 +38,12 @@ public class ByteArrayKeyHandler implements IndexKeyHandler
     }
 
     @Override
+    public int getKeyLength()
+    {
+        return keyLength;
+    }
+
+    @Override
     public int keyHashCode()
     {
         int result = 1;

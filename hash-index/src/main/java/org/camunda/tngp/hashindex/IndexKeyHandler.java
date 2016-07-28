@@ -7,6 +7,8 @@ public interface IndexKeyHandler
 {
     void setKeyLength(int keyLength);
 
+    int getKeyLength();
+
     int keyHashCode();
 
     void readKey(MutableDirectBuffer buffer, int recordKeyOffset);

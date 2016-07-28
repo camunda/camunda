@@ -2,6 +2,7 @@ package org.camunda.tngp.hashindex.types;
 
 import org.camunda.tngp.hashindex.IndexKeyHandler;
 
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
@@ -13,6 +14,12 @@ public class LongKeyHandler implements IndexKeyHandler
     public void setKeyLength(int keyLength)
     {
         // ignore
+    }
+
+    @Override
+    public int getKeyLength()
+    {
+        return BitUtil.SIZE_OF_LONG;
     }
 
     @Override

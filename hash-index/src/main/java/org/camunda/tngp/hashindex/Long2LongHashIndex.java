@@ -22,9 +22,15 @@ public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandl
     }
 
 
-    public long get(long key, long missingValue)
+    public long get(long key, long missingValue, long dirtyValue)
     {
         keyHandler.theKey = key;
+
+        if (dirtyKeys.getAtCurrentKey(-1) > 0)
+        {
+            return dirtyValue;
+        }
+
         valueHandler.theValue = missingValue;
         get();
         return valueHandler.theValue;
@@ -43,6 +49,18 @@ public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandl
         valueHandler.theValue = missingValue;
         remove();
         return valueHandler.theValue;
+    }
+
+    public void markDirty(long key)
+    {
+        keyHandler.theKey = key;
+        dirtyKeys.incrementAtCurrentKey();
+    }
+
+    public void resolveDirty(long key)
+    {
+        keyHandler.theKey = key;
+        dirtyKeys.decrementAtCurrentKey();
     }
 
 }
