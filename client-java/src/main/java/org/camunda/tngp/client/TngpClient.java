@@ -7,9 +7,9 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 
 public interface TngpClient extends AutoCloseable
 {
-    AsyncTaskService tasks();
+    AsyncTasksClient tasks();
 
-    ProcessService processes();
+    WorkflowsClient workflows();
 
     TransportConnectionPool getConnectionPool();
 

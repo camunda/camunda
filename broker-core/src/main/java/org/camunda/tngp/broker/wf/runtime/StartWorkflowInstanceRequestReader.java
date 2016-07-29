@@ -7,7 +7,7 @@ import org.camunda.tngp.util.buffer.BufferReader;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class StartProcessInstanceRequestReader implements BufferReader
+public class StartWorkflowInstanceRequestReader implements BufferReader
 {
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected StartWorkflowInstanceDecoder bodyDecoder = new StartWorkflowInstanceDecoder();
@@ -23,20 +23,20 @@ public class StartProcessInstanceRequestReader implements BufferReader
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final int wfTypeKeyLength = bodyDecoder.wfTypeKeyLength();
+        final int wfDefinitionKeyLength = bodyDecoder.wfDefinitionKeyLength();
 
         offset += bodyDecoder.encodedLength();
-        offset += StartWorkflowInstanceDecoder.wfTypeKeyHeaderLength();
+        offset += StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength();
 
-        keyBuffer.wrap(buffer, offset, wfTypeKeyLength);
+        keyBuffer.wrap(buffer, offset, wfDefinitionKeyLength);
     }
 
-    public long wfTypeId()
+    public long wfDefinitionId()
     {
-        return bodyDecoder.wfTypeId();
+        return bodyDecoder.wfDefinitionId();
     }
 
-    public DirectBuffer wfTypeKey()
+    public DirectBuffer wfDefinitionKey()
     {
         return keyBuffer;
     }

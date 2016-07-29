@@ -13,7 +13,7 @@ public class DeployBpmnResourceAckResponse implements BufferWriter
 
     private static final int ENCODED_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH + DeployBpmnResourceAckEncoder.BLOCK_LENGTH;
 
-    protected long wfTypeId;
+    protected long wfDefinitionId;
 
     @Override
     public int getLength()
@@ -33,12 +33,12 @@ public class DeployBpmnResourceAckResponse implements BufferWriter
         offset += headerEncoder.encodedLength();
 
         encoder.wrap(buffer, offset)
-            .wfTypeId(wfTypeId);
+            .wfDefinitionId(wfDefinitionId);
     }
 
-    public DeployBpmnResourceAckResponse wfTypeId(long value)
+    public DeployBpmnResourceAckResponse wfDefinitionId(long value)
     {
-        this.wfTypeId = value;
+        this.wfDefinitionId = value;
         return this;
     }
 

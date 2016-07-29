@@ -36,12 +36,12 @@ public class BpmnProcessEventReader implements BufferReader
 
     public long processId()
     {
-        return bodyDecoder.processId();
+        return bodyDecoder.wfDefinitionId();
     }
 
     public long processInstanceId()
     {
-        return bodyDecoder.processInstanceId();
+        return bodyDecoder.wfInstanceId();
     }
 
     public int initialElementId()

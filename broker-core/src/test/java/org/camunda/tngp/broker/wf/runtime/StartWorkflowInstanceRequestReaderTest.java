@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class StartProcessInstanceRequestReaderTest
+public class StartWorkflowInstanceRequestReaderTest
 {
     protected UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected int eventLength;
@@ -32,8 +32,8 @@ public class StartProcessInstanceRequestReaderTest
             .version(bodyEncoder.sbeSchemaVersion());
 
         bodyEncoder.wrap(eventBuffer, headerEncoder.encodedLength())
-            .wfTypeId(123L)
-            .wfTypeKey("foo");
+            .wfDefinitionId(123L)
+            .wfDefinitionKey("foo");
 
         eventLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }
@@ -42,14 +42,14 @@ public class StartProcessInstanceRequestReaderTest
     public void shouldReadRequest()
     {
         // given
-        final StartProcessInstanceRequestReader reader = new StartProcessInstanceRequestReader();
+        final StartWorkflowInstanceRequestReader reader = new StartWorkflowInstanceRequestReader();
 
         // when
         reader.wrap(eventBuffer, 0, eventLength);
 
         // then
-        assertThat(reader.wfTypeId()).isEqualTo(123L);
-        BufferAssert.assertThatBuffer(reader.wfTypeKey()).hasBytes("foo".getBytes(StandardCharsets.UTF_8));
+        assertThat(reader.wfDefinitionId()).isEqualTo(123L);
+        BufferAssert.assertThatBuffer(reader.wfDefinitionKey()).hasBytes("foo".getBytes(StandardCharsets.UTF_8));
     }
 
 }

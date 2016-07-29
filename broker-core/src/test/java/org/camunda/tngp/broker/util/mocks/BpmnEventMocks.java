@@ -32,8 +32,8 @@ public class BpmnEventMocks
         when(activityEventReader.event()).thenReturn(event);
         when(activityEventReader.flowElementId()).thenReturn(FLOW_ELEMENT_ID);
         when(activityEventReader.key()).thenReturn(KEY);
-        when(activityEventReader.processId()).thenReturn(PROCESS_ID);
-        when(activityEventReader.processInstanceId()).thenReturn(PROCESS_INSTANCE_ID);
+        when(activityEventReader.wfDefinitionId()).thenReturn(PROCESS_ID);
+        when(activityEventReader.wfInstanceId()).thenReturn(PROCESS_INSTANCE_ID);
 
         when(activityEventReader.taskQueueId()).thenReturn(TASK_QUEUE_ID);
         when(activityEventReader.resourceId()).thenReturn(RESOURCE_ID);
@@ -59,8 +59,8 @@ public class BpmnEventMocks
         when(flowElementEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
         when(flowElementEventReader.flowElementId()).thenReturn(FLOW_ELEMENT_ID);
         when(flowElementEventReader.key()).thenReturn(KEY);
-        when(flowElementEventReader.processId()).thenReturn(PROCESS_ID);
-        when(flowElementEventReader.processInstanceId()).thenReturn(PROCESS_INSTANCE_ID);
+        when(flowElementEventReader.wfDefinitionId()).thenReturn(PROCESS_ID);
+        when(flowElementEventReader.wfInstanceId()).thenReturn(PROCESS_INSTANCE_ID);
 
         if (bpmnEventReader != null)
         {

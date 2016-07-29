@@ -42,10 +42,10 @@ public class StartWorkflowInstanceCmdTest
         final StartWorkflowInstanceCmd apiCommand = command;
 
         // when
-        apiCommand.workflowTypeId(1234L);
+        apiCommand.workflowDefinitionId(1234L);
 
         // then
-        verify(requestWriter).wfTypeId(1234L);
+        verify(requestWriter).wfDefinitionId(1234L);
     }
 
     @Test
@@ -57,10 +57,10 @@ public class StartWorkflowInstanceCmdTest
         final StartWorkflowInstanceCmd apiCommand = command;
 
         // when
-        apiCommand.workflowTypeKey(WORKFLOW_KEY_BYTES);
+        apiCommand.workflowDefinitionKey(WORKFLOW_KEY_BYTES);
 
         // then
-        verify(requestWriter).wfTypeKey(WORKFLOW_KEY_BYTES);
+        verify(requestWriter).wfDefinitionKey(WORKFLOW_KEY_BYTES);
     }
 
     @Test
@@ -72,10 +72,10 @@ public class StartWorkflowInstanceCmdTest
         final StartWorkflowInstanceCmd apiCommand = command;
 
         // when
-        apiCommand.workflowTypeKey("bar");
+        apiCommand.workflowDefinitionKey("bar");
 
         // then
-        verify(requestWriter).wfTypeKey(WORKFLOW_KEY_BYTES);
+        verify(requestWriter).wfDefinitionKey(WORKFLOW_KEY_BYTES);
     }
 
     @Test

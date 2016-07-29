@@ -6,12 +6,12 @@ import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public class StartProcessInstanceResponseWriter implements BufferWriter
+public class StartWorkflowInstanceResponseWriter implements BufferWriter
 {
     protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected StartWorkflowInstanceResponseEncoder bodyEncoder = new StartWorkflowInstanceResponseEncoder();
 
-    protected long processInstanceId;
+    protected long id;
 
     @Override
     public int getLength()
@@ -33,12 +33,12 @@ public class StartProcessInstanceResponseWriter implements BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .wfInstanceId(processInstanceId);
+            .id(id);
     }
 
-    public StartProcessInstanceResponseWriter processInstanceId(long processInstanceId)
+    public StartWorkflowInstanceResponseWriter id(long processInstanceId)
     {
-        this.processInstanceId = processInstanceId;
+        this.id = processInstanceId;
         return this;
     }
 }

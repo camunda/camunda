@@ -218,7 +218,7 @@ public class LockTaskBatchHandlerTest
         when(requestReader.consumerId()).thenReturn(123);
         when(requestReader.lockTime()).thenReturn(1234L);
         when(requestReader.maxTasks()).thenReturn(5);
-        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_TYPE_KEY_MAX_LENGTH + 1]));
+        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_DEF_KEY_MAX_LENGTH + 1]));
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 
@@ -254,7 +254,7 @@ public class LockTaskBatchHandlerTest
         when(requestReader.consumerId()).thenReturn(LockedTaskBatchEncoder.consumerIdNullValue());
         when(requestReader.lockTime()).thenReturn(1234L);
         when(requestReader.maxTasks()).thenReturn(5);
-        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_TYPE_KEY_MAX_LENGTH + 1]));
+        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_DEF_KEY_MAX_LENGTH + 1]));
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 
@@ -290,7 +290,7 @@ public class LockTaskBatchHandlerTest
         when(requestReader.consumerId()).thenReturn(123);
         when(requestReader.lockTime()).thenReturn(LockedTaskBatchEncoder.lockTimeNullValue());
         when(requestReader.maxTasks()).thenReturn(5);
-        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_TYPE_KEY_MAX_LENGTH + 1]));
+        when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_DEF_KEY_MAX_LENGTH + 1]));
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
 

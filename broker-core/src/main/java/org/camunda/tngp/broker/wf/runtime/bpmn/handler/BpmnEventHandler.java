@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.bpmn.handler;
 
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
-import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
@@ -29,10 +29,10 @@ public class BpmnEventHandler
     protected final Int2ObjectHashMap<BpmnProcessEventHandler> processEventHandlers = new Int2ObjectHashMap<>();
     protected final Int2ObjectHashMap<BpmnActivityInstanceEventHandler> activityEventHandlers = new Int2ObjectHashMap<>();
 
-    protected final WfTypeCacheService processCache;
+    protected final WfDefinitionCacheService processCache;
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
-    public BpmnEventHandler(WfTypeCacheService processCache, LogReader logReader, LogWriter logWriter, IdGenerator idGenerator)
+    public BpmnEventHandler(WfDefinitionCacheService processCache, LogReader logReader, LogWriter logWriter, IdGenerator idGenerator)
     {
         this.processCache = processCache;
         this.logReader = logReader;
@@ -91,7 +91,7 @@ public class BpmnEventHandler
 
     protected void handleBpmnFlowElementEvent(BpmnFlowElementEventReader flowElementEventReader)
     {
-        final ProcessGraph process = processCache.getProcessGraphByTypeId(flowElementEventReader.processId());
+        final ProcessGraph process = processCache.getProcessGraphByTypeId(flowElementEventReader.wfDefinitionId());
 
         flowElementVisitor.init(process).moveToNode(flowElementEventReader.flowElementId());
 
@@ -120,7 +120,7 @@ public class BpmnEventHandler
 
     protected void handleBpmnActivityEvent(BpmnActivityEventReader activityEventReader)
     {
-        final ProcessGraph process = processCache.getProcessGraphByTypeId(activityEventReader.processId());
+        final ProcessGraph process = processCache.getProcessGraphByTypeId(activityEventReader.wfDefinitionId());
 
         flowElementVisitor.init(process).moveToNode(activityEventReader.flowElementId());
 

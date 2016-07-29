@@ -5,7 +5,7 @@ import java.util.function.LongFunction;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -17,24 +17,24 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectCache;
 
-public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunction<ProcessGraph>
+public class WfDefinitionCacheService implements Service<WfDefinitionCacheService>, LongFunction<ProcessGraph>
 {
     protected final Long2ObjectCache<ProcessGraph> cache;
 
-    protected final Injector<Log> wfTypeLogInjector = new Injector<>();
-    protected final Injector<HashIndexManager<Long2LongHashIndex>> wfTypeIdIndexInjector = new Injector<>();
-    protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfTypeKeyIndexInjector = new Injector<>();
+    protected final Injector<Log> wfDefinitionLogInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexInjector = new Injector<>();
 
     protected final BpmnModelInstanceTransformer transformer = new BpmnModelInstanceTransformer();
 
-    protected final LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
-    protected final WfTypeReader reader = new WfTypeReader();
+    protected final LogEntryReader logEntryReader = new LogEntryReader(WfDefinitionReader.MAX_LENGTH);
+    protected final WfDefinitionReader reader = new WfDefinitionReader();
 
-    public WfTypeCacheService(int numSets, int setSize)
+    public WfDefinitionCacheService(int numSets, int setSize)
     {
         cache = new Long2ObjectCache<>(numSets, setSize, (v) ->
         {
-            // nothin to do
+            // nothing to do
         });
     }
 
@@ -51,7 +51,7 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
     }
 
     @Override
-    public WfTypeCacheService get()
+    public WfDefinitionCacheService get()
     {
         return this;
     }
@@ -60,7 +60,7 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
     {
         // TODO: throw exception if key longer
 
-        final Bytes2LongHashIndex keyIndex = wfTypeKeyIndexInjector.getValue().getIndex();
+        final Bytes2LongHashIndex keyIndex = wfDefinitionKeyIndexInjector.getValue().getIndex();
         final long id = keyIndex.get(buffer, 0, length, -1);
 
         ProcessGraph processGraph = null;
@@ -81,8 +81,8 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
     @Override
     public ProcessGraph apply(long key)
     {
-        final Long2LongHashIndex idIndex = wfTypeIdIndexInjector.getValue().getIndex();
-        final Log log = wfTypeLogInjector.getValue();
+        final Long2LongHashIndex idIndex = wfDefinitionIdIndexInjector.getValue().getIndex();
+        final Log log = wfDefinitionLogInjector.getValue();
         final long position = idIndex.get(key, -1);
 
         ProcessGraph graph = null;
@@ -96,19 +96,19 @@ public class WfTypeCacheService implements Service<WfTypeCacheService>, LongFunc
         return graph;
     }
 
-    public Injector<HashIndexManager<Long2LongHashIndex>> getWfTypeIdIndexInjector()
+    public Injector<HashIndexManager<Long2LongHashIndex>> getWfDefinitionIdIndexInjector()
     {
-        return wfTypeIdIndexInjector;
+        return wfDefinitionIdIndexInjector;
     }
 
-    public Injector<HashIndexManager<Bytes2LongHashIndex>> getWfTypeKeyIndexInjector()
+    public Injector<HashIndexManager<Bytes2LongHashIndex>> getWfDefinitionKeyIndexInjector()
     {
-        return wfTypeKeyIndexInjector;
+        return wfDefinitionKeyIndexInjector;
     }
 
-    public Injector<Log> getWfTypeLogInjector()
+    public Injector<Log> getWfDefinitionLogInjector()
     {
-        return wfTypeLogInjector;
+        return wfDefinitionLogInjector;
     }
 
 }

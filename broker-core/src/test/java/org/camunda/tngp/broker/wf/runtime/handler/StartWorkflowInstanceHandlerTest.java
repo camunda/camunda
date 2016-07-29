@@ -15,10 +15,10 @@ import static org.mockito.Mockito.when;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
 import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
-import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceRequestReader;
-import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceResponseWriter;
+import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
+import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.LogWriter;
@@ -37,13 +37,13 @@ import org.mockito.MockitoAnnotations;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class StartProcessInstanceHandlerTest
+public class StartWorkflowInstanceHandlerTest
 {
 
     protected MockWfRuntimeContext mockContext;
     protected LogWriter logWriter;
     protected IdGenerator idGenerator;
-    protected WfTypeCacheService processCache;
+    protected WfDefinitionCacheService processCache;
 
     @Mock
     protected ProcessGraph process;
@@ -55,10 +55,10 @@ public class StartProcessInstanceHandlerTest
     protected DirectBuffer requestBuffer;
 
     @Mock
-    protected StartProcessInstanceRequestReader requestReader;
+    protected StartWorkflowInstanceRequestReader requestReader;
 
     @Mock
-    protected StartProcessInstanceResponseWriter responseWriter;
+    protected StartWorkflowInstanceResponseWriter responseWriter;
 
     protected ErrorWriter errorWriter;
 
@@ -74,7 +74,7 @@ public class StartProcessInstanceHandlerTest
         mockContext = new MockWfRuntimeContext();
         logWriter = mockContext.getLogWriter();
         idGenerator = mockContext.getIdGenerator();
-        processCache = mockContext.getWfTypeCacheService();
+        processCache = mockContext.getwfDefinitionCacheService();
 
         when(processCache.getProcessGraphByTypeId(1234L)).thenReturn(process);
 
@@ -88,13 +88,13 @@ public class StartProcessInstanceHandlerTest
     public void shouldStartProcessById()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
 
         startHandler.requestReader = requestReader;
         startHandler.responseWriter = responseWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
-        when(requestReader.wfTypeId()).thenReturn(1234L);
+        when(requestReader.wfDefinitionId()).thenReturn(1234L);
 
         when(response.allocateAndWrite(any())).thenReturn(true);
 
@@ -109,12 +109,12 @@ public class StartProcessInstanceHandlerTest
         verify(flowElementEventWriter).eventType(ExecutionEventType.EVT_OCCURRED);
         verify(flowElementEventWriter).flowElementId(987);
         verify(flowElementEventWriter).processId(1234L);
-        verify(flowElementEventWriter).processInstanceId(processInstanceId.capture());
+        verify(flowElementEventWriter).workflowInstanceId(processInstanceId.capture());
 
         final InOrder inOrder = Mockito.inOrder(response, logWriter, requestReader, responseWriter);
 
         inOrder.verify(requestReader).wrap(requestBuffer, 1234, 4567);
-        inOrder.verify(responseWriter).processInstanceId(processInstanceId.getValue());
+        inOrder.verify(responseWriter).id(processInstanceId.getValue());
         inOrder.verify(response).allocateAndWrite(responseWriter);
         inOrder.verify(logWriter).write(flowElementEventWriter);
         inOrder.verify(response).defer(anyLong(), eq(startHandler));
@@ -127,13 +127,13 @@ public class StartProcessInstanceHandlerTest
     public void shouldStartProcessByKey()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.responseWriter = responseWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
-        when(requestReader.wfTypeId()).thenReturn(StartWorkflowInstanceDecoder.wfTypeIdNullValue());
-        when(requestReader.wfTypeKey()).thenReturn(new UnsafeBuffer(new byte[]{ 1, 2, 3 }));
+        when(requestReader.wfDefinitionId()).thenReturn(StartWorkflowInstanceDecoder.wfDefinitionIdNullValue());
+        when(requestReader.wfDefinitionKey()).thenReturn(new UnsafeBuffer(new byte[]{ 1, 2, 3 }));
         when(processCache.getProcessGraphByTypeId(anyLong())).thenReturn(null);
         when(processCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(process);
 
@@ -150,13 +150,13 @@ public class StartProcessInstanceHandlerTest
         verify(flowElementEventWriter).eventType(ExecutionEventType.EVT_OCCURRED);
         verify(flowElementEventWriter).flowElementId(987);
         verify(flowElementEventWriter).processId(1234L);
-        verify(flowElementEventWriter).processInstanceId(processInstanceId.capture());
+        verify(flowElementEventWriter).workflowInstanceId(processInstanceId.capture());
 
 
         final InOrder inOrder = Mockito.inOrder(response, logWriter, requestReader, responseWriter);
 
         inOrder.verify(requestReader).wrap(requestBuffer, 1234, 4567);
-        inOrder.verify(responseWriter).processInstanceId(processInstanceId.getValue());
+        inOrder.verify(responseWriter).id(processInstanceId.getValue());
         inOrder.verify(response).allocateAndWrite(responseWriter);
         inOrder.verify(logWriter).write(flowElementEventWriter);
         inOrder.verify(response).defer(anyLong(), eq(startHandler));
@@ -169,12 +169,12 @@ public class StartProcessInstanceHandlerTest
     public void shouldWriteErrorWhenProcessNotFoundById()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
-        when(requestReader.wfTypeId()).thenReturn(1234L);
+        when(requestReader.wfDefinitionId()).thenReturn(1234L);
         when(processCache.getProcessGraphByTypeId(1234L)).thenReturn(null);
 
         when(response.allocateAndWrite(any())).thenReturn(true);
@@ -201,13 +201,13 @@ public class StartProcessInstanceHandlerTest
     public void shouldWriteErrorWhenProcessNotFoundByKey()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
-        when(requestReader.wfTypeId()).thenReturn(StartWorkflowInstanceDecoder.wfTypeIdNullValue());
-        when(requestReader.wfTypeKey()).thenReturn(new UnsafeBuffer(new byte[]{ 1, 2, 3 }));
+        when(requestReader.wfDefinitionId()).thenReturn(StartWorkflowInstanceDecoder.wfDefinitionIdNullValue());
+        when(requestReader.wfDefinitionKey()).thenReturn(new UnsafeBuffer(new byte[]{ 1, 2, 3 }));
         when(processCache.getProcessGraphByTypeId(anyLong())).thenReturn(null);
         when(processCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(null);
 
@@ -235,12 +235,12 @@ public class StartProcessInstanceHandlerTest
     public void shouldReturnFailureResultWhenResponseNotAllocated()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
-        when(requestReader.wfTypeId()).thenReturn(1234L);
+        when(requestReader.wfDefinitionId()).thenReturn(1234L);
         when(processCache.getProcessGraphByTypeId(1234L)).thenReturn(null);
 
         when(response.allocateAndWrite(any())).thenReturn(false);
@@ -260,12 +260,12 @@ public class StartProcessInstanceHandlerTest
     public void shouldReturnFailureResultWhenResponseNotDeferred()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
         startHandler.requestReader = requestReader;
         startHandler.errorWriter = errorWriter;
         startHandler.flowElementEventWriter = flowElementEventWriter;
 
-        when(requestReader.wfTypeId()).thenReturn(1234L);
+        when(requestReader.wfDefinitionId()).thenReturn(1234L);
 
         when(response.allocateAndWrite(any())).thenReturn(true);
         when(response.defer(anyLong(), any())).thenReturn(-1);
@@ -284,7 +284,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldCommitResponseWhenAsyncWorkComplete()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
 
         // when
         startHandler.onAsyncWorkCompleted(response);
@@ -298,7 +298,7 @@ public class StartProcessInstanceHandlerTest
     public void shouldAbortResponseWhenAsyncWorkFailed()
     {
         // given
-        final StartProcessInstanceHandler startHandler = new StartProcessInstanceHandler();
+        final StartWorkflowInstanceHandler startHandler = new StartWorkflowInstanceHandler();
 
         // when
         startHandler.onAsyncWorkFailed(response);

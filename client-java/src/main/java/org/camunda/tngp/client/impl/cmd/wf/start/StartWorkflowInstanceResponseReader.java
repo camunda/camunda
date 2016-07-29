@@ -13,7 +13,7 @@ public class StartWorkflowInstanceResponseReader implements BufferReader
 
     public long wfInstanceId()
     {
-        return bodyDecoder.wfInstanceId();
+        return bodyDecoder.id();
     }
 
     public void wrap(DirectBuffer buffer, int offset, int length)

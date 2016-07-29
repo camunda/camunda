@@ -96,7 +96,7 @@ public class TakeOutgoingFlowsHandlerTest
         verify(eventWriter).flowElementId(sequenceFlowId);
         verify(eventWriter).key(anyLong());
         verify(eventWriter).processId(467L);
-        verify(eventWriter).processInstanceId(9876L);
+        verify(eventWriter).workflowInstanceId(9876L);
 
         verify(logWriter).write(eventWriter);
     }
@@ -120,8 +120,8 @@ public class TakeOutgoingFlowsHandlerTest
         // TODO: mock task type
 //        when(activityEventReader.getTaskType())
         when(activityEventReader.key()).thenReturn(764L);
-        when(activityEventReader.processId()).thenReturn(9876L);
-        when(activityEventReader.processInstanceId()).thenReturn(893L);
+        when(activityEventReader.wfDefinitionId()).thenReturn(9876L);
+        when(activityEventReader.wfInstanceId()).thenReturn(893L);
         when(activityEventReader.resourceId()).thenReturn(78);
         when(activityEventReader.taskQueueId()).thenReturn(4);
 
@@ -138,7 +138,7 @@ public class TakeOutgoingFlowsHandlerTest
         inOrder.verify(eventWriter).flowElementId(sequenceFlowId);
         inOrder.verify(eventWriter).key(longThat(not(764L)));
         inOrder.verify(eventWriter).processId(9876L);
-        inOrder.verify(eventWriter).processInstanceId(893L);
+        inOrder.verify(eventWriter).workflowInstanceId(893L);
         inOrder.verify(logWriter).write(eventWriter);
     }
 

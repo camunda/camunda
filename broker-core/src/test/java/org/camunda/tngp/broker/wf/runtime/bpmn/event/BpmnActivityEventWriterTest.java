@@ -35,8 +35,8 @@ public class BpmnActivityEventWriterTest
         writer
             .eventType(ExecutionEventType.ACT_INST_CREATED)
             .key(1234L)
-            .processId(8765L)
-            .processInstanceId(45678L)
+            .wfDefinitionId(8765L)
+            .wfInstanceId(45678L)
             .flowElementId(5678)
             .taskQueueId(7)
             .taskType(new UnsafeBuffer("foobar".getBytes(StandardCharsets.UTF_8)), 3, 3)
@@ -59,8 +59,8 @@ public class BpmnActivityEventWriterTest
                 BpmnActivityEventDecoder.SCHEMA_VERSION);
         assertThat(bodyDecoder.event()).isEqualTo(ExecutionEventType.ACT_INST_CREATED.value());
         assertThat(bodyDecoder.key()).isEqualTo(1234L);
-        assertThat(bodyDecoder.processId()).isEqualTo(8765L);
-        assertThat(bodyDecoder.processInstanceId()).isEqualTo(45678L);
+        assertThat(bodyDecoder.wfDefinitionId()).isEqualTo(8765L);
+        assertThat(bodyDecoder.wfInstanceId()).isEqualTo(45678L);
         assertThat(bodyDecoder.flowElementId()).isEqualTo(5678);
         assertThat(bodyDecoder.taskQueueId()).isEqualTo(7);
         assertThat(bodyDecoder.taskType()).isEqualTo("bar");
@@ -75,8 +75,8 @@ public class BpmnActivityEventWriterTest
         writer
             .eventType(ExecutionEventType.ACT_INST_CREATED)
             .key(1234L)
-            .processId(8765L)
-            .processInstanceId(45678L)
+            .wfDefinitionId(8765L)
+            .wfInstanceId(45678L)
             .flowElementId(5678)
             .taskQueueId(7)
             .taskType(new UnsafeBuffer("foobar".getBytes(StandardCharsets.UTF_8)), 3, 3)

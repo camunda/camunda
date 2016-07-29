@@ -38,8 +38,8 @@ public class TaskEventHandler
             .eventType(ExecutionEventType.ACT_INST_COMPLETED)
             .flowElementId(latestEventReader.flowElementId())
             .key(taskInstance.wfActivityInstanceEventKey())
-            .processId(latestEventReader.processId())
-            .processInstanceId(latestEventReader.processInstanceId())
+            .wfDefinitionId(latestEventReader.wfDefinitionId())
+            .wfInstanceId(latestEventReader.wfInstanceId())
             .taskQueueId(latestEventReader.taskQueueId());
 
         final DirectBuffer taskType = latestEventReader.getTaskType();

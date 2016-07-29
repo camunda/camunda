@@ -98,8 +98,8 @@ public class TaskEventHandlerTest
         inOrder.verify(activityEventWriter).eventType(ExecutionEventType.ACT_INST_COMPLETED);
         inOrder.verify(activityEventWriter).flowElementId(1235);
         inOrder.verify(activityEventWriter).key(23456789L);
-        inOrder.verify(activityEventWriter).processId(8888L);
-        inOrder.verify(activityEventWriter).processInstanceId(9999L);
+        inOrder.verify(activityEventWriter).wfDefinitionId(8888L);
+        inOrder.verify(activityEventWriter).wfInstanceId(9999L);
         inOrder.verify(activityEventWriter).taskQueueId(3);
         inOrder.verify(logWriter).write(activityEventWriter);
 

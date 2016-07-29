@@ -32,8 +32,8 @@ public class CreateActivityInstanceHandler implements BpmnFlowElementEventHandle
             .eventType(ExecutionEventType.ACT_INST_CREATED)
             .flowElementId(flowElementVisitor.nodeId())
             .key(idGenerator.nextId())
-            .processId(flowElementEventReader.processId())
-            .processInstanceId(flowElementEventReader.processInstanceId())
+            .wfDefinitionId(flowElementEventReader.wfDefinitionId())
+            .wfInstanceId(flowElementEventReader.wfInstanceId())
             .taskQueueId(flowElementVisitor.taskQueueId())
             .taskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
 

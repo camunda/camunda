@@ -4,9 +4,9 @@ import org.camunda.tngp.client.ClientCommand;
 
 public interface StartWorkflowInstanceCmd extends ClientCommand<WorkflowInstance>
 {
-    StartWorkflowInstanceCmd workflowTypeId(long workflowTypeId);
+    StartWorkflowInstanceCmd workflowDefinitionId(long id);
 
-    StartWorkflowInstanceCmd workflowTypeKey(byte[] key);
+    StartWorkflowInstanceCmd workflowDefinitionKey(byte[] key);
 
-    StartWorkflowInstanceCmd workflowTypeKey(String key);
+    StartWorkflowInstanceCmd workflowDefinitionKey(String key);
 }

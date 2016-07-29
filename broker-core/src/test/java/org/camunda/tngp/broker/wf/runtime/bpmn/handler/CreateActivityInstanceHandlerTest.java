@@ -79,8 +79,8 @@ public class CreateActivityInstanceHandlerTest
         when(flowEventReader.event()).thenReturn(ExecutionEventType.SQF_EXECUTED);
         when(flowEventReader.flowElementId()).thenReturn(sequenceFlowId);
         when(flowEventReader.key()).thenReturn(1234L);
-        when(flowEventReader.processId()).thenReturn(467L);
-        when(flowEventReader.processInstanceId()).thenReturn(9876L);
+        when(flowEventReader.wfDefinitionId()).thenReturn(467L);
+        when(flowEventReader.wfInstanceId()).thenReturn(9876L);
 
         final CreateActivityInstanceHandler handler = new CreateActivityInstanceHandler();
         handler.setEventWriter(eventWriter);
@@ -92,8 +92,8 @@ public class CreateActivityInstanceHandlerTest
         verify(eventWriter).eventType(ExecutionEventType.ACT_INST_CREATED);
         verify(eventWriter).flowElementId(activityId);
         verify(eventWriter).key(anyLong());
-        verify(eventWriter).processId(467L);
-        verify(eventWriter).processInstanceId(9876L);
+        verify(eventWriter).wfDefinitionId(467L);
+        verify(eventWriter).wfInstanceId(9876L);
         verify(eventWriter).taskQueueId(6);
         verify(eventWriter).taskType(argThat(hasBytes("foo".getBytes(StandardCharsets.UTF_8))), eq(0), eq(3));
 

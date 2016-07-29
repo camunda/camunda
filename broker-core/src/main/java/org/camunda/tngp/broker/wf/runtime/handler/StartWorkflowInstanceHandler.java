@@ -3,9 +3,9 @@ package org.camunda.tngp.broker.wf.runtime.handler;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
-import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceRequestReader;
-import org.camunda.tngp.broker.wf.runtime.StartProcessInstanceResponseWriter;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
+import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
+import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
@@ -19,17 +19,17 @@ import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandl
 
 import uk.co.real_logic.agrona.DirectBuffer;
 
-public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRuntimeContext>, ResponseCompletionHandler
+public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRuntimeContext>, ResponseCompletionHandler
 {
 
-    protected StartProcessInstanceRequestReader requestReader = new StartProcessInstanceRequestReader();
-    protected StartProcessInstanceResponseWriter responseWriter = new StartProcessInstanceResponseWriter();
+    protected StartWorkflowInstanceRequestReader requestReader = new StartWorkflowInstanceRequestReader();
+    protected StartWorkflowInstanceResponseWriter responseWriter = new StartWorkflowInstanceResponseWriter();
 
     protected ErrorWriter errorWriter = new ErrorWriter();
 
     protected BpmnFlowElementEventWriter flowElementEventWriter = new BpmnFlowElementEventWriter();
 
-    protected final byte[] keyBuffer = new byte[Constants.WF_TYPE_KEY_MAX_LENGTH];
+    protected final byte[] keyBuffer = new byte[Constants.WF_DEF_KEY_MAX_LENGTH];
 
     @Override
     public long onRequest(
@@ -42,7 +42,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         System.out.println();
         System.out.println("Starting process instance");
 
-        final WfTypeCacheService wfTypeCache = context.getWfTypeCacheService();
+        final WfDefinitionCacheService wfDefinitionCache = context.getwfDefinitionCacheService();
         final IdGenerator idGenerator = context.getIdGenerator();
         final LogWriter logWriter = context.getLogWriter();
 
@@ -51,10 +51,10 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         ProcessGraph processGraph = null;
         String errorMessage = null;
 
-        final long processId = requestReader.wfTypeId();
-        if (processId != StartWorkflowInstanceDecoder.wfTypeIdNullValue())
+        final long processId = requestReader.wfDefinitionId();
+        if (processId != StartWorkflowInstanceDecoder.wfDefinitionIdNullValue())
         {
-            processGraph = wfTypeCache.getProcessGraphByTypeId(processId);
+            processGraph = wfDefinitionCache.getProcessGraphByTypeId(processId);
 
             if (processGraph == null)
             {
@@ -63,8 +63,8 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         }
         else
         {
-            final DirectBuffer wfTypeKey = requestReader.wfTypeKey();
-            processGraph = wfTypeCache.getLatestProcessGraphByTypeKey(wfTypeKey, 0, wfTypeKey.capacity());
+            final DirectBuffer wfDefinitionKey = requestReader.wfDefinitionKey();
+            processGraph = wfDefinitionCache.getLatestProcessGraphByTypeKey(wfDefinitionKey, 0, wfDefinitionKey.capacity());
 
             if (processGraph == null)
             {
@@ -74,7 +74,7 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
 
         if (processGraph != null)
         {
-            return startProcess(response, logWriter, processGraph, idGenerator);
+            return startWorkflow(response, logWriter, processGraph, idGenerator);
         }
         else
         {
@@ -95,22 +95,22 @@ public class StartProcessInstanceHandler implements BrokerRequestHandler<WfRunti
         }
     }
 
-    protected int startProcess(
+    protected int startWorkflow(
             DeferredResponse response,
             LogWriter logWriter,
             ProcessGraph processGraph,
             IdGenerator idGenerator)
     {
-        final long processInstanceId = idGenerator.nextId();
+        final long workflowInstanceId = idGenerator.nextId();
         final long eventId = idGenerator.nextId();
 
-        responseWriter.processInstanceId(processInstanceId);
+        responseWriter.id(workflowInstanceId);
 
         if (response.allocateAndWrite(responseWriter))
         {
             flowElementEventWriter
                 .key(eventId)
-                .processInstanceId(processInstanceId)
+                .workflowInstanceId(workflowInstanceId)
                 .processId(processGraph.id())
                 .eventType(ExecutionEventType.EVT_OCCURRED)
                 .flowElementId(processGraph.intialFlowNodeId());

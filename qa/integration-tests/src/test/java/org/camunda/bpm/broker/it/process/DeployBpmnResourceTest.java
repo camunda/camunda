@@ -8,10 +8,10 @@ import java.nio.charset.StandardCharsets;
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.tngp.client.ProcessService;
+import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
-import org.camunda.tngp.client.cmd.DeployedWorkflowType;
+import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,13 +35,13 @@ public class DeployBpmnResourceTest
     public void shouldDeployModelInstance()
     {
         final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
+        final WorkflowsClient workflowService = client.workflows();
 
-        final DeployedWorkflowType wfType = workflowService.deploy()
+        final WorkflowDefinition wfDefinition = workflowService.deploy()
             .bpmnModelInstance(Bpmn.createExecutableProcess("anId").startEvent().done())
             .execute();
 
-        assertThat(wfType.getWorkflowTypeId()).isGreaterThanOrEqualTo(0);
+        assertThat(wfDefinition.getId()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
@@ -49,7 +49,7 @@ public class DeployBpmnResourceTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
+        final WorkflowsClient workflowService = client.workflows();
 
         // then
         exception.expect(BrokerRequestException.class);
@@ -67,7 +67,7 @@ public class DeployBpmnResourceTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
+        final WorkflowsClient workflowService = client.workflows();
 
         // then
         exception.expect(BrokerRequestException.class);

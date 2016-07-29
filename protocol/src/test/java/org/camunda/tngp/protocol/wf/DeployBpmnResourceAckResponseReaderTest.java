@@ -24,13 +24,13 @@ public class DeployBpmnResourceAckResponseReaderTest
         headerEncoder.wrap(buffer, 0).schemaId(bodyEncoder.sbeSchemaId()).templateId(bodyEncoder.sbeTemplateId())
                 .version(bodyEncoder.sbeSchemaVersion()).blockLength(bodyEncoder.sbeBlockLength()).shardId(52)
                 .resourceId(123);
-        bodyEncoder.wrap(buffer, headerEncoder.encodedLength()).wfTypeId(1234);
+        bodyEncoder.wrap(buffer, headerEncoder.encodedLength()).wfDefinitionId(1234);
 
         // when
         final DeployBpmnResourceAckResponseReader reader = new DeployBpmnResourceAckResponseReader();
         reader.wrap(buffer, 0, headerEncoder.encodedLength() + bodyEncoder.encodedLength());
 
         // then
-        assertThat(reader.wfTypeId()).isEqualTo(1234);
+        assertThat(reader.wfDefinitionId()).isEqualTo(1234);
     }
 }

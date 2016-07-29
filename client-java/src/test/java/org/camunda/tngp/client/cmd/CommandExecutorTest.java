@@ -120,7 +120,7 @@ public class CommandExecutorTest
     {
         // given
         final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
-        final DeployedWorkflowType expectedResult = mock(DeployedWorkflowType.class);
+        final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
         when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
@@ -144,7 +144,7 @@ public class CommandExecutorTest
     {
         // given
         final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
-        final DeployedWorkflowType expectedResult = mock(DeployedWorkflowType.class);
+        final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
         when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
@@ -168,7 +168,7 @@ public class CommandExecutorTest
     {
         // given
         final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
-        final DeployedWorkflowType expectedResult = mock(DeployedWorkflowType.class);
+        final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
         when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
@@ -197,7 +197,7 @@ public class CommandExecutorTest
     {
         // given
         final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
-        final DeployedWorkflowType expectedResult = mock(DeployedWorkflowType.class);
+        final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
         when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);

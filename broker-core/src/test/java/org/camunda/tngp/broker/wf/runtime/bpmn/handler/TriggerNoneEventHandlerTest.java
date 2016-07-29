@@ -75,8 +75,8 @@ public class TriggerNoneEventHandlerTest
         when(flowEventReader.event()).thenReturn(ExecutionEventType.SQF_EXECUTED);
         when(flowEventReader.flowElementId()).thenReturn(sequenceFlowId);
         when(flowEventReader.key()).thenReturn(1234L);
-        when(flowEventReader.processId()).thenReturn(467L);
-        when(flowEventReader.processInstanceId()).thenReturn(9876L);
+        when(flowEventReader.wfDefinitionId()).thenReturn(467L);
+        when(flowEventReader.wfInstanceId()).thenReturn(9876L);
 
         final TriggerNoneEventHandler eventHandler = new TriggerNoneEventHandler();
         eventHandler.setEventWriter(flowEventWriter);
@@ -90,7 +90,7 @@ public class TriggerNoneEventHandlerTest
         inOrder.verify(flowEventWriter).flowElementId(eventId);
         inOrder.verify(flowEventWriter).key(longThat(not(1234L)));
         inOrder.verify(flowEventWriter).processId(467L);
-        inOrder.verify(flowEventWriter).processInstanceId(9876L);
+        inOrder.verify(flowEventWriter).workflowInstanceId(9876L);
         inOrder.verify(logWriter).write(flowEventWriter);
 
         verifyNoMoreInteractions(logWriter, flowEventWriter);

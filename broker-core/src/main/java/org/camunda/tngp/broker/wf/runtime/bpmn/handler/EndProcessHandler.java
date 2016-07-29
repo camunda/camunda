@@ -30,7 +30,7 @@ public class EndProcessHandler implements BpmnFlowElementEventHandler, BpmnActiv
     public void handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
     {
         writeProcessEndEvent(
-            flowElementEventReader.processInstanceId(),
+            flowElementEventReader.wfInstanceId(),
             logWriter);
     }
 
@@ -39,7 +39,7 @@ public class EndProcessHandler implements BpmnFlowElementEventHandler, BpmnActiv
             IdGenerator idGenerator)
     {
         writeProcessEndEvent(
-            activityEventReader.processInstanceId(),
+            activityEventReader.wfInstanceId(),
             logWriter);
 
     }

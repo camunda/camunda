@@ -19,10 +19,10 @@ public class StartProcessHandler implements BpmnFlowElementEventHandler
 
         eventWriter
             .event(ExecutionEventType.PROC_INST_CREATED)
-            .processId(flowElementEventReader.processId())
-            .processInstanceId(flowElementEventReader.processInstanceId())
+            .processId(flowElementEventReader.wfDefinitionId())
+            .processInstanceId(flowElementEventReader.wfInstanceId())
             .initialElementId(flowElementEventReader.flowElementId())
-            .key(flowElementEventReader.processInstanceId());
+            .key(flowElementEventReader.wfInstanceId());
 
         if (logWriter.write(eventWriter) < 0)
         {

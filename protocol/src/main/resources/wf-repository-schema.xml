@@ -27,12 +27,12 @@
 	<types>
 	</types>
 
-	<sbe:message name="DeployBpmnResource" id="0" description="Deploys new Bpmn Resource defining Workflow Types">
+	<sbe:message name="DeployBpmnResource" id="0" description="Deploys new Bpmn Resource defining Workflow Definitions">
 		<data name="resource" id="1" type="varDataEncoding" />
 	</sbe:message>
 	
 	<sbe:message name="DeployBpmnResourceAck" id="200" description="Bpmn Resource has been successfully deployed">
-		<field name="wfTypeId" id="1" type="uint64" />
+		<field name="wfDefinitionId" id="1" type="uint64" />
 	</sbe:message>
 
 </sbe:messageSchema>

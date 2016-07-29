@@ -4,7 +4,7 @@ import java.util.Properties;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.cmd.DeployedWorkflowType;
+import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource
@@ -42,10 +42,10 @@ public class ClientRule extends ExternalResource
         return client;
     }
 
-    public DeployedWorkflowType deployProcess(BpmnModelInstance process)
+    public WorkflowDefinition deployProcess(BpmnModelInstance process)
     {
         return client
-            .processes()
+            .workflows()
             .deploy()
             .bpmnModelInstance(process)
             .execute();

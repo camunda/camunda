@@ -10,7 +10,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.camunda.tngp.client.AsyncTaskService;
+import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
@@ -44,7 +44,7 @@ public class NonBlockingTaskCreator
             client.connect();
 
             final TransportConnectionPool connectionPool = client.getConnectionPool();
-            final AsyncTaskService asyncTaskService = client.tasks();
+            final AsyncTasksClient asyncTaskService = client.tasks();
 
             final byte[] payload = new byte[payloadSize];
 

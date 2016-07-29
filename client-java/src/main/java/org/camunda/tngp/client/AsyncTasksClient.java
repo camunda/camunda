@@ -4,7 +4,7 @@ import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 
-public interface AsyncTaskService
+public interface AsyncTasksClient
 {
     CreateAsyncTaskCmd create();
 

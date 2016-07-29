@@ -16,23 +16,23 @@ public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstan
     }
 
     @Override
-    public StartWorkflowInstanceCmd workflowTypeId(long workflowTypeId)
+    public StartWorkflowInstanceCmd workflowDefinitionId(long workflowTypeId)
     {
-        requestWriter.wfTypeId(workflowTypeId);
+        requestWriter.wfDefinitionId(workflowTypeId);
         return this;
     }
 
     @Override
-    public StartWorkflowInstanceCmd workflowTypeKey(byte[] key)
+    public StartWorkflowInstanceCmd workflowDefinitionKey(byte[] key)
     {
-        requestWriter.wfTypeKey(key);
+        requestWriter.wfDefinitionKey(key);
         return this;
     }
 
     @Override
-    public StartWorkflowInstanceCmd workflowTypeKey(String key)
+    public StartWorkflowInstanceCmd workflowDefinitionKey(String key)
     {
-        return workflowTypeKey(key.getBytes(CHARSET));
+        return workflowDefinitionKey(key.getBytes(CHARSET));
     }
 
     @Override

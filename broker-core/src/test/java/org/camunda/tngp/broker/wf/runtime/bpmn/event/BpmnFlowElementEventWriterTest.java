@@ -56,8 +56,8 @@ public class BpmnFlowElementEventWriterTest
         assertThat(bodyDecoder.event()).isEqualTo(ExecutionEventType.EVT_OCCURRED.value());
         assertThat(bodyDecoder.initialElementId()).isEqualTo(75);
         assertThat(bodyDecoder.key()).isEqualTo(1234L);
-        assertThat(bodyDecoder.processId()).isEqualTo(8765L);
-        assertThat(bodyDecoder.processInstanceId()).isEqualTo(45678L);
+        assertThat(bodyDecoder.wfDefinitionId()).isEqualTo(8765L);
+        assertThat(bodyDecoder.wfInstanceId()).isEqualTo(45678L);
     }
 
     @Test

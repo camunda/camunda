@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class StartProcessInstanceResponseWriterTest
+public class StartWorkflowInstanceResponseWriterTest
 {
 
     protected UnsafeBuffer eventBuffer;
@@ -26,11 +26,11 @@ public class StartProcessInstanceResponseWriterTest
     public void shouldWriteResponse()
     {
         // given
-        final StartProcessInstanceResponseWriter writer = new StartProcessInstanceResponseWriter();
+        final StartWorkflowInstanceResponseWriter writer = new StartWorkflowInstanceResponseWriter();
 
         // when
         writer
-            .processInstanceId(45678L)
+            .id(45678L)
             .write(eventBuffer, 12);
 
         // then
@@ -48,17 +48,17 @@ public class StartProcessInstanceResponseWriterTest
                 12 + MessageHeaderDecoder.ENCODED_LENGTH,
                 StartWorkflowInstanceResponseDecoder.BLOCK_LENGTH,
                 StartWorkflowInstanceResponseDecoder.SCHEMA_VERSION);
-        assertThat(bodyDecoder.wfInstanceId()).isEqualTo(45678L);
+        assertThat(bodyDecoder.id()).isEqualTo(45678L);
     }
 
     @Test
     public void shouldEstimateWriteLength()
     {
         // given
-        final StartProcessInstanceResponseWriter writer = new StartProcessInstanceResponseWriter();
+        final StartWorkflowInstanceResponseWriter writer = new StartWorkflowInstanceResponseWriter();
 
         writer
-            .processInstanceId(45678L)
+            .id(45678L)
             .write(eventBuffer, 0);
 
         // when

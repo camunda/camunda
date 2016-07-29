@@ -34,10 +34,10 @@ public class MockedWfRepositoryContext extends WfRepositoryContext
 
         final IdGenerator idGeneratorMock = mock(IdGenerator.class);
 
-        setWfTypeLog(logMock);
-        setWfTypeKeyIndex(keyIndexManagerMock);
-        setWfTypeIdGenerator(idGeneratorMock);
-        setWfTypeIdIndex(idIndexManagerMock);
+        setWfDefinitionLog(logMock);
+        setWfDefinitionKeyIndex(keyIndexManagerMock);
+        setWfDefinitionIdGenerator(idGeneratorMock);
+        setWfDefinitionIdIndex(idIndexManagerMock);
     }
 
 }

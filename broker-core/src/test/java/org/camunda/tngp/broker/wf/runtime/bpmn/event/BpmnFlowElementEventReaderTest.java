@@ -34,8 +34,8 @@ public class BpmnFlowElementEventReaderTest
             .event(ExecutionEventType.EVT_OCCURRED.value())
             .flowElementId(75)
             .key(1234L)
-            .processId(8765L)
-            .processInstanceId(45678L);
+            .wfDefinitionId(8765L)
+            .wfInstanceId(45678L);
 
         eventLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }
@@ -53,7 +53,7 @@ public class BpmnFlowElementEventReaderTest
         assertThat(reader.event()).isEqualTo(ExecutionEventType.EVT_OCCURRED);
         assertThat(reader.flowElementId()).isEqualTo(75);
         assertThat(reader.key()).isEqualTo(1234L);
-        assertThat(reader.processId()).isEqualTo(8765L);
-        assertThat(reader.processInstanceId()).isEqualTo(45678L);
+        assertThat(reader.wfDefinitionId()).isEqualTo(8765L);
+        assertThat(reader.wfInstanceId()).isEqualTo(45678L);
     }
 }

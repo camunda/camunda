@@ -53,8 +53,8 @@ public class StartProcessHandlerTest
         when(flowElementEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
         when(flowElementEventReader.flowElementId()).thenReturn(42);
         when(flowElementEventReader.key()).thenReturn(53L);
-        when(flowElementEventReader.processId()).thenReturn(1234L);
-        when(flowElementEventReader.processInstanceId()).thenReturn(1701L);
+        when(flowElementEventReader.wfDefinitionId()).thenReturn(1234L);
+        when(flowElementEventReader.wfInstanceId()).thenReturn(1701L);
 
         // when
         startProcessHandler.handle(flowElementEventReader, process, logWriter, idGenerator);

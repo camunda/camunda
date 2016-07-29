@@ -5,7 +5,7 @@ import java.io.InputStream;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.ClientCommand;
 
-public interface DeployBpmnResourceCmd extends ClientCommand<DeployedWorkflowType>
+public interface DeployBpmnResourceCmd extends ClientCommand<WorkflowDefinition>
 {
 
     DeployBpmnResourceCmd resourceBytes(byte[] resourceBytes);

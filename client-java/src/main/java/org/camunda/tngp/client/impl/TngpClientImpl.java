@@ -5,10 +5,10 @@ import static org.camunda.tngp.client.ClientProperties.*;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
-import org.camunda.tngp.client.AsyncTaskService;
+import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.ProcessService;
+import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
@@ -27,7 +27,7 @@ import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 
-public class TngpClientImpl implements TngpClient, AsyncTaskService, ProcessService
+public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsClient
 {
     public static final int DEFAULT_RESOURCE_ID = 0;
     public static final int DEFAULT_SHARD_ID = 0;
@@ -117,13 +117,13 @@ public class TngpClientImpl implements TngpClient, AsyncTaskService, ProcessServ
     }
 
     @Override
-    public AsyncTaskService tasks()
+    public AsyncTasksClient tasks()
     {
         return this;
     }
 
     @Override
-    public ProcessService processes()
+    public WorkflowsClient workflows()
     {
         return this;
     }

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class WfTypeReaderTest
+public class WfDefinitionReaderTest
 {
     protected static final byte[] PAYLOAD = new byte[] {0, 0, 0, 1, 2, 3, 4, 0};
     protected static final byte[] TYPE = new byte[] {5, 6};
@@ -13,8 +13,8 @@ public class WfTypeReaderTest
     @Test
     public void testReading()
     {
-        final WfTypeReader reader = new WfTypeReader();
-        final WfTypeWriter writer = new WfTypeWriter();
+        final WfDefinitionReader reader = new WfDefinitionReader();
+        final WfDefinitionWriter writer = new WfDefinitionWriter();
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
 
@@ -23,7 +23,7 @@ public class WfTypeReaderTest
             .id(1)
             .version(2)
             .prevVersionPosition(3)
-            .wfTypeKey(TYPE)
+            .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
             .write(buffer, 0);
 

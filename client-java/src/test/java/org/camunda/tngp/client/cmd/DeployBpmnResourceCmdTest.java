@@ -147,7 +147,7 @@ public class DeployBpmnResourceCmdTest
         final DeployBpmnResourceCmdImpl command = new DeployBpmnResourceCmdImpl(mock(ClientCmdExecutor.class));
 
         // when
-        final ClientResponseHandler<DeployedWorkflowType> responseHandler = command.getResponseHandler();
+        final ClientResponseHandler<WorkflowDefinition> responseHandler = command.getResponseHandler();
 
         // then
         assertThat(responseHandler).isInstanceOf(DeployBpmnResourceAckResponseHandler.class);

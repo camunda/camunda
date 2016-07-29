@@ -12,9 +12,9 @@ public class DeployBpmnResourceAckResponseReader implements BufferReader
     protected final DeployBpmnResourceAckDecoder bodyDecoder = new DeployBpmnResourceAckDecoder();
 
 
-    public long wfTypeId()
+    public long wfDefinitionId()
     {
-        return bodyDecoder.wfTypeId();
+        return bodyDecoder.wfDefinitionId();
     }
 
     @Override

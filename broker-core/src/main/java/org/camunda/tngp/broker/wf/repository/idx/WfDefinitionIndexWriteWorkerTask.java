@@ -4,7 +4,7 @@ import org.camunda.tngp.broker.wf.WfWorkerContext;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
 
-public class WfTypeIndexWriteWorkerTask implements WorkerTask<WfWorkerContext>
+public class WfDefinitionIndexWriteWorkerTask implements WorkerTask<WfWorkerContext>
 {
 
     @Override
@@ -16,7 +16,7 @@ public class WfTypeIndexWriteWorkerTask implements WorkerTask<WfWorkerContext>
 
         for (int i = 0; i < contexts.length; i++)
         {
-            workCount += contexts[i].getWfTypeIndexWriter().update();
+            workCount += contexts[i].getWfDefinitionIndexWriter().update();
         }
 
         return workCount;

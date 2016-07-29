@@ -6,8 +6,8 @@ import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
-import org.camunda.tngp.broker.wf.repository.log.WfTypeReader;
-import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -26,10 +26,10 @@ import uk.co.real_logic.agrona.DirectBuffer;
 public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>, ResponseCompletionHandler
 {
     protected LogEntryWriter logEntryWriter = new LogEntryWriter();
-    protected LogEntryReader logEntryReader = new LogEntryReader(WfTypeReader.MAX_LENGTH);
+    protected LogEntryReader logEntryReader = new LogEntryReader(WfDefinitionReader.MAX_LENGTH);
 
-    protected WfTypeWriter wfTypeWriter = new WfTypeWriter();
-    protected WfTypeReader wfTypeReader = new WfTypeReader();
+    protected WfDefinitionWriter wfDefinitionWriter = new WfDefinitionWriter();
+    protected WfDefinitionReader wfDefinitionReader = new WfDefinitionReader();
 
     protected DeployBpmnResourceAckResponse responseWriter = new DeployBpmnResourceAckResponse();
     protected ErrorWriter errorResponseWriter = new ErrorWriter();
@@ -57,16 +57,16 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
         if (executableProcess != null)
         {
-            final byte[] wfTypeKeyBytes = executableProcess.getId().getBytes(StandardCharsets.UTF_8);
+            final byte[] wfDefinitionKeyBytes = executableProcess.getId().getBytes(StandardCharsets.UTF_8);
 
-            if (wfTypeKeyBytes.length <= Constants.WF_TYPE_KEY_MAX_LENGTH)
+            if (wfDefinitionKeyBytes.length <= Constants.WF_DEF_KEY_MAX_LENGTH)
             {
                 // TODO: hand over requestReader here
-                result = doDeploy(context, wfTypeKeyBytes, response, resourceBuffer, 0, resourceBuffer.capacity());
+                result = doDeploy(context, wfDefinitionKeyBytes, response, resourceBuffer, 0, resourceBuffer.capacity());
             }
             else
             {
-                errorMessage = String.format("Id of process exceeds max length: %d.", Constants.WF_TYPE_KEY_MAX_LENGTH);
+                errorMessage = String.format("Id of process exceeds max length: %d.", Constants.WF_DEF_KEY_MAX_LENGTH);
             }
         }
 
@@ -89,7 +89,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
     protected long doDeploy(
             final WfRepositoryContext context,
-            final byte[] wfTypeKeyBytes,
+            final byte[] wfDefinitionKeyBytes,
             final DeferredResponse response,
             final DirectBuffer msg,
             final int resourceOffset,
@@ -97,36 +97,36 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
     {
         long result = -1;
 
-        final Log wfTypeLog = context.getWfTypeLog();
-        final IdGenerator wfTypeIdGenerator = context.getWfTypeIdGenerator();
-        final Bytes2LongHashIndex wfTypeKeyIndex = context.getWfTypeKeyIndex().getIndex();
-        final Long2LongHashIndex wfIdIndex = context.getWfTypeIdIndex().getIndex();
+        final Log wfDefinitionLog = context.getWfDefinitionLog();
+        final IdGenerator wfDefinitionIdGenerator = context.getWfDefinitionIdGenerator();
+        final Bytes2LongHashIndex wfDefinitionKeyIndex = context.getWfDefinitionKeyIndex().getIndex();
+        final Long2LongHashIndex wfIdIndex = context.getWfDefinitionIdIndex().getIndex();
 
-        final long typeId = wfTypeIdGenerator.nextId();
-        responseWriter.wfTypeId(typeId);
+        final long typeId = wfDefinitionIdGenerator.nextId();
+        responseWriter.wfDefinitionId(typeId);
 
         int version = 0;
 
-        final long previousVersionId = wfTypeKeyIndex.get(wfTypeKeyBytes, -1);
+        final long previousVersionId = wfDefinitionKeyIndex.get(wfDefinitionKeyBytes, -1);
         final long prevVersionPos = wfIdIndex.get(previousVersionId, -1);
 
         if (prevVersionPos != -1)
         {
-            logEntryReader.read(wfTypeLog, prevVersionPos, wfTypeReader);
-            version = 1 + wfTypeReader.version();
+            logEntryReader.read(wfDefinitionLog, prevVersionPos, wfDefinitionReader);
+            version = 1 + wfDefinitionReader.version();
         }
 
-        wfTypeWriter
+        wfDefinitionWriter
             .id(typeId)
             .version(version)
             .resourceId(context.getResourceId())
             .prevVersionPosition(prevVersionPos)
-            .wfTypeKey(wfTypeKeyBytes)
+            .wfDefinitionKey(wfDefinitionKeyBytes)
             .resource(msg, resourceOffset, resourceLength);
 
         if (response.allocateAndWrite(responseWriter))
         {
-            final long logEntryOffset = logEntryWriter.write(wfTypeLog, wfTypeWriter);
+            final long logEntryOffset = logEntryWriter.write(wfDefinitionLog, wfDefinitionWriter);
             result = response.defer(logEntryOffset, this);
         }
 

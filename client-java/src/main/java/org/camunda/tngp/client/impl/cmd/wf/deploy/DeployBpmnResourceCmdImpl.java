@@ -8,14 +8,14 @@ import java.io.InputStream;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
-import org.camunda.tngp.client.cmd.DeployedWorkflowType;
+import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 
 import uk.co.real_logic.agrona.LangUtil;
 
-public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<DeployedWorkflowType> implements DeployBpmnResourceCmd
+public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinition> implements DeployBpmnResourceCmd
 {
     protected final int wfRepositoryId = 0;
 

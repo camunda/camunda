@@ -40,8 +40,8 @@ public class BpmnProcessEventWriter implements BufferWriter
 
         bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
             .key(key)
-            .processId(processId)
-            .processInstanceId(processInstanceId)
+            .wfDefinitionId(processId)
+            .wfInstanceId(processInstanceId)
             .event(event.value())
             .initialElementId(initialElementId);
 

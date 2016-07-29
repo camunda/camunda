@@ -27,8 +27,8 @@ public class TriggerNoneEventHandler implements BpmnFlowElementEventHandler
         eventWriter.eventType(ExecutionEventType.EVT_OCCURRED)
             .flowElementId(flowElementVisitor.nodeId())
             .key(idGenerator.nextId())
-            .processId(flowElementEventReader.processId())
-            .processInstanceId(flowElementEventReader.processInstanceId());
+            .processId(flowElementEventReader.wfDefinitionId())
+            .workflowInstanceId(flowElementEventReader.wfInstanceId());
 
         if (logWriter.write(eventWriter) < 0)
         {

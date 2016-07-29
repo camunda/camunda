@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TaskEventHandler;
 import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexWriter;
@@ -14,7 +14,7 @@ public class WfRuntimeContext implements ResourceContext
     protected final String name;
 
     protected IdGenerator idGenerator;
-    protected WfTypeCacheService wfTypeCacheService;
+    protected WfDefinitionCacheService wfDefinitionCacheService;
     protected LogWriter logWriter;
     protected BpmnEventHandler bpmnEventHandler;
     protected TaskEventHandler taskEventHandler;
@@ -47,14 +47,14 @@ public class WfRuntimeContext implements ResourceContext
         this.logWriter = logWriter;
     }
 
-    public WfTypeCacheService getWfTypeCacheService()
+    public WfDefinitionCacheService getwfDefinitionCacheService()
     {
-        return wfTypeCacheService;
+        return wfDefinitionCacheService;
     }
 
-    public void setWfTypeCacheService(WfTypeCacheService wfTypeCacheService)
+    public void setwfDefinitionCacheService(WfDefinitionCacheService wfDefinitionCacheService)
     {
-        this.wfTypeCacheService = wfTypeCacheService;
+        this.wfDefinitionCacheService = wfDefinitionCacheService;
     }
 
     public void setBpmnEventHandler(BpmnEventHandler bpmnEventHandler)

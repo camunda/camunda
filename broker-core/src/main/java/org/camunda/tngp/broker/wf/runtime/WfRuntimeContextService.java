@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.CreateActivityInstanceHandler;
 import org.camunda.tngp.broker.wf.runtime.bpmn.handler.EndProcessHandler;
@@ -26,7 +26,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     // TODO: move somewhere else?
     protected static final int READ_BUFFER_SIZE = 1024 * 1024;
 
-    protected final Injector<WfTypeCacheService> wfTypeChacheInjector = new Injector<>();
+    protected final Injector<WfDefinitionCacheService> wfDefinitionChacheInjector = new Injector<>();
     protected final Injector<IdGenerator> idGeneratorInjector = new Injector<>();
     protected final Injector<Log> logInjector = new Injector<>();
 
@@ -42,7 +42,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     @Override
     public void start(ServiceContext serviceContext)
     {
-        wfRuntimeContext.setWfTypeCacheService(wfTypeChacheInjector.getValue());
+        wfRuntimeContext.setwfDefinitionCacheService(wfDefinitionChacheInjector.getValue());
         wfRuntimeContext.setIdGenerator(idGeneratorInjector.getValue());
 
         final Log log = logInjector.getValue();
@@ -52,7 +52,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setLogWriter(logWriter);
 
         final LogReader logReader = new LogReaderImpl(log, READ_BUFFER_SIZE);
-        final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfTypeChacheInjector.getValue(), logReader, logWriter, idGeneratorInjector.getValue());
+        final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfDefinitionChacheInjector.getValue(), logReader, logWriter, idGeneratorInjector.getValue());
 
         bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
         bpmnEventHandler.addFlowElementHandler(new EndProcessHandler(new LogReaderImpl(log, READ_BUFFER_SIZE), workflowEventIndex));
@@ -94,9 +94,9 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         return wfRuntimeContext;
     }
 
-    public Injector<WfTypeCacheService> getWfTypeChacheInjector()
+    public Injector<WfDefinitionCacheService> getwfDefinitionChacheInjector()
     {
-        return wfTypeChacheInjector;
+        return wfDefinitionChacheInjector;
     }
 
     public Injector<IdGenerator> getIdGeneratorInjector()

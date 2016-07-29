@@ -30,7 +30,7 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeId(12345L);
+            .wfDefinitionId(12345L);
 
         // when
         writer.write(buffer, 42);
@@ -50,7 +50,7 @@ public class StartWorkflowInstanceRequestWriterTest
 
         bodyDecoder.wrap(buffer, 42 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
-        assertThat(bodyDecoder.wfTypeId()).isEqualTo(12345L);
+        assertThat(bodyDecoder.wfDefinitionId()).isEqualTo(12345L);
     }
 
     @Test
@@ -62,7 +62,7 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeId(12345L);
+            .wfDefinitionId(12345L);
 
         // when
         final int encodedLength = writer.getLength();
@@ -71,7 +71,7 @@ public class StartWorkflowInstanceRequestWriterTest
         assertThat(encodedLength).isEqualTo(
             MessageHeaderEncoder.ENCODED_LENGTH +
             StartWorkflowInstanceDecoder.BLOCK_LENGTH +
-            StartWorkflowInstanceDecoder.wfTypeKeyHeaderLength()
+            StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength()
         );
     }
 
@@ -85,7 +85,7 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeKey(WF_TYPE_KEY);
+            .wfDefinitionKey(WF_TYPE_KEY);
 
         // when
         writer.write(buffer, 42);
@@ -106,7 +106,7 @@ public class StartWorkflowInstanceRequestWriterTest
         bodyDecoder.wrap(buffer, 42 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         final byte[] returnedKey = new byte[WF_TYPE_KEY.length];
-        bodyDecoder.getWfTypeKey(returnedKey, 0, WF_TYPE_KEY.length);
+        bodyDecoder.getWfDefinitionKey(returnedKey, 0, WF_TYPE_KEY.length);
 
         assertThat(returnedKey).containsExactly(WF_TYPE_KEY);
     }
@@ -120,7 +120,7 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeKey(WF_TYPE_KEY);
+            .wfDefinitionKey(WF_TYPE_KEY);
 
         // when
         final int encodedLength = writer.getLength();
@@ -129,7 +129,7 @@ public class StartWorkflowInstanceRequestWriterTest
         assertThat(encodedLength).isEqualTo(
             MessageHeaderEncoder.ENCODED_LENGTH +
             StartWorkflowInstanceDecoder.BLOCK_LENGTH +
-            StartWorkflowInstanceDecoder.wfTypeKeyHeaderLength() +
+            StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength() +
             WF_TYPE_KEY.length
         );
     }
@@ -161,8 +161,8 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeId(1234L)
-            .wfTypeKey(WF_TYPE_KEY);
+            .wfDefinitionId(1234L)
+            .wfDefinitionKey(WF_TYPE_KEY);
 
         // then
         exception.expect(RuntimeException.class);
@@ -181,7 +181,7 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeKey(new byte[257]);
+            .wfDefinitionKey(new byte[257]);
 
         // then
         exception.expect(RuntimeException.class);
@@ -200,7 +200,7 @@ public class StartWorkflowInstanceRequestWriterTest
         writer
             .resourceId(52)
             .shardId(8686)
-            .wfTypeKey(new byte[256]);
+            .wfDefinitionKey(new byte[256]);
 
         // when
         writer.validate();

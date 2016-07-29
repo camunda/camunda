@@ -4,19 +4,19 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
+import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.io.DirectBufferInputStream;
 
-public class WfTypeReader implements BufferReader
+public class WfDefinitionReader implements BufferReader
 {
     public static final int MAX_LENGTH = 1024 * 1024 * 2;
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final WfTypeDecoder decoder = new WfTypeDecoder();
+    protected final WfDefinitionDecoder decoder = new WfDefinitionDecoder();
 
     protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0, 0);
     protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0, 0);
@@ -31,13 +31,13 @@ public class WfTypeReader implements BufferReader
 
         offset += headerDecoder.blockLength();
 
-        final int wfTypeKeyLength = decoder.typeKeyLength();
+        final int wfDefinitionKeyLength = decoder.keyLength();
 
         offset += TaskInstanceDecoder.taskTypeHeaderLength();
 
-        typeKeyBuffer.wrap(buffer, offset, wfTypeKeyLength);
+        typeKeyBuffer.wrap(buffer, offset, wfDefinitionKeyLength);
 
-        offset += wfTypeKeyLength;
+        offset += wfDefinitionKeyLength;
 
         decoder.limit(offset);
 

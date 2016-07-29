@@ -32,7 +32,7 @@ id = 0
 useTempLogDirectory = true
 
 [[log]]
-name = "default-wf-type-log"
+name = "default-wf-definition-log"
 id = 1
 useTempLogDirectory = true
 
@@ -61,7 +61,7 @@ perWorkerResponsePoolCapacity = 32
 [[workflow-repository]]
 name = "default"
 id = 0
-logName = "default-wf-type-log"
+logName = "default-wf-definition-log"
 
 [[workflow-runtime]]
 name = "default"

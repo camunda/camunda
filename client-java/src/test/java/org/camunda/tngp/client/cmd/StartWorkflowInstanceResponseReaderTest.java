@@ -33,7 +33,7 @@ public class StartWorkflowInstanceResponseReaderTest
 
         bodyEncoder
             .wrap(buffer, headerEncoder.encodedLength())
-            .wfInstanceId(54L);
+            .id(54L);
 
         encodedLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }

@@ -15,7 +15,7 @@ public class BpmnFlowElementEventWriter implements BufferWriter
 
     protected long key;
     protected long processId;
-    protected long processInstanceId;
+    protected long workflowInstanceId;
     protected ExecutionEventType eventType;
     protected int flowElementId;
 
@@ -40,8 +40,8 @@ public class BpmnFlowElementEventWriter implements BufferWriter
 
         bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
             .key(key)
-            .processId(processId)
-            .processInstanceId(processInstanceId)
+            .wfDefinitionId(processId)
+            .wfInstanceId(workflowInstanceId)
             .event(eventType.value())
             .flowElementId(flowElementId);
     }
@@ -58,9 +58,9 @@ public class BpmnFlowElementEventWriter implements BufferWriter
         return this;
     }
 
-    public BpmnFlowElementEventWriter processInstanceId(long processInstanceId)
+    public BpmnFlowElementEventWriter workflowInstanceId(long processInstanceId)
     {
-        this.processInstanceId = processInstanceId;
+        this.workflowInstanceId = processInstanceId;
         return this;
     }
 

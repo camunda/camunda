@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.client.AsyncTaskService;
+import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.client.cmd.LockedTask;
@@ -37,7 +37,7 @@ public class TaskQueueTest
     public void testCycle()
     {
         final TngpClient client = clientRule.getClient();
-        final AsyncTaskService taskService = client.tasks();
+        final AsyncTasksClient taskService = client.tasks();
 
         System.out.println("Creating task");
 
@@ -76,7 +76,7 @@ public class TaskQueueTest
     public void testCannotCompleteUnlockedTask()
     {
         final TngpClient client = clientRule.getClient();
-        final AsyncTaskService taskService = client.tasks();
+        final AsyncTasksClient taskService = client.tasks();
 
         final Long taskId = taskService.create()
             .taskQueueId(0)

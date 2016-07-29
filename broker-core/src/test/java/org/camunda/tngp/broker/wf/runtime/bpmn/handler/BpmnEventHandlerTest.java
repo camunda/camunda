@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
-import org.camunda.tngp.broker.wf.repository.WfTypeCacheService;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
 import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
@@ -30,7 +30,7 @@ public class BpmnEventHandlerTest
     protected BpmnEventHandler eventHandler;
 
     @Mock
-    protected WfTypeCacheService processCache;
+    protected WfDefinitionCacheService processCache;
 
     @Mock
     protected ProcessGraph process;
@@ -83,7 +83,7 @@ public class BpmnEventHandlerTest
 
         when(flowElementEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
         when(flowElementVisitor.aspectFor(ExecutionEventType.EVT_OCCURRED)).thenReturn(BpmnAspect.START_PROCESS);
-        when(flowElementEventReader.processId()).thenReturn(1234L);
+        when(flowElementEventReader.wfDefinitionId()).thenReturn(1234L);
 
         // when
         eventHandler.doWork();

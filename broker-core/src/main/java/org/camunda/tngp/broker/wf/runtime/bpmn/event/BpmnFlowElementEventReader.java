@@ -25,9 +25,9 @@ public class BpmnFlowElementEventReader implements BufferReader
         return bodyDecoder.key();
     }
 
-    public long processId()
+    public long wfDefinitionId()
     {
-        return bodyDecoder.processId();
+        return bodyDecoder.wfDefinitionId();
     }
 
     public ExecutionEventType event()
@@ -40,9 +40,9 @@ public class BpmnFlowElementEventReader implements BufferReader
         return bodyDecoder.flowElementId();
     }
 
-    public long processInstanceId()
+    public long wfInstanceId()
     {
-        return bodyDecoder.processInstanceId();
+        return bodyDecoder.wfInstanceId();
     }
 
 }

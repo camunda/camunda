@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.tngp.client.ProcessService;
+import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.cmd.DeployedWorkflowType;
+import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,13 +30,13 @@ public class StartProcessInstanceTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    protected DeployedWorkflowType process;
+    protected WorkflowDefinition process;
 
     @Before
     public void deployProcess()
     {
         final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
+        final WorkflowsClient workflowService = client.workflows();
 
         process = workflowService.deploy()
             .bpmnModelInstance(
@@ -51,11 +51,11 @@ public class StartProcessInstanceTest
     public void shouldStartProcessById()
     {
         final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
+        final WorkflowsClient workflowService = client.workflows();
 
         // when
         final WorkflowInstance processInstance = workflowService.start()
-            .workflowTypeId(process.getWorkflowTypeId())
+            .workflowDefinitionId(process.getId())
             .execute();
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
@@ -65,11 +65,11 @@ public class StartProcessInstanceTest
     public void shouldStartProcessByKey()
     {
         final TngpClient client = clientRule.getClient();
-        final ProcessService workflowService = client.processes();
+        final WorkflowsClient workflowService = client.workflows();
 
         // when
         final WorkflowInstance processInstance = workflowService.start()
-            .workflowTypeKey("anId")
+            .workflowDefinitionKey("anId")
             .execute();
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);

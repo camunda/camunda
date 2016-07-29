@@ -13,19 +13,19 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final StartWorkflowInstanceEncoder requestEncoder = new StartWorkflowInstanceEncoder();
 
-    protected final UnsafeBuffer wfTypeKey = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer wfDefinitionKey = new UnsafeBuffer(0, 0);
 
     protected int resourceId;
     protected int shardId;
-    protected long wfTypeId = -1;
+    protected long wfDefinitionId = -1;
 
     @Override
     public int getLength()
     {
         return headerEncoder.encodedLength() +
                 StartWorkflowInstanceEncoder.BLOCK_LENGTH +
-                StartWorkflowInstanceEncoder.wfTypeKeyHeaderLength() +
-                wfTypeKey.capacity();
+                StartWorkflowInstanceEncoder.wfDefinitionKeyHeaderLength() +
+                wfDefinitionKey.capacity();
     }
 
     @Override
@@ -42,24 +42,24 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
         writeOffset += headerEncoder.encodedLength();
 
         requestEncoder.wrap(writeBuffer, writeOffset)
-            .wfTypeId(wfTypeId)
-            .putWfTypeKey(wfTypeKey, 0, wfTypeKey.capacity());
+            .wfDefinitionId(wfDefinitionId)
+            .putWfDefinitionKey(wfDefinitionKey, 0, wfDefinitionKey.capacity());
     }
 
     @Override
     public void validate()
     {
-        final boolean keySet = wfTypeKey.capacity() > 0;
-        final boolean idSet = wfTypeId >= 0;
+        final boolean keySet = wfDefinitionKey.capacity() > 0;
+        final boolean idSet = wfDefinitionId >= 0;
 
         if (keySet && idSet || (!keySet && !idSet))
         {
             throw new RuntimeException("Must set either workflow type id or key");
         }
 
-        if (wfTypeKey.capacity() > Constants.WF_TYPE_KEY_MAX_LENGTH)
+        if (wfDefinitionKey.capacity() > Constants.WF_DEF_KEY_MAX_LENGTH)
         {
-            throw new RuntimeException("Key must not be longer than " + Constants.WF_TYPE_KEY_MAX_LENGTH + " bytes");
+            throw new RuntimeException("Key must not be longer than " + Constants.WF_DEF_KEY_MAX_LENGTH + " bytes");
         }
 
     }
@@ -76,15 +76,15 @@ public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
         return this;
     }
 
-    public StartWorkflowInstanceRequestWriter wfTypeId(long id)
+    public StartWorkflowInstanceRequestWriter wfDefinitionId(long id)
     {
-        this.wfTypeId = id;
+        this.wfDefinitionId = id;
         return this;
     }
 
-    public StartWorkflowInstanceRequestWriter wfTypeKey(byte[] bytes)
+    public StartWorkflowInstanceRequestWriter wfDefinitionKey(byte[] bytes)
     {
-        wfTypeKey.wrap(bytes);
+        wfDefinitionKey.wrap(bytes);
         return this;
     }
 

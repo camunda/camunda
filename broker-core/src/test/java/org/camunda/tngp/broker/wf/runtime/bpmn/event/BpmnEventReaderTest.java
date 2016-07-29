@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.bpmn.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.broker.wf.repository.log.WfTypeWriter;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventDecoder;
 import org.junit.Rule;
@@ -30,7 +30,7 @@ public class BpmnEventReaderTest
             .flowElementId(123)
             .key(456L)
             .processId(789L)
-            .processInstanceId(9875L)
+            .workflowInstanceId(9875L)
             .write(buffer, 0);
 
         // when
@@ -44,8 +44,8 @@ public class BpmnEventReaderTest
         assertThat(flowElementEvent.event()).isEqualTo(ExecutionEventType.EVT_OCCURRED);
         assertThat(flowElementEvent.flowElementId()).isEqualTo(123);
         assertThat(flowElementEvent.key()).isEqualTo(456L);
-        assertThat(flowElementEvent.processId()).isEqualTo(789L);
-        assertThat(flowElementEvent.processInstanceId()).isEqualTo(9875L);
+        assertThat(flowElementEvent.wfDefinitionId()).isEqualTo(789L);
+        assertThat(flowElementEvent.wfInstanceId()).isEqualTo(9875L);
     }
 
     @Test
@@ -53,13 +53,13 @@ public class BpmnEventReaderTest
     {
         // given
         final BpmnEventReader eventReader = new BpmnEventReader();
-        final WfTypeWriter writer = new WfTypeWriter();
+        final WfDefinitionWriter writer = new WfDefinitionWriter();
 
         writer
             .prevVersionPosition(1)
             .resource(new UnsafeBuffer(new byte[0]), 0, 0)
             .resourceId(123)
-            .wfTypeKey(new byte[]{1, 2, 3})
+            .wfDefinitionKey(new byte[]{1, 2, 3})
             .write(buffer, 0);
 
         // then

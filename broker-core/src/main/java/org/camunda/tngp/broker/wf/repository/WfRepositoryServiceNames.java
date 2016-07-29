@@ -11,24 +11,24 @@ public class WfRepositoryServiceNames
 {
     public static final ServiceName<WfRepositoryManager> WF_REPOSITORY_MANAGER_NAME = ServiceName.newServiceName("wf.repository.manager", WfRepositoryManager.class);
 
-    public static ServiceName<IdGenerator> wfTypeIdGeneratorServiceName(String repositoryName)
+    public static ServiceName<IdGenerator> wfDefinitionIdGeneratorServiceName(String repositoryName)
     {
-        return ServiceName.newServiceName(String.format("wf.repository.%s.type.id-generator", repositoryName), IdGenerator.class);
+        return ServiceName.newServiceName(String.format("wf.repository.%s.definition.id-generator", repositoryName), IdGenerator.class);
     }
 
-    public static ServiceName<HashIndexManager<Long2LongHashIndex>> wfTypeIdIndexServiceName(String contextName)
+    public static ServiceName<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexServiceName(String contextName)
     {
-        return (ServiceName) ServiceName.newServiceName(String.format("wf.repository.%s.type.id-index", contextName), HashIndexManager.class);
+        return (ServiceName) ServiceName.newServiceName(String.format("wf.repository.%s.definition.id-index", contextName), HashIndexManager.class);
     }
 
-    public static ServiceName<HashIndexManager<Bytes2LongHashIndex>> wfTypeKeyIndexServiceName(String contextName)
+    public static ServiceName<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexServiceName(String contextName)
     {
-        return (ServiceName) ServiceName.newServiceName(String.format("wf.repository.%s.type.key-index", contextName), HashIndexManager.class);
+        return (ServiceName) ServiceName.newServiceName(String.format("wf.repository.%s.definition.key-index", contextName), HashIndexManager.class);
     }
 
-    public static ServiceName<WfTypeCacheService> wfTypeCacheServiceName(String contextName)
+    public static ServiceName<WfDefinitionCacheService> wfDefinitionCacheServiceName(String contextName)
     {
-        return ServiceName.newServiceName(String.format("wf.repository.%s.type.cache", contextName), WfTypeCacheService.class);
+        return ServiceName.newServiceName(String.format("wf.repository.%s.definition.cache", contextName), WfDefinitionCacheService.class);
     }
 
     public static ServiceName<WfRepositoryContext> wfRepositoryContextName(String contextName)

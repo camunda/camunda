@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.wf.repository;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.repository.idx.WfTypeIndexWriter;
+import org.camunda.tngp.broker.wf.repository.idx.WfDefinitionIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -12,11 +12,11 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 
 public class WfRepositoryContextService implements Service<WfRepositoryContext>
 {
-    protected final Injector<Log> wfTypeLogInjector = new Injector<>();
-    protected final Injector<IdGenerator> wfTypeIdGeneratorInjector = new Injector<>();
-    protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfTypeKeyIndexInjector = new Injector<>();
-    protected final Injector<HashIndexManager<Long2LongHashIndex>> wfTypeIdIndexInjector = new Injector<>();
-    protected final Injector<WfTypeCacheService> wfTypeCacheServiceInjector = new Injector<>();
+    protected final Injector<Log> wfDefinitionLogInjector = new Injector<>();
+    protected final Injector<IdGenerator> wfDefinitionIdGeneratorInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexInjector = new Injector<>();
+    protected final Injector<WfDefinitionCacheService> wfDefinitionCacheServiceInjector = new Injector<>();
 
     protected final WfRepositoryContext context;
 
@@ -28,20 +28,20 @@ public class WfRepositoryContextService implements Service<WfRepositoryContext>
     @Override
     public void start(ServiceContext serviceContext)
     {
-        context.setWfTypeLog(wfTypeLogInjector.getValue());
-        context.setWfTypeIdGenerator(wfTypeIdGeneratorInjector.getValue());
-        context.setWfTypeKeyIndex(wfTypeKeyIndexInjector.getValue());
-        context.setWfTypeIdIndex(wfTypeIdIndexInjector.getValue());
-        context.setWfTypeCacheService(wfTypeCacheServiceInjector.getValue());
-        context.setWfTypeIndexWriter(new WfTypeIndexWriter(context));
+        context.setWfDefinitionLog(wfDefinitionLogInjector.getValue());
+        context.setWfDefinitionIdGenerator(wfDefinitionIdGeneratorInjector.getValue());
+        context.setWfDefinitionKeyIndex(wfDefinitionKeyIndexInjector.getValue());
+        context.setWfDefinitionIdIndex(wfDefinitionIdIndexInjector.getValue());
+        context.setWfDefinitionCacheService(wfDefinitionCacheServiceInjector.getValue());
+        context.setWfDefinitionIndexWriter(new WfDefinitionIndexWriter(context));
     }
 
     @Override
     public void stop()
     {
-        final WfTypeIndexWriter wfTypeIndexWriter = context.getWfTypeIndexWriter();
-        wfTypeIndexWriter.update();
-        wfTypeIndexWriter.writeCheckpoints();
+        final WfDefinitionIndexWriter wfDefinitionIndexWriter = context.getWfDefinitionIndexWriter();
+        wfDefinitionIndexWriter.update();
+        wfDefinitionIndexWriter.writeCheckpoints();
     }
 
     @Override
@@ -50,28 +50,28 @@ public class WfRepositoryContextService implements Service<WfRepositoryContext>
         return context;
     }
 
-    public Injector<Log> getWfTypeLogInjector()
+    public Injector<Log> getWfDefinitionLogInjector()
     {
-        return wfTypeLogInjector;
+        return wfDefinitionLogInjector;
     }
 
-    public Injector<IdGenerator> getWfTypeIdGeneratorInjector()
+    public Injector<IdGenerator> getWfDefinitionIdGeneratorInjector()
     {
-        return wfTypeIdGeneratorInjector;
+        return wfDefinitionIdGeneratorInjector;
     }
 
-    public Injector<HashIndexManager<Bytes2LongHashIndex>> getWfTypeKeyIndexInjector()
+    public Injector<HashIndexManager<Bytes2LongHashIndex>> getWfDefinitionKeyIndexInjector()
     {
-        return wfTypeKeyIndexInjector;
+        return wfDefinitionKeyIndexInjector;
     }
 
-    public Injector<HashIndexManager<Long2LongHashIndex>> getWfTypeIdIndexInjector()
+    public Injector<HashIndexManager<Long2LongHashIndex>> getWfDefinitionIdIndexInjector()
     {
-        return wfTypeIdIndexInjector;
+        return wfDefinitionIdIndexInjector;
     }
 
-    public Injector<WfTypeCacheService> getWfTypeCacheServiceInjector()
+    public Injector<WfDefinitionCacheService> getWfDefinitionCacheServiceInjector()
     {
-        return wfTypeCacheServiceInjector;
+        return wfDefinitionCacheServiceInjector;
     }
 }

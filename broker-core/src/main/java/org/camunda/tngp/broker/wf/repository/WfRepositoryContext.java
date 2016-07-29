@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.wf.repository;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.broker.wf.repository.idx.WfTypeIndexWriter;
+import org.camunda.tngp.broker.wf.repository.idx.WfDefinitionIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -13,12 +13,12 @@ public class WfRepositoryContext implements ResourceContext
     protected final int id;
     protected final String name;
 
-    protected Log wfTypeLog;
-    protected IdGenerator wfTypeIdGenerator;
-    protected HashIndexManager<Bytes2LongHashIndex> wfTypeKeyIndex;
-    protected HashIndexManager<Long2LongHashIndex> wfTypeIdIndex;
-    protected WfTypeIndexWriter wfTypeIndexWriter;
-    protected WfTypeCacheService wfTypeCacheService;
+    protected Log wfDefinitionLog;
+    protected IdGenerator wfDefinitionIdGenerator;
+    protected HashIndexManager<Bytes2LongHashIndex> wfDefinitionKeyIndex;
+    protected HashIndexManager<Long2LongHashIndex> wfDefinitionIdIndex;
+    protected WfDefinitionIndexWriter wfDefinitionIndexWriter;
+    protected WfDefinitionCacheService wfDefinitionCacheService;
 
     public WfRepositoryContext(int id, String name)
     {
@@ -26,14 +26,14 @@ public class WfRepositoryContext implements ResourceContext
         this.name = name;
     }
 
-    public void setWfTypeLog(Log log)
+    public void setWfDefinitionLog(Log log)
     {
-        this.wfTypeLog = log;
+        this.wfDefinitionLog = log;
     }
 
-    public Log getWfTypeLog()
+    public Log getWfDefinitionLog()
     {
-        return wfTypeLog;
+        return wfDefinitionLog;
     }
 
     @Override
@@ -48,53 +48,53 @@ public class WfRepositoryContext implements ResourceContext
         return name;
     }
 
-    public IdGenerator getWfTypeIdGenerator()
+    public IdGenerator getWfDefinitionIdGenerator()
     {
-        return wfTypeIdGenerator;
+        return wfDefinitionIdGenerator;
     }
 
-    public void setWfTypeIdGenerator(IdGenerator wfTypeIdGenerator)
+    public void setWfDefinitionIdGenerator(IdGenerator wfDefinitionIdGenerator)
     {
-        this.wfTypeIdGenerator = wfTypeIdGenerator;
+        this.wfDefinitionIdGenerator = wfDefinitionIdGenerator;
     }
 
-    public HashIndexManager<Bytes2LongHashIndex> getWfTypeKeyIndex()
+    public HashIndexManager<Bytes2LongHashIndex> getWfDefinitionKeyIndex()
     {
-        return wfTypeKeyIndex;
+        return wfDefinitionKeyIndex;
     }
 
-    public void setWfTypeKeyIndex(HashIndexManager<Bytes2LongHashIndex> wfTypeKeyIndex)
+    public void setWfDefinitionKeyIndex(HashIndexManager<Bytes2LongHashIndex> wfDefinitionKeyIndex)
     {
-        this.wfTypeKeyIndex = wfTypeKeyIndex;
+        this.wfDefinitionKeyIndex = wfDefinitionKeyIndex;
     }
 
-    public WfTypeIndexWriter getWfTypeIndexWriter()
+    public WfDefinitionIndexWriter getWfDefinitionIndexWriter()
     {
-        return wfTypeIndexWriter;
+        return wfDefinitionIndexWriter;
     }
 
-    public void setWfTypeIndexWriter(WfTypeIndexWriter wfTypeIndexWriter)
+    public void setWfDefinitionIndexWriter(WfDefinitionIndexWriter wfDefinitionIndexWriter)
     {
-        this.wfTypeIndexWriter = wfTypeIndexWriter;
+        this.wfDefinitionIndexWriter = wfDefinitionIndexWriter;
     }
 
-    public HashIndexManager<Long2LongHashIndex> getWfTypeIdIndex()
+    public HashIndexManager<Long2LongHashIndex> getWfDefinitionIdIndex()
     {
-        return wfTypeIdIndex;
+        return wfDefinitionIdIndex;
     }
 
-    public void setWfTypeIdIndex(HashIndexManager<Long2LongHashIndex> wfTypeIdIndex)
+    public void setWfDefinitionIdIndex(HashIndexManager<Long2LongHashIndex> wfDefinitionIdIndex)
     {
-        this.wfTypeIdIndex = wfTypeIdIndex;
+        this.wfDefinitionIdIndex = wfDefinitionIdIndex;
     }
 
-    public WfTypeCacheService getWfTypeCacheService()
+    public WfDefinitionCacheService getWfDefinitionCacheService()
     {
-        return wfTypeCacheService;
+        return wfDefinitionCacheService;
     }
 
-    public void setWfTypeCacheService(WfTypeCacheService wfTypeCacheService)
+    public void setWfDefinitionCacheService(WfDefinitionCacheService wfDefinitionCacheService)
     {
-        this.wfTypeCacheService = wfTypeCacheService;
+        this.wfDefinitionCacheService = wfDefinitionCacheService;
     }
 }

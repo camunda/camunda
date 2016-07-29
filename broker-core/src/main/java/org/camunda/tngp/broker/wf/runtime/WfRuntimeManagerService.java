@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime;
 
 import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
-import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.wfTypeCacheServiceName;
+import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.wfDefinitionCacheServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfInstanceIdGeneratorServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeWorkflowEventIndexServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeContextServiceName;
@@ -90,7 +90,7 @@ public class WfRuntimeManagerService
         serviceContext.createService(wfRuntimeContextServiceName(wfRuntimeName), wfRuntimeContextService)
             .dependency(wfInstanceLogServiceName, wfRuntimeContextService.getLogInjector())
             .dependency(wfInstanceIdGeneratorServiceName, wfRuntimeContextService.getIdGeneratorInjector())
-            .dependency(wfTypeCacheServiceName(wfRepositoryName), wfRuntimeContextService.getWfTypeChacheInjector())
+            .dependency(wfDefinitionCacheServiceName(wfRepositoryName), wfRuntimeContextService.getwfDefinitionChacheInjector())
             .dependency(workflowEventIndexServiceName, wfRuntimeContextService.getWorkflowEventIndexInjector())
             .listener(this)
             .install();

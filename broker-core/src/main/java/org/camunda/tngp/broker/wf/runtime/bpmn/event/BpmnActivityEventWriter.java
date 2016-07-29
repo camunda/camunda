@@ -16,8 +16,8 @@ public class BpmnActivityEventWriter implements BufferWriter
     protected final BpmnActivityEventEncoder bodyEncoder = new BpmnActivityEventEncoder();
 
     protected long key;
-    protected long processId;
-    protected long processInstanceId;
+    protected long wfDefinitionId;
+    protected long wfInstanceId;
     protected ExecutionEventType eventType;
     protected int flowElementId;
     protected int taskQueueId;
@@ -46,8 +46,8 @@ public class BpmnActivityEventWriter implements BufferWriter
 
         bodyEncoder.wrap(buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
             .key(key)
-            .processId(processId)
-            .processInstanceId(processInstanceId)
+            .wfDefinitionId(wfDefinitionId)
+            .wfInstanceId(wfInstanceId)
             .event(eventType.value())
             .flowElementId(flowElementId)
             .taskQueueId(taskQueueId)
@@ -61,15 +61,15 @@ public class BpmnActivityEventWriter implements BufferWriter
         return this;
     }
 
-    public BpmnActivityEventWriter processId(long processId)
+    public BpmnActivityEventWriter wfDefinitionId(long processId)
     {
-        this.processId = processId;
+        this.wfDefinitionId = processId;
         return this;
     }
 
-    public BpmnActivityEventWriter processInstanceId(long processInstanceId)
+    public BpmnActivityEventWriter wfInstanceId(long processInstanceId)
     {
-        this.processInstanceId = processInstanceId;
+        this.wfInstanceId = processInstanceId;
         return this;
     }
 

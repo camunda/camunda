@@ -23,14 +23,14 @@ public class DeployBpmnResourceResponseHandlerTest
         final DeployBpmnResourceAckResponseReader responseReaderMock = mock(DeployBpmnResourceAckResponseReader.class);
         responseHandler.setResponseReader(responseReaderMock);
 
-        when(responseReaderMock.wfTypeId()).thenReturn(98765L);
+        when(responseReaderMock.wfDefinitionId()).thenReturn(98765L);
         final DirectBuffer responseBuffer = mock(DirectBuffer.class);
 
         // when
-        final DeployedWorkflowType response = responseHandler.readResponse(responseBuffer, 15, 30);
+        final WorkflowDefinition response = responseHandler.readResponse(responseBuffer, 15, 30);
 
         // then
-        assertThat(response.getWorkflowTypeId()).isEqualTo(98765L);
+        assertThat(response.getId()).isEqualTo(98765L);
         verify(responseReaderMock).wrap(responseBuffer, 15, 30);
     }
 }

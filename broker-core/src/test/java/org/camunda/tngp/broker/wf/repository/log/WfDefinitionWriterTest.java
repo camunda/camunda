@@ -1,15 +1,15 @@
 package org.camunda.tngp.broker.wf.repository.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.WfTypeDecoder;
-import org.camunda.tngp.taskqueue.data.WfTypeEncoder;
+import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
+import org.camunda.tngp.taskqueue.data.WfDefinitionEncoder;
 import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class WfTypeWriterTest
+public class WfDefinitionWriterTest
 {
 
     protected static final byte[] PAYLOAD = new byte[] {0, 0, 0, 1, 2, 3, 4, 0};
@@ -21,13 +21,13 @@ public class WfTypeWriterTest
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
 
         // given
-        final WfTypeWriter writer = new WfTypeWriter()
+        final WfDefinitionWriter writer = new WfDefinitionWriter()
             .resourceId(42)
             .shardId(53)
             .id(1)
             .version(2)
             .prevVersionPosition(3)
-            .wfTypeKey(TYPE)
+            .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4);
 
         // when
@@ -35,16 +35,16 @@ public class WfTypeWriterTest
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-        final WfTypeDecoder decoder = new WfTypeDecoder();
+        final WfDefinitionDecoder decoder = new WfDefinitionDecoder();
 
         int readOffset = 0;
 
         headerDecoder.wrap(buffer, readOffset);
 
-        assertThat(headerDecoder.blockLength()).isEqualTo(WfTypeEncoder.BLOCK_LENGTH);
-        assertThat(headerDecoder.templateId()).isEqualTo(WfTypeEncoder.TEMPLATE_ID);
-        assertThat(headerDecoder.schemaId()).isEqualTo(WfTypeEncoder.SCHEMA_ID);
-        assertThat(headerDecoder.version()).isEqualTo(WfTypeEncoder.SCHEMA_VERSION);
+        assertThat(headerDecoder.blockLength()).isEqualTo(WfDefinitionEncoder.BLOCK_LENGTH);
+        assertThat(headerDecoder.templateId()).isEqualTo(WfDefinitionEncoder.TEMPLATE_ID);
+        assertThat(headerDecoder.schemaId()).isEqualTo(WfDefinitionEncoder.SCHEMA_ID);
+        assertThat(headerDecoder.version()).isEqualTo(WfDefinitionEncoder.SCHEMA_VERSION);
         assertThat(headerDecoder.resourceId()).isEqualTo(42);
         assertThat(headerDecoder.shardId()).isEqualTo(53);
 
@@ -57,7 +57,7 @@ public class WfTypeWriterTest
         assertThat(decoder.prevVersionPosition()).isEqualTo(3);
 
         final byte[] typeKey = new byte[2];
-        decoder.getTypeKey(typeKey, 0, 2);
+        decoder.getKey(typeKey, 0, 2);
         assertThat(typeKey).containsExactly((byte) 5, (byte) 6);
 
         final byte[] payload = new byte[4];
@@ -70,9 +70,9 @@ public class WfTypeWriterTest
     {
         // given
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
-        final WfTypeWriter writer = new WfTypeWriter()
+        final WfDefinitionWriter writer = new WfDefinitionWriter()
                 .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
-                .wfTypeKey(TYPE);
+                .wfDefinitionKey(TYPE);
 
         // when
         writer.write(buffer, 0);
@@ -81,11 +81,11 @@ public class WfTypeWriterTest
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
         headerDecoder.wrap(buffer, 0);
 
-        final WfTypeDecoder decoder = new WfTypeDecoder();
+        final WfDefinitionDecoder decoder = new WfDefinitionDecoder();
         decoder.wrap(buffer, headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         final byte[] typeKey = new byte[2];
-        decoder.getTypeKey(typeKey, 0, 2);
+        decoder.getKey(typeKey, 0, 2);
         assertThat(typeKey).containsExactly((byte) 5, (byte) 6);
 
         final byte[] payload = new byte[4];

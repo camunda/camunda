@@ -45,8 +45,8 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceEventHandle
         flowElementVisitor.traverseEdge(BpmnEdgeTypes.NODE_OUTGOING_SEQUENCE_FLOWS);
 
         writeSequenceFlowEvent(
-                activityEventReader.processId(),
-                activityEventReader.processInstanceId(),
+                activityEventReader.wfDefinitionId(),
+                activityEventReader.wfInstanceId(),
                 flowElementVisitor.nodeId(),
                 idGenerator,
                 logWriter);
@@ -59,7 +59,7 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceEventHandle
             .flowElementId(sequenceFlowId)
             .key(idGenerator.nextId())
             .processId(processId)
-            .processInstanceId(processInstanceId);
+            .workflowInstanceId(processInstanceId);
 
         System.out.println("Taking flow " + sequenceFlowId);
 
