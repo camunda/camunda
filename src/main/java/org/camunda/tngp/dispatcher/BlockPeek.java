@@ -1,14 +1,19 @@
 package org.camunda.tngp.dispatcher;
 
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
+
 import java.nio.ByteBuffer;
 
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 public class BlockPeek
 {
     protected ByteBuffer byteBuffer;
+    protected UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
     protected Position subscriberPosition;
 
     protected int streamId;
@@ -38,16 +43,41 @@ public class BlockPeek
 
         byteBuffer.limit(bufferOffset + blockLength);
         byteBuffer.position(bufferOffset);
+
+        bufferView.wrap(byteBuffer, bufferOffset, blockLength);
     }
 
-    public ByteBuffer getBuffer()
+    public ByteBuffer getRawBuffer()
     {
         return byteBuffer;
     }
 
+    public MutableDirectBuffer getBuffer()
+    {
+        return bufferView;
+    }
+
     public void markFailed()
     {
-        // TODO: mark messages as failed.
+        int fragmentOffset = 0;
+        while (fragmentOffset < blockLength)
+        {
+            int fragmentLength = bufferView.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset));
+
+            if (fragmentLength < 0)
+            {
+                fragmentLength = -fragmentLength;
+            }
+
+            final int frameLength = DataFrameDescriptor.alignedLength(fragmentLength);
+            final int flagsOffset = DataFrameDescriptor.flagsOffset(fragmentOffset);
+            final byte flags = byteBuffer.get(flagsOffset);
+
+            byteBuffer.put(flagsOffset, DataFrameDescriptor.enableFlagFailed(flags));
+
+            fragmentOffset += frameLength;
+        }
+
         updatePosition();
     }
 

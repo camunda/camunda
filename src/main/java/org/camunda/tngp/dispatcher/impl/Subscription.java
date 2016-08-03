@@ -5,6 +5,7 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.*;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -55,7 +56,8 @@ public class Subscription
                     frgHandler,
                     maxNumOfFragments,
                     partitionId,
-                    partitionOffset);
+                    partitionOffset,
+                    false);
         }
 
         return fragmentsRead;
@@ -66,12 +68,14 @@ public class Subscription
             final FragmentHandler frgHandler,
             final int maxNumOfFragments,
             int partitionId,
-            int fragmentOffset)
+            int fragmentOffset,
+            boolean handlerControlled)
     {
         final UnsafeBuffer buffer = partition.getDataBuffer();
 
-        int fragmentsRead = 0;
+        int fragmentsConsumed = 0;
 
+        int fragmentResult = FragmentHandler.CONSUME_FRAGMENT_RESULT;
         do
         {
             final int length = buffer.getIntVolatile(lengthOffset(fragmentOffset));
@@ -95,9 +99,16 @@ public class Subscription
             else
             {
                 final int streamId = buffer.getInt(streamIdOffset(fragmentOffset));
+                final byte flags = buffer.getByte(flagsOffset(fragmentOffset));
                 try
                 {
-                    frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId);
+                    final int handlerResult = frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId, flagFailed(flags));
+
+                    if (handlerControlled)
+                    {
+                        fragmentResult = handlerResult;
+                    }
+
                 }
                 catch (RuntimeException e)
                 {
@@ -105,13 +116,49 @@ public class Subscription
                     e.printStackTrace();
                 }
 
-                fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
-                ++fragmentsRead;
+                if (fragmentResult == FragmentHandler.CONSUME_FRAGMENT_RESULT)
+                {
+                    ++fragmentsConsumed;
+                    fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
+                }
             }
         }
-        while (fragmentsRead < maxNumOfFragments);
+        while (fragmentResult == FragmentHandler.CONSUME_FRAGMENT_RESULT && fragmentsConsumed < maxNumOfFragments);
 
         position.setOrdered(position(partitionId, fragmentOffset));
+
+        return fragmentsConsumed;
+    }
+
+    /**
+     * <p>Sequentially peeks for <code>maxNumOfFragments</code> fragments and consumes it (i.e. updates subscription position)
+     * depending on the return value of
+     * {@link FragmentHandler#onFragment(uk.co.real_logic.agrona.DirectBuffer, int, int, int, boolean)}.
+     * If a fragment is not consumed,
+     * then no following fragments are peeked.
+     */
+    public int peekAndConsume(FragmentHandler frgHandler, int maxNumOfFragments)
+    {
+        int fragmentsRead = 0;
+
+        final long currentPosition = position.get();
+
+        final long limit = dispatcher.subscriberLimit(this);
+
+        if (limit > currentPosition)
+        {
+            final int partitionId = partitionId(currentPosition);
+            final int partitionOffset = partitionOffset(currentPosition);
+
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+
+            fragmentsRead = pollFragments(partition,
+                    frgHandler,
+                    maxNumOfFragments,
+                    partitionId,
+                    partitionOffset,
+                    true);
+        }
 
         return fragmentsRead;
     }
@@ -241,8 +288,14 @@ public class Subscription
 
     public void close()
     {
-        dispatcher.closeSubscription(this);
-        position.close();
+        closeAsnyc().join();
+    }
+
+    public CompletableFuture<Void> closeAsnyc()
+    {
+        final CompletableFuture<Void> future = dispatcher.closeSubscriptionAsync(this);
+        future.thenRun(() -> position.close());
+        return future;
     }
 
     public int peekBlock(

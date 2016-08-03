@@ -257,7 +257,7 @@ public class DispatcherTest
         when(subscriberPosition.get()).thenReturn(0L);
         when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
 
-        doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
+        doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0, false);
 
         // if
         final int fragmentsRead = subscriptionSpy.poll(fragmentHandler, 2);
@@ -265,7 +265,7 @@ public class DispatcherTest
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         verify(subscriberPosition).get();
-        verify(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0);
+        verify(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0, false);
     }
 
     @Test
@@ -322,6 +322,25 @@ public class DispatcherTest
         dispatcher.updatePublisherLimit();
 
         verify(publisherLimit).proposeMaxOrdered(position(11, A_LOG_WINDOW_LENGTH));
+    }
+
+    @Test
+    public void shouldReadFragmentsFromPartitionOnPeekAndConsume()
+    {
+        // given
+        dispatcher.openSubscription();
+        when(subscriberPosition.get()).thenReturn(0L);
+        when(publisherPosition.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+
+        doReturn(1).when(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0, true);
+
+        // if
+        final int fragmentsRead = subscriptionSpy.peekAndConsume(fragmentHandler, 2);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+        verify(subscriberPosition).get();
+        verify(subscriptionSpy).pollFragments(logBufferPartition0, fragmentHandler, 2, 0, 0, true);
     }
 
 }

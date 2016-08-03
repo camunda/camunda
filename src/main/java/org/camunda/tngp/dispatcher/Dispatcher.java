@@ -1,6 +1,8 @@
 package org.camunda.tngp.dispatcher;
 
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionId;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -314,11 +316,16 @@ public class Dispatcher implements AutoCloseable
 
     public void closeSubscription(Subscription subscriptionToClose)
     {
-        final CompletableFuture<Void> future = new CompletableFuture<Void>();
+        closeSubscriptionAsync(subscriptionToClose).join();
+    }
+
+    public CompletableFuture<Void> closeSubscriptionAsync(Subscription subscriptionToClose)
+    {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
 
         context.getDispatcherCommandQueue().add((d) -> d.closeSubscription(subscriptionToClose, future));
 
-        future.join();
+        return future;
     }
 
     public LogBuffer getLogBuffer()
@@ -334,16 +341,31 @@ public class Dispatcher implements AutoCloseable
 
     public void close()
     {
+        closeAsync().join();
+    }
+
+    public CompletableFuture<Void> closeAsync()
+    {
         publisherLimit.close();
         publisherPosition.close();
 
-        for (Subscription subscription : subscriptions)
+        final CompletableFuture<?>[] subScriptionFutures = new CompletableFuture<?>[subscriptions.length];
+
+        for (int i = 0; i < subscriptions.length; i++)
         {
-            subscription.close();
+            final CompletableFuture<Void> subscriptionFuture = subscriptions[i].closeAsnyc();
+            subScriptionFutures[i] = subscriptionFuture;
         }
 
-        logBuffer.close();
-        context.close();
+        final CompletableFuture<Void> future =
+                CompletableFuture.allOf(subScriptionFutures)
+                    .thenRun(() ->
+                    {
+                        logBuffer.close();
+                        context.close();
+                    });
+
+        return future;
     }
 
     public int getMaxFrameLength()

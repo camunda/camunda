@@ -26,7 +26,7 @@ public class DispatcherIntegrationTest
         int counter = 0;
 
         @Override
-        public void onFragment(final DirectBuffer buffer, final int offset, final int length, final int streamId)
+        public int onFragment(final DirectBuffer buffer, final int offset, final int length, final int streamId, boolean isMarkedFailed)
         {
             final int newCounter = buffer.getInt(offset);
             if (newCounter  - 1 != counter)
@@ -34,6 +34,7 @@ public class DispatcherIntegrationTest
                 throw new RuntimeException();
             }
             counter = newCounter;
+            return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
 
     }
@@ -234,7 +235,7 @@ public class DispatcherIntegrationTest
                     {
 
                     }
-                    final int newCounter = blockPeek.getBuffer().getInt(messageOffset(blockPeek.getBufferOffset()));
+                    final int newCounter = blockPeek.getRawBuffer().getInt(messageOffset(blockPeek.getBufferOffset()));
                     if (newCounter  - 1 != counter)
                     {
                         throw new RuntimeException();

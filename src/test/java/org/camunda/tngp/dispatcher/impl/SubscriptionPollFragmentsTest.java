@@ -54,14 +54,37 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         // the fragment handler was handed one fragment
-        verify(mockFragmentHandler).onFragment(eq(dataBufferMock), eq(messageOffset(fragOffset)), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID));
+        verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(fragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, false);
+        verifyNoMoreInteractions(mockFragmentHandler);
+        // and the position was increased by the fragment length
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+    }
+
+    @Test
+    public void shouldReadSingleFailedFragment()
+    {
+        final int fragOffset = 0;
+
+        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn(enableFlagFailed((byte) 0));
+
+        // when
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, false);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+        // the fragment handler was handed one fragment
+        verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(fragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, true);
         verifyNoMoreInteractions(mockFragmentHandler);
         // and the position was increased by the fragment length
         verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
@@ -76,21 +99,23 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn((byte) 0);
 
         when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
         when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagFailed((byte) 0));
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, firstFragOffset);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, firstFragOffset, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(2);
 
         // the fragment handler was handed two fragments
         final InOrder inOrder = inOrder(mockFragmentHandler);
-        inOrder.verify(mockFragmentHandler).onFragment(eq(dataBufferMock), eq(messageOffset(firstFragOffset)), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID));
-        inOrder.verify(mockFragmentHandler).onFragment(eq(dataBufferMock), eq(messageOffset(secondFragOffset)), eq(A_MSG_PAYLOAD_LENGTH), eq(A_STREAM_ID));
+        inOrder.verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(firstFragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, false);
+        inOrder.verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(secondFragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, true);
         inOrder.verifyNoMoreInteractions();
 
         // and the position was increased by the fragment length
@@ -107,7 +132,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -126,7 +151,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -146,7 +171,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(-A_MSG_PAYLOAD_LENGTH);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -154,6 +179,48 @@ public class SubscriptionPollFragmentsTest
         verifyNoMoreInteractions(mockFragmentHandler);
         // and the position was set but not increased
         verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, fragOffset));
+    }
+
+    @Test
+    public void shouldNotUpdatePositionBasedOnHandlerPostponeResult()
+    {
+        final int fragOffset = 0;
+
+        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
+        when(mockFragmentHandler.onFragment(any(), anyInt(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(FragmentHandler.POSTPONE_FRAGMENT_RESULT);
+
+        // when
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, true);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(0);
+        // and the position was not increased
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, fragOffset));
+    }
+
+    @Test
+    public void shouldUpdatePositionBasedOnHandlerConsumeResult()
+    {
+        final int fragOffset = 0;
+
+        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
+        when(mockFragmentHandler.onFragment(any(), anyInt(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(FragmentHandler.CONSUME_FRAGMENT_RESULT);
+
+        // when
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, true);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+        // and the position was increased
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
     }
 
     private int nextFragmentOffset(final int currentOffset)

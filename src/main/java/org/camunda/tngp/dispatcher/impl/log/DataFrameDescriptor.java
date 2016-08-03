@@ -9,7 +9,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |R|                        Frame Length                         |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- *  |  Version      |B|E| Flags     |             Type              |
+ *  |  Version      |B|E|F| Flags   |             Type              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  *  |                            StreamId                           |
  *  +---------------------------------------------------------------+
@@ -18,6 +18,13 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
+ *
+ * <p>Flags:
+ * <ul>
+ *   <li>B: Begin Batch
+ *   <li>E: End Batch
+ *   <li>F: Failed (e.g. set by a prior subscriber)
+ *
  *
  */
 public class DataFrameDescriptor
@@ -65,6 +72,10 @@ public class DataFrameDescriptor
         HEADER_LENGTH = offset;
     }
 
+    public static final int FLAG_BATCH_BEGIN_BITMASK = 0b1000_0000;
+    public static final int FLAG_BATCH_END_BITMASK = 0b0100_0000;
+    public static final int FLAG_FAILED_BITMASK = 0b0010_0000;
+
     public static int lengthOffset(int offset)
     {
         return offset + FRAME_LENGTH_OFFSET;
@@ -99,5 +110,36 @@ public class DataFrameDescriptor
     {
         return align(msgLength + HEADER_LENGTH, FRAME_ALIGNMENT);
     }
+
+    public static boolean flagFailed(byte flags)
+    {
+        return (flags & FLAG_FAILED_BITMASK) != 0;
+    }
+
+    public static byte enableFlagFailed(byte flags)
+    {
+        return (byte) (flags | FLAG_FAILED_BITMASK);
+    }
+
+    public static boolean flagBatchBegin(byte flags)
+    {
+        return (flags & FLAG_BATCH_BEGIN_BITMASK) != 0;
+    }
+
+    public static byte enableFlagBatchBegin(byte flags)
+    {
+        return (byte) (flags | FLAG_BATCH_BEGIN_BITMASK);
+    }
+
+    public static boolean flagBatchEnd(byte flags)
+    {
+        return (flags & FLAG_BATCH_END_BITMASK) != 0;
+    }
+
+    public static byte enableFlagBatchEnd(byte flags)
+    {
+        return (byte) (flags | FLAG_BATCH_END_BITMASK);
+    }
+
 
 }
