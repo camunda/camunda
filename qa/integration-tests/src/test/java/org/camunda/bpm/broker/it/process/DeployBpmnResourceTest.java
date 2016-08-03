@@ -1,6 +1,7 @@
 package org.camunda.bpm.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static org.hamcrest.CoreMatchers.*;
 
 import java.nio.charset.StandardCharsets;
@@ -8,6 +9,9 @@ import java.nio.charset.StandardCharsets;
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.Definitions;
+import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
@@ -95,6 +99,41 @@ public class DeployBpmnResourceTest
         // when
         workflowService.deploy()
             .bpmnModelInstance(Bpmn.createProcess().startEvent().endEvent().done())
+            .execute();
+    }
+
+    @Test
+    public void shouldNotDeployTwoProcesses()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final WorkflowsClient workflowService = client.workflows();
+
+        final BpmnModelInstance modelInstance = Bpmn.createEmptyModel();
+        final Definitions definitions = modelInstance.newInstance(Definitions.class);
+        definitions.setTargetNamespace(BPMN20_NS);
+        modelInstance.setDefinitions(definitions);
+
+        final Process process1 = modelInstance.newInstance(Process.class);
+        definitions.addChildElement(process1);
+        process1.setExecutable(true);
+        process1.builder().startEvent().endEvent();
+
+        final Process process2 = modelInstance.newInstance(Process.class);
+        definitions.addChildElement(process2);
+        process2.setExecutable(true);
+        process2.builder().startEvent().endEvent();
+
+        Bpmn.writeModelToStream(System.out, modelInstance);
+
+        // then
+        exception.expect(BrokerRequestException.class);
+        exception.expectMessage(containsString("ERROR 204"));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+
+        // when
+        workflowService.deploy()
+            .bpmnModelInstance(modelInstance)
             .execute();
     }
 
