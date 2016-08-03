@@ -80,4 +80,22 @@ public class DeployBpmnResourceTest
             .execute();
     }
 
+    @Test
+    public void shouldNotDeployNonExecutableModel()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final WorkflowsClient workflowService = client.workflows();
+
+        // then
+        exception.expect(BrokerRequestException.class);
+        exception.expectMessage(containsString("ERROR 203"));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+
+        // when
+        workflowService.deploy()
+            .bpmnModelInstance(Bpmn.createProcess().startEvent().endEvent().done())
+            .execute();
+    }
+
 }
