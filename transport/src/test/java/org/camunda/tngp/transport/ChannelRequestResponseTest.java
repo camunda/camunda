@@ -26,9 +26,10 @@ public class ChannelRequestResponseTest
             reset();
         }
 
-        public void onFragment(DirectBuffer buffer, int offset, int length, int streamId)
+        public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
         {
             lastMsgIdReceived = buffer.getInt(offset);
+            return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
 
         public void reset()

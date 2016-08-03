@@ -65,7 +65,7 @@ public class AsyncRequestWorker implements Agent
         if (pooledResponseCount > 0)
         {
             // poll for as many incoming requests as pooled responses are available
-            workCount += requestSubscription.poll(fragmentHandler, pooledResponseCount);
+            workCount += requestSubscription.peekAndConsume(fragmentHandler, pooledResponseCount);
         }
 
         // poll for completion on the work buffer to send out deferred responses

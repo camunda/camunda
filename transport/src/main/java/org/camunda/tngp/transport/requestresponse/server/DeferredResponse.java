@@ -4,6 +4,7 @@ import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderD
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool.DeferredResponseControl;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -21,9 +22,12 @@ public class DeferredResponse
     protected long asyncOperationId;
     protected ResponseCompletionHandler completionHandler;
 
-    public DeferredResponse(Dispatcher sendBuffer)
+    protected DeferredResponseControl responseControl;
+
+    public DeferredResponse(Dispatcher sendBuffer, DeferredResponseControl deferredResponseControl)
     {
         this.sendBuffer = sendBuffer;
+        this.responseControl = deferredResponseControl;
     }
 
     public void reset()
@@ -94,6 +98,7 @@ public class DeferredResponse
             this.asyncOperationId = asyncOperationId;
             this.completionHandler = handler;
             result = 1;
+            responseControl.defer(this);
         }
         else
         {

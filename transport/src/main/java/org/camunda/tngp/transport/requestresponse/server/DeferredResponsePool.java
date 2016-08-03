@@ -1,13 +1,16 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+
 import java.nio.ByteBuffer;
+import java.util.Queue;
 
 import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.util.BoundedArrayQueue;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
 /**
  * Utility for deferring responses which wait on some async processing (usually io)
@@ -19,7 +22,7 @@ public class DeferredResponsePool implements BlockHandler
 
     protected BoundedArrayQueue<DeferredResponse> pooled;
 
-    protected BoundedArrayQueue<DeferredResponse> deferred;
+    protected Queue<DeferredResponse> deferred;
 
     protected final Dispatcher sendBuffer;
 
@@ -34,7 +37,14 @@ public class DeferredResponsePool implements BlockHandler
 
         for (int i = 0; i < capacity; i++)
         {
-            pooled.offer(new DeferredResponse(sendBuffer));
+            pooled.offer(new DeferredResponse(sendBuffer, new DeferredResponseControl()
+                {
+                    @Override
+                    public void defer(DeferredResponse r)
+                    {
+                        deferred.offer(r);
+                    }
+                }));
         }
     }
 
@@ -44,7 +54,6 @@ public class DeferredResponsePool implements BlockHandler
 
         if (response != null)
         {
-            deferred.offer(response);
             response.open(channelId, connectionId, requestId);
         }
 
@@ -107,8 +116,12 @@ public class DeferredResponsePool implements BlockHandler
     public void reclaim(DeferredResponse response)
     {
         response.reset();
-        deferred.remove();
         pooled.offer(response);
+    }
+
+    public interface DeferredResponseControl
+    {
+        void defer(DeferredResponse r);
     }
 
 }
