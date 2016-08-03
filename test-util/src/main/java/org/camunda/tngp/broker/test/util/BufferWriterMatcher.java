@@ -11,6 +11,12 @@ import org.mockito.ArgumentMatcher;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * Note: this matcher does not work when a {@link BufferWriter} is reused throughout a test.
+ * Mockito only captures the reference, so after the test the {@link BufferWriter} contains the latest state.
+ *
+ * @author Lindhauer
+ */
 public class BufferWriterMatcher<T extends BufferReader> extends ArgumentMatcher<BufferWriter>
 {
     protected T reader;
@@ -80,26 +86,6 @@ public class BufferWriterMatcher<T extends BufferReader> extends ArgumentMatcher
         catch (Exception e)
         {
             throw new RuntimeException("Could not construct matcher", e);
-        }
-    }
-
-    protected static class BufferReaderMatch<T extends BufferReader>
-    {
-        protected Function<T, Object> propertyExtractor;
-        protected Object expectedValue;
-        protected Matcher<?> expectedValueMatcher;
-
-        boolean matches(T reader)
-        {
-            final Object actualValue = propertyExtractor.apply(reader);
-            if (expectedValue != null)
-            {
-                return expectedValue.equals(actualValue);
-            }
-            else
-            {
-                return expectedValueMatcher.matches(actualValue);
-            }
         }
     }
 }
