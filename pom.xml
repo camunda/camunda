@@ -15,6 +15,11 @@
     <relativePath />
   </parent>
 
+  <properties>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
+  </properties>
+
   <modules>
     <module>parent</module>
     <module>broker-core</module>
@@ -24,5 +29,30 @@
     <module>samples</module>
     <module>dist</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>sonatype-oss-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <configuration>
+              <!-- skip gpg signing as the release is not pushed to maven central -->
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <scm>
+    <url>https://github.com/camunda-tngp/camunda-tngp</url>
+    <connection>scm:git:git@github.com:camunda-tngp/camunda-tngp.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/camunda-tngp.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
 </project>
