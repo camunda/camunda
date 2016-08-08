@@ -1,5 +1,5 @@
-def jobName = 'util-DISTRO-maven-deploy'
-def repository = 'util'
+def jobName = 'dispatcher-DISTRO-maven-deploy'
+def repository = 'dispatcher'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
