@@ -89,6 +89,14 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         channelResolver.setChannelId(channel.getId());
     }
 
+    public void disconnect()
+    {
+        channel.close();
+        channel = null;
+
+        channelResolver.resetChannelId();
+    }
+
     @Override
     public void close()
     {

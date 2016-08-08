@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.system;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,10 +15,20 @@ public class SystemContext implements AutoCloseable
 
     protected final ConfigurationManager configurationManager;
 
-    public SystemContext(String configFileLocation)
+    protected SystemContext(ConfigurationManager configurationManager)
     {
         this.serviceContainer = new ServiceContainerImpl();
-        configurationManager = new ConfigurationManagerImpl(configFileLocation);
+        this.configurationManager = configurationManager;
+    }
+
+    public SystemContext(String configFileLocation)
+    {
+        this(new ConfigurationManagerImpl(configFileLocation));
+    }
+
+    public SystemContext(InputStream configStream)
+    {
+        this(new ConfigurationManagerImpl(configStream));
     }
 
     public ServiceContainer getServiceContainer()

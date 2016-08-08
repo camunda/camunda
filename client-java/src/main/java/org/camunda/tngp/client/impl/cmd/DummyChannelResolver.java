@@ -22,4 +22,9 @@ public class DummyChannelResolver implements ClientChannelResolver
         this.channelId = channelId;
     }
 
+    public void resetChannelId()
+    {
+        this.channelId = -1;
+    }
+
 }

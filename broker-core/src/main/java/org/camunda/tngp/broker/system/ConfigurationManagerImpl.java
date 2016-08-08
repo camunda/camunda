@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.system;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,24 +9,39 @@ import com.moandjiezana.toml.Toml;
 
 public class ConfigurationManagerImpl implements ConfigurationManager
 {
-    protected final String configFileLocation;
-
     protected Toml toml;
 
-    public ConfigurationManagerImpl(String configFileLocation)
+    public ConfigurationManagerImpl(String filePath)
     {
-        this.configFileLocation = configFileLocation;
-        if (configFileLocation == null)
+        if (filePath == null)
         {
-            System.out.println("No configuration file provided, using default configuration.");
-            toml = new Toml().read(ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("tngp.default.cfg.toml"));
+            initDefault();
         }
         else
         {
-            final File file = new File(configFileLocation);
+            final File file = new File(filePath);
             System.out.println("Using config file " + file.getAbsolutePath());
             toml = new Toml().read(file);
         }
+    }
+
+    public ConfigurationManagerImpl(InputStream configStream)
+    {
+        if (configStream == null)
+        {
+            initDefault();
+        }
+        else
+        {
+            System.out.println("Using provided configuration stream");
+            toml = new Toml().read(configStream);
+        }
+    }
+
+    public void initDefault()
+    {
+        System.out.println("No configuration provided, using default configuration.");
+        toml = new Toml().read(ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("tngp.default.cfg.toml"));
     }
 
     @Override

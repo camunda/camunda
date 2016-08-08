@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker;
 
+import java.io.InputStream;
+
 import org.camunda.tngp.broker.log.LogComponent;
 import org.camunda.tngp.broker.system.SystemContext;
 import org.camunda.tngp.broker.system.metrics.MetricsComponent;
@@ -18,6 +20,24 @@ public class Broker implements AutoCloseable
 
         brokerContext = new SystemContext(configFileLocation);
 
+        start();
+
+        System.out.println("Broker started.");
+    }
+
+    public Broker(InputStream configStream)
+    {
+        System.out.println("Starting broker");
+
+        brokerContext = new SystemContext(configStream);
+
+        start();
+
+        System.out.println("Broker started.");
+    }
+
+    protected void start()
+    {
         brokerContext.addComponent(new MetricsComponent());
         brokerContext.addComponent(new ThreadingComponent());
         brokerContext.addComponent(new TransportComponent());
@@ -26,8 +46,6 @@ public class Broker implements AutoCloseable
         brokerContext.addComponent(new WfComponent());
 
         brokerContext.init();
-
-        System.out.println("Broker started.");
     }
 
     @Override

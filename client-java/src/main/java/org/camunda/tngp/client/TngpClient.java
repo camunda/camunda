@@ -15,6 +15,8 @@ public interface TngpClient extends AutoCloseable
 
     void connect();
 
+    void disconnect();
+
     void close();
 
     static TngpClient create(Properties properties)
