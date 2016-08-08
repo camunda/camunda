@@ -18,6 +18,8 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
   </properties>
 
   <dependencies>
@@ -92,5 +94,30 @@
     </plugins>
 
   </build>
+
+  <profiles>
+    <profile>
+      <id>sonatype-oss-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <configuration>
+              <!-- skip gpg signing as the release is not pushed to maven central -->
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <scm>
+    <url>https://github.com/camunda-tngp/log</url>
+    <connection>scm:git:git@github.com:camunda-tngp/log.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/log.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
 </project>
