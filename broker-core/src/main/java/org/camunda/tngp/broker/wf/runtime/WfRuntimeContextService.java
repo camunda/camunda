@@ -1,18 +1,24 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import org.camunda.tngp.broker.idx.IndexWriter;
+import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
-import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.CreateActivityInstanceHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.EndProcessHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.StartProcessHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TakeOutgoingFlowsHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TaskEventHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TriggerNoneEventHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.WaitEventHandler;
-import org.camunda.tngp.broker.wf.runtime.idx.WorkflowEventIndexLogTracker;
+import org.camunda.tngp.broker.wf.runtime.log.handler.ActivityRequestHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.WorkflowInstanceRequestHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.ActivityEventHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.CreateActivityInstanceHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.EndProcessHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.FlowElementEventHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.ProcessEventHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.StartProcessHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.TakeOutgoingFlowsHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.TriggerNoneEventHandler;
+import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.WaitEventHandler;
+import org.camunda.tngp.broker.wf.runtime.log.idx.BpmnEventIndexWriter;
+import org.camunda.tngp.broker.wf.runtime.log.idx.WfDefinitionIdIndexWriter;
+import org.camunda.tngp.broker.wf.runtime.log.idx.WfDefinitionKeyIndexWriter;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReaderImpl;
@@ -21,6 +27,7 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 
 public class WfRuntimeContextService implements Service<WfRuntimeContext>
 {
@@ -29,8 +36,12 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     protected final Injector<Log> logInjector = new Injector<>();
 
     protected final Injector<HashIndexManager<Long2LongHashIndex>> workflowEventIndexInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexInjector = new Injector<>();
+    protected final Injector<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexInjector = new Injector<>();
 
     protected final WfRuntimeContext wfRuntimeContext;
+
+    protected Injector<DeferredResponsePool> responsePoolInjector = new Injector<>();
 
     public WfRuntimeContextService(int id, String name)
     {
@@ -40,52 +51,50 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     @Override
     public void start(ServiceContext serviceContext)
     {
-        wfRuntimeContext.setWfDefinitionCache(wfDefinitionChacheInjector.getValue());
-        wfRuntimeContext.setIdGenerator(idGeneratorInjector.getValue());
+        final WfDefinitionCache wfDefinitionCache = wfDefinitionChacheInjector.getValue();
+        final IdGenerator idGenerator = idGeneratorInjector.getValue();
 
         final Log log = logInjector.getValue();
         final HashIndexManager<Long2LongHashIndex> indexManager = workflowEventIndexInjector.getValue();
-        final WorkflowEventIndexLogTracker indexLogTracker = new WorkflowEventIndexLogTracker(indexManager.getIndex());
-        final IndexWriter<BpmnEventReader> indexWriter = new IndexWriter<>(
-                new LogReaderImpl(log),
-                log.getWriteBuffer().openSubscription(),
-                log.getId(),
-                new BpmnEventReader(),
-                indexLogTracker,
-                new HashIndexManager<?>[]{indexManager});
 
-        final LogWriter logWriter = new LogWriter(log, indexWriter);
+        final LogWriter logWriter = new LogWriter(log);
 
         wfRuntimeContext.setLogWriter(logWriter);
+        wfRuntimeContext.setLog(log);
 
-        final BpmnEventHandler bpmnEventHandler = new BpmnEventHandler(wfDefinitionChacheInjector.getValue(), new LogReaderImpl(log), logWriter, idGeneratorInjector.getValue());
-
-        bpmnEventHandler.addFlowElementHandler(new StartProcessHandler());
-        bpmnEventHandler.addFlowElementHandler(new CreateActivityInstanceHandler());
-        bpmnEventHandler.addFlowElementHandler(new TriggerNoneEventHandler());
+        final Templates templates = Templates.wfRuntimeLogTemplates();
+        final LogConsumer wfRuntimeConsumer = new LogConsumer(new LogReaderImpl(log), responsePoolInjector.getValue(), templates);
 
         final EndProcessHandler endProcessHandler = new EndProcessHandler(new LogReaderImpl(log), indexManager.getIndex());
-        bpmnEventHandler.addFlowElementHandler(endProcessHandler);
-        bpmnEventHandler.addActivityHandler(endProcessHandler);
-
         final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
-        bpmnEventHandler.addProcessHandler(takeOutgoingFlowsHandler);
-        bpmnEventHandler.addActivityHandler(takeOutgoingFlowsHandler);
-
         final WaitEventHandler waitEventHandler = new WaitEventHandler();
-        bpmnEventHandler.addProcessHandler(waitEventHandler);
-        bpmnEventHandler.addFlowElementHandler(waitEventHandler);
-        bpmnEventHandler.addActivityHandler(waitEventHandler);
 
-        wfRuntimeContext.setBpmnEventHandler(bpmnEventHandler);
+        final ActivityEventHandler activityEventHandler = new ActivityEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        activityEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
+        activityEventHandler.addAspectHandler(waitEventHandler);
+        activityEventHandler.addAspectHandler(endProcessHandler);
+        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_EVENT, activityEventHandler);
 
-        final TaskEventHandler taskEventHandler = new TaskEventHandler(
-                new LogReaderImpl(log),
-                logWriter,
-                workflowEventIndexInjector.getValue().getIndex());
-        wfRuntimeContext.setTaskEventHandler(taskEventHandler);
+        final ProcessEventHandler processEventHandler = new ProcessEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        processEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
+        processEventHandler.addAspectHandler(waitEventHandler);
+        wfRuntimeConsumer.addHandler(Templates.PROCESS_EVENT, processEventHandler);
 
-        wfRuntimeContext.setIndexWriter(indexWriter);
+        final FlowElementEventHandler flowElementEventHandler = new FlowElementEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        flowElementEventHandler.addAspectHandler(new StartProcessHandler());
+        flowElementEventHandler.addAspectHandler(new CreateActivityInstanceHandler());
+        flowElementEventHandler.addAspectHandler(new TriggerNoneEventHandler());
+        flowElementEventHandler.addAspectHandler(endProcessHandler);
+        wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);
+
+        wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, logWriter, idGenerator));
+        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new LogReaderImpl(log), logWriter, indexManager.getIndex()));
+
+        wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
+        wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
+        wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
+
+        wfRuntimeContext.setLogConsumer(wfRuntimeConsumer);
     }
 
     @Override
@@ -120,4 +129,18 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         return workflowEventIndexInjector;
     }
 
+    public Injector<DeferredResponsePool> getResponsePoolServiceInjector()
+    {
+        return responsePoolInjector;
+    }
+
+    public Injector<HashIndexManager<Long2LongHashIndex>> getWfDefinitionIdIndexInjector()
+    {
+        return wfDefinitionIdIndexInjector;
+    }
+
+    public Injector<HashIndexManager<Bytes2LongHashIndex>> getWfDefinitionKeyIndexInjector()
+    {
+        return wfDefinitionKeyIndexInjector;
+    }
 }

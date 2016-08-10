@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker;
 
+import static java.lang.Runtime.getRuntime;
+
 import java.util.Scanner;
-import static java.lang.Runtime.*;
 
 public class StandaloneBroker
 {

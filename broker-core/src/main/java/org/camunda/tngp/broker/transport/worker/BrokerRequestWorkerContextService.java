@@ -27,10 +27,8 @@ public class BrokerRequestWorkerContextService implements Service<AsyncRequestWo
     @Override
     public void start(ServiceContext serviceContext)
     {
-        asyncWorkSubscription = asyncWorkBufferInjector.getValue().openSubscription();
         requestSubscription = requestBufferInjector.getValue().openSubscription();
 
-        ctx.setAsyncWorkBufferSubscription(asyncWorkSubscription);
         ctx.setRequestBufferSubscription(requestSubscription);
         ctx.setResponsePool(responsePoolInjector.getValue());
     }

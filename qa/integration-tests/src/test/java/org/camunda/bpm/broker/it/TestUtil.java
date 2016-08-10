@@ -24,14 +24,20 @@ public class TestUtil
             this.callable = callable;
         }
 
-        public T until(Function<T, Boolean> condition)
+        public T until(Function<T, Boolean> resultCondition)
+        {
+            return until(resultCondition, (e) -> false);
+        }
+
+        public T until(Function<T, Boolean> resultCondition, Function<Exception, Boolean> exceptionCondition)
         {
             int numTries = 0;
 
-            T result = null;
+            T result;
 
             do
             {
+                result = null;
                 try
                 {
                     if (numTries > 0)
@@ -43,14 +49,16 @@ public class TestUtil
                 }
                 catch (Exception e)
                 {
-                    LangUtil.rethrowUnchecked(e);
+                    if (!exceptionCondition.apply(e))
+                    {
+                        LangUtil.rethrowUnchecked(e);
+                    }
                 }
                 numTries++;
             }
-            while (numTries < MAX_RETRIES && !condition.apply(result));
+            while (numTries < MAX_RETRIES && !resultCondition.apply(result));
 
             return result;
         }
-
     }
 }

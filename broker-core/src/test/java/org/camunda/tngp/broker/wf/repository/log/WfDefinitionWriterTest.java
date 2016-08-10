@@ -25,8 +25,6 @@ public class WfDefinitionWriterTest
             .resourceId(42)
             .shardId(53)
             .id(1)
-            .version(2)
-            .prevVersionPosition(3)
             .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4);
 
@@ -53,8 +51,6 @@ public class WfDefinitionWriterTest
         decoder.wrap(buffer, readOffset, headerDecoder.blockLength(), headerDecoder.version());
 
         assertThat(decoder.id()).isEqualTo(1);
-        assertThat(decoder.version()).isEqualTo(2);
-        assertThat(decoder.prevVersionPosition()).isEqualTo(3);
 
         final byte[] typeKey = new byte[2];
         decoder.getKey(typeKey, 0, 2);

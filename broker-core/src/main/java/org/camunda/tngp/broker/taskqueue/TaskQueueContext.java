@@ -1,11 +1,9 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.idx.IndexWriter;
+import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
-import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
@@ -20,13 +18,11 @@ public class TaskQueueContext implements ResourceContext
 
     protected LogWriter logWriter;
 
-    protected HashIndexManager<Long2LongHashIndex> lockedTaskInstanceIndex;
-
     protected HashIndexManager<Bytes2LongHashIndex> taskTypePositionIndex;
 
     protected IdGenerator taskInstanceIdGenerator;
 
-    protected IndexWriter<TaskInstanceReader> taskQueueIndexWriter;
+    protected LogConsumer logConsumer;
 
     public TaskQueueContext(String taskQueueName, int taskQueueId)
     {
@@ -64,19 +60,9 @@ public class TaskQueueContext implements ResourceContext
         this.logWriter = logWriter;
     }
 
-    public HashIndexManager<Long2LongHashIndex> getLockedTaskInstanceIndex()
-    {
-        return lockedTaskInstanceIndex;
-    }
-
     public HashIndexManager<Bytes2LongHashIndex> getTaskTypePositionIndex()
     {
         return taskTypePositionIndex;
-    }
-
-    public void setLockedTaskInstanceIndex(HashIndexManager<Long2LongHashIndex> lockedTaskInstanceIndex)
-    {
-        this.lockedTaskInstanceIndex = lockedTaskInstanceIndex;
     }
 
     public void setTaskTypePositionIndex(HashIndexManager<Bytes2LongHashIndex> taskTypePositionIndex)
@@ -106,13 +92,13 @@ public class TaskQueueContext implements ResourceContext
         return taskQueueName;
     }
 
-    public IndexWriter<TaskInstanceReader> getIndexWriter()
+    public LogConsumer getLogConsumer()
     {
-        return taskQueueIndexWriter;
+        return logConsumer;
     }
 
-    public void setIndexWriter(IndexWriter<TaskInstanceReader> taskQueueIndexWriter)
+    public void setLogConsumer(LogConsumer logConsumer)
     {
-        this.taskQueueIndexWriter = taskQueueIndexWriter;
+        this.logConsumer = logConsumer;
     }
 }

@@ -1,8 +1,12 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.idx.IndexWriter;
+import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
+import org.camunda.tngp.broker.taskqueue.log.handler.TaskInstanceHandler;
+import org.camunda.tngp.broker.taskqueue.log.handler.TaskInstanceRequestHandler;
+import org.camunda.tngp.broker.taskqueue.log.idx.LockedTasksIndexWriter;
+import org.camunda.tngp.broker.taskqueue.log.idx.TaskTypeIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -12,6 +16,7 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 
 public class TaskQueueContextService implements Service<TaskQueueContext>
 {
@@ -19,6 +24,8 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     protected final Injector<IdGenerator> taskInstanceIdGeneratorInjector = new Injector<>();
     protected final Injector<HashIndexManager<Long2LongHashIndex>> lockedTasksIndexServiceInjector = new Injector<>();
     protected final Injector<HashIndexManager<Bytes2LongHashIndex>> taskTypeIndexServiceInjector = new Injector<>();
+
+    protected final Injector<DeferredResponsePool> responsePoolServiceInjector = new Injector<>();
 
     protected final TaskQueueContext taskQueueContext;
 
@@ -30,35 +37,34 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     @Override
     public void start(ServiceContext serviceContext)
     {
+        final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager = lockedTasksIndexServiceInjector.getValue();
+        final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager = taskTypeIndexServiceInjector.getValue();
+
         taskQueueContext.setLog(logInjector.getValue());
         taskQueueContext.setTaskInstanceIdGenerator(taskInstanceIdGeneratorInjector.getValue());
-        taskQueueContext.setLockedTaskInstanceIndex(lockedTasksIndexServiceInjector.getValue());
-        taskQueueContext.setTaskTypePositionIndex(taskTypeIndexServiceInjector.getValue());
+        taskQueueContext.setTaskTypePositionIndex(taskTypeIndexManager);
 
         final Log log = logInjector.getValue();
-        final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager = taskQueueContext.getLockedTaskInstanceIndex();
-        final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager = taskQueueContext.getTaskTypePositionIndex();
 
-        final TaskQueueIndexLogTracker taskQueueIndexWriter =
-                new TaskQueueIndexLogTracker(lockedTasksIndexManager.getIndex(), taskTypeIndexManager.getIndex());
-        final IndexWriter<TaskInstanceReader> indexWriter = new IndexWriter<>(
-                new LogReaderImpl(log),
-                log.getWriteBuffer().openSubscription(),
-                log.getId(),
-                new TaskInstanceReader(),
-                taskQueueIndexWriter,
-                new HashIndexManager<?>[]{lockedTasksIndexManager, taskTypeIndexManager});
-        indexWriter.resetToLastCheckpointPosition();
-        taskQueueContext.setIndexWriter(indexWriter);
-        taskQueueContext.setLogWriter(new LogWriter(log, indexWriter));
+        final LogWriter logWriter = new LogWriter(log);
+        taskQueueContext.setLogWriter(logWriter);
+
+        final Templates templates = Templates.taskQueueLogTemplates();
+        final LogConsumer taskProcessor = new LogConsumer(new LogReaderImpl(log), responsePoolServiceInjector.getValue(), templates);
+
+        taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler());
+        taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new LogReaderImpl(log), logWriter, lockedTasksIndexManager.getIndex()));
+
+        taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
+        taskProcessor.addIndexWriter(new LockedTasksIndexWriter(lockedTasksIndexManager, templates));
+
+        taskQueueContext.setLogConsumer(taskProcessor);
     }
 
     @Override
     public void stop()
     {
-        final IndexWriter<TaskInstanceReader> taskQueueIndexWriter = taskQueueContext.getIndexWriter();
-        taskQueueIndexWriter.indexLogEntries();
-        taskQueueIndexWriter.writeCheckpoints();
+        taskQueueContext.getLogConsumer().writeSafepoints();
     }
 
     @Override
@@ -90,6 +96,11 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     public Injector<HashIndexManager<Bytes2LongHashIndex>> getTaskTypeIndexServiceInjector()
     {
         return taskTypeIndexServiceInjector;
+    }
+
+    public Injector<DeferredResponsePool> getResponsePoolServiceInjector()
+    {
+        return responsePoolServiceInjector;
     }
 
 }

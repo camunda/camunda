@@ -1,41 +1,25 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import org.camunda.tngp.broker.idx.IndexWriter;
+import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
-import org.camunda.tngp.broker.wf.runtime.bpmn.event.BpmnEventReader;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.BpmnEventHandler;
-import org.camunda.tngp.broker.wf.runtime.bpmn.handler.TaskEventHandler;
+import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogWriter;
-import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class WfRuntimeContext implements ResourceContext
 {
     protected final int id;
     protected final String name;
 
-    protected IdGenerator idGenerator;
-    protected WfDefinitionCache wfDefinitionCache;
     protected LogWriter logWriter;
-    protected BpmnEventHandler bpmnEventHandler;
-    protected TaskEventHandler taskEventHandler;
 
-    protected IndexWriter<BpmnEventReader> indexWriter;
+    protected LogConsumer logConsumer;
+
+    protected Log log;
 
     public WfRuntimeContext(int id, String name)
     {
         this.id = id;
         this.name = name;
-    }
-
-    public IdGenerator getIdGenerator()
-    {
-        return idGenerator;
-    }
-
-    public void setIdGenerator(IdGenerator idGenerator)
-    {
-        this.idGenerator = idGenerator;
     }
 
     public LogWriter getLogWriter()
@@ -48,44 +32,14 @@ public class WfRuntimeContext implements ResourceContext
         this.logWriter = logWriter;
     }
 
-    public WfDefinitionCache getWfDefinitionCache()
+    public Log getLog()
     {
-        return wfDefinitionCache;
+        return log;
     }
 
-    public void setWfDefinitionCache(WfDefinitionCache wfDefinitionCache)
+    public void setLog(Log log)
     {
-        this.wfDefinitionCache = wfDefinitionCache;
-    }
-
-    public void setBpmnEventHandler(BpmnEventHandler bpmnEventHandler)
-    {
-        this.bpmnEventHandler = bpmnEventHandler;
-    }
-
-    public BpmnEventHandler getBpmnEventHandler()
-    {
-        return bpmnEventHandler;
-    }
-
-    public IndexWriter<BpmnEventReader> getIndexWriter()
-    {
-        return indexWriter;
-    }
-
-    public void setIndexWriter(IndexWriter<BpmnEventReader> indexWriter)
-    {
-        this.indexWriter = indexWriter;
-    }
-
-    public void setTaskEventHandler(TaskEventHandler taskEventHandler)
-    {
-        this.taskEventHandler = taskEventHandler;
-    }
-
-    public TaskEventHandler getTaskEventHandler()
-    {
-        return taskEventHandler;
+        this.log = log;
     }
 
     @Override
@@ -98,5 +52,14 @@ public class WfRuntimeContext implements ResourceContext
     public String getResourceName()
     {
         return name;
+    }
+
+    public LogConsumer getLogConsumer()
+    {
+        return logConsumer;
+    }
+    public void setLogConsumer(LogConsumer logConsumer)
+    {
+        this.logConsumer = logConsumer;
     }
 }

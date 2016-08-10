@@ -15,12 +15,13 @@ import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.SystemContext;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueComponentCfg;
-import org.camunda.tngp.broker.taskqueue.handler.CompleteTaskHandler;
-import org.camunda.tngp.broker.taskqueue.handler.CreateTaskInstanceHandler;
-import org.camunda.tngp.broker.taskqueue.handler.LockTaskBatchHandler;
+import org.camunda.tngp.broker.taskqueue.request.handler.CompleteTaskHandler;
+import org.camunda.tngp.broker.taskqueue.request.handler.CreateTaskInstanceHandler;
+import org.camunda.tngp.broker.taskqueue.request.handler.LockTaskBatchHandler;
 import org.camunda.tngp.broker.transport.worker.AsyncRequestWorkerService;
 import org.camunda.tngp.broker.transport.worker.BrokerRequestDispatcher;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContextService;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Service;
@@ -33,6 +34,7 @@ import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
 
 public class TaskQueueComponent implements Component
 {
+    public static final String WORKER_NAME = "task-queue-worker.0";
 
     @Override
     public void init(SystemContext context)
@@ -70,28 +72,25 @@ public class TaskQueueComponent implements Component
         workerContext.setRequestHandler(taskQueueRequestDispatcher);
         workerContext.setWorkerTasks(new WorkerTask[]
         {
-            new InputLogProcessingTask(),
-            new TaskQueueIndexWriteWorkerTask()
+            new LogProcessingTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);
         final AsyncRequestWorkerService workerService = new AsyncRequestWorkerService();
         final TaskQueueWorkerContextService brokerWorkerContextService = new TaskQueueWorkerContextService(workerContext);
 
-        final String workerName = "task-queue-worker.0";
-
-        final ServiceName<DeferredResponsePool> responsePoolServiceName = serviceContainer.createService(workerResponsePoolServiceName(workerName), responsePoolService)
+        final ServiceName<DeferredResponsePool> responsePoolServiceName = serviceContainer.createService(workerResponsePoolServiceName(WORKER_NAME), responsePoolService)
             .dependency(TRANSPORT_SEND_BUFFER, responsePoolService.getSendBufferInector())
             .install();
 
-        final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.createService(workerContextServiceName(workerName), brokerWorkerContextService)
+        final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.createService(workerContextServiceName(WORKER_NAME), brokerWorkerContextService)
             .dependency(responsePoolServiceName, brokerWorkerContextService.getResponsePoolInjector())
             .dependency(LOG_WRITE_BUFFER_SERVICE, brokerWorkerContextService.getAsyncWorkBufferInjector())
             .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), brokerWorkerContextService.getRequestBufferInjector())
             .dependency(TASK_QUEUE_MANAGER, brokerWorkerContextService.getTaskQueueManagerInjector())
             .install();
 
-        serviceContainer.createService(workerServiceName(workerName), workerService)
+        serviceContainer.createService(workerServiceName(WORKER_NAME), workerService)
             .dependency(workerContextServiceName, workerService.getWorkerContextInjector())
             .dependency(AGENT_RUNNER_SERVICE, workerService.getAgentRunnerInjector())
             .dependency(taskQueueManagerServiceName)
@@ -107,26 +106,28 @@ public class TaskQueueComponent implements Component
             @Override
             public <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
             {
-                listenToWorkflowRuntimeLog(service);
+                listenToWorkflowRuntimeLog(name, service);
             }
 
             @Override
             public <S> void onTrackerRegistration(ServiceName<S> name, Service<S> service)
             {
-                listenToWorkflowRuntimeLog(service);
+                listenToWorkflowRuntimeLog(name, service);
             }
 
-            protected void listenToWorkflowRuntimeLog(Service<?> service)
+            protected <S> void listenToWorkflowRuntimeLog(ServiceName<S> name, Service<S> service)
             {
                 if (service instanceof WfRuntimeContextService)
                 {
-                    final ServiceName<Log> logName = ((WfRuntimeContextService) service).getLogInjector().getInjectedServiceName();
+                    final ServiceName<WfRuntimeContext> wfRuntimeContextServiceName = (ServiceName<WfRuntimeContext>) name;
+
+                    final ServiceName<Log> wfRuntimeLogName = ((WfRuntimeContextService) service).getLogInjector().getInjectedServiceName();
 
                     final WfInstanceLogProcessorService wfInstanceLogReaderService = new WfInstanceLogProcessorService();
 
                     serviceContainer
-                        .createService(TaskQueueServiceNames.workflowEventHandlerService(logName.toString()), wfInstanceLogReaderService)
-                        .dependency(logName, wfInstanceLogReaderService.getLogInjector())
+                        .createService(TaskQueueServiceNames.workflowEventHandlerService(wfRuntimeLogName.toString()), wfInstanceLogReaderService)
+                        .dependency(wfRuntimeContextServiceName, wfInstanceLogReaderService.getWfRuntimeContext())
                         .dependency(TASK_QUEUE_MANAGER, wfInstanceLogReaderService.getTaskQueueManager())
                         .install();
                 }

@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
+import org.camunda.bpm.broker.it.util.ParallelRequests;
+import org.camunda.bpm.broker.it.util.ParallelRequests.SilentFuture;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
@@ -99,7 +101,7 @@ public class TaskQueueTest
     }
 
     @Test
-    public void testCannotCompleteTaskTwiceInParallel() throws InterruptedException
+    public void testCannotCompleteTaskTwiceInParallel()
     {
         // given
         final TngpClient client = clientRule.getClient();
@@ -117,51 +119,30 @@ public class TaskQueueTest
             .lockTime(100 * 1000)
             .execute();
 
-        final CompleteTaskRunnable r1 = new CompleteTaskRunnable(taskClient, taskId);
-        final CompleteTaskRunnable r2 = new CompleteTaskRunnable(taskClient, taskId);
 
-        final Thread t1 = new Thread(r1);
-        final Thread t2 = new Thread(r2);
+        final ParallelRequests parallelRequests = ParallelRequests.prepare();
+
+        final SilentFuture<Long> future1 = parallelRequests.submitRequest(
+            () -> taskClient.complete()
+                .taskQueueId(0)
+                .taskId(taskId)
+                .execute());
+
+        final SilentFuture<Long> future2 = parallelRequests.submitRequest(
+            () -> taskClient.complete()
+                .taskQueueId(0)
+                .taskId(taskId)
+                .execute());
 
         // when
-        t1.start();
-        t2.start();
-
-        t1.join();
-        t2.join();
+        parallelRequests.execute();
 
         // then
         final Set<Long> results = new HashSet<>();
-        results.add(r1.result);
-        results.add(r2.result);
+        results.add(future1.get());
+        results.add(future2.get());
 
         assertThat(results).contains(taskId, null);
     }
 
-    public static class CompleteTaskRunnable implements Runnable
-    {
-        protected AsyncTasksClient taskClient;
-        protected long taskId;
-        protected Long result;
-
-        public CompleteTaskRunnable(AsyncTasksClient taskClient, long taskId)
-        {
-            this.taskClient = taskClient;
-            this.taskId = taskId;
-        }
-
-        public void run()
-        {
-            result = taskClient.complete()
-                    .taskQueueId(0)
-                    .taskId(taskId)
-                    .execute();
-        }
-
-        public Long getResult()
-        {
-            return result;
-        }
-
-    }
 }

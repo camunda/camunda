@@ -57,8 +57,8 @@ public class DeployBpmnResourceTest
 
         // then
         exception.expect(BrokerRequestException.class);
-        exception.expectMessage("Failed request (1-1): Cannot deploy Bpmn Resource");
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+        exception.expectMessage("Failed request (1-2): Cannot deploy Bpmn Resource");
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
 
         // when
         workflowService.deploy()
@@ -76,7 +76,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 201"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
 
         // when
         workflowService.deploy()
@@ -94,7 +94,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 203"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
 
         // when
         workflowService.deploy()
@@ -129,7 +129,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 204"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 1));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
 
         // when
         workflowService.deploy()

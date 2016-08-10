@@ -11,8 +11,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
-import org.camunda.tngp.broker.taskqueue.log.TaskInstanceReader;
 import org.camunda.tngp.broker.test.util.BufferReaderMatcher;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;

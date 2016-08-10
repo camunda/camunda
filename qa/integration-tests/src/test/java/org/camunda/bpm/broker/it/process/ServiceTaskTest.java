@@ -82,6 +82,15 @@ public class ServiceTaskTest
             .workflowDefinitionId(workflow.getId())
             .execute();
 
+        TestUtil.doRepeatedly(() ->
+            client.workflows()
+                .start()
+                .workflowDefinitionId(workflow.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
+
         // when
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
             client
@@ -111,13 +120,23 @@ public class ServiceTaskTest
         final WorkflowDefinition workflow1 = clientRule.deployProcess(oneTaskProcess("foo"));
         final WorkflowDefinition workflow2 = clientRule.deployProcess(oneTaskProcess("bar"));
 
-        workflowService.start()
-            .workflowDefinitionId(workflow1.getId())
-            .execute();
+        TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(workflow1.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
-        workflowService.start()
-            .workflowDefinitionId(workflow2.getId())
-            .execute();
+        TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(workflow2.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         // when
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
@@ -147,9 +166,14 @@ public class ServiceTaskTest
         // given
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
 
-        workflowService.start()
-            .workflowDefinitionId(workflow.getId())
-            .execute();
+        TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(workflow.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
             client

@@ -1,7 +1,10 @@
 package org.camunda.tngp.broker.log;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.LOG_AGENT_CONTEXT_SERVICE;
+import static org.camunda.tngp.broker.log.LogServiceNames.LOG_WRITE_BUFFER_SERVICE;
+import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
 
 import java.io.File;
 import java.io.IOException;

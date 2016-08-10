@@ -5,7 +5,7 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.broker.taskqueue.handler.TaskTypeHash;
+import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;

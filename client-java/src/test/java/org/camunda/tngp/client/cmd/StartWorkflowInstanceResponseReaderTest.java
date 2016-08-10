@@ -2,7 +2,7 @@ package org.camunda.tngp.client.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceResponseReader;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
 import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseEncoder;
 import org.junit.Before;

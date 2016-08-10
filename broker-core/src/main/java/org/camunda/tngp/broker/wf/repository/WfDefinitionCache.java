@@ -42,7 +42,7 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
     {
         // TODO: throw exception if key longer
 
-        final long id = wfTypeKeyIndex.get(buffer, 0, length, -1, -2);
+        final long id = wfTypeKeyIndex.get(buffer, 0, length, -1);
 
         ProcessGraph processGraph = null;
 
@@ -62,7 +62,7 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
     @Override
     public ProcessGraph apply(long key)
     {
-        final long position = wfTypeIdIndex.get(key, -1, -2);
+        final long position = wfTypeIdIndex.get(key, -1);
 
         ProcessGraph graph = null;
 

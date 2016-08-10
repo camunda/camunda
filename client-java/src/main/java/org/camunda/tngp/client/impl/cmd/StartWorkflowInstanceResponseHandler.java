@@ -1,7 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.camunda.tngp.client.cmd.WorkflowInstance;
-import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceResponseReader;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseDecoder;
 
 import uk.co.real_logic.agrona.DirectBuffer;

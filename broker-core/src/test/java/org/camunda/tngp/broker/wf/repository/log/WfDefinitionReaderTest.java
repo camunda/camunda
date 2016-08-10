@@ -21,8 +21,6 @@ public class WfDefinitionReaderTest
         writer.resourceId(42)
             .shardId(53)
             .id(1)
-            .version(2)
-            .prevVersionPosition(3)
             .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
             .write(buffer, 0);
@@ -32,8 +30,6 @@ public class WfDefinitionReaderTest
         assertThat(reader.resourceId()).isEqualTo(42);
         assertThat(reader.shardId()).isEqualTo(53);
         assertThat(reader.id()).isEqualTo(1);
-        assertThat(reader.version()).isEqualTo(2);
-        assertThat(reader.prevVersionPosition()).isEqualTo(3);
 
         final byte[] typeKey = new byte[2];
         reader.getTypeKey().getBytes(0, typeKey);

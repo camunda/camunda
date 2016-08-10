@@ -1,7 +1,12 @@
 package org.camunda.tngp.broker.transport;
 
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingServiceName;
 
 import java.net.InetSocketAddress;
 

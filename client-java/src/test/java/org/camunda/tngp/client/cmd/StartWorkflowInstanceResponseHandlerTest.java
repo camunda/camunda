@@ -5,7 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceResponseHandler;
-import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceResponseReader;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

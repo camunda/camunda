@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
+import org.camunda.bpm.broker.it.TestUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.TngpClient;
@@ -54,23 +55,33 @@ public class StartProcessInstanceTest
         final WorkflowsClient workflowService = client.workflows();
 
         // when
-        final WorkflowInstance processInstance = workflowService.start()
-            .workflowDefinitionId(process.getId())
-            .execute();
+        final WorkflowInstance processInstance = TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(process.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
-    public void shouldStartProcessByKey()
+    public void shouldStartProcessByKey() throws InterruptedException
     {
         final TngpClient client = clientRule.getClient();
         final WorkflowsClient workflowService = client.workflows();
 
         // when
-        final WorkflowInstance processInstance = workflowService.start()
-            .workflowDefinitionKey("anId")
-            .execute();
+        final WorkflowInstance processInstance = TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionKey("anId")
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
     }

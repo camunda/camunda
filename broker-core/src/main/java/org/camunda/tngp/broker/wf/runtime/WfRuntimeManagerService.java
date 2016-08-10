@@ -1,21 +1,29 @@
 package org.camunda.tngp.broker.wf.runtime;
 
 import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
-import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.wfDefinitionCacheServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionCacheServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionIdIndexServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionKeyIndexServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfInstanceIdGeneratorServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeWorkflowEventIndexServiceName;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeContextServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeWorkflowEventIndexServiceName;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.camunda.tngp.broker.log.LogEntryProcessor;
+import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.services.Bytes2LongIndexManagerService;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
 import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
+import org.camunda.tngp.broker.wf.WfComponent;
 import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
+import org.camunda.tngp.broker.wf.repository.WfDefinitionCacheService;
+import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
@@ -36,7 +44,7 @@ public class WfRuntimeManagerService
 
     protected ServiceContext serviceContext;
 
-    protected final List<LogEntryProcessor<?>> inputLogProcessors = new CopyOnWriteArrayList<>();
+    protected final List<LogConsumer> inputLogConsumers = new CopyOnWriteArrayList<>();
 
     public WfRuntimeManagerService(ConfigurationManager configurationManager)
     {
@@ -75,6 +83,9 @@ public class WfRuntimeManagerService
         final ServiceName<Log> wfInstanceLogServiceName = logServiceName(wfInstancelogName);
         final ServiceName<IdGenerator> wfInstanceIdGeneratorServiceName = wfInstanceIdGeneratorServiceName(wfRuntimeName);
         final ServiceName<HashIndexManager<Long2LongHashIndex>> workflowEventIndexServiceName = wfRuntimeWorkflowEventIndexServiceName(wfRuntimeName);
+        final ServiceName<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexServiceName = wfDefinitionIdIndexServiceName(wfRuntimeName);
+        final ServiceName<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexServiceName = wfDefinitionKeyIndexServiceName(wfRuntimeName);
+        final ServiceName<WfDefinitionCache> wfDefinitionCacheServiceName = wfDefinitionCacheServiceName(wfRuntimeName);
 
         final LogIdGeneratorService wfInstanceIdGeneratorService = new LogIdGeneratorService(new WfInstanceIdReader());
         serviceContext.createService(wfInstanceIdGeneratorServiceName, wfInstanceIdGeneratorService)
@@ -86,12 +97,32 @@ public class WfRuntimeManagerService
             .dependency(wfInstanceLogServiceName, activityInstanceIndexManagerService.getLogInjector())
             .install();
 
+        final Bytes2LongIndexManagerService wfDefinitionKeyIndexManager = new Bytes2LongIndexManagerService(512, 32 * 1024, 256);
+        serviceContext.createService(wfDefinitionKeyIndexServiceName, wfDefinitionKeyIndexManager)
+            .dependency(wfInstanceLogServiceName, wfDefinitionKeyIndexManager.getLogInjector())
+            .install();
+
+        final Long2LongIndexManagerService wfDefinitionIdIndexManager = new Long2LongIndexManagerService(1024, 64);
+        serviceContext.createService(wfDefinitionIdIndexServiceName, wfDefinitionIdIndexManager)
+            .dependency(wfInstanceLogServiceName, wfDefinitionIdIndexManager.getLogInjector())
+            .install();
+
+        final WfDefinitionCacheService wfDefinitionCacheService = new WfDefinitionCacheService(32, 16);
+        serviceContext.createService(wfDefinitionCacheServiceName, wfDefinitionCacheService)
+            .dependency(wfInstanceLogServiceName, wfDefinitionCacheService.getWfDefinitionLogInjector())
+            .dependency(wfDefinitionKeyIndexServiceName, wfDefinitionCacheService.getWfDefinitionKeyIndexInjector())
+            .dependency(wfDefinitionIdIndexServiceName, wfDefinitionCacheService.getWfDefinitionIdIndexInjector())
+            .install();
+
         final WfRuntimeContextService wfRuntimeContextService = new WfRuntimeContextService(wfRuntimeId, wfRuntimeName);
         serviceContext.createService(wfRuntimeContextServiceName(wfRuntimeName), wfRuntimeContextService)
             .dependency(wfInstanceLogServiceName, wfRuntimeContextService.getLogInjector())
             .dependency(wfInstanceIdGeneratorServiceName, wfRuntimeContextService.getIdGeneratorInjector())
-            .dependency(wfDefinitionCacheServiceName(wfRepositoryName), wfRuntimeContextService.getWfDefinitionChacheInjector())
+            .dependency(wfDefinitionCacheServiceName, wfRuntimeContextService.getWfDefinitionChacheInjector())
             .dependency(workflowEventIndexServiceName, wfRuntimeContextService.getWorkflowEventIndexInjector())
+            .dependency(workerResponsePoolServiceName(WfComponent.WORKER_NAME), wfRuntimeContextService.getResponsePoolServiceInjector())
+            .dependency(wfDefinitionIdIndexServiceName, wfRuntimeContextService.getWfDefinitionIdIndexInjector())
+            .dependency(wfDefinitionKeyIndexServiceName, wfRuntimeContextService.getWfDefinitionKeyIndexInjector())
             .listener(this)
             .install();
     }
@@ -119,15 +150,15 @@ public class WfRuntimeManagerService
     }
 
     @Override
-    public void registerInputLogProcessor(LogEntryProcessor<?> logReadHandler)
+    public void registerInputLogConsumer(LogConsumer logConsumer)
     {
-        inputLogProcessors.add(logReadHandler);
+        inputLogConsumers.add(logConsumer);
     }
 
     @Override
-    public List<LogEntryProcessor<?>> getInputLogProcessors()
+    public List<LogConsumer> getInputLogConsumers()
     {
-        return inputLogProcessors;
+        return inputLogConsumers;
     }
 
 }

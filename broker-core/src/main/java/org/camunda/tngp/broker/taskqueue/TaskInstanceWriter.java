@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.taskqueue.handler.TaskTypeHash;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
+import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
+import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.util.buffer.BufferWriter;
@@ -16,6 +17,7 @@ public class TaskInstanceWriter implements BufferWriter
     protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected TaskInstanceEncoder bodyEncoder = new TaskInstanceEncoder();
 
+    protected EventSource source = EventSource.NULL_VAL;
     protected long id;
     protected long wfActivityInstanceEventKey;
     protected int wfRuntimeResourceId;
@@ -25,6 +27,11 @@ public class TaskInstanceWriter implements BufferWriter
     protected long lockOwner;
     protected UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
     protected UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
+
+    public TaskInstanceWriter()
+    {
+        reset();
+    }
 
     @Override
     public int getLength()
@@ -46,6 +53,7 @@ public class TaskInstanceWriter implements BufferWriter
             // TODO: resource and shard ids
             .resourceId(0)
             .shardId(0)
+            .source(source.value())
             .schemaId(TaskInstanceEncoder.SCHEMA_ID)
             .version(TaskInstanceEncoder.SCHEMA_VERSION)
             .templateId(TaskInstanceEncoder.TEMPLATE_ID);
@@ -66,6 +74,16 @@ public class TaskInstanceWriter implements BufferWriter
             .wfRuntimeResourceId(wfRuntimeResourceId)
             .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
             .putPayload(payloadBuffer, 0, payloadBuffer.capacity());
+
+        reset();
+    }
+
+    protected void reset()
+    {
+        this.lockOwner = TaskInstanceEncoder.lockOwnerIdNullValue();
+        this.lockTime = TaskInstanceEncoder.lockTimeNullValue();
+        wfActivityInstanceEventKey = TaskInstanceEncoder.wfActivityInstanceEventKeyNullValue();
+        wfRuntimeResourceId = TaskInstanceEncoder.wfRuntimeResourceIdNullValue();
     }
 
     public TaskInstanceWriter id(long id)
@@ -119,6 +137,12 @@ public class TaskInstanceWriter implements BufferWriter
     public TaskInstanceWriter payload(DirectBuffer buffer, int offset, int length)
     {
         payloadBuffer.wrap(buffer, offset, length);
+        return this;
+    }
+
+    public TaskInstanceWriter source(EventSource source)
+    {
+        this.source = source;
         return this;
     }
 

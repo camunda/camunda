@@ -28,7 +28,15 @@ public class StartWorkflowInstanceRequestReader implements BufferReader
         offset += bodyDecoder.encodedLength();
         offset += StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength();
 
-        keyBuffer.wrap(buffer, offset, wfDefinitionKeyLength);
+        if (wfDefinitionKeyLength > 0)
+        {
+            keyBuffer.wrap(buffer, offset, wfDefinitionKeyLength);
+        }
+        else
+        {
+            keyBuffer.wrap(0, 0);
+        }
+
     }
 
     public long wfDefinitionId()

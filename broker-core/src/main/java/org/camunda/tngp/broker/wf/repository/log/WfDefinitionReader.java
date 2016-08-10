@@ -3,7 +3,6 @@ package org.camunda.tngp.broker.wf.repository.log;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
@@ -33,7 +32,7 @@ public class WfDefinitionReader implements BufferReader
 
         final int wfDefinitionKeyLength = decoder.keyLength();
 
-        offset += TaskInstanceDecoder.taskTypeHeaderLength();
+        offset += WfDefinitionDecoder.keyHeaderLength();
 
         typeKeyBuffer.wrap(buffer, offset, wfDefinitionKeyLength);
 
@@ -43,9 +42,18 @@ public class WfDefinitionReader implements BufferReader
 
         final int resourceLength = decoder.resourceLength();
 
-        offset += TaskInstanceDecoder.payloadHeaderLength();
+        offset += WfDefinitionDecoder.resourceHeaderLength();
 
-        resourceBuffer.wrap(buffer, offset, resourceLength);
+
+        if (resourceLength > 0)
+        {
+            resourceBuffer.wrap(buffer, offset, resourceLength);
+        }
+        else
+        {
+            resourceBuffer.wrap(0, 0);
+        }
+
     }
 
     public int resourceId()
@@ -71,16 +79,6 @@ public class WfDefinitionReader implements BufferReader
     public long id()
     {
         return decoder.id();
-    }
-
-    public int version()
-    {
-        return decoder.version();
-    }
-
-    public long prevVersionPosition()
-    {
-        return decoder.prevVersionPosition();
     }
 
     public BpmnModelInstance asModelInstance()

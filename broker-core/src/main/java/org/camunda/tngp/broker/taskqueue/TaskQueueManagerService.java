@@ -5,11 +5,12 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueC
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueIdGeneratorName;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockedTasksIndexServiceName;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.camunda.tngp.broker.log.LogEntryProcessor;
+import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.services.Bytes2LongIndexManagerService;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.services.LogIdGeneratorService;
@@ -35,7 +36,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
 
-    protected final List<LogEntryProcessor<?>> inputLogProcessors = new CopyOnWriteArrayList<>();
+    protected final List<LogConsumer> inputLogConsumers = new CopyOnWriteArrayList<>();
 
     public TaskQueueManagerService(ConfigurationManager configurationManager)
     {
@@ -91,6 +92,10 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             .dependency(lockedTasksIndexServiceName, taskQueueContextService.getLockedTasksIndexServiceInjector())
             .dependency(logServiceName, taskQueueContextService.getLogInjector())
             .dependency(idGeneratorName, taskQueueContextService.getTaskInstanceIdGeneratorInjector())
+            // TODO: this is a hack: this response pool serves multiple task queue contexts,
+            //   therefore using the response pool to determine the latest pending task queue request (in the LogConsumer)
+            //   does not work
+            .dependency(workerResponsePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getResponsePoolServiceInjector())
             .listener(this)
             .install();
     }
@@ -119,15 +124,15 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
     }
 
     @Override
-    public List<LogEntryProcessor<?>> getInputLogProcessors()
+    public List<LogConsumer> getInputLogConsumers()
     {
-        return inputLogProcessors;
+        return inputLogConsumers;
     }
 
     @Override
-    public void registerInputLogProcessor(LogEntryProcessor<?> logProcessor)
+    public void registerInputLogConsumer(LogConsumer logConsumer)
     {
-        this.inputLogProcessors.add(logProcessor);
+        this.inputLogConsumers.add(logConsumer);
     }
 
 }

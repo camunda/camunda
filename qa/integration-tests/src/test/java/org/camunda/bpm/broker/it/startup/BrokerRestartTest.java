@@ -2,9 +2,11 @@ package org.camunda.bpm.broker.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.regex.Pattern;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
@@ -15,21 +17,21 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
+@Ignore("https://github.com/camunda-tngp/camunda-tngp/issues/26")
 public class BrokerRestartTest
 {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> foo(tempFolder.getRoot().getAbsolutePath()));
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(() -> persistentBrokerConfig(tempFolder.getRoot().getAbsolutePath()));
 
     public ClientRule clientRule = new ClientRule();
-
-
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -42,14 +44,14 @@ public class BrokerRestartTest
 
     protected TngpClient client;
 
-    // TODO: refactor this
-    protected static InputStream foo(String path)
+    protected static InputStream persistentBrokerConfig(String path)
     {
-        // TODO: this is ugly
+        final String canonicallySeparatedPath = path.replaceAll(Pattern.quote(File.separator), "/");
+
         return TestFileUtil.readAsTextFileAndReplace(
                 BrokerRestartTest.class.getClassLoader().getResourceAsStream("persistent-broker.cfg.toml"),
                 StandardCharsets.UTF_8,
-                Collections.singletonMap("\\$\\{brokerFolder\\}", path));
+                Collections.singletonMap("\\$\\{brokerFolder\\}", canonicallySeparatedPath));
     }
 
     @Before
@@ -68,10 +70,14 @@ public class BrokerRestartTest
     public void shouldNotReReadWorkflowExecutionEvents()
     {
         // given
-        client.workflows()
-            .start()
-            .workflowDefinitionKey("anId")
-            .execute();
+        TestUtil.doRepeatedly(() ->
+            client.workflows()
+                .start()
+                .workflowDefinitionKey("anId")
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
                 client.tasks()

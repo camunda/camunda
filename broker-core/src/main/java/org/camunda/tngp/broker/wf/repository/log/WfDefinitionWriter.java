@@ -17,8 +17,6 @@ public class WfDefinitionWriter implements BufferWriter
     protected int shardId;
 
     protected long id;
-    protected int version;
-    protected long prevVersionPosition;
 
     protected final UnsafeBuffer typeKeyBuffer = new UnsafeBuffer(0, 0);
     protected final UnsafeBuffer resourceBuffer = new UnsafeBuffer(0, 0);
@@ -49,8 +47,6 @@ public class WfDefinitionWriter implements BufferWriter
 
         encoder.wrap(buffer, offset)
             .id(id)
-            .version(version)
-            .prevVersionPosition(prevVersionPosition)
             .putKey(typeKeyBuffer, 0, typeKeyBuffer.capacity())
             .putResource(resourceBuffer, 0, resourceBuffer.capacity());
 
@@ -73,23 +69,6 @@ public class WfDefinitionWriter implements BufferWriter
     public WfDefinitionWriter id(final long value)
     {
         this.id = value;
-        return this;
-    }
-
-    public WfDefinitionWriter version(final int value)
-    {
-        this.version = value;
-        return this;
-    }
-
-    public WfDefinitionWriter prevVersionPosition(long value)
-    {
-        if (value < 0)
-        {
-            value = WfDefinitionEncoder.prevVersionPositionNullValue();
-        }
-
-        prevVersionPosition = value;
         return this;
     }
 

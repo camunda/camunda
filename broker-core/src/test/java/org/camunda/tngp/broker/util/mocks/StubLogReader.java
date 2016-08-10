@@ -15,10 +15,10 @@ public class StubLogReader implements LogReader
 {
     protected long position;
     protected long tailPosition;
-    protected Long2ObjectHashMap<BufferWriter> logEntries = new Long2ObjectHashMap<>();
+    protected Long2ObjectHashMap<byte[]> logEntries = new Long2ObjectHashMap<>();
     protected List<Long> entryPositions = new ArrayList<>();
 
-    protected UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
+    protected UnsafeBuffer tempWriteBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
     protected Log targetLog;
 
@@ -69,22 +69,29 @@ public class StubLogReader implements LogReader
             return false;
         }
 
-        final BufferWriter entryAtPosition = logEntries.get(position);
-        entryAtPosition.write(tempBuffer, 0);
-        final int writtenLength = entryAtPosition.getLength();
 
-        reader.wrap(tempBuffer, 0, writtenLength);
+        final byte[] entryAtPosition = logEntries.get(position);
+        final UnsafeBuffer tempReadBuffer = new UnsafeBuffer(entryAtPosition);
 
-        position += writtenLength;
+        reader.wrap(tempReadBuffer, 0, entryAtPosition.length);
+
+        position += entryAtPosition.length;
 
         return true;
     }
 
     public StubLogReader addEntry(BufferWriter writer)
     {
-        logEntries.put(tailPosition, writer);
+        final int writeLength = writer.getLength();
+
+        writer.write(tempWriteBuffer, 0);
+
+        final byte[] entry = new byte[writeLength];
+        tempWriteBuffer.getBytes(0, entry);
+
+        logEntries.put(tailPosition, entry);
         entryPositions.add(tailPosition);
-        tailPosition += writer.getLength();
+        tailPosition += writeLength;
         return this;
     }
 

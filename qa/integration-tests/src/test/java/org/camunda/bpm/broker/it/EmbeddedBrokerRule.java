@@ -14,7 +14,7 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     public EmbeddedBrokerRule()
     {
-        this(null);
+        this(() -> null);
     }
 
     public EmbeddedBrokerRule(Supplier<InputStream> configSupplier)

@@ -10,6 +10,7 @@
       <type name="version" primitiveType="uint16" />
       <type name="resourceId" primitiveType="uint16" />
       <type name="shardId" primitiveType="uint16" />
+      <type name="source" primitiveType="uint8" />
     </composite>
     <composite name="bpmnEventHeader">
       <type name="event" primitiveType="uint16" />
@@ -42,9 +43,22 @@
       <validValue name="ACTIVE">1</validValue>
       <validValue name="COMPLETED">2</validValue>
     </enum>
+    <enum name="ProcessInstanceRequestType" encodingType="uint8">
+      <validValue name="NEW">0</validValue>
+    </enum>
+    <enum name="ActivityInstanceRequestType" encodingType="uint8">
+      <validValue name="COMPLETE">0</validValue>
+    </enum>
+    <enum name="TaskInstanceRequestType" encodingType="uint8">
+      <validValue name="COMPLETE">0</validValue>
+    </enum>
+    <enum name="WfDefinitionRequestType" encodingType="uint8">
+      <validValue name="NEW">0</validValue>
+    </enum>
     <type name="Date" primitiveType="uint64" semanticType="Date" />
   </types>
 
+  <!-- task queue -->
   <sbe:message name="TaskInstance" id="1" description="A task Instance">
     <field name="id" id="1" type="uint64" />
     <field name="version" id="2" type="uint16" />
@@ -58,15 +72,30 @@
     <data name="taskType" id="7" type="varDataEncoding" />
     <data name="payload" id="8" type="varDataEncoding" />
   </sbe:message>
-
-  <sbe:message name="WfDefinition" id="2" description="A Workflow Type">
-    <field name="id" id="1" type="uint64" />
-    <field name="version" id="2" type="uint16" />
-    <field name="prevVersionPosition" id="3" type="uint64" />
-    <data name="key" id="4" type="varDataEncoding" />
-    <data name="resource" id="5" type="varDataEncoding" />
+  
+  <sbe:message name="TaskInstanceRequest" id="9">
+    <field name="type" id="1" type="TaskInstanceRequestType" />
+    <field name="key" id="2" type="uint64" />
+    <field name="lockOwnerId" id="3" type="uint64" />
+  </sbe:message>
+  
+  <sbe:message name="CreateTaskRequest" id="10">
+    <field name="type" id="1" type="TaskInstanceRequestType" />
+    <data name="taskType" id="2" type="varDataEncoding" />
   </sbe:message>
 
+  <!-- repository -->
+  <sbe:message name="WfDefinition" id="2" description="A Workflow Type">
+    <field name="id" id="1" type="uint64" />
+    <data name="key" id="2" type="varDataEncoding" />
+    <data name="resource" id="3" type="varDataEncoding" />
+  </sbe:message>
+  <sbe:message name="WfDefinitionRequest" id="3" description="A Workflow Type">
+    <field name="type" id="1" type="WfDefinitionRequestType" />
+    <data name="resource" id="2" type="varDataEncoding" />
+  </sbe:message>
+
+  <!-- runtime -->
   <sbe:message name="BpmnProcessEvent" id="4">
     <field name="key" id="1" type="uint64" />
     <field name="event" id="2" type="uint16" />
@@ -91,6 +120,26 @@
     <field name="flowElementId" id="5" type="uint16" />
     <field name="taskQueueId" id="6" type="uint16" />
     <data name="taskType" id="7" type="varDataEncoding" />
+  </sbe:message>
+  
+  <sbe:message name="WorkflowInstanceRequest" id="7">
+    <field name="type" id="1" type="ProcessInstanceRequestType" />
+    <field name="wfDefinitionId" id="2" type="uint64" />
+    <field name="wfInstanceId" id="3" type="uint64" />
+    <data name="wfDefinitionKey" id="4" type="varDataEncoding" />
+  </sbe:message>
+  
+  <sbe:message name="ActivityInstanceRequest" id="8">
+    <field name="type" id="1" type="ActivityInstanceRequestType" />
+    <field name="key" id="2" type="uint64" />
+  </sbe:message>
+  
+  <sbe:message name="WfDefinitionRuntimeRequest" id="11">
+    <field name="type" id="1" type="WfDefinitionRequestType" />
+    <field name="id" id="2" type="uint64" />
+    <field name="version" id="3" type="uint16" />
+    <data name="key" id="4" type="varDataEncoding" />
+    <data name="resource" id="5" type="varDataEncoding" />
   </sbe:message>
 
 </sbe:messageSchema>
