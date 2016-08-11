@@ -110,7 +110,10 @@ mavenJob(jobName) {
       evenIfUnstable false
     }
 
-    // archiveJunit '**/target/surefire-reports/*.xml'
+    archiveJunit ('**/target/surefire-reports/*.xml') {
+      allowEmptyResults()
+    }
+
   }
 
   blockOnUpstreamProjects()
