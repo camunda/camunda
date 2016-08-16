@@ -26,8 +26,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     protected K keyHandler;
     protected V valueHandler;
 
-    protected IndexKeyMap<K> dirtyKeys;
-
     /**
      * Restore an existing index from the index store
      */
@@ -48,8 +46,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         this.splitVisitor = new SplitVisitor(crateKeyHandlerInstance(keyHandlerType, recordKeyLength));
         this.keyHandler = crateKeyHandlerInstance(keyHandlerType, recordKeyLength);
         this.valueHandler = createInstance(valueHandlerType);
-
-        this.dirtyKeys = new IndexKeyMap<>(this.keyHandler);
     }
 
     /**
@@ -98,8 +94,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
         loadedIndexBuffer.write();
         loadedBlockBuffer.write();
-
-        this.dirtyKeys = new IndexKeyMap<>(this.keyHandler);
     }
 
     private K crateKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)

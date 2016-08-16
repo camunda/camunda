@@ -24,31 +24,21 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
         super(indexStore, ByteArrayKeyHandler.class, LongValueHandler.class);
     }
 
-    public long get(byte[] key, long missingValue, long dirtyValue)
+    public long get(byte[] key, long missingValue)
     {
         checkKeyLength(key.length);
+
         keyHandler.setKey(key);
-
-        if (dirtyKeys.getAtCurrentKey(-1) > 0)
-        {
-            return dirtyValue;
-        }
-
         valueHandler.theValue = missingValue;
         get();
         return valueHandler.theValue;
     }
 
-    public long get(DirectBuffer buffer, int offset, int length, long missingValue, long dirtyValue)
+    public long get(DirectBuffer buffer, int offset, int length, long missingValue)
     {
         checkKeyLength(length);
+
         keyHandler.setKey(buffer, offset, length);
-
-        if (dirtyKeys.getAtCurrentKey(-1) > 0)
-        {
-            return dirtyValue;
-        }
-
         valueHandler.theValue = missingValue;
         get();
         return valueHandler.theValue;
@@ -90,30 +80,6 @@ public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValu
         valueHandler.theValue = missingValue;
         remove();
         return valueHandler.theValue;
-    }
-
-    public void markDirty(byte[] key)
-    {
-        this.keyHandler.setKey(key);
-        dirtyKeys.incrementAtCurrentKey();
-    }
-
-    public void markDirty(DirectBuffer buffer, int offset, int length)
-    {
-        keyHandler.setKey(buffer, offset, length);
-        dirtyKeys.incrementAtCurrentKey();
-    }
-
-    public void resolveDirty(byte[] key)
-    {
-        this.keyHandler.setKey(key);
-        dirtyKeys.decrementAtCurrentKey();
-    }
-
-    public void resolveDirty(DirectBuffer buffer, int offset, int length)
-    {
-        keyHandler.setKey(buffer, offset, length);
-        dirtyKeys.decrementAtCurrentKey();
     }
 
     protected void checkKeyLength(int providedKeyLength)

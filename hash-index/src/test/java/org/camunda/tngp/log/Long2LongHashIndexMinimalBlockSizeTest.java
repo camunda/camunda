@@ -13,7 +13,6 @@ import org.junit.Test;
 public class Long2LongHashIndexMinimalBlockSizeTest
 {
     static final long MISSING_VALUE = -2;
-    static final long DIRTY_VALUE = -3;
 
     Long2LongHashIndex index;
     FileChannelIndexStore indexStore;
@@ -38,7 +37,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
     public void shouldReturnMissingValueForEmptyMap()
     {
         // given that the map is empty
-        assertThat(index.get(0, MISSING_VALUE, DIRTY_VALUE) == MISSING_VALUE);
+        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -48,7 +47,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         index.put(1, 1);
 
         // then
-        assertThat(index.get(0, MISSING_VALUE, DIRTY_VALUE) == MISSING_VALUE);
+        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -58,7 +57,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         index.put(1, 1);
 
         // if then
-        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -72,7 +71,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(1, -1, -2)).isEqualTo(-1);
+        assertThat(index.get(1, -1)).isEqualTo(-1);
     }
 
     @Test
@@ -87,8 +86,8 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(1, -1, -2)).isEqualTo(-1);
-        assertThat(index.get(2, -1, -2)).isEqualTo(2);
+        assertThat(index.get(1, -1)).isEqualTo(-1);
+        assertThat(index.get(2, -1)).isEqualTo(2);
     }
 
     @Test
@@ -102,8 +101,8 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.get(0, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(0);
-        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(0, MISSING_VALUE)).isEqualTo(0);
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -118,8 +117,8 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(3);
-        assertThat(index.get(1, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
-        assertThat(index.get(3, MISSING_VALUE, DIRTY_VALUE)).isEqualTo(3);
+        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
+        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
     }
 
     @Test
@@ -137,7 +136,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE, DIRTY_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
@@ -153,7 +152,7 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE, DIRTY_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);

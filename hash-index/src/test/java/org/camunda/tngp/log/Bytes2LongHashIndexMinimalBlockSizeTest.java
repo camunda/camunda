@@ -16,8 +16,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class Bytes2LongHashIndexMinimalBlockSizeTest
 {
     static final long MISSING_VALUE = -2;
-    static final long DIRTY_VALUE = -3;
-
 
     byte[][] keys = new byte[16][64];
 
@@ -56,7 +54,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     public void shouldReturnMissingValueForEmptyMap()
     {
         // given that the map is empty
-        assertThat(index.get(keys[0], MISSING_VALUE, DIRTY_VALUE) == MISSING_VALUE);
+        assertThat(index.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -66,7 +64,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         index.put(keys[1], 1);
 
         // then
-        assertThat(index.get(keys[0], MISSING_VALUE, DIRTY_VALUE) == MISSING_VALUE);
+        assertThat(index.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
     }
 
     @Test
@@ -76,7 +74,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         index.put(keys[1], 1);
 
         // if then
-        assertThat(index.get(keys[1], MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(keys[1], MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -87,7 +85,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         // if then
         final UnsafeBuffer keyBuffer = new UnsafeBuffer(keys[1]);
-        assertThat(index.get(keyBuffer, 0, keyBuffer.capacity(), MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(keyBuffer, 0, keyBuffer.capacity(), MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
@@ -101,8 +99,8 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.get(keys[0], MISSING_VALUE, DIRTY_VALUE)).isEqualTo(0);
-        assertThat(index.get(keys[1], MISSING_VALUE, DIRTY_VALUE)).isEqualTo(1);
+        assertThat(index.get(keys[0], MISSING_VALUE)).isEqualTo(0);
+        assertThat(index.get(keys[1], MISSING_VALUE)).isEqualTo(1);
     }
 
 
@@ -121,7 +119,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(keys[i], MISSING_VALUE, DIRTY_VALUE) == i);
+            assertThat(index.get(keys[i], MISSING_VALUE) == i);
         }
     }
 
@@ -133,7 +131,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
         index.put(keyBuffer, 0, keyBuffer.capacity(), 1);
 
         // then
-        assertThat(index.get(keys[1], -1L, -2L)).isEqualTo(1L);
+        assertThat(index.get(keys[1], -1L)).isEqualTo(1L);
     }
 
     @Test
@@ -146,7 +144,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(keys[i], MISSING_VALUE, DIRTY_VALUE) == i);
+            assertThat(index.get(keys[i], MISSING_VALUE) == i);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
@@ -180,7 +178,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(keys[1], -1L, -2L)).isEqualTo(-1L);
+        assertThat(index.get(keys[1], -1)).isEqualTo(-1);
     }
 
     @Test
@@ -195,7 +193,7 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(keys[1], -1L, -2L)).isEqualTo(-1L);
+        assertThat(index.get(keys[1], -1)).isEqualTo(-1);
     }
 
     @Test
@@ -210,8 +208,8 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
 
         //then
         assertThat(removeResult).isEqualTo(1);
-        assertThat(index.get(keys[1], -1, -2)).isEqualTo(-1);
-        assertThat(index.get(keys[2], -1, -2)).isEqualTo(2);
+        assertThat(index.get(keys[1], -1)).isEqualTo(-1);
+        assertThat(index.get(keys[2], -1)).isEqualTo(2);
     }
 
 }

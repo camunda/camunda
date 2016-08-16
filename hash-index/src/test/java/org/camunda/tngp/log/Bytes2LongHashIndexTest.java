@@ -65,7 +65,7 @@ public class Bytes2LongHashIndexTest
         index.put(key, 76L);
 
         // when then
-        assertThat(index.get(shortenedKey, -1, -2)).isEqualTo(76L);
+        assertThat(index.get(shortenedKey, -1)).isEqualTo(76L);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class Bytes2LongHashIndexTest
         expection.expect(IllegalArgumentException.class);
 
         // when
-        index.get(new byte[65], -2, -3);
+        index.get(new byte[65], -2);
     }
 
 
