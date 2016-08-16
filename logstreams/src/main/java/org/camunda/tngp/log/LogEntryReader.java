@@ -24,14 +24,14 @@ public class LogEntryReader
         this.readBufferView = new UnsafeBuffer(readBuffer);
     }
 
-    public long read(final Log log, final long position, final BufferReader bufferReader)
+    public long read(final Log log, final long position, final BufferReader fragmentReader)
     {
         final long nextFragmentOffset = log.pollFragment(position, pollHandler);
         final int entryLength = pollHandler.bytesRead;
 
         if (entryLength > 0)
         {
-            bufferReader.wrap(readBufferView, 0, entryLength);
+            fragmentReader.wrap(readBufferView, 0, entryLength);
         }
 
         return nextFragmentOffset;

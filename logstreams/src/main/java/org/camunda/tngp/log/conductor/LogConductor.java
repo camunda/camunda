@@ -128,7 +128,7 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
             if (!appendableLogSegment.openSegment(false))
             {
-                future.completeExceptionally(new RuntimeException("Cannot open log segment " + appendableLogSegment.getFileName()));
+                future.completeExceptionally(new RuntimeException("Cannot open log segemtn " + appendableLogSegment.getFileName()));
                 return;
             }
         }
@@ -217,25 +217,35 @@ public class LogConductor implements Agent, Consumer<LogConductorCmd>
 
     public void close(final CompletableFuture<Void> future)
     {
-        if (!agentContext.isWriteBufferExternallyManaged())
+        final Thread closeThread = new Thread("log-closer-thread")
         {
-            agentContext.getWriteBuffer().close();
-        }
-
-        try
-        {
-            final AgentRunner[] agentRunners = agentContext.getAgentRunners();
-            if (agentRunners != null)
+            @Override
+            public void run()
             {
-                for (AgentRunner agentRunner : agentRunners)
+
+                if (!agentContext.isWriteBufferExternallyManaged())
                 {
-                    agentRunner.close();
+                    agentContext.getWriteBuffer().close();
+                }
+
+                try
+                {
+                    final AgentRunner[] agentRunners = agentContext.getAgentRunners();
+                    if (agentRunners != null)
+                    {
+                        for (AgentRunner agentRunner : agentRunners)
+                        {
+                            agentRunner.close();
+                        }
+                    }
+                }
+                finally
+                {
+                    future.complete(null);
                 }
             }
-        }
-        finally
-        {
-            future.complete(null);
-        }
+        };
+
+        closeThread.start();
     }
 }

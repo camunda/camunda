@@ -86,11 +86,6 @@ public class LogContext
         return logAppendHandler;
     }
 
-    public void setLogAppendHandler(LogAppendHandler logAppendHandler)
-    {
-        this.logAppendHandler = logAppendHandler;
-    }
-
     public void setDeleteOnClose(boolean deleteOnClose)
     {
         this.deleteOnClose = deleteOnClose;

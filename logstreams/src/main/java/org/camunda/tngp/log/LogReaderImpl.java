@@ -51,15 +51,15 @@ public class LogReaderImpl implements LogReader
     {
         final long nextPosition = entryReader.read(log, position, reader);
 
-        boolean hasReadEntry = false;
+        boolean hasNext = false;
 
         if (nextPosition != -1)
         {
             this.position = nextPosition;
-            hasReadEntry = true;
+            hasNext = true;
         }
 
-        return hasReadEntry;
+        return hasNext;
     }
 
     public long position()

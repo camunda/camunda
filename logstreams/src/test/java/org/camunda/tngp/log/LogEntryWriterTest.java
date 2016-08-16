@@ -47,7 +47,7 @@ public class LogEntryWriterTest
         when(claimedFragmentMock.getBuffer()).thenReturn(buffer);
         when(claimedFragmentMock.getOffset()).thenReturn(432);
 
-        final long result = logEntryWriter.write(logMock, writerMock, null);
+        final long result = logEntryWriter.write(logMock, writerMock);
 
         assertThat(result).isGreaterThanOrEqualTo(0);
         verify(writerMock).getLength();
@@ -69,7 +69,7 @@ public class LogEntryWriterTest
         when(claimedFragmentMock.getBuffer()).thenReturn(buffer);
         when(claimedFragmentMock.getOffset()).thenReturn(432);
 
-        final long result = logEntryWriter.write(logMock, writerMock, null);
+        final long result = logEntryWriter.write(logMock, writerMock);
 
         assertThat(result).isGreaterThanOrEqualTo(0);
         verify(logBufferMock, times(2)).claim(claimedFragmentMock, 123, 32);
@@ -82,7 +82,7 @@ public class LogEntryWriterTest
         when(writerMock.getLength()).thenReturn(123);
         when(logBufferMock.claim(claimedFragmentMock, 123, 32)).thenReturn(-1L);
 
-        final long result = logEntryWriter.write(logMock, writerMock, null);
+        final long result = logEntryWriter.write(logMock, writerMock);
 
         assertThat(result).isGreaterThanOrEqualTo(-1);
 
