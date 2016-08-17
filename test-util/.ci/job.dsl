@@ -114,6 +114,21 @@ mavenJob(jobName) {
       allowEmptyResults()
     }
 
+    extendedEmail {
+      triggers {
+        firstFailure {
+          sendTo {
+            culprits()
+          }
+        }
+        fixed {
+          sendTo {
+            culprits()
+          }
+        }
+      }
+    }
+
   }
 
   blockOnUpstreamProjects()
