@@ -111,6 +111,21 @@ mavenJob(jobName) {
     }
 
     archiveJunit '**/target/surefire-reports/*.xml'
+
+    extendedEmail {
+      triggers {
+        firstFailure {
+          sendTo {
+            culprits()
+          }
+        }
+        fixed {
+          sendTo {
+            culprits()
+          }
+        }
+      }
+    }
   }
 
   blockOnUpstreamProjects()
