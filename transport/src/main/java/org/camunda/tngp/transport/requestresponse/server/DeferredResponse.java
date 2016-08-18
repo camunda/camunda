@@ -19,10 +19,9 @@ public class DeferredResponse
     protected long connectionId;
     protected long requestId;
 
-    protected long asyncOperationId;
-    protected ResponseCompletionHandler completionHandler;
-
     protected DeferredResponseControl responseControl;
+
+    protected boolean isDeferred = false;
 
     public DeferredResponse(Dispatcher sendBuffer, DeferredResponseControl deferredResponseControl)
     {
@@ -35,8 +34,7 @@ public class DeferredResponse
         this.channelId = -1;
         this.connectionId = -1;
         this.requestId = -1;
-        this.asyncOperationId = -1;
-        this.completionHandler = null;
+        this.isDeferred = false;
     }
 
     public void open(int channelId, long connectionId, long requestId)
@@ -89,21 +87,11 @@ public class DeferredResponse
         return isAllocated;
     }
 
-    public int defer(final long asyncOperationId, ResponseCompletionHandler handler)
+    public int defer()
     {
-        int result = -1;
-
-        if (asyncOperationId >= 0)
-        {
-            this.asyncOperationId = asyncOperationId;
-            this.completionHandler = handler;
-            result = 1;
-            responseControl.defer(this);
-        }
-        else
-        {
-            abort();
-        }
+        final int result = 1;
+        responseControl.defer(this);
+        isDeferred = true;
 
         return result;
     }
@@ -112,7 +100,7 @@ public class DeferredResponse
     {
         if (claimedFragment.isOpen() && isDeferred())
         {
-            completionHandler.onAsyncWorkCompleted(this);
+            commit();
         }
     }
 
@@ -134,7 +122,7 @@ public class DeferredResponse
 
     public boolean isDeferred()
     {
-        return completionHandler != null;
+        return isDeferred;
     }
 
     public MutableDirectBuffer getBuffer()

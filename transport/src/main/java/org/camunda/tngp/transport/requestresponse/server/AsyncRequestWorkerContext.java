@@ -10,12 +10,6 @@ public class AsyncRequestWorkerContext
     protected Subscription requestBufferSubscription;
 
     /**
-     * The buffer to which asynchronous work is submitted.
-     * Responses are deferred / blocked until that work is complete.
-     */
-    protected Subscription asyncWorkBufferSubscription;
-
-    /**
      * The pool from which deferred responses are allocated
      */
     protected DeferredResponsePool responsePool;
@@ -32,16 +26,6 @@ public class AsyncRequestWorkerContext
     public void setRequestBufferSubscription(Subscription requestBufferSubscription)
     {
         this.requestBufferSubscription = requestBufferSubscription;
-    }
-
-    public Subscription getAsyncWorkBufferSubscription()
-    {
-        return asyncWorkBufferSubscription;
-    }
-
-    public void setAsyncWorkBufferSubscription(Subscription asyncWorkBufferSubscription)
-    {
-        this.asyncWorkBufferSubscription = asyncWorkBufferSubscription;
     }
 
     public DeferredResponsePool getResponsePool()

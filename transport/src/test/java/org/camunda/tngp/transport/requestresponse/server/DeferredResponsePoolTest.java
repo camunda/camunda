@@ -3,15 +3,17 @@ package org.camunda.tngp.transport.requestresponse.server;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
@@ -29,6 +31,9 @@ public class DeferredResponsePoolTest
     protected ResponseCompletionHandler completionHandler;
 
     protected ByteBuffer byteBuffer = ByteBuffer.allocate(2000);
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp()
@@ -62,7 +67,7 @@ public class DeferredResponsePoolTest
         final DeferredResponse response2 = responsePool.open(1, 2L, 3L);
 
         response1.allocate(123);
-        response1.defer(600L, completionHandler);
+        response1.defer();
 
         // when
         responsePool.reclaim(response2);
@@ -77,7 +82,41 @@ public class DeferredResponsePoolTest
         assertThat(reopenedResponse).isSameAs(response2);
 
         // and the other response can be completed
-        responsePool.onBlockAvailable(byteBuffer, 300, 1300, 1, 1000L);
-        verify(completionHandler).onAsyncWorkCompleted(response1);
+        final DeferredResponse firstDeferred = responsePool.popDeferred();
+        assertThat(firstDeferred).isSameAs(response1);
+        firstDeferred.commit();
+    }
+
+    @Test
+    public void shouldAccessDeferredResponsesInFIFO()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 2);
+
+        final DeferredResponse response1 = responsePool.open(1, 2L, 3L);
+        final DeferredResponse response2 = responsePool.open(1, 2L, 3L);
+
+        // when
+        response1.defer();
+        response2.defer();
+
+        // then
+        final DeferredResponse firstDeferred = responsePool.popDeferred();
+        final DeferredResponse secondDeferred = responsePool.popDeferred();
+        assertThat(firstDeferred).isSameAs(response1);
+        assertThat(secondDeferred).isSameAs(response2);
+    }
+
+    @Test
+    public void shouldNotProvideDeferredResponseWithoutDefer()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 2);
+
+        // then
+        exception.expect(NoSuchElementException.class);
+
+        // when
+        responsePool.popDeferred();
     }
 }

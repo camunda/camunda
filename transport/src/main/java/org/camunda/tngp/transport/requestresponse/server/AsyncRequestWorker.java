@@ -38,7 +38,6 @@ public class AsyncRequestWorker implements Agent
 
     protected final FragmentHandler fragmentHandler;
     protected final Subscription requestSubscription;
-    protected final Subscription asyncWorkCompletionSubscription;
     protected final DeferredResponsePool responsePool;
 
     protected final WorkerTask[] workerTasks;
@@ -50,7 +49,6 @@ public class AsyncRequestWorker implements Agent
         this.name = name;
         this.context = context;
         this.fragmentHandler = new RequestFragmentHandler(context);
-        this.asyncWorkCompletionSubscription = context.getAsyncWorkBufferSubscription();
         this.requestSubscription = context.getRequestBufferSubscription();
         this.responsePool = context.getResponsePool();
         this.workerTasks = context.getWorkerTasks();
@@ -66,12 +64,6 @@ public class AsyncRequestWorker implements Agent
         {
             // poll for as many incoming requests as pooled responses are available
             workCount += requestSubscription.peekAndConsume(fragmentHandler, pooledResponseCount);
-        }
-
-        // poll for completion on the work buffer to send out deferred responses
-        while (asyncWorkCompletionSubscription.pollBlock(responsePool, 1, false) > 0)
-        {
-            ++workCount;
         }
 
         // run additional tasks
