@@ -207,9 +207,14 @@ public class ServiceTaskTest
         // given
         final WorkflowDefinition workflow = clientRule.deployProcess(TWO_TASKS_PROCESS);
 
-        workflowService.start()
-            .workflowDefinitionId(workflow.getId())
-            .execute();
+        TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(workflow.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         final LockedTasksBatch task1Batch = TestUtil.doRepeatedly(() ->
             client
@@ -268,9 +273,14 @@ public class ServiceTaskTest
                     .removeFlowNode("endEvent"));
 
         // given
-        workflowService.start()
-            .workflowDefinitionId(workflow.getId())
-            .execute();
+        TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(workflow.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
         // when
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
