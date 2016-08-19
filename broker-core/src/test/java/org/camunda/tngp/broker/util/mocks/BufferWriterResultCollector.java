@@ -7,7 +7,7 @@ import org.camunda.tngp.util.ReflectUtil;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class BufferWriterResultCollector
 {

@@ -10,12 +10,12 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class ProcessEventHandlerTest
     protected WfDefinitionCache wfDefinitionCache;
 
     @Mock
-    protected LogWriter logWriter;
+    protected LogWriters logWriters;
 
     @Mock
     protected IdGenerator idGenerator;
@@ -59,7 +59,7 @@ public class ProcessEventHandlerTest
     public void shouldDelegateToRegisteredBpmnAspectHandler()
     {
         // given
-        final ProcessEventHandler handler = new ProcessEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        final ProcessEventHandler handler = new ProcessEventHandler(wfDefinitionCache, idGenerator);
 
         final BpmnProcessAspectHandler aspectHandler = mock(BpmnProcessAspectHandler.class);
         when(aspectHandler.getHandledBpmnAspect()).thenReturn(BpmnAspect.TAKE_OUTGOING_FLOWS);
@@ -73,10 +73,10 @@ public class ProcessEventHandlerTest
         when(eventReader.processInstanceId()).thenReturn(123L);
 
         // when
-        handler.handle(eventReader, responseControl);
+        handler.handle(eventReader, responseControl, logWriters);
 
         // then
-        verify(aspectHandler, times(1)).handle(eventReader, process, logWriter, idGenerator);
-        verifyZeroInteractions(logWriter);
+        verify(aspectHandler, times(1)).handle(eventReader, process, logWriters, idGenerator);
+        verifyZeroInteractions(logWriters);
     }
 }

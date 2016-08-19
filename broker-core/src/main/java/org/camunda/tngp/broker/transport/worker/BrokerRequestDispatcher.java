@@ -7,7 +7,7 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class BrokerRequestDispatcher<C extends ResourceContext> implements AsyncRequestHandler

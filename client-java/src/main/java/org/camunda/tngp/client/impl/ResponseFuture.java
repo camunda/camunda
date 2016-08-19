@@ -11,8 +11,8 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.RequestTimeoutException;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 
 public class ResponseFuture<R> implements Future<R>
 {

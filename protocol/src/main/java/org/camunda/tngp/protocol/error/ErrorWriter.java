@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class ErrorWriter implements BufferWriter
 {

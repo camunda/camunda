@@ -1,25 +1,17 @@
 package org.camunda.tngp.broker.wf.runtime.log;
 
-import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.taskqueue.data.ActivityInstanceRequestEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-public class ActivityInstanceRequestWriter implements BufferWriter
+public class ActivityInstanceRequestWriter extends LogEntryWriter<ActivityInstanceRequestWriter, ActivityInstanceRequestEncoder>
 {
 
-    protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected ActivityInstanceRequestEncoder bodyEncoder = new ActivityInstanceRequestEncoder();
-
-    protected EventSource source;
     protected long key;
 
-    public ActivityInstanceRequestWriter source(EventSource source)
+    public ActivityInstanceRequestWriter()
     {
-        this.source = source;
-        return this;
+        super(new ActivityInstanceRequestEncoder());
     }
 
     public ActivityInstanceRequestWriter key(long key)
@@ -29,27 +21,16 @@ public class ActivityInstanceRequestWriter implements BufferWriter
     }
 
     @Override
-    public int getLength()
+    protected int getBodyLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-                ActivityInstanceRequestEncoder.BLOCK_LENGTH;
+        return ActivityInstanceRequestEncoder.BLOCK_LENGTH;
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .resourceId(0)
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .shardId(0)
-            .source(source.value())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .version(bodyEncoder.sbeSchemaVersion());
-
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
+        bodyEncoder.wrap(buffer, offset)
             .key(key);
-
     }
 
 }

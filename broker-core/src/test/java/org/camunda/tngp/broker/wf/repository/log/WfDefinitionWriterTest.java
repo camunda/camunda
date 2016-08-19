@@ -7,7 +7,7 @@ import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionEncoder;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WfDefinitionWriterTest
 {
@@ -22,8 +22,6 @@ public class WfDefinitionWriterTest
 
         // given
         final WfDefinitionWriter writer = new WfDefinitionWriter()
-            .resourceId(42)
-            .shardId(53)
             .id(1)
             .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4);
@@ -43,8 +41,6 @@ public class WfDefinitionWriterTest
         assertThat(headerDecoder.templateId()).isEqualTo(WfDefinitionEncoder.TEMPLATE_ID);
         assertThat(headerDecoder.schemaId()).isEqualTo(WfDefinitionEncoder.SCHEMA_ID);
         assertThat(headerDecoder.version()).isEqualTo(WfDefinitionEncoder.SCHEMA_VERSION);
-        assertThat(headerDecoder.resourceId()).isEqualTo(42);
-        assertThat(headerDecoder.shardId()).isEqualTo(53);
 
         readOffset += headerDecoder.encodedLength();
 

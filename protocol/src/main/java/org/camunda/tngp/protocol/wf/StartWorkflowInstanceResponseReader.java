@@ -4,7 +4,7 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class StartWorkflowInstanceResponseReader implements BufferReader
 {

@@ -9,7 +9,7 @@ import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceAckResponseH
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponseReader;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class DeployBpmnResourceResponseHandlerTest
 {

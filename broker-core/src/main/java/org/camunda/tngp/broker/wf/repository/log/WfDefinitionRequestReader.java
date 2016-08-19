@@ -5,8 +5,8 @@ import org.camunda.tngp.taskqueue.data.WfDefinitionRequestDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WfDefinitionRequestReader implements BufferReader
 {

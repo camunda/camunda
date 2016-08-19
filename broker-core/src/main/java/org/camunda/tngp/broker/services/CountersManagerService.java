@@ -5,15 +5,14 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
 
+import org.agrona.BitUtil;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.metrics.cfg.MetricsCfg;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
-
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class CountersManagerService implements Service<Counters>
 {

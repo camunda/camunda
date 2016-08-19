@@ -10,7 +10,7 @@ import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskInstanceReaderTest
 {

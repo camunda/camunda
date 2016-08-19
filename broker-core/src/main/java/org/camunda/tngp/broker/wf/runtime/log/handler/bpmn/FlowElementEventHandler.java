@@ -1,36 +1,33 @@
 package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
+import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryTypeHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 public class FlowElementEventHandler implements LogEntryTypeHandler<BpmnFlowElementEventReader>
 {
 
     protected final WfDefinitionCache wfDefinitionCache;
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
-    protected LogWriter logWriter;
     protected IdGenerator idGenerator;
 
     protected final Int2ObjectHashMap<BpmnFlowElementAspectHandler> flowElementEventHandlers = new Int2ObjectHashMap<>();
 
-    public FlowElementEventHandler(WfDefinitionCache wfDefinitionCache, LogWriter logWriter, IdGenerator idGenerator)
+    public FlowElementEventHandler(WfDefinitionCache wfDefinitionCache, IdGenerator idGenerator)
     {
         this.wfDefinitionCache = wfDefinitionCache;
-        this.logWriter = logWriter;
         this.idGenerator = idGenerator;
     }
 
     @Override
-    public void handle(BpmnFlowElementEventReader flowElementEventReader, ResponseControl responseControl)
+    public void handle(BpmnFlowElementEventReader flowElementEventReader, ResponseControl responseControl, LogWriters logWriters)
     {
         final ProcessGraph process = wfDefinitionCache.getProcessGraphByTypeId(flowElementEventReader.wfDefinitionId());
 
@@ -41,7 +38,7 @@ public class FlowElementEventHandler implements LogEntryTypeHandler<BpmnFlowElem
 
         System.out.println("Handling event of type " + flowElementEventReader.event());
 
-        handler.handle(flowElementEventReader, process, logWriter, idGenerator);
+        handler.handle(flowElementEventReader, process, logWriters, idGenerator);
     }
 
     public void addAspectHandler(BpmnFlowElementAspectHandler aspectHandler)

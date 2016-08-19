@@ -13,7 +13,7 @@ import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRuntimeContext>
 {

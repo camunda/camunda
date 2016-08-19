@@ -6,9 +6,9 @@ import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
 import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeployBpmnResourceRequestReaderTest
 {

@@ -8,6 +8,6 @@ public interface IndexWriter
 
     void indexLogEntry(long position, LogEntryHeaderReader reader);
 
-    // oder analog gibt der nur die Positionen raus
     HashIndexManager<?> getIndexManager();
+
 }

@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.system.threads;
 
-import uk.co.real_logic.agrona.concurrent.Agent;
+import org.agrona.concurrent.Agent;
 
 public interface AgentRunnerService
 {

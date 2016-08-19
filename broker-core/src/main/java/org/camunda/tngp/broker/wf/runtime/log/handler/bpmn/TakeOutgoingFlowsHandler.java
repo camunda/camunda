@@ -4,12 +4,12 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandler, BpmnProcessAspectHandler
@@ -24,7 +24,7 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
     }
 
     @Override
-    public int handle(BpmnProcessEventReader processEventReader, ProcessGraph process, LogWriter logWriter,
+    public int handle(BpmnProcessEventReader processEventReader, ProcessGraph process, LogWriters logWriters,
             IdGenerator idGenerator)
     {
         flowElementVisitor.init(process).moveToNode(processEventReader.initialElementId());
@@ -35,11 +35,11 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
                 processEventReader.processInstanceId(),
                 flowElementVisitor.nodeId(),
                 idGenerator,
-                logWriter);
+                logWriters);
     }
 
     @Override
-    public int handle(BpmnActivityEventReader activityEventReader, ProcessGraph process, LogWriter logWriter,
+    public int handle(BpmnActivityEventReader activityEventReader, ProcessGraph process, LogWriters logWriters,
             IdGenerator idGenerator)
     {
         flowElementVisitor.init(process).moveToNode(activityEventReader.flowElementId());
@@ -50,10 +50,10 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
                 activityEventReader.wfInstanceId(),
                 flowElementVisitor.nodeId(),
                 idGenerator,
-                logWriter);
+                logWriters);
     }
 
-    protected int writeSequenceFlowEvent(long processId, long processInstanceId, int sequenceFlowId, IdGenerator idGenerator, LogWriter logWriter)
+    protected int writeSequenceFlowEvent(long processId, long processInstanceId, int sequenceFlowId, IdGenerator idGenerator, LogWriters logWriters)
     {
         eventWriter
             .eventType(ExecutionEventType.SQF_EXECUTED)
@@ -64,15 +64,8 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
 
         System.out.println("Taking flow " + sequenceFlowId);
 
-        if (logWriter.write(eventWriter) >= 0)
-        {
-            return LogEntryHandler.CONSUME_ENTRY_RESULT;
-        }
-        else
-        {
-            System.err.println("cannot write sequence flow take event");
-            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
-        }
+        logWriters.writeToCurrentLog(eventWriter);
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 
     public void setEventWriter(BpmnFlowElementEventWriter eventWriter)

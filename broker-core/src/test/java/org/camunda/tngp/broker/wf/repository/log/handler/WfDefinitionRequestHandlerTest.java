@@ -8,10 +8,12 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
@@ -26,8 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 public class WfDefinitionRequestHandlerTest
 {
     protected StubLogWriter logWriter;
@@ -35,6 +35,7 @@ public class WfDefinitionRequestHandlerTest
     protected StubLogReader logReader;
     protected IdGenerator idGenerator = new PrivateIdGenerator(10L);
     protected StubResponseControl responseControl;
+    protected StubLogWriters logWriters;
 
 
     @Before
@@ -45,6 +46,8 @@ public class WfDefinitionRequestHandlerTest
         logReader = new StubLogReader(200L, null);
         logWriter = new StubLogWriter();
         responseControl = new StubResponseControl();
+        logWriters = new StubLogWriters(0);
+        logWriters.addWriter(0, logWriter);
     }
 
     @Test
@@ -60,12 +63,13 @@ public class WfDefinitionRequestHandlerTest
         when(requestReader.resource()).thenReturn(new UnsafeBuffer(resource));
         when(requestReader.type()).thenReturn(WfDefinitionRequestType.NEW);
 
-        final WfDefinitionRequestHandler handler = new WfDefinitionRequestHandler(logReader, logWriter, idGenerator);
+        final WfDefinitionRequestHandler handler = new WfDefinitionRequestHandler(logReader, idGenerator);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
 
         final WfDefinitionReader wfDefinitionReader = logWriter.getEntryAs(0, WfDefinitionReader.class);
@@ -85,14 +89,14 @@ public class WfDefinitionRequestHandlerTest
         // given
         final byte[] resource = "not-bpmn".getBytes(StandardCharsets.UTF_8);
 
-        final WfDefinitionRequestHandler handler = new WfDefinitionRequestHandler(logReader, logWriter, idGenerator);
+        final WfDefinitionRequestHandler handler = new WfDefinitionRequestHandler(logReader, idGenerator);
 
         final WfDefinitionRequestReader requestReader = mock(WfDefinitionRequestReader.class);
         when(requestReader.resource()).thenReturn(new UnsafeBuffer(resource));
         when(requestReader.type()).thenReturn(WfDefinitionRequestType.NEW);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -102,7 +106,7 @@ public class WfDefinitionRequestHandlerTest
         assertThat(errorReader.detailCode()).isEqualTo(WfErrors.DEPLOYMENT_ERROR);
         assertThat(errorReader.errorMessage()).startsWith("Cannot deploy Bpmn Resource: Exception during parsing");
 
-        assertThat(logWriter.size()).isEqualTo(0);
+        assertThat(logWriters.writtenEntries()).isZero();
     }
 
     @Test
@@ -119,14 +123,14 @@ public class WfDefinitionRequestHandlerTest
 
         final byte[] resource = asByteArray(Bpmn.createExecutableProcess(procesId).startEvent().done());
 
-        final WfDefinitionRequestHandler handler = new WfDefinitionRequestHandler(logReader, logWriter, idGenerator);
+        final WfDefinitionRequestHandler handler = new WfDefinitionRequestHandler(logReader, idGenerator);
 
         final WfDefinitionRequestReader requestReader = mock(WfDefinitionRequestReader.class);
         when(requestReader.resource()).thenReturn(new UnsafeBuffer(resource));
         when(requestReader.type()).thenReturn(WfDefinitionRequestType.NEW);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -136,7 +140,7 @@ public class WfDefinitionRequestHandlerTest
         assertThat(errorReader.detailCode()).isEqualTo(WfErrors.DEPLOYMENT_ERROR);
         assertThat(errorReader.errorMessage()).isEqualTo("Id of process exceeds max length: 256.");
 
-        assertThat(logWriter.size()).isEqualTo(0);
+        assertThat(logWriters.writtenEntries()).isEqualTo(0);
     }
 
     private static byte[] asByteArray(final BpmnModelInstance bpmnModelInstance)

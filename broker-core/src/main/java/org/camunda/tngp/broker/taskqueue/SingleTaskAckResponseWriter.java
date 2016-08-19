@@ -4,7 +4,7 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckEncoder;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class SingleTaskAckResponseWriter implements BufferWriter
 {

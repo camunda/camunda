@@ -2,7 +2,7 @@ package org.camunda.tngp.protocol.taskqueue;
 
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class SingleTaskAckResponseReader implements BufferReader
 {

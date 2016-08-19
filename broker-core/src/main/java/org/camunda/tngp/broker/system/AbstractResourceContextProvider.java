@@ -11,7 +11,7 @@ import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceListener;
 import org.camunda.tngp.servicecontainer.ServiceName;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 
 @SuppressWarnings("unchecked")
 public abstract class AbstractResourceContextProvider<C extends ResourceContext> implements ResourceContextProvider<C>, ServiceListener

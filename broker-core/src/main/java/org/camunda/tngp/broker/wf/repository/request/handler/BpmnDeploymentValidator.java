@@ -9,8 +9,8 @@ import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.bpmn.graph.validation.BpmnExecutionValidators;
 import org.camunda.tngp.bpmn.graph.validation.BpmnValidationResultFormatter;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.io.DirectBufferInputStream;
+import org.agrona.DirectBuffer;
+import org.agrona.io.DirectBufferInputStream;
 
 /**
  * Validates whether a bpmn model can be deployed

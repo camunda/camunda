@@ -1,13 +1,14 @@
 package org.camunda.tngp.broker.taskqueue.log.handler;
 
 import org.camunda.tngp.broker.log.LogEntryTypeHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.taskqueue.LockedTaskBatchWriter;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class TaskInstanceHandler implements LogEntryTypeHandler<TaskInstanceReader>
 {
@@ -15,7 +16,7 @@ public class TaskInstanceHandler implements LogEntryTypeHandler<TaskInstanceRead
     protected LockedTaskBatchWriter taskBatchResponseWriter = new LockedTaskBatchWriter();
 
     @Override
-    public void handle(TaskInstanceReader reader, ResponseControl responseControl)
+    public void handle(TaskInstanceReader reader, ResponseControl responseControl, LogWriters logWriters)
     {
         final TaskInstanceState state = reader.state();
 

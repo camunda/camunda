@@ -12,8 +12,8 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class LockedTaskBatchWriterTest
 {

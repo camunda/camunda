@@ -3,7 +3,7 @@ package org.camunda.tngp.client.impl.cmd;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.protocol.error.ErrorReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class ClientErrorResponseHandler
 {

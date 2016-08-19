@@ -5,8 +5,8 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceEncoder;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class StartWorkflowInstanceRequestWriter implements ClientRequestWriter
 {

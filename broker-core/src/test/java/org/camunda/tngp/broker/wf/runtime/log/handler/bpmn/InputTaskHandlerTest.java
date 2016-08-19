@@ -5,13 +5,14 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
-import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
-import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.handler.InputTaskHandler;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
@@ -20,23 +21,15 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 public class InputTaskHandlerTest
 {
 
     @Mock
     protected TaskInstanceReader taskInstanceReader;
 
-    @Mock
-    protected ResourceContextProvider<WfRuntimeContext> runtimeContextProvider;
-
-    @Mock
-    protected WfRuntimeContext runtimeContext;
-
     protected StubLogWriter logWriter;
     protected StubResponseControl responseControl;
+    protected StubLogWriters logWriters;
 
     protected DirectBuffer payloadBuffer = new UnsafeBuffer("PingPong".getBytes(StandardCharsets.UTF_8));
     protected DirectBuffer taskTypeBuffer = new UnsafeBuffer("Foobar".getBytes(StandardCharsets.UTF_8));
@@ -65,9 +58,8 @@ public class InputTaskHandlerTest
 
         logWriter = new StubLogWriter();
         responseControl = new StubResponseControl();
-
-        when(runtimeContextProvider.getContextForResource(7)).thenReturn(runtimeContext);
-        when(runtimeContext.getLogWriter()).thenReturn(logWriter);
+        logWriters = new StubLogWriters(0);
+        logWriters.addWriter(7, logWriter);
 
     }
 
@@ -75,12 +67,12 @@ public class InputTaskHandlerTest
     public void shouldHandleCompleteEvent()
     {
         // given
-        final InputTaskHandler handler = new InputTaskHandler(runtimeContextProvider);
+        final InputTaskHandler handler = new InputTaskHandler();
 
         mockTaskInstanceEvent(TaskInstanceState.COMPLETED);
 
         // when
-        handler.handle(taskInstanceReader, responseControl);
+        handler.handle(taskInstanceReader, responseControl, logWriters);
 
         // then
         assertThat(logWriter.size()).isEqualTo(1);
@@ -89,19 +81,19 @@ public class InputTaskHandlerTest
         assertThat(newEntry.activityInstanceKey()).isEqualTo(23456789L);
 
         final LogEntryHeaderReader newEntryHeader = logWriter.getEntryAs(0, LogEntryHeaderReader.class);
-        assertThat(newEntryHeader.source()).isEqualTo(EventSource.EXTERNAL_LOG);
+        assertThat(newEntryHeader.source()).isEqualTo(EventSource.LOG);
     }
 
     @Test
     public void shouldNotHandleLockedEvent()
     {
         // given
-        final InputTaskHandler handler = new InputTaskHandler(runtimeContextProvider);
+        final InputTaskHandler handler = new InputTaskHandler();
 
         mockTaskInstanceEvent(TaskInstanceState.LOCKED);
 
         // when
-        handler.handle(taskInstanceReader, responseControl);
+        handler.handle(taskInstanceReader, responseControl, logWriters);
 
         // then
         assertThat(logWriter.size()).isEqualTo(0);

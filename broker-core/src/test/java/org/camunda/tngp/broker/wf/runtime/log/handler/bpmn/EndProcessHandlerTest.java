@@ -14,6 +14,7 @@ import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.TestWfRuntimeLogEntries;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
@@ -33,6 +34,7 @@ public class EndProcessHandlerTest
 
     protected StubLogReader logReader;
     protected StubLogWriter logWriter;
+    protected StubLogWriters logWriters;
 
     @Mock
     protected Long2LongHashIndex workflowEventIndex;
@@ -51,6 +53,7 @@ public class EndProcessHandlerTest
 
         logReader = new StubLogReader(123L, null);
         logWriter = new StubLogWriter();
+        logWriters = new StubLogWriters(0, logWriter);
     }
 
     @Before
@@ -95,9 +98,10 @@ public class EndProcessHandlerTest
         final EndProcessHandler eventHandler = new EndProcessHandler(logReader, workflowEventIndex);
 
         // when
-        eventHandler.handle(flowEventReader, endEventProcess, logWriter, idGenerator);
+        eventHandler.handle(flowEventReader, endEventProcess, logWriters, idGenerator);
 
         // then
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
 
         final BpmnProcessEventReader newEvent = logWriter.getEntryAs(0, BpmnProcessEventReader.class);
@@ -127,9 +131,10 @@ public class EndProcessHandlerTest
         final EndProcessHandler eventHandler = new EndProcessHandler(logReader, workflowEventIndex);
 
         // when
-        eventHandler.handle(activityInstanceEvent, serviceTaskProcess, logWriter, idGenerator);
+        eventHandler.handle(activityInstanceEvent, serviceTaskProcess, logWriters, idGenerator);
 
         // then
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
 
         final BpmnProcessEventReader newEvent = logWriter.getEntryAs(0, BpmnProcessEventReader.class);

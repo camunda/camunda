@@ -9,7 +9,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
@@ -103,57 +102,6 @@ public class LogEntryProcessorTest
         assertThat(fragmentsProcessed).isEqualTo(0);
 
         verifyZeroInteractions(logEntryHandler);
-    }
-
-    @Test
-    public void shouldRetryProcessingOnPostponeResult()
-    {
-        // given
-        final LogEntryProcessor<TaskInstanceReader> logEntryProcessor = new LogEntryProcessor<>(logReader, new TaskInstanceReader(), logEntryHandler);
-
-        logReader.addEntry(new TaskInstanceWriter().id(123L)
-                .state(TaskInstanceState.COMPLETED));
-        logReader.addEntry(new TaskInstanceWriter().id(456L)
-                .state(TaskInstanceState.COMPLETED));
-
-        when(logEntryHandler.handle(eq(logReader.getEntryPosition(0)), any()))
-            .thenReturn(LogEntryHandler.POSTPONE_ENTRY_RESULT, LogEntryHandler.CONSUME_ENTRY_RESULT);
-
-        // when reading the first time
-        int fragmentsProcessed = logEntryProcessor.doWork(1);
-
-        // then
-        final InOrder inOrder = inOrder(logEntryHandler);
-
-        assertThat(fragmentsProcessed).isEqualTo(0);
-        inOrder.verify(logEntryHandler, times(1))
-            .handle(
-                eq(logReader.getEntryPosition(0)),
-                argThat(BufferReaderMatcher.<TaskInstanceReader>readsProperties()
-                        .matching((r) -> r.id(), 123L)));
-
-        // when retrying the first time
-        fragmentsProcessed = logEntryProcessor.doWork(1);
-
-        // then
-        assertThat(fragmentsProcessed).isEqualTo(1);
-        inOrder.verify(logEntryHandler, times(1))
-            .handle(
-                eq(logReader.getEntryPosition(0)),
-                argThat(BufferReaderMatcher.<TaskInstanceReader>readsProperties()
-                        .matching((r) -> r.id(), 123L)));
-
-        // when processing the next entry
-        fragmentsProcessed = logEntryProcessor.doWork(1);
-
-        // then
-        assertThat(fragmentsProcessed).isEqualTo(1);
-        inOrder.verify(logEntryHandler, times(1))
-            .handle(
-                eq(logReader.getEntryPosition(1)),
-                argThat(BufferReaderMatcher.<TaskInstanceReader>readsProperties()
-                        .matching((r) -> r.id(), 456L)));
-        inOrder.verifyNoMoreInteractions();
     }
 
 }

@@ -15,8 +15,8 @@ import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
 
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 
 public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> implements Service<HashIndexManager<I>>, HashIndexManager<I>
 {

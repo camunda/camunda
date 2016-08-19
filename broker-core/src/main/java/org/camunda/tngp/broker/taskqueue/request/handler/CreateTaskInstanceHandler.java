@@ -10,7 +10,7 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueueContext>
 {

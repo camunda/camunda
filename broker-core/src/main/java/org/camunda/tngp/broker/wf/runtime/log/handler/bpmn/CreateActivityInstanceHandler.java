@@ -1,17 +1,16 @@
 package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-
-import uk.co.real_logic.agrona.DirectBuffer;
 
 public class CreateActivityInstanceHandler implements BpmnFlowElementAspectHandler
 {
@@ -20,7 +19,7 @@ public class CreateActivityInstanceHandler implements BpmnFlowElementAspectHandl
     protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
     @Override
-    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriters logWriters, IdGenerator idGenerator)
     {
         final int sequenceFlowId = flowElementEventReader.flowElementId();
         flowElementVisitor.init(process).moveToNode(sequenceFlowId);
@@ -38,15 +37,9 @@ public class CreateActivityInstanceHandler implements BpmnFlowElementAspectHandl
             .taskQueueId(flowElementVisitor.taskQueueId())
             .taskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
 
-        if (logWriter.write(eventWriter) >= 0)
-        {
-            return LogEntryHandler.CONSUME_ENTRY_RESULT;
-        }
-        else
-        {
-            System.err.println("cannot write activity instance create event");
-            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
-        }
+        logWriters.writeToCurrentLog(eventWriter);
+
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 
     @Override

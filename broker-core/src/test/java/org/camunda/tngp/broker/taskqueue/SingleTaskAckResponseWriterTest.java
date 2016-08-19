@@ -6,7 +6,7 @@ import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckDecoder;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class SingleTaskAckResponseWriterTest
 {

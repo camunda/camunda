@@ -5,7 +5,7 @@ import org.camunda.tngp.taskqueue.data.TaskInstanceRequestDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class TaskInstanceRequestReader implements BufferReader
 {

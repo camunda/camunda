@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.transport.worker.spi;
 
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public interface BrokerRequestHandler<C extends ResourceContext>
 {

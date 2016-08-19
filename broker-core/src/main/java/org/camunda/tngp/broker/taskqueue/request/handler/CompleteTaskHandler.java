@@ -17,7 +17,7 @@ import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContext>
 {

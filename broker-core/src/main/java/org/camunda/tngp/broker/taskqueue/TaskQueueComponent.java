@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.LOG_WRITE_BUFFER_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_MANAGER;
 import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
@@ -85,7 +84,6 @@ public class TaskQueueComponent implements Component
 
         final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.createService(workerContextServiceName(WORKER_NAME), brokerWorkerContextService)
             .dependency(responsePoolServiceName, brokerWorkerContextService.getResponsePoolInjector())
-            .dependency(LOG_WRITE_BUFFER_SERVICE, brokerWorkerContextService.getAsyncWorkBufferInjector())
             .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), brokerWorkerContextService.getRequestBufferInjector())
             .dependency(TASK_QUEUE_MANAGER, brokerWorkerContextService.getTaskQueueManagerInjector())
             .install();

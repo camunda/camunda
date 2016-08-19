@@ -16,7 +16,6 @@ public class BrokerRequestWorkerContextService implements Service<AsyncRequestWo
 
     protected final AsyncRequestWorkerContext ctx;
 
-    protected Subscription asyncWorkSubscription;
     protected Subscription requestSubscription;
 
     public BrokerRequestWorkerContextService(AsyncRequestWorkerContext context)
@@ -36,7 +35,6 @@ public class BrokerRequestWorkerContextService implements Service<AsyncRequestWo
     @Override
     public void stop()
     {
-        asyncWorkSubscription.close();
         requestSubscription.close();
     }
 
@@ -54,11 +52,6 @@ public class BrokerRequestWorkerContextService implements Service<AsyncRequestWo
     public Injector<DeferredResponsePool> getResponsePoolInjector()
     {
         return responsePoolInjector;
-    }
-
-    public Injector<Dispatcher> getAsyncWorkBufferInjector()
-    {
-        return asyncWorkBufferInjector;
     }
 
 }

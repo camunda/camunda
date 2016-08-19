@@ -27,7 +27,7 @@ import org.camunda.tngp.taskqueue.data.WfDefinitionRuntimeRequestDecoder;
 import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 
 /**
  * An instance of {@link Templates} is stateful and not thread-safe
@@ -120,12 +120,14 @@ public class Templates
                 CREATE_TASK_REQUEST);
     }
 
+    @SuppressWarnings("unchecked")
     public <S extends BufferReader> S getReader(Template<S> template)
     {
         // TODO: do something if template not contained
         return (S) entryReaders.get(template);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends BufferReader> Template<T> getTemplate(int id)
     {
         // TODO: throw exception if template does not exist

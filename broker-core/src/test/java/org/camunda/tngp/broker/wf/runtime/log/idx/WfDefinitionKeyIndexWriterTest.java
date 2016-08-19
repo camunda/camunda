@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
@@ -20,8 +21,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class WfDefinitionKeyIndexWriterTest
 {

@@ -2,11 +2,6 @@ package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrap;
-import static org.hamcrest.Matchers.not;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.longThat;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -15,26 +10,22 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
-import org.camunda.tngp.broker.test.util.FluentMock;
+import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
+import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TakeOutgoingFlowsHandlerTest
 {
-
-    @FluentMock
-    protected BpmnFlowElementEventWriter eventWriter;
 
     @Mock
     protected BpmnProcessEventReader processEventReader;
@@ -42,8 +33,8 @@ public class TakeOutgoingFlowsHandlerTest
     @Mock
     protected BpmnActivityEventReader activityEventReader;
 
-    @Mock
-    protected LogWriter logWriter;
+    protected StubLogWriter logWriter;
+    protected StubLogWriters logWriters;
 
     protected ProcessGraph process;
     protected FlowElementVisitor elementVisitor;
@@ -55,6 +46,9 @@ public class TakeOutgoingFlowsHandlerTest
     {
         MockitoAnnotations.initMocks(this);
         idGenerator = new PrivateIdGenerator(0);
+
+        logWriter = new StubLogWriter();
+        logWriters = new StubLogWriters(0, logWriter);
     }
 
     @Before
@@ -83,22 +77,22 @@ public class TakeOutgoingFlowsHandlerTest
         when(processEventReader.processInstanceId()).thenReturn(9876L);
 
         final TakeOutgoingFlowsHandler handler = new TakeOutgoingFlowsHandler();
-        handler.setEventWriter(eventWriter);
 
         // when
-        handler.handle(processEventReader, process, logWriter, idGenerator);
+        handler.handle(processEventReader, process, logWriters, idGenerator);
 
         // then
         elementVisitor.init(process).moveToNode(process.intialFlowNodeId());
         final int sequenceFlowId = elementVisitor.traverseEdge(BpmnEdgeTypes.NODE_OUTGOING_SEQUENCE_FLOWS).nodeId();
 
-        verify(eventWriter).eventType(ExecutionEventType.SQF_EXECUTED);
-        verify(eventWriter).flowElementId(sequenceFlowId);
-        verify(eventWriter).key(anyLong());
-        verify(eventWriter).processId(467L);
-        verify(eventWriter).workflowInstanceId(9876L);
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
+        final BpmnFlowElementEventReader reader = logWriter.getEntryAs(0, BpmnFlowElementEventReader.class);
 
-        verify(logWriter).write(eventWriter);
+        assertThat(reader.event()).isEqualTo(ExecutionEventType.SQF_EXECUTED);
+        assertThat(reader.flowElementId()).isEqualTo(sequenceFlowId);
+        assertThat(reader.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(reader.wfDefinitionId()).isEqualTo(467L);
+        assertThat(reader.wfInstanceId()).isEqualTo(9876L);
     }
 
     @Test
@@ -126,20 +120,19 @@ public class TakeOutgoingFlowsHandlerTest
         when(activityEventReader.taskQueueId()).thenReturn(4);
 
         final TakeOutgoingFlowsHandler handler = new TakeOutgoingFlowsHandler();
-        handler.setEventWriter(eventWriter);
 
         // when
-        handler.handle(activityEventReader, process, logWriter, idGenerator);
+        handler.handle(activityEventReader, process, logWriters, idGenerator);
 
         // then
-        final InOrder inOrder = inOrder(eventWriter, logWriter);
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
+        final BpmnFlowElementEventReader reader = logWriter.getEntryAs(0, BpmnFlowElementEventReader.class);
 
-        inOrder.verify(eventWriter).eventType(ExecutionEventType.SQF_EXECUTED);
-        inOrder.verify(eventWriter).flowElementId(sequenceFlowId);
-        inOrder.verify(eventWriter).key(longThat(not(764L)));
-        inOrder.verify(eventWriter).processId(9876L);
-        inOrder.verify(eventWriter).workflowInstanceId(893L);
-        inOrder.verify(logWriter).write(eventWriter);
+        assertThat(reader.event()).isEqualTo(ExecutionEventType.SQF_EXECUTED);
+        assertThat(reader.flowElementId()).isEqualTo(sequenceFlowId);
+        assertThat(reader.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(reader.wfDefinitionId()).isEqualTo(9876L);
+        assertThat(reader.wfInstanceId()).isEqualTo(893L);
     }
 
     @Test

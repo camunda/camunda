@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
@@ -10,7 +11,6 @@ import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActivityInstanceAspectHandler
@@ -28,24 +28,24 @@ public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActi
     }
 
     @Override
-    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriters logWriters, IdGenerator idGenerator)
     {
         return writeProcessEndEvent(
             flowElementEventReader.wfInstanceId(),
-            logWriter);
+            logWriters);
     }
 
     @Override
-    public int handle(BpmnActivityEventReader activityEventReader, ProcessGraph process, LogWriter logWriter,
+    public int handle(BpmnActivityEventReader activityEventReader, ProcessGraph process, LogWriters logWriters,
             IdGenerator idGenerator)
     {
         return writeProcessEndEvent(
             activityEventReader.wfInstanceId(),
-            logWriter);
+            logWriters);
 
     }
 
-    protected int writeProcessEndEvent(long processInstanceId, LogWriter logWriter)
+    protected int writeProcessEndEvent(long processInstanceId, LogWriters logWriters)
     {
         final long previousEventPosition = workflowEventIndex.get(processInstanceId, -1L);
 
@@ -59,15 +59,8 @@ public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActi
             .initialElementId(latestEventReader.initialElementId())
             .key(latestEventReader.key());
 
-        if (logWriter.write(eventWriter) >= 0)
-        {
-            return LogEntryHandler.CONSUME_ENTRY_RESULT;
-        }
-        else
-        {
-            System.err.println("Could not write process start event");
-            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
-        }
+        logWriters.writeToCurrentLog(eventWriter);
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 
     @Override

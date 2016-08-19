@@ -2,10 +2,10 @@ package org.camunda.tngp.protocol.error;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class ErrorReader implements BufferReader
 {

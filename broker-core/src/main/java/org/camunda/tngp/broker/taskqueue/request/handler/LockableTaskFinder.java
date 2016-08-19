@@ -8,14 +8,14 @@ import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
 {
     protected LogReader logReader;
     protected LogEntryProcessor<TaskInstanceReader> logEntryProcessor;
 
-    protected int taskTypeHashToPoll;
+    protected long taskTypeHashToPoll;
     protected DirectBuffer taskTypeToPoll;
 
     protected TaskInstanceReader lockableTask;
@@ -39,7 +39,7 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
             DirectBuffer taskTypeToPoll)
     {
         this.logReader.setLogAndPosition(log, position);
-        this.taskTypeHashToPoll = taskTypeHashToPoll;
+        this.taskTypeHashToPoll = Integer.toUnsignedLong(taskTypeHashToPoll);
         this.taskTypeToPoll = taskTypeToPoll;
         this.lockableTask = null;
         this.lockableTaskPosition = -1;

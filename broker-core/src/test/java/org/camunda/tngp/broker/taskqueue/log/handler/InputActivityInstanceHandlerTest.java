@@ -8,6 +8,7 @@ import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.broker.util.mocks.TestWfRuntimeLogEntries;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
@@ -29,6 +30,7 @@ public class InputActivityInstanceHandlerTest
     protected TaskQueueContext taskQueueContext;
 
     protected StubLogWriter logWriter;
+    protected StubLogWriters logWriters;
     protected StubResponseControl responseControl;
     protected IdGenerator idGenerator;
 
@@ -38,6 +40,8 @@ public class InputActivityInstanceHandlerTest
         MockitoAnnotations.initMocks(this);
 
         logWriter = new StubLogWriter();
+        logWriters = new StubLogWriters(0);
+        logWriters.addWriter(3, logWriter);
         responseControl = new StubResponseControl();
         idGenerator = new PrivateIdGenerator(10L);
 
@@ -55,7 +59,7 @@ public class InputActivityInstanceHandlerTest
         final InputActivityInstanceHandler handler = new InputActivityInstanceHandler(taskQueueContextProvider);
 
         // when
-        handler.handle(activityInstanceEvent, responseControl);
+        handler.handle(activityInstanceEvent, responseControl, logWriters);
 
         // then
         assertThat(logWriter.size()).isEqualTo(1);

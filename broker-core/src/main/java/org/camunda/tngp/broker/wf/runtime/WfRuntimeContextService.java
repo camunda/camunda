@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.wf.runtime;
 
+import java.util.Arrays;
+
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
@@ -63,36 +66,48 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeContext.setLog(log);
 
         final Templates templates = Templates.wfRuntimeLogTemplates();
-        final LogConsumer wfRuntimeConsumer = new LogConsumer(new LogReaderImpl(log), responsePoolInjector.getValue(), templates);
+        final LogConsumer wfRuntimeConsumer = new LogConsumer(
+                log.getId(),
+                new LogReaderImpl(log),
+                responsePoolInjector.getValue(),
+                templates,
+                new LogWritersImpl(wfRuntimeContext, null));
 
         final EndProcessHandler endProcessHandler = new EndProcessHandler(new LogReaderImpl(log), indexManager.getIndex());
         final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
         final WaitEventHandler waitEventHandler = new WaitEventHandler();
 
-        final ActivityEventHandler activityEventHandler = new ActivityEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        final ActivityEventHandler activityEventHandler = new ActivityEventHandler(wfDefinitionCache, idGenerator);
         activityEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
         activityEventHandler.addAspectHandler(waitEventHandler);
         activityEventHandler.addAspectHandler(endProcessHandler);
         wfRuntimeConsumer.addHandler(Templates.ACTIVITY_EVENT, activityEventHandler);
 
-        final ProcessEventHandler processEventHandler = new ProcessEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        final ProcessEventHandler processEventHandler = new ProcessEventHandler(wfDefinitionCache, idGenerator);
         processEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
         processEventHandler.addAspectHandler(waitEventHandler);
         wfRuntimeConsumer.addHandler(Templates.PROCESS_EVENT, processEventHandler);
 
-        final FlowElementEventHandler flowElementEventHandler = new FlowElementEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        final FlowElementEventHandler flowElementEventHandler = new FlowElementEventHandler(wfDefinitionCache, idGenerator);
         flowElementEventHandler.addAspectHandler(new StartProcessHandler());
         flowElementEventHandler.addAspectHandler(new CreateActivityInstanceHandler());
         flowElementEventHandler.addAspectHandler(new TriggerNoneEventHandler());
         flowElementEventHandler.addAspectHandler(endProcessHandler);
         wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);
 
-        wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, logWriter, idGenerator));
-        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new LogReaderImpl(log), logWriter, indexManager.getIndex()));
+        wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator));
+        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new LogReaderImpl(log), indexManager.getIndex()));
 
         wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
         wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
         wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
+
+        wfRuntimeConsumer.recover(Arrays.asList(new LogReaderImpl(log)));
+
+        // replay all events before taking new requests;
+        // avoids that we mix up new API requests (that require a response)
+        // with existing API requests (that do not require a response anymore)
+        wfRuntimeConsumer.fastForwardUntil(log.getLastPosition());
 
         wfRuntimeContext.setLogConsumer(wfRuntimeConsumer);
     }
@@ -100,7 +115,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     @Override
     public void stop()
     {
-        // nothing to do
+        wfRuntimeContext.getLogConsumer().writeSavepoints();
     }
 
     @Override

@@ -4,11 +4,11 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class TriggerNoneEventHandler implements BpmnFlowElementAspectHandler
@@ -18,7 +18,7 @@ public class TriggerNoneEventHandler implements BpmnFlowElementAspectHandler
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
     @Override
-    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter,
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriters logWriters,
             IdGenerator idGenerator)
     {
         flowElementVisitor.init(process).moveToNode(flowElementEventReader.flowElementId());
@@ -31,14 +31,8 @@ public class TriggerNoneEventHandler implements BpmnFlowElementAspectHandler
             .processId(flowElementEventReader.wfDefinitionId())
             .workflowInstanceId(flowElementEventReader.wfInstanceId());
 
-        if (logWriter.write(eventWriter) >= 0)
-        {
-            return LogEntryHandler.CONSUME_ENTRY_RESULT;
-        }
-        else
-        {
-            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
-        }
+        logWriters.writeToCurrentLog(eventWriter);
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
     }
 
     @Override

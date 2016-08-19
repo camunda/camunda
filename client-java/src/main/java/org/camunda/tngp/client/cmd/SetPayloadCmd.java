@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import org.camunda.tngp.client.ClientCommand;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public interface SetPayloadCmd<R, C extends ClientCommand<R>> extends ClientCommand<R>
 {

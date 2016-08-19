@@ -6,9 +6,9 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.client.cmd.LockedTask;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.io.DirectBufferInputStream;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.io.DirectBufferInputStream;
 
 public class LockedTaskImpl implements LockedTask
 {

@@ -1,9 +1,6 @@
 package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.not;
-import static org.mockito.Matchers.longThat;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -12,32 +9,26 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
-import org.camunda.tngp.broker.test.util.FluentMock;
+import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public class TriggerNoneEventHandlerTest
 {
 
-    @FluentMock
-    protected BpmnFlowElementEventWriter flowEventWriter;
-
     @Mock
     protected BpmnFlowElementEventReader flowEventReader;
 
-    @Mock
-    protected LogWriter logWriter;
+    protected StubLogWriter logWriter;
+    protected StubLogWriters logWriters;
 
     protected IdGenerator idGenerator;
 
@@ -49,6 +40,9 @@ public class TriggerNoneEventHandlerTest
     {
         MockitoAnnotations.initMocks(this);
         idGenerator = new PrivateIdGenerator(0);
+
+        logWriter = new StubLogWriter();
+        logWriters = new StubLogWriters(0, logWriter);
     }
 
     @Before
@@ -79,21 +73,19 @@ public class TriggerNoneEventHandlerTest
         when(flowEventReader.wfInstanceId()).thenReturn(9876L);
 
         final TriggerNoneEventHandler eventHandler = new TriggerNoneEventHandler();
-        eventHandler.setEventWriter(flowEventWriter);
 
         // when
-        eventHandler.handle(flowEventReader, process, logWriter, idGenerator);
+        eventHandler.handle(flowEventReader, process, logWriters, idGenerator);
 
         // then
-        final InOrder inOrder = Mockito.inOrder(flowEventWriter, logWriter);
-        inOrder.verify(flowEventWriter).eventType(ExecutionEventType.EVT_OCCURRED);
-        inOrder.verify(flowEventWriter).flowElementId(eventId);
-        inOrder.verify(flowEventWriter).key(longThat(not(1234L)));
-        inOrder.verify(flowEventWriter).processId(467L);
-        inOrder.verify(flowEventWriter).workflowInstanceId(9876L);
-        inOrder.verify(logWriter).write(flowEventWriter);
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
+        final BpmnFlowElementEventReader reader = logWriter.getEntryAs(0, BpmnFlowElementEventReader.class);
 
-        verifyNoMoreInteractions(logWriter, flowEventWriter);
+        assertThat(reader.event()).isEqualTo(ExecutionEventType.EVT_OCCURRED);
+        assertThat(reader.flowElementId()).isEqualTo(eventId);
+        assertThat(reader.key()).isGreaterThanOrEqualTo(0L);
+        assertThat(reader.wfDefinitionId()).isEqualTo(467L);
+        assertThat(reader.wfInstanceId()).isEqualTo(9876L);
     }
 
     @Test

@@ -1,39 +1,35 @@
 package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
+import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryTypeHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 public class ActivityEventHandler implements LogEntryTypeHandler<BpmnActivityEventReader>
 {
 
     protected final WfDefinitionCache wfDefinitionCache;
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
-    protected LogWriter logWriter;
     protected IdGenerator idGenerator;
 
     protected final Int2ObjectHashMap<BpmnActivityInstanceAspectHandler> activityEventHandlers = new Int2ObjectHashMap<>();
 
     public ActivityEventHandler(
             WfDefinitionCache wfDefinitionCache,
-            LogWriter logWriter,
             IdGenerator idGenerator)
     {
         this.wfDefinitionCache = wfDefinitionCache;
-        this.logWriter = logWriter;
         this.idGenerator = idGenerator;
     }
 
     @Override
-    public void handle(BpmnActivityEventReader activityEventReader, ResponseControl responseControl)
+    public void handle(BpmnActivityEventReader activityEventReader, ResponseControl responseControl, LogWriters logWriters)
     {
         final ProcessGraph process = wfDefinitionCache.getProcessGraphByTypeId(activityEventReader.wfDefinitionId());
 
@@ -44,7 +40,7 @@ public class ActivityEventHandler implements LogEntryTypeHandler<BpmnActivityEve
 
         System.out.println("Handling event of type " + activityEventReader.event());
 
-        handler.handle(activityEventReader, process, logWriter, idGenerator);
+        handler.handle(activityEventReader, process, logWriters, idGenerator);
     }
 
 

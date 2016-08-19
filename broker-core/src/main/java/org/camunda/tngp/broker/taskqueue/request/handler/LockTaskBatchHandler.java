@@ -18,7 +18,7 @@ import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueContext>, ResponseCompletionHandler
 {

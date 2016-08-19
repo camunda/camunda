@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.wf.repository;
 
+import java.util.Arrays;
+
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.wf.repository.log.handler.WfDefinitionRequestHandler;
 import org.camunda.tngp.log.Log;
@@ -38,10 +41,22 @@ public class WfRepositoryContextService implements Service<WfRepositoryContext>
         context.setLogWriter(logWriter);
 
         final Templates templates = Templates.wfRepositoryLogTemplates();
-        final LogConsumer logConsumer = new LogConsumer(new LogReaderImpl(log), responsePoolInjector.getValue(), templates);
+        final LogConsumer logConsumer = new LogConsumer(
+                log.getId(),
+                new LogReaderImpl(log),
+                responsePoolInjector.getValue(),
+                templates,
+                new LogWritersImpl(context, null));
 
         logConsumer.addHandler(Templates.WF_DEFINITION_REQUEST,
-                new WfDefinitionRequestHandler(new LogReaderImpl(log), logWriter, idGenerator));
+                new WfDefinitionRequestHandler(new LogReaderImpl(log), idGenerator));
+
+        logConsumer.recover(Arrays.asList(new LogReaderImpl(log)));
+
+        // replay all events before taking new requests;
+        // avoids that we mix up new API requests (that require a response)
+        // with existing API requests (that do not require a response anymore)
+        logConsumer.fastForwardUntil(log.getLastPosition());
 
         context.setLogConsumer(logConsumer);
 
@@ -50,7 +65,7 @@ public class WfRepositoryContextService implements Service<WfRepositoryContext>
     @Override
     public void stop()
     {
-        context.getLogConsumer().writeSafepoints();
+        context.getLogConsumer().writeSavepoints();
     }
 
     @Override

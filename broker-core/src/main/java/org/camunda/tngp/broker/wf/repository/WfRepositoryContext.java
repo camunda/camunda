@@ -63,6 +63,4 @@ public class WfRepositoryContext implements ResourceContext
         this.log = log;
     }
 
-
-
 }

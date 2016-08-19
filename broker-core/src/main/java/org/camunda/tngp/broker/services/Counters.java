@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.services;
 
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.status.CountersManager;
 
 public class Counters
 {

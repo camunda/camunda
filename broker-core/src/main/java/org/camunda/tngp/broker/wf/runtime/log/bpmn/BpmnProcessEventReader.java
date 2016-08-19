@@ -5,7 +5,7 @@ import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class BpmnProcessEventReader implements BufferReader
 {

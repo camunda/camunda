@@ -4,7 +4,7 @@ import org.camunda.tngp.log.idgenerator.spi.LogFragmentIdReader;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class WfDefinitionIdReader implements LogFragmentIdReader
 {

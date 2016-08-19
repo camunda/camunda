@@ -11,7 +11,7 @@ import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>
 {

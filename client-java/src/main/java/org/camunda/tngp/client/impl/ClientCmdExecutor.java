@@ -2,6 +2,7 @@ package org.camunda.tngp.client.impl;
 
 import java.util.concurrent.ExecutionException;
 
+import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
@@ -9,7 +10,6 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class ClientCmdExecutor
 {

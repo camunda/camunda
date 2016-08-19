@@ -13,7 +13,7 @@ import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TestWfRuntimeLogEntries
 {

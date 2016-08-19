@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.system.threads;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import uk.co.real_logic.agrona.concurrent.Agent;
+import org.agrona.concurrent.Agent;
 
 public class AgentGroup implements Agent
 {

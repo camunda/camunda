@@ -4,7 +4,7 @@ import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponseReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class DeployBpmnResourceAckResponseHandler implements ClientResponseHandler<WorkflowDefinition>
 {

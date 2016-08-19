@@ -135,6 +135,10 @@
               <key>sbe.output.dir</key>
               <value>${project.build.directory}/generated-sources</value>
             </systemProperty>
+            <systemProperty>
+              <key>sbe.java.generate.interfaces</key>
+              <value>true</value>
+            </systemProperty>
           </systemProperties>
           <arguments>
             <argument>${project.build.resources[0].directory}/schema.xml</argument>

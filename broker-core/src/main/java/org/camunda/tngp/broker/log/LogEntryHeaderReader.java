@@ -3,8 +3,8 @@ package org.camunda.tngp.broker.log;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class LogEntryHeaderReader implements BufferReader
 {
@@ -27,6 +27,16 @@ public class LogEntryHeaderReader implements BufferReader
         return headerDecoder.templateId();
     }
 
+    public long sourceEventPosition()
+    {
+        return headerDecoder.sourceEventPosition();
+    }
+
+    public int sourceEventLogId()
+    {
+        return headerDecoder.sourceEventLogId();
+    }
+
     public void readInto(BufferReader reader)
     {
         reader.wrap(tempBuffer, 0, tempBuffer.capacity());
@@ -43,8 +53,7 @@ public class LogEntryHeaderReader implements BufferReader
     {
         NULL_VAL((short) 0),
         API((short) 1),
-        EXTERNAL_LOG((short) 2),
-        LOG((short) 3);
+        LOG((short) 2);
 
         short value;
 
@@ -64,8 +73,7 @@ public class LogEntryHeaderReader implements BufferReader
             {
                 case 0: return NULL_VAL;
                 case 1: return API;
-                case 2: return EXTERNAL_LOG;
-                case 3: return LOG;
+                case 2: return LOG;
             }
 
             throw new IllegalArgumentException("Unknown value: " + value);

@@ -1,19 +1,14 @@
 package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.taskqueue.data.BpmnActivityEventEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-public class BpmnActivityEventWriter implements BufferWriter
+public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWriter, BpmnActivityEventEncoder>
 {
-
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final BpmnActivityEventEncoder bodyEncoder = new BpmnActivityEventEncoder();
 
     protected long key;
     protected long wfDefinitionId;
@@ -24,27 +19,23 @@ public class BpmnActivityEventWriter implements BufferWriter
 
     protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
 
-    @Override
-    public int getLength()
+    public BpmnActivityEventWriter()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-                BpmnActivityEventEncoder.BLOCK_LENGTH +
+        super(new BpmnActivityEventEncoder());
+    }
+
+    @Override
+    protected int getBodyLength()
+    {
+        return BpmnActivityEventEncoder.BLOCK_LENGTH +
                 BpmnActivityEventEncoder.taskTypeHeaderLength() +
                 taskTypeBuffer.capacity();
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion())
-            .resourceId(0)
-            .shardId(0);
-
-        bodyEncoder.wrap(buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
+        bodyEncoder.wrap(buffer, offset)
             .key(key)
             .wfDefinitionId(wfDefinitionId)
             .wfInstanceId(wfInstanceId)
@@ -52,7 +43,6 @@ public class BpmnActivityEventWriter implements BufferWriter
             .flowElementId(flowElementId)
             .taskQueueId(taskQueueId)
             .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
-
     }
 
     public BpmnActivityEventWriter key(long key)

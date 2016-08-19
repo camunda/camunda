@@ -2,11 +2,11 @@ package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventWriter;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class StartProcessHandler implements BpmnFlowElementAspectHandler
@@ -15,7 +15,7 @@ public class StartProcessHandler implements BpmnFlowElementAspectHandler
     protected BpmnProcessEventWriter eventWriter = new BpmnProcessEventWriter();
 
     @Override
-    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriter logWriter, IdGenerator idGenerator)
+    public int handle(BpmnFlowElementEventReader flowElementEventReader, ProcessGraph process, LogWriters logWriters, IdGenerator idGenerator)
     {
 
         eventWriter
@@ -25,15 +25,9 @@ public class StartProcessHandler implements BpmnFlowElementAspectHandler
             .initialElementId(flowElementEventReader.flowElementId())
             .key(flowElementEventReader.wfInstanceId());
 
-        if (logWriter.write(eventWriter) >= 0)
-        {
-            return LogEntryHandler.CONSUME_ENTRY_RESULT;
-        }
-        else
-        {
-            System.err.println("Could not write process start event");
-            return LogEntryHandler.POSTPONE_ENTRY_RESULT;
-        }
+        logWriters.writeToCurrentLog(eventWriter);
+
+        return LogEntryHandler.CONSUME_ENTRY_RESULT;
 
     }
 
@@ -41,11 +35,6 @@ public class StartProcessHandler implements BpmnFlowElementAspectHandler
     public BpmnAspect getHandledBpmnAspect()
     {
         return BpmnAspect.START_PROCESS;
-    }
-
-    public void setEventWriter(BpmnProcessEventWriter eventWriter)
-    {
-        this.eventWriter = eventWriter;
     }
 
 }

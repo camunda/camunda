@@ -17,6 +17,7 @@ import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
 import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.protocol.error.ErrorReader;
@@ -30,7 +31,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskInstanceRequestHandlerTest
 {
@@ -38,6 +39,7 @@ public class TaskInstanceRequestHandlerTest
     protected StubLogReader logReader;
     protected StubLogWriter logWriter;
     protected StubResponseControl responseControl;
+    protected StubLogWriters logWriters;
 
     @Mock
     protected Long2LongHashIndex lockedTasksIndex;
@@ -53,6 +55,8 @@ public class TaskInstanceRequestHandlerTest
 
         logReader = new StubLogReader(null);
         logWriter = new StubLogWriter();
+        logWriters = new StubLogWriters(0);
+        logWriters.addWriter(0, logWriter);
         responseControl = new StubResponseControl();
     }
 
@@ -60,7 +64,7 @@ public class TaskInstanceRequestHandlerTest
     public void shouldCompleteTask()
     {
         // given
-        final TaskInstanceRequestHandler handler = new TaskInstanceRequestHandler(logReader, logWriter, lockedTasksIndex);
+        final TaskInstanceRequestHandler handler = new TaskInstanceRequestHandler(logReader, lockedTasksIndex);
 
         final TaskInstanceWriter taskInstance = createTaskInstanceWriter(5L, 15L, TaskInstanceState.LOCKED);
         logReader.addEntry(taskInstance);
@@ -73,7 +77,7 @@ public class TaskInstanceRequestHandlerTest
         when(requestReader.type()).thenReturn(TaskInstanceRequestType.COMPLETE);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -82,6 +86,7 @@ public class TaskInstanceRequestHandlerTest
         final SingleTaskAckResponseReader response = responseControl.getAcceptanceValueAs(0, SingleTaskAckResponseReader.class);
         assertThat(response.taskId()).isEqualTo(5L);
 
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
         final TaskInstanceReader updatedTaskInstance = logWriter.getEntryAs(0, TaskInstanceReader.class);
 
@@ -104,7 +109,7 @@ public class TaskInstanceRequestHandlerTest
     public void shouldWriteErrorResponseForNonExistingTask()
     {
         // given
-        final TaskInstanceRequestHandler handler = new TaskInstanceRequestHandler(logReader, logWriter, lockedTasksIndex);
+        final TaskInstanceRequestHandler handler = new TaskInstanceRequestHandler(logReader, lockedTasksIndex);
 
         when(lockedTasksIndex.get(anyLong(), anyLong())).thenAnswer(new ArgumentAnswer<Long>(1));
 
@@ -115,7 +120,7 @@ public class TaskInstanceRequestHandlerTest
         when(requestReader.type()).thenReturn(TaskInstanceRequestType.COMPLETE);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -126,14 +131,14 @@ public class TaskInstanceRequestHandlerTest
         assertThat(response.detailCode()).isEqualTo(TaskErrors.COMPLETE_TASK_ERROR);
         assertThat(response.errorMessage()).isEqualTo("Task does not exist or is not locked");
 
-        assertThat(logWriter.size()).isEqualTo(0);
+        assertThat(logWriters.writtenEntries()).isZero();
     }
 
     @Test
     public void shouldWriteErrorResponseForWrongConsumerId()
     {
         // given
-        final TaskInstanceRequestHandler handler = new TaskInstanceRequestHandler(logReader, logWriter, lockedTasksIndex);
+        final TaskInstanceRequestHandler handler = new TaskInstanceRequestHandler(logReader, lockedTasksIndex);
 
         final TaskInstanceWriter taskInstance = createTaskInstanceWriter(5L, 15L, TaskInstanceState.LOCKED);
         logReader.addEntry(taskInstance);
@@ -147,7 +152,7 @@ public class TaskInstanceRequestHandlerTest
 
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -158,7 +163,7 @@ public class TaskInstanceRequestHandlerTest
         assertThat(response.detailCode()).isEqualTo(TaskErrors.COMPLETE_TASK_ERROR);
         assertThat(response.errorMessage()).isEqualTo("Task is currently not locked by the provided consumer");
 
-        assertThat(logWriter.size()).isEqualTo(0);
+        assertThat(logWriters.writtenEntries()).isEqualTo(0);
     }
 
     protected TaskInstanceWriter createTaskInstanceWriter(long taskId, long lockOwner, TaskInstanceState state)

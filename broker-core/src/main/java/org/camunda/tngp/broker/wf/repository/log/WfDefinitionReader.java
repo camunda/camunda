@@ -6,9 +6,9 @@ import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.io.DirectBufferInputStream;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.io.DirectBufferInputStream;
 
 public class WfDefinitionReader implements BufferReader
 {
@@ -54,16 +54,6 @@ public class WfDefinitionReader implements BufferReader
             resourceBuffer.wrap(0, 0);
         }
 
-    }
-
-    public int resourceId()
-    {
-        return headerDecoder.resourceId();
-    }
-
-    public int shardId()
-    {
-        return headerDecoder.shardId();
     }
 
     public DirectBuffer getTypeKey()

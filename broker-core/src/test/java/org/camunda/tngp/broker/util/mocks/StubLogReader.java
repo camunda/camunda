@@ -8,8 +8,8 @@ import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class StubLogReader implements LogReader
 {
@@ -64,11 +64,10 @@ public class StubLogReader implements LogReader
     @Override
     public boolean read(BufferReader reader)
     {
-        if (!logEntries.containsKey(position))
+        if (!hasNext())
         {
-            return false;
+            throw new RuntimeException("no next event");
         }
-
 
         final byte[] entryAtPosition = logEntries.get(position);
         final UnsafeBuffer tempReadBuffer = new UnsafeBuffer(entryAtPosition);
@@ -77,7 +76,7 @@ public class StubLogReader implements LogReader
 
         position += entryAtPosition.length;
 
-        return true;
+        return hasNext();
     }
 
     public StubLogReader addEntry(BufferWriter writer)
@@ -93,6 +92,12 @@ public class StubLogReader implements LogReader
         entryPositions.add(tailPosition);
         tailPosition += writeLength;
         return this;
+    }
+
+    @Override
+    public boolean hasNext()
+    {
+        return logEntries.containsKey(position);
     }
 
 }

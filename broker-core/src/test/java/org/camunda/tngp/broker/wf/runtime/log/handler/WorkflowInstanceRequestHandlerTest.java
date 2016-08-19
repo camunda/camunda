@@ -7,8 +7,10 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
@@ -26,8 +28,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 public class WorkflowInstanceRequestHandlerTest
 {
 
@@ -39,6 +39,7 @@ public class WorkflowInstanceRequestHandlerTest
 
     protected StubLogWriter logWriter;
     protected StubResponseControl responseControl;
+    protected StubLogWriters logWriters;
 
     protected IdGenerator idGenerator;
 
@@ -46,8 +47,11 @@ public class WorkflowInstanceRequestHandlerTest
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
+
         logWriter = new StubLogWriter();
         responseControl = new StubResponseControl();
+        logWriters = new StubLogWriters(0, logWriter);
+
         idGenerator = new PrivateIdGenerator(10L);
 
         when(wfDefinitionCache.getProcessGraphByTypeId(1234L)).thenReturn(process);
@@ -60,14 +64,14 @@ public class WorkflowInstanceRequestHandlerTest
     public void shouldStartProcessById()
     {
         // given
-        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, logWriter, idGenerator);
+        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator);
 
         final WorkflowInstanceRequestReader requestReader = mock(WorkflowInstanceRequestReader.class);
         when(requestReader.type()).thenReturn(ProcessInstanceRequestType.NEW);
         when(requestReader.wfDefinitionId()).thenReturn(1234L);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -76,6 +80,7 @@ public class WorkflowInstanceRequestHandlerTest
         final StartWorkflowInstanceResponseReader responseReader = responseControl.getAcceptanceValueAs(0, StartWorkflowInstanceResponseReader.class);
         assertThat(responseReader.wfInstanceId()).isEqualTo(11L);
 
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
         final BpmnFlowElementEventReader flowElementEventReader = logWriter.getEntryAs(0, BpmnFlowElementEventReader.class);
 
@@ -89,7 +94,7 @@ public class WorkflowInstanceRequestHandlerTest
     public void shouldStartProcessByKey()
     {
         // given
-        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, logWriter, idGenerator);
+        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator);
 
         final byte[] key = new byte[]{ 1, 2, 3 };
 
@@ -102,7 +107,7 @@ public class WorkflowInstanceRequestHandlerTest
         when(wfDefinitionCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(process); // TODO: make stronger key parameter assumption
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(responseControl.size()).isEqualTo(1);
@@ -111,6 +116,7 @@ public class WorkflowInstanceRequestHandlerTest
         final StartWorkflowInstanceResponseReader responseReader = responseControl.getAcceptanceValueAs(0, StartWorkflowInstanceResponseReader.class);
         assertThat(responseReader.wfInstanceId()).isEqualTo(11L);
 
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
         final BpmnFlowElementEventReader flowElementEventReader = logWriter.getEntryAs(0, BpmnFlowElementEventReader.class);
 
@@ -124,7 +130,7 @@ public class WorkflowInstanceRequestHandlerTest
     public void shouldWriteErrorWhenProcessNotFoundById()
     {
         // given
-        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, logWriter, idGenerator);
+        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator);
 
         final WorkflowInstanceRequestReader requestReader = mock(WorkflowInstanceRequestReader.class);
         when(requestReader.type()).thenReturn(ProcessInstanceRequestType.NEW);
@@ -133,9 +139,10 @@ public class WorkflowInstanceRequestHandlerTest
         when(wfDefinitionCache.getProcessGraphByTypeId(1234L)).thenReturn(null);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
+        assertThat(logWriters.writtenEntries()).isEqualTo(0);
         assertThat(logWriter.size()).isEqualTo(0);
         assertThat(responseControl.size()).isEqualTo(1);
         assertThat(responseControl.isRejection(0)).isTrue();
@@ -151,7 +158,7 @@ public class WorkflowInstanceRequestHandlerTest
     public void shouldWriteErrorWhenProcessNotFoundByKey()
     {
         // given
-        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, logWriter, idGenerator);
+        final WorkflowInstanceRequestHandler handler = new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator);
 
         final byte[] key = new byte[]{ 1, 2, 3 };
 
@@ -164,7 +171,7 @@ public class WorkflowInstanceRequestHandlerTest
         when(wfDefinitionCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(null);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
         assertThat(logWriter.size()).isEqualTo(0);

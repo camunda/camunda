@@ -8,7 +8,7 @@ import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRuntimeRequestReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRuntimeRequestDecoder;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class WfDefinitionKeyIndexWriter implements IndexWriter
 {

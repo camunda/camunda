@@ -4,8 +4,8 @@ import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
 import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeployBpmnResourceRequestWriter implements ClientRequestWriter
 {

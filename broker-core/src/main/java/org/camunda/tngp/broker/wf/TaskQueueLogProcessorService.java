@@ -1,11 +1,17 @@
 package org.camunda.tngp.broker.wf;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManager;
 import org.camunda.tngp.broker.wf.runtime.log.handler.InputTaskHandler;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -32,19 +38,30 @@ public class TaskQueueLogProcessorService implements Service<LogConsumer>
         final Log inputLog = taskQueueContext.getLog();
 
         final Templates taskQueueLogTemplates = Templates.taskQueueLogTemplates();
-        logConsumer = new LogConsumer(new LogReaderImpl(inputLog), taskQueueLogTemplates);
+        logConsumer = new LogConsumer(
+                inputLog.getId(),
+                new LogReaderImpl(inputLog),
+                taskQueueLogTemplates,
+                new LogWritersImpl(null, wfRuntimeManager));
 
-        logConsumer.addHandler(Templates.TASK_INSTANCE, new InputTaskHandler(wfRuntimeManager));
+        logConsumer.addHandler(Templates.TASK_INSTANCE, new InputTaskHandler());
+
+        final List<LogReader> logReaders = new ArrayList<>();
+        for (WfRuntimeContext resourceContext : wfRuntimeManager.getContexts())
+        {
+            logReaders.add(new LogReaderImpl(resourceContext.getLog()));
+        }
+
+        logConsumer.recover(logReaders);
+        logConsumer.fastForwardUntil(inputLog.getLastPosition());
 
         wfRuntimeManager.registerInputLogConsumer(logConsumer);
-
-        // TODO: restore log consumer position here
     }
 
     @Override
     public void stop()
     {
-        // TODO write index checkpoints here
+        logConsumer.writeSavepoints();
     }
 
     public Injector<WfRuntimeManager> getWfRuntimeManager()

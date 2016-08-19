@@ -11,12 +11,12 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class FlowElementEventHandlerTest
     protected WfDefinitionCache wfDefinitionCache;
 
     @Mock
-    protected LogWriter logWriter;
+    protected LogWriters logWriters;
 
     @Mock
     protected IdGenerator idGenerator;
@@ -65,7 +65,7 @@ public class FlowElementEventHandlerTest
     public void shouldDelegateToRegisteredBpmnAspectHandler()
     {
         // given
-        final FlowElementEventHandler handler = new FlowElementEventHandler(wfDefinitionCache, logWriter, idGenerator);
+        final FlowElementEventHandler handler = new FlowElementEventHandler(wfDefinitionCache, idGenerator);
 
         final BpmnFlowElementAspectHandler aspectHandler = mock(BpmnFlowElementAspectHandler.class);
         when(aspectHandler.getHandledBpmnAspect()).thenReturn(BpmnAspect.END_PROCESS);
@@ -79,10 +79,10 @@ public class FlowElementEventHandlerTest
         when(eventReader.wfInstanceId()).thenReturn(123L);
 
         // when
-        handler.handle(eventReader, responseControl);
+        handler.handle(eventReader, responseControl, logWriters);
 
         // then
-        verify(aspectHandler, times(1)).handle(eventReader, process, logWriter, idGenerator);
-        verifyZeroInteractions(logWriter);
+        verify(aspectHandler, times(1)).handle(eventReader, process, logWriters, idGenerator);
+        verifyZeroInteractions(logWriters);
     }
 }

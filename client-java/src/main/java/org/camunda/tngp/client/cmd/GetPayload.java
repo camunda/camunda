@@ -3,7 +3,8 @@ package org.camunda.tngp.client.cmd;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
+
 
 public interface GetPayload
 {

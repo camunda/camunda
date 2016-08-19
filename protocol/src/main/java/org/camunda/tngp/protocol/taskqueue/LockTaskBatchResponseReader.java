@@ -3,8 +3,8 @@ package org.camunda.tngp.protocol.taskqueue;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder.TasksDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * <p>Careful: This reader is stateful when reading tasks. Users should use the {@link #nextTask()}

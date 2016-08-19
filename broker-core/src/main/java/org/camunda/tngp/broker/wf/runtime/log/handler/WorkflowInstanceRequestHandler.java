@@ -1,7 +1,9 @@
 package org.camunda.tngp.broker.wf.runtime.log.handler;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryTypeHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
@@ -9,42 +11,37 @@ import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
 import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
-
-import uk.co.real_logic.agrona.DirectBuffer;
 
 public class WorkflowInstanceRequestHandler implements LogEntryTypeHandler<WorkflowInstanceRequestReader>
 {
 
     protected final WfDefinitionCache wfDefinitionCache;
     protected final IdGenerator idGenerator;
-    protected final LogWriter logWriter;
 
     protected StartWorkflowInstanceResponseWriter responseWriter = new StartWorkflowInstanceResponseWriter();
     protected ErrorWriter errorWriter = new ErrorWriter();
     protected BpmnFlowElementEventWriter flowElementEventWriter = new BpmnFlowElementEventWriter();
 
-    public WorkflowInstanceRequestHandler(WfDefinitionCache wfDefinitionCache, LogWriter logWriter, IdGenerator idGenerator)
+    public WorkflowInstanceRequestHandler(WfDefinitionCache wfDefinitionCache, IdGenerator idGenerator)
     {
         this.wfDefinitionCache = wfDefinitionCache;
         this.idGenerator = idGenerator;
-        this.logWriter = logWriter;
     }
 
     @Override
-    public void handle(WorkflowInstanceRequestReader reader, ResponseControl responseControl)
+    public void handle(WorkflowInstanceRequestReader reader, ResponseControl responseControl, LogWriters logWriters)
     {
         if (reader.type() == ProcessInstanceRequestType.NEW)
         {
-            createNewWorkflowInstance(reader, responseControl);
+            createNewWorkflowInstance(reader, responseControl, logWriters);
         }
     }
 
-    protected void createNewWorkflowInstance(WorkflowInstanceRequestReader requestReader, ResponseControl responseControl)
+    protected void createNewWorkflowInstance(WorkflowInstanceRequestReader requestReader, ResponseControl responseControl, LogWriters logWriters)
     {
         ProcessGraph processGraph = null;
         String errorMessage = null;
@@ -85,7 +82,7 @@ public class WorkflowInstanceRequestHandler implements LogEntryTypeHandler<Workf
                 .eventType(ExecutionEventType.EVT_OCCURRED)
                 .flowElementId(processGraph.intialFlowNodeId());
 
-            logWriter.write(flowElementEventWriter);
+            logWriters.writeToCurrentLog(flowElementEventWriter);
             responseControl.accept(responseWriter);
         }
         else

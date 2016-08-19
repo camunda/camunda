@@ -33,8 +33,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * Test cases for aspects common to all commands

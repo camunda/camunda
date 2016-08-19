@@ -6,9 +6,9 @@ import org.camunda.tngp.taskqueue.data.WfDefinitionRequestEncoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WfDefinitionRequestWriter implements BufferWriter
 {

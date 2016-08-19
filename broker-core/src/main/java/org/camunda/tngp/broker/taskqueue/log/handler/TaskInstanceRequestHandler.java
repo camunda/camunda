@@ -1,7 +1,9 @@
 package org.camunda.tngp.broker.taskqueue.log.handler;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.log.LogEntryTypeHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
@@ -10,19 +12,15 @@ import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-
 public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInstanceRequestReader>
 {
 
     protected LogReader logReader;
-    protected LogWriter logWriter;
     protected Long2LongHashIndex lockedTasksIndex;
 
     protected TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
@@ -31,15 +29,14 @@ public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInsta
     protected SingleTaskAckResponseWriter responseWriter = new SingleTaskAckResponseWriter();
     protected ErrorWriter errorWriter = new ErrorWriter();
 
-    public TaskInstanceRequestHandler(LogReader logReader, LogWriter logWriter, Long2LongHashIndex lockedTasksIndex)
+    public TaskInstanceRequestHandler(LogReader logReader, Long2LongHashIndex lockedTasksIndex)
     {
         this.logReader = logReader;
-        this.logWriter = logWriter;
         this.lockedTasksIndex = lockedTasksIndex;
     }
 
     @Override
-    public void handle(TaskInstanceRequestReader reader, ResponseControl responseControl)
+    public void handle(TaskInstanceRequestReader reader, ResponseControl responseControl, LogWriters logWriters)
     {
         if (reader.type() == TaskInstanceRequestType.COMPLETE)
         {
@@ -77,7 +74,7 @@ public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInsta
                         .wfActivityInstanceEventKey(taskInstanceReader.wfActivityInstanceEventKey())
                         .wfRuntimeResourceId(taskInstanceReader.wfRuntimeResourceId());
 
-                    logWriter.write(taskInstanceWriter);
+                    logWriters.writeToCurrentLog(taskInstanceWriter);
 
                     responseWriter.taskId(taskInstanceReader.id());
 

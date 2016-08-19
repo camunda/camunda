@@ -10,7 +10,7 @@ import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class BpmnFlowElementEventWriterTest
 {

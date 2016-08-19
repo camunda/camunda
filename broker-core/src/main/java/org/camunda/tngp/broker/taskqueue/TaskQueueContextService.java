@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.taskqueue;
 
+import java.util.Arrays;
+
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.taskqueue.log.handler.TaskInstanceHandler;
@@ -50,13 +53,25 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
         taskQueueContext.setLogWriter(logWriter);
 
         final Templates templates = Templates.taskQueueLogTemplates();
-        final LogConsumer taskProcessor = new LogConsumer(new LogReaderImpl(log), responsePoolServiceInjector.getValue(), templates);
+        final LogConsumer taskProcessor = new LogConsumer(
+                log.getId(),
+                new LogReaderImpl(log),
+                responsePoolServiceInjector.getValue(),
+                templates,
+                new LogWritersImpl(taskQueueContext, null));
 
         taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler());
-        taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new LogReaderImpl(log), logWriter, lockedTasksIndexManager.getIndex()));
+        taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new LogReaderImpl(log), lockedTasksIndexManager.getIndex()));
 
         taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
         taskProcessor.addIndexWriter(new LockedTasksIndexWriter(lockedTasksIndexManager, templates));
+
+        taskProcessor.recover(Arrays.asList(new LogReaderImpl(log)));
+
+        // replay all events before taking new requests;
+        // avoids that we mix up new API requests (that require a response)
+        // with existing API requests (that do not require a response anymore)
+        taskProcessor.fastForwardUntil(log.getLastPosition());
 
         taskQueueContext.setLogConsumer(taskProcessor);
     }
@@ -64,7 +79,7 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     @Override
     public void stop()
     {
-        taskQueueContext.getLogConsumer().writeSafepoints();
+        taskQueueContext.getLogConsumer().writeSavepoints();
     }
 
     @Override

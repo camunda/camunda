@@ -10,8 +10,8 @@ import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogEntryReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.collections.Long2ObjectCache;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2ObjectCache;
 
 public class WfDefinitionCache implements LongFunction<ProcessGraph>
 {

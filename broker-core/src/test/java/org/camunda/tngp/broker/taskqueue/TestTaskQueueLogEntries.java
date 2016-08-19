@@ -9,7 +9,7 @@ import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TestTaskQueueLogEntries
 {
@@ -30,7 +30,7 @@ public class TestTaskQueueLogEntries
         when(taskReaderMock.id()).thenReturn(ID);
         when(taskReaderMock.state()).thenReturn(state);
         when(taskReaderMock.prevVersionPosition()).thenReturn(TaskInstanceDecoder.prevVersionPositionNullValue());
-        when(taskReaderMock.taskTypeHash()).thenReturn((long) TASK_TYPE_HASH);
+        when(taskReaderMock.taskTypeHash()).thenReturn(Integer.toUnsignedLong(TASK_TYPE_HASH));
         when(taskReaderMock.resourceId()).thenReturn(0);
         when(taskReaderMock.shardId()).thenReturn(0);
         when(taskReaderMock.wfActivityInstanceEventKey()).thenReturn(123L);

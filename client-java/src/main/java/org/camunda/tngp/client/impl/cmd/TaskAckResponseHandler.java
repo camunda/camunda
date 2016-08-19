@@ -3,7 +3,7 @@ package org.camunda.tngp.client.impl.cmd;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckDecoder;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class TaskAckResponseHandler implements ClientResponseHandler<Long>
 {

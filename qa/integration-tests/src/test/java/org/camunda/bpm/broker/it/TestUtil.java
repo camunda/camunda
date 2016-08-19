@@ -3,7 +3,7 @@ package org.camunda.bpm.broker.it;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 public class TestUtil
 {

@@ -11,6 +11,8 @@
       <type name="resourceId" primitiveType="uint16" />
       <type name="shardId" primitiveType="uint16" />
       <type name="source" primitiveType="uint8" />
+      <type name="sourceEventPosition" primitiveType="uint64" />
+      <type name="sourceEventLogId" primitiveType="uint16" />
     </composite>
     <composite name="bpmnEventHeader">
       <type name="event" primitiveType="uint16" />

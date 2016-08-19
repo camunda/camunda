@@ -6,7 +6,7 @@ import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.cmd.SetPayloadCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 @SuppressWarnings("unchecked")
 public abstract class AbstractSetPayloadCmd<R, C extends ClientCommand<R>>

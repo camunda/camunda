@@ -10,7 +10,7 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class TaskTypeIndexWriter implements IndexWriter
 {

@@ -1,11 +1,17 @@
 package org.camunda.tngp.broker.wf;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManager;
 import org.camunda.tngp.broker.wf.runtime.log.handler.InputWorkflowDefinitionHandler;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -27,21 +33,30 @@ public class WfDefinitionLogProcessorService implements Service<LogConsumer>
         final Log inputLog = wfRepositoryContext.getLog();
 
         final Templates wfRepositoryLogTemplates = Templates.wfRepositoryLogTemplates();
-        logConsumer = new LogConsumer(new LogReaderImpl(inputLog), wfRepositoryLogTemplates);
+        logConsumer = new LogConsumer(
+                inputLog.getId(),
+                new LogReaderImpl(inputLog),
+                wfRepositoryLogTemplates,
+                new LogWritersImpl(null, wfRuntimeManager));
 
-        logConsumer.addHandler(Templates.WF_DEFINITION, new InputWorkflowDefinitionHandler(wfRuntimeManager));
+        logConsumer.addHandler(Templates.WF_DEFINITION, new InputWorkflowDefinitionHandler());
+
+        final List<LogReader> logReaders = new ArrayList<>();
+        for (WfRuntimeContext resourceContext : wfRuntimeManager.getContexts())
+        {
+            logReaders.add(new LogReaderImpl(resourceContext.getLog()));
+        }
+
+        logConsumer.recover(logReaders);
+        logConsumer.fastForwardUntil(inputLog.getLastPosition());
 
         wfRuntimeManager.registerInputLogConsumer(logConsumer);
-
-        // TODO: restore log consumer position here
-
     }
 
     @Override
     public void stop()
     {
-        // TODO Auto-generated method stub
-
+        logConsumer.writeSavepoints();
     }
 
     @Override

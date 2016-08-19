@@ -1,17 +1,12 @@
 package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
+import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.taskqueue.data.BpmnProcessEventEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-public class BpmnProcessEventWriter implements BufferWriter
+public class BpmnProcessEventWriter extends LogEntryWriter<BpmnProcessEventWriter, BpmnProcessEventEncoder>
 {
-
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final BpmnProcessEventEncoder bodyEncoder = new BpmnProcessEventEncoder();
 
     protected long key;
     protected long processId;
@@ -19,26 +14,21 @@ public class BpmnProcessEventWriter implements BufferWriter
     protected ExecutionEventType event;
     protected int initialElementId;
 
-    @Override
-    public int getLength()
+    public BpmnProcessEventWriter()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH + BpmnProcessEventEncoder.BLOCK_LENGTH;
+        super(new BpmnProcessEventEncoder());
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected int getBodyLength()
     {
-        headerEncoder.wrap(buffer, offset);
-        headerEncoder
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion())
-            // TODO: make resourceId and shardId setters
-            .resourceId(0)
-            .shardId(0);
+        return BpmnProcessEventEncoder.BLOCK_LENGTH;
+    }
 
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
+    @Override
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
+    {
+        bodyEncoder.wrap(buffer, offset)
             .key(key)
             .wfDefinitionId(processId)
             .wfInstanceId(processInstanceId)

@@ -2,7 +2,7 @@ package org.camunda.tngp.client.impl.cmd;
 
 import java.nio.ByteBuffer;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public interface PayloadRequestWriter extends ClientRequestWriter
 {

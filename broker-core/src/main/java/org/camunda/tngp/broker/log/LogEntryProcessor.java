@@ -25,26 +25,45 @@ public class LogEntryProcessor<T extends BufferReader>
     {
         int workCount = 0;
 
-        boolean hasProcessedEntry;
-
+        boolean hasNext;
         do
         {
             final long position = logReader.position();
-            hasProcessedEntry = logReader.read(bufferReader);
-            if (hasProcessedEntry)
+
+            hasNext = logReader.hasNext();
+            if (hasNext)
             {
-                final int handlerResult = entryHandler.handle(position, bufferReader);
-                if (handlerResult == LogEntryHandler.CONSUME_ENTRY_RESULT)
-                {
-                    workCount++;
-                }
-                else
-                {
-                    hasProcessedEntry = false;
-                    logReader.setPosition(position); // reset position to handle log entry a second time
-                }
+                logReader.read(bufferReader);
+                entryHandler.handle(position, bufferReader);
+                workCount++;
             }
-        } while (hasProcessedEntry && workCount < cycles);
+        }
+        while (hasNext && workCount < cycles);
+
+        return workCount;
+    }
+
+    /**
+     * @param position is inclusive
+     */
+    public int doWorkUntil(long position)
+    {
+        int workCount = 0;
+
+        boolean hasNext;
+
+        do
+        {
+
+            hasNext = logReader.hasNext();
+
+            if (hasNext)
+            {
+                logReader.read(bufferReader);
+                entryHandler.handle(position, bufferReader);
+                workCount++;
+            }
+        } while (hasNext && logReader.position() <= position);
 
         return workCount;
     }

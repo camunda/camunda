@@ -4,8 +4,8 @@ import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceDecoder;
 import org.camunda.tngp.protocol.wf.repository.MessageHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeployBpmnResourceRequestReader implements BufferReader
 {

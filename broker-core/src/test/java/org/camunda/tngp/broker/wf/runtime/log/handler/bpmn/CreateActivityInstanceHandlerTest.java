@@ -7,6 +7,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
@@ -17,12 +18,12 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.junit.Before;
@@ -39,7 +40,7 @@ public class CreateActivityInstanceHandlerTest
     protected BpmnFlowElementEventReader flowEventReader;
 
     @Mock
-    protected LogWriter logWriter;
+    protected LogWriters logWriters;
 
     protected ProcessGraph process;
     protected FlowElementVisitor elementVisitor;
@@ -86,7 +87,7 @@ public class CreateActivityInstanceHandlerTest
         handler.setEventWriter(eventWriter);
 
         // when
-        handler.handle(flowEventReader, process, logWriter, idGenerator);
+        handler.handle(flowEventReader, process, logWriters, idGenerator);
 
         // then
         verify(eventWriter).eventType(ExecutionEventType.ACT_INST_CREATED);
@@ -97,7 +98,8 @@ public class CreateActivityInstanceHandlerTest
         verify(eventWriter).taskQueueId(6);
         verify(eventWriter).taskType(argThat(hasBytes("foo".getBytes(StandardCharsets.UTF_8))), eq(0), eq(3));
 
-        verify(logWriter).write(eventWriter);
+        verify(logWriters).writeToCurrentLog(eventWriter);
+        verifyNoMoreInteractions(logWriters);
     }
 
     @Test

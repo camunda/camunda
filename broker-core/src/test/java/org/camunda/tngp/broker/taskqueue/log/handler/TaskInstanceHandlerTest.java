@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TestTaskQueueLogEntries;
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.protocol.taskqueue.LockTaskBatchResponseReader;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckResponseReader;
@@ -25,13 +26,14 @@ public class TaskInstanceHandlerTest
     protected static final byte[] PAYLOAD = "maven".getBytes(StandardCharsets.UTF_8);
 
     protected StubResponseControl responseControl;
+    protected StubLogWriters logWriters;
 
     @Before
     public void setUp()
     {
         responseControl = new StubResponseControl();
+        logWriters = new StubLogWriters(0);
     }
-
 
     @Test
     public void shouldConfirmLockedTask()
@@ -42,9 +44,10 @@ public class TaskInstanceHandlerTest
         final TaskInstanceHandler handler = new TaskInstanceHandler();
 
         // when
-        handler.handle(taskInstance, responseControl);
+        handler.handle(taskInstance, responseControl, logWriters);
 
         // then
+        assertThat(logWriters.writtenEntries()).isZero();
         assertThat(responseControl.size()).isEqualTo(1);
         assertThat(responseControl.isAcceptance(0)).isTrue();
 
@@ -73,9 +76,10 @@ public class TaskInstanceHandlerTest
         final TaskInstanceHandler handler = new TaskInstanceHandler();
 
         // when
-        handler.handle(taskInstance, responseControl);
+        handler.handle(taskInstance, responseControl, logWriters);
 
         // then
+        assertThat(logWriters.writtenEntries()).isZero();
         assertThat(responseControl.size()).isEqualTo(1);
         assertThat(responseControl.isAcceptance(0)).isTrue();
 

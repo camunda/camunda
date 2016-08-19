@@ -1,17 +1,12 @@
 package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
+import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-public class BpmnFlowElementEventWriter implements BufferWriter
+public class BpmnFlowElementEventWriter extends LogEntryWriter<BpmnFlowElementEventWriter, BpmnFlowElementEventEncoder>
 {
-
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final BpmnFlowElementEventEncoder bodyEncoder = new BpmnFlowElementEventEncoder();
 
     protected long key;
     protected long processId;
@@ -19,31 +14,27 @@ public class BpmnFlowElementEventWriter implements BufferWriter
     protected ExecutionEventType eventType;
     protected int flowElementId;
 
-    @Override
-    public int getLength()
+    public BpmnFlowElementEventWriter()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH + BpmnFlowElementEventEncoder.BLOCK_LENGTH;
+        super(new BpmnFlowElementEventEncoder());
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected int getBodyLength()
     {
-        headerEncoder.wrap(buffer, offset);
-        headerEncoder
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion())
-            // TODO: make resourceId and shardId setters
-            .resourceId(0)
-            .shardId(0);
+        return BpmnFlowElementEventEncoder.BLOCK_LENGTH;
+    }
 
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
+    @Override
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
+    {
+        bodyEncoder.wrap(buffer, offset)
             .key(key)
             .wfDefinitionId(processId)
             .wfInstanceId(workflowInstanceId)
             .event(eventType.value())
             .flowElementId(flowElementId);
+
     }
 
     public BpmnFlowElementEventWriter key(long key)

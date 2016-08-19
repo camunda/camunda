@@ -7,7 +7,7 @@ import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder.TasksDecoder;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class PollAndLockResponseHandler implements ClientResponseHandler<LockedTasksBatch>
 {

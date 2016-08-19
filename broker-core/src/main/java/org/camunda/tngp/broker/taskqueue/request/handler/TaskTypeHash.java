@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class TaskTypeHash
 {

@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
 
-import uk.co.real_logic.agrona.collections.Long2ObjectCache;
+import org.agrona.collections.Long2ObjectCache;
 
 public class Long2ObjectChacheService<V> implements Service<Long2ObjectCache<V>>
 {

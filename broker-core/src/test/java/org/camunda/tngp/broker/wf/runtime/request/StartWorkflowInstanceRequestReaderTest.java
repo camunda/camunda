@@ -10,7 +10,7 @@ import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceEncoder;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class StartWorkflowInstanceRequestReaderTest
 {

@@ -1,23 +1,16 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-public class TaskInstanceWriter implements BufferWriter
+public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskInstanceEncoder>
 {
 
-    protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected TaskInstanceEncoder bodyEncoder = new TaskInstanceEncoder();
-
-    protected EventSource source = EventSource.NULL_VAL;
     protected long id;
     protected long wfActivityInstanceEventKey;
     protected int wfRuntimeResourceId;
@@ -30,37 +23,25 @@ public class TaskInstanceWriter implements BufferWriter
 
     public TaskInstanceWriter()
     {
+        super(new TaskInstanceEncoder());
         reset();
     }
 
     @Override
-    public int getLength()
+    protected int getBodyLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-               TaskInstanceEncoder.BLOCK_LENGTH +
-               TaskInstanceEncoder.taskTypeHeaderLength() +
-               taskTypeBuffer.capacity() +
-               TaskInstanceEncoder.payloadHeaderLength() +
-               payloadBuffer.capacity();
+        return TaskInstanceEncoder.BLOCK_LENGTH +
+                TaskInstanceEncoder.taskTypeHeaderLength() +
+                taskTypeBuffer.capacity() +
+                TaskInstanceEncoder.payloadHeaderLength() +
+                payloadBuffer.capacity();
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder
-            .wrap(buffer, offset)
-            .blockLength(TaskInstanceEncoder.BLOCK_LENGTH)
-            // TODO: resource and shard ids
-            .resourceId(0)
-            .shardId(0)
-            .source(source.value())
-            .schemaId(TaskInstanceEncoder.SCHEMA_ID)
-            .version(TaskInstanceEncoder.SCHEMA_VERSION)
-            .templateId(TaskInstanceEncoder.TEMPLATE_ID);
-
-        offset += headerEncoder.encodedLength();
-
-        final int taskTypeHashCode = TaskTypeHash.hashCode(taskTypeBuffer, 0, taskTypeBuffer.capacity());
+        final long taskTypeHashCode =
+                Integer.toUnsignedLong(TaskTypeHash.hashCode(taskTypeBuffer, 0, taskTypeBuffer.capacity()));
 
         bodyEncoder.wrap(buffer, offset)
             .id(id)
@@ -137,12 +118,6 @@ public class TaskInstanceWriter implements BufferWriter
     public TaskInstanceWriter payload(DirectBuffer buffer, int offset, int length)
     {
         payloadBuffer.wrap(buffer, offset, length);
-        return this;
-    }
-
-    public TaskInstanceWriter source(EventSource source)
-    {
-        this.source = source;
         return this;
     }
 

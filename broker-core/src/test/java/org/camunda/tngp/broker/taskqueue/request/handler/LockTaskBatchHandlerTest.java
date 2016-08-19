@@ -40,8 +40,8 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class LockTaskBatchHandlerTest
 {
@@ -142,7 +142,7 @@ public class LockTaskBatchHandlerTest
         assertThat(taskInstanceReader.resourceId()).isEqualTo(0);
         assertThat(taskInstanceReader.shardId()).isEqualTo(0);
         assertThat(taskInstanceReader.state()).isEqualTo(TaskInstanceState.LOCKED);
-        assertThat(taskInstanceReader.taskTypeHash()).isEqualTo((long) TASK_TYPE_HASH);
+        assertThat(taskInstanceReader.taskTypeHash()).isEqualTo(Integer.toUnsignedLong(TASK_TYPE_HASH));
         assertThat(taskInstanceReader.wfActivityInstanceEventKey()).isEqualTo(123L);
         assertThat(taskInstanceReader.wfRuntimeResourceId()).isEqualTo(789);
         assertThatBuffer(taskInstanceReader.getPayload()).hasBytes(PAYLOAD);

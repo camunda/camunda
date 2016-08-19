@@ -4,7 +4,7 @@ import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseEncoder;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class StartWorkflowInstanceResponseWriter implements BufferWriter
 {

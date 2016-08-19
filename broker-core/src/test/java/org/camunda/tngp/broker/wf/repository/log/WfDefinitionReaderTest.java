@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.wf.repository.log;
 import org.junit.Test;
 import static org.assertj.core.api.Assertions.*;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class WfDefinitionReaderTest
 {
@@ -18,8 +18,7 @@ public class WfDefinitionReaderTest
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[512]);
 
-        writer.resourceId(42)
-            .shardId(53)
+        writer
             .id(1)
             .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
@@ -27,8 +26,6 @@ public class WfDefinitionReaderTest
 
         reader.wrap(buffer, 0, 512);
 
-        assertThat(reader.resourceId()).isEqualTo(42);
-        assertThat(reader.shardId()).isEqualTo(53);
         assertThat(reader.id()).isEqualTo(1);
 
         final byte[] typeKey = new byte[2];

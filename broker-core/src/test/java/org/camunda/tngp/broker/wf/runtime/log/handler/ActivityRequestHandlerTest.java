@@ -11,6 +11,7 @@ import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
+import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.TestWfRuntimeLogEntries;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
@@ -29,6 +30,8 @@ public class ActivityRequestHandlerTest
     protected StubLogReader logReader;
     protected StubLogWriter logWriter;
 
+    protected StubLogWriters logWriters;
+
     @Mock
     protected Long2LongHashIndex index;
 
@@ -42,13 +45,15 @@ public class ActivityRequestHandlerTest
 
         logReader = new StubLogReader(null);
         logWriter = new StubLogWriter();
+
+        logWriters = new StubLogWriters(0, logWriter);
     }
 
     @Test
     public void shouldHandleCompleteRequest()
     {
         // given
-        final ActivityRequestHandler handler = new ActivityRequestHandler(logReader, logWriter, index);
+        final ActivityRequestHandler handler = new ActivityRequestHandler(logReader, index);
 
         final BpmnActivityEventWriter activityInstanceEvent = TestWfRuntimeLogEntries.createActivityInstanceEvent(ExecutionEventType.ACT_INST_CREATED);
         logReader.addEntry(activityInstanceEvent);
@@ -59,9 +64,10 @@ public class ActivityRequestHandlerTest
         when(requestReader.type()).thenReturn(ActivityInstanceRequestType.COMPLETE);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
+        assertThat(logWriters.writtenEntries()).isEqualTo(1);
         assertThat(logWriter.size()).isEqualTo(1);
 
         final BpmnActivityEventReader newLogEntry = logWriter.getEntryAs(0, BpmnActivityEventReader.class);
@@ -78,7 +84,7 @@ public class ActivityRequestHandlerTest
     public void shouldIgnoreCompleteRequestForNonExistingActivityInstance()
     {
         // given
-        final ActivityRequestHandler handler = new ActivityRequestHandler(logReader, logWriter, index);
+        final ActivityRequestHandler handler = new ActivityRequestHandler(logReader, index);
 
         when(index.get(anyLong(), anyLong())).thenAnswer(new ArgumentAnswer<>(1));
 
@@ -87,9 +93,9 @@ public class ActivityRequestHandlerTest
         when(requestReader.type()).thenReturn(ActivityInstanceRequestType.COMPLETE);
 
         // when
-        handler.handle(requestReader, responseControl);
+        handler.handle(requestReader, responseControl, logWriters);
 
         // then
-        assertThat(logWriter.size()).isEqualTo(0);
+        assertThat(logWriters.writtenEntries()).isEqualTo(0);
     }
 }

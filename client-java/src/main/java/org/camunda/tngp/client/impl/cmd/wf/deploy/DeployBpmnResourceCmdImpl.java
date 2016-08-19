@@ -13,7 +13,7 @@ import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinition> implements DeployBpmnResourceCmd
 {

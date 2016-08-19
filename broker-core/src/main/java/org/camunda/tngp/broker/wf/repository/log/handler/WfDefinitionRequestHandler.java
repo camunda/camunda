@@ -2,8 +2,10 @@ package org.camunda.tngp.broker.wf.repository.log.handler;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.broker.log.LogEntryTypeHandler;
+import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
@@ -11,19 +13,15 @@ import org.camunda.tngp.broker.wf.repository.log.WfDefinitionRequestReader;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
 import org.camunda.tngp.broker.wf.repository.request.handler.BpmnDeploymentValidator;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-
 public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinitionRequestReader>
 {
 
-    protected LogWriter logWriter;
     protected LogReader logReader;
     protected IdGenerator idGenerator;
 
@@ -34,25 +32,23 @@ public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinit
 
     public WfDefinitionRequestHandler(
             LogReader logReader,
-            LogWriter logWriter,
             IdGenerator idGenerator)
     {
-        this.logWriter = logWriter;
         this.logReader = logReader;
         this.idGenerator = idGenerator;
     }
 
     @Override
-    public void handle(WfDefinitionRequestReader reader, ResponseControl responseControl)
+    public void handle(WfDefinitionRequestReader reader, ResponseControl responseControl, LogWriters logWriters)
     {
         if (reader.type() == WfDefinitionRequestType.NEW)
         {
             final DirectBuffer resource = reader.resource();
-            deployProcess(resource, 0, resource.capacity(), responseControl);
+            deployProcess(resource, 0, resource.capacity(), responseControl, logWriters);
         }
     }
 
-    protected void deployProcess(DirectBuffer resource, int offset, int length, ResponseControl responseControl)
+    protected void deployProcess(DirectBuffer resource, int offset, int length, ResponseControl responseControl, LogWriters logWriters)
     {
         final BpmnDeploymentValidator bpmnProcessValidator = new BpmnDeploymentValidator()
                 .validate(resource, offset, length);
@@ -67,7 +63,7 @@ public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinit
             if (wfDefinitionKeyBytes.length <= Constants.WF_DEF_KEY_MAX_LENGTH)
             {
                 // TODO: hand over requestReader here
-                doDeploy(wfDefinitionKeyBytes, resource, 0, resource.capacity(), responseControl);
+                doDeploy(wfDefinitionKeyBytes, resource, 0, resource.capacity(), responseControl, logWriters);
             }
             else
             {
@@ -91,7 +87,8 @@ public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinit
             DirectBuffer resource,
             final int resourceOffset,
             final int resourceLength,
-            ResponseControl responseControl)
+            ResponseControl responseControl,
+            LogWriters logWriters)
     {
 
         final long typeId = idGenerator.nextId();
@@ -103,7 +100,7 @@ public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinit
 
         responseWriter.wfDefinitionId(typeId);
 
-        logWriter.write(wfDefinitionWriter);
+        logWriters.writeToCurrentLog(wfDefinitionWriter);
         responseControl.accept(responseWriter);
     }
 
