@@ -62,11 +62,16 @@ public class ServiceTaskTest
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
 
         // when
-        final WorkflowInstance processInstance = workflowService.start()
-            .workflowDefinitionId(workflow.getId())
-            .execute();
+        final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
+            workflowService
+                .start()
+                .workflowDefinitionId(workflow.getId())
+                .execute())
+            .until(
+                (wfInstance) -> wfInstance != null,
+                (exception) -> !exception.getMessage().contains("(1-3)"));
 
-        assertThat(processInstance.getId()).isGreaterThanOrEqualTo(0);
+        assertThat(workflowInstance.getId()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
@@ -78,12 +83,8 @@ public class ServiceTaskTest
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
 
         // given
-        workflowService.start()
-            .workflowDefinitionId(workflow.getId())
-            .execute();
-
         TestUtil.doRepeatedly(() ->
-            client.workflows()
+            workflowService
                 .start()
                 .workflowDefinitionId(workflow.getId())
                 .execute())
