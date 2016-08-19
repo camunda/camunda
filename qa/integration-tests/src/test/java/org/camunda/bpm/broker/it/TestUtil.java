@@ -49,7 +49,7 @@ public class TestUtil
                 }
                 catch (Exception e)
                 {
-                    if (!exceptionCondition.apply(e))
+                    if (exceptionCondition.apply(e))
                     {
                         LangUtil.rethrowUnchecked(e);
                     }
