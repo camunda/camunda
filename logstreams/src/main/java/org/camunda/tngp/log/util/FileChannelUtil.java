@@ -7,7 +7,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 public class FileChannelUtil
 {

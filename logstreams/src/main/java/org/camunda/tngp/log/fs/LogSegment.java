@@ -13,9 +13,9 @@ import java.nio.channels.FileChannel.MapMode;
 
 import org.camunda.tngp.log.util.FileChannelUtil;
 
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public abstract class LogSegment
 {

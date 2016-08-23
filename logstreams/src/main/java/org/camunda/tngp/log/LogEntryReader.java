@@ -6,7 +6,7 @@ import java.nio.channels.FileChannel;
 
 import org.camunda.tngp.util.buffer.BufferReader;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class LogEntryReader
 {

@@ -5,8 +5,8 @@ import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.log.appender.LogAppenderCmd;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogAgentContext
 {

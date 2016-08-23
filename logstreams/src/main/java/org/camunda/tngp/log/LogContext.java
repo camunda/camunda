@@ -6,7 +6,7 @@ import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 import org.camunda.tngp.log.fs.LogSegments;
 
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogContext
 {

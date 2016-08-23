@@ -11,7 +11,7 @@ import java.nio.channels.FileChannel;
 
 import org.camunda.tngp.log.util.FileChannelUtil;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * The appender's view of the log segment

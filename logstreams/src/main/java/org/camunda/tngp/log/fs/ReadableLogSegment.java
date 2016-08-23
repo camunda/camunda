@@ -9,7 +9,7 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import org.camunda.tngp.log.LogBlockHandler;
 import org.camunda.tngp.log.LogFragmentHandler;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * not threadsafe, supports single reader

@@ -16,9 +16,9 @@ import org.camunda.tngp.log.fs.LogSegments;
 import org.camunda.tngp.log.fs.ReadableLogSegment;
 import org.camunda.tngp.util.FileUtil;
 
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogConductor implements Agent, Consumer<LogConductorCmd>
 {

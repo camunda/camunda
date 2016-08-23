@@ -32,8 +32,7 @@ public class LogReaderImpl implements LogReader
     public LogReaderImpl(final Log log, final int readBufferSize)
     {
         this(readBufferSize);
-        this.log = log;
-        this.position = log.getInitialPosition();
+        setLogAndPosition(log, log.getInitialPosition());
     }
 
     public void setLogAndPosition(Log log, long position)
@@ -51,12 +50,11 @@ public class LogReaderImpl implements LogReader
     {
         final long nextPosition = entryReader.read(log, position, reader);
 
-        boolean hasNext = false;
+        final boolean hasNext = nextPosition >= 0;
 
-        if (nextPosition != -1)
+        if (hasNext)
         {
             this.position = nextPosition;
-            hasNext = true;
         }
 
         return hasNext;

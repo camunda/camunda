@@ -10,9 +10,9 @@ import org.camunda.tngp.log.LogAgentContext;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 import org.camunda.tngp.log.fs.AppendableLogSegment;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogAppender implements Agent, Consumer<LogAppenderCmd>
 {
