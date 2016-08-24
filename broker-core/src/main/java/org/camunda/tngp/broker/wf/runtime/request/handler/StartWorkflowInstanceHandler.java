@@ -32,9 +32,6 @@ public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRunt
             final int length,
             final DeferredResponse response)
     {
-        System.out.println();
-        System.out.println("Starting process instance");
-
         requestReader.wrap(msg, offset, length);
 
         final DirectBuffer wfDefinitionKey = requestReader.wfDefinitionKey();

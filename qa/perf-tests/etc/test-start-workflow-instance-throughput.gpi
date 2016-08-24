@@ -1,0 +1,11 @@
+set terminal png size 1024,768 enhanced
+set output 'data/test-start-wf-instance-throughput.png'
+set title 'Start WF Instance Throughput'
+
+set grid ytics mytics
+set ylabel "Requests Sent"
+set xlabel "Time [s]"
+set mytics 5
+
+plot 'data/test-start-wf-instance-throughput.txt' using ($1/1000000000):2 with lines notitle
+

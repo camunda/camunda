@@ -42,7 +42,6 @@ public class ProcessEventHandler implements LogEntryTypeHandler<BpmnProcessEvent
         System.out.println("Handling event of type " + processEventReader.event());
 
         handler.handle(processEventReader, process, logWriters, idGenerator);
-
     }
 
     public void addAspectHandler(BpmnProcessAspectHandler aspectHandler)
