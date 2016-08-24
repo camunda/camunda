@@ -109,6 +109,7 @@ public class DeferredResponse
         if (claimedFragment.isOpen())
         {
             claimedFragment.commit();
+            responseControl.reclaim(this);
         }
     }
 

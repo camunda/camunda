@@ -39,6 +39,12 @@ public class DeferredResponsePool
                     {
                         deferred.offer(r);
                     }
+
+                    @Override
+                    public void reclaim(DeferredResponse r)
+                    {
+                        DeferredResponsePool.this.reclaim(r);
+                    }
                 }));
         }
     }
@@ -84,6 +90,9 @@ public class DeferredResponsePool
     public interface DeferredResponseControl
     {
         void defer(DeferredResponse r);
+
+        void reclaim(DeferredResponse r);
+
     }
 
 }
