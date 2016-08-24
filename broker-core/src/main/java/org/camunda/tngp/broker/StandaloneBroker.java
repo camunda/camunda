@@ -26,19 +26,22 @@ public class StandaloneBroker
             }
         });
 
+
         try (Scanner scanner = new Scanner(System.in))
         {
-            final String nextLine = scanner.nextLine();
-            if (nextLine.contains("exit")
+            while (scanner.hasNextLine())
+            {
+                final String nextLine = scanner.nextLine();
+                if (nextLine.contains("exit")
                     || nextLine.contains("close")
                     || nextLine.contains("quit")
                     || nextLine.contains("halt")
                     || nextLine.contains("shutdown")
                     || nextLine.contains("stop"))
-            {
-                System.exit(0);
+                {
+                    System.exit(0);
+                }
             }
-
         }
 
     }
