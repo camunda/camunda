@@ -39,9 +39,6 @@ mavenJob(jobName) {
       }
       branch gitBranch
       extensions {
-        cloneOptions {
-          shallow()
-        }
         localBranch gitBranch
       }
     }
