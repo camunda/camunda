@@ -17,4 +17,6 @@ public interface LogReader
 
     long position();
 
+    boolean hasNext();
+
 }

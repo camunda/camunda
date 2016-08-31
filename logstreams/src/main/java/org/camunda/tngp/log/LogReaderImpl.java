@@ -48,16 +48,20 @@ public class LogReaderImpl implements LogReader
 
     public boolean read(BufferReader reader)
     {
+        if (!hasNext())
+        {
+            throw new RuntimeException("no next event");
+        }
         final long nextPosition = entryReader.read(log, position, reader);
 
-        final boolean hasNext = nextPosition >= 0;
+        this.position = nextPosition;
 
-        if (hasNext)
-        {
-            this.position = nextPosition;
-        }
+        return hasNext();
+    }
 
-        return hasNext;
+    public boolean hasNext()
+    {
+        return position < log.getLastPosition();
     }
 
     public long position()

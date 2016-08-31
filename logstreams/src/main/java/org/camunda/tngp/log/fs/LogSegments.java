@@ -75,7 +75,14 @@ public class LogSegments
 
         if (segmentCount > 0)
         {
-            final ReadableLogSegment lastSegment = this.segments[segmentCount - 1];
+            // We typically have an additional segment on top of the segment
+            // that is currently written to. When the current segment is full,
+            // we can quickly exchange the last segment with that spare, while allocating
+            // a new file in parallel => we use segmentCount - 2 to determine the current segment.
+            // During startup, the second fragment may not be allocated yet, which is why we have the max expression.
+            final int segmentIndex = Math.max(0, segmentCount - 2);
+
+            final ReadableLogSegment lastSegment = this.segments[segmentIndex];
             lastPosition = position(lastSegment.getSegmentId(), lastSegment.getTailVolatile());
         }
         return lastPosition;
