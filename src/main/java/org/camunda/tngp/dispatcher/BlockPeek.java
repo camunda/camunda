@@ -4,11 +4,11 @@ import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
 
 import java.nio.ByteBuffer;
 
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
 
 public class BlockPeek
 {

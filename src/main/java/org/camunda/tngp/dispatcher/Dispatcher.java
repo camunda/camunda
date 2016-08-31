@@ -7,15 +7,15 @@ import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
-import uk.co.real_logic.agrona.concurrent.status.Position;
 
 /**
  * Component for sending and receiving messages between different threads.

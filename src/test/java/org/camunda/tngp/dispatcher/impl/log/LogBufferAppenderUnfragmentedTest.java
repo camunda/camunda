@@ -4,10 +4,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;

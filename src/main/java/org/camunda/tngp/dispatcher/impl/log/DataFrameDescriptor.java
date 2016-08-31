@@ -1,6 +1,6 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 /**
  * <pre>

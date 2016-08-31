@@ -3,10 +3,9 @@ package org.camunda.tngp.dispatcher.impl;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.dispatcher.Dispatcher;
-
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 /**
  * The conductor performs maintenance operations on the dispatcher

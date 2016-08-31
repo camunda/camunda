@@ -1,11 +1,23 @@
 package org.camunda.tngp.dispatcher;
 
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
+import org.agrona.BitUtil;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
 import org.camunda.tngp.dispatcher.impl.allocation.AllocatedBuffer;
@@ -14,20 +26,8 @@ import org.camunda.tngp.dispatcher.impl.allocation.DirectBufferAllocator;
 import org.camunda.tngp.dispatcher.impl.allocation.ExternallyAllocatedBuffer;
 import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocationDescriptor;
 import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocator;
-import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
-
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
-import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
+import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
 
 /**
  * Builder for a {@link Dispatcher}

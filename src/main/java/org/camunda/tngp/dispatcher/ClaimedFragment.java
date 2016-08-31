@@ -1,9 +1,12 @@
 package org.camunda.tngp.dispatcher;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
 
 /**
  * Represents a claimed fragment in the buffer.

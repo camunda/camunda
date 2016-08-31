@@ -1,6 +1,6 @@
 package org.camunda.tngp.dispatcher;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 @FunctionalInterface
 public interface FragmentHandler

@@ -1,12 +1,17 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.LOG_ACTIVE_PARTITION_ID_OFFSET;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.LOG_INITIAL_PARTITION_ID_OFFSET;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.LOG_MAX_FRAME_LENGTH_OFFSET;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.logMetadataOffset;
 
 import java.io.IOException;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.impl.allocation.AllocatedBuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class LogBuffer
 {

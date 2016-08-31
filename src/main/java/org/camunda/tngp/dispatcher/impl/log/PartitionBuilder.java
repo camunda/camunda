@@ -1,12 +1,15 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_META_DATA_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.partitionDataSectionOffset;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.partitionMetadataSectionOffset;
 
 import java.nio.ByteBuffer;
 
 import org.camunda.tngp.dispatcher.impl.allocation.AllocatedBuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class PartitionBuilder
 {

@@ -1,13 +1,21 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
-import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
+import static org.agrona.BitUtil.align;
+import static org.agrona.UnsafeAccess.UNSAFE;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class LogBufferAppender
 {

@@ -1,7 +1,7 @@
 package org.camunda.tngp.dispatcher.impl;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 import java.nio.ByteBuffer;
 
@@ -17,8 +17,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 
 public class SubscriptionPollBlockTest
 {

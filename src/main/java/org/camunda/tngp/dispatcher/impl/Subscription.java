@@ -1,21 +1,32 @@
 package org.camunda.tngp.dispatcher.impl;
 
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.align;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionId;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.BlockHandler;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
 
 public class Subscription
 {
@@ -133,7 +144,7 @@ public class Subscription
     /**
      * <p>Sequentially peeks for <code>maxNumOfFragments</code> fragments and consumes it (i.e. updates subscription position)
      * depending on the return value of
-     * {@link FragmentHandler#onFragment(uk.co.real_logic.agrona.DirectBuffer, int, int, int, boolean)}.
+     * {@link FragmentHandler#onFragment(org.agrona.DirectBuffer, int, int, int, boolean)}.
      * If a fragment is not consumed,
      * then no following fragments are peeked.
      */

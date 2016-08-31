@@ -13,9 +13,9 @@ import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DispatcherIntegrationTest
 {

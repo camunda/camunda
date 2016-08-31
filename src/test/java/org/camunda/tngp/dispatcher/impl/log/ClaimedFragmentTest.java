@@ -7,7 +7,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.junit.Before;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClaimedFragmentTest
 {

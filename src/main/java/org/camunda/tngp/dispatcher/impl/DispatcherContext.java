@@ -1,7 +1,7 @@
 package org.camunda.tngp.dispatcher.impl;
 
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class DispatcherContext
 {

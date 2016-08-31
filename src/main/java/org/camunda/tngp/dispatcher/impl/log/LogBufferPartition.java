@@ -1,10 +1,13 @@
 package org.camunda.tngp.dispatcher.impl.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_CLEAN;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_STATUS_OFFSET;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
 
 import org.camunda.tngp.dispatcher.impl.allocation.AllocatedBuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class LogBufferPartition
 {
