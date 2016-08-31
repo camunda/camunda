@@ -33,9 +33,9 @@ public class ReadTransportPoller extends TransportPoller
 
         if (channels.size() <= ITERATION_THRESHOLD)
         {
-            for (TransportChannelImpl channel : channels)
+            for (int i = 0; i < channels.size(); i++)
             {
-                workCount += channel.receive();
+                workCount += channels.get(i).receive();
             }
         }
         else
