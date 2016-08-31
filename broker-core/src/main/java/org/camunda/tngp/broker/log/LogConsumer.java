@@ -93,7 +93,7 @@ public class LogConsumer
 
     protected long getLastIndexedPosition()
     {
-        long lastIndexedPosition = LOG_INITIAL_POSITION;
+        long lastIndexedPosition = -1L;
         for (int i = 0; i < indexWriters.size(); i++)
         {
             final long lastPositionForIndex = indexWriters.get(i).getLastIndexedPosition();
@@ -109,7 +109,7 @@ public class LogConsumer
      */
     protected long getLastConsumedPosition(List<LogReader> targetLogReaders)
     {
-        long lastConsumedPosition = LOG_INITIAL_POSITION;
+        long lastConsumedPosition = -1L;
 
         finder.sourceLogId = logId;
 
@@ -117,7 +117,7 @@ public class LogConsumer
         {
             final LogReader targetLogReader = targetLogReaders.get(i);
 
-            finder.lastProcessedEventPosition = LOG_INITIAL_POSITION;
+            finder.lastProcessedEventPosition = -1L;
             targetLogReader.setPosition(LOG_INITIAL_POSITION);
             recoveryProcessor.setLogReader(targetLogReader);
             recoveryProcessor.doWork(Integer.MAX_VALUE);
@@ -136,18 +136,26 @@ public class LogConsumer
 
         final long lastIndexedPosition = getLastIndexedPosition();
 
-        final long lastConsumedPosition = Math.max(getLastConsumedPosition(targetLogReaders), lastIndexedPosition);
+        final long lastProcessedPosition = getLastConsumedPosition(targetLogReaders);
+        final long lastConsumedPosition = Math.max(lastProcessedPosition, lastIndexedPosition);
 
-        fastForwardIndexesUntil(lastConsumedPosition);
-
-        logReader.setPosition(lastConsumedPosition);
-
-        // this sets the log reader's position to the next event;
-        // it is a hack that can be resolved
-        // when the log is based on symbolic positions (then it is just lastConsumedPosition + 1)
-        if (logReader.hasNext())
+        if (lastConsumedPosition >= 0)
         {
-            logReader.read(new LogEntryHeaderReader());
+            fastForwardIndexesUntil(lastConsumedPosition);
+
+            logReader.setPosition(lastConsumedPosition);
+
+            // this sets the log reader's position to the next event;
+            // it is a hack that can be resolved
+            // when the log is based on symbolic positions (then it is just lastConsumedPosition + 1)
+            if (logReader.hasNext())
+            {
+                logReader.read(new LogEntryHeaderReader());
+            }
+        }
+        else
+        {
+            logReader.setPosition(LOG_INITIAL_POSITION);
         }
     }
 

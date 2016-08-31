@@ -481,6 +481,30 @@ public class LogConsumerTest
         assertThat(handler.ids).containsExactly(345L);
     }
 
+    @Test
+    public void shouldRecoverLogConsumerPositionWithNoProcessedEvent()
+    {
+        // given
+        final LogConsumer logConsumer = new LogConsumer(
+                0,
+                logReader,
+                Templates.wfRepositoryLogTemplates(),
+                new StubLogWriters(0));
+
+        writeEntry(logReader, 123L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
+
+        final IdLoggingHandler handler = new IdLoggingHandler();
+        logConsumer.addHandler(Templates.WF_DEFINITION, handler);
+
+        // when
+        logConsumer.recover(Arrays.asList(logReader));
+        logConsumer.doConsume();
+
+        // then
+        assertThat(handler.ids).hasSize(1);
+        assertThat(handler.ids).containsExactly(123L);
+    }
+
     public static class ExampleHandler implements LogEntryTypeHandler<WfDefinitionReader>
     {
 

@@ -146,14 +146,10 @@ public class BrokerRestartTest
         restartBroker();
 
         // then
-        final WorkflowInstance wfInstance = TestUtil.doRepeatedly(() ->
-            client.workflows()
+        final WorkflowInstance wfInstance = client.workflows()
                 .start()
                 .workflowDefinitionKey("anId")
-                .execute())
-            .until(
-                (w) -> w != null,
-                (e) -> !e.getMessage().contains("(1-3)"));
+                .execute();
 
         assertThat(wfInstance).isNotNull();
     }
