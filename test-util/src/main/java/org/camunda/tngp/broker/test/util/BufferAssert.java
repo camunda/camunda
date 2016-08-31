@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import org.assertj.core.api.AbstractAssert;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
 {

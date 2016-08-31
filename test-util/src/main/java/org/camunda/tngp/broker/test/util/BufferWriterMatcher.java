@@ -9,7 +9,7 @@ import org.camunda.tngp.util.buffer.BufferWriter;
 import org.hamcrest.Matcher;
 import org.mockito.ArgumentMatcher;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Note: this matcher does not work when a {@link BufferWriter} is reused throughout a test.

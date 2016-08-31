@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import org.mockito.ArgumentMatcher;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class BufferMatcher extends ArgumentMatcher<DirectBuffer>
 {

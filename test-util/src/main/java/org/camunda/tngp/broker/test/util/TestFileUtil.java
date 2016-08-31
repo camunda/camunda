@@ -44,7 +44,6 @@ public class TestFileUtil
         }
 
 
-        System.out.println(fileContent);
         return new ByteArrayInputStream(fileContent.getBytes(charset));
     }
 }
