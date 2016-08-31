@@ -5,7 +5,7 @@ import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.*;
 
 import java.nio.ByteBuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class StaticControlFrames
 {

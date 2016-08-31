@@ -18,9 +18,9 @@ import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.media.AcceptTransportPoller;
 import org.camunda.tngp.transport.impl.media.ConnectTransportPoller;
 
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class TransportConductor implements Agent, Consumer<TransportConductorCmd>
 {

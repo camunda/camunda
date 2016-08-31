@@ -2,8 +2,8 @@ package org.camunda.tngp.transport.requestresponse.client;
 
 import java.util.concurrent.TimeUnit;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public interface TransportRequest extends AutoCloseable
 {

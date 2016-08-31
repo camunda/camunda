@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.util;
 
-import uk.co.real_logic.agrona.BitUtil;
+import org.agrona.BitUtil;
 
 /**
  * Array-based data structure holding a fixed number of objects,

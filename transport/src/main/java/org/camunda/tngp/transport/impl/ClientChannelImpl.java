@@ -11,8 +11,8 @@ import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class ClientChannelImpl extends TransportChannelImpl implements ClientChannel
 {

@@ -9,9 +9,9 @@ import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.impl.TransportChannelImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class Sender implements Agent, Consumer<SenderCmd>
 {

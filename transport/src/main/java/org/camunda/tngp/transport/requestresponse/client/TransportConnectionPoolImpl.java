@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportChannel;
 
-import uk.co.real_logic.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 
 /**
  * Manages a number of pooled connections to be reused by different threads

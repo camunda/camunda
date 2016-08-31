@@ -9,9 +9,9 @@ import java.nio.ByteBuffer;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A client for the request/response protocol

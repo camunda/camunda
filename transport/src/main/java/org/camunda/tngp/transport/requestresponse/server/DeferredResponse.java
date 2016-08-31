@@ -1,14 +1,17 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.connectionIdOffset;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.framedLength;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.headerLength;
+import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.requestIdOffset;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool.DeferredResponseControl;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class DeferredResponse
 {

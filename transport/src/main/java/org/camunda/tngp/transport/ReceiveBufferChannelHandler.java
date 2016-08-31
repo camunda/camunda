@@ -3,7 +3,7 @@ package org.camunda.tngp.transport;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 /**
  * A simple implementation of {@link TransportChannelHandler} discarding errors and

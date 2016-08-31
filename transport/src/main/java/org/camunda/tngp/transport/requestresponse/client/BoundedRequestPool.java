@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
-import uk.co.real_logic.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 
 /**
  * Threadsafe request pool which can be shared by multiple threads.

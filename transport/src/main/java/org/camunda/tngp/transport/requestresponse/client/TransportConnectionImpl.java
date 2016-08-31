@@ -11,8 +11,8 @@ import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.util.LongArrayIndex;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class TransportConnectionImpl implements TransportConnection
 {

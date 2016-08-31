@@ -6,8 +6,8 @@ import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderD
 
 import org.camunda.tngp.dispatcher.FragmentHandler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 
 /**
  * {@link MessageHandler} implementation for data fragments which constitute requests.

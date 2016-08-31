@@ -10,8 +10,8 @@ import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.media.ReadTransportPoller;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionImpl;
 
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 /**
  *

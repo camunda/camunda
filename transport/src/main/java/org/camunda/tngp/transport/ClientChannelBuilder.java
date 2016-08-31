@@ -10,7 +10,7 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPoolImpl;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class ClientChannelBuilder
 {

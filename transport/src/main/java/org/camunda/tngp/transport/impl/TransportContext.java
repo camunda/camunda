@@ -6,8 +6,8 @@ import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class TransportContext
 {

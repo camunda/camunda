@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public interface AsyncRequestHandler
 {

@@ -2,7 +2,7 @@ package org.camunda.tngp.transport.spi;
 
 import org.camunda.tngp.transport.TransportChannel;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public interface TransportChannelHandler
 {

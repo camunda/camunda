@@ -10,8 +10,8 @@ import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ChannelRequestResponseTest
 {

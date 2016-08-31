@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.util;
 
-import static uk.co.real_logic.agrona.BitUtil.findNextPositivePowerOfTwo;
+import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
 import java.util.Collection;
 import java.util.Iterator;

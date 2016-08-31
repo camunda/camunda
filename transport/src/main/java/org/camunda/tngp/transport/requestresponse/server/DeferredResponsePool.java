@@ -5,7 +5,7 @@ import java.util.Queue;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.util.BoundedArrayQueue;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Utility for deferring responses which wait on some async processing (usually io)

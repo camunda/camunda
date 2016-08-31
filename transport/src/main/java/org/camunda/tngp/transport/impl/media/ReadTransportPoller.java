@@ -10,9 +10,9 @@ import org.camunda.tngp.transport.impl.TransportChannelImpl;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.nio.TransportPoller;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.nio.TransportPoller;
 
 public class ReadTransportPoller extends TransportPoller
 {

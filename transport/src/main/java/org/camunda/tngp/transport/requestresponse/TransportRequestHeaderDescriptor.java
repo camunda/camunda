@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.requestresponse;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 public class TransportRequestHeaderDescriptor
 {
