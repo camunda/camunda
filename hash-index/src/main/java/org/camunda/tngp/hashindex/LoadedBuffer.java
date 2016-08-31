@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 
 import org.camunda.tngp.hashindex.store.IndexStore;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class LoadedBuffer
 {

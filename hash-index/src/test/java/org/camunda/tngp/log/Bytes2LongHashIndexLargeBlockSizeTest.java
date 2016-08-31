@@ -2,7 +2,7 @@ package org.camunda.tngp.log;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 import java.io.IOException;
 

@@ -1,12 +1,12 @@
 package org.camunda.tngp.hashindex;
 
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.hashindex.types.ByteArrayKeyHandler;
 import org.camunda.tngp.hashindex.types.LongValueHandler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 public class Bytes2LongHashIndex extends HashIndex<ByteArrayKeyHandler, LongValueHandler>
 {

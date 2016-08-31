@@ -4,7 +4,7 @@ import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.hashindex.types.LongKeyHandler;
 import org.camunda.tngp.hashindex.types.LongValueHandler;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 public class Long2LongHashIndex extends HashIndex<LongKeyHandler, LongValueHandler>
 {

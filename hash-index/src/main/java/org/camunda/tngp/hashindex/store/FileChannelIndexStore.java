@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 public class FileChannelIndexStore implements IndexStore, Closeable
 {
@@ -80,7 +80,7 @@ public class FileChannelIndexStore implements IndexStore, Closeable
     {
         final long previousLength = allocatedLength;
 
-        // partly stolen from uk.co.real_logic.agrona.IoUtil.fill(FileChannel, long, long, byte)
+        // partly stolen from org.agrona.IoUtil.fill(FileChannel, long, long, byte)
         try
         {
             fileChannel.position(previousLength);

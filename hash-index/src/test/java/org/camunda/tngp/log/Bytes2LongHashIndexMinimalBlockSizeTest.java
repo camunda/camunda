@@ -3,7 +3,7 @@ package org.camunda.tngp.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
 import static org.camunda.tngp.hashindex.HashIndexDescriptor.framedRecordLength;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
@@ -11,7 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class Bytes2LongHashIndexMinimalBlockSizeTest
 {

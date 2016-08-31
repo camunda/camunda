@@ -4,7 +4,7 @@ import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 
 import org.camunda.tngp.hashindex.store.IndexStore;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * Simple index data structure using extensible hashing.

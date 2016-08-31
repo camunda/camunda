@@ -1,11 +1,11 @@
 package org.camunda.tngp.hashindex.types;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 import org.camunda.tngp.hashindex.IndexValueHandler;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public class LongValueHandler implements IndexValueHandler
 {
