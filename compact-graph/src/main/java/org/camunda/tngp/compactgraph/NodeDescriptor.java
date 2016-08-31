@@ -1,6 +1,6 @@
 package org.camunda.tngp.compactgraph;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 public class NodeDescriptor
 {

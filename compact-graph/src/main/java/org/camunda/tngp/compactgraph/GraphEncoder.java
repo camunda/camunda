@@ -3,11 +3,11 @@ package org.camunda.tngp.compactgraph;
 import org.camunda.tngp.compactgraph.builder.GraphBuilder;
 import org.camunda.tngp.compactgraph.builder.NodeBuilder;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static org.camunda.tngp.compactgraph.GraphMetadataDescriptor.*;
 import static org.camunda.tngp.compactgraph.NodeDescriptor.*;
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 import java.util.Iterator;
 import java.util.List;

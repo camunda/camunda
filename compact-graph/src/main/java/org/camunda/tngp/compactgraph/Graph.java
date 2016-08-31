@@ -1,7 +1,7 @@
 package org.camunda.tngp.compactgraph;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static org.camunda.tngp.compactgraph.GraphMetadataDescriptor.*;
 

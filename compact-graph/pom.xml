@@ -24,11 +24,11 @@
   <dependencies>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
+      <groupId>org.agrona</groupId>
       <artifactId>Agrona</artifactId>
-      <version>0.4.11</version>
+      <version>0.5.3</version>
     </dependency>
-
+    
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
