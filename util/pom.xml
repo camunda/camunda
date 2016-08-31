@@ -18,7 +18,7 @@
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- TODO: Move to common parent -->
-    <agrona.version>0.4.11</agrona.version>
+    <agrona.version>0.5.3</agrona.version>
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
   </properties>
@@ -26,7 +26,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
+      <groupId>org.agrona</groupId>
       <artifactId>Agrona</artifactId>
       <version>${agrona.version}</version>
       <scope>provided</scope>

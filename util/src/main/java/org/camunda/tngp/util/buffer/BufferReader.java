@@ -1,6 +1,6 @@
 package org.camunda.tngp.util.buffer;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 /**
  * Implementations may expose methods for access to properties from

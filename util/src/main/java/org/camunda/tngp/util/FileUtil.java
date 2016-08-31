@@ -9,7 +9,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import static java.nio.file.FileVisitResult.CONTINUE;
 
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 public class FileUtil
 {

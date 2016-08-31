@@ -1,6 +1,6 @@
 package org.camunda.tngp.util.buffer;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * Implementations may add custom setters to specify values that should be written.
