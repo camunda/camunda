@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.taskqueue.CompleteTaskRequestReader;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
@@ -11,7 +12,6 @@ import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestWriter;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogReaderImpl;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;

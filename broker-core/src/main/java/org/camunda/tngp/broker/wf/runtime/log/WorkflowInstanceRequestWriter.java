@@ -1,32 +1,29 @@
 package org.camunda.tngp.broker.wf.runtime.log;
 
-import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
-import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
-import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
+import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
+import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestEncoder;
 
-public class WorkflowInstanceRequestWriter implements BufferWriter
+public class WorkflowInstanceRequestWriter extends LogEntryWriter<WorkflowInstanceRequestWriter, WorkflowInstanceRequestEncoder>
 {
 
-    protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected WorkflowInstanceRequestEncoder bodyEncoder = new WorkflowInstanceRequestEncoder();
+    public WorkflowInstanceRequestWriter()
+    {
+        super(new WorkflowInstanceRequestEncoder());
+    }
 
     protected ProcessInstanceRequestType type;
     protected long wfDefinitionId;
-    protected EventSource source;
 
     protected UnsafeBuffer wfDefinitionKeyBuffer = new UnsafeBuffer(0, 0);
 
     @Override
-    public int getLength()
+    protected int getBodyLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-                WorkflowInstanceRequestEncoder.BLOCK_LENGTH +
+        return WorkflowInstanceRequestEncoder.BLOCK_LENGTH +
                 WorkflowInstanceRequestEncoder.wfDefinitionKeyHeaderLength() +
                 wfDefinitionKeyBuffer.capacity();
     }
@@ -50,27 +47,14 @@ public class WorkflowInstanceRequestWriter implements BufferWriter
         return this;
     }
 
-    public WorkflowInstanceRequestWriter source(EventSource source)
-    {
-        this.source = source;
-        return this;
-    }
-
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .resourceId(0)
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .shardId(0)
-            .source(source.value())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .version(bodyEncoder.sbeSchemaVersion());
-
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
+        bodyEncoder.wrap(buffer, offset)
             .type(type)
             .wfDefinitionId(wfDefinitionId)
             .putWfDefinitionKey(wfDefinitionKeyBuffer, 0, wfDefinitionKeyBuffer.capacity());
+
     }
+
 }

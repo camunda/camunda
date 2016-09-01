@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.transport.worker.spi;
 
-import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.broker.log.LogWriter;
 
 public interface ResourceContext
 {

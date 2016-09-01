@@ -1,44 +1,32 @@
 package org.camunda.tngp.broker.taskqueue.log;
 
-import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
+import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
-import org.agrona.MutableDirectBuffer;
-
-public class TaskInstanceRequestWriter implements BufferWriter
+public class TaskInstanceRequestWriter extends LogEntryWriter<TaskInstanceRequestWriter, TaskInstanceRequestEncoder>
 {
 
-    protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected TaskInstanceRequestEncoder bodyEncoder = new TaskInstanceRequestEncoder();
+    public TaskInstanceRequestWriter()
+    {
+        super(new TaskInstanceRequestEncoder());
+    }
 
     protected long key;
     protected long lockOwnerId;
     protected TaskInstanceRequestType type;
-    protected EventSource source;
 
     @Override
-    public int getLength()
+    protected int getBodyLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH +
-                TaskInstanceRequestEncoder.BLOCK_LENGTH;
+        return TaskInstanceRequestEncoder.BLOCK_LENGTH;
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    protected void writeBody(MutableDirectBuffer buffer, int offset)
     {
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .resourceId(0)
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .shardId(0)
-            .source(source.value())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .version(bodyEncoder.sbeSchemaVersion());
-
-        bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
+        bodyEncoder.wrap(buffer, offset)
             .key(key)
             .lockOwnerId(lockOwnerId)
             .type(type);
@@ -59,12 +47,6 @@ public class TaskInstanceRequestWriter implements BufferWriter
     public TaskInstanceRequestWriter lockOwnerId(long lockOwnerId)
     {
         this.lockOwnerId = lockOwnerId;
-        return this;
-    }
-
-    public TaskInstanceRequestWriter source(EventSource source)
-    {
-        this.source = source;
         return this;
     }
 

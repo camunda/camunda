@@ -1,9 +1,9 @@
 package org.camunda.tngp.broker.wf.repository;
 
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogWriter;
 
 public class WfRepositoryContext implements ResourceContext
 {

@@ -505,6 +505,36 @@ public class LogConsumerTest
         assertThat(handler.ids).containsExactly(123L);
     }
 
+    @Test
+    public void shouldRecoverLogConsumerPositionWithoutExplicitBackpointer()
+    {
+        // given
+        final LogConsumer logConsumer = new LogConsumer(
+                0,
+                logReader,
+                Templates.wfRepositoryLogTemplates(),
+                new StubLogWriters(0));
+
+        final WfDefinitionWriter writer = new WfDefinitionWriter();
+        writer.id(123L);
+        logReader.addEntry(writer);
+
+        final IdLoggingHandler handler = new IdLoggingHandler();
+        logConsumer.addHandler(Templates.WF_DEFINITION, handler);
+
+        // when
+        logConsumer.recover(Arrays.asList(logReader));
+        logConsumer.doConsume();
+
+        // then
+        assertThat(handler.ids).hasSize(1);
+        assertThat(handler.ids).containsExactly(123L);
+
+        // we are not setting the event source position explicitly
+
+
+    }
+
     public static class ExampleHandler implements LogEntryTypeHandler<WfDefinitionReader>
     {
 

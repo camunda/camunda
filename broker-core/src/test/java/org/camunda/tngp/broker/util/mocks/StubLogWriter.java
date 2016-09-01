@@ -1,9 +1,9 @@
 package org.camunda.tngp.broker.util.mocks;
 
 
-import org.camunda.tngp.log.LogWriter;
+import org.camunda.tngp.broker.log.LogEntryWriter;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.util.buffer.BufferReader;
-import org.camunda.tngp.util.buffer.BufferWriter;
 
 // TODO: make LogWriter an interface
 public class StubLogWriter extends LogWriter
@@ -18,7 +18,7 @@ public class StubLogWriter extends LogWriter
     }
 
     @Override
-    public long write(BufferWriter writer)
+    public long write(LogEntryWriter<?, ?> writer)
     {
         final int length = writer.getLength();
         collector.add(writer);

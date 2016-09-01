@@ -3,12 +3,12 @@ package org.camunda.tngp.broker.wf.repository;
 import java.util.Arrays;
 
 import org.camunda.tngp.broker.log.LogConsumer;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.wf.repository.log.handler.WfDefinitionRequestHandler;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReaderImpl;
-import org.camunda.tngp.log.LogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;

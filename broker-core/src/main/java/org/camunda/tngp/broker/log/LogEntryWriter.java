@@ -10,8 +10,8 @@ public abstract class LogEntryWriter<S extends LogEntryWriter<S, T>, T extends M
 {
 
     protected short source;
-    protected int sourceEventLogId;
-    protected long sourceEventPosition;
+    protected int sourceEventLogId = MessageHeaderEncoder.sourceEventLogIdNullValue();
+    protected long sourceEventPosition = MessageHeaderEncoder.sourceEventPositionNullValue();
 
     protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected T bodyEncoder;
