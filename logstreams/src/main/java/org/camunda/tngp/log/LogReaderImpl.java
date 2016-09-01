@@ -52,6 +52,7 @@ public class LogReaderImpl implements LogReader
         {
             throw new RuntimeException("no next event");
         }
+
         final long nextPosition = entryReader.read(log, position, reader);
 
         this.position = nextPosition;
