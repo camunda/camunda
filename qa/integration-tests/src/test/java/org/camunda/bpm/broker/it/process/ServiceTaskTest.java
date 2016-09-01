@@ -83,7 +83,7 @@ public class ServiceTaskTest
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
 
         // given
-        TestUtil.doRepeatedly(() ->
+        final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
                 .workflowDefinitionId(workflow.getId())
@@ -109,6 +109,7 @@ public class ServiceTaskTest
         assertThat(tasksBatch.getLockedTasks()).hasSize(1);
         assertThat(tasksBatch.getLockedTasks().get(0).getId()).isGreaterThan(0);
         assertThat(tasksBatch.getLockedTasks().get(0).getPayloadString()).isEmpty();
+        assertThat(tasksBatch.getLockedTasks().get(0).getWorkflowInstanceId()).isEqualTo(workflowInstance.getId());
     }
 
     @Test

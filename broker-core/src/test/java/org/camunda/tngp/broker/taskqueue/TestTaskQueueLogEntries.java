@@ -34,6 +34,7 @@ public class TestTaskQueueLogEntries
         when(taskReaderMock.resourceId()).thenReturn(0);
         when(taskReaderMock.shardId()).thenReturn(0);
         when(taskReaderMock.wfActivityInstanceEventKey()).thenReturn(123L);
+        when(taskReaderMock.wfInstanceId()).thenReturn(123123L);
         when(taskReaderMock.wfRuntimeResourceId()).thenReturn(789);
         when(taskReaderMock.getPayload()).thenReturn(new UnsafeBuffer(PAYLOAD));
         when(taskReaderMock.getTaskType()).thenReturn(new UnsafeBuffer(TASK_TYPE));

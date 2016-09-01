@@ -34,7 +34,7 @@ public class TaskInstanceHandler implements LogEntryTypeHandler<TaskInstanceRead
                 .consumerId((int) reader.lockOwnerId()) // TODO: clarifiy: int or long?
                 .lockTime(reader.lockTime())
                 .newTasks()
-                    .appendTask(reader.id(), payload, 0, payload.capacity());
+                    .appendTask(reader.id(), reader.wfInstanceId(), payload, 0, payload.capacity());
 
             responseControl.accept(taskBatchResponseWriter);
         }

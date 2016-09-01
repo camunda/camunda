@@ -84,9 +84,9 @@ public class LockedTaskBatchWriterTest
             .consumerId(1)
             .lockTime(654L)
             .newTasks()
-                .appendTask(76, asBuffer("foo"), 0, 3)
-                .appendTask(98, asBuffer("foobar"), 3, 3)
-                .appendTask(123, asBuffer("foobar"), 1, 2)
+                .appendTask(76, 10076, asBuffer("foo"), 0, 3)
+                .appendTask(98, 10098, asBuffer("foobar"), 3, 3)
+                .appendTask(123, 10123, asBuffer("foobar"), 1, 2)
             .write(buffer, 54);
 
         // then
@@ -111,6 +111,7 @@ public class LockedTaskBatchWriterTest
 
         tasksDecoder.next();
         assertThat(tasksDecoder.taskId()).isEqualTo(76);
+        assertThat(tasksDecoder.wfInstanceId()).isEqualTo(10076);
         assertThat(tasksDecoder.payload()).isEqualTo("foo");
 
         tasksDecoder.next();
@@ -133,9 +134,9 @@ public class LockedTaskBatchWriterTest
             .consumerId(1)
             .lockTime(654L)
             .newTasks()
-                .appendTask(76, asBuffer("foo"), 0, 3)
-                .appendTask(98, asBuffer("foobar"), 3, 3)
-                .appendTask(123, asBuffer("foobar"), 1, 2);
+                .appendTask(76, 10076, asBuffer("foo"), 0, 3)
+                .appendTask(98, 10098, asBuffer("foobar"), 3, 3)
+                .appendTask(123, 10123, asBuffer("foobar"), 1, 2);
 
         // when
         final int length = writer.getLength();

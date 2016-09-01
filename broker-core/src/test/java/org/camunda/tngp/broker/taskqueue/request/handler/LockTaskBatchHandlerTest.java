@@ -100,6 +100,7 @@ public class LockTaskBatchHandlerTest
         taskWriter.prevVersionPosition(TaskInstanceDecoder.prevVersionPositionNullValue());
         taskWriter.wfActivityInstanceEventKey(123L);
         taskWriter.wfRuntimeResourceId(789);
+        taskWriter.wfInstanceId(123123L);
         taskWriter.payload(new UnsafeBuffer(PAYLOAD), 0, PAYLOAD.length);
         taskWriter.taskType(new UnsafeBuffer(TASK_TYPE), 0, TASK_TYPE.length);
     }
@@ -145,6 +146,7 @@ public class LockTaskBatchHandlerTest
         assertThat(taskInstanceReader.taskTypeHash()).isEqualTo(Integer.toUnsignedLong(TASK_TYPE_HASH));
         assertThat(taskInstanceReader.wfActivityInstanceEventKey()).isEqualTo(123L);
         assertThat(taskInstanceReader.wfRuntimeResourceId()).isEqualTo(789);
+        assertThat(taskInstanceReader.wfInstanceId()).isEqualTo(123123L);
         assertThatBuffer(taskInstanceReader.getPayload()).hasBytes(PAYLOAD);
         assertThatBuffer(taskInstanceReader.getTaskType()).hasBytes(TASK_TYPE);
 

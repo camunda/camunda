@@ -14,6 +14,7 @@ public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskI
     protected long id;
     protected long wfActivityInstanceEventKey;
     protected int wfRuntimeResourceId;
+    protected long wfInstanceId;
     protected long prevVersionPosition;
     protected TaskInstanceState state;
     protected long lockTime;
@@ -53,6 +54,7 @@ public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskI
             .taskTypeHash(taskTypeHashCode)
             .wfActivityInstanceEventKey(wfActivityInstanceEventKey)
             .wfRuntimeResourceId(wfRuntimeResourceId)
+            .wfInstanceId(wfInstanceId)
             .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
             .putPayload(payloadBuffer, 0, payloadBuffer.capacity());
 
@@ -65,6 +67,7 @@ public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskI
         this.lockTime = TaskInstanceEncoder.lockTimeNullValue();
         wfActivityInstanceEventKey = TaskInstanceEncoder.wfActivityInstanceEventKeyNullValue();
         wfRuntimeResourceId = TaskInstanceEncoder.wfRuntimeResourceIdNullValue();
+        wfInstanceId = TaskInstanceEncoder.wfInstanceIdNullValue();
     }
 
     public TaskInstanceWriter id(long id)
@@ -109,6 +112,12 @@ public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskI
         return this;
     }
 
+    public TaskInstanceWriter wfInstanceId(long wfInstanceId)
+    {
+        this.wfInstanceId = wfInstanceId;
+        return this;
+    }
+
     public TaskInstanceWriter taskType(DirectBuffer buffer, int offset, int length)
     {
         taskTypeBuffer.wrap(buffer, offset, length);
@@ -120,6 +129,8 @@ public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskI
         payloadBuffer.wrap(buffer, offset, length);
         return this;
     }
+
+
 
 
 

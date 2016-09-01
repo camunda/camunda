@@ -48,6 +48,7 @@ public class PollAndLockResponseHandler implements ClientResponseHandler<LockedT
             final LockedTaskImpl lockedTask = new LockedTaskImpl(payloadLength);
 
             lockedTask.setId(taskDecoder.taskId());
+            lockedTask.setWorkflowInstanceId(taskDecoder.wfInstanceId());
             taskDecoder.getPayload(lockedTask.getPayloadBuffer(), 0, payloadLength);
 
             lockedTasksBatch.addTask(lockedTask);

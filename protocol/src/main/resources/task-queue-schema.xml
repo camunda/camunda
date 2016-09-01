@@ -59,7 +59,8 @@
 		<field name="lockTime" id="2" type="uint64" />
 		<group name="tasks" id="3" dimensionType="groupSizeEncoding">
 			<field name="taskId" id="4" type="uint64" />
-			<data name="payload" id="5" type="varDataEncoding" />
+            <field name="wfInstanceId" id="5" type="uint64" />
+			<data name="payload" id="6" type="varDataEncoding" />
 		</group>
 	</sbe:message>
 

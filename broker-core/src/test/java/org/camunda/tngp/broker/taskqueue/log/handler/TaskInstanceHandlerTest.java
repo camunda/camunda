@@ -59,10 +59,10 @@ public class TaskInstanceHandlerTest
 
         responseReader = responseReader.nextTask();
         assertThat(responseReader.currentTaskId()).isEqualTo(642L);
+        assertThat(responseReader.currentTaskWfInstanceId()).isEqualTo(123123L);
         assertThatBuffer(responseReader.currentTaskPayload()).hasBytes(PAYLOAD);
 
     }
-
 
     @Test
     public void shouldConfirmNewTask()

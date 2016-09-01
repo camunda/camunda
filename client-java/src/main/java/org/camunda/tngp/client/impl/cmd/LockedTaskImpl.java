@@ -13,6 +13,7 @@ import org.agrona.io.DirectBufferInputStream;
 public class LockedTaskImpl implements LockedTask
 {
     protected long id;
+    protected long workflowInstanceId;
 
     protected UnsafeBuffer payloadBuffer;
 
@@ -31,6 +32,17 @@ public class LockedTaskImpl implements LockedTask
     public long getId()
     {
         return id;
+    }
+
+    @Override
+    public long getWorkflowInstanceId()
+    {
+        return workflowInstanceId;
+    }
+
+    public void setWorkflowInstanceId(long workflowInstanceId)
+    {
+        this.workflowInstanceId = workflowInstanceId;
     }
 
     public MutableDirectBuffer getPayloadBuffer()

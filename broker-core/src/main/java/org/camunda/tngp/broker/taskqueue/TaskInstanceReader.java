@@ -121,6 +121,11 @@ public class TaskInstanceReader implements BufferReader
         return decoder.wfActivityInstanceEventKey();
     }
 
+    public long wfInstanceId()
+    {
+        return decoder.wfInstanceId();
+    }
+
     public int wfRuntimeResourceId()
     {
         return decoder.wfRuntimeResourceId();

@@ -71,8 +71,9 @@
     <field name="taskTypeHash" id="6" type="uint32" />
     <field name="wfRuntimeResourceId" id="7" type="uint16" />
     <field name="wfActivityInstanceEventKey" id="8" type="uint64" />
-    <data name="taskType" id="7" type="varDataEncoding" />
-    <data name="payload" id="8" type="varDataEncoding" />
+    <field name="wfInstanceId" id="9" type="uint64" />
+    <data name="taskType" id="10" type="varDataEncoding" />
+    <data name="payload" id="11" type="varDataEncoding" />
   </sbe:message>
   
   <sbe:message name="TaskInstanceRequest" id="9">

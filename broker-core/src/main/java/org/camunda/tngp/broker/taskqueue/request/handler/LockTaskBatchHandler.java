@@ -135,6 +135,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             .id(lockableTask.id())
             .wfActivityInstanceEventKey(lockableTask.wfActivityInstanceEventKey())
             .wfRuntimeResourceId(lockableTask.wfRuntimeResourceId())
+            .wfInstanceId(lockableTask.wfInstanceId())
             .lockOwner(consumerId)
             .lockTime(lockTimeout)
             .state(TaskInstanceState.LOCKED)

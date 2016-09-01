@@ -72,7 +72,8 @@ public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInsta
                         .prevVersionPosition(lockedTaskPosition)
                         .state(TaskInstanceState.COMPLETED)
                         .wfActivityInstanceEventKey(taskInstanceReader.wfActivityInstanceEventKey())
-                        .wfRuntimeResourceId(taskInstanceReader.wfRuntimeResourceId());
+                        .wfRuntimeResourceId(taskInstanceReader.wfRuntimeResourceId())
+                        .wfInstanceId(taskInstanceReader.wfInstanceId());
 
                     logWriters.writeToCurrentLog(taskInstanceWriter);
 

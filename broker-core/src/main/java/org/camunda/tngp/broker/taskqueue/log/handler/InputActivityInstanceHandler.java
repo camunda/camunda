@@ -38,7 +38,8 @@ public class InputActivityInstanceHandler implements LogEntryTypeHandler<BpmnAct
                 .taskType(taskType, 0, taskType.capacity())
                 .state(TaskInstanceState.NEW)
                 .wfRuntimeResourceId(reader.resourceId())
-                .wfActivityInstanceEventKey(reader.key());
+                .wfActivityInstanceEventKey(reader.key())
+                .wfInstanceId(reader.wfInstanceId());
 
             logWriters.writeToLog(reader.taskQueueId(), taskInstanceWriter);
         }

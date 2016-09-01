@@ -40,12 +40,15 @@ public class LockTaskBatchResponseReaderTest
           .tasksCount(3)
           .next()
               .taskId(6)
+              .wfInstanceId(106)
               .putPayload(PAYLOAD1, 0, PAYLOAD1.length)
           .next()
               .taskId(7)
+              .wfInstanceId(107)
               .putPayload(PAYLOAD2, 0, PAYLOAD2.length)
           .next()
               .taskId(8)
+              .wfInstanceId(108)
               .putPayload(PAYLOAD3, 0, PAYLOAD3.length);
 
         messageLength = bodyEncoder.limit();
@@ -66,16 +69,19 @@ public class LockTaskBatchResponseReaderTest
 
         reader.nextTask();
         assertThat(reader.currentTaskId()).isEqualTo(6);
+        assertThat(reader.currentTaskWfInstanceId()).isEqualTo(106);
         assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD1.length);
         assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD1);
 
         reader.nextTask();
         assertThat(reader.currentTaskId()).isEqualTo(7);
+        assertThat(reader.currentTaskWfInstanceId()).isEqualTo(107);
         assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD2.length);
         assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD2);
 
         reader.nextTask();
         assertThat(reader.currentTaskId()).isEqualTo(8);
+        assertThat(reader.currentTaskWfInstanceId()).isEqualTo(108);
         assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD3.length);
         assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD3);
     }

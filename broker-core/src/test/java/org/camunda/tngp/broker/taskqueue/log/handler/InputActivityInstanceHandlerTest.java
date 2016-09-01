@@ -70,6 +70,7 @@ public class InputActivityInstanceHandlerTest
         assertThatBuffer(taskInstanceReader.getTaskType()).hasBytes(TestWfRuntimeLogEntries.TASK_TYPE);
         assertThat(taskInstanceReader.wfRuntimeResourceId()).isEqualTo(TestWfRuntimeLogEntries.WF_RUNTIME_LOG_ID);
         assertThat(taskInstanceReader.wfActivityInstanceEventKey()).isEqualTo(TestWfRuntimeLogEntries.KEY);
+        assertThat(taskInstanceReader.wfInstanceId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
     }
 
 }

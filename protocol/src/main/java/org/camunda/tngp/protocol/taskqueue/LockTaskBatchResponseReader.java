@@ -72,6 +72,11 @@ public class LockTaskBatchResponseReader implements BufferReader
         return bodyTasksDecoder.taskId();
     }
 
+    public long currentTaskWfInstanceId()
+    {
+        return bodyTasksDecoder.wfInstanceId();
+    }
+
     public DirectBuffer currentTaskPayload()
     {
         return bodyTasksPayloadBuffer;

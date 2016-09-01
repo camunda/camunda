@@ -43,6 +43,7 @@ public class TaskInstanceReaderTest
             .version(865)
             .wfActivityInstanceEventKey(90L)
             .wfRuntimeResourceId(5789)
+            .wfInstanceId(123123L)
             .putTaskType(TASK_TYPE, 0, TASK_TYPE.length)
             .putPayload(payload, 0, payload.length);
 
@@ -71,6 +72,7 @@ public class TaskInstanceReaderTest
         assertThat(reader.version()).isEqualTo(865);
         assertThat(reader.wfActivityInstanceEventKey()).isEqualTo(90L);
         assertThat(reader.wfRuntimeResourceId()).isEqualTo(5789);
+        assertThat(reader.wfInstanceId()).isEqualTo(123123L);
 
         assertThatBuffer(reader.getPayload()).hasCapacity(PAYLOAD.length);
         assertThatBuffer(reader.getPayload()).hasBytes(PAYLOAD);

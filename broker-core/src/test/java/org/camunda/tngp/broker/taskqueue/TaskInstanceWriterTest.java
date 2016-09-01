@@ -34,6 +34,7 @@ public class TaskInstanceWriterTest
             .id(7L)
             .taskType(new UnsafeBuffer(TASK_TYPE), 0, TASK_TYPE.length)
             .wfActivityInstanceEventKey(9L)
+            .wfInstanceId(123123L)
             .wfRuntimeResourceId(123)
             .lockOwner(135L)
             .lockTime(12356L)
@@ -61,6 +62,7 @@ public class TaskInstanceWriterTest
         assertThat(bodyDecoder.prevVersionPosition()).isEqualTo(9876);
         assertThat(bodyDecoder.state()).isEqualTo(TaskInstanceState.LOCKED);
         assertThat(bodyDecoder.taskTypeHash()).isEqualTo(TaskTypeHash.hashCode(TASK_TYPE, TASK_TYPE.length));
+        assertThat(bodyDecoder.wfInstanceId()).isEqualTo(123123L);
 
         final UnsafeBuffer decodedTaskType = new UnsafeBuffer(new byte[TASK_TYPE.length + 3]);
         bodyDecoder.getTaskType(decodedTaskType, 3, TASK_TYPE.length);

@@ -32,7 +32,7 @@ public class LockedTaskBatchWriter implements BufferWriter
         size += TasksEncoder.sbeHeaderSize() +
                 ((TasksEncoder.sbeBlockLength() + TasksEncoder.payloadHeaderLength()) * numTasks);
 
-        final int payloadLength = tasksBufferLimit - ((Long.BYTES + Integer.BYTES) * numTasks);
+        final int payloadLength = tasksBufferLimit - ((Long.BYTES + Long.BYTES + Integer.BYTES) * numTasks);
         size += payloadLength;
 
         return size;
@@ -45,14 +45,24 @@ public class LockedTaskBatchWriter implements BufferWriter
         return this;
     }
 
-    public LockedTaskBatchWriter appendTask(long taskId, DirectBuffer payloadBuffer, int payloadOffset, int payloadLength)
+    public LockedTaskBatchWriter appendTask(
+            long taskId,
+            long wfInstanceId,
+            DirectBuffer payloadBuffer,
+            int payloadOffset,
+            int payloadLength)
     {
         // TODO: check if still fits?
+
 
         tasksBuffer.putLong(tasksBufferLimit, taskId);
         tasksBufferLimit += Long.BYTES;
 
-        tasksBuffer.putInt(tasksBufferLimit, payloadLength);
+        tasksBuffer.putLong(tasksBufferLimit, wfInstanceId);
+        tasksBufferLimit += Long.BYTES;
+
+        // TODO: must have a range check payloadLength (same as in the Encoder implementations)
+        tasksBuffer.putShort(tasksBufferLimit, (short) payloadLength);
         tasksBufferLimit += Integer.BYTES;
 
         tasksBuffer.putBytes(tasksBufferLimit, payloadBuffer, payloadOffset, payloadLength);
@@ -100,10 +110,16 @@ public class LockedTaskBatchWriter implements BufferWriter
             final long taskId = tasksBuffer.getLong(currentLimit);
             currentLimit += Long.BYTES;
 
+            final long wfInstanceId = tasksBuffer.getLong(currentLimit);
+            currentLimit += Long.BYTES;
+
             final int payloadLength = tasksBuffer.getInt(currentLimit);
             currentLimit += Integer.BYTES;
 
-            tasksEncoder.next().taskId(taskId).putPayload(tasksBuffer, currentLimit, payloadLength);
+            tasksEncoder.next()
+                .taskId(taskId)
+                .wfInstanceId(wfInstanceId)
+                .putPayload(tasksBuffer, currentLimit, payloadLength);
             currentLimit += payloadLength;
         }
 
