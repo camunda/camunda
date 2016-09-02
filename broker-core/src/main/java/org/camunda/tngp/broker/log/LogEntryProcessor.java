@@ -44,26 +44,19 @@ public class LogEntryProcessor<T extends BufferReader>
     }
 
     /**
-     * @param position is inclusive
+     * @param position is exclusive
      */
     public int doWorkUntil(long position)
     {
         int workCount = 0;
 
-        boolean hasNext;
-
-        do
+        while (logReader.hasNext() && logReader.position() < position)
         {
-
-            hasNext = logReader.hasNext();
-
-            if (hasNext)
-            {
-                logReader.read(bufferReader);
-                entryHandler.handle(position, bufferReader);
-                workCount++;
-            }
-        } while (hasNext && logReader.position() <= position);
+            final long currentPosition = logReader.position();
+            logReader.read(bufferReader);
+            entryHandler.handle(currentPosition, bufferReader);
+            workCount++;
+        }
 
         return workCount;
     }

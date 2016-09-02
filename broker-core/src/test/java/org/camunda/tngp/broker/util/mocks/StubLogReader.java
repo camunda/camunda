@@ -100,4 +100,9 @@ public class StubLogReader implements LogReader
         return logEntries.containsKey(position);
     }
 
+    public long getTailPosition()
+    {
+        return tailPosition;
+    }
+
 }

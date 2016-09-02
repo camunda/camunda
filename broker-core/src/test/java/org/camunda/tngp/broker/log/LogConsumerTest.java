@@ -533,9 +533,30 @@ public class LogConsumerTest
         // then
         assertThat(handler.ids).hasSize(1);
         assertThat(handler.ids).containsExactly(123L);
+    }
 
-        // we are not setting the event source position explicitly
+    @Test
+    public void shouldFastForwardPositionExclusively()
+    {
+        // given
+        final LogConsumer logConsumer = new LogConsumer(
+                0,
+                logReader,
+                Templates.wfRuntimeLogTemplates(),
+                new StubLogWriters(0));
 
+        final WfDefinitionWriter writer = new WfDefinitionWriter();
+        writer.id(123L);
+        logReader.addEntry(writer);
+
+        final ExampleHandler handler = new ExampleHandler();
+        logConsumer.addHandler(Templates.WF_DEFINITION, handler);
+
+        // when
+        logConsumer.fastForwardUntil(logReader.getTailPosition());
+
+        // then
+        assertThat(handler.numInvocations).isEqualTo(1);
 
     }
 

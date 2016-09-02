@@ -144,8 +144,6 @@ public class LogConsumer
 
         if (lastConsumedPosition >= 0)
         {
-            fastForwardIndexesUntil(lastConsumedPosition);
-
             logReader.setPosition(lastConsumedPosition);
 
             // this sets the log reader's position to the next event;
@@ -155,6 +153,10 @@ public class LogConsumer
             {
                 logReader.read(new LogEntryHeaderReader());
             }
+            final long firstUnconsumedPosition = logReader.position();
+
+            fastForwardIndexesUntil(firstUnconsumedPosition);
+
         }
         else
         {
@@ -171,7 +173,7 @@ public class LogConsumer
     }
 
     /**
-     * @param position is inclusive
+     * @param position is exclusive
      */
     protected void fastForwardIndexesUntil(long position)
     {
@@ -191,6 +193,11 @@ public class LogConsumer
 
     protected void fastForwardUntil(long fromPosition, long toPosition, boolean indexOnly)
     {
+        if (fromPosition >= toPosition)
+        {
+            return;
+        }
+
         logEntryHandler.indexOnly = indexOnly;
 
         logReader.setPosition(fromPosition);
