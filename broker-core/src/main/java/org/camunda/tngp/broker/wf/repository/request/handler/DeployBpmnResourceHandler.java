@@ -1,19 +1,18 @@
 package org.camunda.tngp.broker.wf.repository.request.handler;
 
-import org.camunda.tngp.broker.log.LogWriter;
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionRequestWriter;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
-import org.agrona.DirectBuffer;
-
-public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRepositoryContext>
+public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRuntimeContext>
 {
     protected DeployBpmnResourceRequestReader requestReader = new DeployBpmnResourceRequestReader();
 
@@ -23,7 +22,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfReposit
 
     @Override
     public long onRequest(
-            final WfRepositoryContext context,
+            final WfRuntimeContext context,
             final DirectBuffer msg,
             final int offset,
             final int length,

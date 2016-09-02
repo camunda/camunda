@@ -2,17 +2,16 @@ package org.camunda.tngp.client.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceRequestWriter;
-import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceDecoder;
-import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
-import org.camunda.tngp.protocol.wf.repository.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceDecoder;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeployBpmnResourceRequestWriterTest
 {

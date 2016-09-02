@@ -8,7 +8,7 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRuntimeRequestWriter;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class WfDefinitionIdIndexWriterTest
         // given
         final WfDefinitionIdIndexWriter indexWriter = new WfDefinitionIdIndexWriter(indexManager, Templates.wfRuntimeLogTemplates());
 
-        final WfDefinitionRuntimeRequestWriter wfDefinitionWriter = new WfDefinitionRuntimeRequestWriter();
+        final WfDefinitionWriter wfDefinitionWriter = new WfDefinitionWriter();
         wfDefinitionWriter.id(19L);
 
         logReader.addEntry(wfDefinitionWriter);
@@ -68,7 +68,7 @@ public class WfDefinitionIdIndexWriterTest
         // given
         final WfDefinitionIdIndexWriter indexWriter = new WfDefinitionIdIndexWriter(indexManager, Templates.wfRuntimeLogTemplates());
 
-        final WfDefinitionRuntimeRequestWriter wfDefinitionWriter = new WfDefinitionRuntimeRequestWriter();
+        final WfDefinitionWriter wfDefinitionWriter = new WfDefinitionWriter();
 
         wfDefinitionWriter.id(19L);
         logReader.addEntry(wfDefinitionWriter);

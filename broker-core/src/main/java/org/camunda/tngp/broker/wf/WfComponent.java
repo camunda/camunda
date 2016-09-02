@@ -7,7 +7,6 @@ import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSock
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerContextServiceName;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerServiceName;
-import static org.camunda.tngp.broker.wf.repository.WfRepositoryServiceNames.WF_REPOSITORY_MANAGER_NAME;
 import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME;
 
 import org.camunda.tngp.broker.services.DeferredResponsePoolService;
@@ -22,9 +21,6 @@ import org.camunda.tngp.broker.transport.worker.BrokerRequestWorkerContextServic
 import org.camunda.tngp.broker.transport.worker.CompositeRequestDispatcher;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.cfg.WfComponentCfg;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryContextService;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryManagerService;
 import org.camunda.tngp.broker.wf.repository.request.handler.DeployBpmnResourceHandler;
 import org.camunda.tngp.broker.wf.runtime.LogProcessingTask;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
@@ -51,10 +47,6 @@ public class WfComponent implements Component
         final ConfigurationManager configurationManager = context.getConfigurationManager();
         final WfComponentCfg cfg = configurationManager.readEntry("workflow", WfComponentCfg.class);
 
-        final WfRepositoryManagerService wfRepositoryManagerService = new WfRepositoryManagerService(configurationManager);
-        serviceContainer.createService(WF_REPOSITORY_MANAGER_NAME, wfRepositoryManagerService)
-            .install();
-
         final WfRuntimeManagerService wfRuntimeManagerService = new WfRuntimeManagerService(configurationManager);
         serviceContainer.createService(WF_RUNTIME_MANAGER_NAME, wfRuntimeManagerService)
             .install();
@@ -66,24 +58,18 @@ public class WfComponent implements Component
         }
         final int perWorkerResponsePoolCapacity = cfg.perWorkerResponsePoolCapacity;
 
-        final BrokerRequestDispatcher<WfRuntimeContext> runtimeDispatcher = new BrokerRequestDispatcher<>(wfRuntimeManagerService, 3, new BrokerRequestHandler[]
+        final BrokerRequestDispatcher<WfRuntimeContext> runtimeDispatcher = new BrokerRequestDispatcher<>(wfRuntimeManagerService, 2, new BrokerRequestHandler[]
         {
-            new StartWorkflowInstanceHandler()
-        });
-
-        final BrokerRequestDispatcher<WfRepositoryContext> repositoryDispatcher = new BrokerRequestDispatcher<>(wfRepositoryManagerService, 2, new BrokerRequestHandler[]
-        {
-            new DeployBpmnResourceHandler()
+            new DeployBpmnResourceHandler(),
+            new StartWorkflowInstanceHandler(),
         });
 
         final WfWorkerContext workerContext = new WfWorkerContext();
-        workerContext.setWfRepositoryManager(wfRepositoryManagerService);
         workerContext.setWfRuntimeManager(wfRuntimeManagerService);
 
         workerContext.setRequestHandler(new CompositeRequestDispatcher<>(new BrokerRequestDispatcher[]
         {
-            runtimeDispatcher,
-            repositoryDispatcher
+            runtimeDispatcher
         }));
 
         // TODO: does this still need to be an array?
@@ -108,7 +94,6 @@ public class WfComponent implements Component
         serviceContainer.createService(workerServiceName(WORKER_NAME), workerService)
             .dependency(workerContextServiceName, workerService.getWorkerContextInjector())
             .dependency(AGENT_RUNNER_SERVICE, workerService.getAgentRunnerInjector())
-            .dependency(WF_REPOSITORY_MANAGER_NAME)
             .dependency(WF_RUNTIME_MANAGER_NAME)
             .install();
 
@@ -123,14 +108,12 @@ public class WfComponent implements Component
             public <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
             {
                 listenToTaskQueueLog(name, service);
-                listenToWfRepositoryLog(name, service);
             }
 
             @Override
             public <S> void onTrackerRegistration(ServiceName<S> name, Service<S> service)
             {
                 listenToTaskQueueLog(name, service);
-                listenToWfRepositoryLog(name, service);
             }
 
             protected <S> void listenToTaskQueueLog(ServiceName<S> name, Service<S> service)
@@ -147,24 +130,6 @@ public class WfComponent implements Component
                         .createService(WfRuntimeServiceNames.taskEventHandlerService(taskQueueLogName.toString()), taskQueueLogReaderService)
                         .dependency(taskQueueContextServiceName, taskQueueLogReaderService.getTaskQueueContext())
                         .dependency(WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME, taskQueueLogReaderService.getWfRuntimeManager())
-                        .install();
-                }
-            }
-
-            protected <S> void listenToWfRepositoryLog(ServiceName<S> name, Service<S> service)
-            {
-                if (service instanceof WfRepositoryContextService)
-                {
-                    final ServiceName<WfRepositoryContext> wfRepositoryContextServiceName = (ServiceName<WfRepositoryContext>) name;
-
-                    final ServiceName<Log> logName = ((WfRepositoryContextService) service).getWfDefinitionLogInjector().getInjectedServiceName();
-
-                    final WfDefinitionLogProcessorService logReaderService = new WfDefinitionLogProcessorService();
-
-                    serviceContainer
-                        .createService(WfRuntimeServiceNames.taskEventHandlerService(logName.toString()), logReaderService)
-                        .dependency(wfRepositoryContextServiceName, logReaderService.getWfRepositoryContextInjector())
-                        .dependency(WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME, logReaderService.getWfRuntimeManagerInjector())
                         .install();
                 }
             }

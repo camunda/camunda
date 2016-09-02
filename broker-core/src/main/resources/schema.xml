@@ -87,17 +87,6 @@
     <data name="taskType" id="2" type="varDataEncoding" />
   </sbe:message>
 
-  <!-- repository -->
-  <sbe:message name="WfDefinition" id="2" description="A Workflow Type">
-    <field name="id" id="1" type="uint64" />
-    <data name="key" id="2" type="varDataEncoding" />
-    <data name="resource" id="3" type="varDataEncoding" />
-  </sbe:message>
-  <sbe:message name="WfDefinitionRequest" id="3" description="A Workflow Type">
-    <field name="type" id="1" type="WfDefinitionRequestType" />
-    <data name="resource" id="2" type="varDataEncoding" />
-  </sbe:message>
-
   <!-- runtime -->
   <sbe:message name="BpmnProcessEvent" id="4">
     <field name="key" id="1" type="uint64" />
@@ -136,13 +125,15 @@
     <field name="type" id="1" type="ActivityInstanceRequestType" />
     <field name="key" id="2" type="uint64" />
   </sbe:message>
-  
-  <sbe:message name="WfDefinitionRuntimeRequest" id="11">
+
+  <sbe:message name="WfDefinition" id="2" description="A Workflow Type">
+    <field name="id" id="1" type="uint64" />
+    <data name="key" id="2" type="varDataEncoding" />
+    <data name="resource" id="3" type="varDataEncoding" />
+  </sbe:message>
+  <sbe:message name="WfDefinitionRequest" id="3" description="A Workflow Type">
     <field name="type" id="1" type="WfDefinitionRequestType" />
-    <field name="id" id="2" type="uint64" />
-    <field name="version" id="3" type="uint16" />
-    <data name="key" id="4" type="varDataEncoding" />
-    <data name="resource" id="5" type="varDataEncoding" />
+    <data name="resource" id="2" type="varDataEncoding" />
   </sbe:message>
 
 </sbe:messageSchema>

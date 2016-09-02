@@ -4,9 +4,9 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRuntimeRequestReader;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRuntimeRequestDecoder;
+import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 
 public class WfDefinitionIdIndexWriter implements IndexWriter
 {
@@ -22,15 +22,15 @@ public class WfDefinitionIdIndexWriter implements IndexWriter
         this.templates = templates;
     }
 
-
     @Override
     public void indexLogEntry(long position, LogEntryHeaderReader reader)
     {
-        if (reader.templateId() == WfDefinitionRuntimeRequestDecoder.TEMPLATE_ID)
+        if (reader.templateId() == WfDefinitionDecoder.TEMPLATE_ID)
         {
-            final WfDefinitionRuntimeRequestReader requestReader = templates.getReader(Templates.WF_DEFINITION_RUNTIME_REQUEST);
+            final WfDefinitionReader requestReader = templates.getReader(Templates.WF_DEFINITION);
             reader.readInto(requestReader);
 
+            System.out.println("Indexing wf definition at position " + position);
             index.put(requestReader.id(), position);
         }
     }

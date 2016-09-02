@@ -8,6 +8,7 @@ import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
+import org.camunda.tngp.broker.wf.repository.log.handler.WfDefinitionRequestHandler;
 import org.camunda.tngp.broker.wf.runtime.log.handler.ActivityRequestHandler;
 import org.camunda.tngp.broker.wf.runtime.log.handler.WorkflowInstanceRequestHandler;
 import org.camunda.tngp.broker.wf.runtime.log.handler.bpmn.ActivityEventHandler;
@@ -98,15 +99,22 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator));
         wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new LogReaderImpl(log), indexManager.getIndex()));
 
+        wfRuntimeConsumer.addHandler(Templates.WF_DEFINITION_REQUEST,
+                new WfDefinitionRequestHandler(new LogReaderImpl(log), idGenerator));
+
         wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
         wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
         wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
 
         wfRuntimeConsumer.recover(Arrays.asList(new LogReaderImpl(log)));
 
+
         // replay all events before taking new requests;
         // avoids that we mix up new API requests (that require a response)
         // with existing API requests (that do not require a response anymore)
+
+        // TODO: problem: last position points to the position AFTER the last entry
+        //  fast forwarding should be exclusive, or else we read one extra random entry with undefined behavior
         wfRuntimeConsumer.fastForwardUntil(log.getLastPosition());
 
         wfRuntimeContext.setLogConsumer(wfRuntimeConsumer);

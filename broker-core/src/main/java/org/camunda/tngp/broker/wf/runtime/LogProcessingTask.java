@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.wf.WfWorkerContext;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.transport.requestresponse.server.WorkerTask;
 
 public class LogProcessingTask implements WorkerTask<WfWorkerContext>
@@ -14,13 +13,6 @@ public class LogProcessingTask implements WorkerTask<WfWorkerContext>
     public int execute(WfWorkerContext context)
     {
         int workCount = 0;
-
-        final WfRepositoryContext[] repositoryContexts = context.getWfRepositoryManager().getContexts();
-        for (int i = 0; i < repositoryContexts.length; i++)
-        {
-            final WfRepositoryContext repositoryContext = repositoryContexts[i];
-            workCount += repositoryContext.getLogConsumer().doConsume();
-        }
 
         final WfRuntimeContext[] runtimeContexts = context.getWfRuntimeManager().getContexts();
         for (int i = 0; i < runtimeContexts.length; i++)
@@ -39,5 +31,4 @@ public class LogProcessingTask implements WorkerTask<WfWorkerContext>
 
         return workCount;
     }
-
 }

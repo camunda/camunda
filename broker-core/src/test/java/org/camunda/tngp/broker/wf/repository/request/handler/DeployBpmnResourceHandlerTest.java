@@ -10,13 +10,16 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.test.util.BufferWriterMatcher;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfRepositoryContext;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionRequestReader;
+import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
@@ -27,13 +30,10 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
 public class DeployBpmnResourceHandlerTest
 {
 
-    protected WfRepositoryContext context;
+    protected WfRuntimeContext context;
 
     protected StubLogWriter logWriter;
 
@@ -53,7 +53,7 @@ public class DeployBpmnResourceHandlerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        context = new MockedWfRepositoryContext();
+        context = new MockWfRuntimeContext();
 
         logWriter = new StubLogWriter();
         context.setLogWriter(logWriter);

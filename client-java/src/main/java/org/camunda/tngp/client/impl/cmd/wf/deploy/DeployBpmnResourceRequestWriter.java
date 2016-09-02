@@ -1,11 +1,10 @@
 package org.camunda.tngp.client.impl.cmd.wf.deploy;
 
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
-import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceEncoder;
-import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
-
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 
 public class DeployBpmnResourceRequestWriter implements ClientRequestWriter
 {

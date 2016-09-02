@@ -1,10 +1,9 @@
 package org.camunda.tngp.client.impl.cmd;
 
-import org.camunda.tngp.client.cmd.WorkflowInstance;
-import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseDecoder;
-
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.client.cmd.WorkflowInstance;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseDecoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
 
 public class StartWorkflowInstanceResponseHandler implements ClientResponseHandler<WorkflowInstance>
 {

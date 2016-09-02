@@ -2,8 +2,6 @@ package org.camunda.tngp.protocol.wf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceAckEncoder;
-import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
 import org.junit.Test;
 
 import org.agrona.MutableDirectBuffer;

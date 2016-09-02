@@ -1,10 +1,7 @@
 package org.camunda.tngp.protocol.wf;
 
-import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceAckEncoder;
-import org.camunda.tngp.protocol.wf.repository.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
-
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class DeployBpmnResourceAckResponse implements BufferWriter
 {

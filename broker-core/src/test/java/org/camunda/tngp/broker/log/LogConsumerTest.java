@@ -66,7 +66,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final ExampleHandler handler = new ExampleHandler();
@@ -92,7 +92,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final ExampleHandler handler = new ExampleHandler();
@@ -121,7 +121,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final ExampleHandler handler = new ExampleHandler();
@@ -155,7 +155,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final ExampleHandler handler = new ExampleHandler();
@@ -182,7 +182,7 @@ public class LogConsumerTest
                 0,
                 logReader,
                 responsePool,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final AcceptingHandler requestHandler = new AcceptingHandler();
@@ -214,7 +214,7 @@ public class LogConsumerTest
                 0,
                 logReader,
                 responsePool,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final RejectingHandler requestHandler = new RejectingHandler();
@@ -249,7 +249,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 10,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 logWriters);
 
         final SameLogWritingHandler entryHandler = new SameLogWritingHandler();
@@ -280,7 +280,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 10,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 logWriters);
 
         final DifferentLogWritingHandler entryHandler = new DifferentLogWritingHandler(11);
@@ -311,7 +311,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final ExampleHandler handler = new ExampleHandler();
@@ -338,7 +338,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final IndexWriter indexWriter = mock(IndexWriter.class);
@@ -362,7 +362,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final IndexWriter indexWriter = mock(IndexWriter.class);
@@ -392,7 +392,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final IndexWriter indexWriter = mock(IndexWriter.class);
@@ -434,7 +434,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         writeEntry(logReader, 123L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
@@ -460,7 +460,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final StubLogReader targetLogReader1 = new StubLogReader(LogConsumer.LOG_INITIAL_POSITION, null);
@@ -492,7 +492,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         writeEntry(logReader, 123L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
@@ -516,7 +516,7 @@ public class LogConsumerTest
         final LogConsumer logConsumer = new LogConsumer(
                 0,
                 logReader,
-                Templates.wfRepositoryLogTemplates(),
+                Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
         final WfDefinitionWriter writer = new WfDefinitionWriter();

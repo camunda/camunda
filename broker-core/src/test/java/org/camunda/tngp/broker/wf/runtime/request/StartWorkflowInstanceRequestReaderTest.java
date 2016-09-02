@@ -6,8 +6,8 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceEncoder;
 import org.junit.Test;
 
 import org.agrona.concurrent.UnsafeBuffer;

@@ -3,9 +3,9 @@ package org.camunda.tngp.client.cmd;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceRequestWriter;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

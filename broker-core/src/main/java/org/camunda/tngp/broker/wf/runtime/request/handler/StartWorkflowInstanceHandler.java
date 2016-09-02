@@ -9,7 +9,7 @@ import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.Constants;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 

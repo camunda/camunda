@@ -3,13 +3,13 @@ package org.camunda.tngp.broker.log;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.taskqueue.CreateTaskInstanceRequestReader;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
 import org.camunda.tngp.broker.wf.repository.log.WfDefinitionRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRuntimeRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
@@ -23,11 +23,8 @@ import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestDecoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRuntimeRequestDecoder;
 import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
-
-import org.agrona.collections.Int2ObjectHashMap;
 
 /**
  * An instance of {@link Templates} is stateful and not thread-safe
@@ -52,10 +49,6 @@ public class Templates
     public static final Template<ActivityInstanceRequestReader> ACTIVITY_INSTANCE_REQUEST =
             newTemplate(ActivityInstanceRequestDecoder.TEMPLATE_ID, ActivityInstanceRequestReader.class);
 
-    public static final Template<WfDefinitionRuntimeRequestReader> WF_DEFINITION_RUNTIME_REQUEST =
-            newTemplate(WfDefinitionRuntimeRequestDecoder.TEMPLATE_ID, WfDefinitionRuntimeRequestReader.class);
-
-    // wf repository
     public static final Template<WfDefinitionReader> WF_DEFINITION =
             newTemplate(WfDefinitionDecoder.TEMPLATE_ID, WfDefinitionReader.class);
 
@@ -102,12 +95,6 @@ public class Templates
                 FLOW_ELEMENT_EVENT,
                 WF_INSTANCE_REQUEST,
                 ACTIVITY_INSTANCE_REQUEST,
-                WF_DEFINITION_RUNTIME_REQUEST);
-    }
-
-    public static Templates wfRepositoryLogTemplates()
-    {
-        return new Templates(
                 WF_DEFINITION,
                 WF_DEFINITION_REQUEST);
     }

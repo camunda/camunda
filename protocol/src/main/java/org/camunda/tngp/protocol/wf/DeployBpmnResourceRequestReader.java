@@ -1,7 +1,5 @@
 package org.camunda.tngp.protocol.wf;
 
-import org.camunda.tngp.protocol.wf.repository.DeployBpmnResourceDecoder;
-import org.camunda.tngp.protocol.wf.repository.MessageHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;

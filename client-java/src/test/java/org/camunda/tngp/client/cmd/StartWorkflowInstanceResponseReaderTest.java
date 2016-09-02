@@ -3,8 +3,8 @@ package org.camunda.tngp.client.cmd;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseEncoder;
 import org.junit.Before;
 import org.junit.Test;
 

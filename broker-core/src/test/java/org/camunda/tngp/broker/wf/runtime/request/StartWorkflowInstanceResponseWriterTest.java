@@ -3,10 +3,10 @@ package org.camunda.tngp.broker.wf.runtime.request;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseDecoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceResponseEncoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseDecoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseEncoder;
 import org.junit.Before;
 import org.junit.Test;
 

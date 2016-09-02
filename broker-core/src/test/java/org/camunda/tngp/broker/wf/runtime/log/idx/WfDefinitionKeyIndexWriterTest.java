@@ -9,12 +9,11 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRuntimeRequestWriter;
+import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,9 +52,9 @@ public class WfDefinitionKeyIndexWriterTest
         // given
         final WfDefinitionKeyIndexWriter indexWriter = new WfDefinitionKeyIndexWriter(indexManager, Templates.wfRuntimeLogTemplates());
 
-        final WfDefinitionRuntimeRequestWriter wfDefinitionWriter = new WfDefinitionRuntimeRequestWriter();
+        final WfDefinitionWriter wfDefinitionWriter = new WfDefinitionWriter();
         wfDefinitionWriter.id(19L);
-        wfDefinitionWriter.key(new UnsafeBuffer(KEY1), 0, KEY1.length);
+        wfDefinitionWriter.wfDefinitionKey(KEY1);
 
         logReader.addEntry(wfDefinitionWriter);
 
@@ -78,14 +77,14 @@ public class WfDefinitionKeyIndexWriterTest
         // given
         final WfDefinitionKeyIndexWriter indexWriter = new WfDefinitionKeyIndexWriter(indexManager, Templates.wfRuntimeLogTemplates());
 
-        final WfDefinitionRuntimeRequestWriter wfDefinitionWriter = new WfDefinitionRuntimeRequestWriter();
+        final WfDefinitionWriter wfDefinitionWriter = new WfDefinitionWriter();
 
         wfDefinitionWriter.id(19L);
-        wfDefinitionWriter.key(new UnsafeBuffer(KEY1), 0, KEY1.length);
+        wfDefinitionWriter.wfDefinitionKey(KEY1);
         logReader.addEntry(wfDefinitionWriter);
 
         wfDefinitionWriter.id(20L);
-        wfDefinitionWriter.key(new UnsafeBuffer(KEY2), 0, KEY2.length);
+        wfDefinitionWriter.wfDefinitionKey(KEY2);
         logReader.addEntry(wfDefinitionWriter);
 
         final LogEntryHeaderReader header1Reader = new LogEntryHeaderReader();

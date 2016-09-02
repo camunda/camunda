@@ -102,8 +102,7 @@
           </systemProperties>
           <arguments>
             <argument>${project.build.resources[0].directory}/task-queue-schema.xml</argument>
-            <argument>${project.build.resources[0].directory}/wf-repository-schema.xml</argument>
-            <argument>${project.build.resources[0].directory}/wf-runtime-schema.xml</argument>
+            <argument>${project.build.resources[0].directory}/wf-schema.xml</argument>
             <argument>${project.build.resources[0].directory}/error.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>

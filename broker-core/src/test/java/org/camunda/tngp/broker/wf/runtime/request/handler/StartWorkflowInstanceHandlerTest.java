@@ -25,7 +25,7 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.Constants;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceEncoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
 import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;

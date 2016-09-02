@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import org.camunda.tngp.protocol.wf.runtime.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.wf.runtime.StartWorkflowInstanceDecoder;
+import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;
