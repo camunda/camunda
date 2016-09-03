@@ -7,9 +7,9 @@ import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.CompositeAgent;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.broker.services.Counters;
@@ -65,11 +65,11 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
         switch (this.idleStrategy)
         {
             case BUSY_SPIN:
-                idleStrategy = new NoOpIdleStrategy();
+                idleStrategy = new BusySpinIdleStrategy();
                 break;
 
             default:
-                idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
+                idleStrategy = new BackoffIdleStrategy(1000, 100, 100, TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
         }
 
         final String errorCounterName = String.format("%s.errorCounter", agent.roleName());

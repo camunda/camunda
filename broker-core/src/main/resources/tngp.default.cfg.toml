@@ -14,7 +14,7 @@ receiveBufferSize = 16
 
 [threading]
 numberOfThreads = 2
-maxIdleTimeMs = 200
+maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
 [metrics]

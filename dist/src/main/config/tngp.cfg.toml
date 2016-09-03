@@ -43,7 +43,7 @@ id = 2
 
 [task-queues]
 numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
+perWorkerResponsePoolCapacity = 512
 
 [[task-queue]]
 name = "default"
@@ -54,7 +54,7 @@ logName = "default-task-queue-log"
 
 [workflow]
 numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
+perWorkerResponsePoolCapacity = 512
 
 [[workflow-repository]]
 name = "default"
