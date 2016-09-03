@@ -143,11 +143,9 @@ public class TestHelper
             {
                 try
                 {
-                    requestTimes.add(now);
-
                     final Future responseFuture = requestFn.get();
-
                     responseFutures.add(responseFuture);
+                    requestTimes.add(now);
                 }
                 catch (Exception e)
                 {
