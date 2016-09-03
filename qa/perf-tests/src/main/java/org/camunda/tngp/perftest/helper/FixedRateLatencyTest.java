@@ -16,11 +16,11 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 public abstract class FixedRateLatencyTest
 {
-    private static final String TEST_WARMUP_TIMEMS = "test.warmup.timems";
-    private static final String TEST_WARMUP_REQUESTRATE = "test.warmup.requestRate";
-    private static final String TEST_TIMEMS = "test.timems";
-    private static final String TEST_REQUESTRATE = "test.requestRate";
-    private static final String TEST_OUTPUT_FILE_NAME = "test.outputFileName";
+    public static final String TEST_WARMUP_TIMEMS = "test.warmup.timems";
+    public static final String TEST_WARMUP_REQUESTRATE = "test.warmup.requestRate";
+    public static final String TEST_TIMEMS = "test.timems";
+    public static final String TEST_REQUESTRATE = "test.requestRate";
+    public static final String TEST_OUTPUT_FILE_NAME = "test.outputFileName";
 
     public void run()
     {

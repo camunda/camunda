@@ -34,7 +34,7 @@ public class TestHelper
         {
             final String key = (String) propertyNames.nextElement();
             final String value = properties.getProperty(key);
-            if (key.startsWith("tngp") || key.startsWith("sample"))
+            if (key.startsWith("tngp") || key.startsWith("test"))
             {
                 sortedProperties.put(key, value);
             }

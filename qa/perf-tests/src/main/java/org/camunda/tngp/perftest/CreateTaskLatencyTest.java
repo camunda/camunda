@@ -1,5 +1,6 @@
 package org.camunda.tngp.perftest;
 
+import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
@@ -11,6 +12,15 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 public class CreateTaskLatencyTest extends FixedRateLatencyTest
 {
     private static final String TASK_TYPE = "some-task-type";
+
+    @Override
+    protected void setDefaultProperties(Properties properties)
+    {
+        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "30000");
+        properties.putIfAbsent(TEST_REQUESTRATE, "50000");
+
+        super.setDefaultProperties(properties);
+    }
 
     @Override
     @SuppressWarnings("rawtypes")
