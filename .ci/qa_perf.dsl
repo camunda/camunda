@@ -19,6 +19,7 @@ make -e clean
 def TESTS =
 [
     'create-task-throughput': 'test-create-task-throughput',
+    'create-task-latency': 'test-create-task-latency',
     'start-wf-instance-throughput': 'test-start-wf-instance-throughput',
     'start-wf-instance-latency': 'test-start-wf-instance-latency'
  ]
