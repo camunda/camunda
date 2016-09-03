@@ -76,7 +76,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             .dependency(logServiceName, logIdGeneratorService.getLogInjector())
             .install();
 
-        final Long2LongIndexManagerService lockedTasksIndexManagerService = new Long2LongIndexManagerService(2048, 64 * 1024);
+        final Long2LongIndexManagerService lockedTasksIndexManagerService = new Long2LongIndexManagerService(32448, 4 * 1024);
         serviceContext.createService(lockedTasksIndexServiceName, lockedTasksIndexManagerService)
             .dependency(logServiceName, lockedTasksIndexManagerService.getLogInjector())
             .install();

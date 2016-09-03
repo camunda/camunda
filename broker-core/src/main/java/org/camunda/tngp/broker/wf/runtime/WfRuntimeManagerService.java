@@ -92,7 +92,7 @@ public class WfRuntimeManagerService
             .dependency(wfInstanceLogServiceName, wfInstanceIdGeneratorService.getLogInjector())
             .install();
 
-        final Long2LongIndexManagerService activityInstanceIndexManagerService = new Long2LongIndexManagerService(2048, 64 * 1024);
+        final Long2LongIndexManagerService activityInstanceIndexManagerService = new Long2LongIndexManagerService(32448, 4 * 1024);
         serviceContext.createService(workflowEventIndexServiceName, activityInstanceIndexManagerService)
             .dependency(wfInstanceLogServiceName, activityInstanceIndexManagerService.getLogInjector())
             .install();
@@ -102,7 +102,7 @@ public class WfRuntimeManagerService
             .dependency(wfInstanceLogServiceName, wfDefinitionKeyIndexManager.getLogInjector())
             .install();
 
-        final Long2LongIndexManagerService wfDefinitionIdIndexManager = new Long2LongIndexManagerService(1024, 64);
+        final Long2LongIndexManagerService wfDefinitionIdIndexManager = new Long2LongIndexManagerService(32448, 4 * 1024);
         serviceContext.createService(wfDefinitionIdIndexServiceName, wfDefinitionIdIndexManager)
             .dependency(wfInstanceLogServiceName, wfDefinitionIdIndexManager.getLogInjector())
             .install();
