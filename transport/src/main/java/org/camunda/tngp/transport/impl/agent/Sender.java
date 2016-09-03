@@ -51,9 +51,9 @@ public class Sender implements Agent, Consumer<SenderCmd>
     {
         int workCount = 0;
 
-        for (TransportChannelImpl channel : channelsWithControlFrames)
+        for (int i = 0; i < channelsWithControlFrames.size(); i++)
         {
-            channel.writeControlFrame();
+            channelsWithControlFrames.get(i).writeControlFrame();
             workCount++;
         }
 
