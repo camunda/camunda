@@ -14,6 +14,9 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandler, BpmnProcessAspectHandler
 {
+    public static final String DEBUG_LOGGING_ENABLED_PROP_NAME = "camunda.debug.logging.enabled";
+    public static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean(DEBUG_LOGGING_ENABLED_PROP_NAME);
+
     protected BpmnFlowElementEventWriter eventWriter = new BpmnFlowElementEventWriter();
     protected final FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
 
@@ -62,7 +65,10 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
             .processId(processId)
             .workflowInstanceId(processInstanceId);
 
-        System.out.println("Taking flow " + sequenceFlowId);
+        if (DEBUG_LOGGING_ENABLED)
+        {
+            System.out.println("Taking flow " + sequenceFlowId);
+        }
 
         logWriters.writeToCurrentLog(eventWriter);
         return LogEntryHandler.CONSUME_ENTRY_RESULT;

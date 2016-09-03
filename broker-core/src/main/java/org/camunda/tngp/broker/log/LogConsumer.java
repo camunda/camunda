@@ -17,6 +17,8 @@ import org.camunda.tngp.util.buffer.BufferReader;
 
 public class LogConsumer
 {
+    public static final String DEBUG_LOGGING_ENABLED_PROP_NAME = "camunda.debug.logging.enabled";
+    public static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean(DEBUG_LOGGING_ENABLED_PROP_NAME);
 
     // TODO: magic number that becomes obsolete once we have symbolic log positions. Then it can be replaced with 0.
     public static final long LOG_INITIAL_POSITION = 264L;
@@ -312,7 +314,10 @@ public class LogConsumer
 
             if (handler == null)
             {
-                System.out.println("No log entry handler for template " + template.id() + ". Ignoring event.");
+                if (DEBUG_LOGGING_ENABLED)
+                {
+                    System.out.println("No log entry handler for template " + template.id() + ". Ignoring event.");
+                }
                 return;
             }
 

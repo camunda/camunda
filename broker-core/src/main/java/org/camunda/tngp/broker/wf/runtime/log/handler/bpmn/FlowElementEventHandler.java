@@ -13,6 +13,8 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 
 public class FlowElementEventHandler implements LogEntryTypeHandler<BpmnFlowElementEventReader>
 {
+    public static final String DEBUG_LOGGING_ENABLED_PROP_NAME = "camunda.debug.logging.enabled";
+    public static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean(DEBUG_LOGGING_ENABLED_PROP_NAME);
 
     protected final WfDefinitionCache wfDefinitionCache;
     protected FlowElementVisitor flowElementVisitor = new FlowElementVisitor();
@@ -36,7 +38,10 @@ public class FlowElementEventHandler implements LogEntryTypeHandler<BpmnFlowElem
         final BpmnAspect bpmnAspect = flowElementVisitor.aspectFor(flowElementEventReader.event());
         final BpmnFlowElementAspectHandler handler = flowElementEventHandlers.get(bpmnAspect.value());
 
-        System.out.println("Handling event of type " + flowElementEventReader.event());
+        if (DEBUG_LOGGING_ENABLED)
+        {
+            System.out.println("Handling event of type " + flowElementEventReader.event());
+        }
 
         handler.handle(flowElementEventReader, process, logWriters, idGenerator);
     }
