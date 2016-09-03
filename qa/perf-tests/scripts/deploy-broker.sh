@@ -18,7 +18,7 @@ ssh ${REMOTE_USERNAME}@${REMOTE_HOST} /bin/bash <<-EOF
 	mkdir tngp-distribution/
 	tar -zxvf tngp-distribution.tar.gz -C tngp-distribution/ --strip-components=1
 	cd tngp-distribution/bin
-    nohup ./broker &> log.txt &
+    JAVA_OPTS="-XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000" nohup ./broker &> log.txt &
     echo \$! > broker.pid
 EOF
 
