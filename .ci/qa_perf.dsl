@@ -1,6 +1,6 @@
 def gitBranch = 'master'
 def commonName = 'camunda-tngp-QA-performance'
-def jobPrefix = 'TEST-' + commonName
+def jobPrefix = commonName
 def triggerJobName = commonName + '-tests-trigger'
 
 def buildScript =
