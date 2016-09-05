@@ -16,7 +16,6 @@ public class CreateTaskLatencyTest extends FixedRateLatencyTest
     @Override
     protected void setDefaultProperties(Properties properties)
     {
-        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "30000");
         properties.putIfAbsent(TEST_REQUESTRATE, "50000");
 
         super.setDefaultProperties(properties);

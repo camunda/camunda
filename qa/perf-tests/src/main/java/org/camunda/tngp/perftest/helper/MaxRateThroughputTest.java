@@ -6,18 +6,19 @@ import static org.camunda.tngp.perftest.helper.TestHelper.printProperties;
 import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.perftest.reporter.FileReportWriter;
 import org.camunda.tngp.perftest.reporter.RateReporter;
-import org.camunda.tngp.perftest.reporter.SysoutRateReportFn;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 public abstract class MaxRateThroughputTest
 {
     public static final String TEST_WARMUP_TIMEMS = "test.warmup.timems";
+    public static final String TEST_WARMUP_REQUESTRATE = "test.warmup.requestRate";
     public static final String TEST_TIMEMS = "test.timems";
     public static final String TEST_MAX_CONCURRENT_REQUESTS = "2048";
     public static final String TEST_OUTPUT_FILE_NAME = "test.outputFileName";
@@ -56,6 +57,7 @@ public abstract class MaxRateThroughputTest
     protected void setDefaultProperties(final Properties properties)
     {
         properties.putIfAbsent(TEST_WARMUP_TIMEMS, "30000");
+        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "1000");
         properties.putIfAbsent(TEST_TIMEMS, "30000");
         properties.putIfAbsent(TEST_MAX_CONCURRENT_REQUESTS, "2048");
         properties.putIfAbsent(TEST_OUTPUT_FILE_NAME, "data/output.txt");
@@ -74,28 +76,19 @@ public abstract class MaxRateThroughputTest
         {
             System.out.format("Executing warmup\n");
 
+            final int warmupRequestRate = Integer.parseInt(properties.getProperty(TEST_WARMUP_REQUESTRATE));
             final int warmupTimeMs = Integer.parseInt(properties.getProperty(TEST_WARMUP_TIMEMS));
-            final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(TEST_MAX_CONCURRENT_REQUESTS));
+
+            final Consumer<Long> noopLatencyConsumer = (latency) ->
+            {
+                // ignore
+            };
 
             final Supplier<Future> requestFn = requestFn(client, conection);
 
-            final RateReporter rateReporter = new RateReporter(1, TimeUnit.SECONDS, new SysoutRateReportFn());
+            TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
 
-            new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    rateReporter.doReport();
-                }
-
-            }.start();
-
-            TestHelper.executeAtMaxRate(requestFn, rateReporter, warmupTimeMs, maxConcurrentRequests);
-
-            rateReporter.exit();
-
-            System.out.format("Finished warmup.\n");
+            System.out.println("Finished warmup.");
         }
 
         TestHelper.gc();

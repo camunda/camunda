@@ -56,7 +56,7 @@ public abstract class FixedRateLatencyTest
     protected void setDefaultProperties(final Properties properties)
     {
         properties.putIfAbsent(TEST_WARMUP_TIMEMS, "30000");
-        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "2500");
+        properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "1000");
         properties.putIfAbsent(TEST_TIMEMS, "30000");
         properties.putIfAbsent(TEST_REQUESTRATE, "5000");
         properties.putIfAbsent(TEST_OUTPUT_FILE_NAME, "data/output.txt");
@@ -85,9 +85,9 @@ public abstract class FixedRateLatencyTest
 
             final Supplier<Future> requestFn = requestFn(client, conection);
 
-            final int errors = TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
+            TestHelper.executeAtFixedRate(requestFn, noopLatencyConsumer, warmupRequestRate, warmupTimeMs);
 
-            System.out.format("Finished warmup. Errors (failed to send request due to backpressure): %d\n", errors);
+            System.out.println("Finished warmup.");
         }
 
         TestHelper.gc();
