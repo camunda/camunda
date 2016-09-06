@@ -6,13 +6,14 @@ import java.util.List;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.log.ResponseControl.ApiResponseControl;
-import org.camunda.tngp.broker.log.ResponseControl.DefaultResponseControl;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.log.idx.IndexWriterTracker;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.util.buffer.BufferReader;
+
+import static org.camunda.tngp.broker.log.ResponseControl.NOOP_RESPONSE_CONTROL;
 
 
 public class LogConsumer
@@ -29,8 +30,8 @@ public class LogConsumer
     protected LogConsumerTaskHandler logEntryHandler;
     protected LogReader logReader;
     protected DeferredResponsePool apiResponsePool;
+    protected boolean handlesApiRequests;
 
-    protected ResponseControl defaultResponseControl;
     protected ApiResponseControl apiResponseControl;
 
     protected Int2ObjectHashMap<LogEntryTypeHandler<?>> entryHandlers = new Int2ObjectHashMap<>();
@@ -61,9 +62,9 @@ public class LogConsumer
         this.logEntryProcessor = new LogEntryProcessor<>(logReader, new LogEntryHeaderReader(), logEntryHandler);
         this.logReader = logReader;
         this.apiResponsePool = apiResponsePool;
+        this.handlesApiRequests = apiResponsePool != null;
         this.templates = templates;
 
-        this.defaultResponseControl = new DefaultResponseControl();
         this.apiResponseControl = new ApiResponseControl();
 
         this.logWriters = new DecoratingLogWriters(logWriters);
@@ -88,9 +89,9 @@ public class LogConsumer
         indexWriters.add(new IndexWriterTracker(indexWriter));
     }
 
-    public void doConsume()
+    public int doConsume()
     {
-        logEntryProcessor.doWork(Integer.MAX_VALUE);
+        return logEntryProcessor.doWork(Integer.MAX_VALUE);
     }
 
     protected long getLastIndexedPosition()
@@ -217,7 +218,7 @@ public class LogConsumer
             this.logWriters = logWriters;
         }
 
-        public void inContextOfEntry(long entryPosition)
+        public void position(long entryPosition)
         {
             this.entryPosition = entryPosition;
         }
@@ -275,8 +276,7 @@ public class LogConsumer
             final EventSource source = reader.source();
             final ResponseControl responseControl;
 
-            final boolean handlesApiRequests = apiResponsePool != null;
-            if (source == EventSource.API && handlesApiRequests)
+            if (handlesApiRequests && source == EventSource.API)
             {
                 // TODO: das removeFirst funktioniert so lange wie die ResponsePoolQueue von niemand
                 //   anderem konsumiert wird (z.B. nicht mehr, wenn Requests von außen abgebrochen werden können)
@@ -285,7 +285,7 @@ public class LogConsumer
             }
             else
             {
-                responseControl = defaultResponseControl;
+                responseControl = NOOP_RESPONSE_CONTROL;
             }
 
 
@@ -323,7 +323,7 @@ public class LogConsumer
 
             final S entryReader = templates.getReader(template);
             headerReader.readInto(entryReader);
-            logWriters.inContextOfEntry(position);
+            logWriters.position(position);
             handler.handle(entryReader, responseControl, logWriters);
         }
     }

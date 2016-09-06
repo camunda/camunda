@@ -77,10 +77,11 @@ public class LogConsumerTest
         logReader.addEntry(writer);
 
         // when
-        logConsumer.doConsume();
+        final int workCount = logConsumer.doConsume();
 
         // then
         assertThat(handler.numInvocations).isEqualTo(1);
+        assertThat(workCount).isEqualTo(1);
 
     }
 
@@ -102,14 +103,15 @@ public class LogConsumerTest
         logReader.addEntry(writer);
 
         // event is already consumed
-        logConsumer.doConsume();
+        int workCount = logConsumer.doConsume();
         handler.numInvocations = 0;
 
         // when consuming a second time
-        logConsumer.doConsume();
+        workCount += logConsumer.doConsume();
 
         // then the handler is not invoked again with that event
         assertThat(handler.numInvocations).isEqualTo(0);
+        assertThat(workCount).isEqualTo(1);
     }
 
     @Test
@@ -130,7 +132,7 @@ public class LogConsumerTest
         logReader.addEntry(writer);
 
         // first event is already consumed
-        logConsumer.doConsume();
+        int workCount = logConsumer.doConsume();
         handler.numInvocations = 0;
 
         // and a new event is written
@@ -138,10 +140,11 @@ public class LogConsumerTest
         logReader.addEntry(writer);
 
         // when consuming a second time
-        logConsumer.doConsume();
+        workCount += logConsumer.doConsume();
 
         // then the handler is invoked again
         assertThat(handler.numInvocations).isEqualTo(1);
+        assertThat(workCount).isEqualTo(2);
     }
 
 
@@ -164,10 +167,11 @@ public class LogConsumerTest
         logReader.addEntry(writer);
 
         // when
-        logConsumer.doConsume();
+        final int workCount = logConsumer.doConsume();
 
         // then
         assertThat(handler.numInvocations).isEqualTo(0);
+        assertThat(workCount).isEqualTo(1);
     }
 
     @Test

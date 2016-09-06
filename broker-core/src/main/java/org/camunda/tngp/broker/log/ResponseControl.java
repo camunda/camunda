@@ -10,9 +10,8 @@ public interface ResponseControl
 
     void reject(ErrorWriter errorWriter);
 
-    class DefaultResponseControl implements ResponseControl
+    ResponseControl NOOP_RESPONSE_CONTROL = new ResponseControl()
     {
-
         @Override
         public void accept(BufferWriter responseWriter)
         {
@@ -24,7 +23,7 @@ public interface ResponseControl
         {
             // do nothing; could be used for detection of inconsistencies
         }
-    }
+    };
 
     class ApiResponseControl implements ResponseControl
     {

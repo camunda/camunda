@@ -25,14 +25,14 @@ public abstract class LogEntryWriter<S extends LogEntryWriter<S, T>, T extends M
     {
         headerEncoder.wrap(buffer, offset)
             .blockLength(bodyEncoder.sbeBlockLength())
-            .resourceId(0)
+            .templateId(bodyEncoder.sbeTemplateId())
             .schemaId(bodyEncoder.sbeSchemaId())
+            .version(bodyEncoder.sbeSchemaVersion())
+            .resourceId(0)
             .shardId(0)
             .source(source)
-            .sourceEventLogId(sourceEventLogId)
             .sourceEventPosition(sourceEventPosition)
-            .templateId(bodyEncoder.sbeTemplateId())
-            .version(bodyEncoder.sbeSchemaVersion());
+            .sourceEventLogId(sourceEventLogId);
     }
 
     @SuppressWarnings("unchecked")

@@ -23,17 +23,12 @@ public class LogWritersImpl implements LogWriters
     @Override
     public void writeToLog(int logId, LogEntryWriter<?, ?> entryWriter)
     {
-        final ResourceContext resourceContext;
-        if (resourceContextProvider != null)
+        if (resourceContextProvider == null)
         {
-            resourceContext = resourceContextProvider.getContextForResource(logId);
-        }
-        else
-        {
-            resourceContext = null;
+            throw new RuntimeException("Cannot write log entry: No resourceContextProvider provided");
         }
 
-
+        final ResourceContext resourceContext = resourceContextProvider.getContextForResource(logId);
         writeToResourceContext(resourceContext, entryWriter);
     }
 

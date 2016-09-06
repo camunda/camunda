@@ -13,18 +13,20 @@ public class LogProcessingTask implements WorkerTask<WfWorkerContext>
     @Override
     public int execute(WfWorkerContext context)
     {
+        int workCount = 0;
+
         final WfRepositoryContext[] repositoryContexts = context.getWfRepositoryManager().getContexts();
         for (int i = 0; i < repositoryContexts.length; i++)
         {
             final WfRepositoryContext repositoryContext = repositoryContexts[i];
-            repositoryContext.getLogConsumer().doConsume();
+            workCount += repositoryContext.getLogConsumer().doConsume();
         }
 
         final WfRuntimeContext[] runtimeContexts = context.getWfRuntimeManager().getContexts();
         for (int i = 0; i < runtimeContexts.length; i++)
         {
             final WfRuntimeContext runtimeContext = runtimeContexts[i];
-            runtimeContext.getLogConsumer().doConsume();
+            workCount += runtimeContext.getLogConsumer().doConsume();
         }
 
         final List<LogConsumer> sourceLogConsumers = context.getWfRuntimeManager().getInputLogConsumers();
@@ -32,10 +34,10 @@ public class LogProcessingTask implements WorkerTask<WfWorkerContext>
         for (int i = 0; i < sourceLogConsumers.size(); i++)
         {
             final LogConsumer sourceLogConsumer = sourceLogConsumers.get(i);
-            sourceLogConsumer.doConsume();
+            workCount += sourceLogConsumer.doConsume();
         }
 
-        return 0;
+        return workCount;
     }
 
 }
