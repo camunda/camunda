@@ -1,7 +1,8 @@
 package org.camunda.tngp.client.cmd;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -9,6 +10,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLDecoder;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -98,7 +100,8 @@ public class DeployBpmnResourceCmdTest
         final URL fileUrl = classLoader.getResource("example_file");
 
         // when
-        apiCommand.resourceFile(fileUrl.getFile());
+        final String filePath = URLDecoder.decode(fileUrl.getFile(), "UTF-8");
+        apiCommand.resourceFile(filePath);
 
         // then
         final byte[] expectedBytes = readClasspathFile("example_file");
