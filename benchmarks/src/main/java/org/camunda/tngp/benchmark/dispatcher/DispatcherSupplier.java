@@ -38,7 +38,7 @@ public class DispatcherSupplier implements Runnable, FragmentHandler
         }
 
         dispatcher = Dispatchers.create("default")
-                .bufferSize(1024 * 1024 * 16)
+                .bufferSize(1024 * 1024 * 32)
                 .idleStrategy(new BusySpinIdleStrategy())
                 .build();
 

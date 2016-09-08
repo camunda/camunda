@@ -6,8 +6,9 @@ def buildScript =
 #!/bin/bash -xe
 
 mvn clean package -B -DskipTests
-java -Dburst.size=10 -jar benchmarks/target/benchmarks.jar -bm sample -tu ns
+java -Dburst.size=100 -jar benchmarks/target/benchmarks.jar -bm sample -tu ns
 """
+
 job(jobName)
 {
     scm
