@@ -1,18 +1,11 @@
-package org.camunda.tngp.benchmark.dispatcher;
+package org.camunda.tngp.benchmark.baseline;
 
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -20,16 +13,15 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 
-public class DispatcherScalabilityBenchmark
+public class CCLQScalabilityBenchmark
 {
     static final AtomicInteger THREAD_ID_GENERATOR = new AtomicInteger(0);
     private static final int BURST_SIZE = Integer.getInteger("burst.size", 1);
 
     @State(Scope.Benchmark)
-    public static class SharedState implements FragmentHandler
+    public static class SharedState
     {
-        Dispatcher dispatcher;
-        Subscription subscription;
+        ConcurrentLinkedQueue<Integer> queue;
         Thread consumer;
         volatile boolean exit = false;
         AtomicBoolean[] burstCompleteFields;
@@ -50,34 +42,23 @@ public class DispatcherScalabilityBenchmark
                 messages[i] = -(BURST_SIZE - i);
             }
 
-            dispatcher = Dispatchers.create("default")
-                    .bufferSize(1024 * 1024 * 32)
-                    .idleStrategy(new BusySpinIdleStrategy())
-                    .build();
-
-            subscription = dispatcher.openSubscription();
+            queue = new ConcurrentLinkedQueue<>();
 
             consumer = new Thread(() ->
             {
-                while (!exit)
+                do
                 {
-                    subscription.poll(this, BURST_SIZE);
+                    final Integer result = queue.poll();
+
+                    if (result != null && result >= 0)
+                    {
+                        burstCompleteFields[result].set(true);
+                    }
                 }
+                while (!exit);
             });
 
             consumer.start();
-        }
-
-        public int onFragment(DirectBuffer msg, int offset, int length, int streamId, boolean foo)
-        {
-            final int messageId = msg.getInt(offset);
-
-            if (messageId >= 0)
-            {
-                burstCompleteFields[messageId].set(true);
-            }
-
-            return CONSUME_FRAGMENT_RESULT;
         }
 
         @TearDown
@@ -88,7 +69,6 @@ public class DispatcherScalabilityBenchmark
             try
             {
                 consumer.join();
-                dispatcher.close();
             }
             catch (InterruptedException e)
             {
@@ -102,21 +82,18 @@ public class DispatcherScalabilityBenchmark
     public static class ThreadState
     {
         protected int threadId;
-        protected Dispatcher dispatcher;
+        protected ConcurrentLinkedQueue<Integer> queue;
         protected AtomicBoolean burstCompleteField;
         protected int[] messages;
-        protected ClaimedFragment claimedFragment;
-        protected UnsafeBuffer sendBuffer;
 
         @Setup
         public void setup(final SharedState sharedState)
         {
             threadId = THREAD_ID_GENERATOR.getAndIncrement();
-            dispatcher = sharedState.dispatcher;
+            queue = sharedState.queue;
             burstCompleteField = sharedState.burstCompleteFields[threadId];
             messages = Arrays.copyOf(sharedState.messages, sharedState.messages.length);
             messages[messages.length - 1] = threadId;
-            sendBuffer = new UnsafeBuffer(new byte[8]);
         }
     }
 
@@ -147,13 +124,11 @@ public class DispatcherScalabilityBenchmark
         burstCompleteField.set(false);
 
         final int[] messages = threadState.messages;
-        final Dispatcher dispatcher = threadState.dispatcher;
-        final UnsafeBuffer sendBuffer = threadState.sendBuffer;
+        final ConcurrentLinkedQueue<Integer> queue = threadState.queue;
 
         for (int i = 0; i < messages.length; i++)
         {
-            sendBuffer.putInt(0, messages[i]);
-            while (dispatcher.offer(sendBuffer) < 0)
+            while (!queue.offer(messages[i]))
             {
                 // spin
             }
