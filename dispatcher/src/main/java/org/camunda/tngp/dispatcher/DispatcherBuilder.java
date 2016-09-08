@@ -12,6 +12,7 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -59,6 +60,8 @@ public class DispatcherBuilder
     protected boolean agentExternallyManaged = false;
 
     protected DispatcherConductor conductorAgent;
+
+    protected IdleStrategy idleStrategy;
 
     protected int mode = Dispatcher.MODE_PUB_SUB;
 
@@ -111,6 +114,12 @@ public class DispatcherBuilder
     public DispatcherBuilder conductorExternallyManaged()
     {
         this.agentExternallyManaged = true;
+        return this;
+    }
+
+    public DispatcherBuilder idleStrategy(IdleStrategy idleStrategy)
+    {
+        this.idleStrategy = idleStrategy;
         return this;
     }
 
@@ -225,7 +234,12 @@ public class DispatcherBuilder
 
         if (!agentExternallyManaged)
         {
-            final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+            IdleStrategy idleStrategy = this.idleStrategy;
+
+            if (idleStrategy == null)
+            {
+                idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+            }
 
             AtomicCounter errorCounter = null;
             if (countersManager != null)
