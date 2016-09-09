@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository.log.handler;
+package org.camunda.tngp.broker.wf.runtime.log.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
@@ -16,8 +16,8 @@ import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionRequestReader;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestReader;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.protocol.error.ErrorReader;

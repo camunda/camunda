@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository.log.handler;
+package org.camunda.tngp.broker.wf.runtime.log.handler;
 
 import java.nio.charset.StandardCharsets;
 
@@ -8,10 +8,10 @@ import org.camunda.tngp.broker.log.LogEntryTypeHandler;
 import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionRequestReader;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
-import org.camunda.tngp.broker.wf.repository.request.handler.BpmnDeploymentValidator;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestReader;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionWriter;
+import org.camunda.tngp.broker.wf.runtime.request.handler.BpmnDeploymentValidator;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;

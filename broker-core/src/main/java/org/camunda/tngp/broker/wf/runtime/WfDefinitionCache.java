@@ -1,10 +1,10 @@
-package org.camunda.tngp.broker.wf.repository;
+package org.camunda.tngp.broker.wf.runtime;
 
 import java.util.function.LongFunction;
 
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;

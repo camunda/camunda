@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository.request.handler;
+package org.camunda.tngp.broker.wf.runtime.request.handler;
 
 import java.io.StringWriter;
 

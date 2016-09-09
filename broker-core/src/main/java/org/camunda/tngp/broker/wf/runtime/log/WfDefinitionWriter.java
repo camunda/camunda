@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository.log;
+package org.camunda.tngp.broker.wf.runtime.log;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

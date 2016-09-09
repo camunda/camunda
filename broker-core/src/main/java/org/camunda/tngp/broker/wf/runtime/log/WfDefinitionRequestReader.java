@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository.log;
+package org.camunda.tngp.broker.wf.runtime.log;
 
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestDecoder;

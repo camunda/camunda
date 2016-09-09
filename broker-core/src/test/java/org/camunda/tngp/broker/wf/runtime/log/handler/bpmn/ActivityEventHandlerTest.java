@@ -14,7 +14,7 @@ import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
+import org.camunda.tngp.broker.wf.runtime.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;

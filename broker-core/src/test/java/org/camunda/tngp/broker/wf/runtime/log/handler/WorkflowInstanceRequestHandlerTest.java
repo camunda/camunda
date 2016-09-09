@@ -13,7 +13,7 @@ import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
+import org.camunda.tngp.broker.wf.runtime.WfDefinitionCache;
 import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;

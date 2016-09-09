@@ -21,11 +21,11 @@ import org.camunda.tngp.broker.transport.worker.BrokerRequestWorkerContextServic
 import org.camunda.tngp.broker.transport.worker.CompositeRequestDispatcher;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.cfg.WfComponentCfg;
-import org.camunda.tngp.broker.wf.repository.request.handler.DeployBpmnResourceHandler;
 import org.camunda.tngp.broker.wf.runtime.LogProcessingTask;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManagerService;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames;
+import org.camunda.tngp.broker.wf.runtime.request.handler.DeployBpmnResourceHandler;
 import org.camunda.tngp.broker.wf.runtime.request.handler.StartWorkflowInstanceHandler;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Service;

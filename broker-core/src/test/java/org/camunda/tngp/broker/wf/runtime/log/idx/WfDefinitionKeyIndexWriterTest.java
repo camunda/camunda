@@ -13,7 +13,7 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionWriter;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.junit.Before;
 import org.junit.Test;

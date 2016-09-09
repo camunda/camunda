@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository;
+package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;

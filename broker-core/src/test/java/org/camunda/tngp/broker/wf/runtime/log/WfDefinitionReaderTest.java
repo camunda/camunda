@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.wf.repository.log;
+package org.camunda.tngp.broker.wf.runtime.log;
 
 import org.junit.Test;
 import static org.assertj.core.api.Assertions.*;

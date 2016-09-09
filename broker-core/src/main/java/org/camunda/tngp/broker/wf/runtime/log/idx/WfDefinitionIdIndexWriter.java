@@ -4,7 +4,7 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.repository.log.WfDefinitionReader;
+import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 

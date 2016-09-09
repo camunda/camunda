@@ -2,7 +2,6 @@ package org.camunda.tngp.broker.wf.runtime;
 
 import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.wf.repository.WfDefinitionCache;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
