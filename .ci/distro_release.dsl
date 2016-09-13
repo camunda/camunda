@@ -1,3 +1,5 @@
+// vim: set filetype=groovy:
+
 def jobName = 'camunda-tngp-DISTRO-maven-deploy'
 def repository = 'camunda-tngp'
 def gitBranch = 'master'
@@ -8,7 +10,10 @@ def mvnGoals = 'verify'
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettings = 'camunda-maven-settings'
 
-def downstreamProjects = 'camunda-tngp-QA-performance-tests-trigger'
+def downstreamProjects = [
+    'camunda-tngp-QA-performance-tests-trigger',
+]
+
 
 // script to set access rights on ssh keys
 // and configure git user name and email
@@ -151,7 +156,7 @@ mavenJob(jobName)
           }
         }
 
-        downstream(downstreamProjects, 'SUCCESS')
+        downstream(downstreamProjects.join(','), 'SUCCESS')
     }
 
     blockOnUpstreamProjects()

@@ -1,31 +1,39 @@
+// vim: set filetype=groovy:
+
 def gitBranch = 'master'
 def commonName = 'camunda-tngp-QA-performance'
-def jobPrefix = commonName
 def triggerJobName = commonName + '-tests-trigger'
 
-def buildScript =
-"""\
-#!/bin/bash -xe
 
-cd qa/perf-tests/
-export BROKER_HOST=192.168.0.21
-make -e clean build
-make -e deploy-broker
-make -e @test@
-make -e clean
-"""
+// map of tests to execute and the corresponding make targets
+def TESTS = [
+    [
+        name: 'create-task-throughput',
+        target: 'test-create-task-throughput'
+    ],
+    [
+        name: 'create-task-latency',
+        target: 'test-create-task-latency'
+    ],
+    [
+        name: 'start-wf-instance-throughput',
+        target: 'test-start-wf-instance-throughput'
+    ],
+    [
+        name: 'start-wf-instance-latency',
+        target: 'test-start-wf-instance-latency'
+    ]
+]
 
-// name -> make target
-def TESTS =
-[
-    'create-task-throughput': 'test-create-task-throughput',
-    'create-task-latency': 'test-create-task-latency',
-    'start-wf-instance-throughput': 'test-start-wf-instance-throughput',
-    'start-wf-instance-latency': 'test-start-wf-instance-latency'
- ]
+// generate job names from tests
+def JOBS = TESTS.collectEntries
+{ test ->
+    [("${commonName}-${test.name}"): test.target]
+}
 
 
-// common root job for perf tests
+// job which triggers all perf jobs
+// can be triggered manually and is also used as downstream of the distro job
 job(triggerJobName)
 {
     label 'master'
@@ -33,17 +41,17 @@ job(triggerJobName)
 
     publishers
     {
-        downstream(TESTS.keySet().collect{ jobPrefix + it }.join(','), 'SUCCESS')
+        downstream(JOBS.keySet().join(','), 'SUCCESS')
     }
 
 }
 
 
 // performance tests jobs
-TESTS.each
-{ testName, makeTarget ->
+JOBS.each
+{ jobName, makeTarget ->
 
-    job(jobPrefix + testName)
+    job(jobName)
     {
         scm
         {
@@ -66,7 +74,7 @@ TESTS.each
 
         steps
         {
-            shell buildScript.replace('@test@', makeTarget)
+            shell makeStep(makeTarget);
         }
 
         wrappers
@@ -148,4 +156,18 @@ listView('Performance-Tests')
             }
         }
     }
+}
+
+// create build script for given make target
+static String makeStep(String target) {
+    return """\
+#!/bin/bash -xe
+
+cd qa/perf-tests/
+export BROKER_HOST=192.168.0.21
+make -e clean build
+make -e deploy-broker
+make -e ${target}
+make -e clean
+"""
 }
