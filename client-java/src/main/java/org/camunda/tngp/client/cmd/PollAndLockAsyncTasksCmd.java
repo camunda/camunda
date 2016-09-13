@@ -3,7 +3,6 @@ package org.camunda.tngp.client.cmd;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.client.ClientCommand;
-import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
 
 public interface PollAndLockAsyncTasksCmd extends ClientCommand<LockedTasksBatch>
 {
@@ -15,6 +14,6 @@ public interface PollAndLockAsyncTasksCmd extends ClientCommand<LockedTasksBatch
 
     PollAndLockAsyncTasksCmd maxTasks(int maxTasks);
 
-    PollAndLockTasksCmdImpl taskType(String taskType);
+    PollAndLockAsyncTasksCmd taskType(String taskType);
 
 }

@@ -44,15 +44,6 @@ public class ServiceTaskTest
         .taskAttributes("serviceTask", taskType, 0);
     }
 
-    public static final BpmnModelInstance TWO_TASKS_PROCESS = wrap(Bpmn.createExecutableProcess("anId")
-            .startEvent()
-            .serviceTask("serviceTask1")
-            .serviceTask("serviceTask2")
-            .endEvent()
-            .done())
-        .taskAttributes("serviceTask1", "foo", 0)
-        .taskAttributes("serviceTask2", "bar", 0);
-
     @Test
     public void shouldStartProcessWithServiceTask()
     {
@@ -207,7 +198,7 @@ public class ServiceTaskTest
         final WorkflowsClient workflowService = client.workflows();
 
         // given
-        final WorkflowDefinition workflow = clientRule.deployProcess(TWO_TASKS_PROCESS);
+        final WorkflowDefinition workflow = clientRule.deployProcess(ProcessModels.TWO_TASKS_PROCESS);
 
         TestUtil.doRepeatedly(() ->
             workflowService

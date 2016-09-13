@@ -4,5 +4,5 @@ public interface LockedTask extends GetPayload
 {
     long getId();
 
-    long getWorkflowInstanceId();
+    Long getWorkflowInstanceId();
 }

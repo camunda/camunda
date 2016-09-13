@@ -97,7 +97,7 @@ public class BrokerRestartTest
                     .taskType("foo")
                     .lockTime(1234L)
                     .execute())
-            .until((b) -> !b.getLockedTasks().isEmpty());
+            .whileConditionHolds((b) -> b.getLockedTasks().isEmpty());
 
         assertThat(tasksBatchAfterRestart.getLockedTasks()).isEmpty();
 

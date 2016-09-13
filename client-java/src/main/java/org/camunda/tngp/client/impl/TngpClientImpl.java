@@ -1,6 +1,12 @@
 package org.camunda.tngp.client.impl;
 
-import static org.camunda.tngp.client.ClientProperties.*;
+import static org.camunda.tngp.client.ClientProperties.BROKER_CONTACTPOINT;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
@@ -20,6 +26,9 @@ import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
 import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceCmdImpl;
 import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceCmdImpl;
+import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
+import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
+import org.camunda.tngp.client.task.impl.TaskSubscriptionManager;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
@@ -39,6 +48,8 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
     protected DummyChannelResolver channelResolver;
     protected ClientCmdExecutor cmdExecutor;
+
+    protected TaskSubscriptionManager taskSubscriptionManager;
 
     public TngpClientImpl(Properties properties)
     {
@@ -78,6 +89,10 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         channelResolver = new DummyChannelResolver();
 
         cmdExecutor = new ClientCmdExecutor(connectionPool, channelResolver);
+
+        final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
+        final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
+        taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks);
     }
 
     public void connect()
@@ -87,10 +102,18 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
                 .connect();
 
         channelResolver.setChannelId(channel.getId());
+
+        taskSubscriptionManager.startAcquisition();
+        taskSubscriptionManager.startExecution();
     }
 
     public void disconnect()
     {
+        taskSubscriptionManager.closeAllSubscriptions();
+
+        taskSubscriptionManager.stopAcquisition();
+        taskSubscriptionManager.stopExecution();
+
         channel.close();
         channel = null;
 
@@ -100,6 +123,11 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     @Override
     public void close()
     {
+        if (isConnected())
+        {
+            disconnect();
+        }
+
         try
         {
             connectionPool.close();
@@ -118,6 +146,12 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
             e.printStackTrace();
         }
     }
+
+    protected boolean isConnected()
+    {
+        return channel != null;
+    }
+
 
     public TransportConnectionPool getConnectionPool()
     {
@@ -164,5 +198,17 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     public StartWorkflowInstanceCmd start()
     {
         return new StartWorkflowInstanceCmdImpl(cmdExecutor);
+    }
+
+    @Override
+    public TaskSubscriptionBuilder newSubscription()
+    {
+        return taskSubscriptionManager.newSubscription();
+    }
+
+    @Override
+    public PollableTaskSubscriptionBuilder newPollableSubscription()
+    {
+        return taskSubscriptionManager.newPollableSubscription();
     }
 }

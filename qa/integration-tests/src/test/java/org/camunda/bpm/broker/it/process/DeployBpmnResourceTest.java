@@ -124,8 +124,6 @@ public class DeployBpmnResourceTest
         process2.setExecutable(true);
         process2.builder().startEvent().endEvent();
 
-        Bpmn.writeModelToStream(System.out, modelInstance);
-
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 204"));
