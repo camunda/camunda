@@ -74,7 +74,77 @@ WorkflowDefinition workflowDefinition = workflowsClient
 
 Workflow instances can be started by key (=> `id` attribute of `process` element in XML) or ID.
 
-## Tasks API
+
+## Task Subscriptions API
+
+*Task subscriptions* can be used to implement task execution in an event-driven way. Once a subscription is opened, the client then receives future tasks for that type,
+locks them and hands them to a registered *task handler*.
+
+### Creating a Subscription
+
+```java
+TaskHandler sendInvoiceHandler = new SendInvoiceHandler();
+
+TaskSubscription subscription = tasksClient.newSubscription()
+    .taskQueueId(0)
+    .taskType("send-invoice")
+    .lockTime(100000L)
+    .handler(sendInvoiceHandler)
+    .open();
+```
+
+Whenever a new task is received, the `sendInvoiceHandler` object receives that task and can process it.
+
+Properties:
+
+* `taskQueueId`: Identifies the task queue that this subscription addresses. Must correspond to a valid `id` of a `[task-queue]` element in the broker configuration
+* `taskType`: Restricts the subscription to tasks of the given type. Corresponds to the value provided in the BPMN XML.
+
+### Implementing a Task Handler
+
+Implement the interface `org.camunda.tngp.client.task.TaskHandler` to create a task handler. `TaskHandler` is a functional interface, meaning that it can be implemented as a lambda. Implementations must be thread-safe.
+
+Put the business logic for executing a task into the handler's `#handle` method. `#handle` is called whenever the client receives a task and takes an instance of `org.camunda.tngp.client.task.Task`. A `Task` instance provides access to the task's workflow context and methods to complete the task.
+
+Example:
+
+```java
+public class SendInvoiceHandler implements TaskHandler
+{
+
+    @Override
+    public void handle(Task task)
+    {
+        // actually do send invoice
+
+        task.complete();
+    }
+}
+```
+
+### Closing a Subscription
+
+```java
+TaskSubscription subscription = ...;
+
+subscription.close();
+```
+
+Once closed, the client no longer receives tasks for that subscription. The close operation blocks until all previously received tasks have been given to the handler.
+
+
+## Standalone Task API
+
+If you use task subscriptions, you most likely do not need most operations of the standalone API. It can be used to perform individual actions independently such as completing an arbitrary task instance.
+
+### Complete Task Instances
+
+```java
+tasksClient.complete()
+    .taskQueueId(0)
+    .taskId(lockedTask.getId())
+    .execute();
+```
 
 ### Poll and Lock Task Instances
 
@@ -87,21 +157,9 @@ LockedTasksBatch taskBatch = tasksClient.pollAndLock()
     .execute();
 ```
 
-Properties:
-
-* `taskQueueId`: Identifies the task queue this should be added to. Must correspond to a valid `id` of a `[task-queue]` element in the broker configuration
-* `taskType`: Restricts the request to tasks of the given type. Corresponds to the value provided in the BPMN XML.
+This method is an alternative to task subscriptions.
 
 Limitations:
 
 * Max tasks can only be 1
 * Tasks with an expired lock time do not become lockable again
-
-### Complete Task Instances
-
-```java
-tasksClient.complete()
-    .taskQueueId(0)
-    .taskId(lockedTask.getId())
-    .execute();
-```
