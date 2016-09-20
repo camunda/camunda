@@ -10,9 +10,18 @@ public class FluentAnswer implements Answer<Object>
     public Object answer(InvocationOnMock invocation) throws Throwable
     {
         final Class<?> returnType = invocation.getMethod().getReturnType();
-        final Object mock = invocation.getMock();
 
         Object answer = null;
+
+        if (returnType == Object.class)
+        {
+            // workaround for methods with a generic return type without an upper bound.
+            // Such types are erased to Object at runtime and we don't want to mock such methods
+            return answer;
+        }
+
+        final Object mock = invocation.getMock();
+
 
         if (returnType.isAssignableFrom(mock.getClass()))
         {
