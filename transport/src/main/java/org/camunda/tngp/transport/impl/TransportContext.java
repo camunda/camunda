@@ -1,13 +1,12 @@
 package org.camunda.tngp.transport.impl;
 
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
-
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class TransportContext
 {

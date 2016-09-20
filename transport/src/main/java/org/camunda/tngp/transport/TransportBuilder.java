@@ -12,8 +12,8 @@ import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
+import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
-import org.camunda.tngp.dispatcher.impl.Subscription;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
@@ -144,7 +144,7 @@ public class TransportBuilder
 
         if (senderSubscription == null)
         {
-            senderSubscription = sendBuffer.openSubscription();
+            senderSubscription = sendBuffer.openSubscription("sender");
         }
 
         transportContext.setSenderSubscription(senderSubscription);

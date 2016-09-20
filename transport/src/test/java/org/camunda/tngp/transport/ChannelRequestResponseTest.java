@@ -3,15 +3,14 @@ package org.camunda.tngp.transport;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.junit.Test;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class ChannelRequestResponseTest
 {
@@ -68,7 +67,7 @@ public class ChannelRequestResponseTest
             .connect();
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
-        final Subscription clientReceiveBufferSubscription = clientReceiveBuffer.openSubscription();
+        final Subscription clientReceiveBufferSubscription = clientReceiveBuffer.openSubscription("client-receiver");
 
         for (int i = 0; i < 10000; i++)
         {

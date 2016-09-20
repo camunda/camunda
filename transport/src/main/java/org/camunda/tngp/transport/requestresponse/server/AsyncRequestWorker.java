@@ -1,9 +1,8 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.impl.Subscription;
-
 import org.agrona.concurrent.Agent;
+import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.dispatcher.Subscription;
 
 /**
  * Base class for implementing asynchronous request/response server workers processing requests which need to wait on async i/o.

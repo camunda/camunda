@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.dispatcher.Subscription;
 
 public class AsyncRequestWorkerContext
 {

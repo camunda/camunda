@@ -5,13 +5,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.camunda.tngp.dispatcher.impl.Subscription;
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
-import org.camunda.tngp.transport.impl.TransportContext;
-
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.transport.impl.TransportChannelImpl;
+import org.camunda.tngp.transport.impl.TransportContext;
 
 public class Sender implements Agent, Consumer<SenderCmd>
 {

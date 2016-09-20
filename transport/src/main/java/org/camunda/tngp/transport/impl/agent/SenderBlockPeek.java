@@ -1,11 +1,10 @@
 package org.camunda.tngp.transport.impl.agent;
 
-import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.impl.Subscription;
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
-
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.dispatcher.BlockPeek;
+import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.transport.impl.TransportChannelImpl;
 
 public class SenderBlockPeek extends BlockPeek
 {
