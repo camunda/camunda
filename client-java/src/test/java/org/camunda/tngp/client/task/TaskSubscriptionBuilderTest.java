@@ -3,6 +3,8 @@ package org.camunda.tngp.client.task;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import java.util.concurrent.TimeUnit;
+
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.task.impl.PollableTaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskAcquisition;
@@ -145,5 +147,46 @@ public class TaskSubscriptionBuilderTest
 
         // when
         builder.open();
+    }
+
+    @Test
+    public void shouldSetLockTimeWithTimeUnit()
+    {
+        // given
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+
+        builder
+            .handler(mock(TaskHandler.class))
+            .lockTime(10, TimeUnit.DAYS)
+            .taskQueueId(123)
+            .taskType("fooo");
+
+        // when
+        final TaskSubscription taskSubscription = builder.open();
+
+        // then
+        final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
+
+        assertThat(subscriptionImpl.getLockTime()).isEqualTo(TimeUnit.DAYS.toMillis(10L));
+    }
+
+    @Test
+    public void shouldSetLockTimeWithTimeUnitForPollableSubscription()
+    {
+        // given
+        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(acquisition, true);
+
+        builder
+            .lockTime(10, TimeUnit.DAYS)
+            .taskQueueId(123)
+            .taskType("fooo");
+
+        // when
+        final PollableTaskSubscription taskSubscription = builder.open();
+
+        // then
+        final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
+
+        assertThat(subscriptionImpl.getLockTime()).isEqualTo(TimeUnit.DAYS.toMillis(10L));
     }
 }

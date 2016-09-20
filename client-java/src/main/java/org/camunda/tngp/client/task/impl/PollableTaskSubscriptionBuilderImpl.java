@@ -37,6 +37,12 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     }
 
     @Override
+    public PollableTaskSubscriptionBuilder lockTime(long lockTime, TimeUnit timeUnit)
+    {
+        return lockTime(timeUnit.toMillis(lockTime));
+    }
+
+    @Override
     public PollableTaskSubscriptionBuilder taskQueueId(int taskQueueId)
     {
         this.taskQueueId = taskQueueId;

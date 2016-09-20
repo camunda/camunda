@@ -38,6 +38,12 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     }
 
     @Override
+    public TaskSubscriptionBuilder lockTime(long lockTime, TimeUnit timeUnit)
+    {
+        return lockTime(timeUnit.toMillis(lockTime));
+    }
+
+    @Override
     public TaskSubscriptionBuilder taskQueueId(int taskQueueId)
     {
         this.taskQueueId = taskQueueId;
