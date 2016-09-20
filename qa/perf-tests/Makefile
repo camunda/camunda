@@ -53,8 +53,8 @@ clean: undeploy-broker
 	scripts/clean.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
 
 build:
-	cd ../.. && mvn clean package -DskipTests
-	mvn clean package
+	cd ../.. && mvn clean package -U -DskipTests
+	mvn clean package -U
 
 all-tests: test-create-task-throughput test-create-task-latency test-start-wf-instance-latency test-start-wf-instance-throughput
 
