@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.transport.worker;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -26,7 +26,7 @@ public class BrokerRequestWorkerContextService implements Service<AsyncRequestWo
     @Override
     public void start(ServiceContext serviceContext)
     {
-        requestSubscription = requestBufferInjector.getValue().openSubscription();
+        requestSubscription = requestBufferInjector.getValue().openSubscription("request");
 
         ctx.setRequestBufferSubscription(requestSubscription);
         ctx.setResponsePool(responsePoolInjector.getValue());
