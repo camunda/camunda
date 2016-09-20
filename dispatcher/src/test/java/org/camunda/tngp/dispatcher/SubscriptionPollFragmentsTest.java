@@ -1,20 +1,34 @@
-package org.camunda.tngp.dispatcher.impl;
+package org.camunda.tngp.dispatcher;
 
-import static org.mockito.Mockito.*;
-import static org.agrona.BitUtil.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.agrona.BitUtil.align;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.enableFlagFailed;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.Position;
 
 public class SubscriptionPollFragmentsTest
 {
@@ -43,7 +57,7 @@ public class SubscriptionPollFragmentsTest
 
         mockSubscriberPosition = mock(Position.class);
         mockFragmentHandler = mock(FragmentHandler.class);
-        subscription = new Subscription(mockSubscriberPosition, 0, mock(Dispatcher.class));
+        subscription = new Subscription(mockSubscriberPosition, 0, "0", mock(Dispatcher.class));
     }
 
     @Test
@@ -57,7 +71,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, false);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
@@ -79,7 +93,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn(enableFlagFailed((byte) 0));
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, false);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
@@ -95,6 +109,7 @@ public class SubscriptionPollFragmentsTest
     {
         final int firstFragOffset = 0;
         final int secondFragOffset = nextFragmentOffset(firstFragOffset);
+        final long limit = position(A_PARTITION_ID, 2 * A_FRAGMENT_LENGTH);
 
         when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
         when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
@@ -107,7 +122,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagFailed((byte) 0));
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, firstFragOffset, false);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, firstFragOffset, 2, limit, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(2);
@@ -124,6 +139,38 @@ public class SubscriptionPollFragmentsTest
     }
 
     @Test
+    public void shouldNotReadBeyondLimit()
+    {
+        final int firstFragOffset = 0;
+        final int secondFragOffset = nextFragmentOffset(firstFragOffset);
+        final long limit = position(A_PARTITION_ID, A_FRAGMENT_LENGTH);
+
+        when(dataBufferMock.getIntVolatile(firstFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(firstFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(firstFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn((byte) 0);
+
+        when(dataBufferMock.getIntVolatile(secondFragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(secondFragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(secondFragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(secondFragOffset))).thenReturn(enableFlagFailed((byte) 0));
+
+        // when
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, firstFragOffset, 2, limit, false);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+
+        // the fragment handler was handed one fragment
+        final InOrder inOrder = inOrder(mockFragmentHandler);
+        inOrder.verify(mockFragmentHandler).onFragment(dataBufferMock, messageOffset(firstFragOffset), A_MSG_PAYLOAD_LENGTH, A_STREAM_ID, false);
+        inOrder.verifyNoMoreInteractions();
+
+        // and the position was increased by the fragment length
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, secondFragOffset));
+    }
+
+    @Test
     public void shouldRollOverOnPaddingAtEndOfPartition()
     {
         final int fragOffset = A_PARTITION_LENGTH - alignedLength(A_MSG_PAYLOAD_LENGTH);
@@ -132,7 +179,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset, false);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 2, position(A_PARTITION_ID + 1, 0), false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -151,7 +198,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_PADDING);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 2, A_PARTITION_ID, fragOffset, false);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 2, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -171,7 +218,7 @@ public class SubscriptionPollFragmentsTest
         when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(-A_MSG_PAYLOAD_LENGTH);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, false);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, 0, false);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -194,7 +241,7 @@ public class SubscriptionPollFragmentsTest
             .thenReturn(FragmentHandler.POSTPONE_FRAGMENT_RESULT);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, true);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), true);
 
         // then
         assertThat(fragmentsRead).isEqualTo(0);
@@ -215,12 +262,53 @@ public class SubscriptionPollFragmentsTest
             .thenReturn(FragmentHandler.CONSUME_FRAGMENT_RESULT);
 
         // when
-        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, 1, A_PARTITION_ID, fragOffset, true);
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), true);
 
         // then
         assertThat(fragmentsRead).isEqualTo(1);
         // and the position was increased
         verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+    }
+
+    @Test
+    public void shouldUpdatePositionBasedOnHandlerFailedResult()
+    {
+        final int fragOffset = 0;
+
+        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn((byte) 0);
+        when(mockFragmentHandler.onFragment(any(), anyInt(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(FragmentHandler.FAILED_FRAGMENT_RESULT);
+
+        // when
+        final int fragmentsRead = subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), true);
+
+        // then
+        assertThat(fragmentsRead).isEqualTo(1);
+        // and the position was increased by the fragment length
+        verify(mockSubscriberPosition).setOrdered(position(A_PARTITION_ID, nextFragmentOffset(fragOffset)));
+    }
+
+    @Test
+    public void shouldMarkFragmentAsFailedBasedOnHandlerFailedResult()
+    {
+        final int fragOffset = 0;
+        final byte flags = (byte) 0;
+
+        when(dataBufferMock.getIntVolatile(fragOffset)).thenReturn(A_MSG_PAYLOAD_LENGTH);
+        when(dataBufferMock.getShort(typeOffset(fragOffset))).thenReturn(TYPE_MESSAGE);
+        when(dataBufferMock.getInt(streamIdOffset(fragOffset))).thenReturn(A_STREAM_ID);
+        when(dataBufferMock.getByte(flagsOffset(fragOffset))).thenReturn(flags);
+        when(mockFragmentHandler.onFragment(any(), anyInt(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(FragmentHandler.FAILED_FRAGMENT_RESULT);
+
+        // when
+        subscription.pollFragments(logBufferPartition, mockFragmentHandler, A_PARTITION_ID, fragOffset, 1, position(A_PARTITION_ID, A_FRAGMENT_LENGTH), true);
+
+        // then
+        verify(dataBufferMock).putByte(flagsOffset(fragOffset), DataFrameDescriptor.enableFlagFailed(flags));
     }
 
     private int nextFragmentOffset(final int currentOffset)

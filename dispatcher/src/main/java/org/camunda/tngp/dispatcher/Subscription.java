@@ -1,4 +1,4 @@
-package org.camunda.tngp.dispatcher.impl;
+package org.camunda.tngp.dispatcher;
 
 import static org.agrona.BitUtil.align;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionId;
@@ -20,25 +20,23 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
-import org.camunda.tngp.dispatcher.BlockHandler;
-import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferPartition;
-
 
 public class Subscription
 {
     protected final Position position;
     protected final LogBuffer logBuffer;
     protected final Dispatcher dispatcher;
-    protected final int subscriberId;
+    protected final int id;
+    protected final String name;
 
-    public Subscription(Position position, int subscriberId, Dispatcher dispatcher)
+    public Subscription(Position position, int id, String name, Dispatcher dispatcher)
     {
         this.position = position;
-        this.subscriberId = subscriberId;
+        this.id = id;
+        this.name = name;
         this.dispatcher = dispatcher;
         this.logBuffer = dispatcher.getLogBuffer();
     }
@@ -48,6 +46,13 @@ public class Subscription
         return position.get();
     }
 
+    /**
+     * Read fragments from the buffer and invoke the given handler for each
+     * fragment. Consume the fragments (i.e. update the subscription position)
+     * after all fragments are handled.
+     *
+     * @return the amount of read fragments
+     */
     public int poll(FragmentHandler frgHandler, int maxNumOfFragments)
     {
         int fragmentsRead = 0;
@@ -65,9 +70,10 @@ public class Subscription
 
             fragmentsRead = pollFragments(partition,
                     frgHandler,
-                    maxNumOfFragments,
                     partitionId,
                     partitionOffset,
+                    maxNumOfFragments,
+                    limit,
                     false);
         }
 
@@ -77,9 +83,10 @@ public class Subscription
     protected int pollFragments(
             final LogBufferPartition partition,
             final FragmentHandler frgHandler,
-            final int maxNumOfFragments,
             int partitionId,
             int fragmentOffset,
+            final int maxNumOfFragments,
+            final long limit,
             boolean handlerControlled)
     {
         final UnsafeBuffer buffer = partition.getDataBuffer();
@@ -110,10 +117,18 @@ public class Subscription
             else
             {
                 final int streamId = buffer.getInt(streamIdOffset(fragmentOffset));
-                final byte flags = buffer.getByte(flagsOffset(fragmentOffset));
+                final int flagsOffset = flagsOffset(fragmentOffset);
+                final byte flags = buffer.getByte(flagsOffset);
                 try
                 {
-                    final int handlerResult = frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId, flagFailed(flags));
+                    final boolean isMarkedAsFailed = flagFailed(flags);
+
+                    final int handlerResult = frgHandler.onFragment(buffer, messageOffset(fragmentOffset), length, streamId, isMarkedAsFailed);
+
+                    if (handlerResult == FragmentHandler.FAILED_FRAGMENT_RESULT && !isMarkedAsFailed)
+                    {
+                        buffer.putByte(flagsOffset, DataFrameDescriptor.enableFlagFailed(flags));
+                    }
 
                     if (handlerControlled)
                     {
@@ -127,14 +142,14 @@ public class Subscription
                     e.printStackTrace();
                 }
 
-                if (fragmentResult == FragmentHandler.CONSUME_FRAGMENT_RESULT)
+                if (fragmentResult != FragmentHandler.POSTPONE_FRAGMENT_RESULT)
                 {
                     ++fragmentsConsumed;
                     fragmentOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
                 }
             }
         }
-        while (fragmentResult == FragmentHandler.CONSUME_FRAGMENT_RESULT && fragmentsConsumed < maxNumOfFragments);
+        while (fragmentResult != FragmentHandler.POSTPONE_FRAGMENT_RESULT && fragmentsConsumed < maxNumOfFragments && position(partitionId, fragmentOffset) < limit);
 
         position.setOrdered(position(partitionId, fragmentOffset));
 
@@ -142,11 +157,12 @@ public class Subscription
     }
 
     /**
-     * <p>Sequentially peeks for <code>maxNumOfFragments</code> fragments and consumes it (i.e. updates subscription position)
-     * depending on the return value of
-     * {@link FragmentHandler#onFragment(org.agrona.DirectBuffer, int, int, int, boolean)}.
-     * If a fragment is not consumed,
-     * then no following fragments are peeked.
+     * Sequentially read fragments from the buffer and invoke the given handler for each
+     * fragment. Consume the fragments (i.e. update the subscription position)
+     * depending on the return value of {@link FragmentHandler#onFragment(org.agrona.DirectBuffer, int, int, int, boolean)}.
+     * If a fragment is not consumed then no following fragments are read.
+     *
+     * @return the amount of read fragments
      */
     public int peekAndConsume(FragmentHandler frgHandler, int maxNumOfFragments)
     {
@@ -165,134 +181,13 @@ public class Subscription
 
             fragmentsRead = pollFragments(partition,
                     frgHandler,
-                    maxNumOfFragments,
                     partitionId,
                     partitionOffset,
+                    maxNumOfFragments,
+                    limit,
                     true);
+
         }
-
-        return fragmentsRead;
-    }
-
-    public int pollBlock(BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
-    {
-        return pollBlock(0, blockHandler, maxNumOfFragments, isStreamAware);
-    }
-
-    public int pollBlock(int subscriberId, BlockHandler blockHandler, int maxNumOfFragments, boolean isStreamAware)
-    {
-        int fragmentsRead = 0;
-
-        final long currentPosition = position.get();
-
-        final long limit = dispatcher.subscriberLimit(this);
-
-        if (limit > currentPosition)
-        {
-            final int partitionId = partitionId(currentPosition);
-            final int partitionOffset = partitionOffset(currentPosition);
-
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
-
-            fragmentsRead = pollBlock(partition,
-                    blockHandler,
-                    maxNumOfFragments,
-                    partitionId,
-                    partitionOffset,
-                    isStreamAware);
-        }
-
-        return fragmentsRead;
-    }
-
-    protected int pollBlock(
-            final LogBufferPartition partition,
-            final BlockHandler blockHandler,
-            final int maxNumOfFragments,
-            int partitionId,
-            int partitionOffset,
-            final boolean isStreamAware)
-    {
-
-        final UnsafeBuffer buffer = partition.getDataBuffer();
-        final ByteBuffer rawBuffer = partition.getUnderlyingBuffer().getRawBuffer();
-        final int bufferOffset = partition.getUnderlyingBufferOffset();
-        final long blockPosition = position(partitionId, partitionOffset);
-
-        int fragmentsRead = 0;
-
-        final int firstFragmentOffset = partitionOffset;
-        int blockLength = 0;
-        int initialStreamId = -1;
-
-        // scan buffer for block
-        do
-        {
-            final int length = buffer.getIntVolatile(lengthOffset(partitionOffset));
-            if (length <= 0)
-            {
-                break;
-            }
-
-            final short type = buffer.getShort(typeOffset(partitionOffset));
-            if (type == TYPE_PADDING)
-            {
-                partitionOffset += align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
-
-                if (partitionOffset >= partition.getPartitionSize())
-                {
-                    ++partitionId;
-                    partitionOffset = 0;
-                }
-
-                break;
-            }
-            else
-            {
-                if (isStreamAware)
-                {
-                    final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
-                    if (fragmentsRead == 0)
-                    {
-                        initialStreamId = streamId;
-                    }
-                    else
-                    {
-                        if (streamId != initialStreamId)
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                final int alignedFrameLength = align(length + HEADER_LENGTH, FRAME_ALIGNMENT);
-                partitionOffset += alignedFrameLength;
-                blockLength += alignedFrameLength;
-                ++fragmentsRead;
-            }
-        }
-        while (fragmentsRead < maxNumOfFragments);
-
-        if (fragmentsRead > 0)
-        {
-            final int absoluteOffset = bufferOffset + firstFragmentOffset;
-            try
-            {
-                blockHandler.onBlockAvailable(
-                        rawBuffer,
-                        absoluteOffset,
-                        blockLength,
-                        initialStreamId,
-                        blockPosition);
-            }
-            catch (Exception e)
-            {
-                // TODO!
-                e.printStackTrace();
-            }
-        }
-
-        position.setOrdered(position(partitionId, partitionOffset));
 
         return fragmentsRead;
     }
@@ -309,6 +204,18 @@ public class Subscription
         return future;
     }
 
+    /**
+     * Read fragments from the buffer as block. Use
+     * {@link BlockPeek#getBuffer()} to consume the fragments and finish the
+     * operation using {@link BlockPeek#markCompleted()} or
+     * {@link BlockPeek#markFailed()}.
+     *
+     * @param isStreamAware
+     *            if <code>true</code>, it stops reading fragments when a
+     *            fragment has a different stream id than the previous one
+     *
+     * @return amount of read bytes
+     */
     public int peekBlock(
             BlockPeek availableBlock,
             int maxBlockSize,
@@ -329,9 +236,10 @@ public class Subscription
 
             bytesAvailable = peekBlock(partition,
                     availableBlock,
-                    maxBlockSize,
                     partitionId,
                     partitionOffset,
+                    maxBlockSize,
+                    limit,
                     isStreamAware);
         }
 
@@ -341,9 +249,10 @@ public class Subscription
     protected int peekBlock(
             final LogBufferPartition partition,
             final BlockPeek availableBlock,
-            final int maxBlockSize,
             int partitionId,
             int partitionOffset,
+            final int maxBlockSize,
+            long limit,
             final boolean isStreamAware)
     {
 
@@ -369,16 +278,15 @@ public class Subscription
             {
                 partitionOffset += alignedLength(length);
 
+                if (partitionOffset >= partition.getPartitionSize())
+                {
+                    partitionId += 1;
+                    partitionOffset = 0;
+                }
+
                 if (blockLength == 0)
                 {
-                    if (partitionOffset >= partition.getPartitionSize())
-                    {
-                        position.proposeMaxOrdered(position(1 + partitionId, 0));
-                    }
-                    else
-                    {
-                        position.proposeMaxOrdered(position(partitionId, partitionOffset));
-                    }
+                    position.proposeMaxOrdered(position(partitionId, partitionOffset));
                 }
 
                 break;
@@ -414,7 +322,7 @@ public class Subscription
                 }
             }
         }
-        while (maxBlockSize - blockLength > HEADER_LENGTH);
+        while (maxBlockSize - blockLength > HEADER_LENGTH && position(partitionId, partitionOffset) < limit);
 
         if (blockLength > 0)
         {
@@ -424,17 +332,35 @@ public class Subscription
                 rawBuffer,
                 position,
                 initialStreamId,
-                partitionId,
-                firstFragmentOffset,
                 absoluteOffset,
-                blockLength);
+                blockLength,
+                partitionId,
+                partitionOffset);
         }
 
         return blockLength;
     }
 
-    public int getSubscriberId()
+    public int getId()
     {
-        return subscriberId;
+        return id;
     }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("Subscription [id=");
+        builder.append(id);
+        builder.append(", name=");
+        builder.append(name);
+        builder.append("]");
+        return builder.toString();
+    }
+
 }

@@ -63,29 +63,4 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
         return null;
     }
 
-    public void closeSubscription(Subscription subscriptionToClose, CompletableFuture<Void> future)
-    {
-        try
-        {
-            dispatcher.doCloseSubscription(subscriptionToClose);
-            future.complete(null);
-        }
-        catch (Exception e)
-        {
-            future.completeExceptionally(e);
-        }
-    }
-
-    public void openSubscription(CompletableFuture<Subscription> future)
-    {
-        try
-        {
-            future.complete(dispatcher.doOpenSubscription());
-        }
-        catch (Exception e)
-        {
-            future.completeExceptionally(e);
-        }
-    }
-
 }

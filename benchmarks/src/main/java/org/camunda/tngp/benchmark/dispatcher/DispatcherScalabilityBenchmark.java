@@ -12,7 +12,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.dispatcher.Subscription;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -55,7 +55,7 @@ public class DispatcherScalabilityBenchmark
                     .idleStrategy(new BusySpinIdleStrategy())
                     .build();
 
-            subscription = dispatcher.openSubscription();
+            subscription = dispatcher.openSubscription("test");
 
             consumer = new Thread(() ->
             {

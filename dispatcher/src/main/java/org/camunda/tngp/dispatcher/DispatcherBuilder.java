@@ -63,6 +63,8 @@ public class DispatcherBuilder
 
     protected IdleStrategy idleStrategy;
 
+    protected String[] subscriptionNames;
+
     protected int mode = Dispatcher.MODE_PUB_SUB;
 
     public DispatcherBuilder(final String dispatcherName)
@@ -117,6 +119,10 @@ public class DispatcherBuilder
         return this;
     }
 
+    /**
+     * The idle strategy of the conductor agent. Default is
+     * {@link BackoffIdleStrategy}.
+     */
     public DispatcherBuilder idleStrategy(IdleStrategy idleStrategy)
     {
         this.idleStrategy = idleStrategy;
@@ -144,12 +150,36 @@ public class DispatcherBuilder
         return this;
     }
 
+    /**
+     * Predefined subscriptions which will be created on startup in the order as
+     * they are declared.
+     */
+    public DispatcherBuilder subscriptions(final String... subscriptionNames)
+    {
+        this.subscriptionNames = subscriptionNames;
+        return this;
+    }
+
+    /**
+     * Publish-Subscribe-Mode (default): multiple subscriptions can read the
+     * same fragment / block concurrently in any order.
+     *
+     * @see #modePipeline()
+     */
     public DispatcherBuilder modePubSub()
     {
         this.mode = Dispatcher.MODE_PUB_SUB;
         return this;
     }
 
+    /**
+     * Pipeline-Mode: a subscription can only read a fragment / block if the
+     * previous subscription completes reading. The subscriptions must be
+     * created on startup using the builder method
+     * {@link #subscriptions(String...)} that defines the order.
+     *
+     * @see #modePubSub()
+     */
     public DispatcherBuilder modePipeline()
     {
         this.mode = Dispatcher.MODE_PIPELINE;
@@ -219,13 +249,13 @@ public class DispatcherBuilder
 
         final DispatcherContext context = new DispatcherContext();
 
-
         final Dispatcher dispatcher = new Dispatcher(
             logBuffer,
             logAppender,
             publisherLimit,
             publisherPosition,
             bufferWindowLength,
+            subscriptionNames,
             mode,
             context,
             dispatcherName);

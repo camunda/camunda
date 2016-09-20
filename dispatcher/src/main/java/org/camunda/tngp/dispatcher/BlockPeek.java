@@ -9,7 +9,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 
-
+/**
+ * Represents a block of fragments to read from.
+ */
 public class BlockPeek
 {
     protected ByteBuffer byteBuffer;
@@ -21,25 +23,25 @@ public class BlockPeek
     protected int bufferOffset;
     protected int blockLength;
 
-    protected int partitionId;
-    protected int partitionOffset;
+    protected int newPartitionId;
+    protected int newPartitionOffset;
 
     public void setBlock(
             final ByteBuffer byteBuffer,
             final Position position,
             final int streamId,
-            final int partitionId,
-            final int partitionOffset,
             final int bufferOffset,
-            final int blockLength)
+            final int blockLength,
+            final int newPartitionId,
+            final int newPartitionOffset)
     {
         this.byteBuffer = byteBuffer;
         this.subscriberPosition = position;
         this.streamId = streamId;
-        this.partitionId = partitionId;
-        this.partitionOffset = partitionOffset;
         this.bufferOffset = bufferOffset;
         this.blockLength = blockLength;
+        this.newPartitionId = newPartitionId;
+        this.newPartitionOffset = newPartitionOffset;
 
         byteBuffer.limit(bufferOffset + blockLength);
         byteBuffer.position(bufferOffset);
@@ -52,11 +54,18 @@ public class BlockPeek
         return byteBuffer;
     }
 
+    /**
+     * Returns the buffer to read from.
+     */
     public MutableDirectBuffer getBuffer()
     {
         return bufferView;
     }
 
+    /**
+     * Finish reading and consume the fragments (i.e. update the subscription
+     * position). Mark all fragments as failed.
+     */
     public void markFailed()
     {
         int fragmentOffset = 0;
@@ -81,6 +90,10 @@ public class BlockPeek
         updatePosition();
     }
 
+    /**
+     * Finish reading and consume the fragments (i.e. update the subscription
+     * position).
+     */
     public void markCompleted()
     {
         updatePosition();
@@ -88,7 +101,7 @@ public class BlockPeek
 
     protected void updatePosition()
     {
-        subscriberPosition.proposeMaxOrdered(position(partitionId, partitionOffset + blockLength));
+        subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
     }
 
     public int getStreamId()
@@ -108,11 +121,7 @@ public class BlockPeek
 
     public long getBlockPosition()
     {
-        return position(partitionId, partitionOffset);
-    }
-
-    public void cancel()
-    {
+        return position(newPartitionId, newPartitionOffset);
     }
 
 }

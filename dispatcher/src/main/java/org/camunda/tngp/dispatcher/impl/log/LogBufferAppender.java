@@ -19,6 +19,8 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 
 public class LogBufferAppender
 {
+    public static final int RESULT_PADDING_AT_END_OF_PARTITION = -2;
+    public static final int RESULT_END_OF_PARTITION = -1;
 
     public int appendFrame(
             final LogBufferPartition partition,
@@ -97,7 +99,7 @@ public class LogBufferAppender
 
     protected int onEndOfPartition(final LogBufferPartition partition, final int partitionOffset)
     {
-        int newTail = -1;
+        int newTail = RESULT_END_OF_PARTITION;
 
         final int padLength = partition.getPartitionSize() - partitionOffset - HEADER_LENGTH;
 
@@ -110,7 +112,7 @@ public class LogBufferAppender
             buffer.putShort(typeOffset(partitionOffset), TYPE_PADDING);
             buffer.putIntOrdered(lengthOffset(partitionOffset), padLength);
 
-            newTail = -2;
+            newTail = RESULT_PADDING_AT_END_OF_PARTITION;
         }
 
         return newTail;

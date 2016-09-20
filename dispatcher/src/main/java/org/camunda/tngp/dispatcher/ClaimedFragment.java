@@ -44,11 +44,17 @@ public class ClaimedFragment
         return buffer.capacity();
     }
 
+    /**
+     * Returns the claimed fragment to write in.
+     */
     public MutableDirectBuffer getBuffer()
     {
         return buffer;
     }
 
+    /**
+     * Commit the fragment so that it can be read by subscriptions.
+     */
     public void commit()
     {
         // commit the message by writing the positive length
@@ -56,6 +62,10 @@ public class ClaimedFragment
         reset(buffer);
     }
 
+    /**
+     * Commit the fragment and mark it as failed. It will be ignored by
+     * subscriptions.
+     */
     public void abort()
     {
         // abort the message by setting type to padding and writing the positive length
