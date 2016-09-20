@@ -3,16 +3,15 @@ package org.camunda.tngp.log.appender;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.dispatcher.BlockPeek;
-import org.camunda.tngp.dispatcher.impl.Subscription;
+import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogAgentContext;
 import org.camunda.tngp.log.conductor.LogConductorCmd;
 import org.camunda.tngp.log.fs.AppendableLogSegment;
-
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class LogAppender implements Agent, Consumer<LogAppenderCmd>
 {
@@ -34,7 +33,7 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
     {
         toLogConductorCmdQueue = context.getLogConductorCmdQueue();
         cmdQueue = context.getAppenderCmdQueue();
-        appenderSubsciption = context.getWriteBuffer().openSubscription();
+        appenderSubsciption = context.getWriteBuffer().openSubscription("log-appender");
         blockPeek = new BlockPeek();
     }
 
