@@ -21,6 +21,7 @@ import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.task.impl.TaskAcquisition;
+import org.camunda.tngp.client.task.impl.TaskImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptions;
 import org.junit.Before;
@@ -51,6 +52,7 @@ public class TaskSubscriptionTest
     {
         MockitoAnnotations.initMocks(this);
         when(client.pollAndLock()).thenReturn(pollCmd);
+        when(pollCmd.execute()).thenReturn(taskBatch);
         when(client.complete()).thenReturn(completeCmd);
     }
 
@@ -123,7 +125,6 @@ public class TaskSubscriptionTest
         tasks.add(task(1));
         tasks.add(task(2));
         when(taskBatch.getLockedTasks()).thenReturn(tasks);
-        when(pollCmd.execute()).thenReturn(taskBatch);
 
         acquisition.acquireTasksForSubscriptions();
 
@@ -152,7 +153,6 @@ public class TaskSubscriptionTest
 
         final LockedTask task = task(1);
         when(taskBatch.getLockedTasks()).thenReturn(Arrays.asList(task));
-        when(pollCmd.execute()).thenReturn(taskBatch);
 
         acquisition.acquireTasksForSubscriptions();
 
@@ -179,7 +179,6 @@ public class TaskSubscriptionTest
 
         final LockedTask task = task(1);
         when(taskBatch.getLockedTasks()).thenReturn(Arrays.asList(task));
-        when(pollCmd.execute()).thenReturn(taskBatch);
 
         acquisition.acquireTasksForSubscriptions();
 
@@ -204,14 +203,15 @@ public class TaskSubscriptionTest
         subscription.openAsync();
         acquisition.evaluateCommands();
 
-        final List<LockedTask> tasks = Arrays.asList(task(1));
+        final List<LockedTask> tasks = Arrays.asList(task(1), task(2), task(3));
         when(taskBatch.getLockedTasks()).thenReturn(tasks);
-        when(pollCmd.execute()).thenReturn(taskBatch);
 
         // when
-        acquisition.acquireTasksForSubscriptions();
+        final int workCount = acquisition.acquireTasksForSubscriptions();
 
         // then
+        assertThat(workCount).isEqualTo(3);
+
         verify(client).pollAndLock();
         verify(pollCmd).lockTime(123L);
         verify(pollCmd).maxTasks(5);
@@ -221,7 +221,7 @@ public class TaskSubscriptionTest
 
         verifyNoMoreInteractions(pollCmd, client);
 
-        assertThat(subscription.size()).isEqualTo(1);
+        assertThat(subscription.size()).isEqualTo(3);
     }
 
     @Test
@@ -251,6 +251,54 @@ public class TaskSubscriptionTest
 
         // then
         assertThat(subscription1.size() + subscription2.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotAcquireMoreThanSubscriptionCapacity()
+    {
+        // given
+        final TaskSubscriptions subscriptions = new TaskSubscriptions();
+        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions);
+
+        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, "foo", 0, 123L, 5, acquisition, true);
+
+        subscription.openAsync();
+        acquisition.evaluateCommands();
+
+        for (int i = 0; i < TaskSubscriptionImpl.CAPACITY - 1; i++)
+        {
+            subscription.addTask(mock(TaskImpl.class));
+        }
+
+        // when
+        acquisition.acquireTasksForSubscriptions();
+
+        // then
+        verify(pollCmd).maxTasks(1);
+    }
+
+    @Test
+    public void shouldNotAcquireWhenSubscriptionFull()
+    {
+        // given
+        final TaskSubscriptions subscriptions = new TaskSubscriptions();
+        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions);
+
+        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, "foo", 0, 123L, 5, acquisition, true);
+
+        subscription.openAsync();
+        acquisition.evaluateCommands();
+
+        for (int i = 0; i < TaskSubscriptionImpl.CAPACITY; i++)
+        {
+            subscription.addTask(mock(TaskImpl.class));
+        }
+
+        // when
+        acquisition.acquireTasksForSubscriptions();
+
+        // then
+        verifyZeroInteractions(pollCmd);
     }
 
     @Test
@@ -288,7 +336,6 @@ public class TaskSubscriptionTest
         tasks.add(task(1));
         tasks.add(task(2));
         when(taskBatch.getLockedTasks()).thenReturn(tasks);
-        when(pollCmd.execute()).thenReturn(taskBatch);
 
         acquisition.acquireTasksForSubscriptions();
 
@@ -326,7 +373,6 @@ public class TaskSubscriptionTest
         tasks.add(task);
 
         when(taskBatch.getLockedTasks()).thenReturn(tasks);
-        when(pollCmd.execute()).thenReturn(taskBatch);
 
         acquisition.acquireTasksForSubscriptions();
 

@@ -58,7 +58,7 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
         {
             if (subscription.isOpen())
             {
-                acquireTasks(subscription);
+                workCount += acquireTasks(subscription);
             }
             else if (subscription.isClosing() && !subscription.hasQueuedTasks())
             {
@@ -97,15 +97,23 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
         subscription.doOpen();
     }
 
-    protected void acquireTasks(TaskSubscriptionImpl subscription)
+    protected int acquireTasks(TaskSubscriptionImpl subscription)
     {
+        final int remainingCapacity = subscription.capacity() - subscription.size();
+
+        if (remainingCapacity <= 0)
+        {
+            return 0;
+        }
+
+        final int tasksToAcquire = Math.min(remainingCapacity, subscription.getMaxTasks());
+
         final LockedTasksBatch tasksBatch = client.pollAndLock()
                 .taskQueueId(subscription.getTaskQueueId())
                 .lockTime(subscription.getLockTime())
-                .maxTasks(subscription.getMaxTasks())
+                .maxTasks(tasksToAcquire)
                 .taskType(subscription.getTaskType())
                 .execute();
-
 
         final List<LockedTask> lockedTasks = tasksBatch.getLockedTasks();
 
@@ -123,6 +131,8 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
 
             subscription.addTask(task); // cannot fail when there is a single thread that adds to the queue
         }
+
+        return lockedTasks.size();
     }
 
     public void scheduleCommand(AcquisitionCmd command)
