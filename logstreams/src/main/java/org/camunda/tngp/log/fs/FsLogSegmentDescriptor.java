@@ -1,6 +1,7 @@
 package org.camunda.tngp.log.fs;
 
 import static org.agrona.BitUtil.*;
+import static org.agrona.IoUtil.*;
 
 /**
  * Segment layout
@@ -21,12 +22,12 @@ import static org.agrona.BitUtil.*;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |            Version           |          [unused]              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                         Segment Size                          |
+ *  |                        Segment Capacity                       |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                       Cache Line Padding                    ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
- *  |                         Segment Tail                          |
+ *  |                         Segment Size                          |
  *  +---------------------------------------------------------------+
  *  |                       Cache Line Padding                    ...
  * ...                                                              |
@@ -34,13 +35,13 @@ import static org.agrona.BitUtil.*;
  *
  * </pre>
  */
-public class LogSegmentDescriptor
+public class FsLogSegmentDescriptor
 {
 
     public static final int SEGMENT_ID_OFFSET;
     public static final int VERSION_OFFSET;
+    public static final int SEGMENT_CAPACITY_OFFSET;
     public static final int SEGMENT_SIZE_OFFSET;
-    public static final int SEGMENT_TAIL_OFFSET;
 
     public static final int METADATA_LENGTH;
 
@@ -54,12 +55,12 @@ public class LogSegmentDescriptor
         VERSION_OFFSET = offset;
         offset += SIZE_OF_INT;
 
+        SEGMENT_CAPACITY_OFFSET = offset;
+        offset += (2 * CACHE_LINE_LENGTH);
+
         SEGMENT_SIZE_OFFSET = offset;
         offset += (2 * CACHE_LINE_LENGTH);
 
-        SEGMENT_TAIL_OFFSET = offset;
-        offset += (2 * CACHE_LINE_LENGTH);
-
-        METADATA_LENGTH = align(offset, 8);
+        METADATA_LENGTH = align(offset, BLOCK_SIZE);
     }
 }

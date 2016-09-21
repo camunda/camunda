@@ -1,19 +1,21 @@
-package org.camunda.tngp.log.appender;
+package org.camunda.tngp.log.fs;
 
 import java.io.File;
 
-public class LogSegmentAllocationDescriptor
+public class FsStorageConfiguration
 {
     protected final String fragmentFileNameTemplate = "%s" + File.separatorChar + "%02d.data";
     protected final int segmentSize;
     protected final String path;
     protected final int initialSegmentId;
+    protected final boolean deleteOnClose;
 
-    public LogSegmentAllocationDescriptor(int segmentSize, String path, int initialSegmentId)
+    public FsStorageConfiguration(int segmentSize, String path, int initialSegmentId, boolean deleteOnClose)
     {
         this.segmentSize = segmentSize;
         this.path = path;
         this.initialSegmentId = initialSegmentId;
+        this.deleteOnClose = deleteOnClose;
     }
 
     public String getFragmentFileNameTemplate()
@@ -36,4 +38,13 @@ public class LogSegmentAllocationDescriptor
         return String.format(fragmentFileNameTemplate, path, segmentId);
     }
 
+    public boolean isDeleteOnClose()
+    {
+        return deleteOnClose;
+    }
+
+    public int getInitialSegmentId()
+    {
+        return initialSegmentId;
+    }
 }

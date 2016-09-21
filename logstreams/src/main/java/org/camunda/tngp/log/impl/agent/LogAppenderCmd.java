@@ -1,4 +1,4 @@
-package org.camunda.tngp.log.appender;
+package org.camunda.tngp.log.impl.agent;
 
 public interface LogAppenderCmd
 {

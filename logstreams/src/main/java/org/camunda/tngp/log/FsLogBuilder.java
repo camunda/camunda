@@ -1,6 +1,9 @@
 package org.camunda.tngp.log;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.ErrorHandler;
@@ -8,17 +11,26 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.CompositeAgent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
-import org.camunda.tngp.log.appender.LogAppender;
-import org.camunda.tngp.log.appender.LogSegmentAllocationDescriptor;
-import org.camunda.tngp.log.conductor.LogConductor;
+import org.camunda.tngp.log.fs.FsLogStorage;
+import org.camunda.tngp.log.fs.FsStorageConfiguration;
+import org.camunda.tngp.log.impl.LogBlockIndex;
+import org.camunda.tngp.log.impl.LogContext;
+import org.camunda.tngp.log.impl.LogImpl;
+import org.camunda.tngp.log.impl.agent.LogAgentContext;
+import org.camunda.tngp.log.impl.agent.LogAppendHandler;
+import org.camunda.tngp.log.impl.agent.LogAppender;
+import org.camunda.tngp.log.impl.agent.LogConductor;
+import org.camunda.tngp.log.impl.agent.LogConductorCmd;
 
-public class LogBuilder
+public class FsLogBuilder
 {
     static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
@@ -57,77 +69,81 @@ public class LogBuilder
     protected LogAppender logAppender;
     protected boolean deleteOnClose;
 
-    public LogBuilder(String name, int id)
+    public FsLogBuilder(String name, int id)
     {
         this.name = name;
         this.id = id;
     }
 
-    public LogBuilder writeBuffer(Dispatcher writeBuffer)
+    public FsLogBuilder writeBuffer(Dispatcher writeBuffer)
     {
         this.writeBuffer = writeBuffer;
         this.writeBufferExternallyManaged = true;
         return this;
     }
 
-    public LogBuilder writeBufferSize(int writeBfferSize)
+    public FsLogBuilder writeBufferSize(int writeBfferSize)
     {
         this.writeBufferSize = writeBfferSize;
         return this;
     }
 
-    public LogBuilder logRootPath(String logRootPath)
+    public FsLogBuilder logRootPath(String logRootPath)
     {
         this.logRootPath = logRootPath;
         return this;
     }
 
-    public LogBuilder logDirectory(String logDir)
+    public FsLogBuilder logDirectory(String logDir)
     {
         this.logDirectory = logDir;
         return this;
     }
 
-    public LogBuilder initialLogSegmentId(int logFragmentId)
+    public FsLogBuilder initialLogSegmentId(int logFragmentId)
     {
         this.initialLogSegmentId = logFragmentId;
         return this;
     }
 
-    public LogBuilder countersManager(CountersManager countersManager)
+    public FsLogBuilder countersManager(CountersManager countersManager)
     {
         this.countersManager = countersManager;
         return this;
     }
 
-    public LogBuilder threadingMode(ThreadingMode threadingMode)
+    public FsLogBuilder threadingMode(ThreadingMode threadingMode)
     {
         this.threadingMode = threadingMode;
         return this;
     }
 
-    public LogBuilder logSegmentSize(int logSegmentSize)
+    public FsLogBuilder logSegmentSize(int logSegmentSize)
     {
         this.logSegmentSize = logSegmentSize;
         return this;
     }
 
-    public LogBuilder logAgentContext(LogAgentContext logAgentContext)
+    public FsLogBuilder logAgentContext(LogAgentContext logAgentContext)
     {
         this.logAgentContext = logAgentContext;
         this.agentsExternallyManaged = true;
         return this;
     }
 
-    public LogBuilder deleteOnClose(boolean deleteOnClose)
+    public FsLogBuilder deleteOnClose(boolean deleteOnClose)
     {
         this.deleteOnClose = deleteOnClose;
         return this;
     }
 
-    public Log build()
+    public Future<Log> build()
     {
-        final LogContext logContext = new LogContext(name, id);
+        final LogContext logContext = new LogContext();
+
+        logContext.setLogId(id);
+        logContext.setLogName(name);
+
         if (logDirectory == null)
         {
             logDirectory = logRootPath + File.separatorChar + name + File.separatorChar;
@@ -135,9 +151,14 @@ public class LogBuilder
         final File file = new File(logDirectory);
         file.mkdirs();
 
-        logContext.setLogAllocationDescriptor(new LogSegmentAllocationDescriptor(logSegmentSize, logDirectory, initialLogSegmentId));
+        final FsStorageConfiguration storageConfig = new FsStorageConfiguration(logSegmentSize,
+                logDirectory,
+                initialLogSegmentId,
+                deleteOnClose);
 
-        logContext.setDeleteOnClose(deleteOnClose);
+        final FsLogStorage storage = new FsLogStorage(logContext, storageConfig);
+
+        logContext.setLogStorage(storage);
 
         if (!agentsExternallyManaged)
         {
@@ -190,9 +211,32 @@ public class LogBuilder
         }
 
         logContext.setWriteBuffer(logAgentContext.getWriteBuffer());
-        logContext.setLogConductorCmdQueue(logAgentContext.getLogConductorCmdQueue());
 
-        return new Log(logContext);
+        logContext.setBlockIndex(new LogBlockIndex(100000, (c) ->
+        {
+            return new UnsafeBuffer(ByteBuffer.allocate(c));
+        }));
+
+        final UnsafeBuffer countersBuffer = new UnsafeBuffer(ByteBuffer.allocate(1024));
+        final UnsafeBuffer metafataBuffer = new UnsafeBuffer(ByteBuffer.allocate(2048));
+
+        final CountersManager countersManager = new CountersManager(metafataBuffer, countersBuffer);
+        logContext.setPositionCounter(countersManager.newCounter(String.format("%s.position", name)));
+
+        final ManyToOneConcurrentArrayQueue<LogConductorCmd> logConductorCmdQueue = logAgentContext.getLogConductorCmdQueue();
+        logContext.setToConductorCmdQueue(logConductorCmdQueue);
+
+        logContext.setLogAppendHandler(new LogAppendHandler(logContext));
+
+        final CompletableFuture<Log> logFuture = new CompletableFuture<>();
+        final LogImpl logImpl = new LogImpl(logContext);
+
+        logConductorCmdQueue.add((c) ->
+        {
+            c.onLogOpened(logImpl, logFuture);
+        });
+
+        return logFuture;
     }
 
     public LogAppender getLogAppender()

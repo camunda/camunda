@@ -1,4 +1,4 @@
-package org.camunda.tngp.log.conductor;
+package org.camunda.tngp.log.impl.agent;
 
 @FunctionalInterface
 public interface LogConductorCmd

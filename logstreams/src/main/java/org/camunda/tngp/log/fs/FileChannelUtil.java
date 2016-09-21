@@ -1,4 +1,4 @@
-package org.camunda.tngp.log.util;
+package org.camunda.tngp.log.fs;
 
 import java.io.File;
 import java.io.IOException;

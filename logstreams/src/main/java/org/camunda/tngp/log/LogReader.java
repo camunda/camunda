@@ -1,22 +1,18 @@
 package org.camunda.tngp.log;
 
-import org.camunda.tngp.util.buffer.BufferReader;
+import java.util.Iterator;
 
-/**
- * Utility class for incrementally reading the log in a sequential fashion.
- * Maintains a position which is kept between calls to {@link #read(int)}.
- */
-public interface LogReader
+public interface LogReader extends Iterator<ReadableLogEntry>
 {
+    void wrap(Log log);
 
-    void setLogAndPosition(Log log, long position);
+    void wrap(Log log, long position);
 
-    void setPosition(long position);
+    void seek(long seekPosition);
 
-    boolean read(BufferReader reader);
+    void seekToFirstEntry();
 
-    long position();
+    void seekToLastEntry();
 
-    boolean hasNext();
-
+    long getPosition();
 }

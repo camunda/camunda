@@ -3,6 +3,7 @@ package org.camunda.tngp.log.integration;
 import static org.assertj.core.api.Assertions.*;
 
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.Logs;
@@ -17,15 +18,14 @@ public class DeleteOnCloseTest
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Test
-    public void shouldNotDeleteOnCloseByDefault()
+    public void shouldNotDeleteOnCloseByDefault() throws InterruptedException, ExecutionException
     {
         final File logFolder = tempFolder.getRoot();
 
-        final Log log = Logs.createLog("foo", 0)
+        final Log log = Logs.createFsLog("foo", 0)
                 .logRootPath(logFolder.getAbsolutePath())
-                .build();
-
-        log.start();
+                .build()
+                .get();
 
         // if
         log.close();
@@ -36,16 +36,15 @@ public class DeleteOnCloseTest
 
     @Test
     @Ignore
-    public void shouldDeleteOnCloseIfSet()
+    public void shouldDeleteOnCloseIfSet() throws InterruptedException, ExecutionException
     {
         final File logFolder = tempFolder.getRoot();
 
-        final Log log = Logs.createLog("foo", 0)
+        final Log log = Logs.createFsLog("foo", 0)
                 .logRootPath(logFolder.getAbsolutePath())
                 .deleteOnClose(true)
-                .build();
-
-        log.start();
+                .build()
+                .get();
 
         // if
         log.close();

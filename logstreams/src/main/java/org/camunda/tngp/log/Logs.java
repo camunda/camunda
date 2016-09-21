@@ -2,9 +2,9 @@ package org.camunda.tngp.log;
 
 public class Logs
 {
-    public static LogBuilder createLog(String name, int id)
+    public static FsLogBuilder createFsLog(String name, int id)
     {
-        return new LogBuilder(name, id);
+        return new FsLogBuilder(name, id);
     }
 
 }
