@@ -2,9 +2,7 @@ package org.camunda.tngp.broker.services;
 
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.log.idgenerator.LastLoggedIdReader;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
-import org.camunda.tngp.log.idgenerator.spi.LogFragmentIdReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -12,24 +10,16 @@ import org.camunda.tngp.servicecontainer.ServiceContext;
 public class LogIdGeneratorService implements Service<IdGenerator>
 {
     protected final Injector<Log> logInjector = new Injector<>();
-    protected final LogFragmentIdReader logFragmentIdReader;
 
     protected IdGenerator idGenerator;
-
-    public LogIdGeneratorService(final LogFragmentIdReader logFragmentIdReader)
-    {
-        this.logFragmentIdReader = logFragmentIdReader;
-    }
 
     @Override
     public void start(ServiceContext serviceContext)
     {
-        final LastLoggedIdReader lastLoggedIdReader = new LastLoggedIdReader();
         final Log log = logInjector.getValue();
-        System.out.print(serviceContext.getName() + " recovering last id ... ");
-        final long id = lastLoggedIdReader.recover(log, logFragmentIdReader);
-        System.out.println(id + ".");
-        idGenerator = new PrivateIdGenerator(id);
+        final long lastIdUpperLimit = log.getLastPosition();
+        System.out.print(serviceContext.getName() + " recovering last id ... " + lastIdUpperLimit + ".");
+        idGenerator = new PrivateIdGenerator(lastIdUpperLimit);
     }
 
     @Override

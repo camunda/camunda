@@ -14,11 +14,6 @@
       <type name="sourceEventPosition" primitiveType="uint64" />
       <type name="sourceEventLogId" primitiveType="uint16" />
     </composite>
-    <composite name="bpmnEventHeader">
-      <type name="event" primitiveType="uint16" />
-      <type name="bpmnElementType" primitiveType="uint16" />
-      <type name="schemaId" primitiveType="uint16" />
-    </composite>
     <composite name="varDataEncoding">
       <type name="length" primitiveType="uint16" />
       <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />

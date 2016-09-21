@@ -147,12 +147,57 @@ public class BrokerRestartTest
 
         // then
         final WorkflowInstance wfInstance = client.workflows()
-                .start()
-                .workflowDefinitionKey("anId")
-                .execute();
+            .start()
+            .workflowDefinitionKey("anId")
+            .execute();
 
         assertThat(wfInstance).isNotNull();
     }
+
+    @Test
+    public void shouldContinueAscendingWfRuntimeIdGenerationAfterRestart()
+    {
+        // given
+        final WorkflowInstance wfInstance = client.workflows()
+            .start()
+            .workflowDefinitionKey("anId")
+            .execute();
+
+        restartBroker();
+
+        // when
+        final WorkflowInstance wfInstance2 = client.workflows()
+            .start()
+            .workflowDefinitionKey("anId")
+            .execute();
+
+        // then
+        assertThat(wfInstance2.getId()).isGreaterThan(wfInstance.getId());
+    }
+
+    @Test
+    public void shouldContinueAscendingTaskIdGenerationAfterRestart()
+    {
+        // given
+        final Long taskId = client.tasks()
+            .create()
+            .taskQueueId(0)
+            .taskType("foo")
+            .execute();
+
+        restartBroker();
+
+        // when
+        final Long task2Id = client.tasks()
+            .create()
+            .taskQueueId(0)
+            .taskType("foo")
+            .execute();
+
+        // then
+        assertThat(task2Id).isGreaterThan(taskId);
+    }
+
 
     protected void restartBroker()
     {

@@ -85,7 +85,7 @@ public class WfRuntimeManagerService
         final ServiceName<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexServiceName = wfDefinitionKeyIndexServiceName(wfRuntimeName);
         final ServiceName<WfDefinitionCache> wfDefinitionCacheServiceName = wfDefinitionCacheServiceName(wfRuntimeName);
 
-        final LogIdGeneratorService wfInstanceIdGeneratorService = new LogIdGeneratorService(new WfInstanceIdReader());
+        final LogIdGeneratorService wfInstanceIdGeneratorService = new LogIdGeneratorService();
         serviceContext.createService(wfInstanceIdGeneratorServiceName, wfInstanceIdGeneratorService)
             .dependency(wfInstanceLogServiceName, wfInstanceIdGeneratorService.getLogInjector())
             .install();

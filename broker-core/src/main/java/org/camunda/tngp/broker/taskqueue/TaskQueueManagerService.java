@@ -71,7 +71,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
         final ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndexName = taskQueueTaskTypePositionIndex(taskQueueName);
         final ServiceName<IdGenerator> idGeneratorName = taskQueueIdGeneratorName(taskQueueName);
 
-        final LogIdGeneratorService logIdGeneratorService = new LogIdGeneratorService(new TaskInstanceIdReader());
+        final LogIdGeneratorService logIdGeneratorService = new LogIdGeneratorService();
         serviceContext.createService(idGeneratorName, logIdGeneratorService)
             .dependency(logServiceName, logIdGeneratorService.getLogInjector())
             .install();
