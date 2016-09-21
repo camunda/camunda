@@ -133,6 +133,7 @@ public class TransportBuilder
             final DispatcherBuilder dispatcherBuilder = Dispatchers.create(name + ".write-buffer");
 
             this.sendBuffer = dispatcherBuilder.bufferSize(sendBufferSize)
+                .subscriptions("sender")
                 .countersManager(countersManager)
                 .conductorExternallyManaged()
                 .build();
@@ -144,7 +145,7 @@ public class TransportBuilder
 
         if (senderSubscription == null)
         {
-            senderSubscription = sendBuffer.openSubscription("sender");
+            senderSubscription = sendBuffer.getSubscriptionByName("sender");
         }
 
         transportContext.setSenderSubscription(senderSubscription);
