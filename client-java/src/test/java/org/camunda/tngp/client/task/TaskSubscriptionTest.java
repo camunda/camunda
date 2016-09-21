@@ -12,7 +12,9 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
@@ -373,6 +375,8 @@ public class TaskSubscriptionTest
         tasks.add(task);
 
         when(taskBatch.getLockedTasks()).thenReturn(tasks);
+        final Date lockTime = new Date(TimeUnit.DAYS.toMillis(40L));
+        when(taskBatch.getLockTime()).thenReturn(lockTime);
 
         acquisition.acquireTasksForSubscriptions();
 
@@ -388,6 +392,7 @@ public class TaskSubscriptionTest
                 final Task task = (Task) argument;
                 return task.getId() == 1 &&
                         task.getWorkflowInstanceId() == 444L &&
+                        lockTime.equals(task.getLockExpirationTime()) &&
                         "foo".equals(task.getType());
             }
         }));

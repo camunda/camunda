@@ -1,13 +1,13 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import java.util.Date;
 import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder.TasksDecoder;
-
-import org.agrona.DirectBuffer;
+import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 
 public class PollAndLockResponseHandler implements ClientResponseHandler<LockedTasksBatch>
 {
@@ -37,7 +37,7 @@ public class PollAndLockResponseHandler implements ClientResponseHandler<LockedT
 
         responseDecoder.wrap(responseBuffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        lockedTasksBatch.setLockTime(responseDecoder.lockTime());
+        lockedTasksBatch.setLockTime(new Date(responseDecoder.lockTime()));
 
         final Iterator<TasksDecoder> taskIterator = responseDecoder.tasks().iterator();
         while (taskIterator.hasNext())

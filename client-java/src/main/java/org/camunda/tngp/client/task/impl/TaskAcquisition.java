@@ -1,7 +1,6 @@
 package org.camunda.tngp.client.task.impl;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -126,7 +125,7 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
                     lockedTask.getId(),
                     lockedTask.getWorkflowInstanceId(),
                     subscription.getTaskType(),
-                    new Date(0L),
+                    tasksBatch.getLockTime(),
                     subscription.getTaskQueueId());
 
             subscription.addTask(task); // cannot fail when there is a single thread that adds to the queue
