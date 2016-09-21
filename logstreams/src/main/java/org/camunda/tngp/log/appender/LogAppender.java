@@ -33,7 +33,7 @@ public class LogAppender implements Agent, Consumer<LogAppenderCmd>
     {
         toLogConductorCmdQueue = context.getLogConductorCmdQueue();
         cmdQueue = context.getAppenderCmdQueue();
-        appenderSubsciption = context.getWriteBuffer().openSubscription("log-appender");
+        appenderSubsciption = context.getWriteBuffer().getSubscriptionByName("log-appender");
         blockPeek = new BlockPeek();
     }
 

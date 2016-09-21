@@ -146,6 +146,7 @@ public class LogBuilder
             {
                 final DispatcherBuilder dispatcherBuilder = Dispatchers.create("log-write-buffer")
                         .bufferSize(writeBufferSize)
+                        .subscriptions("log-appender")
                         .conductorExternallyManaged();
                 writeBuffer = dispatcherBuilder.build();
                 writeBufferConductor = dispatcherBuilder.getConductorAgent();
