@@ -139,13 +139,14 @@ public class TransportBuilder
                 .build();
 
             this.sendBufferConductor = dispatcherBuilder.getConductorAgent();
+            this.senderSubscription = sendBuffer.getSubscriptionByName("sender");
         }
 
         transportContext.setSendBuffer(sendBuffer);
 
         if (senderSubscription == null)
         {
-            senderSubscription = sendBuffer.getSubscriptionByName("sender");
+            senderSubscription = sendBuffer.openSubscription("sender");
         }
 
         transportContext.setSenderSubscription(senderSubscription);
