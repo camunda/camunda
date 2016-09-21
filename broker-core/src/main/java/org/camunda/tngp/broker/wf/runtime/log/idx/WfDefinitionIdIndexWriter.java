@@ -10,6 +10,8 @@ import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
 
 public class WfDefinitionIdIndexWriter implements IndexWriter
 {
+    public static final String DEBUG_LOGGING_ENABLED_PROP_NAME = "camunda.debug.logging.enabled";
+    public static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean(DEBUG_LOGGING_ENABLED_PROP_NAME);
 
     protected HashIndexManager<Long2LongHashIndex> indexManager;
     protected Long2LongHashIndex index;
@@ -30,7 +32,11 @@ public class WfDefinitionIdIndexWriter implements IndexWriter
             final WfDefinitionReader requestReader = templates.getReader(Templates.WF_DEFINITION);
             reader.readInto(requestReader);
 
-            System.out.println("Indexing wf definition at position " + position);
+            if (DEBUG_LOGGING_ENABLED)
+            {
+                System.out.println("Indexing wf definition at position " + position);
+            }
+
             index.put(requestReader.id(), position);
         }
     }
