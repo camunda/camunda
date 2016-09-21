@@ -110,7 +110,7 @@ public class LogManagerService implements Service<LogManager>, LogManager
 
         final DispatcherBuilder writeBufferBuilder = Dispatchers.create(null)
                 .bufferSize(logWriteBufferSize)
-                .modePipeline(); // log write buffer is in pipeline mode
+                .subscriptions("log-appender");
 
         final DispatcherService logWriteBufferService = new DispatcherService(writeBufferBuilder);
         serviceContext.createService(LOG_WRITE_BUFFER_SERVICE, logWriteBufferService)
