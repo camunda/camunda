@@ -212,6 +212,37 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks.get(0).getId()).isEqualTo(taskId);
     }
 
+    @Test
+    public void shouldOpenSubscriptionAfterClientReconnect()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        client.tasks().create()
+            .taskQueueId(0)
+            .taskType("foo")
+            .execute();
+
+        // when
+        client.disconnect();
+        client.connect();
+
+        // then
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        client.tasks().newSubscription()
+                .taskQueueId(0)
+                .taskType("foo")
+                .lockTime(100L)
+                .handler(taskHandler)
+                .open();
+
+        TestUtil.waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
+
+        assertThat(taskHandler.getHandledTasks()).hasSize(1);
+
+    }
+
     public static class RecordingTaskHandler implements TaskHandler
     {
         protected List<Task> handledTasks = Collections.synchronizedList(new ArrayList<>());
@@ -222,6 +253,16 @@ public class TaskSubscriptionTest
             System.out.println("Task handler executed: " + task.getType());
             handledTasks.add(task);
             task.complete();
+        }
+
+        public List<Task> getHandledTasks()
+        {
+            return handledTasks;
+        }
+
+        public void clear()
+        {
+            handledTasks.clear();
         }
     }
 

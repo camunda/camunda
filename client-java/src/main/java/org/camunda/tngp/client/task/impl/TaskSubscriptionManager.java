@@ -13,8 +13,9 @@ public class TaskSubscriptionManager
 {
 
     protected final TaskAcquisition acqusition;
-    protected final AgentRunner acquisitionRunner;
-    protected final AgentRunner[] executionRunners;
+    protected AgentRunner acquisitionRunner;
+    protected AgentRunner[] executionRunners;
+    protected final int numExecutionThreads;
 
     protected final TaskSubscriptions subscriptions;
 
@@ -25,28 +26,47 @@ public class TaskSubscriptionManager
         subscriptions = new TaskSubscriptions();
 
         acqusition = new TaskAcquisition(client, subscriptions);
-        acquisitionRunner = newAgentRunner(acqusition);
-        executionRunners = new AgentRunner[numExecutionThreads];
-        for (int i = 0; i < numExecutionThreads; i++)
-        {
-            executionRunners[i] = newAgentRunner(new TaskExecutor(subscriptions));
-        }
+        this.numExecutionThreads = numExecutionThreads;
 
         this.autoCompleteTasks = autoCompleteTasks;
     }
 
+    public void initializeRunners()
+    {
+        acquisitionRunner = newAgentRunner(acqusition);
+        for (int i = 0; i < executionRunners.length; i++)
+        {
+            executionRunners[i] = newAgentRunner(new TaskExecutor(subscriptions));
+        }
+    }
+
     public void startAcquisition()
     {
+        if (acquisitionRunner == null)
+        {
+            acquisitionRunner = newAgentRunner(acqusition);
+        }
+
         AgentRunner.startOnThread(acquisitionRunner);
     }
 
     public void stopAcquisition()
     {
         acquisitionRunner.close();
+        acquisitionRunner = null;
     }
 
     public void startExecution()
     {
+        if (executionRunners == null)
+        {
+            executionRunners = new AgentRunner[numExecutionThreads];
+            for (int i = 0; i < executionRunners.length; i++)
+            {
+                executionRunners[i] = newAgentRunner(new TaskExecutor(subscriptions));
+            }
+        }
+
         for (int i = 0; i < executionRunners.length; i++)
         {
             AgentRunner.startOnThread(executionRunners[i]);
@@ -59,6 +79,7 @@ public class TaskSubscriptionManager
         {
             executionRunners[i].close();
         }
+        executionRunners = null;
     }
 
     protected static AgentRunner newAgentRunner(Agent agent)

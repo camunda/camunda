@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.regex.Pattern;
 
@@ -12,6 +13,7 @@ import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.broker.it.TestUtil;
 import org.camunda.bpm.broker.it.process.ServiceTaskTest;
+import org.camunda.bpm.broker.it.taskqueue.TaskSubscriptionTest.RecordingTaskHandler;
 import org.camunda.tngp.broker.test.util.TestFileUtil;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
@@ -198,6 +200,44 @@ public class BrokerRestartTest
         assertThat(task2Id).isGreaterThan(taskId);
     }
 
+    @Test
+    public void shouldNotReceiveTasksAfterRestartWithSubscription()
+    {
+        // given
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        client.tasks().newSubscription()
+            .taskQueueId(0)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(10L))
+            .handler(taskHandler)
+            .open();
+
+        client.tasks().create()
+            .taskType("foo")
+            .execute();
+
+        TestUtil.waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
+
+        // when
+        restartBroker();
+
+        // then
+        taskHandler.clear();
+
+        client.tasks().newSubscription()
+            .taskQueueId(0)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(10L))
+            .handler(taskHandler)
+            .open();
+
+        TestUtil.doRepeatedly(() -> null)
+            .whileConditionHolds((o) -> taskHandler.getHandledTasks().isEmpty());
+
+        assertThat(taskHandler.getHandledTasks()).isEmpty();
+    }
+
 
     protected void restartBroker()
     {
@@ -205,5 +245,6 @@ public class BrokerRestartTest
         brokerRule.restartBroker();
         client.connect();
     }
+
 
 }

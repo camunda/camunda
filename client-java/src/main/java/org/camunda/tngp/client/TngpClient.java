@@ -13,8 +13,14 @@ public interface TngpClient extends AutoCloseable
 
     TransportConnectionPool getConnectionPool();
 
+    /**
+     * Connects the client to the configured broker. Not thread-safe.
+     */
     void connect();
 
+    /**
+     * Disconnects the client from the configured broker. Not thread-safe.
+     */
     void disconnect();
 
     void close();
