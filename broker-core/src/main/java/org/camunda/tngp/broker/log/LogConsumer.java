@@ -144,24 +144,34 @@ public class LogConsumer
 
         if (lastConsumedPosition >= 0)
         {
-            logReader.setPosition(lastConsumedPosition);
-
-            // this sets the log reader's position to the next event;
-            // it is a hack that can be resolved
-            // when the log is based on symbolic positions (then it is just lastConsumedPosition + 1)
-            if (logReader.hasNext())
-            {
-                logReader.read(new LogEntryHeaderReader());
-            }
-            final long firstUnconsumedPosition = logReader.position();
+            final long firstUnconsumedPosition = tryGetNextLogEntryPosition(lastConsumedPosition);
 
             fastForwardIndexesUntil(firstUnconsumedPosition);
+            logReader.setPosition(firstUnconsumedPosition);
 
         }
         else
         {
             logReader.setPosition(LOG_INITIAL_POSITION);
         }
+    }
+
+    /**
+     * @return the position of the log event or the argument if no next element exists
+     */
+    protected long tryGetNextLogEntryPosition(long position)
+    {
+        logReader.setPosition(position);
+
+        // this sets the log reader's position to the next event;
+        // it is a hack that can be resolved
+        // when the log is based on symbolic positions (then it is perhaps just lastConsumedPosition + 1)
+        if (logReader.hasNext())
+        {
+            logReader.read(new LogEntryHeaderReader());
+        }
+
+        return logReader.position();
     }
 
     /**
@@ -182,10 +192,16 @@ public class LogConsumer
         for (int i = 0; i < indexWriters.size(); i++)
         {
             final long lastIndexedPosition = indexWriters.get(i).getLastIndexedPosition();
-            if (lastIndexedPosition >= 0 && lastIndexedPosition < minimalIndexPosition)
+
+            if (lastIndexedPosition < minimalIndexPosition)
             {
                 minimalIndexPosition  = lastIndexedPosition;
             }
+        }
+
+        if (minimalIndexPosition < 0)
+        {
+            minimalIndexPosition = LOG_INITIAL_POSITION;
         }
 
         fastForwardUntil(minimalIndexPosition, position, true);

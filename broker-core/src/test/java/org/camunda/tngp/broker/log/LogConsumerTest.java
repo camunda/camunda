@@ -398,7 +398,6 @@ public class LogConsumerTest
         final IndexWriter indexWriter = mock(IndexWriter.class);
         final HashIndexManager indexManager = mock(HashIndexManager.class);
         when(indexWriter.getIndexManager()).thenReturn(indexManager);
-        when(indexManager.getLastCheckpointPosition()).thenReturn(LogConsumer.LOG_INITIAL_POSITION);
 
         writeEntry(logReader, 123L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
         writeEntry(logReader, 234L, 0, logReader.getEntryPosition(0));
@@ -413,6 +412,33 @@ public class LogConsumerTest
         // then
         verify(indexWriter, times(1)).indexLogEntry(eq(logReader.getEntryPosition(1)), any());
         verify(indexWriter, never()).indexLogEntry(longThat(not(equalTo(logReader.getEntryPosition(1)))), any());
+    }
+
+    @Test
+    public void shouldRecoverIndexWritersWithNoCheckpoint()
+    {
+        // given
+        final LogConsumer logConsumer = new LogConsumer(
+                0,
+                logReader,
+                Templates.wfRuntimeLogTemplates(),
+                new StubLogWriters(0));
+
+        final IndexWriter indexWriter = mock(IndexWriter.class);
+        final HashIndexManager indexManager = mock(HashIndexManager.class);
+        when(indexWriter.getIndexManager()).thenReturn(indexManager);
+
+        writeEntry(logReader, 123L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
+        writeEntry(logReader, 234L, 0, logReader.getEntryPosition(0));
+        when(indexManager.getLastCheckpointPosition()).thenReturn(-1L);
+
+        // when
+        logConsumer.addIndexWriter(indexWriter);
+        logConsumer.recover(Arrays.asList(logReader));
+
+        // then
+        verify(indexWriter, times(1)).indexLogEntry(eq(logReader.getEntryPosition(0)), any());
+        verify(indexWriter, never()).indexLogEntry(longThat(not(equalTo(logReader.getEntryPosition(0)))), any());
     }
 
     protected void writeEntry(StubLogReader logReader, long entryId, int sourceLogId, long sourcePosition)
