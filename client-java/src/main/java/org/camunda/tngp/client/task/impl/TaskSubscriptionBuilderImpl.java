@@ -1,5 +1,6 @@
 package org.camunda.tngp.client.task.impl;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.client.task.TaskHandler;
@@ -9,13 +10,18 @@ import org.camunda.tngp.util.EnsureUtil;
 public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 {
 
+    /**
+     * MaxTasks is not yet implemented in the broker
+     */
+    protected static final int MAX_TASKS = 1;
+
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int taskQueueId = 0;
     protected TaskHandler taskHandler;
 
-    protected TaskAcquisition taskAcquisition;
-    protected boolean autoCompleteTasks;
+    protected final TaskAcquisition taskAcquisition;
+    protected final boolean autoCompleteTasks;
 
     public TaskSubscriptionBuilderImpl(TaskAcquisition taskAcquisition, boolean autoCompleteTasks)
     {
@@ -31,16 +37,16 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     }
 
     @Override
-    public TaskSubscriptionBuilder lockTime(long lockTime)
+    public TaskSubscriptionBuilder lockTime(long lockDuration)
     {
-        this.lockTime = lockTime;
+        this.lockTime = lockDuration;
         return this;
     }
 
     @Override
-    public TaskSubscriptionBuilder lockTime(long lockTime, TimeUnit timeUnit)
+    public TaskSubscriptionBuilder lockTime(Duration lockDuration)
     {
-        return lockTime(timeUnit.toMillis(lockTime));
+        return lockTime(lockDuration.toMillis());
     }
 
     @Override
@@ -65,7 +71,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskHandler, taskType, taskQueueId, lockTime, 1, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(taskHandler, taskType, taskQueueId, lockTime, MAX_TASKS, taskAcquisition, autoCompleteTasks);
         subscription.open();
         return subscription;
     }

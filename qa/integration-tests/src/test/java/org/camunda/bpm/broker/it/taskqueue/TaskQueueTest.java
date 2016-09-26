@@ -2,6 +2,7 @@ package org.camunda.bpm.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -116,7 +117,7 @@ public class TaskQueueTest
         taskClient.pollAndLock()
             .taskQueueId(0)
             .taskType("bar")
-            .lockTime(100 * 1000)
+            .lockTime(Duration.ofHours(1L))
             .execute();
 
 

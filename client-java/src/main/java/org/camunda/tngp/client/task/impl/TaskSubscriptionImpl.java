@@ -16,18 +16,18 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
 
     public static final int CAPACITY = 32;
 
-    protected TaskHandler taskHandler;
+    protected final TaskHandler taskHandler;
 
-    protected Queue<TaskImpl> acquiredTasks = new ManyToManyConcurrentArrayQueue<>(CAPACITY);
+    protected final Queue<TaskImpl> acquiredTasks = new ManyToManyConcurrentArrayQueue<>(CAPACITY);
 
-    protected String taskType;
-    protected int maxTasks = 1;
-    protected int taskQueueId = 0;
-    protected long lockTime = 60L * 1000L;
+    protected final String taskType;
+    protected final int maxTasks;
+    protected final int taskQueueId;
+    protected final long lockTime;
 
-    protected AtomicInteger state;
+    protected final AtomicInteger state;
 
-    protected TaskAcquisition acquisition;
+    protected final TaskAcquisition acquisition;
 
     public static final int STATE_NEW = 0;
     public static final int STATE_OPENING = 1;

@@ -13,8 +13,8 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
 {
     public static final String ROLE_NAME = "task-acquisition";
 
-    protected TngpClientImpl client;
-    protected TaskSubscriptions taskSubscriptions;
+    protected final TngpClientImpl client;
+    protected final TaskSubscriptions taskSubscriptions;
     protected CommandQueue<AcquisitionCmd> cmdQueue;
 
     public TaskAcquisition(TngpClientImpl client, TaskSubscriptions subscriptions)

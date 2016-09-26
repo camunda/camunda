@@ -1,7 +1,9 @@
 package org.camunda.tngp.client.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -9,12 +11,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
@@ -190,6 +192,39 @@ public class TaskSubscriptionTest
         // then
         verify(client, never()).complete();
         verifyZeroInteractions(completeCmd);
+    }
+
+    @Test
+    public void shouldNotAutoCompleteTaskOnException()
+    {
+        // given
+        final TaskSubscriptions subscriptions = new TaskSubscriptions();
+        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions);
+        doThrow(new RuntimeException()).when(taskHandler).handle(any());
+
+        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, "foo", 0, 123L, 5, acquisition, true);
+
+        subscription.openAsync();
+        acquisition.evaluateCommands();
+
+        final LockedTask task = task(1);
+        when(taskBatch.getLockedTasks()).thenReturn(Arrays.asList(task));
+
+        acquisition.acquireTasksForSubscriptions();
+
+        // when
+        try
+        {
+            subscription.poll();
+        }
+        catch (Exception e)
+        {
+           // expected
+        }
+
+        // then
+        verify(client, never()).complete();
+        verify(completeCmd, never()).execute();
     }
 
 
@@ -375,7 +410,7 @@ public class TaskSubscriptionTest
         tasks.add(task);
 
         when(taskBatch.getLockedTasks()).thenReturn(tasks);
-        final Date lockTime = new Date(TimeUnit.DAYS.toMillis(40L));
+        final Instant lockTime = Instant.ofEpochMilli(0L).plus(Duration.ofDays(40L));
         when(taskBatch.getLockTime()).thenReturn(lockTime);
 
         acquisition.acquireTasksForSubscriptions();

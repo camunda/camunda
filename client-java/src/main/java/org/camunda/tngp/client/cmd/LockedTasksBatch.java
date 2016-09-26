@@ -1,11 +1,11 @@
 package org.camunda.tngp.client.cmd;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 
 public interface LockedTasksBatch
 {
-    Date getLockTime();
+    Instant getLockTime();
 
     List<LockedTask> getLockedTasks();
 }

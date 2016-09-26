@@ -1,7 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.camunda.tngp.client.cmd.LockedTask;
@@ -11,7 +11,7 @@ public class LockedTasksBatchImpl implements LockedTasksBatch
 {
 
     protected final List<LockedTask> lockedTasks;
-    protected Date lockTime;
+    protected Instant lockTime;
 
     public LockedTasksBatchImpl()
     {
@@ -24,13 +24,13 @@ public class LockedTasksBatchImpl implements LockedTasksBatch
         return lockedTasks;
     }
 
-    public void setLockTime(Date lockTime)
+    public void setLockTime(Instant lockTime)
     {
         this.lockTime = lockTime;
     }
 
     @Override
-    public Date getLockTime()
+    public Instant getLockTime()
     {
         return lockTime;
     }

@@ -1,5 +1,6 @@
 package org.camunda.tngp.client.task.impl;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.client.task.PollableTaskSubscription;
@@ -13,8 +14,8 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int taskQueueId = 0;
 
-    protected TaskAcquisition taskAcquisition;
-    protected boolean autoCompleteTasks;
+    protected final TaskAcquisition taskAcquisition;
+    protected final boolean autoCompleteTasks;
 
     public PollableTaskSubscriptionBuilderImpl(TaskAcquisition taskAcquisition, boolean autoCompleteTasks)
     {
@@ -30,16 +31,16 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     }
 
     @Override
-    public PollableTaskSubscriptionBuilder lockTime(long lockTime)
+    public PollableTaskSubscriptionBuilder lockTime(long lockDuration)
     {
-        this.lockTime = lockTime;
+        this.lockTime = lockDuration;
         return this;
     }
 
     @Override
-    public PollableTaskSubscriptionBuilder lockTime(long lockTime, TimeUnit timeUnit)
+    public PollableTaskSubscriptionBuilder lockTime(Duration lockDuration)
     {
-        return lockTime(timeUnit.toMillis(lockTime));
+        return lockTime(lockDuration.toMillis());
     }
 
     @Override

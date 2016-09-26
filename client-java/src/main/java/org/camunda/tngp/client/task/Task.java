@@ -1,6 +1,6 @@
 package org.camunda.tngp.client.task;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * Represents a task that was received by a subscription.
@@ -30,5 +30,5 @@ public interface Task extends WaitStateResponse
      * @return the time until when the task is locked
      *   and can be exclusively processed by this client.
      */
-    Date getLockExpirationTime();
+    Instant getLockExpirationTime();
 }

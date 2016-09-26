@@ -6,7 +6,7 @@ public class TaskExecutor implements Agent
 {
     public static final String ROLE_NAME = "task-executor";
 
-    protected TaskSubscriptions subscriptions;
+    protected final TaskSubscriptions subscriptions;
 
     public TaskExecutor(TaskSubscriptions subscriptions)
     {

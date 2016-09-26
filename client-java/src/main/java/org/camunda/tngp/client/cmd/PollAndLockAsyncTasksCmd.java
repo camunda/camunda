@@ -1,6 +1,6 @@
 package org.camunda.tngp.client.cmd;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.camunda.tngp.client.ClientCommand;
 
@@ -10,7 +10,7 @@ public interface PollAndLockAsyncTasksCmd extends ClientCommand<LockedTasksBatch
 
     PollAndLockAsyncTasksCmd lockTime(long lockTimeMs);
 
-    PollAndLockAsyncTasksCmd lockTime(long lockTime, TimeUnit timeUnit);
+    PollAndLockAsyncTasksCmd lockTime(Duration timeDuration);
 
     PollAndLockAsyncTasksCmd maxTasks(int maxTasks);
 

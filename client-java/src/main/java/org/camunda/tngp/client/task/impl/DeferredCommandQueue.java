@@ -7,8 +7,8 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 public class DeferredCommandQueue<T> implements CommandQueue<T>
 {
 
-    protected ManyToOneConcurrentArrayQueue<T> cmdQueue;
-    protected Consumer<T> consumer;
+    protected final ManyToOneConcurrentArrayQueue<T> cmdQueue;
+    protected final Consumer<T> consumer;
 
     public DeferredCommandQueue(Consumer<T> consumer)
     {

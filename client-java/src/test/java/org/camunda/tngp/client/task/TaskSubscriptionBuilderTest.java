@@ -3,6 +3,7 @@ package org.camunda.tngp.client.task;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.client.impl.TngpClientImpl;
@@ -157,7 +158,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .handler(mock(TaskHandler.class))
-            .lockTime(10, TimeUnit.DAYS)
+            .lockTime(Duration.ofDays(10))
             .taskQueueId(123)
             .taskType("fooo");
 
@@ -177,7 +178,7 @@ public class TaskSubscriptionBuilderTest
         final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(acquisition, true);
 
         builder
-            .lockTime(10, TimeUnit.DAYS)
+            .lockTime(Duration.ofDays(10))
             .taskQueueId(123)
             .taskType("fooo");
 

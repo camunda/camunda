@@ -219,7 +219,7 @@ public class TaskSubscriptionTest
         @Override
         public void handle(Task task)
         {
-            System.out.println("Task handler executed");
+            System.out.println("Task handler executed: " + task.getType());
             handledTasks.add(task);
             task.complete();
         }

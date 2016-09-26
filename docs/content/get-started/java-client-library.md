@@ -122,6 +122,8 @@ public class SendInvoiceHandler implements TaskHandler
 }
 ```
 
+By default, the client automatically completes the task after `TaskHandler#handle` returns successfully. That means, it is not required to call `Task#complete`. This behavior can be toggled via the client configuration property `tngp.client.tasks.execution.autocomplete`.
+
 ### Closing a Subscription
 
 ```java
@@ -131,6 +133,13 @@ subscription.close();
 ```
 
 Once closed, the client no longer receives tasks for that subscription. The close operation blocks until all previously received tasks have been given to the handler.
+
+
+### Self-managed Task Execution
+
+For regular task subscriptions, the client manages execution threads that invoke the provided `TaskHandler` implementations. In advanced use cases it may be required to control the execution thread context. *Pollable task subscriptions* provide the means to do so.
+
+Similar to a `TaskSubscription`, a `PollableTaskSubscription` continuously receives tasks once opened. In contrast, a `PollableTaskSubscription` does not have a pre-defined `TaskHandler` that is called automatically. Instead, this is left to the user per the method `PollableTaskSubscription#poll(TaskHandler)`. This method executes all tasks that have been received up to the time of invocation. A pollable task subscription can be opened via the API entry point `AsyncTasksClient#newPollableSubscription`.
 
 
 ## Standalone Task API

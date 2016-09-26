@@ -1,7 +1,10 @@
 package org.camunda.tngp.client.task;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
+/**
+ * Builds a {@link TaskSubscription} that automatically notifies a {@link TaskHandler} whenever a task is received.
+ */
 public interface TaskSubscriptionBuilder
 {
 
@@ -14,17 +17,17 @@ public interface TaskSubscriptionBuilder
      * Sets the lock duration for which subscribed tasks will be
      * exclusively locked for this task client.
      *
-     * @param lockTime in milliseconds
+     * @param lockDuration in milliseconds
      */
-    TaskSubscriptionBuilder lockTime(long lockTime);
+    TaskSubscriptionBuilder lockTime(long lockDuration);
 
     /**
      * Sets the lock duration for which subscribed tasks will be
      * exclusively locked for this task client.
      *
-     * @param lockTime in the provided time unit
+     * @param lockDuration duration for which tasks are being locked
      */
-    TaskSubscriptionBuilder lockTime(long lockTime, TimeUnit timeUnit);
+    TaskSubscriptionBuilder lockTime(Duration lockDuration);
 
     /**
      * Sets the task queue id to subscribe to.

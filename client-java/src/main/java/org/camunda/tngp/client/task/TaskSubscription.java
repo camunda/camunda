@@ -10,6 +10,9 @@ package org.camunda.tngp.client.task;
 public interface TaskSubscription
 {
 
+    /**
+     * @return true if this subscription is currently active and tasks are received for it
+     */
     boolean isOpen();
 
     /**

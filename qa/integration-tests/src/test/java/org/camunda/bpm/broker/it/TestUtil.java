@@ -11,7 +11,7 @@ import org.agrona.LangUtil;
 public class TestUtil
 {
 
-    public static final int MAX_RETRIES = 5;
+    public static final int MAX_RETRIES = 20;
 
     public static <T> Invocation<T> doRepeatedly(Callable<T> callable)
     {

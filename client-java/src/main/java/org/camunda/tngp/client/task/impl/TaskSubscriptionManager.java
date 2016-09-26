@@ -12,13 +12,13 @@ import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 public class TaskSubscriptionManager
 {
 
-    protected TaskAcquisition acqusition;
-    protected AgentRunner acquisitionRunner;
-    protected AgentRunner[] executionRunners;
+    protected final TaskAcquisition acqusition;
+    protected final AgentRunner acquisitionRunner;
+    protected final AgentRunner[] executionRunners;
 
-    protected TaskSubscriptions subscriptions;
+    protected final TaskSubscriptions subscriptions;
 
-    protected boolean autoCompleteTasks;
+    protected final boolean autoCompleteTasks;
 
     public TaskSubscriptionManager(TngpClientImpl client, int numExecutionThreads, boolean autoCompleteTasks)
     {

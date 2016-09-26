@@ -1,7 +1,10 @@
 package org.camunda.tngp.client.task;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
+/**
+ * Builds a {@link PollableTaskSubscription} that can be manually polled for execution.
+ */
 public interface PollableTaskSubscriptionBuilder
 {
 
@@ -14,17 +17,17 @@ public interface PollableTaskSubscriptionBuilder
      * Sets the lock duration for which subscribed tasks will be
      * exclusively locked for this task client.
      *
-     * @param lockTime in milliseconds
+     * @param lockDuration in milliseconds
      */
-    PollableTaskSubscriptionBuilder lockTime(long lockTime);
+    PollableTaskSubscriptionBuilder lockTime(long lockDuration);
 
     /**
      * Sets the lock duration for which subscribed tasks will be
      * exclusively locked for this task client.
      *
-     * @param lockTime in the provided time unit
+     * @param lockDuration duration for which tasks are being locked
      */
-    PollableTaskSubscriptionBuilder lockTime(long lockTime, TimeUnit timeUnit);
+    PollableTaskSubscriptionBuilder lockTime(Duration lockDuration);
 
     /**
      * Sets the task queue id to subscribe to.

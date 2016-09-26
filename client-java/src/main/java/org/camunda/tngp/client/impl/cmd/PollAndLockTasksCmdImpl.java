@@ -1,7 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import java.nio.charset.Charset;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
@@ -44,9 +44,9 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     }
 
     @Override
-    public PollAndLockAsyncTasksCmd lockTime(long lockTime, TimeUnit timeUnit)
+    public PollAndLockAsyncTasksCmd lockTime(Duration timeDuration)
     {
-        return lockTime(timeUnit.toMillis(lockTime));
+        return lockTime(timeDuration.toMillis());
     }
 
     @Override

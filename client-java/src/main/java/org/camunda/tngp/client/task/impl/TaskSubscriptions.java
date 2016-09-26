@@ -5,8 +5,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TaskSubscriptions
 {
-    protected List<TaskSubscriptionImpl> pollableSubscriptions = new CopyOnWriteArrayList<>();
-    protected List<TaskSubscriptionImpl> managedExecutionSubscriptions = new CopyOnWriteArrayList<>();
+    protected final List<TaskSubscriptionImpl> pollableSubscriptions = new CopyOnWriteArrayList<>();
+    protected final List<TaskSubscriptionImpl> managedExecutionSubscriptions = new CopyOnWriteArrayList<>();
 
     public void addPollableSubscription(TaskSubscriptionImpl subscription)
     {
