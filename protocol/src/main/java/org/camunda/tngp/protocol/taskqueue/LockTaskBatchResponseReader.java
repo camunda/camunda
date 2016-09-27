@@ -28,8 +28,8 @@ public class LockTaskBatchResponseReader implements BufferReader
     {
         inputBuffer.wrap(buffer, offset, length);
 
-        headerDecoder.wrap(buffer, offset);
-        bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        headerDecoder.wrap(inputBuffer, 0);
+        bodyDecoder.wrap(inputBuffer, 0 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         // sets the body decoder's limit to after the header of the tasks group
         bodyTasksDecoder = bodyDecoder.tasks();

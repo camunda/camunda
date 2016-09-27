@@ -20,13 +20,15 @@ public class LockTaskBatchResponseReaderTest
     protected UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected int messageLength;
 
+    public static final int OFFSET = 20;
+
     @Before
     public void writeTasks()
     {
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
         final LockedTaskBatchEncoder bodyEncoder = new LockedTaskBatchEncoder();
 
-        headerEncoder.wrap(messageBuffer, 0)
+        headerEncoder.wrap(messageBuffer, OFFSET)
             .resourceId(1)
             .schemaId(LockedTaskBatchEncoder.SCHEMA_ID)
             .shardId(2)
@@ -34,7 +36,7 @@ public class LockTaskBatchResponseReaderTest
             .version(LockedTaskBatchEncoder.SCHEMA_VERSION)
             .blockLength(bodyEncoder.sbeBlockLength());
 
-        bodyEncoder.wrap(messageBuffer, headerEncoder.encodedLength())
+        bodyEncoder.wrap(messageBuffer, OFFSET + headerEncoder.encodedLength())
           .consumerId(87)
           .lockTime(3456789L)
           .tasksCount(3)
@@ -51,7 +53,7 @@ public class LockTaskBatchResponseReaderTest
               .wfInstanceId(108)
               .putPayload(PAYLOAD3, 0, PAYLOAD3.length);
 
-        messageLength = bodyEncoder.limit();
+        messageLength = bodyEncoder.limit() - OFFSET;
     }
 
     @Test
@@ -61,7 +63,7 @@ public class LockTaskBatchResponseReaderTest
         final LockTaskBatchResponseReader reader = new LockTaskBatchResponseReader();
 
         // when
-        reader.wrap(messageBuffer, 0, messageLength);
+        reader.wrap(messageBuffer, OFFSET, messageLength);
 
         // then
         assertThat(reader.consumerId()).isEqualTo(87);
@@ -91,7 +93,7 @@ public class LockTaskBatchResponseReaderTest
     {
         // given
         final LockTaskBatchResponseReader reader = new LockTaskBatchResponseReader();
-        reader.wrap(messageBuffer, 0, messageLength);
+        reader.wrap(messageBuffer, OFFSET, messageLength);
         reader.nextTask();
         reader.currentTaskId();
         reader.currentTaskPayload();
@@ -107,7 +109,7 @@ public class LockTaskBatchResponseReaderTest
     {
         // given
         final LockTaskBatchResponseReader reader = new LockTaskBatchResponseReader();
-        reader.wrap(messageBuffer, 0, messageLength);
+        reader.wrap(messageBuffer, OFFSET, messageLength);
         reader.nextTask();
         reader.currentTaskId();
         reader.currentTaskPayload();
