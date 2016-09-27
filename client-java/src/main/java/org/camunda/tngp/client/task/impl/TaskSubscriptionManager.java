@@ -31,16 +31,19 @@ public class TaskSubscriptionManager
         this.autoCompleteTasks = autoCompleteTasks;
     }
 
-    public void initializeRunners()
+    public void start()
     {
-        acquisitionRunner = newAgentRunner(acqusition);
-        for (int i = 0; i < executionRunners.length; i++)
-        {
-            executionRunners[i] = newAgentRunner(new TaskExecutor(subscriptions));
-        }
+        startAcquisition();
+        startExecution();
     }
 
-    public void startAcquisition()
+    public void stop()
+    {
+        stopAcquisition();
+        stopExecution();
+    }
+
+    protected void startAcquisition()
     {
         if (acquisitionRunner == null)
         {
@@ -50,13 +53,13 @@ public class TaskSubscriptionManager
         AgentRunner.startOnThread(acquisitionRunner);
     }
 
-    public void stopAcquisition()
+    protected void stopAcquisition()
     {
         acquisitionRunner.close();
         acquisitionRunner = null;
     }
 
-    public void startExecution()
+    protected void startExecution()
     {
         if (executionRunners == null)
         {
@@ -73,7 +76,7 @@ public class TaskSubscriptionManager
         }
     }
 
-    public void stopExecution()
+    protected void stopExecution()
     {
         for (int i = 0; i < executionRunners.length; i++)
         {

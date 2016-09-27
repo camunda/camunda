@@ -103,16 +103,14 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
         channelResolver.setChannelId(channel.getId());
 
-        taskSubscriptionManager.startAcquisition();
-        taskSubscriptionManager.startExecution();
+        taskSubscriptionManager.start();
     }
 
     public void disconnect()
     {
         taskSubscriptionManager.closeAllSubscriptions();
 
-        taskSubscriptionManager.stopAcquisition();
-        taskSubscriptionManager.stopExecution();
+        taskSubscriptionManager.stop();
 
         channel.close();
         channel = null;
