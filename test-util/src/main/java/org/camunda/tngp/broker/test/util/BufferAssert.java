@@ -2,9 +2,8 @@ package org.camunda.tngp.broker.test.util;
 
 import java.util.Arrays;
 
-import org.assertj.core.api.AbstractAssert;
-
 import org.agrona.DirectBuffer;
+import org.assertj.core.api.AbstractAssert;
 
 public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
 {
@@ -30,7 +29,7 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
 
         if (!Arrays.equals(expected, actualBytes))
         {
-            failWithMessage("Expected byte array does not match bytes in buffer");
+            failWithMessage("Expected byte array match bytes <%s> but was <%s>", Arrays.toString(expected), Arrays.toString(actualBytes));
         }
 
         return this;
