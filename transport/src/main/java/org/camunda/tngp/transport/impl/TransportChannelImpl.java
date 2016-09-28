@@ -1,8 +1,15 @@
 package org.camunda.tngp.transport.impl;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.*;
-import static org.camunda.tngp.transport.impl.StaticControlFrames.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.camunda.tngp.transport.impl.StaticControlFrames.CLOSE_FRAME;
+import static org.camunda.tngp.transport.impl.StaticControlFrames.END_OF_STREAM_FRAME;
+import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_CONTROL_CLOSE;
+import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_CONTROL_END_OF_STREAM;
+import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_PROTO_CONTROL_FRAME;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,15 +20,14 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.agrona.LangUtil;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-
-import org.agrona.LangUtil;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public abstract class TransportChannelImpl implements TransportChannel
 {
@@ -92,16 +98,13 @@ public abstract class TransportChannelImpl implements TransportChannel
 
                     boolean handled = false;
 
-                    if (msgType == TYPE_MESSAGE)
+                    if (isProtocolMessage(msgType))
                     {
-                        handled = channelHandler.onChannelReceive(this,
-                                channelReadBufferView,
-                                HEADER_LENGTH,
-                                msgLength);
+                        handled = handleProtocolMessage(msgType, msgLength, frameLength);
                     }
                     else
                     {
-                        handleControlFrame(msgType, frameLength);
+                        handleGeneralControlFrame(msgType, frameLength);
                         handled = true;
                     }
 
@@ -135,6 +138,11 @@ public abstract class TransportChannelImpl implements TransportChannel
         return bytesRead;
     }
 
+    protected static boolean isProtocolMessage(final int msgType)
+    {
+        return msgType == TYPE_MESSAGE || msgType == TYPE_PROTO_CONTROL_FRAME;
+    }
+
     private int mediaReceive(ByteBuffer receiveBuffer)
     {
         int bytesReceived = -2;
@@ -151,7 +159,30 @@ public abstract class TransportChannelImpl implements TransportChannel
         return bytesReceived;
     }
 
-    protected void handleControlFrame(final int msgType, final int frameLength)
+    /**
+     * @param protocolHandler
+     * @param messageLength exact message length
+     * @param frameLength aligned message length
+     * @return
+     */
+    protected boolean handleProtocolMessage(int msgType, int messageLength, int frameLength)
+    {
+        if (msgType == TYPE_MESSAGE)
+        {
+            return channelHandler.onChannelReceive(this,
+                    channelReadBufferView,
+                    HEADER_LENGTH,
+                    messageLength);
+        }
+        else
+        {
+            channelHandler.onControlFrame(this, channelReadBufferView, 0, frameLength);
+
+            return true;
+        }
+    }
+
+    protected void handleGeneralControlFrame(final int msgType, final int frameLength)
     {
         if (msgType == TYPE_CONTROL_END_OF_STREAM)
         {
@@ -171,10 +202,6 @@ public abstract class TransportChannelImpl implements TransportChannel
                     sender.sendControlFrame(this);
                 });
             }
-        }
-        else if (msgType == TYPE_PROTO_CONTROL_FRAME)
-        {
-            this.channelHandler.onControlFrame(this, channelReadBufferView, 0, frameLength);
         }
         else
         {

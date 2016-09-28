@@ -4,17 +4,18 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.transport.impl.ClientChannelImpl;
+import org.camunda.tngp.transport.impl.CompositeChannelHandler;
+import org.camunda.tngp.transport.impl.DefaultChannelHandler;
 import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.RequestResponseChannelHandler;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPoolImpl;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
-import org.agrona.DirectBuffer;
-
 public class ClientChannelBuilder
 {
-    public static final DefaultClientChannelHandler DEFAULT_HANDLER = new DefaultClientChannelHandler();
+    public static final DefaultChannelHandler DEFAULT_HANDLER = new DefaultChannelHandler();
 
     protected final TransportContext transportContext;
 
@@ -22,7 +23,7 @@ public class ClientChannelBuilder
 
     protected boolean isProtocolChannel = true;
 
-    protected TransportChannelHandler channelHandler = DEFAULT_HANDLER;
+    protected CompositeChannelHandler channelHandler = new CompositeChannelHandler();
 
     public ClientChannelBuilder(TransportContext transportContext, InetSocketAddress remoteAddress)
     {
@@ -30,15 +31,17 @@ public class ClientChannelBuilder
         this.remoteAddress = remoteAddress;
     }
 
-    public ClientChannelBuilder transportChannelHandler(TransportChannelHandler channelHandler)
+    public ClientChannelBuilder transportChannelHandler(short protocolId, TransportChannelHandler channelHandler)
     {
-        this.channelHandler = channelHandler;
+        this.channelHandler.addHandler(protocolId, channelHandler);
         return this;
     }
 
-    public ClientChannelBuilder requestResponseChannel(TransportConnectionPool connectionPool)
+    public ClientChannelBuilder requestResponseProtocol(TransportConnectionPool connectionPool)
     {
-        return transportChannelHandler(new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
+
+        return transportChannelHandler(Protocols.REQUEST_RESPONSE,
+                new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -59,42 +62,6 @@ public class ClientChannelBuilder
     public ClientChannel connect()
     {
         return connectAsync().join();
-    }
-
-    public static class DefaultClientChannelHandler implements TransportChannelHandler
-    {
-
-        @Override
-        public void onChannelOpened(TransportChannel transportChannel)
-        {
-            // no-op
-        }
-
-        @Override
-        public void onChannelClosed(TransportChannel transportChannel)
-        {
-            // no-op
-        }
-
-        @Override
-        public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            System.err.println("onChannelSendError() on channel " + transportChannel + " ignored by " + DefaultClientChannelHandler.class.getName());
-        }
-
-        @Override
-        public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            System.err.println("received and dropped " + length + " bytes on channel " + transportChannel + " in " + DefaultClientChannelHandler.class.getName());
-            return true;
-        }
-
-        @Override
-        public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
-        {
-            System.err.println("received and dropped control frame on channel " + transportChannel + " in " + DefaultClientChannelHandler.class.getName());
-        }
-
     }
 
 }

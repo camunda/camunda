@@ -9,8 +9,6 @@ public interface TransportRequest extends AutoCloseable
 {
     boolean isOpen();
 
-    MutableDirectBuffer getRequestBuffer();
-
     MutableDirectBuffer getClaimedRequestBuffer();
 
     int getClaimedOffset();

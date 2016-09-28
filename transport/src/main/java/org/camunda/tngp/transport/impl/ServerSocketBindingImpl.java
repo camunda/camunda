@@ -38,15 +38,15 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
     protected List<ServerChannelImpl> openChannels = new ArrayList<>();
 
     protected ServerSocketChannel media;
-    protected TransportChannelHandler transportChannelHandler;
+    protected TransportChannelHandler channelHandler;
 
     public ServerSocketBindingImpl(
             final TransportContext transportContext,
             final InetSocketAddress bindAddress,
-            final TransportChannelHandler transportChannelHandler)
+            final TransportChannelHandler channelHandler)
     {
         this.transportContext = transportContext;
-        this.transportChannelHandler = transportChannelHandler;
+        this.channelHandler = channelHandler;
         this.conductorCmdQueue = transportContext.getConductorCmdQueue();
         this.bindAddress = bindAddress;
 
@@ -127,7 +127,7 @@ public class ServerSocketBindingImpl implements ServerSocketBinding
                         transportContext,
                         this,
                         socketChannel,
-                        transportChannelHandler);
+                        channelHandler);
 
                 openChannels.add(channel);
 

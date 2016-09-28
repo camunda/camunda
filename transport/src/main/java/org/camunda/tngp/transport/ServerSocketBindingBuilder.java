@@ -3,12 +3,12 @@ package org.camunda.tngp.transport;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.camunda.tngp.transport.impl.DefaultChannelHandler;
 import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.TransportConductorCmd;
 import org.camunda.tngp.transport.spi.TransportChannelHandler;
-
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class ServerSocketBindingBuilder
 {
@@ -18,7 +18,7 @@ public class ServerSocketBindingBuilder
 
     protected ManyToOneConcurrentArrayQueue<TransportConductorCmd> conductorCmdQueue;
 
-    protected TransportChannelHandler channelHandler;
+    protected TransportChannelHandler channelHandler = new DefaultChannelHandler();
 
     public ServerSocketBindingBuilder(TransportContext transportContext, InetSocketAddress bindAddress)
     {
@@ -29,6 +29,7 @@ public class ServerSocketBindingBuilder
 
     public ServerSocketBindingBuilder transportChannelHandler(TransportChannelHandler channelHandler)
     {
+
         this.channelHandler = channelHandler;
         return this;
     }

@@ -24,7 +24,7 @@ public class ProtocolRequestResponseTest
                 .bind();
 
              final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
-             final ClientChannel channel = clientTransport.createClientChannel(addr).requestResponseChannel(connectionPool).connect();
+             final ClientChannel channel = clientTransport.createClientChannel(addr).requestResponseProtocol(connectionPool).connect();
              final TransportConnection connection = connectionPool.openConnection())
         {
             final RequestQueue q = new RequestQueue(32);

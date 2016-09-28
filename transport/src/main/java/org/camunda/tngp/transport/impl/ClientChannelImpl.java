@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.ClientChannel;
@@ -19,8 +18,6 @@ public class ClientChannelImpl extends TransportChannelImpl implements ClientCha
     protected final ManyToOneConcurrentArrayQueue<TransportConductorCmd> toConcuctorCmdQue;
 
     protected final Dispatcher sendBuffer;
-
-    protected final AtomicLong requestIdGenerator = new AtomicLong();
 
     protected InetSocketAddress remoteAddress;
 

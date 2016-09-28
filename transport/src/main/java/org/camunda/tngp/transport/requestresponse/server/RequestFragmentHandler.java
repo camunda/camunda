@@ -1,11 +1,11 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.connectionIdOffset;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.headerLength;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.requestIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.headerLength;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
 import org.camunda.tngp.dispatcher.FragmentHandler;
-
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.MessageHandler;
 
@@ -28,11 +28,14 @@ public class RequestFragmentHandler implements FragmentHandler
     @Override
     public int onFragment(DirectBuffer buffer, int offset, int length, int channelId, boolean isMarkedFailed)
     {
-        final long connectionId = buffer.getLong(connectionIdOffset(offset));
-        final long requestId = buffer.getLong(requestIdOffset(offset));
+        final int requestResponseOffset = offset + TransportHeaderDescriptor.headerLength();
+        final int requestResponseLength = length - TransportHeaderDescriptor.headerLength();
 
-        final int requestOffset = offset + headerLength();
-        final int requestLength = length - headerLength();
+        final long connectionId = buffer.getLong(connectionIdOffset(requestResponseOffset));
+        final long requestId = buffer.getLong(requestIdOffset(requestResponseOffset));
+
+        final int requestOffset = requestResponseOffset + headerLength();
+        final int requestLength = requestResponseLength - headerLength();
 
         final DeferredResponse response = responsePool.open(channelId, connectionId, requestId);
 

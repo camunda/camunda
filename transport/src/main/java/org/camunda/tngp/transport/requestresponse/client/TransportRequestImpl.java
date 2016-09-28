@@ -1,7 +1,8 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -9,7 +10,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.transport.TransportChannel;
-
+import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.BackoffIdleStrategy;
@@ -31,8 +34,6 @@ public class TransportRequestImpl implements TransportRequest
     public static final AtomicIntegerFieldUpdater<TransportRequestImpl> STATE_FIELD = AtomicIntegerFieldUpdater.newUpdater(TransportRequestImpl.class, "state");
 
     protected volatile int state;
-
-    protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(0, 0);
 
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
@@ -131,9 +132,13 @@ public class TransportRequestImpl implements TransportRequest
     public void writeHeader()
     {
         final MutableDirectBuffer claimedBuffer = claimedFragment.getBuffer();
-        final int headerOffset = claimedFragment.getOffset();
-        claimedBuffer.putLong(connectionIdOffset(headerOffset), connectionId);
-        claimedBuffer.putLong(requestIdOffset(headerOffset), id);
+
+        TransportHeaderDescriptor.writeHeader(claimedBuffer, claimedFragment.getOffset(), Protocols.REQUEST_RESPONSE);
+
+        final int requestResponseHeaderOffset = claimedFragment.getOffset() + TransportHeaderDescriptor.headerLength();
+
+        claimedBuffer.putLong(connectionIdOffset(requestResponseHeaderOffset), connectionId);
+        claimedBuffer.putLong(requestIdOffset(requestResponseHeaderOffset), id);
     }
 
     @Override
@@ -222,12 +227,6 @@ public class TransportRequestImpl implements TransportRequest
     }
 
     @Override
-    public MutableDirectBuffer getRequestBuffer()
-    {
-        return requestBuffer;
-    }
-
-    @Override
     public MutableDirectBuffer getClaimedRequestBuffer()
     {
         return claimedFragment.getBuffer();
@@ -236,7 +235,9 @@ public class TransportRequestImpl implements TransportRequest
     @Override
     public int getClaimedOffset()
     {
-        return claimedFragment.getOffset() + headerLength();
+        return claimedFragment.getOffset() +
+                TransportHeaderDescriptor.headerLength() +
+                RequestResponseProtocolHeaderDescriptor.headerLength();
     }
 
     @Override
@@ -302,14 +303,14 @@ public class TransportRequestImpl implements TransportRequest
         {
             if (id == requestId)
             {
-                this.responseLength = length - headerLength();
+                this.responseLength = length - RequestResponseProtocolHeaderDescriptor.headerLength();
 
                 if (responseBuffer.capacity() < responseLength)
                 {
                     responseBuffer.wrap(ByteBuffer.allocateDirect(responseLength));
                 }
 
-                responseBuffer.putBytes(0, buffer, offset + headerLength(), responseLength);
+                responseBuffer.putBytes(0, buffer, offset + RequestResponseProtocolHeaderDescriptor.headerLength(), responseLength);
 
                 // broadcast
                 isResponseHandled = STATE_FIELD.compareAndSet(this, STATE_OPEN, STATE_RESPONSE_AVAILABLE);

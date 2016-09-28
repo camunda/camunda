@@ -2,7 +2,7 @@ package org.camunda.tngp.transport.requestresponse;
 
 import static org.agrona.BitUtil.*;
 
-public class TransportRequestHeaderDescriptor
+public class RequestResponseProtocolHeaderDescriptor
 {
     public static final int CONNECTION_ID_OFFSET;
     public static final int REQUEST_ID_OFFSET;

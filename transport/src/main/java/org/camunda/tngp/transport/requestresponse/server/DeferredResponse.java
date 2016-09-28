@@ -1,14 +1,15 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.connectionIdOffset;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.framedLength;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.headerLength;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.requestIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool.DeferredResponseControl;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -49,12 +50,14 @@ public class DeferredResponse
 
     public boolean allocate(int msgLength)
     {
-        final int framedLength = framedLength(msgLength);
+        final int requestResponseHeaderFramedLength = RequestResponseProtocolHeaderDescriptor.framedLength(msgLength);
+        final int transportHeaderFramedLength = TransportHeaderDescriptor.framedLength(requestResponseHeaderFramedLength);
+
         long claimedPosition = -1;
 
         do
         {
-            claimedPosition = sendBuffer.claim(claimedFragment, framedLength, channelId);
+            claimedPosition = sendBuffer.claim(claimedFragment, transportHeaderFramedLength, channelId);
         }
         while (claimedPosition == -2);
 
@@ -66,8 +69,11 @@ public class DeferredResponse
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
             final int claimedOffset = claimedFragment.getOffset();
 
-            buffer.putLong(connectionIdOffset(claimedOffset), connectionId);
-            buffer.putLong(requestIdOffset(claimedOffset), requestId);
+            TransportHeaderDescriptor.writeHeader(buffer, claimedOffset, Protocols.REQUEST_RESPONSE);
+            final int requestResponseOffset = claimedOffset + TransportHeaderDescriptor.headerLength();
+
+            buffer.putLong(connectionIdOffset(requestResponseOffset), connectionId);
+            buffer.putLong(requestIdOffset(requestResponseOffset), requestId);
         }
 
         return isAllocated;
@@ -136,7 +142,9 @@ public class DeferredResponse
 
     public int getClaimedOffset()
     {
-        return claimedFragment.getOffset() + headerLength();
+        return claimedFragment.getOffset() +
+                RequestResponseProtocolHeaderDescriptor.headerLength() +
+                TransportHeaderDescriptor.headerLength();
     }
 
 }

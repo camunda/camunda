@@ -10,6 +10,8 @@ import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
+import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.junit.Test;
 
 public class ChannelRequestResponseTest
@@ -27,7 +29,7 @@ public class ChannelRequestResponseTest
 
         public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
         {
-            lastMsgIdReceived = buffer.getInt(offset);
+            lastMsgIdReceived = buffer.getInt(offset + TransportHeaderDescriptor.HEADER_LENGTH);
             return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
 
@@ -42,6 +44,8 @@ public class ChannelRequestResponseTest
     {
         // 1K message
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
+        TransportHeaderDescriptor.writeHeader(msg, 0, Protocols.REQUEST_RESPONSE);
+
         final ClientFragmentHandler fragmentHandler = new ClientFragmentHandler();
         final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
 
@@ -63,7 +67,7 @@ public class ChannelRequestResponseTest
             .bind();
 
         final ClientChannel channel = clientTransport.createClientChannel(addr)
-            .transportChannelHandler(new ReceiveBufferChannelHandler(clientReceiveBuffer))
+            .transportChannelHandler(Protocols.REQUEST_RESPONSE, new ReceiveBufferChannelHandler(clientReceiveBuffer))
             .connect();
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
@@ -71,7 +75,7 @@ public class ChannelRequestResponseTest
 
         for (int i = 0; i < 10000; i++)
         {
-            msg.putInt(0, i);
+            msg.putInt(TransportHeaderDescriptor.headerLength(), i);
             sendRequest(sendBuffer, msg, channel);
             waitForResponse(clientReceiveBufferSubscription, fragmentHandler, i);
         }

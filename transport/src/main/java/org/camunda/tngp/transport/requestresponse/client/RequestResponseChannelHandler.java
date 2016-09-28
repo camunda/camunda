@@ -1,17 +1,15 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_PROTO_CONTROL_FRAME;
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
-import java.nio.ByteBuffer;
-
-import org.camunda.tngp.transport.TransportChannel;
-import org.camunda.tngp.transport.spi.TransportChannelHandler;
-
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 
 /**
  * A client for the request/response protocol
@@ -20,26 +18,16 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
 {
     public static final short PROTOCOL_ID = 1;
 
-    public final ByteBuffer upgradeFrame;
-
     protected final TransportConnectionPoolImpl connectionManager;
 
     public RequestResponseChannelHandler(final TransportConnectionPoolImpl connectionManager)
     {
         this.connectionManager = connectionManager;
-
-        upgradeFrame = ByteBuffer.allocate(alignedLength(BitUtil.SIZE_OF_SHORT));
-        final UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0, 0);
-        ctrMsgWriter.wrap(upgradeFrame);
-        ctrMsgWriter.putInt(lengthOffset(0), BitUtil.SIZE_OF_SHORT);
-        ctrMsgWriter.putShort(typeOffset(0), TYPE_PROTO_CONTROL_FRAME);
-        ctrMsgWriter.putShort(messageOffset(0), PROTOCOL_ID);
     }
 
     @Override
     public void onChannelOpened(TransportChannel transportChannel)
     {
-        transportChannel.sendControlFrame(upgradeFrame);
     }
 
 
@@ -98,14 +86,17 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
         final int offset,
         final int length)
     {
-        final long connectionId = buffer.getLong(connectionIdOffset(offset));
+        final int requestResponseHeaderOffset = offset + TransportHeaderDescriptor.headerLength();
+        final int requestResponseMessageLength = length - TransportHeaderDescriptor.headerLength();
+
+        final long connectionId = buffer.getLong(connectionIdOffset(requestResponseHeaderOffset));
         final TransportConnectionImpl connection = connectionManager.findConnection(connectionId);
 
         boolean isHandled = false;
 
         if (connection != null)
         {
-            isHandled = connection.processResponse(buffer, offset, length);
+            isHandled = connection.processResponse(buffer, requestResponseHeaderOffset, requestResponseMessageLength);
         }
 
         if (!isHandled)

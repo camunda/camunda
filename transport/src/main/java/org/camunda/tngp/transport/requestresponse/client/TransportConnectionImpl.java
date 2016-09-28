@@ -1,18 +1,18 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
-import static org.camunda.tngp.transport.requestresponse.TransportRequestHeaderDescriptor.*;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.transport.util.LongArrayIndex;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 public class TransportConnectionImpl implements TransportConnection
 {
@@ -82,7 +82,9 @@ public class TransportConnectionImpl implements TransportConnection
         }
 
         final TransportRequestImpl requestImpl = (TransportRequestImpl) request;
-        final int framedLength = framedLength(msgLength);
+
+        final int requestResponseHeaderFramedLength = RequestResponseProtocolHeaderDescriptor.framedLength(msgLength);
+        final int transportHeaderFramedLength = TransportHeaderDescriptor.framedLength(requestResponseHeaderFramedLength);
         final long now = System.currentTimeMillis();
 
         final long requestId = openRequests.put(requestImpl);
@@ -95,7 +97,7 @@ public class TransportConnectionImpl implements TransportConnection
 
             do
             {
-                claimedPosition = sendBuffer.claim(requestImpl.getClaimedFragment(), framedLength, channelId);
+                claimedPosition = sendBuffer.claim(requestImpl.getClaimedFragment(), transportHeaderFramedLength, channelId);
             }
             while (claimedPosition == -2);
 
@@ -110,33 +112,6 @@ public class TransportConnectionImpl implements TransportConnection
         }
 
         return claimedPosition >= 0;
-    }
-
-    @Override
-    public boolean sendRequest(
-            final TransportRequest request,
-            final int channelId,
-            final int msgLength)
-    {
-        final boolean isOpen = openRequest(request, channelId, msgLength);
-
-        if (isOpen)
-        {
-            try
-            {
-                final MutableDirectBuffer claimedBuffer = request.getClaimedRequestBuffer();
-                final int claimedOffset = request.getClaimedOffset();
-                claimedBuffer.putBytes(claimedOffset, request.getRequestBuffer(), 0, msgLength);
-                request.commit();
-            }
-            catch (Exception e)
-            {
-                request.abort();
-                e.printStackTrace();
-            }
-        }
-
-        return isOpen;
     }
 
     /**
