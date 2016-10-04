@@ -98,7 +98,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     public void connect()
     {
         channel = transport.createClientChannel(contactPoint)
-                .requestResponseChannel(connectionPool)
+                .requestResponseProtocol(connectionPool)
                 .connect();
 
         channelResolver.setChannelId(channel.getId());
