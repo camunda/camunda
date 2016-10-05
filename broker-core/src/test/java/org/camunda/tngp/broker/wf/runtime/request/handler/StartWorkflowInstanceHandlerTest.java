@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.request.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -10,10 +10,12 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.broker.test.util.BufferWriterMatcher;
+import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.wf.WfErrors;
@@ -29,15 +31,14 @@ import org.camunda.tngp.protocol.wf.StartWorkflowInstanceEncoder;
 import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
 import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
+import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class StartWorkflowInstanceHandlerTest
 {
@@ -57,6 +58,9 @@ public class StartWorkflowInstanceHandlerTest
 
     @Mock
     protected StartWorkflowInstanceRequestReader requestReader;
+
+    @Captor
+    protected ArgumentCaptor<BufferWriter> captor;
 
     protected ErrorWriter errorWriter;
 
@@ -152,17 +156,17 @@ public class StartWorkflowInstanceHandlerTest
         handler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
-        final InOrder inOrder = Mockito.inOrder(response);
-
-        inOrder.verify(response).allocateAndWrite(argThat(
-                BufferWriterMatcher.writesProperties(ErrorReader.class)
-                    .matching((r) -> r.componentCode(), WfErrors.COMPONENT_CODE)
-                    .matching((r) -> r.detailCode(), WfErrors.PROCESS_INSTANCE_REQUEST_ERROR)
-                    .matching((r) -> r.errorMessage(), "Only one parameter, workflow definition id or key, can be specified")
-                ));
-
-        verify(response).commit();
+        final InOrder inOrder = inOrder(response);
+        inOrder.verify(response).allocateAndWrite(captor.capture());
+        inOrder.verify(response).commit();
         verifyNoMoreInteractions(response);
+
+        final ErrorReader reader = new ErrorReader();
+        BufferWriterUtil.wrap(captor.getValue(), reader);
+
+        assertThat(reader.componentCode()).isEqualTo(WfErrors.COMPONENT_CODE);
+        assertThat(reader.detailCode()).isEqualTo(WfErrors.PROCESS_INSTANCE_REQUEST_ERROR);
+        assertThat(reader.errorMessage()).isEqualTo("Only one parameter, workflow definition id or key, can be specified");
 
         assertThat(logWriter.size()).isEqualTo(0);
     }
@@ -182,17 +186,17 @@ public class StartWorkflowInstanceHandlerTest
         handler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
-        final InOrder inOrder = Mockito.inOrder(response);
-
-        inOrder.verify(response).allocateAndWrite(argThat(
-                BufferWriterMatcher.writesProperties(ErrorReader.class)
-                    .matching((r) -> r.componentCode(), WfErrors.COMPONENT_CODE)
-                    .matching((r) -> r.detailCode(), WfErrors.PROCESS_INSTANCE_REQUEST_ERROR)
-                    .matching((r) -> r.errorMessage(), "Either workflow definition id or key must be specified")
-                ));
-
-        verify(response).commit();
+        final InOrder inOrder = inOrder(response);
+        inOrder.verify(response).allocateAndWrite(captor.capture());
+        inOrder.verify(response).commit();
         verifyNoMoreInteractions(response);
+
+        final ErrorReader reader = new ErrorReader();
+        BufferWriterUtil.wrap(captor.getValue(), reader);
+
+        assertThat(reader.componentCode()).isEqualTo(WfErrors.COMPONENT_CODE);
+        assertThat(reader.detailCode()).isEqualTo(WfErrors.PROCESS_INSTANCE_REQUEST_ERROR);
+        assertThat(reader.errorMessage()).isEqualTo("Either workflow definition id or key must be specified");
 
         assertThat(logWriter.size()).isEqualTo(0);
     }
@@ -212,18 +216,18 @@ public class StartWorkflowInstanceHandlerTest
         handler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
-        final InOrder inOrder = Mockito.inOrder(response);
-
-        inOrder.verify(response).allocateAndWrite(argThat(
-                BufferWriterMatcher.writesProperties(ErrorReader.class)
-                    .matching((r) -> r.componentCode(), WfErrors.COMPONENT_CODE)
-                    .matching((r) -> r.detailCode(), WfErrors.PROCESS_INSTANCE_REQUEST_ERROR)
-                    .matching((r) -> r.errorMessage(), "Workflow definition key must not be longer than " +
-                            Constants.WF_DEF_KEY_MAX_LENGTH + " bytes")
-                ));
-
-        verify(response).commit();
+        final InOrder inOrder = inOrder(response);
+        inOrder.verify(response).allocateAndWrite(captor.capture());
+        inOrder.verify(response).commit();
         verifyNoMoreInteractions(response);
+
+        final ErrorReader reader = new ErrorReader();
+        BufferWriterUtil.wrap(captor.getValue(), reader);
+
+        assertThat(reader.componentCode()).isEqualTo(WfErrors.COMPONENT_CODE);
+        assertThat(reader.detailCode()).isEqualTo(WfErrors.PROCESS_INSTANCE_REQUEST_ERROR);
+        assertThat(reader.errorMessage()).isEqualTo("Workflow definition key must not be longer than " +
+                Constants.WF_DEF_KEY_MAX_LENGTH + " bytes");
 
         assertThat(logWriter.size()).isEqualTo(0);
     }

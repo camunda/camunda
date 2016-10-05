@@ -13,7 +13,6 @@
 package org.camunda.tngp.protocol.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -24,8 +23,6 @@ public class PollEventsRequestReaderTest
     protected UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
     protected static final int OFFSET = 21;
-
-    protected static final byte[] TOPIC_NAME = "topic".getBytes();
 
     protected int messageLength;
 
@@ -46,7 +43,7 @@ public class PollEventsRequestReaderTest
         requestEncoder.wrap(buffer, OFFSET + headerEncoder.encodedLength())
             .startPosition(100)
             .maxEvents(10)
-            .putTopicName(TOPIC_NAME, 0, TOPIC_NAME.length);
+            .topicId(1);
 
         messageLength = requestEncoder.limit();
     }
@@ -63,11 +60,7 @@ public class PollEventsRequestReaderTest
         // then
         assertThat(reader.startPosition()).isEqualTo(100);
         assertThat(reader.maxEvents()).isEqualTo(10);
-
-        assertThatBuffer(reader.topicName())
-            .hasCapacity(TOPIC_NAME.length)
-            .hasBytes(TOPIC_NAME);
+        assertThat(reader.topicId()).isEqualTo(1);
     }
-
 
 }

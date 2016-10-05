@@ -2,7 +2,6 @@ package org.camunda.tngp.broker.wf.runtime.request.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -14,7 +13,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.broker.test.util.BufferWriterMatcher;
+import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
@@ -24,8 +23,11 @@ import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
+import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -45,6 +47,9 @@ public class DeployBpmnResourceHandlerTest
 
     @Mock
     protected DeferredResponse response;
+
+    @Captor
+    protected ArgumentCaptor<BufferWriter> captor;
 
     public static final byte[] RESOURCE = "oh say can you see".getBytes(StandardCharsets.UTF_8);
 
@@ -102,16 +107,17 @@ public class DeployBpmnResourceHandlerTest
 
         // then
         final InOrder inOrder = inOrder(response);
-
-        inOrder.verify(response).allocateAndWrite(argThat(
-                BufferWriterMatcher.writesProperties(ErrorReader.class)
-                    .matching((e) -> e.componentCode(), WfErrors.COMPONENT_CODE)
-                    .matching((e) -> e.detailCode(), WfErrors.DEPLOYMENT_REQUEST_ERROR)
-                    .matching((e) -> e.errorMessage(), "Deployment resource is required")));
-
+        inOrder.verify(response).allocateAndWrite(captor.capture());
         inOrder.verify(response).commit();
-
         verifyNoMoreInteractions(response);
+
+        final ErrorReader reader = new ErrorReader();
+        BufferWriterUtil.wrap(captor.getValue(), reader);
+
+        assertThat(reader.componentCode()).isEqualTo(WfErrors.COMPONENT_CODE);
+        assertThat(reader.detailCode()).isEqualTo(WfErrors.DEPLOYMENT_REQUEST_ERROR);
+        assertThat(reader.errorMessage()).isEqualTo("Deployment resource is required");
+
         assertThat(logWriter.size()).isEqualTo(0);
     }
 

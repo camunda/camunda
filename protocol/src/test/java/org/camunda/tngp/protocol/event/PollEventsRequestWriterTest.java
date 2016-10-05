@@ -21,8 +21,6 @@ import org.junit.rules.ExpectedException;
 
 public class PollEventsRequestWriterTest
 {
-    protected static final byte[] TOPIC_NAME = "topic".getBytes();
-
     protected static final int OFFSET = 21;
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
@@ -39,7 +37,7 @@ public class PollEventsRequestWriterTest
         requestWriter
             .startPosition(0)
             .maxEvents(10)
-            .topicName(TOPIC_NAME, 0, TOPIC_NAME.length);
+            .topicId(1);
 
         // when
         requestWriter.write(buffer, OFFSET);
@@ -59,7 +57,7 @@ public class PollEventsRequestWriterTest
 
         assertThat(requestDecoder.startPosition()).isEqualTo(0);
         assertThat(requestDecoder.maxEvents()).isEqualTo(10);
-        assertThat(requestDecoder.topicName()).isEqualTo("topic");
+        assertThat(requestDecoder.topicId()).isEqualTo(1);
     }
 
     @Test
@@ -71,17 +69,13 @@ public class PollEventsRequestWriterTest
         requestWriter
             .startPosition(0)
             .maxEvents(10)
-            .topicName(TOPIC_NAME, 0, TOPIC_NAME.length);
+            .topicId(1);
 
         // when
         final int length = requestWriter.getLength();
 
         // then
-        assertThat(length).isEqualTo(
-                MessageHeaderDecoder.ENCODED_LENGTH +
-                PollEventsDecoder.BLOCK_LENGTH +
-                PollEventsDecoder.topicNameHeaderLength() +
-                TOPIC_NAME.length);
+        assertThat(length).isEqualTo(MessageHeaderDecoder.ENCODED_LENGTH + PollEventsDecoder.BLOCK_LENGTH);
     }
 
     @Test
@@ -93,7 +87,7 @@ public class PollEventsRequestWriterTest
         requestWriter
             .startPosition(0)
             .maxEvents(10)
-            .topicName(TOPIC_NAME, 0, TOPIC_NAME.length);
+            .topicId(1);
 
         // when
         requestWriter.write(buffer, OFFSET);
@@ -109,7 +103,7 @@ public class PollEventsRequestWriterTest
 
         assertThat(requestDecoder.startPosition()).isEqualTo(PollEventsDecoder.startPositionNullValue());
         assertThat(requestDecoder.maxEvents()).isEqualTo(PollEventsDecoder.maxEventsNullValue());
-        assertThat(requestDecoder.topicName()).isEqualTo("");
+        assertThat(requestDecoder.topicId()).isEqualTo(PollEventsDecoder.topicIdNullValue());
     }
 
     @Test
@@ -121,7 +115,7 @@ public class PollEventsRequestWriterTest
         requestWriter
             .startPosition(-1)
             .maxEvents(10)
-            .topicName(TOPIC_NAME, 0, TOPIC_NAME.length);
+            .topicId(1);
 
         // then
         thrown.expect(RuntimeException.class);
@@ -140,7 +134,7 @@ public class PollEventsRequestWriterTest
         requestWriter
             .startPosition(0)
             .maxEvents(0)
-            .topicName(TOPIC_NAME, 0, TOPIC_NAME.length);
+            .topicId(1);
 
         // then
         thrown.expect(RuntimeException.class);
@@ -151,18 +145,19 @@ public class PollEventsRequestWriterTest
     }
 
     @Test
-    public void shouldValidateTopicName()
+    public void shouldValidateTopicId()
     {
         // given
         final PollEventsRequestWriter requestWriter = new PollEventsRequestWriter();
 
         requestWriter
             .startPosition(0)
-            .maxEvents(10);
+            .maxEvents(10)
+            .topicId(-1);
 
         // then
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("No topic name set");
+        thrown.expectMessage("topic id must be greater or equal to 0");
 
         // when
         requestWriter.validate();

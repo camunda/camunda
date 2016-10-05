@@ -10,39 +10,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.protocol.event;
+package org.camunda.tngp.broker.event.request.handler;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-public class PollEventsRequestReader implements BufferReader
+public class EventReader implements BufferReader
 {
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final PollEventsDecoder requestDecoder = new PollEventsDecoder();
+    protected final UnsafeBuffer eventBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
-        headerDecoder.wrap(buffer, offset);
-
-        offset += headerDecoder.encodedLength();
-
-        requestDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+        eventBuffer.wrap(buffer, offset, length);
     }
 
-    public long startPosition()
+    public DirectBuffer getEventBuffer()
     {
-        return requestDecoder.startPosition();
-    }
-
-    public int maxEvents()
-    {
-        return requestDecoder.maxEvents();
-    }
-
-    public int topicId()
-    {
-        return requestDecoder.topicId();
+        return eventBuffer;
     }
 
 }

@@ -13,7 +13,6 @@
 package org.camunda.tngp.protocol.event;
 
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class PollEventsRequestWriter implements BufferWriter
@@ -21,10 +20,9 @@ public class PollEventsRequestWriter implements BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final PollEventsEncoder requestEncoder = new PollEventsEncoder();
 
-    protected final UnsafeBuffer topicNameBuffer = new UnsafeBuffer(0, 0);
-
     protected long startPosition;
     protected int maxEvents;
+    protected int topicId;
 
     public PollEventsRequestWriter()
     {
@@ -35,9 +33,7 @@ public class PollEventsRequestWriter implements BufferWriter
     public int getLength()
     {
         return headerEncoder.encodedLength() +
-               requestEncoder.sbeBlockLength() +
-               PollEventsEncoder.topicNameHeaderLength() +
-               topicNameBuffer.capacity();
+               requestEncoder.sbeBlockLength();
     }
 
     @Override
@@ -54,17 +50,13 @@ public class PollEventsRequestWriter implements BufferWriter
         requestEncoder.wrap(buffer, offset)
             .startPosition(startPosition)
             .maxEvents(maxEvents)
-            .putTopicName(topicNameBuffer, 0, topicNameBuffer.capacity());
+            .topicId(topicId);
 
         reset();
     }
 
     public void validate()
     {
-        if (topicNameBuffer.capacity() == 0)
-        {
-            throw new RuntimeException("No topic name set");
-        }
         if (startPosition < 0)
         {
             throw new RuntimeException("start position must be greater or equal to 0");
@@ -73,14 +65,17 @@ public class PollEventsRequestWriter implements BufferWriter
         {
             throw new RuntimeException("max events must be greater than 0");
         }
+        if (topicId < 0)
+        {
+            throw new RuntimeException("topic id must be greater or equal to 0");
+        }
     }
 
     protected void reset()
     {
         startPosition = PollEventsEncoder.startPositionNullValue();
         maxEvents = PollEventsEncoder.maxEventsNullValue();
-
-        topicNameBuffer.wrap(0, 0);
+        topicId = PollEventsEncoder.topicIdNullValue();
     }
 
     public PollEventsRequestWriter startPosition(long startPosition)
@@ -95,9 +90,9 @@ public class PollEventsRequestWriter implements BufferWriter
         return this;
     }
 
-    public PollEventsRequestWriter topicName(byte[] bytes, int offset, int length)
+    public PollEventsRequestWriter topicId(int topicId)
     {
-        topicNameBuffer.wrap(bytes, offset, length);
+        this.topicId = topicId;
         return this;
     }
 

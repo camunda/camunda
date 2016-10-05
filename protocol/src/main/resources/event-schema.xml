@@ -28,7 +28,7 @@
     description="Poll a number of events">
     <field name="startPosition" id="1" type="uint64" />
     <field name="maxEvents" id="2" type="uint16" />
-    <data  name="topicName" id="3" type="varDataEncoding" />
+    <field  name="topicId" id="3" type="uint16" />
   </sbe:message>
   
   <sbe:message name="EventBatch" id="100"
