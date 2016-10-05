@@ -61,6 +61,7 @@ public class CompactListDescriptor
 
     static
     {
+        // list header
         int offset = 0;
 
         HEADER_OFFSET = offset;
@@ -76,8 +77,10 @@ public class CompactListDescriptor
 
         HEADER_LENGTH = offset;
 
+        // data section
         DATA_SECTION_OFFSET = offset;
 
+        // element header
         offset = 0;
         ELEMENT_LENGTH_OFFSET = offset;
         offset += SIZE_OF_INT;

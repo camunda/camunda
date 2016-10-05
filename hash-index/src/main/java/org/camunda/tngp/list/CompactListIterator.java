@@ -44,6 +44,8 @@ public class CompactListIterator implements Iterator<MutableDirectBuffer>
 
     /**
      * Attach a view of the next element to a {@link MutableDirectBuffer} for providing direct access.
+     * Always returns the same object, i.e. objects returned by previous {@link #next()} invocations
+     * become invalid.
      *
      * @see CompactList#wrap(int, MutableDirectBuffer)
      * @see Iterator#next()
