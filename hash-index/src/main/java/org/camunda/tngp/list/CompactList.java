@@ -172,7 +172,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
 
         final int lastElementOffset = elementOffset(framedElementLength, size - 1);
 
-        setMemory(lastElementOffset, framedElementLength, 0);
+        setMemory(lastElementOffset, framedElementLength, (byte) 0);
         setSize(size - 1);
     }
 
@@ -324,7 +324,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         final int start = elementOffset(framedElementLength, 0);
         final int end = elementOffset(framedElementLength, size);
 
-        setMemory(start, end, 0);
+        setMemory(start, end, (byte) 0);
         setSize(0);
     }
 
@@ -373,14 +373,14 @@ public class CompactList implements Iterable<MutableDirectBuffer>
 
     protected void setValue(DirectBuffer buffer, int offset, int length, int idx, int elementOffset)
     {
-        setMemory(elementOffset, framedElementLength, 0);
+        setMemory(elementOffset, framedElementLength, (byte) 0);
         listBuffer.putInt(elementLengthOffset(elementOffset), length);
         listBuffer.putBytes(elementDataOffset(elementOffset), buffer, offset, length);
     }
 
-    protected void setMemory(final int idx, final int length, int value)
+    protected void setMemory(final int idx, final int length, byte value)
     {
-        listBuffer.setMemory(idx, length, (byte) value);
+        listBuffer.setMemory(idx, length, value);
     }
 
     @Override
