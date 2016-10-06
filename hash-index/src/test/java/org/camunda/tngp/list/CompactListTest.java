@@ -3,7 +3,6 @@ package org.camunda.tngp.list;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.tngp.list.CompactListDescriptor.elementDataOffset;
 import static org.camunda.tngp.list.CompactListDescriptor.elementOffset;
 import static org.camunda.tngp.list.CompactListDescriptor.framedLength;
@@ -13,10 +12,12 @@ import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class CompactListTest
 {
@@ -24,6 +25,9 @@ public class CompactListTest
 
     UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
     UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
+
+    @Rule
+    public ExpectedException expectedExceptionRule = ExpectedException.none();
 
     @Before
     public void setup()
@@ -33,38 +37,50 @@ public class CompactListTest
         readBuffer.wrap(new byte[SIZE_OF_INT]);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldExceptionNotEnoughCapacity()
     {
+        // given
         final ByteBuffer underlyingBuffer = ByteBuffer.allocateDirect(0);
 
+        // then
+        expectedExceptionRule.expect(IllegalArgumentException.class);
+
+        // when
         new CompactList(underlyingBuffer, 16, 10);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldExceptionForElementLengthTooLargeWhenAddingElement()
     {
         // given
         final UnsafeBuffer element = new UnsafeBuffer(new byte[SIZE_OF_LONG]);
 
+        // then
+        expectedExceptionRule.expect(IllegalArgumentException.class);
+
+        // when
         list.add(element);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void shouldExceptionWhenIndexIsOutOfBoundWhenAddingElement()
+    @Test
+    public void shouldExceptionWhenIndexIsNegativeWhenAddingElement()
     {
-        final UnsafeBuffer element = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
 
-        try
-        {
-            list.add(element, 0, SIZE_OF_INT, -1);
-            fail("Expected exception: IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-        }
+        // when
+        list.add(writeBuffer, 0, SIZE_OF_INT, -1);
+    }
 
-        list.add(element, 0, SIZE_OF_INT, 1);
+    @Test
+    public void shouldExceptionWhenIndexIsGreaterThanSizeWhenAddingElement()
+    {
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
+
+        // when
+        list.add(writeBuffer, 0, SIZE_OF_INT, 1);
     }
 
     @Test
@@ -121,29 +137,37 @@ public class CompactListTest
         assertThat(readBuffer.getInt(0)).isEqualTo(9);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldExceptionForElementLengthTooLargeWhenSettingElement()
     {
+        // given
         final UnsafeBuffer element = new UnsafeBuffer(new byte[SIZE_OF_LONG]);
 
+        // then
+        expectedExceptionRule.expect(IllegalArgumentException.class);
+
+        // when
         list.set(0, element);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void shouldExceptionWhenIndexIsOutOfBoundWhenSettingElement()
+    @Test
+    public void shouldExceptionWhenIndexIsNegativeWhenSettingElement()
     {
-        final UnsafeBuffer element = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
 
-        try
-        {
-            list.set(-1, element);
-            fail("Expected exception: IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-        }
+        // when
+        list.set(-1, writeBuffer);
+    }
 
-        list.set(0, element);
+    @Test
+    public void shouldExceptionWhenIndexIsGreaterThanSizeWhenSettingElement()
+    {
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
+
+        // when
+        list.set(0, writeBuffer);
     }
 
     @Test
@@ -200,18 +224,23 @@ public class CompactListTest
         assertThat(readBuffer.getInt(0)).isEqualTo(9);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void shouldExceptionWhenIndexIsOutOfBoundWhenRemovingElement()
+    @Test
+    public void shouldExceptionWhenIndexIsNegativeWhenRemovingElement()
     {
-        try
-        {
-            list.remove(-1);
-            fail("Expected exception: IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-        }
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
 
+        // when
+        list.remove(-1);
+    }
+
+    @Test
+    public void shouldExceptionWhenIndexIsGreaterThanSizeWhenRemovingElement()
+    {
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
+
+        // when
         list.remove(0);
     }
 
@@ -276,18 +305,23 @@ public class CompactListTest
         assertThat(list.size()).isEqualTo(0);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void shouldExceptionIndexOutOfBoundWhenGettingElement()
+    @Test
+    public void shouldExceptionWhenIndexIsNegativeWhenGettingElement()
     {
-        try
-        {
-            list.get(-1, readBuffer, 0);
-            fail("Expected exception: IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-        }
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
 
+        // when
+        list.get(-1, readBuffer, 0);
+    }
+
+    @Test
+    public void shouldExceptionWhenIndexIsGreaterThanSizeWhenGettingElement()
+    {
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
+
+        // when
         list.get(0, readBuffer, 0);
     }
 
@@ -304,18 +338,57 @@ public class CompactListTest
         assertThat(readBuffer.getInt(0)).isEqualTo(7);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
+    public void shouldNotModifyElementInList()
+    {
+        // given
+        final UnsafeBuffer element = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+
+        addValues();
+
+        list.get(7, element, 0);
+
+        // assume
+        assertThat(element.getInt(0)).isEqualTo(7);
+
+        // when
+        element.putInt(0, 555);
+
+        // then
+        list.get(7, readBuffer, 0);
+        assertThat(readBuffer.getInt(0)).isEqualTo(7);
+    }
+
+    @Test
+    public void shouldReturnLengthOfSuppliedElement()
+    {
+        // given
+        addValues();
+
+        // when
+        final int length = list.get(7, readBuffer, 0);
+
+        // then
+        assertThat(length).isEqualTo(SIZE_OF_INT);
+    }
+
+    @Test
+    public void shouldExceptionWhenIndexIsNegativeWhenWrappingElement()
+    {
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
+
+        // when
+        list.wrap(-1, readBuffer);
+    }
+
+    @Test
     public void shouldExceptionIndexOutOfBoundWhenWrappingElement()
     {
-        try
-        {
-            list.wrap(-1, readBuffer);
-            fail("Expected exception: IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException e)
-        {
-        }
+        // then
+        expectedExceptionRule.expect(IndexOutOfBoundsException.class);
 
+        // when
         list.wrap(0, readBuffer);
     }
 
@@ -333,6 +406,40 @@ public class CompactListTest
     }
 
     @Test
+    public void shouldChangeValueInList()
+    {
+        // given
+        final UnsafeBuffer element = new UnsafeBuffer(new byte[SIZE_OF_INT]);
+
+        addValues();
+
+        list.wrap(7, element);
+
+        // assume
+        assertThat(element.getInt(0)).isEqualTo(7);
+
+        // when
+        element.putInt(0, 555);
+
+        // then
+        list.wrap(7, readBuffer);
+        assertThat(readBuffer.getInt(0)).isEqualTo(555);
+    }
+
+    @Test
+    public void shouldReturnLengthOfAttachedElement()
+    {
+        // given
+        addValues();
+
+        // when
+        final int length = list.wrap(7, readBuffer);
+
+        // then
+        assertThat(length).isEqualTo(SIZE_OF_INT);
+    }
+
+    @Test
     public void shouldFindElement()
     {
         // given
@@ -342,10 +449,10 @@ public class CompactListTest
         keyBuffer.putInt(0, 7);
 
         // when
-        final int idx = list.find(keyBuffer, new Comparator<MutableDirectBuffer>()
+        final int idx = list.find(keyBuffer, new Comparator<DirectBuffer>()
         {
             @Override
-            public int compare(MutableDirectBuffer o1, MutableDirectBuffer o2)
+            public int compare(DirectBuffer o1, DirectBuffer o2)
             {
                 return Integer.compare(o1.getInt(0), o2.getInt(0));
             }
@@ -381,10 +488,10 @@ public class CompactListTest
         keyBuffer.putInt(0, 7);
 
         // when
-        final int idx = list.find(keyBuffer, new Comparator<MutableDirectBuffer>()
+        final int idx = list.find(keyBuffer, new Comparator<DirectBuffer>()
         {
             @Override
-            public int compare(MutableDirectBuffer o1, MutableDirectBuffer o2)
+            public int compare(DirectBuffer o1, DirectBuffer o2)
             {
                 return Integer.compare(o1.getInt(0), o2.getInt(0));
             }
@@ -446,6 +553,22 @@ public class CompactListTest
     }
 
     @Test
+    public void shouldReturnLengthOfCopy()
+    {
+        // given
+        addValues();
+
+        final int framedElementLength = framedLength(SIZE_OF_INT);
+        final UnsafeBuffer copy = new UnsafeBuffer(new byte[requiredBufferCapacity(framedElementLength, 16)]);
+
+        // when
+        final int length = list.copyInto(copy, 0);
+
+        // then
+        assertThat(length).isEqualTo(140);
+    }
+
+    @Test
     public void shouldIterate()
     {
         // given
@@ -467,10 +590,22 @@ public class CompactListTest
         assertThat(iterator.next().getInt(0)).isEqualTo(9);
     }
 
-    @Test(expected = NoSuchElementException.class)
+    @Test
+    public void shouldReturnCapacity()
+    {
+        assertThat(list.capacity()).isEqualTo(16);
+    }
+
+    @Test
     public void shouldExceptionNoSuchElement()
     {
+        // given
         final CompactListIterator iterator = list.iterator();
+
+        // then
+        expectedExceptionRule.expect(NoSuchElementException.class);
+
+        // when
         iterator.next();
     }
 

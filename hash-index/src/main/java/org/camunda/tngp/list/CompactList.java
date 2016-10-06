@@ -60,34 +60,36 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     /**
      * Appends the passed element to the end of the list.
      *
-     * @param buffer to which the view is attached.
+     * @param srcBuffer from which the element bytes will be copied.
      */
-    public void add(DirectBuffer buffer)
+    public void add(DirectBuffer srcBuffer)
     {
-        add(buffer, 0, buffer.capacity());
+        add(srcBuffer, 0, srcBuffer.capacity());
     }
 
     /**
      * Appends the passed element to the end of the list.
      *
-     * @param buffer to which the element is attached.
+     * @param srcBuffer from which the element bytes will be copied.
      * @param offset at which the element begins.
      * @param length of the element.
      */
-    public void add(DirectBuffer buffer, int offset, int length)
+    public void add(DirectBuffer srcBuffer, int offset, int length)
     {
-        add(buffer, offset, length, max(size(), 0));
+        add(srcBuffer, offset, length, max(size(), 0));
     }
 
     /**
      * Adds the passed element at the given index.
+     * Shifts the element currently at that position
+     * (if any) and any subsequent elements to the right
      *
-     * @param buffer to which the element is attached.
+     * @param srcBuffer from which the element bytes will be copied.
      * @param offset at which the element begins.
      * @param length of the element.
-     * @param idx at which position the element should be added.
+     * @param idx at which the specified element is to be inserted.
      */
-    public void add(DirectBuffer buffer, int offset, int length, int idx)
+    public void add(DirectBuffer srcBuffer, int offset, int length, int idx)
     {
         final int size = size();
         final int capacity = capacity();
@@ -111,43 +113,47 @@ public class CompactList implements Iterable<MutableDirectBuffer>
             listBuffer.putBytes(copyOffset, listBuffer, elementOffset, copyLength);
         }
 
-        setValue(buffer, offset, length, idx, elementOffset);
+        setValue(srcBuffer, offset, length, idx, elementOffset);
         setSize(size + 1);
     }
 
     /**
-     * Replaces the element at the given index with the passed element
+     * Replaces the element at the specified position in this list with the
+     * specified element.
      *
      * @param idx of the element to replace
-     * @param buffer from which the element bytes will be copied.
+     * @param srcBuffer from which the element bytes will be copied.
      */
-    public void set(int idx, DirectBuffer buffer)
+    public void set(int idx, DirectBuffer srcBuffer)
     {
-        set(idx, buffer, 0, buffer.capacity());
+        set(idx, srcBuffer, 0, srcBuffer.capacity());
     }
 
     /**
-     * Replaces the element at the given index with the passed element
+     * Replaces the element at the specified position in this list with the
+     * specified element.
      *
      * @param idx of the element to replace
-     * @param buffer from which the element bytes will be copied.
+     * @param srcBuffer from which the element bytes will be copied.
      * @param offset at which the element begins.
      * @param length of the element.
      */
-    public void set(int idx, DirectBuffer buffer, int offset, int length)
+    public void set(int idx, DirectBuffer srcBuffer, int offset, int length)
     {
         final int size = size();
 
         elementLengthCheck(length);
         boundsCheckIncludingSize(idx, size);
 
-        setValue(buffer, offset, length, idx);
+        setValue(srcBuffer, offset, length, idx);
     }
 
     /**
-     * Removes an element at the passed index.
+     * Removes the element at the specified position in this list.
+     * Shifts any subsequent elements to the left (subtracts one
+     * from their indices).
      *
-     * @param idx to remove the corresponding element.
+     * @param idx of the element to be removed.
      */
     public void remove(int idx)
     {
@@ -181,7 +187,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     }
 
     /**
-     * Returns the capacity of the list.
+     * Returns this list's capacity.
      *
      * @return the capacity of the list.
      */
@@ -201,13 +207,15 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     }
 
     /**
-     * Get the element from the underlying buffer into a supplied {@link MutableDirectBuffer}.
+     * Get the element from the list into a supplied {@link MutableDirectBuffer}.
      *
      * @param idx the element to supply.
-     * @param buffer into which the element will be copied.
+     * @param dstBuffer into which the element will be copied.
      * @param offset of the supplied buffer to use.
+     *
+     * @return the length of the supplied element.
      */
-    public void get(int idx, MutableDirectBuffer buffer, int offset)
+    public int get(int idx, MutableDirectBuffer dstBuffer, int offset)
     {
         final int size = size();
 
@@ -216,16 +224,20 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         final int elementOffset = elementOffset(framedElementLength, idx);
         final int length = listBuffer.getInt(elementLengthOffset(elementOffset));
 
-        buffer.putBytes(offset, listBuffer, elementDataOffset(elementOffset), length);
+        dstBuffer.putBytes(offset, listBuffer, elementDataOffset(elementOffset), length);
+
+        return length;
     }
 
     /**
      * Attach a view of the element to a {@link MutableDirectBuffer} for providing direct access.
      *
      * @param idx the element to attach.
-     * @param buffer to which the view of the element is attached.
+     * @param dstBuffer to which the view of the element is attached.
+     *
+     * @return the length of the attached element.
      */
-    public void wrap(int idx, MutableDirectBuffer buffer)
+    public int wrap(int idx, MutableDirectBuffer dstBuffer)
     {
         final int size = size();
 
@@ -234,7 +246,9 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         final int elementOffset = elementOffset(framedElementLength, idx);
         final int length = listBuffer.getInt(elementLengthOffset(elementOffset));
 
-        buffer.wrap(listBuffer, elementDataOffset(elementOffset), length);
+        dstBuffer.wrap(listBuffer, elementDataOffset(elementOffset), length);
+
+        return length;
     }
 
     /**
@@ -251,13 +265,12 @@ public class CompactList implements Iterable<MutableDirectBuffer>
      *         otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The
      *         <i>insertion point</i> is defined as the point at which the
      *         key would be inserted into the list: the index of the first
-     *         element greater than the key, or <tt>list.size()</tt> if all
+     *         element greater than the key, or <tt>size()</tt> if all
      *         elements in the list are less than the specified key.  Note
      *         that this guarantees that the return value will be &gt;= 0 if
      *         and only if the key is found.
      */
-    @SuppressWarnings("unchecked")
-    public <T extends DirectBuffer> int find(final T key, final Comparator<T> c)
+    public int find(final DirectBuffer key, final Comparator<DirectBuffer> c)
     {
         int low = 0;
         int high = size() - 1;
@@ -266,7 +279,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         {
             final int mid = (low + high) >>> 1;
             wrap(mid, elementBuffer);
-            final int cmp = c.compare((T) elementBuffer, key);
+            final int cmp = c.compare(elementBuffer, key);
 
             if (cmp < 0)
             {
@@ -288,14 +301,23 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     /**
      * Copy the underlying buffer into a supplied {@link MutableDirectBuffer}.
      *
-     * @param buffer into which the underlying buffer is copied.
+     * @param dstBuffer into which the underlying buffer is copied.
      * @param offset of the supplied buffer to use.
+     *
+     * @return the length of the supplied copy of the underlying buffer.
      */
-    public void copyInto(MutableDirectBuffer buffer, int offset)
+    public int copyInto(MutableDirectBuffer dstBuffer, int offset)
     {
-        buffer.putBytes(offset, listBuffer, 0, listBuffer.capacity());
+        final int length = listBuffer.capacity();
+        dstBuffer.putBytes(offset, listBuffer, 0, length);
+
+        return length;
     }
 
+    /**
+     * Removes all of the elements from this list.
+     * The list will be empty after this call returns.
+     */
     public void clear()
     {
         final int size = size();
