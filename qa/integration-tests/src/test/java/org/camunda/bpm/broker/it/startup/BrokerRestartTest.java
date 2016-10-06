@@ -69,6 +69,7 @@ public class BrokerRestartTest
     @Test
     public void shouldNotReReadWorkflowExecutionEvents()
     {
+
         // given
         TestUtil.doRepeatedly(() ->
             client.workflows()

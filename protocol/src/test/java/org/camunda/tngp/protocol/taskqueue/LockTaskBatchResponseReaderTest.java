@@ -1,21 +1,14 @@
 package org.camunda.tngp.protocol.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
-import java.nio.charset.StandardCharsets;
-
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder.TasksEncoder;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.agrona.concurrent.UnsafeBuffer;
-
 public class LockTaskBatchResponseReaderTest
 {
-
-    public static final byte[] PAYLOAD1 = "does".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] PAYLOAD2 = "not".getBytes(StandardCharsets.UTF_8);
-    public static final byte[] PAYLOAD3 = "compute".getBytes(StandardCharsets.UTF_8);
 
     protected UnsafeBuffer messageBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected int messageLength;
@@ -36,22 +29,25 @@ public class LockTaskBatchResponseReaderTest
             .version(LockedTaskBatchEncoder.SCHEMA_VERSION)
             .blockLength(bodyEncoder.sbeBlockLength());
 
-        bodyEncoder.wrap(messageBuffer, OFFSET + headerEncoder.encodedLength())
-          .consumerId(87)
-          .lockTime(3456789L)
-          .tasksCount(3)
-          .next()
-              .taskId(6)
-              .wfInstanceId(106)
-              .putPayload(PAYLOAD1, 0, PAYLOAD1.length)
-          .next()
-              .taskId(7)
-              .wfInstanceId(107)
-              .putPayload(PAYLOAD2, 0, PAYLOAD2.length)
-          .next()
-              .taskId(8)
-              .wfInstanceId(108)
-              .putPayload(PAYLOAD3, 0, PAYLOAD3.length);
+        final TasksEncoder tasksEncoder = bodyEncoder.wrap(messageBuffer, OFFSET + headerEncoder.encodedLength())
+            .consumerId(87)
+            .tasksCount(3);
+
+        tasksEncoder.next()
+            .task()
+              .id(6)
+              .lockTime(123)
+              .wfInstanceId(106);
+        tasksEncoder.next()
+            .task()
+              .id(7)
+              .lockTime(234)
+              .wfInstanceId(107);
+        tasksEncoder.next()
+            .task()
+              .id(8)
+              .lockTime(345)
+              .wfInstanceId(108);
 
         messageLength = bodyEncoder.limit() - OFFSET;
     }
@@ -67,25 +63,21 @@ public class LockTaskBatchResponseReaderTest
 
         // then
         assertThat(reader.consumerId()).isEqualTo(87);
-        assertThat(reader.lockTime()).isEqualTo(3456789L);
 
         reader.nextTask();
         assertThat(reader.currentTaskId()).isEqualTo(6);
         assertThat(reader.currentTaskWfInstanceId()).isEqualTo(106);
-        assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD1.length);
-        assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD1);
+        assertThat(reader.currentTaskLockTime()).isEqualTo(123);
 
         reader.nextTask();
         assertThat(reader.currentTaskId()).isEqualTo(7);
         assertThat(reader.currentTaskWfInstanceId()).isEqualTo(107);
-        assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD2.length);
-        assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD2);
+        assertThat(reader.currentTaskLockTime()).isEqualTo(234);
 
         reader.nextTask();
         assertThat(reader.currentTaskId()).isEqualTo(8);
         assertThat(reader.currentTaskWfInstanceId()).isEqualTo(108);
-        assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD3.length);
-        assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD3);
+        assertThat(reader.currentTaskLockTime()).isEqualTo(345);
     }
 
     @Test
@@ -96,12 +88,10 @@ public class LockTaskBatchResponseReaderTest
         reader.wrap(messageBuffer, OFFSET, messageLength);
         reader.nextTask();
         reader.currentTaskId();
-        reader.currentTaskPayload();
+        reader.currentTaskLockTime();
 
         // then
         assertThat(reader.currentTaskId()).isEqualTo(6);
-        assertThatBuffer(reader.currentTaskPayload()).hasCapacity(PAYLOAD1.length);
-        assertThatBuffer(reader.currentTaskPayload()).hasBytes(PAYLOAD1);
     }
 
     @Test
@@ -112,10 +102,9 @@ public class LockTaskBatchResponseReaderTest
         reader.wrap(messageBuffer, OFFSET, messageLength);
         reader.nextTask();
         reader.currentTaskId();
-        reader.currentTaskPayload();
+        reader.currentTaskLockTime();
 
         // then
         assertThat(reader.consumerId()).isEqualTo(87);
-        assertThat(reader.lockTime()).isEqualTo(3456789L);
     }
 }

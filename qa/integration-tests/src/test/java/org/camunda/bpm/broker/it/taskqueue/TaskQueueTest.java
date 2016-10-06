@@ -146,4 +146,21 @@ public class TaskQueueTest
         assertThat(results).contains(taskId, null);
     }
 
+    @Test
+    public void testLockZeroTasks()
+    {
+        // given
+        final AsyncTasksClient taskService = clientRule.getClient().tasks();
+
+        // when
+        final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
+                .taskQueueId(0)
+                .taskType("bar")
+                .lockTime(100 * 1000)
+                .execute();
+
+        // when
+        assertThat(lockedTasksBatch.getLockedTasks()).isEmpty();
+    }
+
 }

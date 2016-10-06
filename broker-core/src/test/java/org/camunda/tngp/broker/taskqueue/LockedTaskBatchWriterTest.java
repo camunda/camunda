@@ -4,16 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder.TasksDecoder;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder.TasksEncoder;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskDecoder;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.junit.Test;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class LockedTaskBatchWriterTest
 {
@@ -28,7 +29,6 @@ public class LockedTaskBatchWriterTest
         // when
         writer
             .consumerId(1)
-            .lockTime(654L)
             .write(buffer, 54);
 
         // then
@@ -46,7 +46,6 @@ public class LockedTaskBatchWriterTest
         assertThat(headerDecoder.version()).isEqualTo(bodyDecoder.sbeSchemaVersion());
 
         assertThat(bodyDecoder.consumerId()).isEqualTo(1);
-        assertThat(bodyDecoder.lockTime()).isEqualTo(654L);
         assertThat(bodyDecoder.tasks().count()).isEqualTo(0);
     }
 
@@ -58,8 +57,7 @@ public class LockedTaskBatchWriterTest
         final LockedTaskBatchWriter writer = new LockedTaskBatchWriter();
 
         writer
-            .consumerId(1)
-            .lockTime(654L);
+            .consumerId(1);
 
         // when
         final int length = writer.getLength();
@@ -78,15 +76,15 @@ public class LockedTaskBatchWriterTest
     {
         // given
         final LockedTaskBatchWriter writer = new LockedTaskBatchWriter();
+        final LockedTaskWriter taskWriter = new LockedTaskWriter();
 
         // when
         writer
             .consumerId(1)
-            .lockTime(654L)
             .newTasks()
-                .appendTask(76, 10076, asBuffer("foo"), 0, 3)
-                .appendTask(98, 10098, asBuffer("foobar"), 3, 3)
-                .appendTask(123, 10123, asBuffer("foobar"), 1, 2)
+                .appendTask(taskWriter.id(76).workflowInstanceId(10076).lockTime(123L))
+                .appendTask(taskWriter.id(98).workflowInstanceId(10098).lockTime(234L))
+                .appendTask(taskWriter.id(123).workflowInstanceId(10123).lockTime(345L))
             .write(buffer, 54);
 
         // then
@@ -104,23 +102,24 @@ public class LockedTaskBatchWriterTest
         assertThat(headerDecoder.version()).isEqualTo(bodyDecoder.sbeSchemaVersion());
 
         assertThat(bodyDecoder.consumerId()).isEqualTo(1);
-        assertThat(bodyDecoder.lockTime()).isEqualTo(654L);
 
         final TasksDecoder tasksDecoder = bodyDecoder.tasks();
         assertThat(tasksDecoder.count()).isEqualTo(3);
 
-        tasksDecoder.next();
-        assertThat(tasksDecoder.taskId()).isEqualTo(76);
-        assertThat(tasksDecoder.wfInstanceId()).isEqualTo(10076);
-        assertThat(tasksDecoder.payload()).isEqualTo("foo");
+        LockedTaskDecoder taskDecoder = tasksDecoder.next().task();
+        assertThat(taskDecoder.id()).isEqualTo(76);
+        assertThat(taskDecoder.wfInstanceId()).isEqualTo(10076);
+        assertThat(taskDecoder.lockTime()).isEqualTo(123L);
 
-        tasksDecoder.next();
-        assertThat(tasksDecoder.taskId()).isEqualTo(98);
-        assertThat(tasksDecoder.payload()).isEqualTo("bar");
+        taskDecoder = tasksDecoder.next().task();
+        assertThat(taskDecoder.id()).isEqualTo(98);
+        assertThat(taskDecoder.wfInstanceId()).isEqualTo(10098);
+        assertThat(taskDecoder.lockTime()).isEqualTo(234L);
 
-        tasksDecoder.next();
-        assertThat(tasksDecoder.taskId()).isEqualTo(123);
-        assertThat(tasksDecoder.payload()).isEqualTo("oo");
+        taskDecoder = tasksDecoder.next().task();
+        assertThat(taskDecoder.id()).isEqualTo(123);
+        assertThat(taskDecoder.wfInstanceId()).isEqualTo(10123);
+        assertThat(taskDecoder.lockTime()).isEqualTo(345L);
     }
 
     @Test
@@ -129,14 +128,14 @@ public class LockedTaskBatchWriterTest
 
         // given
         final LockedTaskBatchWriter writer = new LockedTaskBatchWriter();
+        final LockedTaskWriter taskWriter = new LockedTaskWriter();
 
         writer
             .consumerId(1)
-            .lockTime(654L)
             .newTasks()
-                .appendTask(76, 10076, asBuffer("foo"), 0, 3)
-                .appendTask(98, 10098, asBuffer("foobar"), 3, 3)
-                .appendTask(123, 10123, asBuffer("foobar"), 1, 2);
+                .appendTask(taskWriter.id(76).workflowInstanceId(10076).lockTime(123L))
+                .appendTask(taskWriter.id(98).workflowInstanceId(10089).lockTime(234L))
+                .appendTask(taskWriter.id(123).workflowInstanceId(10123).lockTime(345L));
 
         // when
         final int length = writer.getLength();
@@ -147,8 +146,7 @@ public class LockedTaskBatchWriterTest
                 LockedTaskBatchEncoder.BLOCK_LENGTH +
                 TasksEncoder.sbeHeaderSize();
 
-        expectedLength += (TasksEncoder.sbeBlockLength() + TasksEncoder.payloadHeaderLength()) * 3; // static length of tasks
-        expectedLength += 3 + 3 + 2; // payload lengths
+        expectedLength += TasksEncoder.sbeBlockLength() * 3; // static length of tasks
 
         assertThat(length).isEqualTo(expectedLength);
     }

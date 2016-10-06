@@ -2,21 +2,23 @@ package org.camunda.tngp.broker.taskqueue.request.handler;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHandler;
+import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
+import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 
-public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
+public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
 {
     protected LogReader logReader;
-    protected LogEntryProcessor<TaskInstanceReader> logEntryProcessor;
+    protected LogEntryProcessor<LogEntryHeaderReader> logEntryProcessor;
 
     protected long taskTypeHashToPoll;
     protected DirectBuffer taskTypeToPoll;
 
+    protected TaskInstanceReader taskReader = new TaskInstanceReader();
     protected TaskInstanceReader lockableTask;
     protected long lockableTaskPosition;
 
@@ -28,16 +30,15 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
     public LockableTaskFinder(LogReader logReader)
     {
         this.logReader = logReader;
-        this.logEntryProcessor = new LogEntryProcessor<>(logReader, new TaskInstanceReader(), this);
+        this.logEntryProcessor = new LogEntryProcessor<>(logReader, new LogEntryHeaderReader(), this);
     }
 
-    void init(
-            Log log,
+    public void init(
             long position,
             int taskTypeHashToPoll,
             DirectBuffer taskTypeToPoll)
     {
-        this.logReader.wrap(log, position);
+        this.logReader.seek(position);
         this.taskTypeHashToPoll = Integer.toUnsignedLong(taskTypeHashToPoll);
         this.taskTypeToPoll = taskTypeToPoll;
         this.lockableTask = null;
@@ -89,13 +90,20 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
     }
 
     @Override
-    public int handle(long position, TaskInstanceReader reader)
+    public int handle(long position, LogEntryHeaderReader reader)
     {
-        if (reader.taskTypeHash() == taskTypeHashToPoll && reader.state() == TaskInstanceState.NEW)
+        if (!reader.template().equals(Templates.TASK_INSTANCE))
         {
-            if (taskTypeEqual(reader.getTaskType(), taskTypeToPoll))
+            return LogEntryHandler.CONSUME_ENTRY_RESULT;
+        }
+
+        reader.readInto(taskReader);
+
+        if (taskReader.taskTypeHash() == taskTypeHashToPoll && taskReader.state() == TaskInstanceState.NEW)
+        {
+            if (taskTypeEqual(taskReader.getTaskType(), taskTypeToPoll))
             {
-                lockableTask = reader;
+                lockableTask = taskReader;
                 lockableTaskPosition = position;
             }
         }

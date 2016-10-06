@@ -99,7 +99,6 @@ public class ServiceTaskTest
         // then
         assertThat(tasksBatch.getLockedTasks()).hasSize(1);
         assertThat(tasksBatch.getLockedTasks().get(0).getId()).isGreaterThan(0);
-        assertThat(tasksBatch.getLockedTasks().get(0).getPayloadString()).isEmpty();
         assertThat(tasksBatch.getLockedTasks().get(0).getWorkflowInstanceId()).isEqualTo(workflowInstance.getId());
     }
 
@@ -147,7 +146,6 @@ public class ServiceTaskTest
         // then
         assertThat(tasksBatch.getLockedTasks()).hasSize(1);
         assertThat(tasksBatch.getLockedTasks().get(0).getId()).isGreaterThan(0);
-        assertThat(tasksBatch.getLockedTasks().get(0).getPayloadString()).isEmpty();
     }
 
     @Test
@@ -246,6 +244,8 @@ public class ServiceTaskTest
 
         final LockedTask task2 = task2Batch.getLockedTasks().get(0);
 
+        assertThat(task2.getId()).isNotEqualTo(task1.getId());
+
         final Long result = client.tasks().complete()
             .taskQueueId(0)
             .taskId(task2.getId())
@@ -293,7 +293,6 @@ public class ServiceTaskTest
 
         final LockedTask task = tasksBatch.getLockedTasks().get(0);
         assertThat(task.getId()).isGreaterThan(0);
-        assertThat(task.getPayloadString()).isEmpty();
 
         final Long result = client
             .tasks()

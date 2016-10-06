@@ -40,4 +40,22 @@ public class CompositeRequestDispatcher<C extends ResourceContext> implements As
 
         return -1;
     }
+
+    @Override
+    public long onDataFrame(DirectBuffer buffer, int offset, int length)
+    {
+        decoderFlyweight.wrap(buffer, offset);
+
+        final int schemaId = decoderFlyweight.schemaId();
+
+        for (int i = 0; i < dispatchers.length; i++)
+        {
+            if (dispatchers[i].schemaId == schemaId)
+            {
+                return dispatchers[i].onDataFrame(buffer, offset, length);
+            }
+        }
+
+        return -1;
+    }
 }

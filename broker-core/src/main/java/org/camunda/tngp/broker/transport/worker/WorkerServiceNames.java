@@ -4,6 +4,7 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorker;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
 
 public class WorkerServiceNames
 {
@@ -21,5 +22,11 @@ public class WorkerServiceNames
     {
         return ServiceName.newServiceName(String.format("workers.%s", bindingName), AsyncRequestWorker.class);
     }
+
+    public static ServiceName<DataFramePool> workerDataFramePoolServiceName(String bindingName)
+    {
+        return ServiceName.newServiceName(String.format("workers.%s.data-frame-pool", bindingName), DataFramePool.class);
+    }
+
 
 }

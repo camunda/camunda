@@ -2,6 +2,7 @@ package org.camunda.bpm.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +22,8 @@ import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
+import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
+import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -243,6 +246,76 @@ public class TaskSubscriptionTest
 
     }
 
+    @Test
+    public void shouldHandleMoreTasksThanPrefetchConfigured()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        final int numTasks = 100;
+        for (int i = 0; i < numTasks; i++)
+        {
+            client.tasks().create()
+                .taskQueueId(0)
+                .taskType("foo")
+                .execute();
+        }
+
+        final RecordingTaskHandler handler = new RecordingTaskHandler();
+
+        final TaskSubscriptionBuilder builder = client.tasks().newSubscription()
+            .taskQueueId(0)
+            .taskType("foo")
+            .lockTime(10000L)
+            .handler(handler);
+
+        // when
+        ((TaskSubscriptionBuilderImpl) builder)
+            .taskPrefetchSize(2)
+            .open();
+
+        TestUtil.waitUntil(() -> handler.handledTasks.size() == numTasks);
+
+        // then
+        assertThat(handler.handledTasks).hasSize(numTasks);
+    }
+
+    @Test
+    public void shouldGiveTaskToSingleSubscription()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        client.tasks().newSubscription()
+            .taskQueueId(0)
+            .lockTime(Duration.ofHours(1L))
+            .taskType("foo")
+            .handler(taskHandler)
+            .open();
+
+        client.tasks().newSubscription()
+            .taskQueueId(0)
+            .lockTime(Duration.ofHours(1L))
+            .taskType("foo")
+            .handler(taskHandler)
+            .open();
+
+        // when
+        client
+            .tasks()
+            .create()
+            .taskQueueId(0)
+            .taskType("foo")
+            .execute();
+
+        TestUtil.waitUntil(() -> taskHandler.handledTasks.size() == 1);
+
+        // then
+        assertThat(taskHandler.handledTasks).hasSize(1);
+    }
+
     public static class RecordingTaskHandler implements TaskHandler
     {
         protected List<Task> handledTasks = Collections.synchronizedList(new ArrayList<>());
@@ -250,7 +323,6 @@ public class TaskSubscriptionTest
         @Override
         public void handle(Task task)
         {
-            System.out.println("Task handler executed: " + task.getType());
             handledTasks.add(task);
             task.complete();
         }

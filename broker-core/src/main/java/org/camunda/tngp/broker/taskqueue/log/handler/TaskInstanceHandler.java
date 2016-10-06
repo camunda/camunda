@@ -5,14 +5,21 @@ import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.taskqueue.LockedTaskBatchWriter;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
+import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
-import org.agrona.DirectBuffer;
 
 public class TaskInstanceHandler implements LogEntryTypeHandler<TaskInstanceReader>
 {
     protected SingleTaskAckResponseWriter singleTaskResponseWriter = new SingleTaskAckResponseWriter();
     protected LockedTaskBatchWriter taskBatchResponseWriter = new LockedTaskBatchWriter();
+
+    protected LockTasksOperator lockTasksOperator;
+
+    public TaskInstanceHandler(LockTasksOperator lockTasksOperator)
+    {
+        this.lockTasksOperator = lockTasksOperator;
+    }
 
     @Override
     public void handle(TaskInstanceReader reader, ResponseControl responseControl, LogWriters logWriters)
@@ -27,15 +34,7 @@ public class TaskInstanceHandler implements LogEntryTypeHandler<TaskInstanceRead
         }
         else if (state == TaskInstanceState.LOCKED)
         {
-            final DirectBuffer payload = reader.getPayload();
-
-            taskBatchResponseWriter
-                .consumerId((int) reader.lockOwnerId()) // TODO: clarifiy: int or long?
-                .lockTime(reader.lockTime())
-                .newTasks()
-                    .appendTask(reader.id(), reader.wfInstanceId(), payload, 0, payload.capacity());
-
-            responseControl.accept(taskBatchResponseWriter);
+            lockTasksOperator.onTaskLocked(reader);
         }
     }
 

@@ -6,23 +6,30 @@ import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API
 import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
 import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerContextServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerDataFramePoolServiceName;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerServiceName;
 
+import org.camunda.tngp.broker.services.DataFramePoolService;
 import org.camunda.tngp.broker.services.DeferredResponsePoolService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.SystemContext;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueComponentCfg;
+import org.camunda.tngp.broker.taskqueue.request.handler.CloseTaskSubscriptionHandler;
 import org.camunda.tngp.broker.taskqueue.request.handler.CompleteTaskHandler;
 import org.camunda.tngp.broker.taskqueue.request.handler.CreateTaskInstanceHandler;
+import org.camunda.tngp.broker.taskqueue.request.handler.CreateTaskSubscriptionHandler;
 import org.camunda.tngp.broker.taskqueue.request.handler.LockTaskBatchHandler;
+import org.camunda.tngp.broker.taskqueue.request.handler.ProvideSubscriptionCreditsHandler;
+import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscriptionTask;
 import org.camunda.tngp.broker.transport.worker.AsyncRequestWorkerService;
 import org.camunda.tngp.broker.transport.worker.BrokerRequestDispatcher;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContextService;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.protocol.taskqueue.ProvideSubscriptionCreditsDecoder;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
@@ -64,22 +71,32 @@ public class TaskQueueComponent implements Component
         final BrokerRequestDispatcher<TaskQueueContext> taskQueueRequestDispatcher = new BrokerRequestDispatcher<>(taskQueueManagerService, 1, new BrokerRequestHandler[] {
             new CreateTaskInstanceHandler(),
             new LockTaskBatchHandler(),
-            new CompleteTaskHandler()
+            new CompleteTaskHandler(),
+            new CreateTaskSubscriptionHandler(),
+            new CloseTaskSubscriptionHandler()
         });
+
+        taskQueueRequestDispatcher.addDataFrameHandler(ProvideSubscriptionCreditsDecoder.TEMPLATE_ID, new ProvideSubscriptionCreditsHandler());
 
         final TaskQueueWorkerContext workerContext = new TaskQueueWorkerContext();
         workerContext.setRequestHandler(taskQueueRequestDispatcher);
         workerContext.setWorkerTasks(new WorkerTask[]
         {
-            new LogProcessingTask()
+            new LogProcessingTask(),
+            new TaskSubscriptionTask()
         });
 
         final DeferredResponsePoolService responsePoolService = new DeferredResponsePoolService(perWorkerResponsePoolCapacity);
+        final DataFramePoolService dataFramePoolService = new DataFramePoolService(perWorkerResponsePoolCapacity);
         final AsyncRequestWorkerService workerService = new AsyncRequestWorkerService();
         final TaskQueueWorkerContextService brokerWorkerContextService = new TaskQueueWorkerContextService(workerContext);
 
         final ServiceName<DeferredResponsePool> responsePoolServiceName = serviceContainer.createService(workerResponsePoolServiceName(WORKER_NAME), responsePoolService)
             .dependency(TRANSPORT_SEND_BUFFER, responsePoolService.getSendBufferInector())
+            .install();
+
+        serviceContainer.createService(workerDataFramePoolServiceName(WORKER_NAME), dataFramePoolService)
+            .dependency(TRANSPORT_SEND_BUFFER, dataFramePoolService.getSendBufferInector())
             .install();
 
         final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.createService(workerContextServiceName(WORKER_NAME), brokerWorkerContextService)

@@ -2,10 +2,9 @@ package org.camunda.tngp.protocol.wf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Test;
-
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Test;
 
 public class DeployBpmnResourceAckResponseReaderTest
 {

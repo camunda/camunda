@@ -21,6 +21,11 @@
 			<type name="blockLength" primitiveType="uint16" />
 			<type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
 		</composite>
+		<composite name="lockedTask">
+		    <type name="id" id="1" primitiveType="uint64" />
+	        <type name="lockTime" id="2" primitiveType="uint64" />
+	        <type name="wfInstanceId" id="3" primitiveType="uint64" />
+		</composite>
 	</types>
 
 	<types>
@@ -53,16 +58,41 @@
 		<field name="taskId" id="2" type="uint64" />
 	</sbe:message>
 
+    <sbe:message name="CreateTaskSubscription" id="4">
+        <field name="consumerId" id="1" type="uint16" />
+        <field name="lockDuration" id="2" type="uint64" />
+        <field name="initialCredits" id="3" type="uint16" />
+        <data name="taskType" id="4" type="varDataEncoding" />
+    </sbe:message>
+    
+    <sbe:message name="CloseTaskSubscription" id="5">
+        <field name="consumerId" id="1" type="uint16" />
+        <field name="subscriptionId" id="2" type="uint64" />
+    </sbe:message>
+    
+    <sbe:message name="TaskSubscriptionAck" id="400">
+        <field name="id" id="1" type="uint64" />
+    </sbe:message>
+    
+    <sbe:message name="SubscribedTask" id="401">
+        <field name="subscriptionId" id="1" type="uint64" />
+        <field name="task" id="2" type="lockedTask" />
+    </sbe:message>
+    
 	<sbe:message name="LockedTaskBatch" id="100"
 		description="A batch of locked tasks">
 		<field name="consumerId" id="1" type="uint16" />
-		<field name="lockTime" id="2" type="uint64" />
 		<group name="tasks" id="3" dimensionType="groupSizeEncoding">
-			<field name="taskId" id="4" type="uint64" />
-            <field name="wfInstanceId" id="5" type="uint64" />
-			<data name="payload" id="6" type="varDataEncoding" />
+            <field name="task" id="4" type="lockedTask" />
 		</group>
 	</sbe:message>
+    
+    <sbe:message name="ProvideSubscriptionCredits" id="6">
+        <field name="consumerId" id="1" type="uint16" />
+        <field name="subscriptionId" id="2" type="uint64" />
+        <field name="credits" id="2" type="uint32" />
+    </sbe:message>
+    
 
 	<sbe:message name="SingleTaskAck" id="200">
 		<field name="taskId" id="1" type="uint64" />

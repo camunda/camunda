@@ -6,6 +6,7 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueI
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockedTasksIndexServiceName;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerDataFramePoolServiceName;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -96,6 +97,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             //   therefore using the response pool to determine the latest pending task queue request (in the LogConsumer)
             //   does not work
             .dependency(workerResponsePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getResponsePoolServiceInjector())
+            .dependency(workerDataFramePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getDataFramePoolInjector())
             .listener(this)
             .install();
     }

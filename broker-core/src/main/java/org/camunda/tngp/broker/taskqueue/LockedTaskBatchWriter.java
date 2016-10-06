@@ -1,13 +1,12 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
-import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder.TasksEncoder;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferWriter;
-
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder.TasksEncoder;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
+import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class LockedTaskBatchWriter implements BufferWriter
 {
@@ -15,13 +14,17 @@ public class LockedTaskBatchWriter implements BufferWriter
     protected LockedTaskBatchEncoder bodyEncoder = new LockedTaskBatchEncoder();
 
     protected int consumerId;
-    protected long lockTime;
 
     // TODO: make configurable=?
     protected static final int MAX_TASK_ENCODED_LENGTH = 1024 * 1024;
     protected UnsafeBuffer tasksBuffer = new UnsafeBuffer(new byte[MAX_TASK_ENCODED_LENGTH]);
     protected int tasksBufferLimit = 0;
     protected int numTasks = 0;
+
+    public LockedTaskBatchWriter()
+    {
+        reset();
+    }
 
     @Override
     public int getLength()
@@ -30,12 +33,16 @@ public class LockedTaskBatchWriter implements BufferWriter
                 LockedTaskBatchEncoder.BLOCK_LENGTH;
 
         size += TasksEncoder.sbeHeaderSize() +
-                ((TasksEncoder.sbeBlockLength() + TasksEncoder.payloadHeaderLength()) * numTasks);
-
-        final int payloadLength = tasksBufferLimit - ((Long.BYTES + Long.BYTES + Integer.BYTES) * numTasks);
-        size += payloadLength;
+                (TasksEncoder.sbeBlockLength() * numTasks);
 
         return size;
+    }
+
+    protected void reset()
+    {
+        consumerId = LockedTaskBatchEncoder.consumerIdNullValue();
+        tasksBufferLimit = 0;
+        numTasks = 0;
     }
 
     public LockedTaskBatchWriter newTasks()
@@ -45,29 +52,15 @@ public class LockedTaskBatchWriter implements BufferWriter
         return this;
     }
 
-    public LockedTaskBatchWriter appendTask(
-            long taskId,
-            long wfInstanceId,
-            DirectBuffer payloadBuffer,
-            int payloadOffset,
-            int payloadLength)
+    public LockedTaskBatchWriter appendTask(LockedTaskWriter taskWriter)
     {
-        // TODO: check if still fits?
+        final int taskLength = taskWriter.getLength();
 
+        // TODO: check if fits
 
-        tasksBuffer.putLong(tasksBufferLimit, taskId);
-        tasksBufferLimit += Long.BYTES;
+        taskWriter.write(tasksBuffer, tasksBufferLimit);
 
-        tasksBuffer.putLong(tasksBufferLimit, wfInstanceId);
-        tasksBufferLimit += Long.BYTES;
-
-        // TODO: must have a range check payloadLength (same as in the Encoder implementations)
-        tasksBuffer.putShort(tasksBufferLimit, (short) payloadLength);
-        tasksBufferLimit += Integer.BYTES;
-
-        tasksBuffer.putBytes(tasksBufferLimit, payloadBuffer, payloadOffset, payloadLength);
-        tasksBufferLimit += payloadLength;
-
+        tasksBufferLimit += taskLength;
         numTasks++;
 
         return this;
@@ -76,12 +69,6 @@ public class LockedTaskBatchWriter implements BufferWriter
     public LockedTaskBatchWriter consumerId(int consumerId)
     {
         this.consumerId = consumerId;
-        return this;
-    }
-
-    public LockedTaskBatchWriter lockTime(long lockTime)
-    {
-        this.lockTime = lockTime;
         return this;
     }
 
@@ -99,29 +86,13 @@ public class LockedTaskBatchWriter implements BufferWriter
 
         bodyEncoder
             .wrap(buffer, offset + headerEncoder.encodedLength())
-            .consumerId(consumerId)
-            .lockTime(lockTime);
+            .consumerId(consumerId);
 
-        final TasksEncoder tasksEncoder = bodyEncoder.tasksCount(numTasks);
+        bodyEncoder.tasksCount(numTasks);
 
-        int currentLimit = 0;
-        for (int i = 0; i < numTasks; i++)
-        {
-            final long taskId = tasksBuffer.getLong(currentLimit);
-            currentLimit += Long.BYTES;
+        buffer.putBytes(bodyEncoder.limit(), tasksBuffer, 0, tasksBufferLimit);
 
-            final long wfInstanceId = tasksBuffer.getLong(currentLimit);
-            currentLimit += Long.BYTES;
-
-            final int payloadLength = tasksBuffer.getInt(currentLimit);
-            currentLimit += Integer.BYTES;
-
-            tasksEncoder.next()
-                .taskId(taskId)
-                .wfInstanceId(wfInstanceId)
-                .putPayload(tasksBuffer, currentLimit, payloadLength);
-            currentLimit += payloadLength;
-        }
+        reset();
 
     }
 

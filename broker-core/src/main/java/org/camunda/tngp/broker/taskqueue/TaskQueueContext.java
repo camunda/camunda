@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.taskqueue;
 import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
+import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -23,6 +24,8 @@ public class TaskQueueContext implements ResourceContext
     protected IdGenerator taskInstanceIdGenerator;
 
     protected LogConsumer logConsumer;
+
+    protected LockTasksOperator lockedTasksOperator;
 
     public TaskQueueContext(String taskQueueName, int taskQueueId)
     {
@@ -101,4 +104,15 @@ public class TaskQueueContext implements ResourceContext
     {
         this.logConsumer = logConsumer;
     }
+
+    public LockTasksOperator getLockedTasksOperator()
+    {
+        return lockedTasksOperator;
+    }
+
+    public void setLockedTasksOperator(LockTasksOperator lockedTasksOperator)
+    {
+        this.lockedTasksOperator = lockedTasksOperator;
+    }
+
 }

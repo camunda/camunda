@@ -4,25 +4,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class LockableTaskFinderTest
 {
 
     protected StubLogReader logReader;
-
-    @Mock
-    protected Log log;
 
     protected static final byte[] PAYLOAD = "booom".getBytes(StandardCharsets.UTF_8);
 
@@ -34,7 +28,7 @@ public class LockableTaskFinderTest
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
-        logReader = new StubLogReader(log)
+        logReader = new StubLogReader(null)
             .addEntry(createTaskInstanceWriter(1L, TASK_TYPE, TaskInstanceState.COMPLETED))
             .addEntry(createTaskInstanceWriter(2L, TASK_TYPE2, TaskInstanceState.NEW))
             .addEntry(createTaskInstanceWriter(3L, TASK_TYPE, TaskInstanceState.NEW))
@@ -63,7 +57,7 @@ public class LockableTaskFinderTest
     {
         // given
         final LockableTaskFinder taskFinder = new LockableTaskFinder(logReader);
-        taskFinder.init(log, 0, TASK_TYPE_HASH, new UnsafeBuffer(TASK_TYPE));
+        taskFinder.init(0, TASK_TYPE_HASH, new UnsafeBuffer(TASK_TYPE));
 
         // when
         taskFinder.findNextLockableTask();

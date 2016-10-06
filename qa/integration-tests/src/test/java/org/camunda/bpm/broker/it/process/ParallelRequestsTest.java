@@ -9,12 +9,13 @@ import org.camunda.bpm.broker.it.util.ParallelRequests;
 import org.camunda.bpm.broker.it.util.ParallelRequests.SilentFuture;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowsClient;
+import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -50,7 +51,6 @@ public class ParallelRequestsTest
      * Smoke test for whether responses get mixed up
      */
     @Test
-    @Ignore
     public void shouldHandleParallelDeploymentAndInstantiation()
     {
         // given
@@ -88,6 +88,61 @@ public class ParallelRequestsTest
         assertThat(deploymentFuture.get()).isNotNull();
         assertThat(instantiationFuture.get()).isNotNull();
 
+    }
+
+    /**
+     * Smoke test. If it fails it may not always be reproducible since the behavior
+     * may depend on broker-internal processing and timing, e.g. if both requests
+     * are handled in the same batch
+     */
+    @Test
+    public void shouldHandleParallelTaskLockingAndCompletion()
+    {
+        // given
+        final ParallelRequests parallelRequests = ParallelRequests.prepare();
+
+        final TngpClient client = clientRule.getClient();
+        final AsyncTasksClient tasksClient = client.tasks();
+
+        final Long task1Id = tasksClient.create()
+            .taskQueueId(0)
+            .taskType("foo")
+            .execute();
+
+        tasksClient.pollAndLock()
+            .taskQueueId(0)
+            .taskType("foo")
+            .lockTime(10000L)
+            .maxTasks(1)
+            .execute();
+
+        final Long task2Id = tasksClient.create()
+            .taskQueueId(0)
+            .taskType("bar")
+            .execute();
+
+        final SilentFuture<LockedTasksBatch> lockedTasksFuture = parallelRequests.submitRequest(
+            () ->
+                tasksClient
+                    .pollAndLock()
+                    .taskQueueId(0)
+                    .taskType("bar")
+                    .lockTime(10000L)
+                    .maxTasks(1)
+                    .execute());
+        final SilentFuture<Long> completionFuture = parallelRequests.submitRequest(
+            () ->
+                tasksClient.complete().taskQueueId(0).taskId(task1Id).execute());
+
+        // when
+        parallelRequests.execute();
+
+        // then
+        assertThat(completionFuture.get()).isEqualTo(task1Id);
+
+        final LockedTasksBatch tasksBatch = lockedTasksFuture.get();
+        assertThat(tasksBatch.getLockedTasks()).hasSize(1);
+        assertThat(tasksBatch.getLockedTasks().get(0).getId()).isEqualTo(task2Id);
     }
 
 

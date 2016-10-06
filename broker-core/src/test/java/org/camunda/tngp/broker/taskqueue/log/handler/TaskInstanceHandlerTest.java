@@ -1,21 +1,26 @@
 package org.camunda.tngp.broker.taskqueue.log.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.broker.taskqueue.TestTaskQueueLogEntries;
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
+import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
+import org.camunda.tngp.broker.test.util.BufferReaderMatcher;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
-import org.camunda.tngp.protocol.taskqueue.LockTaskBatchResponseReader;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckResponseReader;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class TaskInstanceHandlerTest
 {
@@ -28,9 +33,14 @@ public class TaskInstanceHandlerTest
     protected StubResponseControl responseControl;
     protected StubLogWriters logWriters;
 
+    @Mock
+    protected LockTasksOperator lockTasksOperator;
+
     @Before
     public void setUp()
     {
+        MockitoAnnotations.initMocks(this);
+
         responseControl = new StubResponseControl();
         logWriters = new StubLogWriters(0);
     }
@@ -41,27 +51,19 @@ public class TaskInstanceHandlerTest
         // given
         final TaskInstanceReader taskInstance = TestTaskQueueLogEntries.mockTaskInstance(TaskInstanceState.LOCKED, 42L, 53L);
 
-        final TaskInstanceHandler handler = new TaskInstanceHandler();
+        final TaskInstanceHandler handler = new TaskInstanceHandler(lockTasksOperator);
 
         // when
         handler.handle(taskInstance, responseControl, logWriters);
 
         // then
         assertThat(logWriters.writtenEntries()).isZero();
-        assertThat(responseControl.size()).isEqualTo(1);
-        assertThat(responseControl.isAcceptance(0)).isTrue();
+        assertThat(responseControl.size()).isEqualTo(0);
 
-        LockTaskBatchResponseReader responseReader = responseControl.getAcceptanceValueAs(0, LockTaskBatchResponseReader.class);
-
-        assertThat(responseReader.consumerId()).isEqualTo(42);
-        assertThat(responseReader.lockTime()).isEqualTo(53L);
-        assertThat(responseReader.numTasks()).isEqualTo(1);
-
-        responseReader = responseReader.nextTask();
-        assertThat(responseReader.currentTaskId()).isEqualTo(642L);
-        assertThat(responseReader.currentTaskWfInstanceId()).isEqualTo(123123L);
-        assertThatBuffer(responseReader.currentTaskPayload()).hasBytes(PAYLOAD);
-
+        verify(lockTasksOperator).onTaskLocked(
+                argThat(BufferReaderMatcher.<TaskInstanceReader>readsProperties()
+                        .matching((r) -> r.lockTime(), 53L)
+                        .matching((r) -> r.id(), TestTaskQueueLogEntries.ID)));
     }
 
     @Test
@@ -73,7 +75,7 @@ public class TaskInstanceHandlerTest
                 TaskInstanceDecoder.lockOwnerIdNullValue(),
                 TaskInstanceDecoder.lockTimeNullValue());
 
-        final TaskInstanceHandler handler = new TaskInstanceHandler();
+        final TaskInstanceHandler handler = new TaskInstanceHandler(mock(LockTasksOperator.class));
 
         // when
         handler.handle(taskInstance, responseControl, logWriters);

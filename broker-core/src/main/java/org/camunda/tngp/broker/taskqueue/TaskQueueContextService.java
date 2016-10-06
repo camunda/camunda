@@ -11,6 +11,7 @@ import org.camunda.tngp.broker.taskqueue.log.handler.TaskInstanceHandler;
 import org.camunda.tngp.broker.taskqueue.log.handler.TaskInstanceRequestHandler;
 import org.camunda.tngp.broker.taskqueue.log.idx.LockedTasksIndexWriter;
 import org.camunda.tngp.broker.taskqueue.log.idx.TaskTypeIndexWriter;
+import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.BufferedLogReader;
@@ -20,6 +21,7 @@ import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
 
 public class TaskQueueContextService implements Service<TaskQueueContext>
 {
@@ -29,6 +31,8 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     protected final Injector<HashIndexManager<Bytes2LongHashIndex>> taskTypeIndexServiceInjector = new Injector<>();
 
     protected final Injector<DeferredResponsePool> responsePoolServiceInjector = new Injector<>();
+
+    protected final Injector<DataFramePool> dataFramePoolInjector = new Injector<>();
 
     protected final TaskQueueContext taskQueueContext;
 
@@ -60,7 +64,14 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
                 templates,
                 new LogWritersImpl(taskQueueContext, null));
 
-        taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler());
+        final LockTasksOperator lockTasksOperator = new LockTasksOperator(
+                taskTypeIndexManager.getIndex(),
+                new BufferedLogReader(log),
+                logWriter,
+                responsePoolServiceInjector.getValue(),
+                dataFramePoolInjector.getValue());
+
+        taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
         taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
 
         taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
@@ -74,6 +85,8 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
         taskProcessor.fastForwardToLastEvent();
 
         taskQueueContext.setLogConsumer(taskProcessor);
+
+        taskQueueContext.setLockedTasksOperator(lockTasksOperator);
     }
 
     @Override
@@ -116,6 +129,11 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     public Injector<DeferredResponsePool> getResponsePoolServiceInjector()
     {
         return responsePoolServiceInjector;
+    }
+
+    public Injector<DataFramePool> getDataFramePoolInjector()
+    {
+        return dataFramePoolInjector;
     }
 
 }
