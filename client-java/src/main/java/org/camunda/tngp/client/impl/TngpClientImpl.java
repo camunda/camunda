@@ -1,12 +1,6 @@
 package org.camunda.tngp.client.impl;
 
-import static org.camunda.tngp.client.ClientProperties.BROKER_CONTACTPOINT;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
-import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
+import static org.camunda.tngp.client.ClientProperties.*;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
@@ -70,7 +64,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
     protected final EventsClient eventsClient;
 
-    public TngpClientImpl(Properties properties)
+    public TngpClientImpl(final Properties properties)
     {
         ClientProperties.setDefaults(properties);
 
@@ -125,6 +119,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         eventsClient = new TngpEventsClientImpl(cmdExecutor);
     }
 
+    @Override
     public void connect()
     {
         channel = transport.createClientChannel(contactPoint)
@@ -137,6 +132,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         // taskSubscriptionManager.start();
     }
 
+    @Override
     public void disconnect()
     {
         //taskSubscriptionManager.closeAllSubscriptions();
@@ -161,7 +157,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         {
             connectionPool.close();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -170,7 +166,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         {
             transport.close();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -179,7 +175,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         {
             dataFrameReceiveBuffer.close();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -191,6 +187,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     }
 
 
+    @Override
     public TransportConnectionPool getConnectionPool()
     {
         return connectionPool;

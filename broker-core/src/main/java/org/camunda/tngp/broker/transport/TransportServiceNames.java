@@ -13,6 +13,7 @@ public class TransportServiceNames
     public static final ServiceName<ClientApiMessageHandler> CLIENT_API_MESSAGE_HANDLER = ServiceName.newServiceName("transport.clientApi.messageHandler", ClientApiMessageHandler.class);
 
     public static final String CLIENT_API_SOCKET_BINDING_NAME = "clientApi";
+    public static final String MANAGEMENT_SOCKET_BINDING_NAME = "management";
 
     public static ServiceName<ServerSocketBinding> serverSocketBindingServiceName(String bindingName)
     {

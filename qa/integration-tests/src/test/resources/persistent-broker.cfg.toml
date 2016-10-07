@@ -10,6 +10,9 @@ sendBufferSize = 64
 port = 51015
 receiveBufferSize = 16
 
+[network.management]
+port = 51016
+
 # System Configuration --------------------------------
 
 [threading]

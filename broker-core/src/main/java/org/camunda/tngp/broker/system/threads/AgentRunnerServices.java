@@ -4,7 +4,6 @@ import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public interface AgentRunnerServices
 {
-
     AgentRunnerService networkReceiverAgentRunnerService();
 
     AgentRunnerService networkSenderAgentRunnerService();
@@ -15,4 +14,9 @@ public interface AgentRunnerServices
 
     AgentRunnerService conductorAgentRunnerService();
 
+    AgentRunnerService gossipAgentRunnerService();
+
+    AgentRunnerService raftAgentRunnerService();
+
+    AgentRunnerService clusterAgentService();
 }

@@ -1,0 +1,51 @@
+# Default TNGP Config File. Used if no config file is provided to the broker.
+
+# Networking configuration ----------------------------
+
+[network]
+hostname = "0.0.0.0"
+sendBufferSize = 128
+
+[network.clientApi]
+port = 9090
+receiveBufferSize = 16
+
+[network.management]
+host = "localhost"
+port = 6666
+receiveBufferSize = 16
+
+[network.management.gossip]
+initialContactPoints = [
+    "localhost:5555"
+]
+peersStorageFile = "/tmp/6666.tngp"
+
+# System Configuration --------------------------------
+
+[threading]
+numberOfThreads = 2
+maxIdleTimeMs = 100
+idleStrategy = "BACKOFF"
+
+[metrics]
+useTempCountersFile = true
+
+# Log Configuration -----------------------------------
+
+[logs]
+logWriteBufferSize = 256
+defaultLogSegmentSize = 512
+
+# Task Queues ------------------------------------------
+
+[task-queues]
+numberOfWorkers = 1
+perWorkerResponsePoolCapacity = 32
+
+# Workflow ---------------------------------------------
+
+[workflow]
+numberOfWorkers = 1
+perWorkerResponsePoolCapacity = 32
+

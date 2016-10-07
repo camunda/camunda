@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
+    package="org.camunda.tngp.management.cluster" id="5" version="1"
+    semanticVersion="0.1.0" description="Tngp Cluster Management Protocol" byteOrder="littleEndian">
+
+    <types>
+        <composite name="messageHeader"
+            description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16" />
+            <type name="templateId" primitiveType="uint16" />
+            <type name="schemaId" primitiveType="uint16" />
+            <type name="version" primitiveType="uint16" />
+        </composite>
+        <composite name="varDataEncoding">
+            <type name="length" primitiveType="uint16" />
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
+        </composite>
+        <composite name="groupSizeEncoding">
+            <type name="blockLength" primitiveType="uint16" />
+            <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+        </composite>
+    </types>
+
+    <types>
+        <enum name="BooleanType" encodingType="uint8" semanticType="Boolean">
+            <validValue name="FALSE">0</validValue>
+            <validValue name="TRUE">1</validValue>
+        </enum>
+         <enum name="Type" encodingType="uint8">     
+            <validValue name="INACTIVE">0</validValue>
+            <validValue name="RESERVE">1</validValue>
+            <validValue name="PASSIVE">2</validValue>
+            <validValue name="ACTIVE">3</validValue>
+        </enum>
+        <enum name="Status" encodingType="uint8" semanticType="Boolean">
+            <validValue name="AVAILABLE">0</validValue>
+            <validValue name="UNVAILABLE">1</validValue>
+        </enum>
+    </types>
+
+    <sbe:message name="InvitationRequest" id="0">
+        <field name="log" id="1" type="uint16" />
+        <group name="cluster" id="2" dimensionType="groupSizeEncoding">
+            <field name="type" id="3" type="Type"/>
+            <field name="port" id="4" type="uint16"/>
+            <data name="host" id="5" type="varDataEncoding"/>
+        </group>
+    </sbe:message>
+
+    <sbe:message name="InvitationResponse" id="1">
+        <field name="acknowledged" id="0" type="BooleanType"/>
+    </sbe:message>
+
+</sbe:messageSchema>

@@ -10,6 +10,15 @@ sendBufferSize = 128
 port = 51015
 receiveBufferSize = 16
 
+[network.management]
+host = "localhost"
+port = 51016
+receiveBufferSize = 16
+
+[network.management.gossip]
+peersStorageFile = "/tmp/51016.tngp"
+
+
 # System Configuration --------------------------------
 
 [threading]
@@ -29,7 +38,7 @@ defaultLogSegmentSize = 512
 [[log]]
 name = "default-task-queue-log"
 id = 0
-useTempLogDirectory = true
+logDirectory = "/tmp/tngp-51015-task"
 
 [snapshot]
 useTempSnapshotDirectory = true

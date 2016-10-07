@@ -11,7 +11,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
 {
     protected Toml toml;
 
-    public ConfigurationManagerImpl(String filePath)
+    public ConfigurationManagerImpl(final String filePath)
     {
         if (filePath == null)
         {
@@ -25,7 +25,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         }
     }
 
-    public ConfigurationManagerImpl(InputStream configStream)
+    public ConfigurationManagerImpl(final InputStream configStream)
     {
         if (configStream == null)
         {
@@ -45,7 +45,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
     }
 
     @Override
-    public <T> T readEntry(String key, Class<T> configObjectType)
+    public <T> T readEntry(final String key, final Class<T> configObjectType)
     {
         final Toml componentConfig = toml.getTable(key);
 
@@ -60,13 +60,16 @@ public class ConfigurationManagerImpl implements ConfigurationManager
     }
 
     @Override
-    public <T> List<T> readList(String key, Class<T> type)
+    public <T> List<T> readList(final String key, final Class<T> type)
     {
         final List<T> result = new ArrayList<>();
         final List<Toml> tables = toml.getTables(key);
-        for (Toml toml : tables)
+        if (tables != null)
         {
-            result.add(toml.to(type));
+            for (final Toml toml : tables)
+            {
+                result.add(toml.to(type));
+            }
         }
         return result;
     }

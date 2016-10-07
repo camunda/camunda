@@ -31,6 +31,9 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     protected static final String AGENT_NAME_LOG_APPENDER = "log-appender";
     protected static final String AGENT_NAME_LOG_STREAM_PROCESSOR = "log-stream-processor";
     protected static final String AGENT_NAME_CONDUCTOR = "conductor";
+    protected static final String AGENT_NAME_GOSSIP = "gossip";
+    protected static final String AGENT_NAME_RAFT = "raft";
+    protected static final String AGENT_NAME_CLUSTER = "cluster";
 
     static int maxThreadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
 
@@ -41,6 +44,9 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     protected AgentRunnerService logAppenderAgentRunnerService;
     protected AgentRunnerService logStreamProcessorAgentRunnerService;
     protected AgentRunnerService conductorAgentRunnerService;
+    protected AgentRunnerService gossipAgentRunnerService;
+    protected AgentRunnerService raftAgentRunnerService;
+    protected AgentRunnerService clusterAgentRunnerService;
 
     protected final int availableThreads;
 
@@ -88,7 +94,17 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
             networkSenderAgentRunnerService = new SharedAgentRunnerService(agentRunnerFactory, AGENT_NAME_NETWORK_SENDER);
             logAppenderAgentRunnerService = new SharedAgentRunnerService(agentRunnerFactory, AGENT_NAME_LOG_APPENDER, logAppenderThreadCount);
             logStreamProcessorAgentRunnerService = new SharedAgentRunnerService(agentRunnerFactory, AGENT_NAME_LOG_STREAM_PROCESSOR, logStreamProcessorThreadCount);
-            conductorAgentRunnerService = new SharedAgentRunnerService(agentRunnerFactory, AGENT_NAME_CONDUCTOR);
+
+            final CompositeAgentRunnerServiceFactory compositeAgentRunnerServiceFactory = new CompositeAgentRunnerServiceFactory(agentRunnerFactory,
+                    AGENT_NAME_CONDUCTOR,
+                    AGENT_NAME_GOSSIP,
+                    AGENT_NAME_RAFT,
+                    AGENT_NAME_CLUSTER);
+
+            conductorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CONDUCTOR);
+            gossipAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_GOSSIP);
+            raftAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_RAFT);
+            clusterAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CLUSTER);
         }
         else if (availableThreads == 4)
         {
@@ -98,10 +114,16 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
 
             final CompositeAgentRunnerServiceFactory compositeAgentRunnerServiceFactory = new CompositeAgentRunnerServiceFactory(agentRunnerFactory,
                     AGENT_NAME_NETWORK_SENDER,
-                    AGENT_NAME_CONDUCTOR);
+                    AGENT_NAME_CONDUCTOR,
+                    AGENT_NAME_GOSSIP,
+                    AGENT_NAME_RAFT,
+                    AGENT_NAME_CLUSTER);
 
             networkSenderAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_NETWORK_SENDER);
             conductorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CONDUCTOR);
+            gossipAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_GOSSIP);
+            raftAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_RAFT);
+            clusterAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CLUSTER);
         }
         else if (availableThreads == 3)
         {
@@ -111,11 +133,17 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
             final CompositeAgentRunnerServiceFactory compositeAgentRunnerServiceFactory = new CompositeAgentRunnerServiceFactory(agentRunnerFactory,
                     AGENT_NAME_LOG_STREAM_PROCESSOR,
                     AGENT_NAME_NETWORK_SENDER,
-                    AGENT_NAME_CONDUCTOR);
+                    AGENT_NAME_CONDUCTOR,
+                    AGENT_NAME_GOSSIP,
+                    AGENT_NAME_RAFT,
+                    AGENT_NAME_CLUSTER);
 
             logStreamProcessorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_LOG_STREAM_PROCESSOR);
             networkSenderAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_NETWORK_SENDER);
             conductorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CONDUCTOR);
+            gossipAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_GOSSIP);
+            raftAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_RAFT);
+            clusterAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CLUSTER);
         }
         else if (availableThreads == 2)
         {
@@ -129,11 +157,17 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
             compositeAgentRunnerServiceFactory = new CompositeAgentRunnerServiceFactory(agentRunnerFactory,
                     AGENT_NAME_LOG_STREAM_PROCESSOR,
                     AGENT_NAME_NETWORK_SENDER,
-                    AGENT_NAME_CONDUCTOR);
+                    AGENT_NAME_CONDUCTOR,
+                    AGENT_NAME_GOSSIP,
+                    AGENT_NAME_RAFT,
+                    AGENT_NAME_CLUSTER);
 
             logStreamProcessorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_LOG_STREAM_PROCESSOR);
             networkSenderAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_NETWORK_SENDER);
             conductorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CONDUCTOR);
+            gossipAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_GOSSIP);
+            raftAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_RAFT);
+            clusterAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CLUSTER);
         }
         else
         {
@@ -142,13 +176,19 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
                     AGENT_NAME_LOG_APPENDER,
                     AGENT_NAME_LOG_STREAM_PROCESSOR,
                     AGENT_NAME_NETWORK_SENDER,
-                    AGENT_NAME_CONDUCTOR);
+                    AGENT_NAME_CONDUCTOR,
+                    AGENT_NAME_GOSSIP,
+                    AGENT_NAME_RAFT,
+                    AGENT_NAME_CLUSTER);
 
             networkReceiverAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_NETWORK_RECEIVER);
             logAppenderAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_LOG_APPENDER);
             logStreamProcessorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_LOG_STREAM_PROCESSOR);
             networkSenderAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_NETWORK_SENDER);
             conductorAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CONDUCTOR);
+            gossipAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_GOSSIP);
+            raftAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_RAFT);
+            clusterAgentRunnerService = compositeAgentRunnerServiceFactory.createAgentRunnerService(AGENT_NAME_CLUSTER);
         }
     }
 
@@ -215,6 +255,24 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     public AgentRunnerService conductorAgentRunnerService()
     {
         return conductorAgentRunnerService;
+    }
+
+    @Override
+    public AgentRunnerService gossipAgentRunnerService()
+    {
+        return gossipAgentRunnerService;
+    }
+
+    @Override
+    public AgentRunnerService raftAgentRunnerService()
+    {
+        return raftAgentRunnerService;
+    }
+
+    @Override
+    public AgentRunnerService clusterAgentService()
+    {
+        return clusterAgentRunnerService;
     }
 
     class DefaultAgentRunnerFactory implements AgentRunnerFactory

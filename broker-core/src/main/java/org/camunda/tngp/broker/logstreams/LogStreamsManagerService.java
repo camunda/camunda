@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.logstreams;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
 
 import java.io.File;
 import java.io.IOException;

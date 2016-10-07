@@ -1,21 +1,17 @@
 package org.camunda.tngp.broker.transport;
 
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingServiceName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
+import org.camunda.tngp.broker.clustering.worker.cfg.ManagementComponentCfg;
 import org.camunda.tngp.broker.logstreams.LogStreamServiceNames;
 import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.SystemContext;
+import org.camunda.tngp.broker.transport.binding.ServerSocketBindingService;
 import org.camunda.tngp.broker.transport.cfg.SocketBindingCfg;
 import org.camunda.tngp.broker.transport.cfg.TransportComponentCfg;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandlerService;
@@ -44,6 +40,7 @@ public class TransportComponent implements Component
             .install();
 
         context.addRequiredStartAction(bindClientApi(serviceContainer, transportComponentCfg));
+        context.addRequiredStartAction(bindManagement(serviceContainer, transportComponentCfg));
     }
 
     protected CompletableFuture<Void> bindClientApi(ServiceContainer serviceContainer, TransportComponentCfg transportComponentCfg)
@@ -86,4 +83,36 @@ public class TransportComponent implements Component
             .install();
     }
 
+    protected CompletableFuture<Void> bindManagement(ServiceContainer serviceContainer, TransportComponentCfg transportComponentCfg)
+    {
+        final ManagementComponentCfg socketBindingCfg = transportComponentCfg.management;
+
+        final int port = socketBindingCfg.port;
+
+        String hostname = socketBindingCfg.host;
+        if (hostname == null || hostname.isEmpty())
+        {
+            hostname = transportComponentCfg.hostname;
+        }
+
+        final InetSocketAddress bindAddr = new InetSocketAddress(hostname, port);
+
+        int receiveBufferSize = socketBindingCfg.receiveBufferSize * 1024 * 1024;
+        if (receiveBufferSize == -1)
+        {
+            receiveBufferSize = transportComponentCfg.defaultReceiveBufferSize;
+        }
+
+        final DispatcherService receiveBufferService = new DispatcherService(receiveBufferSize);
+        serviceContainer.createService(serverSocketBindingReceiveBufferName(MANAGEMENT_SOCKET_BINDING_NAME), receiveBufferService)
+            .dependency(AGENT_RUNNER_SERVICE, receiveBufferService.getAgentRunnerInjector())
+            .dependency(COUNTERS_MANAGER_SERVICE, receiveBufferService.getCountersManagerInjector())
+            .install();
+
+        final ServerSocketBindingService socketBindingService = new ServerSocketBindingService(MANAGEMENT_SOCKET_BINDING_NAME, bindAddr);
+        return serviceContainer.createService(serverSocketBindingServiceName(MANAGEMENT_SOCKET_BINDING_NAME), socketBindingService)
+            .dependency(TRANSPORT, socketBindingService.getTransportInjector())
+            .dependency(serverSocketBindingReceiveBufferName(MANAGEMENT_SOCKET_BINDING_NAME), socketBindingService.getReceiveBufferInjector())
+            .install();
+    }
 }
