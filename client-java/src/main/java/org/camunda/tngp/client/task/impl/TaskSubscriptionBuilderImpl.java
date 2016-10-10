@@ -10,15 +10,13 @@ import org.camunda.tngp.util.EnsureUtil;
 public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 {
 
-    /**
-     * MaxTasks is not yet implemented in the broker
-     */
-    protected static final int MAX_TASKS = 1;
+    public static final int DEFAULT_TASK_PREFETCH_SIZE = 32;
 
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int taskQueueId = 0;
     protected TaskHandler taskHandler;
+    protected int taskPrefetchSize = DEFAULT_TASK_PREFETCH_SIZE;
 
     protected final TaskAcquisition taskAcquisition;
     protected final boolean autoCompleteTasks;
@@ -62,6 +60,11 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         this.taskHandler = handler;
         return this;
     }
+    public TaskSubscriptionBuilderImpl taskPrefetchSize(int numTasks)
+    {
+        this.taskPrefetchSize = numTasks;
+        return this;
+    }
 
     @Override
     public TaskSubscriptionImpl open()
@@ -71,7 +74,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskHandler, taskType, taskQueueId, lockTime, MAX_TASKS, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(taskHandler, taskType, taskQueueId, lockTime, taskPrefetchSize, taskAcquisition, autoCompleteTasks);
         subscription.open();
         return subscription;
     }

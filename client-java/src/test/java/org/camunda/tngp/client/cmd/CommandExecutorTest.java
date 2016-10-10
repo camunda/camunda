@@ -24,6 +24,7 @@ import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.buffer.RequestWriter;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,9 +88,9 @@ public class CommandExecutorTest
 
         when(requestWriter.getLength()).thenReturn(REQUEST_LENGTH);
 
-        when(clientChannelResolver.getChannelIdForCmd(any())).thenReturn(73);
+        when(clientChannelResolver.getChannelIdForCmd(any(AbstractCmdImpl.class))).thenReturn(73);
 
-        commandExecutor = new ClientCmdExecutor(mock(TransportConnectionPool.class), clientChannelResolver);
+        commandExecutor = new ClientCmdExecutor(mock(TransportConnectionPool.class), mock(DataFramePool.class), clientChannelResolver);
     }
 
     @Test

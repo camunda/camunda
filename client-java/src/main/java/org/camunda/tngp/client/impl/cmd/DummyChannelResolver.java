@@ -9,6 +9,17 @@ public class DummyChannelResolver implements ClientChannelResolver
     @Override
     public int getChannelIdForCmd(final AbstractCmdImpl<?> cmd)
     {
+        return resolveChannelId();
+    }
+
+    @Override
+    public int getChannelIdForCmd(AbstractSingleMessageCmd cmd)
+    {
+        return resolveChannelId();
+    }
+
+    protected int resolveChannelId()
+    {
         if (channelId == -1)
         {
             throw new RuntimeException("Not connected; call connect() on the client first.");
@@ -26,5 +37,6 @@ public class DummyChannelResolver implements ClientChannelResolver
     {
         this.channelId = -1;
     }
+
 
 }

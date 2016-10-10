@@ -4,9 +4,12 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
+import org.camunda.tngp.client.impl.cmd.AbstractSingleMessageCmd;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
@@ -14,11 +17,15 @@ import org.camunda.tngp.util.buffer.RequestWriter;
 public class ClientCmdExecutor
 {
     protected final TransportConnectionPool connectionPool;
+    protected final DataFramePool dataFramePool;
     protected final ClientChannelResolver clientChannelResolver;
 
-    public ClientCmdExecutor(final TransportConnectionPool connectionPool, final ClientChannelResolver clientChannelResolver)
+    public ClientCmdExecutor(final TransportConnectionPool connectionPool,
+            DataFramePool dataFramePool,
+            final ClientChannelResolver clientChannelResolver)
     {
         this.connectionPool = connectionPool;
+        this.dataFramePool = dataFramePool;
         this.clientChannelResolver = clientChannelResolver;
     }
 
@@ -88,5 +95,34 @@ public class ClientCmdExecutor
         final MutableDirectBuffer buffer = request.getClaimedRequestBuffer();
 
         requestWriter.write(buffer, offset);
+    }
+
+    public void execute(AbstractSingleMessageCmd cmd)
+    {
+        final RequestWriter requestWriter = cmd.getRequestWriter();
+        requestWriter.validate();
+
+        final int channelId = clientChannelResolver.getChannelIdForCmd(cmd);
+
+        final OutgoingDataFrame dataFrame = dataFramePool.openFrame(requestWriter.getLength(), channelId);
+
+        if (dataFrame != null)
+        {
+            try
+            {
+                dataFrame.write(requestWriter);
+                dataFrame.commit();
+            }
+            catch (Exception e)
+            {
+                dataFrame.abort();
+                throw new RuntimeException("Failed to write data frame", e);
+            }
+        }
+        else
+        {
+            throw new RuntimeException("Failed to open data frame");
+        }
+
     }
 }

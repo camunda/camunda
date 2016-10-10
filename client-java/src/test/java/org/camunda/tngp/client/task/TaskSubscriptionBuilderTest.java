@@ -1,14 +1,20 @@
 package org.camunda.tngp.client.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.PollableTaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskAcquisition;
+import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptions;
@@ -16,6 +22,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class TaskSubscriptionBuilderTest
 {
@@ -26,16 +34,31 @@ public class TaskSubscriptionBuilderTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    @Mock
+    protected TngpClientImpl client;
+
+    @FluentMock
+    protected CreateTaskSubscriptionCmdImpl openSubscriptionCmd;
+
+
+
     @Before
     public void setUp()
     {
+        MockitoAnnotations.initMocks(this);
+
+        when(client.brokerTaskSubscription()).thenReturn(openSubscriptionCmd);
+        when(openSubscriptionCmd.execute()).thenReturn(123L);
+
         subscriptions = new TaskSubscriptions();
-        acquisition = new TaskAcquisition(mock(TngpClientImpl.class), subscriptions)
+        acquisition = new TaskAcquisition(client, subscriptions, mock(TaskDataFrameCollector.class))
         {
             {
                 this.cmdQueue = new ImmediateCommandQueue<>(this);
             }
         };
+
+
     }
 
     @Test
@@ -59,11 +82,17 @@ public class TaskSubscriptionBuilderTest
 
         final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(654L);
-        assertThat(subscriptionImpl.getMaxTasks()).isEqualTo(1);
+        assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE);
         assertThat(subscriptionImpl.getTaskQueueId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
         assertThat(subscriptions.getManagedExecutionSubscriptions()).contains(subscriptionImpl);
+
+        verify(client).brokerTaskSubscription();
+        verify(openSubscriptionCmd).consumerId((short) 0);
+        verify(openSubscriptionCmd).lockDuration(654L);
+        verify(openSubscriptionCmd).taskType("fooo");
+        verify(openSubscriptionCmd).execute();
     }
 
     @Test
@@ -85,7 +114,7 @@ public class TaskSubscriptionBuilderTest
 
         final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(654L);
-        assertThat(subscriptionImpl.getMaxTasks()).isEqualTo(1);
+        assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE);
         assertThat(subscriptionImpl.getTaskQueueId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
@@ -190,4 +219,35 @@ public class TaskSubscriptionBuilderTest
 
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(TimeUnit.DAYS.toMillis(10L));
     }
+
+    @Test
+    public void shouldThrowExceptionWhenSubscriptionCannotBeOpened()
+    {
+        // given
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+
+        final TaskHandler handler = mock(TaskHandler.class);
+        builder
+            .handler(handler)
+            .lockTime(654L)
+            .taskQueueId(123)
+            .taskType("fooo");
+
+        when(openSubscriptionCmd.execute()).thenThrow(new RuntimeException("foo"));
+
+        try
+        {
+            // when
+            builder.open();
+            fail("expected exception");
+        }
+        catch (RuntimeException e)
+        {
+            // then
+            assertThat(e).hasMessageContaining("Could not open subscription");
+        }
+
+        assertThat(subscriptions.getManagedExecutionSubscriptions()).isEmpty();
+    }
+
 }

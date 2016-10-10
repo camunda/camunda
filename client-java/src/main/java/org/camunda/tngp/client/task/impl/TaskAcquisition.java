@@ -1,27 +1,31 @@
 package org.camunda.tngp.client.task.impl;
 
+import java.time.Instant;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.Agent;
-import org.camunda.tngp.client.cmd.LockedTask;
-import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.task.impl.TaskDataFrameCollector.SubscribedTaskHandler;
+import org.camunda.tngp.protocol.taskqueue.SubscribedTaskReader;
 
-public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
+public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, SubscribedTaskHandler
 {
     public static final String ROLE_NAME = "task-acquisition";
 
     protected final TngpClientImpl client;
     protected final TaskSubscriptions taskSubscriptions;
     protected CommandQueue<AcquisitionCmd> cmdQueue;
+    protected TaskDataFrameCollector taskCollector;
 
-    public TaskAcquisition(TngpClientImpl client, TaskSubscriptions subscriptions)
+    public TaskAcquisition(TngpClientImpl client, TaskSubscriptions subscriptions, TaskDataFrameCollector taskCollector)
     {
         this.client = client;
         this.taskSubscriptions = subscriptions;
         this.cmdQueue = new DeferredCommandQueue<>(this);
+        this.taskCollector = taskCollector;
+        this.taskCollector.setTaskHandler(this);
     }
 
     @Override
@@ -30,7 +34,8 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
         int workCount = 0;
 
         workCount += evaluateCommands();
-        workCount += acquireTasksForSubscriptions();
+        workCount += taskCollector.doWork();
+        workCount += manageSubscriptions();
 
         return workCount;
     }
@@ -40,29 +45,25 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
         return cmdQueue.drain();
     }
 
-    public int acquireTasksForSubscriptions()
+    public int manageSubscriptions()
     {
         int workCount = 0;
 
-        workCount += workOnSubscriptions(taskSubscriptions.getManagedExecutionSubscriptions());
-        workCount += workOnSubscriptions(taskSubscriptions.getPollableSubscriptions());
+        workCount += manageSubscriptions(taskSubscriptions.getManagedExecutionSubscriptions());
+        workCount += manageSubscriptions(taskSubscriptions.getPollableSubscriptions());
 
         return workCount;
     }
 
-    protected int workOnSubscriptions(Collection<TaskSubscriptionImpl> subscriptions)
+    protected int manageSubscriptions(Collection<TaskSubscriptionImpl> subscriptions)
     {
         int workCount = 0;
+
         for (TaskSubscriptionImpl subscription : subscriptions)
         {
-            if (subscription.isOpen())
+            if (subscription.isClosing() && !subscription.hasQueuedTasks())
             {
-                workCount += acquireTasks(subscription);
-            }
-            else if (subscription.isClosing() && !subscription.hasQueuedTasks())
-            {
-                subscription.doClose();
-                taskSubscriptions.removeSubscription(subscription);
+                closeSubscription(subscription);
                 workCount++;
             }
         }
@@ -82,8 +83,28 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
         t.execute(this);
     }
 
+    public void closeSubscription(TaskSubscriptionImpl subscription)
+    {
+        client.closeBrokerTaskSubscription()
+            .consumerId((short) 0)
+            .subscriptionId(subscription.getId())
+            .execute();
+
+        subscription.doClose();
+        taskSubscriptions.removeSubscription(subscription);
+    }
+
     public void openSubscription(TaskSubscriptionImpl subscription)
     {
+        final CreateTaskSubscriptionCmdImpl cmd = client.brokerTaskSubscription();
+        cmd.consumerId((short) 0)
+            .initialCredits(subscription.capacity())
+            .lockDuration(subscription.getLockTime())
+            .taskType(subscription.getTaskType());
+
+        final long subscriptionId = cmd.execute();
+        subscription.setId(subscriptionId);
+
         if (subscription.isManagedSubscription())
         {
             taskSubscriptions.addManagedExecutionSubscription(subscription);
@@ -96,47 +117,39 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>
         subscription.doOpen();
     }
 
-    protected int acquireTasks(TaskSubscriptionImpl subscription)
+    public void addCredits(TaskSubscriptionImpl subscription, int credits)
     {
-        final int remainingCapacity = subscription.capacity() - subscription.size();
-
-        if (remainingCapacity <= 0)
+        if (subscription.isOpen())
         {
-            return 0;
-        }
-
-        final int tasksToAcquire = Math.min(remainingCapacity, subscription.getMaxTasks());
-
-        final LockedTasksBatch tasksBatch = client.pollAndLock()
-                .taskQueueId(subscription.getTaskQueueId())
-                .lockTime(subscription.getLockTime())
-                .maxTasks(tasksToAcquire)
-                .taskType(subscription.getTaskType())
+            client.provideSubscriptionCredits()
+                .consumerId((short) 0)
+                .subscriptionId(subscription.getId())
+                .credits(credits)
                 .execute();
-
-        final List<LockedTask> lockedTasks = tasksBatch.getLockedTasks();
-
-        for (int i = 0; i < lockedTasks.size(); i++)
-        {
-            final LockedTask lockedTask = lockedTasks.get(i);
-
-            final TaskImpl task = new TaskImpl(
-                    client,
-                    lockedTask.getId(),
-                    lockedTask.getWorkflowInstanceId(),
-                    subscription.getTaskType(),
-                    tasksBatch.getLockTime(),
-                    subscription.getTaskQueueId());
-
-            subscription.addTask(task); // cannot fail when there is a single thread that adds to the queue
         }
-
-        return lockedTasks.size();
     }
 
     public void scheduleCommand(AcquisitionCmd command)
     {
         cmdQueue.add(command);
+    }
+
+    @Override
+    public void onTask(SubscribedTaskReader taskReader)
+    {
+        final long subscriptionId = taskReader.subscriptionId();
+        final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);
+
+        final TaskImpl task = new TaskImpl(
+                client,
+                taskReader.taskId(),
+                taskReader.wfInstanceId(),
+                subscription.getTaskType(),
+                Instant.ofEpochMilli(taskReader.lockTime()),
+                subscription.getTaskQueueId());
+
+        subscription.addTask(task);
+
     }
 
 }

@@ -1,6 +1,5 @@
 package org.camunda.tngp.client.task.impl;
 
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,20 +13,20 @@ import org.camunda.tngp.client.task.TaskSubscription;
 public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubscription
 {
 
-    public static final int CAPACITY = 32;
-
     protected final TaskHandler taskHandler;
 
-    protected final Queue<TaskImpl> acquiredTasks = new ManyToManyConcurrentArrayQueue<>(CAPACITY);
+    protected final ManyToManyConcurrentArrayQueue<TaskImpl> acquiredTasks;
 
     protected final String taskType;
-    protected final int maxTasks;
     protected final int taskQueueId;
     protected final long lockTime;
+    protected final int capacity;
 
     protected final AtomicInteger state;
 
     protected final TaskAcquisition acquisition;
+
+    protected long id;
 
     public static final int STATE_NEW = 0;
     public static final int STATE_OPENING = 1;
@@ -44,11 +43,11 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
             String taskType,
             int taskQueueId,
             long lockTime,
-            int maxTasks,
+            int lowerBoundCapacity,
             TaskAcquisition acquisition,
             boolean autoComplete)
     {
-        this(null, taskType, taskQueueId, lockTime, maxTasks, acquisition, autoComplete);
+        this(null, taskType, taskQueueId, lockTime, lowerBoundCapacity, acquisition, autoComplete);
     }
 
     public TaskSubscriptionImpl(
@@ -56,7 +55,7 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
             String taskType,
             int taskQueueId,
             long lockTime,
-            int maxTasks,
+            int lowerBoundCapacity,
             TaskAcquisition acquisition,
             boolean autoComplete)
     {
@@ -64,26 +63,27 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
         this.taskType = taskType;
         this.taskQueueId = taskQueueId;
         this.lockTime = lockTime;
-        this.maxTasks = maxTasks;
         this.acquisition = acquisition;
         this.autoComplete = autoComplete;
 
         this.state = new AtomicInteger(STATE_NEW);
+        this.acquiredTasks = new ManyToManyConcurrentArrayQueue<>(lowerBoundCapacity);
+        this.capacity = acquiredTasks.capacity();
     }
 
     public void addTask(TaskImpl task)
     {
-        acquiredTasks.offer(task);
+        final boolean added = acquiredTasks.offer(task);
+
+        if (!added)
+        {
+            throw new RuntimeException("Cannot add any more tasks. Task queue saturated.");
+        }
     }
 
     public String getTaskType()
     {
         return taskType;
-    }
-
-    public int getMaxTasks()
-    {
-        return maxTasks;
     }
 
     public int getTaskQueueId()
@@ -99,11 +99,21 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
     @Override
     public int poll(TaskHandler taskHandler)
     {
+        final int currentlyAvailableTasks = size();
         int handledTasks = 0;
 
         TaskImpl task;
-        while ((task = acquiredTasks.poll()) != null)
+
+        // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
+        // in case the broker continuously produces new tasks
+        while (handledTasks < currentlyAvailableTasks)
         {
+            task = acquiredTasks.poll();
+            if (task == null)
+            {
+                break;
+            }
+
             handledTasks++;
 
             try
@@ -119,6 +129,8 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
             {
                 onTaskHandlingException(task, e);
             }
+
+            submitCredits(1);
         }
 
         return handledTasks;
@@ -240,6 +252,11 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
         return future;
     }
 
+    public void submitCredits(int credits)
+    {
+        acquisition.scheduleCommand((a) -> a.addCredits(this, credits));
+    }
+
     public int size()
     {
         return acquiredTasks.size();
@@ -257,7 +274,17 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
 
     public int capacity()
     {
-        return CAPACITY;
+        return capacity;
+    }
+
+    public void setId(long id)
+    {
+        this.id = id;
+    }
+
+    public long getId()
+    {
+        return id;
     }
 
 }

@@ -19,7 +19,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.MockTaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.PollAndLockTaskRequestReader;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
@@ -28,10 +27,6 @@ import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
-import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
-import org.camunda.tngp.protocol.wf.Constants;
-import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
-import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.PollAndLockTasksEncoder;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
@@ -188,7 +183,7 @@ public class LockTaskBatchHandlerTest
         // given
         final LockTaskBatchHandler handler = new LockTaskBatchHandler();
         when(requestReader.consumerId()).thenReturn(123);
-        when(requestReader.lockTime()).thenReturn(LockedTaskBatchEncoder.lockTimeNullValue());
+        when(requestReader.lockTime()).thenReturn(PollAndLockTasksEncoder.lockTimeNullValue());
         when(requestReader.maxTasks()).thenReturn(5);
         when(requestReader.taskType()).thenReturn(new UnsafeBuffer(new byte[Constants.WF_DEF_KEY_MAX_LENGTH + 1]));
 

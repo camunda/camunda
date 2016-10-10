@@ -61,7 +61,7 @@
     <sbe:message name="CreateTaskSubscription" id="4">
         <field name="consumerId" id="1" type="uint16" />
         <field name="lockDuration" id="2" type="uint64" />
-        <field name="initialCredits" id="3" type="uint16" />
+        <field name="initialCredits" id="3" type="uint32" />
         <data name="taskType" id="4" type="varDataEncoding" />
     </sbe:message>
     

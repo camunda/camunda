@@ -2,25 +2,16 @@ package org.camunda.tngp.client.impl.cmd;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
-import org.camunda.tngp.client.cmd.LockedTask;
+import java.time.Instant;
 
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
+import org.camunda.tngp.client.cmd.LockedTask;
 
 public class LockedTaskImpl implements LockedTask
 {
     protected long id;
     protected Long workflowInstanceId;
-
-    protected UnsafeBuffer payloadBuffer;
-
-    public LockedTaskImpl(int payloadLength)
-    {
-        payloadBuffer = new UnsafeBuffer(new byte[payloadLength]);
-    }
+    protected Instant lockTime;
 
     public void setId(long taskId)
     {
@@ -32,6 +23,17 @@ public class LockedTaskImpl implements LockedTask
     public long getId()
     {
         return id;
+    }
+
+    public void setLockTime(Instant lockTime)
+    {
+        this.lockTime = lockTime;
+    }
+
+    @Override
+    public Instant getLockTime()
+    {
+        return lockTime;
     }
 
     @Override
@@ -47,51 +49,43 @@ public class LockedTaskImpl implements LockedTask
 
     public MutableDirectBuffer getPayloadBuffer()
     {
-        return payloadBuffer;
+        return null;
     }
 
     @Override
     public int payloadLength()
     {
-        return payloadBuffer.capacity();
+        return 0;
     }
 
     @Override
     public int putPayload(ByteBuffer buffer)
     {
-        final int bytesWritten = Math.min(buffer.remaining(), payloadLength());
-
-        payloadBuffer.getBytes(0, buffer, bytesWritten);
-
-        return bytesWritten;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public int putPayload(MutableDirectBuffer buffer, int offset, int lenght)
     {
-        final int bytesWritten = Math.min(lenght, payloadLength());
-
-        payloadBuffer.getBytes(0, buffer, offset, bytesWritten);
-
-        return bytesWritten;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public byte[] getPayloadBytes()
     {
-        return payloadBuffer.byteArray();
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public String getPayloadString()
     {
-        return new String(getPayloadBytes(), StandardCharsets.UTF_8);
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public InputStream getPayloadStream()
     {
-        return new DirectBufferInputStream(payloadBuffer);
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 }

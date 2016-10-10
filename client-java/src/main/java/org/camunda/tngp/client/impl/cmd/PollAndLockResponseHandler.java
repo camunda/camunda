@@ -7,6 +7,7 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchDecoder.TasksDecoder;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskDecoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 
 public class PollAndLockResponseHandler implements ClientResponseHandler<LockedTasksBatch>
@@ -37,23 +38,20 @@ public class PollAndLockResponseHandler implements ClientResponseHandler<LockedT
 
         responseDecoder.wrap(responseBuffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        lockedTasksBatch.setLockTime(Instant.ofEpochMilli(responseDecoder.lockTime()));
-
         final Iterator<TasksDecoder> taskIterator = responseDecoder.tasks().iterator();
         while (taskIterator.hasNext())
         {
-            final TasksDecoder taskDecoder = taskIterator.next();
-            final int payloadLength = taskDecoder.payloadLength();
+            final LockedTaskDecoder taskDecoder = taskIterator.next().task();
 
-            final LockedTaskImpl lockedTask = new LockedTaskImpl(payloadLength);
+            final LockedTaskImpl lockedTask = new LockedTaskImpl();
+            lockedTask.setLockTime(Instant.ofEpochMilli(taskDecoder.lockTime()));
 
-            lockedTask.setId(taskDecoder.taskId());
+            lockedTask.setId(taskDecoder.id());
 
             final long wfInstanceId = taskDecoder.wfInstanceId();
-            final Long apiWfInstanceId = (wfInstanceId != TasksDecoder.wfInstanceIdNullValue()) ? wfInstanceId : null;
+            final Long apiWfInstanceId = (wfInstanceId != LockedTaskDecoder.wfInstanceIdNullValue()) ? wfInstanceId : null;
 
             lockedTask.setWorkflowInstanceId(apiWfInstanceId);
-            taskDecoder.getPayload(lockedTask.getPayloadBuffer(), 0, payloadLength);
 
             lockedTasksBatch.addTask(lockedTask);
         }

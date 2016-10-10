@@ -10,6 +10,7 @@ import org.camunda.tngp.util.EnsureUtil;
 public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscriptionBuilder
 {
 
+    protected int taskPrefetchSize = TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE;
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int taskQueueId = 0;
@@ -50,6 +51,12 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         return this;
     }
 
+    public PollableTaskSubscriptionBuilderImpl taskPrefetchSize(int numTasks)
+    {
+        this.taskPrefetchSize = numTasks;
+        return this;
+    }
+
     @Override
     public PollableTaskSubscription open()
     {
@@ -57,7 +64,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskType, taskQueueId, lockTime, 1, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(taskType, taskQueueId, lockTime, taskPrefetchSize, taskAcquisition, autoCompleteTasks);
         subscription.open();
         return subscription;
     }

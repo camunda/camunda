@@ -22,20 +22,28 @@ import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
 import org.camunda.tngp.client.event.impl.TngpEventsClientImpl;
+import org.camunda.tngp.client.impl.cmd.CloseTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.CompleteTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTaskCmdImpl;
+import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
+import org.camunda.tngp.client.impl.cmd.ProvideSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceCmdImpl;
 import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceCmdImpl;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionManager;
+import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.transport.ClientChannel;
+import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.Transports;
+import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
 
 
 public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsClient
@@ -45,8 +53,10 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
     protected final Transport transport;
     protected final TransportConnectionPool connectionPool;
+    protected final DataFramePool dataFramePool;
     protected ClientChannel channel;
     protected InetSocketAddress contactPoint;
+    protected Dispatcher dataFrameReceiveBuffer;
 
     protected DummyChannelResolver channelResolver;
     protected ClientCmdExecutor cmdExecutor;
@@ -88,15 +98,22 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
             .threadingMode(threadingMode)
             .build();
 
+        dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
+            .bufferSize(1024 * 1024 * sendBufferSize)
+            .modePubSub()
+            .frameMaxLength(1024 * 1024)
+            .build();
+
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, maxConnections, maxRequests);
+        dataFramePool = DataFramePool.newBoundedPool(maxRequests, transport.getSendBuffer());
 
         channelResolver = new DummyChannelResolver();
 
-        cmdExecutor = new ClientCmdExecutor(connectionPool, channelResolver);
+        cmdExecutor = new ClientCmdExecutor(connectionPool, dataFramePool, channelResolver);
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
-        taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks);
+        taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
 
         eventsClient = new TngpEventsClientImpl(cmdExecutor);
     }
@@ -105,6 +122,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     {
         channel = transport.createClientChannel(contactPoint)
                 .requestResponseProtocol(connectionPool)
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
                 .connect();
 
         channelResolver.setChannelId(channel.getId());
@@ -149,6 +167,15 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         {
             e.printStackTrace();
         }
+
+        try
+        {
+            dataFrameReceiveBuffer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     protected boolean isConnected()
@@ -160,6 +187,11 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     public TransportConnectionPool getConnectionPool()
     {
         return connectionPool;
+    }
+
+    public DataFramePool getDataFramePool()
+    {
+        return dataFramePool;
     }
 
     @Override
@@ -190,6 +222,21 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     public PollAndLockAsyncTasksCmd pollAndLock()
     {
         return new PollAndLockTasksCmdImpl(cmdExecutor);
+    }
+
+    public CreateTaskSubscriptionCmdImpl brokerTaskSubscription()
+    {
+        return new CreateTaskSubscriptionCmdImpl(cmdExecutor);
+    }
+
+    public CloseTaskSubscriptionCmdImpl closeBrokerTaskSubscription()
+    {
+        return new CloseTaskSubscriptionCmdImpl(cmdExecutor);
+    }
+
+    public ProvideSubscriptionCreditsCmdImpl provideSubscriptionCredits()
+    {
+        return new ProvideSubscriptionCreditsCmdImpl(cmdExecutor);
     }
 
     @Override

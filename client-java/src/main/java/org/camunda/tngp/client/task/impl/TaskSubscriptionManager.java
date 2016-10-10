@@ -8,6 +8,7 @@ import org.agrona.concurrent.BackoffIdleStrategy;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
+import org.camunda.tngp.dispatcher.Subscription;
 
 public class TaskSubscriptionManager
 {
@@ -21,11 +22,13 @@ public class TaskSubscriptionManager
 
     protected final boolean autoCompleteTasks;
 
-    public TaskSubscriptionManager(TngpClientImpl client, int numExecutionThreads, boolean autoCompleteTasks)
+    public TaskSubscriptionManager(TngpClientImpl client, int numExecutionThreads, boolean autoCompleteTasks, Subscription receiveBufferSubscription)
     {
         subscriptions = new TaskSubscriptions();
 
-        acqusition = new TaskAcquisition(client, subscriptions);
+        final TaskDataFrameCollector taskCollector = new TaskDataFrameCollector(receiveBufferSubscription);
+
+        acqusition = new TaskAcquisition(client, subscriptions, taskCollector);
         this.numExecutionThreads = numExecutionThreads;
 
         this.autoCompleteTasks = autoCompleteTasks;
