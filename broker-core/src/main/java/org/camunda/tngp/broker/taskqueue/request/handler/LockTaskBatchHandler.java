@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
-import org.camunda.tngp.broker.log.LogWriter;
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.taskqueue.LockedTaskBatchWriter;
 import org.camunda.tngp.broker.taskqueue.PollAndLockTaskRequestReader;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
@@ -13,12 +14,11 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskBatchEncoder;
+import org.camunda.tngp.protocol.taskqueue.PollAndLockTasksDecoder;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.ResponseCompletionHandler;
-
-import org.agrona.DirectBuffer;
 
 public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueContext>, ResponseCompletionHandler
 {
@@ -186,5 +186,11 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
     public void onAsyncWorkFailed(final DeferredResponse response)
     {
         response.abort();
+    }
+
+    @Override
+    public int getTemplateId()
+    {
+        return PollAndLockTasksDecoder.TEMPLATE_ID;
     }
 }

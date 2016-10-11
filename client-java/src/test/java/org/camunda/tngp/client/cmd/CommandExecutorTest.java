@@ -19,11 +19,11 @@ import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.impl.ClientChannelResolver;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.buffer.RequestWriter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,7 +65,7 @@ public class CommandExecutorTest
     protected ClientResponseHandler<Object> responseHandler;
 
     @Mock
-    protected ClientRequestWriter clientRequestWriter;
+    protected RequestWriter requestWriter;
 
     @Mock
     protected ClientChannelResolver clientChannelResolver;
@@ -85,7 +85,7 @@ public class CommandExecutorTest
 
         when(connection.openRequest(anyInt(), anyInt())).thenReturn(request);
 
-        when(clientRequestWriter.getLength()).thenReturn(REQUEST_LENGTH);
+        when(requestWriter.getLength()).thenReturn(REQUEST_LENGTH);
 
         when(clientChannelResolver.getChannelIdForCmd(any())).thenReturn(73);
 
@@ -96,18 +96,18 @@ public class CommandExecutorTest
     public void testExecuteAsync()
     {
         // given
-        final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ExampleCmd cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
 
         // when
         commandExecutor.executeAsync(cmd, connection);
 
         // then
-        final InOrder inOrder = Mockito.inOrder(connection, request, clientRequestWriter);
+        final InOrder inOrder = Mockito.inOrder(connection, request, requestWriter);
 
-        inOrder.verify(clientRequestWriter).validate();
-        inOrder.verify(clientRequestWriter).getLength();
+        inOrder.verify(requestWriter).validate();
+        inOrder.verify(requestWriter).getLength();
         inOrder.verify(connection).openRequest(73, REQUEST_LENGTH);
-        inOrder.verify(clientRequestWriter).write(requestBuffer, 84);
+        inOrder.verify(requestWriter).write(requestBuffer, 84);
         inOrder.verify(request).commit();
 
         verify(request, never()).awaitResponse();
@@ -119,7 +119,7 @@ public class CommandExecutorTest
     public void testExecuteAsyncAndAwaitResult() throws InterruptedException, ExecutionException
     {
         // given
-        final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ExampleCmd cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
@@ -143,7 +143,7 @@ public class CommandExecutorTest
     public void testAwaitTime() throws InterruptedException, ExecutionException, TimeoutException
     {
         // given
-        final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ExampleCmd cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
@@ -167,7 +167,7 @@ public class CommandExecutorTest
     public void testExecuteSync()
     {
         // given
-        final ExampleCmd cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ExampleCmd cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
@@ -179,12 +179,12 @@ public class CommandExecutorTest
         // then
         assertThat(returnedResult).isSameAs(expectedResult);
 
-        final InOrder inOrder = Mockito.inOrder(connection, requestBuffer, request, clientRequestWriter, responseHandler);
+        final InOrder inOrder = Mockito.inOrder(connection, requestBuffer, request, requestWriter, responseHandler);
 
-        inOrder.verify(clientRequestWriter).validate();
-        inOrder.verify(clientRequestWriter).getLength();
+        inOrder.verify(requestWriter).validate();
+        inOrder.verify(requestWriter).getLength();
         inOrder.verify(connection).openRequest(73, REQUEST_LENGTH);
-        inOrder.verify(clientRequestWriter).write(requestBuffer, 84);
+        inOrder.verify(requestWriter).write(requestBuffer, 84);
         inOrder.verify(request).commit();
 
         inOrder.verify(request).awaitResponse(12345L, TimeUnit.MILLISECONDS);
@@ -196,7 +196,7 @@ public class CommandExecutorTest
     public void testExecuteAsyncAndGetResponseAvailable() throws InterruptedException, ExecutionException
     {
         // given
-        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
@@ -219,7 +219,7 @@ public class CommandExecutorTest
     public void testExecuteAsyncAndGetResponseUnavailable() throws InterruptedException, ExecutionException
     {
         // given
-        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
 
 
         final Future<Object> asyncResult = cmd.executeAsync(connection);
@@ -237,7 +237,7 @@ public class CommandExecutorTest
     public void testPollResponseAvailable()
     {
         // given
-        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
 
         final Future<Object> asyncResult = cmd.executeAsync(connection);
 
@@ -256,7 +256,7 @@ public class CommandExecutorTest
     public void testPollResponseUnavailable()
     {
         // given
-        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, clientRequestWriter, responseHandler);
+        final ClientCommand<Object> cmd = new ExampleCmd(commandExecutor, requestWriter, responseHandler);
 
         final Future<Object> asyncResult = cmd.executeAsync(connection);
 
@@ -274,16 +274,16 @@ public class CommandExecutorTest
     public static class ExampleCmd extends AbstractCmdImpl<Object>
     {
 
-        protected ClientRequestWriter requestWriter;
+        protected RequestWriter requestWriter;
 
-        public ExampleCmd(final ClientCmdExecutor cmdExecutor, final ClientRequestWriter requestWriter, final ClientResponseHandler<Object> responseHandler)
+        public ExampleCmd(final ClientCmdExecutor cmdExecutor, final RequestWriter requestWriter, final ClientResponseHandler<Object> responseHandler)
         {
             super(cmdExecutor, responseHandler);
             this.requestWriter = requestWriter;
         }
 
         @Override
-        public ClientRequestWriter getRequestWriter()
+        public RequestWriter getRequestWriter()
         {
             return requestWriter;
         }

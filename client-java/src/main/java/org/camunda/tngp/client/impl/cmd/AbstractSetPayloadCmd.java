@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.cmd.SetPayloadCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-
+import org.camunda.tngp.util.buffer.PayloadRequestWriter;
 import org.agrona.DirectBuffer;
 
 @SuppressWarnings("unchecked")

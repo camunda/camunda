@@ -8,6 +8,7 @@ import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.wf.DeployBpmnResourceDecoder;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
@@ -59,5 +60,10 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRuntime
         response.commit();
     }
 
+    @Override
+    public int getTemplateId()
+    {
+        return DeployBpmnResourceDecoder.TEMPLATE_ID;
+    }
 
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.Future;
 import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
 {
@@ -44,6 +45,6 @@ public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
         return responseHandler;
     }
 
-    public abstract ClientRequestWriter getRequestWriter();
+    public abstract RequestWriter getRequestWriter();
 
 }

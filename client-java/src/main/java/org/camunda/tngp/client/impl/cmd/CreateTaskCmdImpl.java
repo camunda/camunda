@@ -3,6 +3,7 @@ package org.camunda.tngp.client.impl.cmd;
 import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskRequestWriter;
+import org.camunda.tngp.util.buffer.PayloadRequestWriter;
 
 public class CreateTaskCmdImpl extends AbstractSetPayloadCmd<Long, CreateAsyncTaskCmd>
     implements CreateAsyncTaskCmd

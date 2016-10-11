@@ -1,8 +1,7 @@
 package org.camunda.tngp.broker.transport.worker.spi;
 
-import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
-
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
 public interface BrokerRequestHandler<C extends ResourceContext>
 {
@@ -13,5 +12,7 @@ public interface BrokerRequestHandler<C extends ResourceContext>
              int offset,
              int length,
              DeferredResponse response);
+
+    int getTemplateId();
 
 }

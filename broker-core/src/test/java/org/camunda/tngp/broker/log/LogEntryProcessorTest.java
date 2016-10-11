@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
@@ -102,6 +104,62 @@ public class LogEntryProcessorTest
         assertThat(fragmentsProcessed).isEqualTo(0);
 
         verifyZeroInteractions(logEntryHandler);
+    }
+
+    @Test
+    public void shouldHandleEntryAgainIfPostponeResult()
+    {
+        // given
+        final LogEntryProcessor<TaskInstanceReader> logEntryProcessor = new LogEntryProcessor<>(logReader, new TaskInstanceReader(), logEntryHandler);
+
+        logReader.addEntry(new TaskInstanceWriter().id(123L)
+                .state(TaskInstanceState.COMPLETED));
+
+        when(logEntryHandler.handle(anyLong(), any())).thenReturn(
+                LogEntryHandler.POSTPONE_ENTRY_RESULT,
+                LogEntryHandler.CONSUME_ENTRY_RESULT);
+
+        // when
+        final int fragmentsProcessed = logEntryProcessor.doWork(Integer.MAX_VALUE);
+
+        // then
+        assertThat(fragmentsProcessed).isEqualTo(2);
+
+        verify(logEntryHandler, times(2))
+            .handle(
+                    eq(logReader.getEntryPosition(0)),
+                    argThat(BufferReaderMatcher.<TaskInstanceReader>readsProperties()
+                            .matching((r) -> r.id(), 123L)));
+        verifyNoMoreInteractions(logEntryHandler);
+    }
+
+    @Test
+    public void shouldStopHandleEntriesIfFailedResult()
+    {
+        // given
+        final LogEntryProcessor<TaskInstanceReader> logEntryProcessor = new LogEntryProcessor<>(logReader, new TaskInstanceReader(), logEntryHandler);
+
+        logReader.addEntry(new TaskInstanceWriter().id(123L)
+                .state(TaskInstanceState.COMPLETED));
+        logReader.addEntry(new TaskInstanceWriter().id(456L)
+                .state(TaskInstanceState.COMPLETED));
+
+        when(logEntryHandler.handle(anyLong(), any())).thenReturn(
+                LogEntryHandler.FAILED_ENTRY_RESULT,
+                LogEntryHandler.CONSUME_ENTRY_RESULT);
+
+        // when
+        final int fragmentsProcessed = logEntryProcessor.doWork(Integer.MAX_VALUE);
+
+        // then
+        assertThat(fragmentsProcessed).isEqualTo(1);
+
+        verify(logEntryHandler, times(1))
+            .handle(
+                    eq(logReader.getEntryPosition(0)),
+                    argThat(BufferReaderMatcher.<TaskInstanceReader>readsProperties()
+                            .matching((r) -> r.id(), 123L)));
+        verifyNoMoreInteractions(logEntryHandler);
     }
 
 }

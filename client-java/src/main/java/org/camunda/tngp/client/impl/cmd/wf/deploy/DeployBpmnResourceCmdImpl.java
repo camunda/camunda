@@ -11,8 +11,7 @@ import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
-
+import org.camunda.tngp.util.buffer.RequestWriter;
 import org.agrona.LangUtil;
 
 public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinition> implements DeployBpmnResourceCmd
@@ -91,7 +90,7 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
     }
 
     @Override
-    public ClientRequestWriter getRequestWriter()
+    public RequestWriter getRequestWriter()
     {
         return requestWriter;
     }

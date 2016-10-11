@@ -4,11 +4,11 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.buffer.BufferWriter;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 
 public class ClientCmdExecutor
@@ -55,7 +55,7 @@ public class ClientCmdExecutor
 
     public <R> ResponseFuture<R> executeAsync(final AbstractCmdImpl<R> cmd, final TransportConnection connection)
     {
-        final ClientRequestWriter requestWriter = cmd.getRequestWriter();
+        final RequestWriter requestWriter = cmd.getRequestWriter();
         requestWriter.validate();
 
         final int channelId = clientChannelResolver.getChannelIdForCmd(cmd);

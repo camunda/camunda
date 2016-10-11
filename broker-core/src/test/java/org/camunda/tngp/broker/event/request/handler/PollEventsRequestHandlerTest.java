@@ -83,7 +83,7 @@ public class PollEventsRequestHandlerTest
         when(eventContext.getLogManager()).thenReturn(logManager);
 
         logReader = new StubLogReader(0, log);
-        final EventFinder eventFinder = new EventFinder(logReader);
+        final EventFinder eventFinder = new EventFinder(logReader, PollEventsRequestHandler.EVENT_BUFFER_SIZE);
 
         handler = new PollEventsRequestHandler(requestReader, eventFinder, new EventBatchWriter(), new ErrorWriter());
     }
@@ -117,7 +117,7 @@ public class PollEventsRequestHandlerTest
         final EventBatchReader reader = new EventBatchReader();
         BufferWriterUtil.wrap(captor.getValue(), reader);
 
-        assertThat(reader.eventCount()).isEqualTo(1);
+        assertThat(reader.eventCount()).isEqualTo(2);
 
         reader.nextEvent();
 
@@ -125,6 +125,13 @@ public class PollEventsRequestHandlerTest
         assertThatBuffer(reader.currentEvent())
             .hasCapacity(EVENT1.length)
             .hasBytes(EVENT1);
+
+        reader.nextEvent();
+
+        assertThat(reader.currentPosition()).isEqualTo(logReader.getEntryPosition(1));
+        assertThatBuffer(reader.currentEvent())
+            .hasCapacity(EVENT2.length)
+            .hasBytes(EVENT2);
     }
 
     @Test

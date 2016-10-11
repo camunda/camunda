@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.broker.event.request.handler;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.log.Log;
@@ -23,60 +25,99 @@ public class EventFinder implements LogEntryHandler<EventReader>
     protected final LogReader logReader;
     protected final LogEntryProcessor<EventReader> logEntryProcessor;
 
-    protected EventReader event;
-    protected long eventPosition;
+    protected final UnsafeBuffer eventBuffer;
+    protected final int eventBufferSize;
 
-    public EventFinder()
+    protected int maxEvents;
+    protected int eventCount;
+
+    protected long[] eventPositions;
+    protected int[] eventBufferOffsets;
+
+    public EventFinder(int eventBufferSize)
     {
-        this(new LogReaderImpl(1024 * 1024));
+        this(new LogReaderImpl(eventBufferSize), eventBufferSize);
     }
 
-    public EventFinder(LogReader logReader)
+    public EventFinder(LogReader logReader, int eventBufferSize)
     {
         this.logReader = logReader;
         this.logEntryProcessor = new LogEntryProcessor<>(logReader, new EventReader(), this);
+
+        this.eventBufferSize = eventBufferSize;
+        eventBuffer = new UnsafeBuffer(new byte[eventBufferSize]);
     }
 
-    void init(
-            Log log,
-            long position)
+    public void init(Log log, long position, int maxEvents)
     {
         this.logReader.setLogAndPosition(log, position);
 
-        this.event = null;
-        this.eventPosition = -1;
+        this.eventBuffer.wrap(new byte[eventBufferSize]);
+
+        this.maxEvents = maxEvents;
+        this.eventCount = 0;
+
+        this.eventPositions = new long[maxEvents];
+        this.eventBufferOffsets = new int[maxEvents + 1];
+        eventBufferOffsets[0] = 0;
     }
 
     @Override
     public int handle(long position, EventReader reader)
     {
-        // no filtering of events
+        int result = LogEntryHandler.CONSUME_ENTRY_RESULT;
 
-        event = reader;
-        eventPosition = position;
+        final DirectBuffer buffer = reader.getEventBuffer();
+        final int bufferLength = buffer.capacity();
+        final int bufferIndex = eventBufferOffsets[eventCount];
 
-        return LogEntryHandler.CONSUME_ENTRY_RESULT;
+        if (bufferIndex + bufferLength < eventBufferSize)
+        {
+            eventPositions[eventCount] = position;
+            // add event to buffer
+            eventBuffer.putBytes(bufferIndex, buffer, 0, bufferLength);
+            // set offset of next event
+            eventBufferOffsets[eventCount + 1] = bufferIndex + bufferLength;
+
+            eventCount++;
+        }
+        else
+        {
+            result = LogEntryHandler.FAILED_ENTRY_RESULT;
+        }
+
+        return result;
     }
 
-    public boolean findEvents()
+    public int findEvents()
     {
         int entriesProcessed = 0;
         do
         {
-            entriesProcessed = logEntryProcessor.doWorkSingle();
-        } while (entriesProcessed > 0 && event == null);
+            entriesProcessed = logEntryProcessor.doWork(maxEvents);
+        } while (entriesProcessed > 0 && eventCount > maxEvents);
 
-        return event != null;
+        return eventCount;
     }
 
-    public EventReader getEvent()
+    public DirectBuffer getEventBuffer()
     {
-        return event;
+        return eventBuffer;
     }
 
-    public long getEventPosition()
+    public long getEventPosition(int index)
     {
-        return eventPosition;
+        return eventPositions[index];
+    }
+
+    public int getEventBufferOffset(int index)
+    {
+        return eventBufferOffsets[index];
+    }
+
+    public int getEventBufferLength(int index)
+    {
+        return eventBufferOffsets[index + 1] - eventBufferOffsets[index];
     }
 
 }

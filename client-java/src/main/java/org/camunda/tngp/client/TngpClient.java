@@ -11,6 +11,11 @@ public interface TngpClient extends AutoCloseable
 
     WorkflowsClient workflows();
 
+    /**
+     * Access the Event Api.
+     */
+    EventsClient events();
+
     TransportConnectionPool getConnectionPool();
 
     /**

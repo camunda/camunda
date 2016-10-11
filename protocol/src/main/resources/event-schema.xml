@@ -24,7 +24,7 @@
 		</composite>
 	</types>
   
-  <sbe:message name="PollEvents" id="1"
+  <sbe:message name="PollEvents" id="0"
     description="Poll a number of events">
     <field name="startPosition" id="1" type="uint64" />
     <field name="maxEvents" id="2" type="uint16" />

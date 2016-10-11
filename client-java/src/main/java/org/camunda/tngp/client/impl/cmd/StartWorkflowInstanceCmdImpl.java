@@ -4,6 +4,7 @@ import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceRequestWriter;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstance>
     implements StartWorkflowInstanceCmd
@@ -36,7 +37,7 @@ public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstan
     }
 
     @Override
-    public ClientRequestWriter getRequestWriter()
+    public RequestWriter getRequestWriter()
     {
         return requestWriter;
     }

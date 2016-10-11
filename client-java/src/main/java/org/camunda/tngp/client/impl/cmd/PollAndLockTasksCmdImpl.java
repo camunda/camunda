@@ -8,6 +8,7 @@ import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.taskqueue.PollAndLockRequestWriter;
 import org.camunda.tngp.protocol.taskqueue.CreateTaskInstanceEncoder;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     implements PollAndLockAsyncTasksCmd
@@ -57,7 +58,7 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     }
 
     @Override
-    public ClientRequestWriter getRequestWriter()
+    public RequestWriter getRequestWriter()
     {
         return requestWriter;
     }

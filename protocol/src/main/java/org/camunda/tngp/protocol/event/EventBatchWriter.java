@@ -20,17 +20,27 @@ import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class EventBatchWriter implements BufferWriter
 {
-    protected static final int EVENT_BUFFER_SIZE = 1024 * 1024;
+    public static final int DEFAULT_EVENT_BUFFER_SIZE = 1024 * 1024;
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final EventBatchEncoder batchEncoder = new EventBatchEncoder();
 
-    protected final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[EVENT_BUFFER_SIZE]);
+    protected final UnsafeBuffer eventBuffer;
+    protected final int bufferSize;
+
     protected int eventBufferLimit = 0;
     protected int eventCount = 0;
 
     public EventBatchWriter()
     {
+        this(DEFAULT_EVENT_BUFFER_SIZE);
+    }
+
+    public EventBatchWriter(int eventBufferSize)
+    {
+        bufferSize = eventBufferSize + Long.BYTES + Integer.BYTES;
+        eventBuffer = new UnsafeBuffer(new byte[bufferSize]);
+
         reset();
     }
 
@@ -85,7 +95,7 @@ public class EventBatchWriter implements BufferWriter
 
     protected void reset()
     {
-        eventBuffer.wrap(new byte[EVENT_BUFFER_SIZE]);
+        eventBuffer.wrap(new byte[bufferSize]);
         eventBufferLimit = 0;
         eventCount = 0;
     }
@@ -104,7 +114,6 @@ public class EventBatchWriter implements BufferWriter
             int eventOffset,
             int eventLength)
     {
-
         eventBuffer.putLong(eventBufferLimit, position);
         eventBufferLimit += Long.BYTES;
 

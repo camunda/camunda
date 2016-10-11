@@ -1,13 +1,13 @@
 package org.camunda.tngp.broker.transport.worker;
 
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestHandler;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
-
-import org.agrona.DirectBuffer;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class BrokerRequestDispatcher<C extends ResourceContext> implements AsyncRequestHandler
@@ -18,7 +18,7 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
 
     protected final int schemaId;
 
-    protected final BrokerRequestHandler[] handlers;
+    protected final Int2ObjectHashMap<BrokerRequestHandler<C>> handlersByTemplateId = new Int2ObjectHashMap<>();
 
     protected ResourceContextProvider<C> contextProvider;
 
@@ -28,8 +28,12 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
             BrokerRequestHandler[] handlers)
     {
         this.contextProvider = contextProvider;
-        this.handlers = handlers;
         this.schemaId = schemaId;
+
+        for (BrokerRequestHandler<C> handler : handlers)
+        {
+            this.handlersByTemplateId.put(handler.getTemplateId(), handler);
+        }
     }
 
     @Override
@@ -48,9 +52,9 @@ public class BrokerRequestDispatcher<C extends ResourceContext> implements Async
 
         if (schemaId == this.schemaId)
         {
-            if (templateId >= 0 && templateId < handlers.length)
+            if (templateId >= 0)
             {
-                final BrokerRequestHandler<C> handler = handlers[templateId];
+                final BrokerRequestHandler<C> handler = handlersByTemplateId.get(templateId);
 
                 if (handler != null)
                 {

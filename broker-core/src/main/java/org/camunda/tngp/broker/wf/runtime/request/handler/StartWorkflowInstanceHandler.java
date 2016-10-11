@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.wf.runtime.request.handler;
 
-import org.camunda.tngp.broker.log.LogWriter;
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
@@ -12,8 +13,6 @@ import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
-
-import org.agrona.DirectBuffer;
 
 public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRuntimeContext>
 {
@@ -75,6 +74,12 @@ public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRunt
 
         response.allocateAndWrite(errorWriter);
         response.commit();
+    }
+
+    @Override
+    public int getTemplateId()
+    {
+        return StartWorkflowInstanceDecoder.TEMPLATE_ID;
     }
 
 }

@@ -41,6 +41,7 @@ public class EventManagerService extends AbstractResourceContextProvider<EventCo
         final EventContextService eventContextService = new EventContextService();
         serviceContext.createService(EVENT_CONTEXT_SERVICE, eventContextService)
             .dependency(LOG_MANAGER_SERVICE, eventContextService.getLogManagerInjector())
+            .listener(this)
             .install();
     }
 

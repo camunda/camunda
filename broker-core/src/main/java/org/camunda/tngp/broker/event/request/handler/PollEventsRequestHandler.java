@@ -19,12 +19,15 @@ import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.event.EventBatchWriter;
+import org.camunda.tngp.protocol.event.PollEventsDecoder;
 import org.camunda.tngp.protocol.event.PollEventsEncoder;
 import org.camunda.tngp.protocol.event.PollEventsRequestReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
 public class PollEventsRequestHandler implements BrokerRequestHandler<EventContext>
 {
+    public static final int EVENT_BUFFER_SIZE = 1024 * 1024;
+
     protected final  PollEventsRequestReader requestReader;
     protected final EventBatchWriter batchWriter;
 
@@ -34,7 +37,7 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
 
     public PollEventsRequestHandler()
     {
-        this(new PollEventsRequestReader(), new EventFinder(), new EventBatchWriter(), new ErrorWriter());
+        this(new PollEventsRequestReader(), new EventFinder(EVENT_BUFFER_SIZE), new EventBatchWriter(EVENT_BUFFER_SIZE), new ErrorWriter());
     }
 
     public PollEventsRequestHandler(PollEventsRequestReader requestReader, EventFinder eventFinder, EventBatchWriter batchWriter, ErrorWriter errorWriter)
@@ -76,17 +79,18 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
 
         if (startPosition < log.getLastPosition())
         {
-            eventFinder.init(log, startPosition);
+            eventFinder.init(log, startPosition, maxEvents);
 
-            // TODO found more than one event
-            final boolean eventsFound = eventFinder.findEvents();
+            final int eventCount = eventFinder.findEvents();
+            final DirectBuffer eventBuffer = eventFinder.getEventBuffer();
 
-            if (eventsFound)
+            for (int i = 0; i < eventCount; i++)
             {
-                final long eventPosition = eventFinder.getEventPosition();
-                final DirectBuffer eventBuffer = eventFinder.getEvent().getEventBuffer();
+                final long eventPosition = eventFinder.getEventPosition(i);
+                final int eventOffset = eventFinder.getEventBufferOffset(i);
+                final int eventLength = eventFinder.getEventBufferLength(i);
 
-                batchWriter.appendEvent(eventPosition, eventBuffer, 0, eventBuffer.capacity());
+                batchWriter.appendEvent(eventPosition, eventBuffer, eventOffset, eventLength);
             }
         }
 
@@ -121,6 +125,12 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
         }
 
         return result;
+    }
+
+    @Override
+    public int getTemplateId()
+    {
+        return PollEventsDecoder.TEMPLATE_ID;
     }
 
 }

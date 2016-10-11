@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
+import org.camunda.tngp.client.EventsClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
@@ -20,6 +21,7 @@ import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
+import org.camunda.tngp.client.event.impl.TngpEventsClientImpl;
 import org.camunda.tngp.client.impl.cmd.CompleteTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
@@ -50,6 +52,8 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     protected ClientCmdExecutor cmdExecutor;
 
     protected TaskSubscriptionManager taskSubscriptionManager;
+
+    protected final EventsClient eventsClient;
 
     public TngpClientImpl(Properties properties)
     {
@@ -93,6 +97,8 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
         taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks);
+
+        eventsClient = new TngpEventsClientImpl(cmdExecutor);
     }
 
     public void connect()
@@ -166,6 +172,12 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     public WorkflowsClient workflows()
     {
         return this;
+    }
+
+    @Override
+    public EventsClient events()
+    {
+        return eventsClient;
     }
 
     @Override

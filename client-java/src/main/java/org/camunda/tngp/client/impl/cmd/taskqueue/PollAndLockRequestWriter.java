@@ -1,13 +1,12 @@
 package org.camunda.tngp.client.impl.cmd.taskqueue;
 
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.taskqueue.PollAndLockTasksEncoder;
-
+import org.camunda.tngp.util.buffer.RequestWriter;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PollAndLockRequestWriter implements ClientRequestWriter
+public class PollAndLockRequestWriter implements RequestWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final PollAndLockTasksEncoder requestEncoder = new PollAndLockTasksEncoder();

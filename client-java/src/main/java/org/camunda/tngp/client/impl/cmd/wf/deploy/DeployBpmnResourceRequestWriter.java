@@ -2,11 +2,11 @@ package org.camunda.tngp.client.impl.cmd.wf.deploy;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.cmd.ClientRequestWriter;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceEncoder;
 import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
-public class DeployBpmnResourceRequestWriter implements ClientRequestWriter
+public class DeployBpmnResourceRequestWriter implements RequestWriter
 {
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();

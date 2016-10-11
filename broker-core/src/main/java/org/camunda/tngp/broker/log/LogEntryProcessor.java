@@ -24,6 +24,7 @@ public class LogEntryProcessor<T extends BufferReader>
     public int doWork(final int cycles)
     {
         int workCount = 0;
+        int entryHandlerResult = -1;
 
         boolean hasNext;
         do
@@ -34,11 +35,18 @@ public class LogEntryProcessor<T extends BufferReader>
             if (hasNext)
             {
                 logReader.read(bufferReader);
-                entryHandler.handle(position, bufferReader);
+                entryHandlerResult = entryHandler.handle(position, bufferReader);
+
+                if (entryHandlerResult == LogEntryHandler.POSTPONE_ENTRY_RESULT)
+                {
+                    // reset position
+                    logReader.setPosition(position);
+                }
+
                 workCount++;
             }
         }
-        while (hasNext && workCount < cycles);
+        while (entryHandlerResult != LogEntryHandler.FAILED_ENTRY_RESULT && hasNext && workCount < cycles);
 
         return workCount;
     }

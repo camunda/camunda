@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
-import org.camunda.tngp.broker.log.LogWriter;
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
+import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.taskqueue.CompleteTaskRequestReader;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
@@ -13,11 +14,10 @@ import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.taskqueue.CompleteTaskDecoder;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
-
-import org.agrona.DirectBuffer;
 
 public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContext>
 {
@@ -84,6 +84,12 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
         {
             return -1;
         }
+    }
+
+    @Override
+    public int getTemplateId()
+    {
+        return CompleteTaskDecoder.TEMPLATE_ID;
     }
 
 }

@@ -2,10 +2,9 @@ package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import java.nio.ByteBuffer;
 
-import org.camunda.tngp.client.impl.cmd.PayloadRequestWriter;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
-
+import org.camunda.tngp.util.buffer.PayloadRequestWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

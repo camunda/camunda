@@ -13,9 +13,9 @@
 package org.camunda.tngp.protocol.event;
 
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.util.buffer.BufferWriter;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
-public class PollEventsRequestWriter implements BufferWriter
+public class PollEventsRequestWriter implements RequestWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final PollEventsEncoder requestEncoder = new PollEventsEncoder();
@@ -55,6 +55,7 @@ public class PollEventsRequestWriter implements BufferWriter
         reset();
     }
 
+    @Override
     public void validate()
     {
         if (startPosition < 0)
