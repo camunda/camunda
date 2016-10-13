@@ -29,7 +29,7 @@ import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
 public class PollEventsRequestHandler implements BrokerRequestHandler<EventContext>
 {
-    public static final int EVENT_BUFFER_SIZE = 1024 * 1024;
+    public static final int EVENT_BUFFER_CAPACITY = 1024 * 1024;
 
     protected final PollEventsRequestReader requestReader;
 
@@ -41,7 +41,7 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
 
     public PollEventsRequestHandler()
     {
-        this(new PollEventsRequestReader(), new BufferedLogReader(), new EventBatchWriter(EVENT_BUFFER_SIZE), new ErrorWriter());
+        this(new PollEventsRequestReader(), new BufferedLogReader(EVENT_BUFFER_CAPACITY), new EventBatchWriter(EVENT_BUFFER_CAPACITY), new ErrorWriter());
     }
 
     public PollEventsRequestHandler(PollEventsRequestReader requestReader, LogReader logReader, EventBatchWriter batchWriter, ErrorWriter errorWriter)

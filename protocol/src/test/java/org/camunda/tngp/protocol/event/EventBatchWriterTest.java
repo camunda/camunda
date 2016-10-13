@@ -152,18 +152,50 @@ public class EventBatchWriterTest
     }
 
     @Test
-    public void shouldValidateEventCount()
+    public void shouldNotAppendEventIfCapacityIsReached()
     {
         // given
-        final EventBatchWriter batchWriter = new EventBatchWriter();
-        // no event is set
-
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("No events set");
+        final int bufferCapacity = EVENT1.length;
+        final EventBatchWriter batchWriter = new EventBatchWriter(bufferCapacity);
 
         // when
-        batchWriter.validate();
+        final boolean appendedFirstEvent = batchWriter.appendEvent(
+                0,
+                asBuffer(EVENT1),
+                0,
+                EVENT1.length);
+
+        final boolean appendedSecondEvent = batchWriter.appendEvent(
+                100,
+                asBuffer(EVENT2),
+                0,
+                EVENT2.length);
+
+        // then
+        assertThat(appendedFirstEvent).isTrue();
+        assertThat(appendedSecondEvent).isFalse();
+    }
+
+    @Test
+    public void shouldHasCapacity()
+    {
+        // given
+        final int bufferCapacity = EVENT1.length;
+        final EventBatchWriter batchWriter = new EventBatchWriter(bufferCapacity);
+
+        assertThat(batchWriter.hasCapacity(bufferCapacity)).isTrue();
+        assertThat(batchWriter.hasCapacity(bufferCapacity + 1)).isFalse();
+
+        // when
+        batchWriter.appendEvent(
+                0,
+                asBuffer(EVENT1),
+                0,
+                EVENT1.length);
+
+        // then
+        assertThat(batchWriter.hasCapacity(0)).isFalse();
+        assertThat(batchWriter.hasCapacity(1)).isFalse();
     }
 
     protected UnsafeBuffer asBuffer(byte[] event)

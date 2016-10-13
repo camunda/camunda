@@ -25,7 +25,6 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -75,7 +74,7 @@ public class PollEventsTest
             .execute();
 
         final EventsBatch eventsBatch = client.events().poll()
-            .startPosition(0)
+            .startPosition(INITIAL_LOG_POSITION)
             .maxEvents(1)
             .topicId(TASK_QUEUE_TOPIC_ID)
             .execute();
@@ -217,7 +216,6 @@ public class PollEventsTest
     }
 
     @Test
-    @Ignore("implement with new log structure")
     public void shouldPollEventWithStartPositionBetweenEvents()
     {
         final TngpClient client = clientRule.getClient();
@@ -235,7 +233,7 @@ public class PollEventsTest
                 .execute();
 
         final EventsBatch eventsBatch = client.events().poll()
-            .startPosition(INITIAL_LOG_POSITION + 10)
+            .startPosition(INITIAL_LOG_POSITION + 1)
             .maxEvents(2)
             .topicId(TASK_QUEUE_TOPIC_ID)
             .execute();

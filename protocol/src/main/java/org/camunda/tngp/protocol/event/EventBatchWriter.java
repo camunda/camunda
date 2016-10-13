@@ -12,17 +12,21 @@
  */
 package org.camunda.tngp.protocol.event;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.event.EventBatchEncoder.EventsEncoder;
+import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.buffer.BufferWriter;
-
-import static org.agrona.BitUtil.*;
 
 public class EventBatchWriter implements BufferWriter
 {
-    public static final int DEFAULT_EVENT_BUFFER_SIZE = 1024 * 1024;
+    public static final int DEFAULT_EVENT_BUFFER_CAPACITY = 1024 * 1024;
+
+    protected static final int EVENT_META_DATA_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final EventBatchEncoder batchEncoder = new EventBatchEncoder();
@@ -35,12 +39,12 @@ public class EventBatchWriter implements BufferWriter
 
     public EventBatchWriter()
     {
-        this(DEFAULT_EVENT_BUFFER_SIZE);
+        this(DEFAULT_EVENT_BUFFER_CAPACITY);
     }
 
-    public EventBatchWriter(int eventBufferSize)
+    public EventBatchWriter(int eventBufferCapacity)
     {
-        bufferCapacity = eventBufferSize + Long.BYTES + Integer.BYTES;
+        bufferCapacity = eventBufferCapacity + EVENT_META_DATA_SIZE;
         eventBuffer = new UnsafeBuffer(new byte[bufferCapacity]);
 
         reset();
@@ -55,7 +59,7 @@ public class EventBatchWriter implements BufferWriter
 
         size += (EventsEncoder.sbeBlockLength() + EventsEncoder.eventHeaderLength()) * eventCount;
 
-        size += eventBufferLimit - (Long.BYTES + Integer.BYTES) * eventCount;
+        size += eventBufferLimit - EVENT_META_DATA_SIZE * eventCount;
 
         return size;
     }
@@ -102,14 +106,6 @@ public class EventBatchWriter implements BufferWriter
         eventCount = 0;
     }
 
-    public void validate()
-    {
-        if (eventCount < 1)
-        {
-            throw new RuntimeException("No events set");
-        }
-    }
-
     public boolean appendEvent(
             long position,
             DirectBuffer buffer,
@@ -139,7 +135,9 @@ public class EventBatchWriter implements BufferWriter
 
     public boolean hasCapacity(int eventLength)
     {
-        return bufferCapacity - eventBufferLimit - SIZE_OF_LONG - SIZE_OF_INT >= 0;
+        EnsureUtil.ensureGreaterThanOrEqual("event length", eventLength, 0);
+
+        return (eventBufferLimit + eventLength + EVENT_META_DATA_SIZE) <= bufferCapacity;
     }
 
 }
