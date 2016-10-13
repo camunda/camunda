@@ -16,7 +16,7 @@ public class LogAppendHandler
     protected final LogBlockIndex blockIndex;
     protected final LogStorage logStorage;
 
-    protected int blockSize = 1024 * 1024 * 16;
+    protected int blockSize = 1024 * 1024 * 64;
 
     protected int currentBlockSize;
 
