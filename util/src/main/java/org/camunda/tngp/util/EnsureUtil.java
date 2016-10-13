@@ -19,4 +19,14 @@ public class EnsureUtil
         }
 
     }
+
+    public static void ensureGreaterThanOrEqual(String property, long testValue, long comparisonValue)
+    {
+        if (testValue < comparisonValue)
+        {
+            throw new RuntimeException(property + " must be greater than or equal to " + comparisonValue);
+        }
+
+    }
+
 }
