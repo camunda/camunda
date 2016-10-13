@@ -18,6 +18,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.event.EventBatchEncoder.EventsEncoder;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
+import static org.agrona.BitUtil.*;
+
 public class EventBatchWriter implements BufferWriter
 {
     public static final int DEFAULT_EVENT_BUFFER_SIZE = 1024 * 1024;
@@ -26,7 +28,7 @@ public class EventBatchWriter implements BufferWriter
     protected final EventBatchEncoder batchEncoder = new EventBatchEncoder();
 
     protected final UnsafeBuffer eventBuffer;
-    protected final int bufferSize;
+    protected final int bufferCapacity;
 
     protected int eventBufferLimit = 0;
     protected int eventCount = 0;
@@ -38,8 +40,8 @@ public class EventBatchWriter implements BufferWriter
 
     public EventBatchWriter(int eventBufferSize)
     {
-        bufferSize = eventBufferSize + Long.BYTES + Integer.BYTES;
-        eventBuffer = new UnsafeBuffer(new byte[bufferSize]);
+        bufferCapacity = eventBufferSize + Long.BYTES + Integer.BYTES;
+        eventBuffer = new UnsafeBuffer(new byte[bufferCapacity]);
 
         reset();
     }
@@ -78,10 +80,10 @@ public class EventBatchWriter implements BufferWriter
         for (int i = 0; i < eventCount; i++)
         {
             final long position = eventBuffer.getLong(eventOffset);
-            eventOffset += Long.BYTES;
+            eventOffset += SIZE_OF_LONG;
 
             final int eventLength = eventBuffer.getShort(eventOffset);
-            eventOffset += Integer.BYTES;
+            eventOffset += SIZE_OF_INT;
 
             eventsEncoder.next()
                 .position(position)
@@ -95,7 +97,7 @@ public class EventBatchWriter implements BufferWriter
 
     protected void reset()
     {
-        eventBuffer.wrap(new byte[bufferSize]);
+        eventBuffer.wrap(new byte[bufferCapacity]);
         eventBufferLimit = 0;
         eventCount = 0;
     }
@@ -108,24 +110,36 @@ public class EventBatchWriter implements BufferWriter
         }
     }
 
-    public EventBatchWriter appendEvent(
+    public boolean appendEvent(
             long position,
             DirectBuffer buffer,
             int eventOffset,
             int eventLength)
     {
-        eventBuffer.putLong(eventBufferLimit, position);
-        eventBufferLimit += Long.BYTES;
+        boolean eventAppended = false;
 
-        eventBuffer.putShort(eventBufferLimit, (short) eventLength);
-        eventBufferLimit += Integer.BYTES;
+        if (hasCapacity(eventLength))
+        {
+            eventBuffer.putLong(eventBufferLimit, position);
+            eventBufferLimit += SIZE_OF_LONG;
 
-        eventBuffer.putBytes(eventBufferLimit, buffer, eventOffset, eventLength);
-        eventBufferLimit += eventLength;
+            eventBuffer.putShort(eventBufferLimit, (short) eventLength);
+            eventBufferLimit += SIZE_OF_INT;
 
-        eventCount++;
+            eventBuffer.putBytes(eventBufferLimit, buffer, eventOffset, eventLength);
+            eventBufferLimit += eventLength;
 
-        return this;
+            eventCount++;
+
+            eventAppended = true;
+        }
+
+        return eventAppended;
+    }
+
+    public boolean hasCapacity(int eventLength)
+    {
+        return bufferCapacity - eventBufferLimit - SIZE_OF_LONG - SIZE_OF_INT >= 0;
     }
 
 }

@@ -10,9 +10,9 @@ import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManager;
 import org.camunda.tngp.broker.wf.runtime.log.handler.InputTaskHandler;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -40,7 +40,7 @@ public class TaskQueueLogProcessorService implements Service<LogConsumer>
         final Templates taskQueueLogTemplates = Templates.taskQueueLogTemplates();
         logConsumer = new LogConsumer(
                 inputLog.getId(),
-                new LogReaderImpl(inputLog),
+                new BufferedLogReader(inputLog),
                 taskQueueLogTemplates,
                 new LogWritersImpl(null, wfRuntimeManager));
 
@@ -49,11 +49,11 @@ public class TaskQueueLogProcessorService implements Service<LogConsumer>
         final List<LogReader> logReaders = new ArrayList<>();
         for (WfRuntimeContext resourceContext : wfRuntimeManager.getContexts())
         {
-            logReaders.add(new LogReaderImpl(resourceContext.getLog()));
+            logReaders.add(new BufferedLogReader(resourceContext.getLog()));
         }
 
         logConsumer.recover(logReaders);
-        logConsumer.fastForwardUntil(inputLog.getLastPosition());
+        logConsumer.fastForwardToLastEvent();
 
         wfRuntimeManager.registerInputLogConsumer(logConsumer);
     }

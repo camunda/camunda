@@ -109,14 +109,10 @@ public class BrokerRestartTest
     public void shouldCompleteTaskAfterRestart()
     {
         // given
-        TestUtil.doRepeatedly(() ->
-            client.workflows()
-                .start()
-                .workflowDefinitionKey("anId")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
+        client.workflows()
+            .start()
+            .workflowDefinitionKey("anId")
+            .execute();
 
         final LockedTasksBatch taskBatch = TestUtil.doRepeatedly(() ->
                 client.tasks()

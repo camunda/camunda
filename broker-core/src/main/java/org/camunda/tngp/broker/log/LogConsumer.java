@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.log;
 
+import static org.camunda.tngp.broker.log.ResponseControl.NOOP_RESPONSE_CONTROL;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,19 +12,15 @@ import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.log.idx.IndexWriterTracker;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
+import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.util.buffer.BufferReader;
-
-import static org.camunda.tngp.broker.log.ResponseControl.NOOP_RESPONSE_CONTROL;
 
 
 public class LogConsumer
 {
     public static final String DEBUG_LOGGING_ENABLED_PROP_NAME = "camunda.debug.logging.enabled";
     public static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean(DEBUG_LOGGING_ENABLED_PROP_NAME);
-
-    // TODO: magic number that becomes obsolete once we have symbolic log positions. Then it can be replaced with 0.
-    public static final long LOG_INITIAL_POSITION = 264L;
 
     protected int logId;
     protected LogEntryProcessor<LogEntryHeaderReader> logEntryProcessor;
@@ -121,7 +119,8 @@ public class LogConsumer
             final LogReader targetLogReader = targetLogReaders.get(i);
 
             finder.lastProcessedEventPosition = -1L;
-            targetLogReader.setPosition(LOG_INITIAL_POSITION);
+
+            targetLogReader.seekToFirstEntry();
             recoveryProcessor.setLogReader(targetLogReader);
             recoveryProcessor.doWork(Integer.MAX_VALUE);
 
@@ -136,7 +135,6 @@ public class LogConsumer
      */
     public void recover(List<LogReader> targetLogReaders)
     {
-
         final long lastIndexedPosition = getLastIndexedPosition();
 
         final long lastProcessedPosition = getLastConsumedPosition(targetLogReaders);
@@ -144,34 +142,16 @@ public class LogConsumer
 
         if (lastConsumedPosition >= 0)
         {
-            final long firstUnconsumedPosition = tryGetNextLogEntryPosition(lastConsumedPosition);
+            final long firstUnconsumedPosition = lastConsumedPosition + 1;
 
             fastForwardIndexesUntil(firstUnconsumedPosition);
-            logReader.setPosition(firstUnconsumedPosition);
+            logReader.seek(firstUnconsumedPosition);
 
         }
         else
         {
-            logReader.setPosition(LOG_INITIAL_POSITION);
+            logReader.seekToFirstEntry();
         }
-    }
-
-    /**
-     * @return the position of the log event or the argument if no next element exists
-     */
-    protected long tryGetNextLogEntryPosition(long position)
-    {
-        logReader.setPosition(position);
-
-        // this sets the log reader's position to the next event;
-        // it is a hack that can be resolved
-        // when the log is based on symbolic positions (then it is perhaps just lastConsumedPosition + 1)
-        if (logReader.hasNext())
-        {
-            logReader.read(new LogEntryHeaderReader());
-        }
-
-        return logReader.position();
     }
 
     /**
@@ -179,7 +159,7 @@ public class LogConsumer
      */
     public void fastForwardUntil(long fastForwardStopPosition)
     {
-        fastForwardUntil(logReader.position(), fastForwardStopPosition, false);
+        fastForwardUntil(logReader.getPosition(), fastForwardStopPosition, false);
     }
 
     /**
@@ -199,12 +179,7 @@ public class LogConsumer
             }
         }
 
-        if (minimalIndexPosition < 0)
-        {
-            minimalIndexPosition = LOG_INITIAL_POSITION;
-        }
-
-        fastForwardUntil(minimalIndexPosition, position, true);
+        fastForwardUntil(minimalIndexPosition + 1, position, true);
     }
 
     protected void fastForwardUntil(long fromPosition, long toPosition, boolean indexOnly)
@@ -216,7 +191,7 @@ public class LogConsumer
 
         logEntryHandler.indexOnly = indexOnly;
 
-        logReader.setPosition(fromPosition);
+        logReader.seek(fromPosition);
         logEntryProcessor.doWorkUntil(toPosition);
 
         logEntryHandler.indexOnly = false;
@@ -228,6 +203,11 @@ public class LogConsumer
         {
             indexWriters.get(i).writeCheckpoint();
         }
+    }
+
+    public void fastForwardToLastEvent()
+    {
+        logEntryProcessor.doWork(Integer.MAX_VALUE);
     }
 
     public class DecoratingLogWriters implements LogWriters
@@ -303,7 +283,8 @@ public class LogConsumer
             {
                 // TODO: das removeFirst funktioniert so lange wie die ResponsePoolQueue von niemand
                 //   anderem konsumiert wird (z.B. nicht mehr, wenn Requests von außen abgebrochen werden können)
-                apiResponseControl.wrap(apiResponsePool.popDeferred());
+                final DeferredResponse popDeferred = apiResponsePool.popDeferred();
+                apiResponseControl.wrap(popDeferred);
                 responseControl = apiResponseControl;
             }
             else
@@ -376,5 +357,6 @@ public class LogConsumer
             return 0;
         }
     }
+
 }
 

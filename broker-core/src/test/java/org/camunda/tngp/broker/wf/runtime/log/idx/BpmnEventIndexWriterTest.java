@@ -49,7 +49,7 @@ public class BpmnEventIndexWriterTest
         logReader.addEntry(TestWfRuntimeLogEntries.createActivityInstanceEvent(ExecutionEventType.ACT_INST_CREATED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         // when
         indexWriter.indexLogEntry(76L, reader);
@@ -70,7 +70,7 @@ public class BpmnEventIndexWriterTest
         logReader.addEntry(TestWfRuntimeLogEntries.createActivityInstanceEvent(ExecutionEventType.ACT_INST_COMPLETED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         // when
         indexWriter.indexLogEntry(76L, reader);
@@ -90,7 +90,7 @@ public class BpmnEventIndexWriterTest
         logReader.addEntry(TestWfRuntimeLogEntries.createFlowElementEvent());
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         // when
         indexWriter.indexLogEntry(76L, reader);
@@ -110,7 +110,7 @@ public class BpmnEventIndexWriterTest
         logReader.addEntry(TestWfRuntimeLogEntries.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         // when
         indexWriter.indexLogEntry(76L, reader);
@@ -130,7 +130,7 @@ public class BpmnEventIndexWriterTest
         logReader.addEntry(TestWfRuntimeLogEntries.createProcessEvent(ExecutionEventType.PROC_INST_COMPLETED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         // when
         indexWriter.indexLogEntry(76L, reader);

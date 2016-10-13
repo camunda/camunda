@@ -13,8 +13,8 @@ import org.camunda.tngp.broker.taskqueue.log.idx.LockedTasksIndexWriter;
 import org.camunda.tngp.broker.taskqueue.log.idx.TaskTypeIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -55,23 +55,23 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
         final Templates templates = Templates.taskQueueLogTemplates();
         final LogConsumer taskProcessor = new LogConsumer(
                 log.getId(),
-                new LogReaderImpl(log),
+                new BufferedLogReader(log),
                 responsePoolServiceInjector.getValue(),
                 templates,
                 new LogWritersImpl(taskQueueContext, null));
 
         taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler());
-        taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new LogReaderImpl(log), lockedTasksIndexManager.getIndex()));
+        taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
 
         taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
         taskProcessor.addIndexWriter(new LockedTasksIndexWriter(lockedTasksIndexManager, templates));
 
-        taskProcessor.recover(Arrays.asList(new LogReaderImpl(log)));
+        taskProcessor.recover(Arrays.asList(new BufferedLogReader(log)));
 
         // replay all events before taking new requests;
         // avoids that we mix up new API requests (that require a response)
         // with existing API requests (that do not require a response anymore)
-        taskProcessor.fastForwardUntil(log.getLastPosition());
+        taskProcessor.fastForwardToLastEvent();
 
         taskQueueContext.setLogConsumer(taskProcessor);
     }

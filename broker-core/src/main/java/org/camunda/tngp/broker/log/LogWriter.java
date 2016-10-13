@@ -16,6 +16,9 @@ public class LogWriter
 
     public long write(LogEntryWriter<?, ?> writer)
     {
-        return logEntryWriter.write(log, writer);
+        logEntryWriter.wrap(log);
+        logEntryWriter.valueWriter(writer);
+        logEntryWriter.positionAsKey();
+        return logEntryWriter.tryWrite();
     }
 }

@@ -1,10 +1,7 @@
 package org.camunda.tngp.broker.log;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.LOG_AGENT_CONTEXT_SERVICE;
-import static org.camunda.tngp.broker.log.LogServiceNames.LOG_WRITE_BUFFER_SERVICE;
-import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
+import static org.camunda.tngp.broker.log.LogServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +18,7 @@ import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogBuilder;
+import org.camunda.tngp.log.FsLogBuilder;
 import org.camunda.tngp.log.Logs;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -97,7 +94,7 @@ public class LogManagerService implements Service<LogManager>, LogManager
         }
         logSegmentSize = logSegmentSize * 1024 * 1024;
 
-        final LogBuilder logBuilder = Logs.createLog(logName, logId)
+        final FsLogBuilder logBuilder = Logs.createFsLog(logName, logId)
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
             .logSegmentSize(logSegmentSize);

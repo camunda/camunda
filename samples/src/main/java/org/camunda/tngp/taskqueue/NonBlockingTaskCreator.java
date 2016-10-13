@@ -29,7 +29,7 @@ public class NonBlockingTaskCreator
 
         ClientProperties.setDefaults(properties);
 
-        properties.putIfAbsent(SAMPLE_NUMBER_OF_REQUESTS, "1000");
+        properties.putIfAbsent(SAMPLE_NUMBER_OF_REQUESTS, "1000000");
         properties.putIfAbsent(SAMPLE_PAYLOAD_SIZE, "512");
         properties.putIfAbsent(SAMPLE_MAX_CONCURRENT_REQUESTS, "64");
 

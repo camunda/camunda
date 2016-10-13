@@ -1,14 +1,13 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
-
-import org.agrona.DirectBuffer;
 
 public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
 {
@@ -23,7 +22,7 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
 
     public LockableTaskFinder()
     {
-        this(new LogReaderImpl(1024 * 1024));
+        this(new BufferedLogReader());
     }
 
     public LockableTaskFinder(LogReader logReader)
@@ -38,7 +37,7 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
             int taskTypeHashToPoll,
             DirectBuffer taskTypeToPoll)
     {
-        this.logReader.setLogAndPosition(log, position);
+        this.logReader.wrap(log, position);
         this.taskTypeHashToPoll = Integer.toUnsignedLong(taskTypeHashToPoll);
         this.taskTypeToPoll = taskTypeToPoll;
         this.lockableTask = null;
@@ -51,7 +50,8 @@ public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
         do
         {
             entriesProcessed = logEntryProcessor.doWorkSingle();
-        } while (entriesProcessed > 0 && lockableTask == null);
+        }
+        while (entriesProcessed > 0 && lockableTask == null);
 
         return lockableTask != null;
     }

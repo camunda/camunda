@@ -2,107 +2,211 @@ package org.camunda.tngp.broker.util.mocks;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.util.buffer.BufferReader;
+import org.camunda.tngp.log.ReadableLogEntry;
 import org.camunda.tngp.util.buffer.BufferWriter;
-
-import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class StubLogReader implements LogReader
 {
-    protected long position;
-    protected long tailPosition;
-    protected Long2ObjectHashMap<byte[]> logEntries = new Long2ObjectHashMap<>();
-    protected List<Long> entryPositions = new ArrayList<>();
+    private enum IteratorState
+    {
+        UNINITIALIZED,
+        INITIALIZED_EMPTY_LOG,
+        INITIALIZED,
+        ACTIVE;
+    }
 
-    protected UnsafeBuffer tempWriteBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
+    protected IteratorState iteratorState = IteratorState.UNINITIALIZED;
+
+    protected List<StubLogEntry> logEntries = new ArrayList<>();
+    protected StubLogEntry currentEntry = null;
 
     protected Log targetLog;
 
+    protected long firstEventPosition = 0;
+
     public StubLogReader(Log targetLog)
     {
-        this(0L, targetLog);
+        wrap(targetLog);
     }
 
-    public StubLogReader(long initialPosition, Log targetLog)
+    public StubLogReader(Log targetLog, long position)
     {
-        this.tailPosition = initialPosition;
-        this.position = initialPosition;
-        this.targetLog = targetLog;
+        wrap(targetLog, position);
     }
 
-    public long position()
+    public long getPosition()
     {
-        return position;
+        if (currentEntry != null)
+        {
+            return currentEntry.getPosition();
+        }
+        else
+        {
+            return -1;
+        }
     }
 
     @Override
-    public void setLogAndPosition(Log log, long position)
+    public void wrap(Log log)
     {
-        if (targetLog != log)
+        if (targetLog != null && targetLog != log)
         {
             throw new RuntimeException("StubLogReader only works for a single log");
         }
 
-        this.position = position;
+        seekToLastEntry();
     }
 
     @Override
-    public void setPosition(long position)
+    public void wrap(Log log, long position)
     {
-        this.position = position;
-    }
-
-    public long getEntryPosition(int entryIndex)
-    {
-        return entryPositions.get(entryIndex);
-    }
-
-    @Override
-    public boolean read(BufferReader reader)
-    {
-        if (!hasNext())
+        if (targetLog != null && targetLog != log)
         {
-            throw new RuntimeException("no next event");
+            throw new RuntimeException("StubLogReader only works for a single log");
         }
 
-        final byte[] entryAtPosition = logEntries.get(position);
-        final UnsafeBuffer tempReadBuffer = new UnsafeBuffer(entryAtPosition);
-
-        reader.wrap(tempReadBuffer, 0, entryAtPosition.length);
-
-        position += entryAtPosition.length;
-
-        return hasNext();
+        seek(position);
     }
 
-    public StubLogReader addEntry(BufferWriter writer)
+    private void clear()
     {
-        final int writeLength = writer.getLength();
+        this.iteratorState = IteratorState.UNINITIALIZED;
+        this.currentEntry = null;
+    }
 
-        writer.write(tempWriteBuffer, 0);
+    @Override
+    public void seek(long position)
+    {
+        clear();
 
-        final byte[] entry = new byte[writeLength];
-        tempWriteBuffer.getBytes(0, entry);
+        for (int i = 0; i < logEntries.size(); i++)
+        {
+            final StubLogEntry entry = logEntries.get(i);
+            if (entry.getPosition() >= position)
+            {
+                this.iteratorState = IteratorState.INITIALIZED;
+                this.currentEntry = entry;
+                break;
+            }
+        }
 
-        logEntries.put(tailPosition, entry);
-        entryPositions.add(tailPosition);
-        tailPosition += writeLength;
-        return this;
     }
 
     @Override
     public boolean hasNext()
     {
-        return logEntries.containsKey(position);
+        switch (iteratorState)
+        {
+            case UNINITIALIZED:
+                return false;
+
+            case INITIALIZED:
+                return true;
+
+            case INITIALIZED_EMPTY_LOG:
+                return logEntries.size() > 0;
+
+            default: // ACTIVE
+                return logEntries.indexOf(currentEntry) < logEntries.size() - 1;
+
+        }
     }
 
-    public long getTailPosition()
+    @Override
+    public ReadableLogEntry next()
     {
-        return tailPosition;
+        if (!hasNext())
+        {
+            throw new NoSuchElementException("No next entry available. Check with hasNext() first.");
+        }
+
+        StubLogEntry nextEntry = currentEntry;
+
+        if (iteratorState == IteratorState.ACTIVE)
+        {
+            nextEntry = logEntries.get(logEntries.indexOf(currentEntry) + 1);
+        }
+        else if (iteratorState == IteratorState.INITIALIZED_EMPTY_LOG)
+        {
+            nextEntry = logEntries.get(0);
+        }
+
+        iteratorState = IteratorState.ACTIVE;
+        currentEntry = nextEntry;
+
+        return nextEntry;
     }
 
+    public StubLogReader addEntry(long key, BufferWriter writer)
+    {
+        final int writeLength = writer.getLength();
+
+        final UnsafeBuffer entryBuffer = new UnsafeBuffer(new byte[writeLength]);
+
+        writer.write(entryBuffer, 0);
+
+        long position = firstEventPosition;
+
+        if (logEntries.size() >= 1)
+        {
+            position = logEntries.get(logEntries.size() - 1).getPosition() + 1;
+        }
+
+        logEntries.add(new StubLogEntry(position, 0, entryBuffer));
+
+        return this;
+    }
+
+    public StubLogReader addEntry(BufferWriter writer)
+    {
+        return addEntry(-1, writer);
+    }
+
+    @Override
+    public void seekToLastEntry()
+    {
+        clear();
+
+        if (logEntries.size() > 0)
+        {
+            currentEntry = logEntries.get(logEntries.size() - 1);
+            this.iteratorState = IteratorState.INITIALIZED;
+        }
+        else
+        {
+            iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+        }
+    }
+
+    @Override
+    public void seekToFirstEntry()
+    {
+        clear();
+
+        if (logEntries.size() > 0)
+        {
+            currentEntry = logEntries.get(0);
+            this.iteratorState = IteratorState.INITIALIZED;
+        }
+        else
+        {
+            iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+        }
+
+    }
+
+    public long getEntryPosition(int i)
+    {
+        return logEntries.get(i).getPosition();
+    }
+
+    public void setFirstEventPosition(long intitalPosition)
+    {
+        this.firstEventPosition = intitalPosition;
+    }
 }

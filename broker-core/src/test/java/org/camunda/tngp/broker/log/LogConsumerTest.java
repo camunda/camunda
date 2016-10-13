@@ -56,7 +56,7 @@ public class LogConsumerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        logReader = new StubLogReader(LogConsumer.LOG_INITIAL_POSITION, null);
+        logReader = new StubLogReader(null);
     }
 
     @Test
@@ -306,7 +306,6 @@ public class LogConsumerTest
         // given
         final WfDefinitionWriter writer = new WfDefinitionWriter();
         writer.id(123L);
-        logReader.addEntry(writer);
 
         final LogConsumer logConsumer = new LogConsumer(
                 0,
@@ -314,12 +313,15 @@ public class LogConsumerTest
                 Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
+        logReader.addEntry(writer);
+
         final ExampleHandler handler = new ExampleHandler();
         logConsumer.addHandler(Templates.WF_DEFINITION, handler);
 
         final IndexWriter indexWriter = mock(IndexWriter.class);
         final HashIndexManager indexManager = mock(HashIndexManager.class);
         when(indexWriter.getIndexManager()).thenReturn(indexManager);
+        when(indexManager.getLastCheckpointPosition()).thenReturn(-1L);
 
         logConsumer.addIndexWriter(indexWriter);
 
@@ -344,7 +346,7 @@ public class LogConsumerTest
         final IndexWriter indexWriter = mock(IndexWriter.class);
         final HashIndexManager indexManager = mock(HashIndexManager.class);
         when(indexWriter.getIndexManager()).thenReturn(indexManager);
-        when(indexManager.getLastCheckpointPosition()).thenReturn(LogConsumer.LOG_INITIAL_POSITION);
+        when(indexManager.getLastCheckpointPosition()).thenReturn(10L);
 
         logConsumer.addIndexWriter(indexWriter);
 
@@ -352,7 +354,7 @@ public class LogConsumerTest
         logConsumer.writeSavepoints();
 
         // then
-        verify(indexManager).writeCheckPoint(LogConsumer.LOG_INITIAL_POSITION);
+        verify(indexManager).writeCheckPoint(10L);
     }
 
     @Test
@@ -368,7 +370,7 @@ public class LogConsumerTest
         final IndexWriter indexWriter = mock(IndexWriter.class);
         final HashIndexManager indexManager = mock(HashIndexManager.class);
         when(indexWriter.getIndexManager()).thenReturn(indexManager);
-        when(indexManager.getLastCheckpointPosition()).thenReturn(LogConsumer.LOG_INITIAL_POSITION);
+        when(indexManager.getLastCheckpointPosition()).thenReturn(-1L);
 
         logConsumer.addIndexWriter(indexWriter);
 
@@ -489,8 +491,8 @@ public class LogConsumerTest
                 Templates.wfRuntimeLogTemplates(),
                 new StubLogWriters(0));
 
-        final StubLogReader targetLogReader1 = new StubLogReader(LogConsumer.LOG_INITIAL_POSITION, null);
-        final StubLogReader targetLogReader2 = new StubLogReader(LogConsumer.LOG_INITIAL_POSITION, null);
+        final StubLogReader targetLogReader1 = new StubLogReader(null);
+        final StubLogReader targetLogReader2 = new StubLogReader(null);
 
         writeEntry(logReader, 123L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
         writeEntry(logReader, 234L, MessageHeaderEncoder.sourceEventLogIdNullValue(), MessageHeaderEncoder.sourceEventPositionNullValue());
@@ -579,7 +581,7 @@ public class LogConsumerTest
         logConsumer.addHandler(Templates.WF_DEFINITION, handler);
 
         // when
-        logConsumer.fastForwardUntil(logReader.getTailPosition());
+        logConsumer.fastForwardToLastEvent();
 
         // then
         assertThat(handler.numInvocations).isEqualTo(1);
@@ -601,7 +603,7 @@ public class LogConsumerTest
     public static class IdLoggingHandler implements LogEntryTypeHandler<WfDefinitionReader>
     {
 
-        protected List<Long> ids = new ArrayList<>();;
+        protected List<Long> ids = new ArrayList<>();
 
         @Override
         public void handle(WfDefinitionReader reader, ResponseControl responseControl, LogWriters logWriters)

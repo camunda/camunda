@@ -39,7 +39,7 @@ public class LockedTasksIndexWriterTest
     {
         MockitoAnnotations.initMocks(this);
 
-        logReader = new StubLogReader(666L, null);
+        logReader = new StubLogReader(null);
         when(indexManager.getIndex()).thenReturn(index);
     }
 
@@ -55,7 +55,7 @@ public class LockedTasksIndexWriterTest
         logReader.addEntry(writer);
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         final long entryPosition = logReader.getEntryPosition(0);
 
@@ -82,7 +82,7 @@ public class LockedTasksIndexWriterTest
         logReader.addEntry(writer);
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         final long entryPosition = logReader.getEntryPosition(0);
 
@@ -107,7 +107,7 @@ public class LockedTasksIndexWriterTest
         logReader.addEntry(writer);
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
-        logReader.read(reader);
+        logReader.next().readValue(reader);
 
         final long entryPosition = logReader.getEntryPosition(0);
 

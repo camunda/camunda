@@ -24,8 +24,8 @@ import org.camunda.tngp.broker.wf.runtime.log.idx.WfDefinitionIdIndexWriter;
 import org.camunda.tngp.broker.wf.runtime.log.idx.WfDefinitionKeyIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -68,12 +68,12 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         final Templates templates = Templates.wfRuntimeLogTemplates();
         final LogConsumer wfRuntimeConsumer = new LogConsumer(
                 log.getId(),
-                new LogReaderImpl(log),
+                new BufferedLogReader(log),
                 responsePoolInjector.getValue(),
                 templates,
                 new LogWritersImpl(wfRuntimeContext, null));
 
-        final EndProcessHandler endProcessHandler = new EndProcessHandler(new LogReaderImpl(log), indexManager.getIndex());
+        final EndProcessHandler endProcessHandler = new EndProcessHandler(new BufferedLogReader(log), indexManager.getIndex());
         final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
         final WaitEventHandler waitEventHandler = new WaitEventHandler();
 
@@ -96,16 +96,16 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);
 
         wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator));
-        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new LogReaderImpl(log), indexManager.getIndex()));
+        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new BufferedLogReader(log), indexManager.getIndex()));
 
         wfRuntimeConsumer.addHandler(Templates.WF_DEFINITION_REQUEST,
-                new WfDefinitionRequestHandler(new LogReaderImpl(log), idGenerator));
+                new WfDefinitionRequestHandler(new BufferedLogReader(log), idGenerator));
 
         wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
         wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
         wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
 
-        wfRuntimeConsumer.recover(Arrays.asList(new LogReaderImpl(log)));
+        wfRuntimeConsumer.recover(Arrays.asList(new BufferedLogReader(log)));
 
 
         // replay all events before taking new requests;
@@ -114,7 +114,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
 
         // TODO: problem: last position points to the position AFTER the last entry
         //  fast forwarding should be exclusive, or else we read one extra random entry with undefined behavior
-        wfRuntimeConsumer.fastForwardUntil(log.getLastPosition());
+        wfRuntimeConsumer.fastForwardToLastEvent();
 
         wfRuntimeContext.setLogConsumer(wfRuntimeConsumer);
     }

@@ -44,8 +44,8 @@ public class EventBatchWriterTest
             .appendEvent(0,
                     asBuffer(EVENT1),
                     0,
-                    EVENT1.length)
-            .appendEvent(100,
+                    EVENT1.length);
+        batchWriter.appendEvent(100,
                     asBuffer(EVENT2),
                     0,
                     EVENT2.length);
@@ -103,8 +103,8 @@ public class EventBatchWriterTest
             .appendEvent(0,
                     asBuffer(EVENT1),
                     0,
-                    EVENT1.length)
-            .appendEvent(100,
+                    EVENT1.length);
+        batchWriter.appendEvent(100,
                     asBuffer(EVENT2),
                     0,
                     EVENT2.length);

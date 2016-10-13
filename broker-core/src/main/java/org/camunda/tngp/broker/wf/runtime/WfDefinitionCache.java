@@ -2,16 +2,17 @@ package org.camunda.tngp.broker.wf.runtime;
 
 import java.util.function.LongFunction;
 
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2ObjectCache;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogEntryReader;
-
-import org.agrona.DirectBuffer;
-import org.agrona.collections.Long2ObjectCache;
+import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.ReadableLogEntry;
 
 public class WfDefinitionCache implements LongFunction<ProcessGraph>
 {
@@ -23,8 +24,9 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
 
     protected final BpmnModelInstanceTransformer transformer = new BpmnModelInstanceTransformer();
 
-    protected final LogEntryReader logEntryReader = new LogEntryReader(WfDefinitionReader.MAX_LENGTH);
     protected final WfDefinitionReader reader = new WfDefinitionReader();
+
+    protected final LogReader logReader = new BufferedLogReader();
 
     public WfDefinitionCache(int numSets, int setSize, Log wfTypeLog, Long2LongHashIndex wfTypeIdIndex, Bytes2LongHashIndex wfTypeKeyIndex)
     {
@@ -68,7 +70,9 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
 
         if (position >= 0)
         {
-            logEntryReader.read(wfTypeLog, position, reader);
+            logReader.wrap(wfTypeLog, position);
+            final ReadableLogEntry logEntry = logReader.next();
+            logEntry.readValue(reader);
             graph = transformer.transformSingleProcess(reader.asModelInstance(), key);
         }
 

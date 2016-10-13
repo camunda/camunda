@@ -49,8 +49,9 @@ public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActi
     {
         final long previousEventPosition = workflowEventIndex.get(processInstanceId, -1L);
 
-        logReader.setPosition(previousEventPosition);
-        logReader.read(latestEventReader);
+        logReader.seek(previousEventPosition);
+        logReader.next()
+            .readValue(latestEventReader);
 
         eventWriter
             .event(ExecutionEventType.PROC_INST_COMPLETED)

@@ -8,9 +8,9 @@ import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.taskqueue.log.handler.InputActivityInstanceHandler;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.LogReaderImpl;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -34,7 +34,7 @@ public class WfInstanceLogProcessorService implements Service<LogConsumer>
 
         logConsumer = new LogConsumer(
                 log.getId(),
-                new LogReaderImpl(log),
+                new BufferedLogReader(log),
                 wfRuntimeTemplates,
                 new LogWritersImpl(null, taskQueueManager));
 
@@ -43,11 +43,11 @@ public class WfInstanceLogProcessorService implements Service<LogConsumer>
         final List<LogReader> logReaders = new ArrayList<>();
         for (TaskQueueContext resourceContext : taskQueueManager.getContexts())
         {
-            logReaders.add(new LogReaderImpl(resourceContext.getLog()));
+            logReaders.add(new BufferedLogReader(resourceContext.getLog()));
         }
 
         logConsumer.recover(logReaders);
-        logConsumer.fastForwardUntil(log.getLastPosition());
+        logConsumer.fastForwardToLastEvent();
 
         taskQueueManagerInjector.getValue().registerInputLogConsumer(logConsumer);
     }

@@ -16,7 +16,10 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.event.EventContext;
 import org.camunda.tngp.broker.event.EventErrors;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
+import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.ReadableLogEntry;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.event.EventBatchWriter;
 import org.camunda.tngp.protocol.event.PollEventsDecoder;
@@ -28,22 +31,23 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
 {
     public static final int EVENT_BUFFER_SIZE = 1024 * 1024;
 
-    protected final  PollEventsRequestReader requestReader;
+    protected final PollEventsRequestReader requestReader;
+
     protected final EventBatchWriter batchWriter;
 
     protected final ErrorWriter errorWriter;
 
-    protected final EventFinder eventFinder;
+    protected final LogReader logReader;
 
     public PollEventsRequestHandler()
     {
-        this(new PollEventsRequestReader(), new EventFinder(EVENT_BUFFER_SIZE), new EventBatchWriter(EVENT_BUFFER_SIZE), new ErrorWriter());
+        this(new PollEventsRequestReader(), new BufferedLogReader(), new EventBatchWriter(EVENT_BUFFER_SIZE), new ErrorWriter());
     }
 
-    public PollEventsRequestHandler(PollEventsRequestReader requestReader, EventFinder eventFinder, EventBatchWriter batchWriter, ErrorWriter errorWriter)
+    public PollEventsRequestHandler(PollEventsRequestReader requestReader, LogReader logReader, EventBatchWriter batchWriter, ErrorWriter errorWriter)
     {
         this.requestReader = requestReader;
-        this.eventFinder = eventFinder;
+        this.logReader = logReader;
         this.batchWriter = batchWriter;
         this.errorWriter = errorWriter;
     }
@@ -77,20 +81,23 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
             return writeError(response, "found no topic with id: " + topicId);
         }
 
-        if (startPosition < log.getLastPosition())
+        logReader.wrap(log, startPosition);
+        int eventCount = 0;
+        boolean eventAppended = true;
+
+        while (eventAppended && eventCount < maxEvents && logReader.hasNext())
         {
-            eventFinder.init(log, startPosition, maxEvents);
+            final ReadableLogEntry logEntry = logReader.next();
 
-            final int eventCount = eventFinder.findEvents();
-            final DirectBuffer eventBuffer = eventFinder.getEventBuffer();
+            eventAppended = batchWriter.appendEvent(
+                logEntry.getPosition(),
+                logEntry.getValueBuffer(),
+                logEntry.getValueOffset(),
+                logEntry.getValueLength());
 
-            for (int i = 0; i < eventCount; i++)
+            if (eventAppended)
             {
-                final long eventPosition = eventFinder.getEventPosition(i);
-                final int eventOffset = eventFinder.getEventBufferOffset(i);
-                final int eventLength = eventFinder.getEventBufferLength(i);
-
-                batchWriter.appendEvent(eventPosition, eventBuffer, eventOffset, eventLength);
+                eventCount++;
             }
         }
 

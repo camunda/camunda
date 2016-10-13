@@ -5,7 +5,6 @@ import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
-import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
 import org.camunda.tngp.taskqueue.data.TaskInstanceState;
@@ -40,9 +39,7 @@ public class TaskTypeIndexWriter implements IndexWriter
             {
                 final DirectBuffer taskType = taskInstanceReader.getTaskType();
 
-                // TODO: this is next line is completely broken and only works if the previous version has the exact same length as this entry
-                // SEE: https://github.com/camunda-tngp/broker/issues/4
-                final long newPosition = taskInstanceReader.prevVersionPosition() + DataFrameDescriptor.alignedLength(taskInstanceReader.length());
+                final long newPosition = taskInstanceReader.prevVersionPosition() + 1;
 
                 index.put(taskType, 0, taskType.capacity(), newPosition);
             }

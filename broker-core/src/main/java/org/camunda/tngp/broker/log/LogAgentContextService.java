@@ -2,9 +2,9 @@ package org.camunda.tngp.broker.log;
 
 import org.camunda.tngp.broker.system.threads.AgentRunnerService;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.log.LogAgentContext;
-import org.camunda.tngp.log.appender.LogAppender;
-import org.camunda.tngp.log.conductor.LogConductor;
+import org.camunda.tngp.log.impl.agent.LogAgentContext;
+import org.camunda.tngp.log.impl.agent.LogAppender;
+import org.camunda.tngp.log.impl.agent.LogConductor;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;

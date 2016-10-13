@@ -82,10 +82,9 @@ public class PollEventsRequestHandlerTest
         when(logManager.getLogById(anyInt())).thenReturn(log);
         when(eventContext.getLogManager()).thenReturn(logManager);
 
-        logReader = new StubLogReader(0, log);
-        final EventFinder eventFinder = new EventFinder(logReader, PollEventsRequestHandler.EVENT_BUFFER_SIZE);
+        logReader = new StubLogReader(log);
 
-        handler = new PollEventsRequestHandler(requestReader, eventFinder, new EventBatchWriter(), new ErrorWriter());
+        handler = new PollEventsRequestHandler(requestReader, logReader, new EventBatchWriter(), new ErrorWriter());
     }
 
     @Test
@@ -100,7 +99,6 @@ public class PollEventsRequestHandlerTest
             .addEntry(createMockEventWriter(EVENT1))
             .addEntry(createMockEventWriter(EVENT2));
 
-        when(log.getLastPosition()).thenReturn(logReader.getTailPosition());
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
@@ -142,7 +140,6 @@ public class PollEventsRequestHandlerTest
         when(requestReader.maxEvents()).thenReturn(10);
         when(requestReader.topicId()).thenReturn(1);
 
-        when(log.getLastPosition()).thenReturn(0L);
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when
@@ -174,7 +171,6 @@ public class PollEventsRequestHandlerTest
             .addEntry(createMockEventWriter(EVENT1))
             .addEntry(createMockEventWriter(EVENT2));
 
-        when(log.getLastPosition()).thenReturn(logReader.getTailPosition());
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when

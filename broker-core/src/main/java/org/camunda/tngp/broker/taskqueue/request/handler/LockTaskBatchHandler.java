@@ -80,8 +80,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
         // scan the log for lockable tasks
         final long recentTaskTypePosition = taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1);
 
-        final long scanPos = Math.max(recentTaskTypePosition, log.getInitialPosition());
-        lockableTaskFinder.init(log, scanPos, taskTypeHash, taskType);
+        lockableTaskFinder.init(log, recentTaskTypePosition, taskTypeHash, taskType);
 
         final boolean lockableTaskFound = lockableTaskFinder.findNextLockableTask();
 

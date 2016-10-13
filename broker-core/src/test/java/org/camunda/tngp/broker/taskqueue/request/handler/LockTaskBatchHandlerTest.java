@@ -85,7 +85,8 @@ public class LockTaskBatchHandlerTest
         taskContext = new MockTaskQueueContext();
         logWriter = new StubLogWriter();
         taskContext.setLogWriter(logWriter);
-        logReader = new StubLogReader(55L, taskContext.getLog());
+        logReader = new StubLogReader(taskContext.getLog());
+        logReader.setFirstEventPosition(55L);
         lockableTaskFinder = new LockableTaskFinder(logReader);
 
         final HashIndexManager<Bytes2LongHashIndex> indexManager = mock(HashIndexManager.class);

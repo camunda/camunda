@@ -36,7 +36,7 @@ public class LogEntryProcessorTest
     {
         MockitoAnnotations.initMocks(this);
 
-        logReader = new StubLogReader(156L, null);
+        logReader = new StubLogReader(null);
     }
 
     @Test

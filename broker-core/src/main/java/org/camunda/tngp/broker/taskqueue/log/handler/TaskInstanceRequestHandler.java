@@ -48,8 +48,9 @@ public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInsta
             }
             else
             {
-                logReader.setPosition(lockedTaskPosition);
-                logReader.read(taskInstanceReader);
+                logReader.seek(lockedTaskPosition);
+                logReader.next()
+                    .readValue(taskInstanceReader);
 
                 final long requestConsumer = reader.consumerId();
 

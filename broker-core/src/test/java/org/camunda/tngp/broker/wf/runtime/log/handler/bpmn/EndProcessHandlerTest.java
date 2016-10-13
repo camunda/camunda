@@ -51,7 +51,7 @@ public class EndProcessHandlerTest
         MockitoAnnotations.initMocks(this);
         idGenerator = new PrivateIdGenerator(0);
 
-        logReader = new StubLogReader(123L, null);
+        logReader = new StubLogReader(null);
         logWriter = new StubLogWriter();
         logWriters = new StubLogWriters(0, logWriter);
     }

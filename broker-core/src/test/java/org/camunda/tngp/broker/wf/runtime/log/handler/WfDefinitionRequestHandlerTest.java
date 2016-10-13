@@ -43,7 +43,7 @@ public class WfDefinitionRequestHandlerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        logReader = new StubLogReader(200L, null);
+        logReader = new StubLogReader(null);
         logWriter = new StubLogWriter();
         responseControl = new StubResponseControl();
         logWriters = new StubLogWriters(0);

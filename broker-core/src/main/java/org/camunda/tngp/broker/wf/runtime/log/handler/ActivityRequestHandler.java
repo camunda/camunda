@@ -48,8 +48,9 @@ public class ActivityRequestHandler implements LogEntryTypeHandler<ActivityInsta
             return;
         }
 
-        logReader.setPosition(latestPosition);
-        logReader.read(activityInstanceReader);
+        logReader.seek(latestPosition);
+        logReader.next()
+            .readValue(activityInstanceReader);
 
         activityInstanceWriter
             .eventType(ExecutionEventType.ACT_INST_COMPLETED)

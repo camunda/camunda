@@ -11,6 +11,9 @@ import java.nio.file.Path;
 import org.camunda.tngp.hashindex.HashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.log.Log;
+import org.camunda.tngp.log.fs.FsLogStorage;
+import org.camunda.tngp.log.impl.LogImpl;
+import org.camunda.tngp.log.spi.LogStorage;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
@@ -44,7 +47,10 @@ public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> impleme
     {
         final Log log = logInjector.getValue();
 
-        indexDirPath = log.getLogDirectory().getAbsolutePath() + File.separator;
+        final LogStorage logStorage = ((LogImpl)log).getLogContext().getLogStorage();
+        final String logPath = ((FsLogStorage) logStorage).getConfig().getPath();
+
+        indexDirPath = logPath + File.separator;
         indexWorkFilePath = new File(String.format("%s%s.idx", indexDirPath, serviceContext.getName())).toPath();
 
         try

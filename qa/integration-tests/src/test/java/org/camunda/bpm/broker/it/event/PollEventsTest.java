@@ -34,7 +34,7 @@ import org.junit.rules.RuleChain;
 public class PollEventsTest
 {
     private static final int TASK_QUEUE_TOPIC_ID = 0;
-    private static final int INITIAL_LOG_POSITION = 264;
+    private static final int INITIAL_LOG_POSITION = 0;
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -75,7 +75,7 @@ public class PollEventsTest
             .execute();
 
         final EventsBatch eventsBatch = client.events().poll()
-            .startPosition(INITIAL_LOG_POSITION)
+            .startPosition(0)
             .maxEvents(1)
             .topicId(TASK_QUEUE_TOPIC_ID)
             .execute();

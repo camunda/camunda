@@ -43,7 +43,7 @@ public class WfDefinitionKeyIndexWriterTest
 
         when(indexManager.getIndex()).thenReturn(index);
 
-        logReader = new StubLogReader(777L, null);
+        logReader = new StubLogReader(null);
     }
 
     @Test
@@ -59,7 +59,7 @@ public class WfDefinitionKeyIndexWriterTest
         logReader.addEntry(wfDefinitionWriter);
 
         final LogEntryHeaderReader headerReader = new LogEntryHeaderReader();
-        logReader.read(headerReader);
+        logReader.next().readValue(headerReader);
 
         final long position = logReader.getEntryPosition(0);
 
@@ -88,9 +88,9 @@ public class WfDefinitionKeyIndexWriterTest
         logReader.addEntry(wfDefinitionWriter);
 
         final LogEntryHeaderReader header1Reader = new LogEntryHeaderReader();
-        logReader.read(header1Reader);
+        logReader.next().readValue(header1Reader);
         final LogEntryHeaderReader header2Reader = new LogEntryHeaderReader();
-        logReader.read(header2Reader);
+        logReader.next().readValue(header2Reader);
 
         final long position1 = logReader.getEntryPosition(0);
         final long position2 = logReader.getEntryPosition(1);

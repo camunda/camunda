@@ -1,7 +1,10 @@
 package org.camunda.tngp.broker.log;
 
 import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.log.ReadableLogEntry;
 import org.camunda.tngp.util.buffer.BufferReader;
+
+import static org.camunda.tngp.broker.log.LogEntryHandler.*;
 
 public class LogEntryProcessor<T extends BufferReader>
 {
@@ -24,29 +27,22 @@ public class LogEntryProcessor<T extends BufferReader>
     public int doWork(final int cycles)
     {
         int workCount = 0;
-        int entryHandlerResult = -1;
+        int handlerResult = CONSUME_ENTRY_RESULT;
 
-        boolean hasNext;
-        do
+        while (handlerResult != FAILED_ENTRY_RESULT && logReader.hasNext() && workCount < cycles)
         {
-            final long position = logReader.position();
+            final ReadableLogEntry nextEntry = logReader.next();
+            nextEntry.readValue(bufferReader);
+            handlerResult = entryHandler.handle(nextEntry.getPosition(), bufferReader);
 
-            hasNext = logReader.hasNext();
-            if (hasNext)
+            if (handlerResult == POSTPONE_ENTRY_RESULT)
             {
-                logReader.read(bufferReader);
-                entryHandlerResult = entryHandler.handle(position, bufferReader);
-
-                if (entryHandlerResult == LogEntryHandler.POSTPONE_ENTRY_RESULT)
-                {
-                    // reset position
-                    logReader.setPosition(position);
-                }
-
-                workCount++;
+                logReader.seek(logReader.getPosition());
             }
+
+            ++workCount;
         }
-        while (entryHandlerResult != LogEntryHandler.FAILED_ENTRY_RESULT && hasNext && workCount < cycles);
+
 
         return workCount;
     }
@@ -58,12 +54,20 @@ public class LogEntryProcessor<T extends BufferReader>
     {
         int workCount = 0;
 
-        while (logReader.hasNext() && logReader.position() < position)
+        while (logReader.hasNext())
         {
-            final long currentPosition = logReader.position();
-            logReader.read(bufferReader);
-            entryHandler.handle(currentPosition, bufferReader);
-            workCount++;
+            final ReadableLogEntry nextEntry = logReader.next();
+
+            if (nextEntry.getPosition() < position)
+            {
+                nextEntry.readValue(bufferReader);
+                entryHandler.handle(nextEntry.getPosition(), bufferReader);
+                ++workCount;
+            }
+            else
+            {
+                break;
+            }
         }
 
         return workCount;

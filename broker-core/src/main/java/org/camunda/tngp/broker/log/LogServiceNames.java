@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.log;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogAgentContext;
+import org.camunda.tngp.log.impl.agent.LogAgentContext;
 import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class LogServiceNames
