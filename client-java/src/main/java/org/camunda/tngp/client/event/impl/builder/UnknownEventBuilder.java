@@ -10,44 +10,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.client.event.impl;
+package org.camunda.tngp.client.event.impl.builder;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.event.Event;
+import org.camunda.tngp.client.event.impl.dto.UnknownEvent;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 
-public class EventImpl implements Event
+public class UnknownEventBuilder implements EventBuilder
 {
-    protected long position;
-
-    protected final UnsafeBuffer eventBuffer;
-
-    public EventImpl(int eventLength)
-    {
-        eventBuffer = new UnsafeBuffer(new byte[eventLength]);
-    }
+    protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
     @Override
-    public int getEventLength()
+    public Event build(long position, DirectBuffer buffer)
     {
-        return eventBuffer.capacity();
-    }
+        messageHeaderDecoder.wrap(buffer, 0);
 
-    @Override
-    public DirectBuffer getEventBuffer()
-    {
-        return eventBuffer;
-    }
+        final UnknownEvent event = new UnknownEvent();
 
-    @Override
-    public long getPosition()
-    {
-        return position;
-    }
+        event.setPosition(position);
+        event.setRawBuffer(buffer);
 
-    public void setPosition(long position)
-    {
-        this.position = position;
+        event.setTemplateId(messageHeaderDecoder.templateId());
+
+        return event;
     }
 
 }

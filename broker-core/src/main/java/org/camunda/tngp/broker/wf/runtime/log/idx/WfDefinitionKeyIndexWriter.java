@@ -7,7 +7,7 @@ import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
-import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
 
 public class WfDefinitionKeyIndexWriter implements IndexWriter
 {

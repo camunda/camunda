@@ -7,15 +7,15 @@ import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
-import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceEncoder;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 
 public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInstanceRequestReader>
 {

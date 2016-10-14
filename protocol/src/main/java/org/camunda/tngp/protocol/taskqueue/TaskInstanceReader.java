@@ -1,12 +1,11 @@
-package org.camunda.tngp.broker.taskqueue;
-
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
-import org.camunda.tngp.util.buffer.BufferReader;
+package org.camunda.tngp.protocol.taskqueue;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.util.buffer.BufferReader;
 
 public class TaskInstanceReader implements BufferReader
 {

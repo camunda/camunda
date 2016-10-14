@@ -10,7 +10,7 @@ import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
 
 public class InputActivityInstanceHandler implements LogEntryTypeHandler<BpmnActivityEventReader>
 {

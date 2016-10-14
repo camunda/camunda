@@ -3,11 +3,11 @@ package org.camunda.tngp.broker.taskqueue.request.handler;
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 
 public class LockableTaskFinder implements LogEntryHandler<TaskInstanceReader>
 {

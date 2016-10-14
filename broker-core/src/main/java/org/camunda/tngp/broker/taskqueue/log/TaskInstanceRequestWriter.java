@@ -2,8 +2,8 @@ package org.camunda.tngp.broker.taskqueue.log;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestEncoder;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 
 public class TaskInstanceRequestWriter extends LogEntryWriter<TaskInstanceRequestWriter, TaskInstanceRequestEncoder>
 {

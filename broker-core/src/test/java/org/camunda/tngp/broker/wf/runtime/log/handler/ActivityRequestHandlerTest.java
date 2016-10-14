@@ -18,7 +18,7 @@ import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.taskqueue.data.ActivityInstanceRequestType;
+import org.camunda.tngp.protocol.log.ActivityInstanceRequestType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

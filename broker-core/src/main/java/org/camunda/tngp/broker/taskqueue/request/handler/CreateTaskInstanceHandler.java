@@ -9,7 +9,7 @@ import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.taskqueue.CreateTaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
 public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueueContext>

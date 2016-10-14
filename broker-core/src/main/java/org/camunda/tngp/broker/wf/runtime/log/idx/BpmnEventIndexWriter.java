@@ -8,8 +8,8 @@ import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventDecoder;
+import org.camunda.tngp.protocol.log.BpmnProcessEventDecoder;
 
 public class BpmnEventIndexWriter implements IndexWriter
 {

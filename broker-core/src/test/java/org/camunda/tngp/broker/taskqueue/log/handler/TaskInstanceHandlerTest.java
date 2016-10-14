@@ -5,15 +5,15 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TestTaskQueueLogEntries;
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.protocol.taskqueue.LockTaskBatchResponseReader;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckResponseReader;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.junit.Before;
 import org.junit.Test;
 

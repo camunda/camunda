@@ -4,8 +4,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
-import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
-import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestEncoder;
+import org.camunda.tngp.protocol.log.ProcessInstanceRequestType;
+import org.camunda.tngp.protocol.log.WorkflowInstanceRequestEncoder;
 
 public class WorkflowInstanceRequestWriter extends LogEntryWriter<WorkflowInstanceRequestWriter, WorkflowInstanceRequestEncoder>
 {

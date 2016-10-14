@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.log;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.sbe.MessageEncoderFlyweight;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 public abstract class LogEntryWriter<S extends LogEntryWriter<S, T>, T extends MessageEncoderFlyweight> implements BufferWriter

@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventEncoder;
+import org.camunda.tngp.protocol.log.BpmnFlowElementEventEncoder;
 
 public class BpmnFlowElementEventWriter extends LogEntryWriter<BpmnFlowElementEventWriter, BpmnFlowElementEventEncoder>
 {

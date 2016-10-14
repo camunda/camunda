@@ -2,9 +2,9 @@ package org.camunda.tngp.broker.wf.runtime.log;
 
 import static org.assertj.core.api.Assertions.*;
 
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionEncoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionEncoder;
 import org.junit.Test;
 
 import org.agrona.concurrent.UnsafeBuffer;

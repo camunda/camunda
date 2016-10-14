@@ -14,7 +14,7 @@ import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
+import org.camunda.tngp.protocol.log.ProcessInstanceRequestType;
 
 public class WorkflowInstanceRequestHandler implements LogEntryTypeHandler<WorkflowInstanceRequestReader>
 {

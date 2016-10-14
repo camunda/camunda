@@ -6,9 +6,9 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
-
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class TestTaskQueueLogEntries

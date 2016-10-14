@@ -6,7 +6,6 @@ import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.taskqueue.CompleteTaskRequestReader;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestWriter;
@@ -16,7 +15,8 @@ import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskDecoder;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
 public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContext>

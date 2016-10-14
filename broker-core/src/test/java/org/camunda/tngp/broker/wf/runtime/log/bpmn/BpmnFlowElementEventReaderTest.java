@@ -3,8 +3,8 @@ package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.log.BpmnFlowElementEventEncoder;
+import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
 

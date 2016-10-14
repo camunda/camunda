@@ -22,7 +22,7 @@ import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceDecoder;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseReader;
-import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
+import org.camunda.tngp.protocol.log.ProcessInstanceRequestType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

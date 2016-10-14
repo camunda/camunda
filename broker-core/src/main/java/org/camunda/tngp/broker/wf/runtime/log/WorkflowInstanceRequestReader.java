@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.wf.runtime.log;
 
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.ProcessInstanceRequestType;
-import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestDecoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.ProcessInstanceRequestType;
+import org.camunda.tngp.protocol.log.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;

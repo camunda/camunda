@@ -10,24 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.client.event;
+package org.camunda.tngp.client.event.impl.builder;
 
-import java.util.List;
+import org.agrona.DirectBuffer;
+import org.camunda.tngp.client.event.Event;
 
-/**
- * A batch of {@link Event}s.
- */
-public interface EventsBatch
+public interface EventBuilder
 {
 
-    /**
-     * @return all containing events.
-     */
-    List<Event> getEvents();
-
-    /**
-     * @return the containing task instance events.
-     */
-    List<TaskInstanceEvent> getTaskInstanceEvents();
+    Event build(long position, DirectBuffer buffer);
 
 }

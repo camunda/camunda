@@ -26,13 +26,8 @@ public interface Event
     long getPosition();
 
     /**
-     * @return the buffer which contains the event as bytes
+     * @return the underlying buffer which contains the event as bytes
      */
-    DirectBuffer getEventBuffer();
-
-    /**
-     * @return the length of the buffer which contains the event
-     */
-    int getEventLength();
+    DirectBuffer getRawBuffer();
 
 }

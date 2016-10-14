@@ -20,7 +20,7 @@ import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;

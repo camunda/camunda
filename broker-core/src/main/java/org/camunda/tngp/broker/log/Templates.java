@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.taskqueue.CreateTaskInstanceRequestReader;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
@@ -14,16 +13,17 @@ import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
-import org.camunda.tngp.taskqueue.data.ActivityInstanceRequestDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnFlowElementEventDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnProcessEventDecoder;
-import org.camunda.tngp.taskqueue.data.CreateTaskRequestDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestDecoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRequestDecoder;
-import org.camunda.tngp.taskqueue.data.WorkflowInstanceRequestDecoder;
+import org.camunda.tngp.protocol.log.ActivityInstanceRequestDecoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventDecoder;
+import org.camunda.tngp.protocol.log.BpmnFlowElementEventDecoder;
+import org.camunda.tngp.protocol.log.BpmnProcessEventDecoder;
+import org.camunda.tngp.protocol.log.CreateTaskRequestDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestDecoder;
+import org.camunda.tngp.protocol.log.WorkflowInstanceRequestDecoder;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 /**

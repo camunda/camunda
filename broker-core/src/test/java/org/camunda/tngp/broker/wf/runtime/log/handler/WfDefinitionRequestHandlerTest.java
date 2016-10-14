@@ -23,7 +23,7 @@ import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponseReader;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;

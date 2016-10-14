@@ -4,12 +4,12 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 
 public class LockedTasksIndexWriter implements IndexWriter
 {

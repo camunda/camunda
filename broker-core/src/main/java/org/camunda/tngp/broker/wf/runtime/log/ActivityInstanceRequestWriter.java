@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.log;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
-import org.camunda.tngp.taskqueue.data.ActivityInstanceRequestEncoder;
+import org.camunda.tngp.protocol.log.ActivityInstanceRequestEncoder;
 
 public class ActivityInstanceRequestWriter extends LogEntryWriter<ActivityInstanceRequestWriter, ActivityInstanceRequestEncoder>
 {

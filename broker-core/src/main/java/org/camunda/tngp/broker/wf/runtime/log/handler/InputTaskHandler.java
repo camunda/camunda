@@ -4,10 +4,10 @@ import org.camunda.tngp.broker.log.LogEntryTypeHandler;
 import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestWriter;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 
 public class InputTaskHandler implements LogEntryTypeHandler<TaskInstanceReader>
 {

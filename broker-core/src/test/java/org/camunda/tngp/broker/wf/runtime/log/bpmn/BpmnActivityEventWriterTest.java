@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventDecoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventEncoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
 

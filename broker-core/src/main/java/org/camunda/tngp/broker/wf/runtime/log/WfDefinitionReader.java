@@ -2,8 +2,8 @@ package org.camunda.tngp.broker.wf.runtime.log;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionDecoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;

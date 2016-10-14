@@ -4,8 +4,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRequestEncoder;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestEncoder;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
 
 public class WfDefinitionRequestWriter extends LogEntryWriter<WfDefinitionRequestWriter, WfDefinitionRequestEncoder>
 {

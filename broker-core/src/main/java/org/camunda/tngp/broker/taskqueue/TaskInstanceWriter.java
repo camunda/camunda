@@ -5,8 +5,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
-import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceEncoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
 
 public class TaskInstanceWriter extends LogEntryWriter<TaskInstanceWriter, TaskInstanceEncoder>
 {

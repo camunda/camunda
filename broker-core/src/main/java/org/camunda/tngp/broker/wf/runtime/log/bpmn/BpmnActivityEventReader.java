@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventDecoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventDecoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;

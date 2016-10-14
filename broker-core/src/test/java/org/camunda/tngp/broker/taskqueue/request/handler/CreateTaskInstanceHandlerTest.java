@@ -10,13 +10,13 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.broker.taskqueue.CreateTaskInstanceRequestReader;
 import org.camunda.tngp.broker.taskqueue.MockTaskQueueContext;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
-import org.camunda.tngp.taskqueue.data.TaskInstanceDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.junit.Before;
 import org.junit.Test;

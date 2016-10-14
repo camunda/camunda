@@ -17,7 +17,7 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
 
 public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinitionRequestReader>
 {

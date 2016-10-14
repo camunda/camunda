@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.log;
 
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;

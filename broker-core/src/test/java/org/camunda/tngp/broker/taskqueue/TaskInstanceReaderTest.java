@@ -5,9 +5,10 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceEncoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
+import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.log.TaskInstanceEncoder;
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.junit.Test;
 
 import org.agrona.concurrent.UnsafeBuffer;

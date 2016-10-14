@@ -5,9 +5,8 @@ import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.taskqueue.LockedTaskBatchWriter;
 import org.camunda.tngp.broker.taskqueue.SingleTaskAckResponseWriter;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
-import org.camunda.tngp.taskqueue.data.TaskInstanceState;
-
+import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.agrona.DirectBuffer;
 
 public class TaskInstanceHandler implements LogEntryTypeHandler<TaskInstanceReader>

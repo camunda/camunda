@@ -11,7 +11,7 @@ import org.camunda.tngp.broker.log.ResponseControl.ApiResponseControl;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.log.idx.IndexWriterTracker;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.util.buffer.BufferReader;

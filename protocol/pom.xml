@@ -15,6 +15,7 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+    <schema.directory>${project.build.resources[0].directory}</schema.directory>
   </properties>
 
   <dependencies>
@@ -99,12 +100,17 @@
               <key>sbe.output.dir</key>
               <value>${project.build.directory}/generated-sources</value>
             </systemProperty>
+            <systemProperty>
+              <key>sbe.java.generate.interfaces</key>
+              <value>true</value>
+            </systemProperty>
           </systemProperties>
           <arguments>
-            <argument>${project.build.resources[0].directory}/task-queue-schema.xml</argument>
-            <argument>${project.build.resources[0].directory}/wf-schema.xml</argument>
-            <argument>${project.build.resources[0].directory}/error.xml</argument>
-            <argument>${project.build.resources[0].directory}/event-schema.xml</argument>
+            <argument>${schema.directory}/task-queue-schema.xml</argument>
+            <argument>${schema.directory}/wf-schema.xml</argument>
+            <argument>${schema.directory}/error.xml</argument>
+            <argument>${schema.directory}/event-schema.xml</argument>
+            <argument>${schema.directory}/log-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
         </configuration>

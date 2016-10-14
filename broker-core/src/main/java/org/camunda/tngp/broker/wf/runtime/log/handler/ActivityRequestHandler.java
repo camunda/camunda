@@ -10,7 +10,7 @@ import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.taskqueue.data.ActivityInstanceRequestType;
+import org.camunda.tngp.protocol.log.ActivityInstanceRequestType;
 
 public class ActivityRequestHandler implements LogEntryTypeHandler<ActivityInstanceRequestReader>
 {

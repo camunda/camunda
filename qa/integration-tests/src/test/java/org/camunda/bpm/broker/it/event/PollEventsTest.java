@@ -13,18 +13,15 @@
 package org.camunda.bpm.broker.it.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
-import org.agrona.DirectBuffer;
+import java.util.List;
+
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.log.Template;
-import org.camunda.tngp.broker.log.Templates;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
+import org.camunda.tngp.client.event.TaskInstanceEvent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -67,7 +64,7 @@ public class PollEventsTest
     {
         final TngpClient client = clientRule.getClient();
 
-        final Long taskId = client.tasks().create()
+        client.tasks().create()
             .taskQueueId(0)
             .taskType("test")
             .payload("foo")
@@ -85,23 +82,7 @@ public class PollEventsTest
         final Event event = eventsBatch.getEvents().get(0);
 
         assertThat(event.getPosition()).isEqualTo(INITIAL_LOG_POSITION);
-        assertThat(event.getEventLength()).isGreaterThan(0);
-
-        final DirectBuffer eventBuffer = event.getEventBuffer();
-        final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-        messageHeaderDecoder.wrap(eventBuffer, 0);
-
-        assertThat(messageHeaderDecoder.templateId()).isEqualTo(Templates.TASK_INSTANCE.id());
-
-        final Template<TaskInstanceReader> template = Templates.getTemplate(messageHeaderDecoder.templateId());
-        assertThat(template).isNotNull();
-
-        final TaskInstanceReader reader = template.newReader();
-        reader.wrap(eventBuffer, 0, eventBuffer.capacity());
-
-        assertThat(reader.id()).isEqualTo(taskId);
-        assertThatBuffer(reader.getTaskType()).hasBytes("test".getBytes());
-        assertThatBuffer(reader.getPayload()).hasBytes("foo".getBytes());
+        assertThat(event.getRawBuffer()).isNotNull();
     }
 
     @Test
@@ -127,21 +108,17 @@ public class PollEventsTest
             .topicId(TASK_QUEUE_TOPIC_ID)
             .execute();
 
-        assertThat(eventsBatch.getEvents()).hasSize(2);
+        final List<TaskInstanceEvent> events = eventsBatch.getTaskInstanceEvents();
+        assertThat(events).hasSize(2);
 
-        final Event event1 = eventsBatch.getEvents().get(0);
-        final Event event2 = eventsBatch.getEvents().get(1);
+        final TaskInstanceEvent event1 = events.get(0);
+        final TaskInstanceEvent event2 = events.get(1);
 
-        final Template<TaskInstanceReader> template = Templates.getTemplate(Templates.TASK_INSTANCE.id());
-        final TaskInstanceReader reader = template.newReader();
+        assertThat(event1.getPosition()).isEqualTo(INITIAL_LOG_POSITION);
+        assertThat(event1.getId()).isEqualTo(taskId1);
 
-        DirectBuffer buffer = event1.getEventBuffer();
-        reader.wrap(buffer, 0, buffer.capacity());
-        assertThat(reader.id()).isEqualTo(taskId1);
-
-        buffer = event2.getEventBuffer();
-        reader.wrap(buffer, 0, buffer.capacity());
-        assertThat(reader.id()).isEqualTo(taskId2);
+        assertThat(event2.getPosition()).isGreaterThan(INITIAL_LOG_POSITION);
+        assertThat(event2.getId()).isEqualTo(taskId2);
     }
 
     @Test
@@ -177,16 +154,11 @@ public class PollEventsTest
                 .topicId(TASK_QUEUE_TOPIC_ID)
                 .execute();
 
-        assertThat(eventsBatch.getEvents()).hasSize(1);
+        final List<TaskInstanceEvent> events = eventsBatch.getTaskInstanceEvents();
+        assertThat(events).hasSize(1);
 
-        final Event event = eventsBatch.getEvents().get(0);
-        final DirectBuffer buffer = event.getEventBuffer();
-
-        final Template<TaskInstanceReader> template = Templates.getTemplate(Templates.TASK_INSTANCE.id());
-        final TaskInstanceReader reader = template.newReader();
-
-        reader.wrap(buffer, 0, buffer.capacity());
-        assertThat(reader.id()).isEqualTo(taskId2);
+        final TaskInstanceEvent event = events.get(0);
+        assertThat(event.getId()).isEqualTo(taskId2);
     }
 
     @Test
@@ -238,16 +210,52 @@ public class PollEventsTest
             .topicId(TASK_QUEUE_TOPIC_ID)
             .execute();
 
+        final List<TaskInstanceEvent> events = eventsBatch.getTaskInstanceEvents();
+        assertThat(events).hasSize(1);
+
+        final TaskInstanceEvent event = events.get(0);
+        assertThat(event.getId()).isEqualTo(taskId2);
+    }
+
+    @Test
+    public void shouldPollTaskInstanceEvent()
+    {
+        final TngpClient client = clientRule.getClient();
+
+        final Long taskId = client.tasks().create()
+            .taskQueueId(0)
+            .taskType("test")
+            .execute();
+
+        final EventsBatch eventsBatch = client.events().poll()
+            .startPosition(INITIAL_LOG_POSITION)
+            .maxEvents(1)
+            .topicId(TASK_QUEUE_TOPIC_ID)
+            .execute();
+
+        assertThat(eventsBatch).isNotNull();
         assertThat(eventsBatch.getEvents()).hasSize(1);
 
-        final Template<TaskInstanceReader> template = Templates.getTemplate(Templates.TASK_INSTANCE.id());
-        final TaskInstanceReader reader = template.newReader();
+        final List<TaskInstanceEvent> events = eventsBatch.getTaskInstanceEvents();
+        assertThat(events).hasSize(1);
 
-        final Event event1 = eventsBatch.getEvents().get(0);
-        final DirectBuffer buffer = event1.getEventBuffer();
-        reader.wrap(buffer, 0, buffer.capacity());
+        final TaskInstanceEvent event = events.get(0);
 
-        assertThat(reader.id()).isEqualTo(taskId2);
+        assertThat(event.getPosition()).isEqualTo(INITIAL_LOG_POSITION);
+        assertThat(event.getRawBuffer()).isNotNull();
+
+        assertThat(event.getId()).isEqualTo(taskId);
+        assertThat(event.getType()).isEqualTo("test");
+
+        assertThat(event.isNew()).isTrue();
+        assertThat(event.isLocked()).isFalse();
+        assertThat(event.isCompleted()).isFalse();
+        assertThat(event.getState()).isEqualTo(TaskInstanceEvent.STATE_NEW);
+
+        assertThat(event.getWorkflowInstanceId()).isNull();
+        assertThat(event.getLockOwnerId()).isNull();
+        assertThat(event.getLockExpirationTime()).isNull();
     }
+
 
 }

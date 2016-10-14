@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.log;
 
-import org.camunda.tngp.taskqueue.data.MessageHeaderDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestDecoder;
-import org.camunda.tngp.taskqueue.data.TaskInstanceRequestType;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestDecoder;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;

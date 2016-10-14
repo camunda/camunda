@@ -14,9 +14,11 @@ package org.camunda.tngp.client.event.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
+import org.camunda.tngp.client.event.TaskInstanceEvent;
 
 public class EventsBatchImpl implements EventsBatch
 {
@@ -26,6 +28,20 @@ public class EventsBatchImpl implements EventsBatch
     public List<Event> getEvents()
     {
         return events;
+    }
+
+    @Override
+    public List<TaskInstanceEvent> getTaskInstanceEvents()
+    {
+        return getEventsOfType(TaskInstanceEvent.class);
+    }
+
+    protected <T extends Event> List<T> getEventsOfType(Class<T> type)
+    {
+        return events.stream()
+                .filter(type::isInstance)
+                .map(type::cast)
+                .collect(Collectors.toList());
     }
 
     public void addEvent(Event event)

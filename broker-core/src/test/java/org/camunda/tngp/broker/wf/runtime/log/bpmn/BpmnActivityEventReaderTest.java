@@ -6,8 +6,8 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventEncoder;
-import org.camunda.tngp.taskqueue.data.MessageHeaderEncoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventEncoder;
+import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
 

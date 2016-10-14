@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3" package="org.camunda.tngp.taskqueue.data"
-  id="2" version="1" semanticVersion="0.1.0" description="Task Queue Data Schema" byteOrder="littleEndian">
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3" package="org.camunda.tngp.protocol.log"
+  id="5" version="1" semanticVersion="0.1.0" description="Tngp Log Protocol" byteOrder="littleEndian">
 
   <types>
     <composite name="messageHeader" description="Message identifiers and length of message root">

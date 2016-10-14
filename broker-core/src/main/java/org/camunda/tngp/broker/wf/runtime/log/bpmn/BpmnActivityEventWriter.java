@@ -5,7 +5,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-import org.camunda.tngp.taskqueue.data.BpmnActivityEventEncoder;
+import org.camunda.tngp.protocol.log.BpmnActivityEventEncoder;
 
 public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWriter, BpmnActivityEventEncoder>
 {

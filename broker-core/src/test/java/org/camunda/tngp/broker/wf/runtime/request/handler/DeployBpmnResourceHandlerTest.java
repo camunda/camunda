@@ -21,7 +21,7 @@ import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestReader;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
-import org.camunda.tngp.taskqueue.data.WfDefinitionRequestType;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;

@@ -113,47 +113,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.3.2</version>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
-          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
-          <systemProperties>
-            <systemProperty>
-              <key>sbe.output.dir</key>
-              <value>${project.build.directory}/generated-sources</value>
-            </systemProperty>
-            <systemProperty>
-              <key>sbe.java.generate.interfaces</key>
-              <value>true</value>
-            </systemProperty>
-          </systemProperties>
-          <arguments>
-            <argument>${project.build.resources[0].directory}/schema.xml</argument>
-          </arguments>
-          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
-            <version>1.3.3-RC3</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <configuration>
