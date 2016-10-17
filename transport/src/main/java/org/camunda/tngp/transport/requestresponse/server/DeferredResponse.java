@@ -96,6 +96,9 @@ public class DeferredResponse
         return isAllocated;
     }
 
+    /**
+     * Response becomes enqueued in response pool, accessible via {@link DeferredResponsePool#popDeferred()}
+     */
     public int deferFifo()
     {
         responseControl.defer(this);
@@ -155,5 +158,10 @@ public class DeferredResponse
     public DeferredResponseControl getControl()
     {
         return responseControl;
+    }
+
+    public int getChannelId()
+    {
+        return channelId;
     }
 }

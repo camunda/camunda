@@ -11,4 +11,9 @@ public interface AsyncRequestHandler
             int length,
             DeferredResponse response);
 
+    long onDataFrame(
+            DirectBuffer buffer,
+            int offset,
+            int length);
+
 }

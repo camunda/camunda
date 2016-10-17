@@ -5,6 +5,7 @@ import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocol
 import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
 
 import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.MessageHandler;
@@ -28,14 +29,39 @@ public class RequestFragmentHandler implements FragmentHandler
     @Override
     public int onFragment(DirectBuffer buffer, int offset, int length, int channelId, boolean isMarkedFailed)
     {
-        final int requestResponseOffset = offset + TransportHeaderDescriptor.headerLength();
-        final int requestResponseLength = length - TransportHeaderDescriptor.headerLength();
+        final short protocolId = buffer.getShort(TransportHeaderDescriptor.protocolIdOffset(offset));
 
-        final long connectionId = buffer.getLong(connectionIdOffset(requestResponseOffset));
-        final long requestId = buffer.getLong(requestIdOffset(requestResponseOffset));
+        final int protocolMessageOffset = offset + TransportHeaderDescriptor.headerLength();
+        final int protocolMessageLength = length - TransportHeaderDescriptor.headerLength();
 
-        final int requestOffset = requestResponseOffset + headerLength();
-        final int requestLength = requestResponseLength - headerLength();
+        if (Protocols.REQUEST_RESPONSE == protocolId)
+        {
+            return handleRequestResponseMessage(buffer, protocolMessageOffset, protocolMessageLength, channelId);
+        }
+        else if (Protocols.FULL_DUPLEX_SINGLE_MESSAGE == protocolId)
+        {
+            return handleDataFrame(buffer, protocolMessageOffset, protocolMessageLength, channelId);
+        }
+        else
+        {
+            System.err.println("Received message with unknown protocol id " + protocolId + ". Ignoring it.");
+            return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        }
+    }
+
+    protected int handleDataFrame(DirectBuffer buffer, int offset, int length, int channelId)
+    {
+        asyncRequestHandler.onDataFrame(buffer, offset, length);
+        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+
+    protected int handleRequestResponseMessage(DirectBuffer buffer, int offset, int length, int channelId)
+    {
+        final long connectionId = buffer.getLong(connectionIdOffset(offset));
+        final long requestId = buffer.getLong(requestIdOffset(offset));
+
+        final int requestOffset = offset + headerLength();
+        final int requestLength = length - headerLength();
 
         final DeferredResponse response = responsePool.open(channelId, connectionId, requestId);
 
