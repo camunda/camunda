@@ -6,6 +6,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class OutgoingDataFrameImpl implements OutgoingDataFrame
 {
@@ -26,6 +27,12 @@ public class OutgoingDataFrameImpl implements OutgoingDataFrame
     public MutableDirectBuffer getBuffer()
     {
         return buffer;
+    }
+
+    @Override
+    public void write(BufferWriter writer)
+    {
+        writer.write(buffer, 0);
     }
 
     @Override
