@@ -155,7 +155,7 @@ public class LockTaskBatchHandlerTest
         assertThatBuffer(taskInstanceReader.getPayload()).hasBytes(PAYLOAD);
         assertThatBuffer(taskInstanceReader.getTaskType()).hasBytes(TASK_TYPE);
 
-        verify(response).defer();
+        verify(response).deferFifo();
 
         verifyNoMoreInteractions(response);
     }

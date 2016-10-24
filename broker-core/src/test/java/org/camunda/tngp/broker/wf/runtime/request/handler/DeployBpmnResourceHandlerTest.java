@@ -78,7 +78,7 @@ public class DeployBpmnResourceHandlerTest
         handler.onRequest(context, message, 123, 456, response);
 
         // then
-        verify(response).defer();
+        verify(response).deferFifo();
         verifyNoMoreInteractions(response);
 
         assertThat(logWriter.size()).isEqualTo(1);

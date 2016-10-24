@@ -46,7 +46,7 @@ public class CreateTaskInstanceHandler implements BrokerRequestHandler<TaskQueue
 
         logWriter.write(taskInstanceWriter);
 
-        return response.defer();
+        return response.deferFifo();
     }
 
     @Override

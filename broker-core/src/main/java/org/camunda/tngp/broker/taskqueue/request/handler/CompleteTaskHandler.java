@@ -65,7 +65,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
 
         logWriter.write(logRequestWriter);
 
-        return response.defer();
+        return response.deferFifo();
     }
 
     protected int writeError(DeferredResponse response, String errorMessage)

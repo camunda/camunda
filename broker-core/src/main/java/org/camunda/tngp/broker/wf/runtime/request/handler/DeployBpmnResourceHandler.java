@@ -47,7 +47,7 @@ public class DeployBpmnResourceHandler implements BrokerRequestHandler<WfRuntime
 
         logWriter.write(logRequestWriter);
 
-        return response.defer();
+        return response.deferFifo();
     }
 
     protected void writeError(String errorMessage, DeferredResponse response)

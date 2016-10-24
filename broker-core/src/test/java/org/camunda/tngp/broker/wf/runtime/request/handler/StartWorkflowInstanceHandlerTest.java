@@ -82,7 +82,7 @@ public class StartWorkflowInstanceHandlerTest
         when(process.intialFlowNodeId()).thenReturn(987);
         when(process.id()).thenReturn(1234L);
 
-        when(response.defer()).thenReturn(1);
+        when(response.deferFifo()).thenReturn(1);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class StartWorkflowInstanceHandlerTest
         handler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
-        verify(response).defer();
+        verify(response).deferFifo();
 
         assertThat(logWriter.size()).isEqualTo(1);
 
@@ -128,7 +128,7 @@ public class StartWorkflowInstanceHandlerTest
         handler.onRequest(mockContext, requestBuffer, 0, 0, response);
 
         // then
-        verify(response).defer();
+        verify(response).deferFifo();
 
         assertThat(logWriter.size()).isEqualTo(1);
 

@@ -74,7 +74,7 @@ public class CreateTaskInstanceHandlerTest
         handler.onRequest(taskContext, message, 123, 456, response);
 
         // then
-        verify(response).defer();
+        verify(response).deferFifo();
         verifyNoMoreInteractions(response);
 
         assertThat(logWriter.size()).isEqualTo(1);

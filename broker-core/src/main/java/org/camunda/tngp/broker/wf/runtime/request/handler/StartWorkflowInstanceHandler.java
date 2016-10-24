@@ -62,7 +62,7 @@ public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRunt
             .source(EventSource.API);
 
         logWriter.write(logRequestWriter);
-        return response.defer();
+        return response.deferFifo();
     }
 
     protected void writeError(String errorMessage, DeferredResponse response)

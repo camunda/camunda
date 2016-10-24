@@ -143,7 +143,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             .taskType(taskType, 0, taskType.capacity());
 
         logWriter.write(taskInstanceWriter);
-        return response.defer();
+        return response.deferFifo();
     }
 
     protected void initResponse(
