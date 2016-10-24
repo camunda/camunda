@@ -96,12 +96,16 @@ public class DeferredResponse
         return isAllocated;
     }
 
+    public int deferFifo()
+    {
+        responseControl.defer(this);
+        return defer();
+    }
+
     public int defer()
     {
         final int result = 1;
-        responseControl.defer(this);
         isDeferred = true;
-
         return result;
     }
 

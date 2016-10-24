@@ -67,7 +67,7 @@ public class DeferredResponsePoolTest
         final DeferredResponse response2 = responsePool.open(1, 2L, 3L);
 
         response1.allocate(123);
-        response1.defer();
+        response1.deferFifo();
 
         // when
         responsePool.reclaim(response2);
@@ -97,8 +97,8 @@ public class DeferredResponsePoolTest
         final DeferredResponse response2 = responsePool.open(1, 2L, 3L);
 
         // when
-        response1.defer();
-        response2.defer();
+        response1.deferFifo();
+        response2.deferFifo();
 
         // then
         final DeferredResponse firstDeferred = responsePool.popDeferred();
@@ -119,4 +119,43 @@ public class DeferredResponsePoolTest
         // when
         responsePool.popDeferred();
     }
+
+    @Test
+    public void shouldSetResponseAsDeferred()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 2);
+
+        final DeferredResponse response1 = responsePool.open(1, 2L, 3L);
+        final DeferredResponse response2 = responsePool.open(1, 2L, 3L);
+
+        // assume
+        assertThat(response1.isDeferred()).isFalse();
+        assertThat(response2.isDeferred()).isFalse();
+
+        // when
+        response1.defer();
+        response2.defer();
+
+        // then
+        assertThat(response1.isDeferred()).isTrue();
+        assertThat(response2.isDeferred()).isTrue();
+    }
+
+    @Test
+    public void shouldNotAddResponseToQueue()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 2);
+
+        final DeferredResponse response1 = responsePool.open(1, 2L, 3L);
+        response1.defer();
+
+        // then
+        exception.expect(NoSuchElementException.class);
+
+        // when
+        responsePool.popDeferred();
+    }
+
 }

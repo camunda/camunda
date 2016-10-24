@@ -34,6 +34,8 @@ public class DeferredResponsePool
         {
             pooled.offer(new DeferredResponse(sendBuffer, new DeferredResponseControl()
                 {
+                    protected boolean isReclaimed = false;
+
                     @Override
                     public void defer(DeferredResponse r)
                     {
@@ -43,7 +45,11 @@ public class DeferredResponsePool
                     @Override
                     public void reclaim(DeferredResponse r)
                     {
-                        DeferredResponsePool.this.reclaim(r);
+                        if (!isReclaimed)
+                        {
+                            DeferredResponsePool.this.reclaim(r);
+                        }
+                        isReclaimed = true;
                     }
                 }));
         }
