@@ -122,8 +122,8 @@ public class DeferredResponse
         if (claimedFragment.isOpen())
         {
             claimedFragment.commit();
-            responseControl.reclaim(this);
         }
+        responseControl.reclaim(this);
     }
 
     public void abort()
@@ -132,6 +132,7 @@ public class DeferredResponse
         {
             claimedFragment.abort();
         }
+        responseControl.reclaim(this);
     }
 
     public boolean isDeferred()

@@ -158,4 +158,39 @@ public class DeferredResponsePoolTest
         responsePool.popDeferred();
     }
 
+    @Test
+    public void shouldReclaimDeferredResponseWhenCommitting()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 1);
+        final DeferredResponse response = responsePool.open(1, 2L, 3L);
+        response.deferFifo();
+
+        // assume
+        assertThat(responsePool.open(1, 2L, 3L)).isNull();
+
+        // when
+        response.commit();
+
+        // then
+        assertThat(responsePool.open(1, 2L, 3L)).isNotNull();
+    }
+
+    @Test
+    public void shouldReclaimDeferredResponseWhenAborting()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 1);
+        final DeferredResponse response = responsePool.open(1, 2L, 3L);
+        response.deferFifo();
+
+        // assume
+        assertThat(responsePool.open(1, 2L, 3L)).isNull();
+
+        // when
+        response.abort();
+
+        // then
+        assertThat(responsePool.open(1, 2L, 3L)).isNotNull();
+    }
 }
