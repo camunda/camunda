@@ -12,14 +12,12 @@
  */
 package org.camunda.tngp.util.buffer;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 
 public final class BufferUtil
 {
-    public static final Charset UTF_8_CHARSET = Charset.forName("utf-8");
-
     private BufferUtil()
     { // avoid instantiation of util class
     }
@@ -30,7 +28,7 @@ public final class BufferUtil
 
         buffer.getBytes(0, bytes);
 
-        return new String(bytes, UTF_8_CHARSET);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
 }
