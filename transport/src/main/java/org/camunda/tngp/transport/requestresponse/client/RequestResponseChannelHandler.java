@@ -92,19 +92,15 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
         final long connectionId = buffer.getLong(connectionIdOffset(requestResponseHeaderOffset));
         final TransportConnectionImpl connection = connectionManager.findConnection(connectionId);
 
-        boolean isHandled = false;
-
         if (connection != null)
         {
-            isHandled = connection.processResponse(buffer, requestResponseHeaderOffset, requestResponseMessageLength);
+            if (!connection.processResponse(buffer, requestResponseHeaderOffset, requestResponseMessageLength))
+            {
+                System.err.println("Dropping protocol frame on connection " + connectionId);
+            }
         }
 
-        if (!isHandled)
-        {
-            System.err.println("Dropping protocol frame on connection " + connectionId);
-        }
-
-        return isHandled;
+        return true;
     }
 
     @Override
