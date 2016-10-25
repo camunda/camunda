@@ -12,27 +12,25 @@
  */
 package org.camunda.tngp.client.event;
 
-import java.util.List;
-
 /**
- * A batch of {@link Event}s.
+ * Represents one workflow definition {@link Event}.
  */
-public interface EventsBatch
+public interface WorkflowDefinitionEvent extends Event
 {
 
     /**
-     * @return all containing events.
+     * @return the workflow definition id
      */
-    List<Event> getEvents();
+    long getId();
 
     /**
-     * @return the containing task instance events.
+     * @return the workflow definition key
      */
-    List<TaskInstanceEvent> getTaskInstanceEvents();
+    String getKey();
 
     /**
-     * @return the containing workflow definition events.
+     * @return the workflow definition resource as XML string
      */
-    List<WorkflowDefinitionEvent> getWorkflowDefinitionEvents();
+    String getResource();
 
 }

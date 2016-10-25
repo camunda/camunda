@@ -32,13 +32,8 @@ id = 0
 useTempLogDirectory = true
 
 [[log]]
-name = "default-wf-definition-log"
-id = 1
-useTempLogDirectory = true
-
-[[log]]
 name = "default-wf-instance-log"
-id = 2
+id = 1
 useTempLogDirectory = true
 
 # Task Queues ------------------------------------------

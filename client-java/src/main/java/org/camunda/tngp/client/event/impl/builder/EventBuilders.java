@@ -14,6 +14,8 @@ package org.camunda.tngp.client.event.impl.builder;
 
 import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.protocol.log.TaskInstanceEncoder;
+import org.camunda.tngp.protocol.log.WfDefinitionEncoder;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestEncoder;
 
 public class EventBuilders
 {
@@ -23,6 +25,12 @@ public class EventBuilders
 
     protected static final EventBuilder TASK_INSTANCE_EVENT_BUILDER =
             registerEventBuilder(TaskInstanceEncoder.TEMPLATE_ID, new TaskInstanceEventBuilder());
+
+    protected static final EventBuilder WORKFLOW_DEFINITION_EVENT_BUILDER =
+            registerEventBuilder(WfDefinitionEncoder.TEMPLATE_ID, new WorkflowDefinitionEventBuilder());
+
+    protected static final EventBuilder WORKFLOW_DEFINITION_REQUEST_EVENT_BUILDER =
+            registerEventBuilder(WfDefinitionRequestEncoder.TEMPLATE_ID, new WorkflowDefinitionRequestEventBuilder());
 
     protected static EventBuilder registerEventBuilder(int templateId, EventBuilder eventBuilder)
     {

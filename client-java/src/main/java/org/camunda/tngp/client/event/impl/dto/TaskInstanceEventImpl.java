@@ -143,4 +143,24 @@ public class TaskInstanceEventImpl implements TaskInstanceEvent
         return state;
     }
 
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("TaskInstanceEventImpl [id=");
+        builder.append(id);
+        builder.append(", workflowInstanceId=");
+        builder.append(workflowInstanceId);
+        builder.append(", type=");
+        builder.append(type);
+        builder.append(", state=");
+        builder.append(state);
+        builder.append(", lockExpirationTime=");
+        builder.append(lockExpirationTime);
+        builder.append(", lockOwnerId=");
+        builder.append(lockOwnerId);
+        builder.append("]");
+        return builder.toString();
+    }
+
 }

@@ -32,12 +32,8 @@ name = "default-task-queue-log"
 id = 0
 
 [[log]]
-name = "default-wf-definition-log"
-id = 1
-
-[[log]]
 name = "default-wf-instance-log"
-id = 2
+id = 1
 
 # Task Queues ------------------------------------------
 

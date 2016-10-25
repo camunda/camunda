@@ -4,15 +4,18 @@ import java.util.function.LongFunction;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectCache;
+import org.agrona.io.DirectBufferInputStream;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.BufferedLogReader;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.ReadableLogEntry;
+import org.camunda.tngp.protocol.wf.WfDefinitionReader;
 
 public class WfDefinitionCache implements LongFunction<ProcessGraph>
 {
@@ -73,11 +76,12 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
             logReader.wrap(wfTypeLog, position);
             final ReadableLogEntry logEntry = logReader.next();
             logEntry.readValue(reader);
-            graph = transformer.transformSingleProcess(reader.asModelInstance(), key);
+
+            final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(new DirectBufferInputStream(reader.getResource()));
+            graph = transformer.transformSingleProcess(modelInstance, key);
         }
 
         return graph;
     }
-
 
 }

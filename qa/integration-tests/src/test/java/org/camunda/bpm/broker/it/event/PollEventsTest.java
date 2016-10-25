@@ -18,10 +18,13 @@ import java.util.List;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
 import org.camunda.tngp.client.event.TaskInstanceEvent;
+import org.camunda.tngp.client.event.WorkflowDefinitionEvent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,6 +33,8 @@ import org.junit.rules.RuleChain;
 public class PollEventsTest
 {
     private static final int TASK_QUEUE_TOPIC_ID = 0;
+    private static final int WORKFLOW_TOPIC_ID = 1;
+
     private static final int INITIAL_LOG_POSITION = 0;
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -229,12 +234,9 @@ public class PollEventsTest
 
         final EventsBatch eventsBatch = client.events().poll()
             .startPosition(INITIAL_LOG_POSITION)
-            .maxEvents(1)
+            .maxEvents(10)
             .topicId(TASK_QUEUE_TOPIC_ID)
             .execute();
-
-        assertThat(eventsBatch).isNotNull();
-        assertThat(eventsBatch.getEvents()).hasSize(1);
 
         final List<TaskInstanceEvent> events = eventsBatch.getTaskInstanceEvents();
         assertThat(events).hasSize(1);
@@ -255,6 +257,40 @@ public class PollEventsTest
         assertThat(event.getWorkflowInstanceId()).isNull();
         assertThat(event.getLockOwnerId()).isNull();
         assertThat(event.getLockExpirationTime()).isNull();
+    }
+
+    @Test
+    public void shouldPollWorkflowDefinitionEvent()
+    {
+        final TngpClient client = clientRule.getClient();
+
+        final WorkflowDefinition workflowDefinition = client.workflows().deploy()
+            .bpmnModelInstance(Bpmn.createExecutableProcess("process-id").startEvent().endEvent().done())
+            .execute();
+
+        // this ensures that the workflow definition event is already persistent - see #68
+        client.workflows().start()
+            .workflowDefinitionId(workflowDefinition.getId())
+            .execute();
+
+        final EventsBatch eventsBatch = client.events().poll()
+            .startPosition(INITIAL_LOG_POSITION)
+            .maxEvents(10)
+            .topicId(WORKFLOW_TOPIC_ID)
+            .execute();
+
+        final List<WorkflowDefinitionEvent> events = eventsBatch.getWorkflowDefinitionEvents();
+        assertThat(events).hasSize(1);
+
+        final WorkflowDefinitionEvent event = events.get(0);
+
+        assertThat(event.getPosition()).isGreaterThanOrEqualTo(INITIAL_LOG_POSITION);
+        assertThat(event.getRawBuffer()).isNotNull();
+
+        assertThat(event.getId()).isEqualTo(workflowDefinition.getId());
+        assertThat(event.getKey()).isEqualTo("process-id");
+
+        assertThat(event.getResource()).isNotEmpty();
     }
 
 

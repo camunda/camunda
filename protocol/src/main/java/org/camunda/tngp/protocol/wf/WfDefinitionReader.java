@@ -1,14 +1,10 @@
-package org.camunda.tngp.broker.wf.runtime.log;
-
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
-import org.camunda.tngp.util.buffer.BufferReader;
+package org.camunda.tngp.protocol.wf;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
+import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
+import org.camunda.tngp.util.buffer.BufferReader;
 
 public class WfDefinitionReader implements BufferReader
 {
@@ -69,11 +65,6 @@ public class WfDefinitionReader implements BufferReader
     public long id()
     {
         return decoder.id();
-    }
-
-    public BpmnModelInstance asModelInstance()
-    {
-        return Bpmn.readModelFromStream(new DirectBufferInputStream(resourceBuffer));
     }
 
 }

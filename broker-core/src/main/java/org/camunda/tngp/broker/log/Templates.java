@@ -7,8 +7,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.taskqueue.CreateTaskInstanceRequestReader;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestReader;
+import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
@@ -24,6 +23,7 @@ import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
 import org.camunda.tngp.protocol.log.WfDefinitionRequestDecoder;
 import org.camunda.tngp.protocol.log.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
+import org.camunda.tngp.protocol.wf.WfDefinitionReader;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 /**

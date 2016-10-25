@@ -8,16 +8,16 @@ import org.camunda.tngp.broker.log.LogEntryTypeHandler;
 import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.log.ResponseControl;
 import org.camunda.tngp.broker.wf.WfErrors;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestReader;
+import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionWriter;
 import org.camunda.tngp.broker.wf.runtime.request.handler.BpmnDeploymentValidator;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponse;
-import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
+import org.camunda.tngp.protocol.wf.WfDefinitionReader;
 
 public class WfDefinitionRequestHandler implements LogEntryTypeHandler<WfDefinitionRequestReader>
 {

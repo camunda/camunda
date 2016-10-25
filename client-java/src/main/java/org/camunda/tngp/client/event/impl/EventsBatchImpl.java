@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
 import org.camunda.tngp.client.event.TaskInstanceEvent;
+import org.camunda.tngp.client.event.WorkflowDefinitionEvent;
 
 public class EventsBatchImpl implements EventsBatch
 {
@@ -36,6 +37,12 @@ public class EventsBatchImpl implements EventsBatch
         return getEventsOfType(TaskInstanceEvent.class);
     }
 
+    @Override
+    public List<WorkflowDefinitionEvent> getWorkflowDefinitionEvents()
+    {
+        return getEventsOfType(WorkflowDefinitionEvent.class);
+    }
+
     protected <T extends Event> List<T> getEventsOfType(Class<T> type)
     {
         return events.stream()
@@ -47,6 +54,16 @@ public class EventsBatchImpl implements EventsBatch
     public void addEvent(Event event)
     {
         events.add(event);
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder.append("EventsBatchImpl [events=");
+        builder.append(events);
+        builder.append("]");
+        return builder.toString();
     }
 
 }

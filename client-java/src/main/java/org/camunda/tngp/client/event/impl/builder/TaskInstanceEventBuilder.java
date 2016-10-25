@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.client.event.impl.builder;
 
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+
 import java.time.Instant;
 
 import org.agrona.DirectBuffer;
@@ -36,7 +38,7 @@ public class TaskInstanceEventBuilder implements EventBuilder
         event.setRawBuffer(buffer);
 
         event.setId(reader.id());
-        event.setType(asString(reader.getTaskType()));
+        event.setType(bufferAsString(reader.getTaskType()));
 
         event.setState(mapState(reader.state()));
 
@@ -59,13 +61,6 @@ public class TaskInstanceEventBuilder implements EventBuilder
         }
 
         return event;
-    }
-
-    protected String asString(DirectBuffer buffer)
-    {
-        final byte[] bytes = new byte[buffer.capacity()];
-        buffer.getBytes(0, bytes);
-        return new String(bytes);
     }
 
     protected int mapState(TaskInstanceState state)

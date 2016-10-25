@@ -18,7 +18,7 @@ import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.wf.WfErrors;
 import org.camunda.tngp.broker.wf.runtime.MockWfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestReader;
+import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.wf.DeployBpmnResourceRequestReader;
 import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
