@@ -193,4 +193,40 @@ public class DeferredResponsePoolTest
         // then
         assertThat(responsePool.open(1, 2L, 3L)).isNotNull();
     }
+
+    @Test
+    public void shouldNotReclaimSameResponseMoreThanOnce()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 2);
+        final DeferredResponse response1 = responsePool.open(1, 2L, 3L);
+        responsePool.open(1, 2L, 3L);
+
+        // assume
+        assertThat(responsePool.getPooledCount()).isEqualTo(0);
+
+        // when
+        responsePool.reclaim(response1);
+        responsePool.reclaim(response1);
+
+        // then
+        assertThat(responsePool.getPooledCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldReclaimResponse()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 1);
+
+        DeferredResponse response = responsePool.open(1, 2L, 3L);
+        responsePool.reclaim(response);
+
+        // when
+        response = responsePool.open(1, 2L, 3L);
+        responsePool.reclaim(response);
+
+        // then
+        assertThat(responsePool.getPooledCount()).isEqualTo(1);
+    }
 }

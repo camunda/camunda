@@ -2,10 +2,9 @@ package org.camunda.tngp.transport.requestresponse.server;
 
 import java.util.Queue;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.util.BoundedArrayQueue;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Utility for deferring responses which wait on some async processing (usually io)
@@ -45,12 +44,21 @@ public class DeferredResponsePool
                     @Override
                     public void reclaim(DeferredResponse r)
                     {
-                        if (!isReclaimed)
-                        {
-                            DeferredResponsePool.this.reclaim(r);
-                        }
-                        isReclaimed = true;
+                        DeferredResponsePool.this.reclaim(r);
                     }
+
+                    @Override
+                    public boolean isReclaimed()
+                    {
+                        return isReclaimed;
+                    }
+
+                    @Override
+                    public void setReclaimed(boolean reclaimed)
+                    {
+                        this.isReclaimed = reclaimed;
+                    }
+
                 }));
         }
     }
@@ -61,6 +69,7 @@ public class DeferredResponsePool
 
         if (response != null)
         {
+            response.getControl().setReclaimed(false);
             response.open(channelId, connectionId, requestId);
         }
 
@@ -85,7 +94,13 @@ public class DeferredResponsePool
     public void reclaim(DeferredResponse response)
     {
         response.reset();
-        pooled.offer(response);
+
+        final DeferredResponseControl responseControl = response.getControl();
+        if (!responseControl.isReclaimed())
+        {
+            pooled.offer(response);
+        }
+        responseControl.setReclaimed(true);
     }
 
     public DeferredResponse popDeferred()
@@ -99,6 +114,9 @@ public class DeferredResponsePool
 
         void reclaim(DeferredResponse r);
 
+        boolean isReclaimed();
+
+        void setReclaimed(boolean reclaimed);
     }
 
 }

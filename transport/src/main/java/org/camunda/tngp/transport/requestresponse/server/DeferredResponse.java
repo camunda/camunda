@@ -152,4 +152,8 @@ public class DeferredResponse
                 TransportHeaderDescriptor.headerLength();
     }
 
+    public DeferredResponseControl getControl()
+    {
+        return responseControl;
+    }
 }
