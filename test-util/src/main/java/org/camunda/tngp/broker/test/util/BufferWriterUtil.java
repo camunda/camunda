@@ -13,6 +13,7 @@
 package org.camunda.tngp.broker.test.util;
 
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.util.ReflectUtil;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -25,6 +26,15 @@ public class BufferWriterUtil
         writer.write(buffer, 0);
 
         reader.wrap(buffer, 0, buffer.capacity());
+    }
+
+    public static <T extends BufferReader> T wrap(BufferWriter writer, Class<T> readerClass)
+    {
+        final T reader = ReflectUtil.newInstance(readerClass);
+
+        wrap(writer, reader);
+
+        return reader;
     }
 
 }
