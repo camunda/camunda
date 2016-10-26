@@ -102,7 +102,7 @@ public class LockTaskBatchHandlerTest
                 eq(response),
                 eq(123),
                 eq(1234L),
-                eq(5L),
+                eq(1L), // restricted to always 1 for now
                 argThat(BufferMatcher.hasBytes(TASK_TYPE)));
 
         verify(response).defer();

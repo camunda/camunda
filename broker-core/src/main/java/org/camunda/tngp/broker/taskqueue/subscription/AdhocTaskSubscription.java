@@ -7,6 +7,7 @@ import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 public class AdhocTaskSubscription extends TaskSubscription
 {
 
+    protected long defaultCredits;
     protected DeferredResponse response;
     protected LockedTaskBatchWriter taskBatchResponseWriter = new LockedTaskBatchWriter();
 
@@ -18,6 +19,11 @@ public class AdhocTaskSubscription extends TaskSubscription
     public void wrap(DeferredResponse response)
     {
         this.response = response;
+    }
+
+    public void setDefaultCredits(long defaultCredits)
+    {
+        this.defaultCredits = defaultCredits;
     }
 
     @Override
@@ -35,9 +41,11 @@ public class AdhocTaskSubscription extends TaskSubscription
 
     }
 
-    public void onTaskAcquisition(LockTasksOperator taskOperator, int numTasksAcquired)
+    public void onTaskAcquisitionFinished(LockTasksOperator taskOperator)
     {
-        if (numTasksAcquired == 0)
+        final boolean noTasksAcquired = defaultCredits == credits;
+
+        if (noTasksAcquired)
         {
             taskBatchResponseWriter.consumerId(consumerId);
 

@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap.KeySet;
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
@@ -15,8 +16,7 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
     protected LogReader logReader;
     protected LogEntryProcessor<LogEntryHeaderReader> logEntryProcessor;
 
-    protected long taskTypeHashToPoll;
-    protected DirectBuffer taskTypeToPoll;
+    protected KeySet taskTypeHashes;
 
     protected TaskInstanceReader taskReader = new TaskInstanceReader();
     protected TaskInstanceReader lockableTask;
@@ -35,18 +35,17 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
 
     public void init(
             long position,
-            int taskTypeHashToPoll,
-            DirectBuffer taskTypeToPoll)
+            KeySet taskTypeHashes)
     {
         this.logReader.seek(position);
-        this.taskTypeHashToPoll = Integer.toUnsignedLong(taskTypeHashToPoll);
-        this.taskTypeToPoll = taskTypeToPoll;
+        this.taskTypeHashes = taskTypeHashes;
         this.lockableTask = null;
         this.lockableTaskPosition = -1;
     }
 
     public boolean findNextLockableTask()
     {
+        lockableTask = null;
         int entriesProcessed = 0;
         do
         {
@@ -67,7 +66,7 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
         return lockableTaskPosition;
     }
 
-    private static boolean taskTypeEqual(
+    public static boolean taskTypeEqual(
             DirectBuffer actualTaskType,
             DirectBuffer taskTypeToPoll)
     {
@@ -99,13 +98,10 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
 
         reader.readInto(taskReader);
 
-        if (taskReader.taskTypeHash() == taskTypeHashToPoll && taskReader.state() == TaskInstanceState.NEW)
+        if (taskReader.state() == TaskInstanceState.NEW && taskTypeHashes.contains((int) taskReader.taskTypeHash()))
         {
-            if (taskTypeEqual(taskReader.getTaskType(), taskTypeToPoll))
-            {
-                lockableTask = taskReader;
-                lockableTaskPosition = position;
-            }
+            lockableTask = taskReader;
+            lockableTaskPosition = position;
         }
 
         return LogEntryHandler.CONSUME_ENTRY_RESULT;

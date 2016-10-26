@@ -38,7 +38,7 @@ public class OngoingTaskSubscription extends TaskSubscription
     }
 
     @Override
-    public void onTaskAcquisition(LockTasksOperator taskOperator, int numTasksAcquired)
+    public void onTaskAcquisitionFinished(LockTasksOperator taskOperator)
     {
     }
 

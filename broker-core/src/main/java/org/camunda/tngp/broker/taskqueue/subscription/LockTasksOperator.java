@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.taskqueue.subscription;
 import java.util.Queue;
 
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap.KeyIterator;
@@ -51,6 +52,8 @@ public class LockTasksOperator
 
     protected Queue<AdhocTaskSubscription> adhocSubscriptionPool;
 
+    protected Int2ObjectHashMap<TaskSubscription> subscriptionsByType = new Int2ObjectHashMap<>();
+
     public LockTasksOperator(
             Bytes2LongHashIndex taskTypePositionIndex,
             LogReader logReader,
@@ -72,49 +75,85 @@ public class LockTasksOperator
 
     public int lockTasks()
     {
+
+        // determine scan start position
         final KeySet keySet = taskSubscriptions.keySet();
-        final KeyIterator keyIterator = keySet.iterator();
+        long scanStartPosition = Long.MAX_VALUE;
+        KeyIterator subscriptionIdIt = keySet.iterator();
 
-        int tasksLocked = 0;
-
-        while (keyIterator.hasNext())
+        while (subscriptionIdIt.hasNext())
         {
-            final TaskSubscription subscription = taskSubscriptions.get(keyIterator.nextLong());
+            final TaskSubscription subscription = taskSubscriptions.get(subscriptionIdIt.nextLong());
+            final DirectBuffer taskType = subscription.getTaskType();
+            final long taskTypePosition = taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1);
 
-            if (subscription.getCredits() > 0)
+            if (taskTypePosition >= 0 && taskTypePosition < scanStartPosition)
             {
-                tasksLocked += lockTasks(subscription);
+                scanStartPosition = taskTypePosition;
             }
         }
 
-        return tasksLocked;
-    }
-
-    public int lockTasks(TaskSubscription subscription)
-    {
-
-        // scan the log for lockable tasks
-        final DirectBuffer taskType = subscription.getTaskType();
-        final long recentTaskTypePosition = taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1);
-
-        final long scanPos = Math.max(recentTaskTypePosition, 0);
-        taskFinder.init(scanPos, subscription.getTaskTypeHash(), taskType);
-
-        final boolean lockableTaskFound = taskFinder.findNextLockableTask();
-        final int numTasksFound = lockableTaskFound ? 1 : 0;
-
-        if (lockableTaskFound)
+        if (scanStartPosition == Long.MAX_VALUE)
         {
-            lockTask(
-                    subscription,
-                    taskFinder.getLockableTask(),
-                    taskFinder.getLockableTaskPosition(),
-                    logWriter);
-
-            subscription.setCredits(subscription.getCredits() - 1);
+            scanStartPosition = 0;
         }
 
-        subscription.onTaskAcquisition(this, numTasksFound);
+        // scan for tasks
+        taskFinder.init(scanStartPosition, subscriptionsByType.keySet());
+
+        int numTasksFound = 0;
+
+        while (taskFinder.findNextLockableTask())
+        {
+            final TaskInstanceReader task = taskFinder.getLockableTask();
+            final DirectBuffer foundTaskType = task.getTaskType();
+            final long taskTypeBeginIndex = taskTypePositionIndex.get(foundTaskType, 0, foundTaskType.capacity(), -1L);
+
+            if (taskFinder.getLockableTaskPosition() < taskTypeBeginIndex)
+            {
+                // ignore task for which the index says that it has already been locked
+                continue;
+            }
+
+            final TaskSubscription headSubscription = subscriptionsByType.get((int) task.taskTypeHash());
+            TaskSubscription candidateSubscription = headSubscription;
+            boolean subscriptionFound = false;
+
+            do
+            {
+                final DirectBuffer taskType = candidateSubscription.getTaskType();
+
+                if (candidateSubscription.getCredits() > 0L &&
+                        LockableTaskFinder.taskTypeEqual(taskType, foundTaskType))
+                {
+                    subscriptionFound = true;
+                }
+                else
+                {
+                    candidateSubscription = candidateSubscription.getNext();
+                }
+            }
+            while (!subscriptionFound && candidateSubscription != headSubscription);
+
+            if (subscriptionFound)
+            {
+                lockTask(
+                        candidateSubscription,
+                        taskFinder.getLockableTask(),
+                        taskFinder.getLockableTaskPosition(),
+                        logWriter);
+                numTasksFound++;
+                candidateSubscription.setCredits(candidateSubscription.getCredits() - 1);
+            }
+
+            // TODO: could rotate in tasktypemap to ensure fairness
+        }
+
+        subscriptionIdIt = keySet.iterator();
+        while (subscriptionIdIt.hasNext())
+        {
+            taskSubscriptions.get(subscriptionIdIt.nextLong()).onTaskAcquisitionFinished(this);
+        }
 
         return numTasksFound;
     }
@@ -186,6 +225,19 @@ public class LockTasksOperator
     protected void addTaskSubscription(TaskSubscription subscription)
     {
         taskSubscriptions.put(subscription.getId(), subscription);
+
+        final int taskTypeHash = subscription.getTaskTypeHash();
+        if (subscriptionsByType.containsKey(taskTypeHash))
+        {
+            final TaskSubscription next = subscriptionsByType.get(taskTypeHash);
+            subscription.setNext(next);
+            final TaskSubscription previous = next.getPrevious();
+            subscription.setPrevious(previous);
+            previous.setNext(subscription);
+            next.setPrevious(subscription);
+        }
+
+        subscriptionsByType.put(taskTypeHash, subscription);
     }
 
     public TaskSubscription openSubscription(
@@ -199,12 +251,13 @@ public class LockTasksOperator
                 subscriptionIdGenerator.nextId(),
                 channelId,
                 dataFramePool);
-        addTaskSubscription(subscription);
 
         subscription.setConsumerId(consumerId);
         subscription.setCredits(credits);
         subscription.setLockDuration(lockDuration);
         subscription.setTaskType(taskType, 0, taskType.capacity());
+
+        addTaskSubscription(subscription);
 
         return subscription;
     }
@@ -226,12 +279,14 @@ public class LockTasksOperator
         else
         {
             subscription.wrap(response);
-            addTaskSubscription(subscription);
 
             subscription.setConsumerId(consumerId);
+            subscription.setDefaultCredits(credits);
             subscription.setCredits(credits);
             subscription.setLockDuration(lockDuration);
             subscription.setTaskType(taskType, 0, taskType.capacity());
+
+            addTaskSubscription(subscription);
         }
 
         return subscription;
@@ -240,6 +295,24 @@ public class LockTasksOperator
     public void removeSubscription(TaskSubscription subscription)
     {
         taskSubscriptions.remove(subscription.getId());
+
+        final TaskSubscription next = subscription.getNext();
+        final TaskSubscription previous = subscription.getPrevious();
+        previous.setNext(next);
+        next.setPrevious(previous);
+
+        final int taskTypeHash = subscription.getTaskTypeHash();
+        if (subscriptionsByType.get(taskTypeHash) == subscription)
+        {
+            if (next != subscription)
+            {
+                subscriptionsByType.put(taskTypeHash, next);
+            }
+            else
+            {
+                subscriptionsByType.remove(taskTypeHash);
+            }
+        }
 
         if (subscription instanceof AdhocTaskSubscription)
         {

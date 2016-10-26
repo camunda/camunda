@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
@@ -33,6 +34,7 @@ public class LockableTaskFinderTest
             .addEntry(createTaskInstanceWriter(2L, TASK_TYPE2, TaskInstanceState.NEW))
             .addEntry(createTaskInstanceWriter(3L, TASK_TYPE, TaskInstanceState.NEW))
             .addEntry(createTaskInstanceWriter(4L, TASK_TYPE, TaskInstanceState.NEW));
+
     }
 
     protected TaskInstanceWriter createTaskInstanceWriter(long taskId, byte[] taskType, TaskInstanceState state)
@@ -57,7 +59,10 @@ public class LockableTaskFinderTest
     {
         // given
         final LockableTaskFinder taskFinder = new LockableTaskFinder(logReader);
-        taskFinder.init(0, TASK_TYPE_HASH, new UnsafeBuffer(TASK_TYPE));
+
+        final Int2ObjectHashMap<byte[]> taskTypes = new Int2ObjectHashMap<>();
+        taskTypes.put(TaskTypeHash.hashCode(TASK_TYPE, TASK_TYPE.length), TASK_TYPE);
+        taskFinder.init(0, taskTypes.keySet());
 
         // when
         taskFinder.findNextLockableTask();

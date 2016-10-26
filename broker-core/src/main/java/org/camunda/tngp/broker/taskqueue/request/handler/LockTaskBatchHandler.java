@@ -62,7 +62,7 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
                 response,
                 requestReader.consumerId(),
                 requestReader.lockTime(),
-                requestReader.maxTasks(),
+                1,
                 requestReader.taskType());
 
         return 0;

@@ -18,6 +18,9 @@ public abstract class TaskSubscription
     protected UnsafeBuffer taskTypeView = new UnsafeBuffer(0, 0);
     protected int taskTypeHash;
 
+    protected TaskSubscription next = this;
+    protected TaskSubscription previous = this;
+
     public long getId()
     {
         return id;
@@ -74,6 +77,26 @@ public abstract class TaskSubscription
 
     public abstract void onTaskLocked(LockTasksOperator taskOperator, LockedTaskWriter task);
 
-    public abstract void onTaskAcquisition(LockTasksOperator taskOperator, int numTasksAcquired);
+    public abstract void onTaskAcquisitionFinished(LockTasksOperator taskOperator);
 
+
+    public TaskSubscription getNext()
+    {
+        return next;
+    }
+
+    public void setNext(TaskSubscription next)
+    {
+        this.next = next;
+    }
+
+    public TaskSubscription getPrevious()
+    {
+        return previous;
+    }
+
+    public void setPrevious(TaskSubscription previous)
+    {
+        this.previous = previous;
+    }
 }

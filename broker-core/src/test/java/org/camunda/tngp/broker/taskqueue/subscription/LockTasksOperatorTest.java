@@ -35,7 +35,6 @@ import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -130,7 +129,6 @@ public class LockTasksOperatorTest
     }
 
     @Test
-    @Ignore
     public void shouldLockMultipleTasksPerCycle()
     {
         // given
@@ -154,6 +152,33 @@ public class LockTasksOperatorTest
 
         final TaskInstanceReader task2 = logWriter.getEntryAs(0, TaskInstanceReader.class);
         assertThat(task2.id()).isEqualTo(13L);
+    }
+
+    @Test
+    public void shouldLockMultipleTasksOfDifferentTypesInterleaved()
+    {
+        // given
+        logReader.addEntry(taskWriter(13L, TaskInstanceState.NEW, TASK_TYPE1));
+        logReader.addEntry(taskWriter(14L, TaskInstanceState.NEW, TASK_TYPE2));
+        logReader.addEntry(taskWriter(14L, TaskInstanceState.LOCKED, TASK_TYPE2));
+
+        when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
+            .thenReturn(logReader.getEntryPosition(0));
+        when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE2)), eq(0), eq(TASK_TYPE1.length), anyLong()))
+            .thenReturn(logReader.getEntryPosition(2));
+
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool, 1);
+        operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
+        operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE2_BUF);
+
+        // when
+        operator.lockTasks();
+
+        // then only the first task has been locked
+        assertThat(logWriter.size()).isEqualTo(1);
+
+        final TaskInstanceReader task = logWriter.getEntryAs(0, TaskInstanceReader.class);
+        assertThat(task.id()).isEqualTo(13L);
     }
 
 
@@ -385,7 +410,6 @@ public class LockTasksOperatorTest
     }
 
     @Test
-    @Ignore
     public void shouldAcquireTaskOnlyOnceWithMultipleSubscriptions()
     {
         // given
