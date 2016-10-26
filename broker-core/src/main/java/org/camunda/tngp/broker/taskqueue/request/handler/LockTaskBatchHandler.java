@@ -7,7 +7,6 @@ import org.camunda.tngp.broker.taskqueue.TaskErrors;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
-import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.taskqueue.PollAndLockTasksDecoder;
@@ -58,21 +57,15 @@ public class LockTaskBatchHandler implements BrokerRequestHandler<TaskQueueConte
             return writeError(response, "Task type is too long");
         }
 
-        final TaskSubscription subscription =
-                lockedTasksOperator.openAdhocSubscription(
-                        requestReader.consumerId(),
-                        requestReader.lockTime(),
-                        requestReader.maxTasks(),
-                        requestReader.taskType());
+        response.defer();
+        lockedTasksOperator.openAdhocSubscription(
+                response,
+                requestReader.consumerId(),
+                requestReader.lockTime(),
+                requestReader.maxTasks(),
+                requestReader.taskType());
 
-        subscription.setConsumerId(requestReader.consumerId());
-        subscription.setLockDuration(requestReader.lockTime());
-        subscription.setCredits(requestReader.maxTasks());
-
-        final DirectBuffer taskTypeBuffer = requestReader.taskType();
-        subscription.setTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
-
-        return response.deferFifo();
+        return 0;
     }
 
     protected int writeError(DeferredResponse response, String errorMessage)

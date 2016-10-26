@@ -5,10 +5,8 @@ import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap.KeyIterator;
 import org.agrona.collections.Long2ObjectHashMap.KeySet;
-import org.agrona.collections.LongHashSet;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.log.LogWriter;
-import org.camunda.tngp.broker.taskqueue.LockedTaskBatchWriter;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.request.handler.LockableTaskFinder;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
@@ -17,12 +15,9 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
-import org.camunda.tngp.protocol.taskqueue.SubscribedTaskWriter;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
-import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
-import org.camunda.tngp.transport.singlemessage.OutgoingDataFrame;
 
 public class LockTasksOperator
 {
@@ -45,26 +40,20 @@ public class LockTasksOperator
     protected TaskInstanceWriter taskInstanceWriter = new TaskInstanceWriter();
 
     protected Long2ObjectHashMap<TaskSubscription> taskSubscriptions = new Long2ObjectHashMap<>();
-    protected LongHashSet adhocSubscriptions = new LongHashSet(MISSING_VALUE);
     protected Long2LongHashMap pendingLockedTasks = new Long2LongHashMap(MISSING_VALUE);
 
-    protected DeferredResponsePool responsePool;
     protected DataFramePool dataFramePool;
 
     protected LockedTaskWriter taskWriter = new LockedTaskWriter();
-    protected SubscribedTaskWriter subscribedTaskWriter = new SubscribedTaskWriter();
-    protected LockedTaskBatchWriter taskBatchResponseWriter = new LockedTaskBatchWriter();
 
     public LockTasksOperator(
             Bytes2LongHashIndex taskTypePositionIndex,
             LogReader logReader,
             LogWriter logWriter,
-            DeferredResponsePool responsePool,
             DataFramePool dataFramePool)
     {
         this.taskTypePositionIndex = taskTypePositionIndex;
         this.logWriter = logWriter;
-        this.responsePool = responsePool;
         this.dataFramePool = dataFramePool;
         this.taskFinder = new LockableTaskFinder(logReader);
     }
@@ -100,6 +89,7 @@ public class LockTasksOperator
         taskFinder.init(scanPos, subscription.getTaskTypeHash(), taskType);
 
         final boolean lockableTaskFound = taskFinder.findNextLockableTask();
+        final int numTasksFound = lockableTaskFound ? 1 : 0;
 
         if (lockableTaskFound)
         {
@@ -110,30 +100,11 @@ public class LockTasksOperator
                     logWriter);
 
             subscription.setCredits(subscription.getCredits() - 1);
-
-            return 1;
         }
-        else
-        {
-            if (isAdhocSubscription(subscription))
-            {
-                // TODO: FIFO not guaranteed
-                final DeferredResponse response = responsePool.popDeferred();
 
-                lockNoTask(response, subscription.getConsumerId());
+        subscription.onTaskAcquisition(this, numTasksFound);
 
-                removeSubscription(subscription);
-            }
-            return 0;
-        }
-    }
-
-    protected void lockNoTask(final DeferredResponse response, final int consumerId)
-    {
-        taskBatchResponseWriter.consumerId(consumerId);
-
-        response.allocateAndWrite(taskBatchResponseWriter);
-        response.commit();
+        return numTasksFound;
     }
 
     protected void lockTask(
@@ -192,36 +163,7 @@ public class LockTasksOperator
             .lockTime(task.lockTime())
             .workflowInstanceId(task.wfInstanceId());
 
-        if (isAdhocSubscription(subscription))
-        {
-            // TODO: FIFO not guaranteed
-            final DeferredResponse response = responsePool.popDeferred();
-
-            taskBatchResponseWriter
-                .consumerId(subscription.getConsumerId())
-                .newTasks()
-                    .appendTask(taskWriter);
-
-            response.allocateAndWrite(taskBatchResponseWriter);
-            response.commit();
-
-            removeSubscription(subscription);
-        }
-        else
-        {
-            final int channelId = subscription.getChannelId();
-
-            final OutgoingDataFrame dataFrame = dataFramePool.openFrame(subscribedTaskWriter.getLength(), channelId);
-
-            dataFrame.write(subscribedTaskWriter
-                    .subscriptionId(subscriptionId)
-                    .task(taskWriter));
-
-            dataFrame.commit();
-        }
-
-
-
+        subscription.onTaskLocked(this, taskWriter);
     }
 
     public boolean hasPendingTasks()
@@ -234,12 +176,6 @@ public class LockTasksOperator
         taskSubscriptions.put(subscription.getId(), subscription);
     }
 
-    protected void addAdhocTaskSubscription(TaskSubscription subscription)
-    {
-        addTaskSubscription(subscription);
-        adhocSubscriptions.add(subscription.getId());
-    }
-
     public TaskSubscription openSubscription(
             int channelId,
             int consumerId,
@@ -247,7 +183,10 @@ public class LockTasksOperator
             long credits,
             DirectBuffer taskType)
     {
-        final TaskSubscription subscription = new TaskSubscription(subscriptionIdGenerator.nextId(), channelId);
+        final TaskSubscription subscription = new OngoingTaskSubscription(
+                subscriptionIdGenerator.nextId(),
+                channelId,
+                dataFramePool);
         addTaskSubscription(subscription);
 
         subscription.setConsumerId(consumerId);
@@ -259,13 +198,15 @@ public class LockTasksOperator
     }
 
     public TaskSubscription openAdhocSubscription(
+            DeferredResponse response,
             int consumerId,
             long lockDuration,
             long credits,
             DirectBuffer taskType)
     {
-        final TaskSubscription subscription = new TaskSubscription(subscriptionIdGenerator.nextId());
-        addAdhocTaskSubscription(subscription);
+        final AdhocTaskSubscription subscription = new AdhocTaskSubscription(subscriptionIdGenerator.nextId());
+        subscription.wrap(response);
+        addTaskSubscription(subscription);
 
         subscription.setConsumerId(consumerId);
         subscription.setCredits(credits);
@@ -278,16 +219,10 @@ public class LockTasksOperator
     public void removeSubscription(TaskSubscription subscription)
     {
         taskSubscriptions.remove(subscription.getId());
-        adhocSubscriptions.remove(subscription.getId());
     }
 
     public TaskSubscription getSubscription(long subscriptionId)
     {
         return taskSubscriptions.get(subscriptionId);
-    }
-
-    protected boolean isAdhocSubscription(TaskSubscription subscription)
-    {
-        return adhocSubscriptions.contains(subscription.getId());
     }
 }

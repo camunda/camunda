@@ -3,13 +3,12 @@ package org.camunda.tngp.broker.taskqueue.subscription;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
+import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
 import org.camunda.tngp.protocol.wf.Constants;
 
-public class TaskSubscription
+public abstract class TaskSubscription
 {
     protected long id;
-    protected int channelId;
-    protected boolean isAdhoc;
 
     protected int consumerId;
     protected long lockDuration;
@@ -19,33 +18,9 @@ public class TaskSubscription
     protected UnsafeBuffer taskTypeView = new UnsafeBuffer(0, 0);
     protected int taskTypeHash;
 
-    /**
-     * Creates an adhoc subscription
-     */
-    public TaskSubscription(long id)
-    {
-        this(id, -1);
-        this.isAdhoc = true;
-    }
-
-    /**
-     * Creates a long running subscription
-     */
-    public TaskSubscription(long id, int channelId)
-    {
-        this.id = id;
-        this.channelId = channelId;
-        this.isAdhoc = false;
-    }
-
     public long getId()
     {
         return id;
-    }
-
-    public int getChannelId()
-    {
-        return channelId;
     }
 
     public int getConsumerId()
@@ -97,10 +72,8 @@ public class TaskSubscription
         return taskTypeHash;
     }
 
-    public boolean isAdhoc()
-    {
-        return isAdhoc;
-    }
+    public abstract void onTaskLocked(LockTasksOperator taskOperator, LockedTaskWriter task);
 
+    public abstract void onTaskAcquisition(LockTasksOperator taskOperator, int numTasksAcquired);
 
 }

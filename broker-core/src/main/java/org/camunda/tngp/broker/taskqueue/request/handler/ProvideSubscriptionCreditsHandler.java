@@ -4,6 +4,7 @@ import java.io.PrintStream;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
+import org.camunda.tngp.broker.taskqueue.subscription.AdhocTaskSubscription;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerDataFrameHandler;
@@ -47,7 +48,7 @@ public class ProvideSubscriptionCreditsHandler implements BrokerDataFrameHandler
         {
             return ignoreRequest(System.out, "Subscription " + subscriptionId + " not assigned to consumer " + consumerId);
         }
-        if (subscription.isAdhoc())
+        if (subscription instanceof AdhocTaskSubscription)
         {
             return ignoreRequest(System.out, "Subscription " + subscriptionId + " is adhoc subscription");
         }

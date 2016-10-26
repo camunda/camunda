@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.taskqueue.request.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,12 +11,14 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskErrors;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
+import org.camunda.tngp.broker.taskqueue.subscription.OngoingTaskSubscription;
 import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.taskqueue.CloseTaskSubscriptionDecoder;
 import org.camunda.tngp.protocol.taskqueue.CloseTaskSubscriptionRequestReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
+import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,7 +66,7 @@ public class CloseTaskSubscriptionHandlerTest
         when(requestReader.consumerId()).thenReturn(34);
         when(requestReader.subscriptionId()).thenReturn(123L);
 
-        final TaskSubscription subscription = new TaskSubscription(123L);
+        final TaskSubscription subscription = new OngoingTaskSubscription(123L, 456, mock(DataFramePool.class));
         subscription.setConsumerId(34);
         when(taskOperator.getSubscription(123L)).thenReturn(subscription);
 
@@ -84,7 +87,7 @@ public class CloseTaskSubscriptionHandlerTest
         when(requestReader.consumerId()).thenReturn(34);
         when(requestReader.subscriptionId()).thenReturn(123L);
 
-        final TaskSubscription subscription = new TaskSubscription(123L);
+        final TaskSubscription subscription = new OngoingTaskSubscription(123L, 456, mock(DataFramePool.class));
         subscription.setConsumerId(45);
         when(taskOperator.getSubscription(123L)).thenReturn(subscription);
 

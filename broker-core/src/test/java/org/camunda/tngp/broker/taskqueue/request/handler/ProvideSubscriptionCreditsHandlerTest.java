@@ -15,7 +15,6 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.protocol.taskqueue.ProvideSubscriptionCreditsDecoder;
 import org.camunda.tngp.protocol.taskqueue.ProvideSubscriptionCreditsReader;
-import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +41,6 @@ public class ProvideSubscriptionCreditsHandlerTest
                 mock(Bytes2LongHashIndex.class),
                 mock(LogReader.class),
                 mock(LogWriter.class),
-                mock(DeferredResponsePool.class),
                 mock(DataFramePool.class));
         taskQueueContext = new MockTaskQueueContext();
         taskQueueContext.setLockedTasksOperator(taskOperator);

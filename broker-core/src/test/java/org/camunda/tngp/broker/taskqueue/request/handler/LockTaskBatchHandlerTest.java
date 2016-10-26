@@ -86,7 +86,7 @@ public class LockTaskBatchHandlerTest
         handler.requestReader = requestReader;
 
         final TaskSubscription taskSubscription = mock(TaskSubscription.class);
-        when(lockTasksOperator.openAdhocSubscription(anyInt(), anyLong(), anyLong(), any()))
+        when(lockTasksOperator.openAdhocSubscription(any(), anyInt(), anyLong(), anyLong(), any()))
             .thenReturn(taskSubscription);
 
         when(response.allocateAndWrite(any())).thenReturn(true, false);
@@ -99,12 +99,13 @@ public class LockTaskBatchHandlerTest
 
         assertThat(logWriter.size()).isEqualTo(0);
         verify(lockTasksOperator).openAdhocSubscription(
+                eq(response),
                 eq(123),
                 eq(1234L),
                 eq(5L),
                 argThat(BufferMatcher.hasBytes(TASK_TYPE)));
 
-        verify(response).deferFifo();
+        verify(response).defer();
     }
 
     @Test

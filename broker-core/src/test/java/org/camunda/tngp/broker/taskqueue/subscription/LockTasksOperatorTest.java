@@ -102,7 +102,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
 
         operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
 
@@ -140,7 +140,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
         operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
 
         // when
@@ -166,9 +166,9 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
 
-        operator.openAdhocSubscription(32, 123123L, 43, TASK_TYPE1_BUF);
+        operator.openAdhocSubscription(deferredResponse, 32, 123123L, 43, TASK_TYPE1_BUF);
 
         // when
         operator.lockTasks();
@@ -191,7 +191,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
 
         final TaskSubscription subscription = operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
 
@@ -228,10 +228,8 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
-        operator.openAdhocSubscription(32, 123123L, 43, TASK_TYPE1_BUF);
-
-        when(deferredResponsePool.popDeferred()).thenReturn(deferredResponse, (DeferredResponse) null);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
+        operator.openAdhocSubscription(deferredResponse, 32, 123123L, 43, TASK_TYPE1_BUF);
 
         operator.lockTasks();
 
@@ -259,7 +257,7 @@ public class LockTasksOperatorTest
     public void shouldIgnoreTaskThatIsNotPending()
     {
         // given
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
 
         // when
         operator.onTaskLocked(taskReader(123L, 456L, 789L));
@@ -278,7 +276,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
         final TaskSubscription subscription = operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
 
         // when
@@ -298,10 +296,8 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), eq(-1L)))
             .thenReturn(-1L);
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
-        operator.openAdhocSubscription(32, 123123L, 43, TASK_TYPE1_BUF);
-
-        when(deferredResponsePool.popDeferred()).thenReturn(deferredResponse, (DeferredResponse) null);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
+        operator.openAdhocSubscription(deferredResponse, 32, 123123L, 43, TASK_TYPE1_BUF);
 
         // when
         operator.lockTasks();
@@ -328,8 +324,8 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
-        operator.openAdhocSubscription(32, 123123L, 1, TASK_TYPE1_BUF);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
+        operator.openAdhocSubscription(deferredResponse, 32, 123123L, 1, TASK_TYPE1_BUF);
         when(deferredResponsePool.popDeferred()).thenReturn(deferredResponse, (DeferredResponse) null);
 
         operator.lockTasks();
@@ -354,7 +350,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
         operator.openSubscription(13, 32, 123123L, 0, TASK_TYPE1_BUF);
 
         // when
@@ -374,7 +370,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
         final TaskSubscription subscription = operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
 
         operator.lockTasks();
@@ -400,7 +396,7 @@ public class LockTasksOperatorTest
         when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
             .thenReturn(logReader.getEntryPosition(0));
 
-        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, deferredResponsePool, dataFramePool);
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool);
 
         operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
         operator.openSubscription(14, 32, 123123L, 43, TASK_TYPE1_BUF);

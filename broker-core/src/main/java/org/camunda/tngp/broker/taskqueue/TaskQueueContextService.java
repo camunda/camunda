@@ -68,7 +68,6 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
                 taskTypeIndexManager.getIndex(),
                 new BufferedLogReader(log),
                 logWriter,
-                responsePoolServiceInjector.getValue(),
                 dataFramePoolInjector.getValue());
 
         taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
