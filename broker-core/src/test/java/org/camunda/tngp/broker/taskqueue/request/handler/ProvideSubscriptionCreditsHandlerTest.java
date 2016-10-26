@@ -41,7 +41,8 @@ public class ProvideSubscriptionCreditsHandlerTest
                 mock(Bytes2LongHashIndex.class),
                 mock(LogReader.class),
                 mock(LogWriter.class),
-                mock(DataFramePool.class));
+                mock(DataFramePool.class),
+                1);
         taskQueueContext = new MockTaskQueueContext();
         taskQueueContext.setLockedTasksOperator(taskOperator);
     }

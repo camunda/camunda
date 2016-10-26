@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.subscription;
 
+import java.util.Queue;
+
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -18,6 +20,7 @@ import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.util.BoundedArrayQueue;
 
 public class LockTasksOperator
 {
@@ -46,16 +49,25 @@ public class LockTasksOperator
 
     protected LockedTaskWriter taskWriter = new LockedTaskWriter();
 
+    protected Queue<AdhocTaskSubscription> adhocSubscriptionPool;
+
     public LockTasksOperator(
             Bytes2LongHashIndex taskTypePositionIndex,
             LogReader logReader,
             LogWriter logWriter,
-            DataFramePool dataFramePool)
+            DataFramePool dataFramePool,
+            int upperBoundConcurrentAdhocSubscriptions)
     {
         this.taskTypePositionIndex = taskTypePositionIndex;
         this.logWriter = logWriter;
         this.dataFramePool = dataFramePool;
         this.taskFinder = new LockableTaskFinder(logReader);
+        this.adhocSubscriptionPool = new BoundedArrayQueue<>(upperBoundConcurrentAdhocSubscriptions);
+
+        for (int i = 0; i < upperBoundConcurrentAdhocSubscriptions; i++)
+        {
+            adhocSubscriptionPool.add(new AdhocTaskSubscription(subscriptionIdGenerator.nextId()));
+        }
     }
 
     public int lockTasks()
@@ -204,14 +216,23 @@ public class LockTasksOperator
             long credits,
             DirectBuffer taskType)
     {
-        final AdhocTaskSubscription subscription = new AdhocTaskSubscription(subscriptionIdGenerator.nextId());
-        subscription.wrap(response);
-        addTaskSubscription(subscription);
+        final AdhocTaskSubscription subscription = adhocSubscriptionPool.poll();
 
-        subscription.setConsumerId(consumerId);
-        subscription.setCredits(credits);
-        subscription.setLockDuration(lockDuration);
-        subscription.setTaskType(taskType, 0, taskType.capacity());
+        if (subscription == null)
+        {
+            System.err.println("Cannot open adhoc subscription. No more pooled subscriptions available");
+            return subscription;
+        }
+        else
+        {
+            subscription.wrap(response);
+            addTaskSubscription(subscription);
+
+            subscription.setConsumerId(consumerId);
+            subscription.setCredits(credits);
+            subscription.setLockDuration(lockDuration);
+            subscription.setTaskType(taskType, 0, taskType.capacity());
+        }
 
         return subscription;
     }
@@ -219,6 +240,11 @@ public class LockTasksOperator
     public void removeSubscription(TaskSubscription subscription)
     {
         taskSubscriptions.remove(subscription.getId());
+
+        if (subscription instanceof AdhocTaskSubscription)
+        {
+            adhocSubscriptionPool.add((AdhocTaskSubscription) subscription);
+        }
     }
 
     public TaskSubscription getSubscription(long subscriptionId)

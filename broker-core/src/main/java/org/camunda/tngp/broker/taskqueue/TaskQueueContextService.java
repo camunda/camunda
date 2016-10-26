@@ -46,6 +46,7 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     {
         final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager = lockedTasksIndexServiceInjector.getValue();
         final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager = taskTypeIndexServiceInjector.getValue();
+        final DeferredResponsePool responsePool = responsePoolServiceInjector.getValue();
 
         taskQueueContext.setLog(logInjector.getValue());
         taskQueueContext.setTaskInstanceIdGenerator(taskInstanceIdGeneratorInjector.getValue());
@@ -60,7 +61,7 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
         final LogConsumer taskProcessor = new LogConsumer(
                 log.getId(),
                 new BufferedLogReader(log),
-                responsePoolServiceInjector.getValue(),
+                responsePool,
                 templates,
                 new LogWritersImpl(taskQueueContext, null));
 
@@ -68,7 +69,9 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
                 taskTypeIndexManager.getIndex(),
                 new BufferedLogReader(log),
                 logWriter,
-                dataFramePoolInjector.getValue());
+                dataFramePoolInjector.getValue(),
+                responsePool.getCapacity() // there cannot be more open adhoc subscriptions than there are requests
+                );
 
         taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
         taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
