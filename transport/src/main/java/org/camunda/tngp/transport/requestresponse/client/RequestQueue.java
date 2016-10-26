@@ -1,6 +1,6 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
-import org.camunda.tngp.transport.util.BoundedArrayQueue;
+import org.camunda.tngp.util.BoundedArrayQueue;
 
 public class RequestQueue extends BoundedArrayQueue<TransportRequest>
 {
