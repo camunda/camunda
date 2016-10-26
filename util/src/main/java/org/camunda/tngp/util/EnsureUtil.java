@@ -29,4 +29,22 @@ public class EnsureUtil
 
     }
 
+    public static void ensureLessThan(String property, long testValue, long comparisonValue)
+    {
+        if (testValue >= comparisonValue)
+        {
+            throw new RuntimeException(property + " must be less than " + comparisonValue);
+        }
+
+    }
+
+    public static void ensureLessThanOrEqual(String property, long testValue, long comparisonValue)
+    {
+        if (testValue > comparisonValue)
+        {
+            throw new RuntimeException(property + " must be less than or equal to " + comparisonValue);
+        }
+
+    }
+
 }
