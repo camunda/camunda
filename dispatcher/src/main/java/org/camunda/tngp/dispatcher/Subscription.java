@@ -65,8 +65,7 @@ public class Subscription
         {
             final int partitionId = partitionId(currentPosition);
             final int partitionOffset = partitionOffset(currentPosition);
-
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId);
 
             fragmentsRead = pollFragments(partition,
                     frgHandler,
@@ -177,7 +176,7 @@ public class Subscription
             final int partitionId = partitionId(currentPosition);
             final int partitionOffset = partitionOffset(currentPosition);
 
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId);
 
             fragmentsRead = pollFragments(partition,
                     frgHandler,
@@ -232,7 +231,7 @@ public class Subscription
             final int partitionId = partitionId(currentPosition);
             final int partitionOffset = partitionOffset(currentPosition);
 
-            final LogBufferPartition partition = logBuffer.getPartition(partitionId % logBuffer.getPartitionCount());
+            final LogBufferPartition partition = logBuffer.getPartition(partitionId);
 
             bytesAvailable = peekBlock(partition,
                     availableBlock,
@@ -263,6 +262,12 @@ public class Subscription
         final int firstFragmentOffset = partitionOffset;
         int blockLength = 0;
         int initialStreamId = -1;
+
+        int offsetLimit = partitionOffset(limit);
+        if (partitionId(limit) > partitionId)
+        {
+            offsetLimit = partition.getPartitionSize();
+        }
 
         // scan buffer for block
         do
@@ -322,7 +327,7 @@ public class Subscription
                 }
             }
         }
-        while (maxBlockSize - blockLength > HEADER_LENGTH && position(partitionId, partitionOffset) < limit);
+        while (maxBlockSize - blockLength > HEADER_LENGTH && partitionOffset < offsetLimit);
 
         if (blockLength > 0)
         {

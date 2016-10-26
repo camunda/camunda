@@ -1,6 +1,5 @@
 package org.camunda.tngp.dispatcher.impl;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.Agent;
@@ -23,8 +22,6 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
     protected final ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> cmdQueue;
 
     protected Dispatcher dispatcher;
-    protected CompletableFuture<Dispatcher> closeFuture;
-    protected CompletableFuture<Dispatcher> startFuture;
 
     protected final DispatcherContext context;
     protected String name;
@@ -56,11 +53,6 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
     public void accept(DispatcherConductorCommand cmd)
     {
         cmd.execute(this);
-    }
-
-    public Object exit()
-    {
-        return null;
     }
 
 }

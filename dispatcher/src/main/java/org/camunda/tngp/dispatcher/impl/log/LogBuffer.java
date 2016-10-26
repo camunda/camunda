@@ -15,7 +15,6 @@ import org.camunda.tngp.dispatcher.impl.allocation.AllocatedBuffer;
 
 public class LogBuffer
 {
-
     protected final AllocatedBuffer rawBuffer;
 
     protected final LogBufferPartition[] partitions;
@@ -24,21 +23,22 @@ public class LogBuffer
 
     protected final int partitionSize;
 
-    public LogBuffer(AllocatedBuffer allocatedBuffer, int partitionSize)
+    public LogBuffer(AllocatedBuffer allocatedBuffer, int partitionSize, int initialPartitionId)
     {
         this.partitionSize = partitionSize;
         rawBuffer = allocatedBuffer;
-
 
         partitions = new PartitionBuilder().slicePartitions(partitionSize, rawBuffer);
 
         metadataBuffer = new UnsafeBuffer(rawBuffer.getRawBuffer(), logMetadataOffset(partitionSize), LOG_META_DATA_LENGTH);
 
+        metadataBuffer.putInt(LOG_INITIAL_PARTITION_ID_OFFSET, initialPartitionId);
+        metadataBuffer.putIntVolatile(LOG_ACTIVE_PARTITION_ID_OFFSET, initialPartitionId);
     }
 
-    public LogBufferPartition getPartition(int i)
+    public LogBufferPartition getPartition(int id)
     {
-        return partitions[i];
+        return partitions[id % getPartitionCount()];
     }
 
     public int getActivePartitionIdVolatile()
@@ -65,7 +65,7 @@ public class LogBuffer
     {
         final int nextPartitionId = 1 + activePartitionId;
         final int nextNextPartitionId = 1 + nextPartitionId;
-        final LogBufferPartition nextNextPartition = partitions[nextNextPartitionId % 3];
+        final LogBufferPartition nextNextPartition = partitions[(nextNextPartitionId) % getPartitionCount()];
 
         nextNextPartition.setStatusOrdered(PARTITION_NEEDS_CLEANING);
         metadataBuffer.putIntOrdered(LOG_ACTIVE_PARTITION_ID_OFFSET, nextPartitionId);

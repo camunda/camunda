@@ -1,6 +1,7 @@
 package org.camunda.tngp.dispatcher.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 
@@ -16,6 +17,7 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.junit.Test;
 
 public class DispatcherIntegrationTest
@@ -32,7 +34,7 @@ public class DispatcherIntegrationTest
             final int newCounter = buffer.getInt(offset);
             if (newCounter  - 1 != counter)
             {
-                throw new RuntimeException();
+                throw new RuntimeException(newCounter + " " + counter);
             }
             counter = newCounter;
             return FragmentHandler.CONSUME_FRAGMENT_RESULT;
@@ -56,29 +58,17 @@ public class DispatcherIntegrationTest
         final Subscription subscription = dispatcher.openSubscription("test");
 
 
-        final Thread consumerThread = new Thread(new Runnable()
+        final Thread consumerThread = new Thread(() ->
         {
-
-            @Override
-            public void run()
+            while (consumer.counter < totalWork)
             {
-                while (consumer.counter < totalWork)
-                {
-                    subscription.poll(consumer, Integer.MAX_VALUE);
-                }
+                subscription.poll(consumer, Integer.MAX_VALUE);
             }
         });
 
         consumerThread.start();
 
-        for (int i = 1; i <= totalWork; i++)
-        {
-            msg.putInt(0, i);
-            while (dispatcher.offer(msg) <= 0)
-            {
-                // spin
-            }
-        }
+        offerMessage(dispatcher, msg, totalWork);
 
         consumerThread.join();
 
@@ -99,39 +89,17 @@ public class DispatcherIntegrationTest
 
         final Subscription subscription = dispatcher.openSubscription("test");
 
-        final Thread consumerThread = new Thread(new Runnable()
+        final Thread consumerThread = new Thread(() ->
         {
-
-            @Override
-            public void run()
+            while (consumer.counter < totalWork)
             {
-                while (consumer.counter < totalWork)
-                {
-                    subscription.poll(consumer, Integer.MAX_VALUE);
-                }
+                subscription.poll(consumer, Integer.MAX_VALUE);
             }
         });
 
         consumerThread.start();
 
-        for (int i = 1, committed = 1; committed <= totalWork; i++)
-        {
-            while (dispatcher.claim(claimedFragment, 64) <= 0)
-            {
-                // spin
-            }
-            final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            if (i % 5 != 0)
-            {
-                buffer.putInt(claimedFragment.getOffset(), committed);
-                claimedFragment.commit();
-                committed++;
-            }
-            else
-            {
-                claimedFragment.abort();
-            }
-        }
+        claimFragment(dispatcher, claimedFragment, totalWork);
 
         consumerThread.join();
 
@@ -141,7 +109,7 @@ public class DispatcherIntegrationTest
     @Test
     public void testPeekBlock() throws Exception
     {
-        final int totalWork = 1000000;
+        final int totalWork = 10000000;
         final ClaimedFragment claimedFragment = new ClaimedFragment();
         final BlockPeek blockPeek = new BlockPeek();
 
@@ -164,10 +132,10 @@ public class DispatcherIntegrationTest
                     {
 
                     }
-                    final int newCounter = blockPeek.getRawBuffer().getInt(messageOffset(blockPeek.getBufferOffset()));
-                    if (newCounter  - 1 != counter)
+                    final int newCounter = Integer.reverseBytes(blockPeek.getRawBuffer().getInt(messageOffset(blockPeek.getBufferOffset())));
+                    if (newCounter - 1 != counter)
                     {
-                        throw new RuntimeException();
+                        throw new RuntimeException(newCounter + " " + counter);
                     }
                     counter = newCounter;
                     blockPeek.markCompleted();
@@ -177,24 +145,7 @@ public class DispatcherIntegrationTest
 
         consumerThread.start();
 
-        for (int i = 1, committed = 1; committed <= totalWork; i++)
-        {
-            while (dispatcher.claim(claimedFragment, 59) <= 0)
-            {
-                // spin
-            }
-            final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            if (i % 5 != 0)
-            {
-                buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(committed));
-                claimedFragment.commit();
-                committed++;
-            }
-            else
-            {
-                claimedFragment.abort();
-            }
-        }
+        claimFragment(dispatcher, claimedFragment, totalWork);
 
         consumerThread.join();
 
@@ -219,46 +170,30 @@ public class DispatcherIntegrationTest
         final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
         final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
 
-        final Thread consumerThread1 = new Thread(new Runnable()
+        final Thread consumerThread1 = new Thread(() ->
         {
-
-            @Override
-            public void run()
+            while (consumer1.counter < totalWork)
             {
-                while (consumer1.counter < totalWork)
-                {
-                    subscription1.peekAndConsume(consumer1, Integer.MAX_VALUE);
-                }
+                subscription1.peekAndConsume(consumer1, Integer.MAX_VALUE);
             }
         });
 
-        final Thread consumerThread2 = new Thread(new Runnable()
+        final Thread consumerThread2 = new Thread(() ->
         {
-
-            @Override
-            public void run()
+            while (consumer2.counter < totalWork)
             {
-                while (consumer2.counter < totalWork)
-                {
-                    // in pipeline mode, the second consumer should not overtake the first consumer
-                    assertThat(consumer2.counter).isLessThanOrEqualTo(consumer1.counter);
+                // in pipeline mode, the second consumer should not overtake the
+                // first consumer
+                assertThat(consumer2.counter).isLessThanOrEqualTo(consumer1.counter);
 
-                    subscription2.peekAndConsume(consumer2, Integer.MAX_VALUE);
-                }
+                subscription2.peekAndConsume(consumer2, Integer.MAX_VALUE);
             }
         });
 
         consumerThread1.start();
         consumerThread2.start();
 
-        for (int i = 1; i <= totalWork; i++)
-        {
-            msg.putInt(0, i);
-            while (dispatcher.offer(msg, i) <= 0)
-            {
-                // spin
-            }
-        }
+        offerMessage(dispatcher, msg, totalWork);
 
         consumerThread1.join();
         consumerThread2.join();
@@ -287,57 +222,39 @@ public class DispatcherIntegrationTest
         final AtomicInteger counter1 = new AtomicInteger(0);
         final AtomicInteger counter2 = new AtomicInteger(0);
 
-        final Thread consumerThread1 = new Thread(new Runnable()
+        final Thread consumerThread1 = new Thread(() ->
         {
-            @Override
-            public void run()
+            while (counter1.get() < totalWork)
             {
-                while (counter1.get() < totalWork)
+                while (subscription1.peekBlock(blockPeek1, alignedLength(64), false) == 0)
                 {
-                    while (subscription1.peekBlock(blockPeek1, alignedLength(64), false) == 0)
-                    {
 
-                    }
-                    counter1.incrementAndGet();
-                    blockPeek1.markCompleted();
                 }
+                counter1.incrementAndGet();
+                blockPeek1.markCompleted();
             }
         });
 
-        final Thread consumerThread2 = new Thread(new Runnable()
+        final Thread consumerThread2 = new Thread(() ->
         {
-            @Override
-            public void run()
+            while (counter2.get() < totalWork)
             {
-                while (counter2.get() < totalWork)
+                // in pipeline mode, the second consumer should not overtake the first consumer
+                assertThat(counter2.get()).isLessThanOrEqualTo(counter1.get());
+
+                while (subscription2.peekBlock(blockPeek2, alignedLength(64), false) == 0)
                 {
-                    // in pipeline mode, the second consumer should not overtake the first consumer
-                    assertThat(counter2.get()).isLessThanOrEqualTo(counter1.get());
 
-                    while (subscription2.peekBlock(blockPeek2, alignedLength(64), false) == 0)
-                    {
-
-                    }
-                    counter2.incrementAndGet();
-                    blockPeek2.markCompleted();
                 }
+                counter2.incrementAndGet();
+                blockPeek2.markCompleted();
             }
         });
 
         consumerThread1.start();
         consumerThread2.start();
 
-        for (int i = 1; i <= totalWork; i++)
-        {
-            while (dispatcher.claim(claimedFragment, 59) <= 0)
-            {
-                // spin
-            }
-            final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-            buffer.putInt(claimedFragment.getOffset(), Integer.reverseBytes(i));
-            claimedFragment.commit();
-
-        }
+        claimFragment(dispatcher, claimedFragment, totalWork);
 
         consumerThread1.join();
         consumerThread2.join();
@@ -376,34 +293,74 @@ public class DispatcherIntegrationTest
         final Subscription subscription1 = dispatcher.getSubscriptionByName("s1");
         final Subscription subscription2 = dispatcher.getSubscriptionByName("s2");
 
-        final Thread consumerThread1 = new Thread(new Runnable()
+        final Thread consumerThread1 = new Thread(() ->
         {
-            @Override
-            public void run()
+            while (counter1.get() < totalWork)
             {
-                while (counter1.get() < totalWork)
-                {
-                    subscription1.peekAndConsume(failedConsumer, Integer.MAX_VALUE);
-                }
+                subscription1.peekAndConsume(failedConsumer, Integer.MAX_VALUE);
             }
         });
 
-        final Thread consumerThread2 = new Thread(new Runnable()
+        final Thread consumerThread2 = new Thread(() ->
         {
-
-            @Override
-            public void run()
+            while (counter2.get() < totalWork)
             {
-                while (counter2.get() < totalWork)
-                {
-                    subscription2.peekAndConsume(checkFailedConsumer, Integer.MAX_VALUE);
-                }
+                subscription2.peekAndConsume(checkFailedConsumer, Integer.MAX_VALUE);
             }
         });
 
         consumerThread1.start();
         consumerThread2.start();
 
+        offerMessage(dispatcher, msg, totalWork);
+
+        consumerThread1.join();
+        consumerThread2.join();
+
+        dispatcher.close();
+    }
+
+    @Test
+    public void testInitialPartitionId() throws Exception
+    {
+        // 1 million messages
+        final int totalWork = 1000000;
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
+
+        final Dispatcher dispatcher = Dispatchers.create("default")
+                .bufferSize(1024 * 1024 * 10) // 10 MB buffersize
+                .initialPartitionId(2)
+                .build();
+
+        final LogBuffer logBuffer = dispatcher.getLogBuffer();
+        final Subscription subscription = dispatcher.openSubscription("test");
+        final Consumer consumer = new Consumer();
+
+        assertThat(logBuffer.getInitialPartitionId()).isEqualTo(2);
+        assertThat(logBuffer.getActivePartitionIdVolatile()).isEqualTo(2);
+
+        assertThat(dispatcher.getPublisherPosition()).isEqualTo(position(2, 0));
+        assertThat(subscription.getPosition()).isEqualTo(position(2, 0));
+
+        final Thread consumerThread = new Thread(() ->
+        {
+            while (consumer.counter < totalWork)
+            {
+                subscription.poll(consumer, Integer.MAX_VALUE);
+            }
+        });
+
+        consumerThread.start();
+
+        offerMessage(dispatcher, msg, totalWork);
+
+        consumerThread.join();
+
+        dispatcher.close();
+    }
+
+    protected void offerMessage(final Dispatcher dispatcher, final UnsafeBuffer msg, final int totalWork)
+    {
         for (int i = 1; i <= totalWork; i++)
         {
             msg.putInt(0, i);
@@ -412,11 +369,20 @@ public class DispatcherIntegrationTest
                 // spin
             }
         }
+    }
 
-        consumerThread1.join();
-        consumerThread2.join();
-
-        dispatcher.close();
+    protected void claimFragment(final Dispatcher dispatcher, final ClaimedFragment claimedFragment, final int totalWork)
+    {
+        for (int i = 1; i <= totalWork; i++)
+        {
+            while (dispatcher.claim(claimedFragment, 59) <= 0)
+            {
+                // spin
+            }
+            final MutableDirectBuffer buffer = claimedFragment.getBuffer();
+            buffer.putInt(claimedFragment.getOffset(), i);
+            claimedFragment.commit();
+        }
     }
 
 }

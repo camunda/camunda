@@ -38,7 +38,6 @@ public class Dispatcher implements AutoCloseable
 
     protected final int maxFrameLength;
     protected final int partitionSize;
-    protected final int initialPartitionId;
     protected int logWindowLength;
     protected final String name;
 
@@ -66,7 +65,6 @@ public class Dispatcher implements AutoCloseable
         this.context = context;
         this.name = name;
 
-        this.initialPartitionId = logBuffer.getInitialPartitionId();
         this.partitionSize = logBuffer.getPartitionSize();
         this.maxFrameLength = partitionSize / 16;
 
@@ -140,10 +138,8 @@ public class Dispatcher implements AutoCloseable
     {
         final long limit = publisherLimit.getVolatile();
 
-        final int initialPartitionId = logBuffer.getInitialPartitionId();
         final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-        final int partitionIndex = (activePartitionId - initialPartitionId) % logBuffer.getPartitionCount();
-        final LogBufferPartition partition = logBuffer.getPartition(partitionIndex);
+        final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
 
         final int partitionOffset = partition.getTailCounterVolatile();
         final long position = position(activePartitionId, partitionOffset);
@@ -170,7 +166,7 @@ public class Dispatcher implements AutoCloseable
                 throw new RuntimeException(exceptionMessage);
             }
 
-            newPosition = updatePublisherPosition(initialPartitionId, activePartitionId, newOffset);
+            newPosition = updatePublisherPosition(activePartitionId, newOffset);
 
             publisherPosition.proposeMaxOrdered(newPosition);
         }
@@ -204,13 +200,10 @@ public class Dispatcher implements AutoCloseable
      */
     public long claim(ClaimedFragment claim, int length, int streamId)
     {
-
         final long limit = publisherLimit.getVolatile();
 
-        final int initialPartitionId = logBuffer.getInitialPartitionId();
         final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-        final int partitionIndex = (activePartitionId - initialPartitionId) % logBuffer.getPartitionCount();
-        final LogBufferPartition partition = logBuffer.getPartition(partitionIndex);
+        final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
 
         final int partitionOffset = partition.getTailCounterVolatile();
         final long position = position(activePartitionId, partitionOffset);
@@ -234,7 +227,7 @@ public class Dispatcher implements AutoCloseable
                 throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
             }
 
-            newPosition = updatePublisherPosition(initialPartitionId, activePartitionId, newOffset);
+            newPosition = updatePublisherPosition(activePartitionId, newOffset);
 
             publisherPosition.proposeMaxOrdered(newPosition);
         }
@@ -243,7 +236,7 @@ public class Dispatcher implements AutoCloseable
 
     }
 
-    protected long updatePublisherPosition(final int initialPartitionId, final int activePartitionId, int newOffset)
+    protected long updatePublisherPosition(final int activePartitionId, int newOffset)
     {
         long newPosition = -1;
 
@@ -383,7 +376,9 @@ public class Dispatcher implements AutoCloseable
 
     protected Subscription newSubscription(final int subscriptionId, final String subscriptionName)
     {
-        return new Subscription(new AtomicLongPosition(), subscriptionId, subscriptionName, this);
+        final AtomicLongPosition position = new AtomicLongPosition();
+        position.setOrdered(position(logBuffer.getActivePartitionIdVolatile(), 0));
+        return new Subscription(position, subscriptionId, subscriptionName, this);
     }
 
     /**

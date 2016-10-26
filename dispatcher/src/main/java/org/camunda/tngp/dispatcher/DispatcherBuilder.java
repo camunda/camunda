@@ -1,5 +1,6 @@
 package org.camunda.tngp.dispatcher;
 
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
 import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
 import static org.camunda.tngp.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
 
@@ -29,6 +30,7 @@ import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocationDescripto
 import org.camunda.tngp.dispatcher.impl.allocation.MappedFileAllocator;
 import org.camunda.tngp.dispatcher.impl.log.LogBuffer;
 import org.camunda.tngp.dispatcher.impl.log.LogBufferAppender;
+import org.camunda.tngp.util.EnsureUtil;
 
 /**
  * Builder for a {@link Dispatcher}
@@ -66,6 +68,8 @@ public class DispatcherBuilder
     protected String[] subscriptionNames;
 
     protected int mode = Dispatcher.MODE_PUB_SUB;
+
+    protected int initialPartitionId = 0;
 
     public DispatcherBuilder(final String dispatcherName)
     {
@@ -150,6 +154,14 @@ public class DispatcherBuilder
         return this;
     }
 
+    public DispatcherBuilder initialPartitionId(int initialPartitionId)
+    {
+        EnsureUtil.ensureGreaterThanOrEqual("initial partition id", initialPartitionId, 0);
+
+        this.initialPartitionId = initialPartitionId;
+        return this;
+    }
+
     /**
      * Predefined subscriptions which will be created on startup in the order as
      * they are declared.
@@ -188,11 +200,67 @@ public class DispatcherBuilder
 
     public Dispatcher build()
     {
-
         final int partitionSize = BitUtil.align(bufferSize / PARTITION_COUNT, 8);
-        final int requiredCapacity = requiredCapacity(partitionSize);
 
-        // allocate the buffer
+        final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(partitionSize);
+
+        // allocate the counters
+
+        Position publisherLimit = null;
+        Position publisherPosition = null;
+
+        if (countersManager != null)
+        {
+            final int publisherPositionCounter = countersManager.allocate(String.format("%s.publisher.position", dispatcherName));
+            publisherPosition = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherPositionCounter, countersManager);
+            final int publisherLimitCounter = countersManager.allocate(String.format("%s.publisher.limit", dispatcherName));
+            publisherLimit = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherLimitCounter, countersManager);
+        }
+        else
+        {
+            final long initialPosition = position(initialPartitionId, 0);
+
+            publisherLimit = new AtomicLongPosition();
+            publisherLimit.setOrdered(initialPosition);
+
+            publisherPosition = new AtomicLongPosition();
+            publisherPosition.setOrdered(initialPosition);
+        }
+
+        // create dispatcher
+
+        final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize, initialPartitionId);
+        final LogBufferAppender logAppender = new LogBufferAppender();
+
+        final int bufferWindowLength = partitionSize / 4;
+
+        final DispatcherContext context = new DispatcherContext();
+
+        final Dispatcher dispatcher = new Dispatcher(
+            logBuffer,
+            logAppender,
+            publisherLimit,
+            publisherPosition,
+            bufferWindowLength,
+            subscriptionNames,
+            mode,
+            context,
+            dispatcherName);
+
+        conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
+
+        if (!agentExternallyManaged)
+        {
+            final AgentRunner conductorRunner = initConductorRunner();
+            context.setAgentRunner(conductorRunner);
+        }
+
+        return dispatcher;
+    }
+
+    protected AllocatedBuffer initAllocatedBuffer(final int partitionSize)
+    {
+        final int requiredCapacity = requiredCapacity(partitionSize);
 
         AllocatedBuffer allocatedBuffer = null;
         if (allocateInMemory)
@@ -221,68 +289,28 @@ public class DispatcherBuilder
                     .allocate(new MappedFileAllocationDescriptor(requiredCapacity, bufferFile));
             }
         }
+        return allocatedBuffer;
+    }
 
-        // allocate the counters
+    protected AgentRunner initConductorRunner()
+    {
+        IdleStrategy idleStrategy = this.idleStrategy;
 
-        Position publisherLimit = null;
-        Position publisherPosition = null;
+        if (idleStrategy == null)
+        {
+            idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
+        }
 
+        AtomicCounter errorCounter = null;
         if (countersManager != null)
         {
-            final int publisherPositionCounter = countersManager.allocate(String.format("%s.publisher.position", dispatcherName));
-            publisherPosition = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherPositionCounter, countersManager);
-            final int publisherLimitCounter = countersManager.allocate(String.format("%s.publisher.limit", dispatcherName));
-            publisherLimit = new UnsafeBufferPosition((UnsafeBuffer) countersBuffer, publisherLimitCounter, countersManager);
-        }
-        else
-        {
-            publisherLimit = new AtomicLongPosition();
-            publisherPosition = new AtomicLongPosition();
+            errorCounter = countersManager.newCounter(String.format("net.long_running.dispatcher.%s.conductor.errorCounter", dispatcherName));
         }
 
-        // create dispatcher
+        final AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductorAgent);
+        AgentRunner.startOnThread(conductorRunner);
 
-        final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize);
-        final LogBufferAppender logAppender = new LogBufferAppender();
-
-        final int bufferWindowLength = partitionSize / 4;
-
-        final DispatcherContext context = new DispatcherContext();
-
-        final Dispatcher dispatcher = new Dispatcher(
-            logBuffer,
-            logAppender,
-            publisherLimit,
-            publisherPosition,
-            bufferWindowLength,
-            subscriptionNames,
-            mode,
-            context,
-            dispatcherName);
-
-        conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
-
-        if (!agentExternallyManaged)
-        {
-            IdleStrategy idleStrategy = this.idleStrategy;
-
-            if (idleStrategy == null)
-            {
-                idleStrategy = new BackoffIdleStrategy(100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MILLISECONDS.toNanos(100));
-            }
-
-            AtomicCounter errorCounter = null;
-            if (countersManager != null)
-            {
-                errorCounter = countersManager.newCounter(String.format("net.long_running.dispatcher.%s.conductor.errorCounter", dispatcherName));
-            }
-
-            final AgentRunner conductorRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, errorCounter, conductorAgent);
-            AgentRunner.startOnThread(conductorRunner);
-            context.setAgentRunner(conductorRunner);
-        }
-
-        return dispatcher;
+        return conductorRunner;
     }
 
     public DispatcherConductor getConductorAgent()
