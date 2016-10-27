@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.subscription;
 
 import java.util.Queue;
+import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -8,6 +9,9 @@ import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap.KeyIterator;
 import org.agrona.collections.Long2ObjectHashMap.KeySet;
+import org.agrona.collections.LongHashSet;
+import org.agrona.collections.LongIterator;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
@@ -19,11 +23,13 @@ import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
+import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.TransportChannelListener;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.camunda.tngp.util.BoundedArrayQueue;
 
-public class LockTasksOperator
+public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>, TransportChannelListener
 {
 
     public static final long MISSING_VALUE = -1L;
@@ -45,6 +51,7 @@ public class LockTasksOperator
 
     protected Long2ObjectHashMap<TaskSubscription> taskSubscriptions = new Long2ObjectHashMap<>();
     protected Long2LongHashMap pendingLockedTasks = new Long2LongHashMap(MISSING_VALUE);
+    protected Int2ObjectHashMap<TaskSubscription> subscriptionsByType = new Int2ObjectHashMap<>();
 
     protected DataFramePool dataFramePool;
 
@@ -52,7 +59,8 @@ public class LockTasksOperator
 
     protected Queue<AdhocTaskSubscription> adhocSubscriptionPool;
 
-    protected Int2ObjectHashMap<TaskSubscription> subscriptionsByType = new Int2ObjectHashMap<>();
+    protected LongHashSet removalCandidates = new LongHashSet(-1L);
+    protected ManyToOneConcurrentArrayQueue<Consumer<LockTasksOperator>> cmdQueue = new ManyToOneConcurrentArrayQueue<>(32);
 
     public LockTasksOperator(
             Bytes2LongHashIndex taskTypePositionIndex,
@@ -73,7 +81,26 @@ public class LockTasksOperator
         }
     }
 
-    public int lockTasks()
+    public int doWork()
+    {
+        int workCount = 0;
+        workCount += manageSubscriptions();
+        workCount += lockTasks();
+        return workCount;
+    }
+
+    protected int manageSubscriptions()
+    {
+        return cmdQueue.drain(this);
+    }
+
+    @Override
+    public void accept(Consumer<LockTasksOperator> t)
+    {
+        t.accept(this);
+    }
+
+    protected int lockTasks()
     {
 
         // determine scan start position
@@ -323,5 +350,39 @@ public class LockTasksOperator
     public TaskSubscription getSubscription(long subscriptionId)
     {
         return taskSubscriptions.get(subscriptionId);
+    }
+
+    public void removeSubscriptionsForChannel(int channelId)
+    {
+        final KeySet subscriptionIds = taskSubscriptions.keySet();
+
+        final KeyIterator subscriptionIdIt = subscriptionIds.iterator();
+
+        while (subscriptionIdIt.hasNext())
+        {
+            final long subscriptionId = subscriptionIdIt.nextLong();
+            final TaskSubscription subscription = taskSubscriptions.get(subscriptionId);
+            if (subscription.getChannelId() == channelId)
+            {
+                removalCandidates.add(subscriptionId);
+            }
+        }
+
+        final LongIterator removalIt = removalCandidates.iterator();
+
+        while (removalIt.hasNext())
+        {
+            final long subscriptionId = removalIt.nextValue();
+            removeSubscription(taskSubscriptions.get(subscriptionId));
+        }
+
+        removalCandidates.clear();
+    }
+
+    @Override
+    public void onChannelClosed(TransportChannel channel)
+    {
+        // invoked in context of transport conductor thread, so we can't handle this synchronously
+        cmdQueue.add((t) -> t.removeSubscriptionsForChannel(channel.getId()));
     }
 }

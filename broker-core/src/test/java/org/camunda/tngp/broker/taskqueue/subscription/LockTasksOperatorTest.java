@@ -315,6 +315,24 @@ public class LockTasksOperatorTest
     }
 
     @Test
+    public void shouldRemoveSubscriptionsOnChannelClose()
+    {
+        // given
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool, 1);
+        final TaskSubscription sub1 = operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE1_BUF);
+        final TaskSubscription sub2 = operator.openSubscription(14, 32, 123123L, 43, TASK_TYPE1_BUF);
+        final TaskSubscription sub3 = operator.openSubscription(13, 32, 123123L, 43, TASK_TYPE2_BUF);
+
+        // when
+        operator.removeSubscriptionsForChannel(13);
+
+        // then
+        assertThat(operator.getSubscription(sub1.getId())).isNull();
+        assertThat(operator.getSubscription(sub2.getId())).isNotNull();
+        assertThat(operator.getSubscription(sub3.getId())).isNull();
+    }
+
+    @Test
     public void shouldReturnZeroTasksForAdhocSubscription()
     {
         // given
@@ -479,6 +497,8 @@ public class LockTasksOperatorTest
         assertThat(newSubscription.getLockDuration()).isEqualTo(1L);
         assertThatBuffer(newSubscription.getTaskType()).hasBytes(TASK_TYPE2);
     }
+
+
 
     protected TaskInstanceWriter taskWriter(long id, TaskInstanceState state, byte[] taskType)
     {

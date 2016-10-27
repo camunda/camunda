@@ -5,8 +5,8 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueC
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueIdGeneratorName;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockedTasksIndexServiceName;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
 import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerDataFramePoolServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -19,6 +19,7 @@ import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
+import org.camunda.tngp.broker.transport.TransportServiceNames;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
@@ -98,6 +99,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             //   does not work
             .dependency(workerResponsePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getResponsePoolServiceInjector())
             .dependency(workerDataFramePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getDataFramePoolInjector())
+            .dependency(TransportServiceNames.TRANSPORT, taskQueueContextService.getTransportInjector())
             .listener(this)
             .install();
     }

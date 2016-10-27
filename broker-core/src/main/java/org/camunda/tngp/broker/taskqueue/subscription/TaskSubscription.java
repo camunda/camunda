@@ -75,6 +75,8 @@ public abstract class TaskSubscription
         return taskTypeHash;
     }
 
+    public abstract int getChannelId();
+
     public abstract void onTaskLocked(LockTasksOperator taskOperator, LockedTaskWriter task);
 
     public abstract void onTaskAcquisitionFinished(LockTasksOperator taskOperator);

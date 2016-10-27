@@ -20,6 +20,7 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 
@@ -33,6 +34,7 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     protected final Injector<DeferredResponsePool> responsePoolServiceInjector = new Injector<>();
 
     protected final Injector<DataFramePool> dataFramePoolInjector = new Injector<>();
+    protected final Injector<Transport> transportInjector = new Injector<>();
 
     protected final TaskQueueContext taskQueueContext;
 
@@ -73,6 +75,9 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
                 responsePool.getCapacity() // there cannot be more open adhoc subscriptions than there are requests
                 );
 
+        final Transport transport = transportInjector.getValue();
+        transport.registerChannelListener(lockTasksOperator);
+
         taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
         taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
 
@@ -95,6 +100,8 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     public void stop()
     {
         taskQueueContext.getLogConsumer().writeSavepoints();
+        final Transport transport = transportInjector.getValue();
+        transport.removeChannelListener(taskQueueContext.getLockedTasksOperator());
     }
 
     @Override
@@ -138,4 +145,8 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
         return dataFramePoolInjector;
     }
 
+    public Injector<Transport> getTransportInjector()
+    {
+        return transportInjector;
+    }
 }

@@ -42,4 +42,10 @@ public class OngoingTaskSubscription extends TaskSubscription
     {
     }
 
+    @Override
+    public int getChannelId()
+    {
+        return channelId;
+    }
+
 }

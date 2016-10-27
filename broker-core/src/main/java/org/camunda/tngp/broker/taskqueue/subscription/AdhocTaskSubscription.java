@@ -55,4 +55,10 @@ public class AdhocTaskSubscription extends TaskSubscription
             taskOperator.removeSubscription(this);
         }
     }
+
+    @Override
+    public int getChannelId()
+    {
+        return response.getChannelId();
+    }
 }
