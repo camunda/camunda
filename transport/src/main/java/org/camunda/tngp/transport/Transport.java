@@ -38,6 +38,32 @@ public class Transport implements AutoCloseable
         return new ClientChannelBuilder(transportContext, remoteAddress);
     }
 
+    public CompletableFuture<Void> registerChannelListener(TransportChannelListener listener)
+    {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        transportContext.getConductorCmdQueue().add((c) ->
+        {
+            c.registerChannelListener(listener);
+            future.complete(null);
+        });
+
+        return future;
+    }
+
+    public CompletableFuture<Void> removeChannelListener(TransportChannelListener listener)
+    {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        transportContext.getConductorCmdQueue().add((c) ->
+        {
+            c.removeChannelListener(listener);
+            future.complete(null);
+        });
+
+        return future;
+    }
+
     public ServerSocketBindingBuilder createServerSocketBinding(InetSocketAddress addr)
     {
         if (STATE_OPEN != STATE_FIELD.get(this))

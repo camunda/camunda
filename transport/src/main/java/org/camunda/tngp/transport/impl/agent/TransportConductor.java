@@ -5,22 +5,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-
-import org.camunda.tngp.transport.TransportChannel;
-import org.camunda.tngp.transport.ServerSocketBinding;
-import org.camunda.tngp.transport.Transport;
-import org.camunda.tngp.transport.impl.TransportChannelImpl;
-import org.camunda.tngp.transport.impl.ClientChannelImpl;
-import org.camunda.tngp.transport.impl.ServerChannelImpl;
-import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
-import org.camunda.tngp.transport.impl.TransportContext;
-import org.camunda.tngp.transport.impl.media.AcceptTransportPoller;
-import org.camunda.tngp.transport.impl.media.ConnectTransportPoller;
 
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.camunda.tngp.transport.ServerSocketBinding;
+import org.camunda.tngp.transport.Transport;
+import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.TransportChannelListener;
+import org.camunda.tngp.transport.impl.ClientChannelImpl;
+import org.camunda.tngp.transport.impl.ServerChannelImpl;
+import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
+import org.camunda.tngp.transport.impl.TransportChannelImpl;
+import org.camunda.tngp.transport.impl.TransportContext;
+import org.camunda.tngp.transport.impl.media.AcceptTransportPoller;
+import org.camunda.tngp.transport.impl.media.ConnectTransportPoller;
 
 public class TransportConductor implements Agent, Consumer<TransportConductorCmd>
 {
@@ -34,6 +35,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
     protected final List<ClientChannelImpl> clientChannels = new ArrayList<>();
     protected final List<ServerSocketBinding> serverSocketBindings = new ArrayList<>();
+    protected final List<TransportChannelListener> channelListeners = new CopyOnWriteArrayList<>();
 
     protected final Map<ClientChannelImpl, CompletableFuture<TransportChannel>> connectFutures = new HashMap<>();
 
@@ -146,6 +148,16 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         return CompletableFuture.allOf(receiverFuture, senderFuture);
     }
 
+    public void registerChannelListener(TransportChannelListener listener)
+    {
+        channelListeners.add(listener);
+    }
+
+    public void removeChannelListener(TransportChannelListener listener)
+    {
+        channelListeners.remove(listener);
+    }
+
     private void notifyChannelHandlerOpen(final TransportChannelImpl channel)
     {
         try
@@ -156,6 +168,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         {
             e.printStackTrace();
         }
+
     }
 
     protected void notifyChannelHandlerClosed(TransportChannelImpl channel)
@@ -167,6 +180,18 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         catch (Exception e)
         {
             e.printStackTrace();
+        }
+
+        for (int i = 0; i < channelListeners.size(); i++)
+        {
+            try
+            {
+                channelListeners.get(i).onChannelClosed(channel);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 

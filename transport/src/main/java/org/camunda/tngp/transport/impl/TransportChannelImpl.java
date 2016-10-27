@@ -133,6 +133,10 @@ public abstract class TransportChannelImpl implements TransportChannel
             {
                 notifyCloseException(null);
             }
+            else
+            {
+                notifyClosed();
+            }
         }
 
         return bytesRead;
@@ -201,6 +205,7 @@ public abstract class TransportChannelImpl implements TransportChannel
                 {
                     sender.sendControlFrame(this);
                 });
+
             }
         }
         else
