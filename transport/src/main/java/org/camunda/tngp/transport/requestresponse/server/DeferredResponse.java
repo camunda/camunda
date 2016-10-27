@@ -10,7 +10,6 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
-import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool.DeferredResponseControl;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 
@@ -23,14 +22,15 @@ public class DeferredResponse
     protected long connectionId;
     protected long requestId;
 
-    protected DeferredResponseControl responseControl;
+    protected DeferredResponsePool responsePool;
 
     protected boolean isDeferred = false;
+    protected boolean isReclaimed = false;
 
-    public DeferredResponse(Dispatcher sendBuffer, DeferredResponseControl deferredResponseControl)
+    public DeferredResponse(Dispatcher sendBuffer, DeferredResponsePool responsePool)
     {
         this.sendBuffer = sendBuffer;
-        this.responseControl = deferredResponseControl;
+        this.responsePool = responsePool;
     }
 
     public void reset()
@@ -101,7 +101,7 @@ public class DeferredResponse
      */
     public int deferFifo()
     {
-        responseControl.defer(this);
+        responsePool.offerDeferred(this);
         return defer();
     }
 
@@ -126,7 +126,7 @@ public class DeferredResponse
         {
             claimedFragment.commit();
         }
-        responseControl.reclaim(this);
+        responsePool.reclaim(this);
     }
 
     public void abort()
@@ -135,7 +135,7 @@ public class DeferredResponse
         {
             claimedFragment.abort();
         }
-        responseControl.reclaim(this);
+        responsePool.reclaim(this);
     }
 
     public boolean isDeferred()
@@ -155,13 +155,18 @@ public class DeferredResponse
                 TransportHeaderDescriptor.headerLength();
     }
 
-    public DeferredResponseControl getControl()
-    {
-        return responseControl;
-    }
-
     public int getChannelId()
     {
         return channelId;
+    }
+
+    public boolean isReclaimed()
+    {
+        return isReclaimed;
+    }
+
+    public void setIsReclaimed(boolean isReclaimed)
+    {
+        this.isReclaimed = isReclaimed;
     }
 }

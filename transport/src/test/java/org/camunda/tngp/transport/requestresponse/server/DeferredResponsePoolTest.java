@@ -229,4 +229,22 @@ public class DeferredResponsePoolTest
         // then
         assertThat(responsePool.getPooledCount()).isEqualTo(1);
     }
+
+    @Test
+    public void shouldOfferDeferred()
+    {
+        // given
+        final DeferredResponsePool responsePool = new DeferredResponsePool(dispatcher, 1);
+        final DeferredResponse response = responsePool.open(1, 2L, 3L);
+
+        // assume
+        assertThat(responsePool.getDeferredCount()).isEqualTo(0);
+
+        // when
+        responsePool.offerDeferred(response);
+
+        // then
+        assertThat(responsePool.getDeferredCount()).isEqualTo(1);
+    }
+
 }

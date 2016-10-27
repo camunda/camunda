@@ -31,35 +31,7 @@ public class DeferredResponsePool
 
         for (int i = 0; i < capacity; i++)
         {
-            pooled.offer(new DeferredResponse(sendBuffer, new DeferredResponseControl()
-                {
-                    protected boolean isReclaimed = false;
-
-                    @Override
-                    public void defer(DeferredResponse r)
-                    {
-                        deferred.offer(r);
-                    }
-
-                    @Override
-                    public void reclaim(DeferredResponse r)
-                    {
-                        DeferredResponsePool.this.reclaim(r);
-                    }
-
-                    @Override
-                    public boolean isReclaimed()
-                    {
-                        return isReclaimed;
-                    }
-
-                    @Override
-                    public void setReclaimed(boolean reclaimed)
-                    {
-                        this.isReclaimed = reclaimed;
-                    }
-
-                }));
+            pooled.offer(new DeferredResponse(sendBuffer, this));
         }
     }
 
@@ -69,7 +41,7 @@ public class DeferredResponsePool
 
         if (response != null)
         {
-            response.getControl().setReclaimed(false);
+            response.setIsReclaimed(false);
             response.open(channelId, connectionId, requestId);
         }
 
@@ -95,12 +67,11 @@ public class DeferredResponsePool
     {
         response.reset();
 
-        final DeferredResponseControl responseControl = response.getControl();
-        if (!responseControl.isReclaimed())
+        if (!response.isReclaimed())
         {
             pooled.offer(response);
         }
-        responseControl.setReclaimed(true);
+        response.setIsReclaimed(true);
     }
 
     public DeferredResponse popDeferred()
@@ -108,15 +79,8 @@ public class DeferredResponsePool
         return deferred.remove();
     }
 
-    public interface DeferredResponseControl
+    public void offerDeferred(DeferredResponse response)
     {
-        void defer(DeferredResponse r);
-
-        void reclaim(DeferredResponse r);
-
-        boolean isReclaimed();
-
-        void setReclaimed(boolean reclaimed);
+        deferred.offer(response);
     }
-
 }
