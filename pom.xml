@@ -19,6 +19,7 @@
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
+    <additionalparam>-Xdoclint:none</additionalparam>
   </properties>
 
   <modules>
@@ -43,18 +44,6 @@
       </build>
     </profile>
   </profiles>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <additionalparam>-Xdoclint:none</additionalparam>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <scm>
     <url>https://github.com/camunda-tngp/dispatcher</url>
