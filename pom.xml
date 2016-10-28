@@ -44,6 +44,18 @@
     </profile>
   </profiles>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <additionalparam>-Xdoclint:none</additionalparam>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <scm>
     <url>https://github.com/camunda-tngp/dispatcher</url>
     <connection>scm:git:git@github.com:camunda-tngp/dispatcher.git</connection>
