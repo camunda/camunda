@@ -6,7 +6,6 @@ Features:
 
 * Start / stop Services
 * Dependency Tracking and Injection
-* Service Lifecycle Listeners
 
 Heavily inspired by [jboss-msc](https://github.com/jboss-msc).
 
@@ -23,10 +22,10 @@ for our purposes.
 A service is a POJO implementing the `Service` interface.
 The `Service` interface provides the following methods:
 
-* `start(ServiceContext context)`: invoked when the service is started. At this point all the
+* `start(ServiceStartContext context)`: invoked when the service is started. At this point all the
 service's dependencies are guaranteed to be fulfilled.
-* `stop()`: invoked when the service is stopped
-* `get()`: retuns the service object
+* `stop(ServiceStopContext context)`: invoked when the service is stopped
+* `get()`: returns the service object
 
 The following is an example implementation of a thread safe count service:
 
@@ -188,8 +187,106 @@ public void shouldIncrementCountOnRequest()
 }
 ```
 
+# Threading Model
+
+The service container uses a single thread to do all it's work (like starting / stopping services), called "The Service Container Thread". When a service is started or stopped the corresponding lifecycle methods are invoked by the service container thread.
+
+Implementations of a serice's start(), stop() methods must be non-blocking. If a start/stop method blocks on an external resource or I/O, it must do this in another thread and signal completion.
+
+If a service needs to perform long running background work, it must schedule this work in another thread.
 
 
+## Execute asynchronous Actions on start / stop
 
+This is the simplest way of executing an asynchronous action on start / stop. The service container maintains a pool of worker threads to which actions (implementations of the `java.lang.Runnable` interface can be submitted).
 
+A service implementation can submit an action to this thread pool by invoking the `run(...)` method from the start or stop method:
 
+```java
+public class ConfigurationService implements Service<Configuration>
+{
+    protected Configuration configuration;
+
+    @Override
+    public void start(ServiceStartContext ctx)
+    {
+        ctx.run(() ->
+        {
+            // read & parse XML configuration from file
+            configuration = ...;
+
+            // throwing exception keeps service from starting.
+        });
+    }
+    
+    ...
+}
+```
+
+The service does not complete it's start phase until the provided runnable is completed. If the runnable throws an
+exception, starting of the service fails.
+
+## Controlling Completion manually
+
+In oreder to gain complete control over the asynchronous start / stop of a service,
+a CompletableFuture can be obtained from the context, by invoking the `.async()` method
+on the context object. The service does not complete it's start phase until the obtained future is completed:
+
+Note that if the obtained future is not completed (either regularly or exceptionally), the service never starts up.
+
+```java
+public class ConfigurationService implements Service<Configuration>
+{
+    protected Configuration configuration;
+
+    @Override
+    public void start(ServiceStartContext ctx)
+    {
+        final CompletableFuture<Void> startFuture = ctx.async();
+
+        try
+        {
+            new Thread(() ->
+            {
+                try
+                {
+                    // read & parse XML configuration from file
+                    configuration = ...;
+                    startFuture.complete(null);
+                }
+                catch (Throwable t)
+                {
+                    startFuture.completeExceptionally(t);
+                } 
+            })
+            .start();
+        }
+        catch (Throwable t)
+        {
+            startFuture.completeExceptionally(t);
+        } 
+        
+    }    
+    ...
+}
+```
+
+## Using asynchronous APIs
+
+Some asynchronous APIs may return a CompletableFuture. In that case, the future can be directly supplied to the
+context object. The service does not complete it's start phase until the provided future is completed.
+
+```java
+public class ConfigurationService implements Service<Configuration>
+{
+    protected Configuration configuration;
+
+    @Override
+    public void start(ServiceStartContext ctx)
+    {
+        ctx.async(asyncApi.doAsync());
+    }
+    
+    ...
+}
+```

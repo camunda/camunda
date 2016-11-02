@@ -1,25 +1,17 @@
 package org.camunda.tngp.servicecontainer;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 public interface ServiceContainer
 {
+    void start();
+
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
-    /**
-     * Receives notifications of all services started after it has been registered with the {@link ServiceContainer}.
-     */
-    void registerListener(ServiceListener listener);
+    CompletableFuture<Void> removeService(ServiceName<?> serviceName);
 
-    void removeListener(ServiceListener listener);
-
-    /**
-     * Receives notifications of all services that already run when it is registered with the {@link ServiceContainer}
-     * and notifications of all services that are started after that.
-     */
-    void registerTracker(ServiceTracker tracker);
-
-    void removeTracker(ServiceTracker tracker);
-
-    void remove(ServiceName<?> serviceName);
-
-    void stop();
+    void close(long awaitTime, TimeUnit timeUnit) throws TimeoutException, ExecutionException, InterruptedException;
 }

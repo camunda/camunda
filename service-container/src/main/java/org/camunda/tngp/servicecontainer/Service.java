@@ -2,9 +2,9 @@ package org.camunda.tngp.servicecontainer;
 
 public interface Service<S>
 {
-    void start(ServiceContext serviceContext);
+    void start(ServiceStartContext startContext);
 
-    void stop();
+    void stop(ServiceStopContext stopContext);
 
     S get();
 }

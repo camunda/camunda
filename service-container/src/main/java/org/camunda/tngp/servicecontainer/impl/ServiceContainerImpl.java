@@ -1,26 +1,111 @@
 package org.camunda.tngp.servicecontainer.impl;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceBuilder;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.servicecontainer.ServiceLifecycleObserver;
-import org.camunda.tngp.servicecontainer.ServiceListener;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.servicecontainer.ServiceTracker;
 
-public class ServiceContainerImpl implements ServiceContainer
+public class ServiceContainerImpl implements Agent, ServiceContainer
 {
-    protected List<Runnable> operations = new ArrayList<>();
+    enum ContainerState
+    {
+        NEW, OPEN, CLOSING, CLOSED; // container is not reusable
+    }
 
-    protected Map<ServiceName<?>, ServiceController> controllers = new HashMap<>();
-    protected List<ServiceListener> listeners = new ArrayList<>();
-    protected List<ServiceTracker> trackers = new ArrayList<>();
+    private static final String NAME = "service-container-main";
+
+    protected final Map<ServiceName<?>, ServiceController> controllersByName = new HashMap<>();
+    protected final Map<ServiceName<?>, ServiceGroup> groups = new HashMap<>();
+    protected final List<ServiceController> controllers = new ArrayList<>();
+
+    private final AgentRunner agentRunner;
+    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(1024);
+    protected final Consumer<Runnable> cmdConsumer = (r) ->
+    {
+        r.run();
+    };
+
+    private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
+    {
+        t.printStackTrace();
+    };
+
+    protected ContainerState state = ContainerState.NEW;
+
+    protected final AtomicBoolean isOpenend = new AtomicBoolean(false);
+    protected ExecutorService actionsExecutor;
+    protected WaitingIdleStrategy idleStrategy;
+
+    public ServiceContainerImpl()
+    {
+        idleStrategy = new WaitingIdleStrategy();
+        agentRunner = new AgentRunner(idleStrategy, DEFAULT_ERROR_HANDLER, null, this);
+    }
+
+    @Override
+    public void start()
+    {
+        cmdQueue.add(() ->
+        {
+            state = ContainerState.OPEN;
+        });
+
+        idleStrategy.signalWorkAvailable();
+
+        if (isOpenend.compareAndSet(false, true))
+        {
+            AgentRunner.startOnThread(agentRunner);
+            final AtomicInteger threadCounter = new AtomicInteger();
+            actionsExecutor = Executors.newCachedThreadPool((r) -> new Thread(r, String.format("service-container-action-%d", threadCounter.getAndIncrement())));
+        }
+        else
+        {
+            final String errorMessage = String.format("Cannot start service container, is already open.");
+            throw new IllegalStateException(errorMessage);
+        }
+    }
+
+    @Override
+    public int doWork()
+    {
+        int workCount = 0;
+
+        workCount += cmdQueue.drain(cmdConsumer);
+
+        for (int i = 0; i < controllers.size(); i++)
+        {
+            workCount += controllers.get(i).doWork();
+        }
+
+        return workCount;
+    }
+
+
+    @Override
+    public String roleName()
+    {
+        return NAME;
+    }
 
     @Override
     public <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service)
@@ -28,151 +113,170 @@ public class ServiceContainerImpl implements ServiceContainer
         return new ServiceBuilder<>(name, service, this);
     }
 
-    public void serviceBuilt(ServiceBuilder<?> serviceBuilder)
+    public CompletableFuture<Void> onServiceBuilt(ServiceBuilder<?> serviceBuilder)
     {
-        for (ServiceName<?> dependency : serviceBuilder.getDependencies())
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        executeCmd(future, () ->
         {
-            ServiceController dependentServiceController = controllers.get(dependency);
-            if(dependentServiceController != null && dependentServiceController.dependencies.containsKey(serviceBuilder.getName()))
+            if (state == ContainerState.OPEN)
             {
-                throw new RuntimeException("Circular dependency detected: " + serviceBuilder.getName()+ " <-> " + dependentServiceController.name + "." );
-            }
-        }
+                final ServiceController serviceController = new ServiceController(serviceBuilder, this);
 
-        controllers.put(serviceBuilder.getName(), new ServiceController(serviceBuilder, this));
-    }
+                final ServiceName<?> serviceName = serviceBuilder.getName();
 
-    public void serviceStopped(ServiceController serviceController)
-    {
-    }
-
-    public void serviceFailed(ServiceController serviceController)
-    {
-
-    }
-
-    @Override
-    public void registerListener(ServiceListener listener)
-    {
-        this.listeners.add(listener);
-    }
-
-    @Override
-    public void removeListener(ServiceListener listener)
-    {
-        this.listeners.remove(listener);
-    }
-
-    @Override
-    public void registerTracker(ServiceTracker tracker)
-    {
-        this.trackers.add(tracker);
-        invokeOnTrackerRegistered(tracker, controllers.values());
-    }
-
-    @Override
-    public void removeTracker(ServiceTracker tracker)
-    {
-        this.trackers.remove(tracker);
-    }
-
-    public void serviceStarted(ServiceController serviceController)
-    {
-        invokeOnServiceStarted(serviceController, listeners);
-        invokeOnServiceStarted(serviceController, serviceController.listeners);
-        invokeOnServiceStarted(serviceController, trackers);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected void invokeOnTrackerRegistered(ServiceTracker tracker, Collection<ServiceController> serviceControllers)
-    {
-        List<ServiceController> controllers = new ArrayList<>(serviceControllers);
-        for (int i = 0; i < controllers.size(); i++)
-        {
-            ServiceController controller = controllers.get(i);
-            if (controller.isStarted())
-            {
-                tracker.onTrackerRegistration(controller.name, controller.service);
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void invokeOnServiceStarted(ServiceController serviceController, List<? extends ServiceLifecycleObserver> listeners)
-    {
-        if(listeners != null)
-        {
-            for(int i = 0; i < listeners.size(); i++)
-            {
-                final ServiceLifecycleObserver serviceListener = listeners.get(i);
-                try
+                if (!controllersByName.containsKey(serviceName))
                 {
-                    serviceListener.onServiceStarted(serviceController.name, serviceController.service);
+                    controllersByName.put(serviceName, serviceController);
+                    controllers.add(serviceController);
+                    serviceController.references = createReferences(serviceController, serviceBuilder.getInjectedReferences());
+                    serviceController.startAsyncInternal(future);
                 }
-                catch(Exception e)
+                else
                 {
-                    e.printStackTrace();
+                    final String errorMessage = String.format("Cannot install service with name '%s'. Service with same name already exists", serviceName);
+                    future.completeExceptionally(new IllegalStateException(errorMessage));
                 }
             }
-        }
-    }
-
-    public void serviceStopping(ServiceController serviceController)
-    {
-        invokeOnServiceStopping(serviceController, listeners);
-        invokeOnServiceStopping(serviceController, serviceController.listeners);
-        invokeOnServiceStopping(serviceController, trackers);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void invokeOnServiceStopping(ServiceController serviceController, List<? extends ServiceLifecycleObserver> listeners)
-    {
-        if(listeners != null)
-        {
-            for(int i = 0; i < listeners.size(); i++)
+            else
             {
-                final ServiceLifecycleObserver serviceListener = listeners.get(i);
-                try
-                {
-                    serviceListener.onServiceStopping(serviceController.name, serviceController.service);
-                }
-                catch(Exception e)
-                {
-                    e.printStackTrace();
-                }
+                final String errorMessage = String.format("Cannot install new service into the contianer, state is '%s'", state);
+                future.completeExceptionally(new IllegalStateException(errorMessage));
             }
+        });
+
+        future.whenComplete((r,t) ->
+        {
+            if (t != null)
+            {
+                t.printStackTrace();
+            }
+        });
+
+        return future;
+    }
+
+    private void executeCmd(CompletableFuture<Void> future, Runnable r)
+    {
+        try
+        {
+            cmdQueue.add(r);
+        }
+        catch (Throwable t)
+        {
+            future.completeExceptionally(t);
+        }
+        finally
+        {
+            idleStrategy.signalWorkAvailable();
         }
     }
 
     @Override
-    public void remove(ServiceName<?> serviceName)
+    public CompletableFuture<Void> removeService(ServiceName<?> serviceName)
     {
-        final ServiceController serviceController = controllers.get(serviceName);
-        if(serviceController != null)
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        executeCmd(future, () ->
         {
-            serviceController.remove();
-            controllers.remove(serviceController);
+            if (state == ContainerState.OPEN || state == ContainerState.CLOSING)
+            {
+                final ServiceController ctrl = controllersByName.get(serviceName);
+
+                if (ctrl != null)
+                {
+                    ctrl.stopAsyncInternal(future);
+                }
+                else
+                {
+                    final String errorMessage = String.format("Cannot remove service with name '%s': no such service registered.", serviceName);
+                    future.completeExceptionally(new IllegalArgumentException(errorMessage));
+                }
+            }
+            else
+            {
+                final String errorMessage = String.format("Cannot remove service, container is '%s'.", state);
+                future.completeExceptionally(new IllegalStateException(errorMessage));
+            }
+        });
+
+        future.whenComplete((r,t) ->
+        {
+            if (t != null)
+            {
+                System.err.format("Failed to remove service %s:\n", serviceName);
+                t.printStackTrace();
+            }
+        });
+
+        return future;
+    }
+
+    @Override
+    public void close(long awaitTime, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        final CompletableFuture<Void> containerCloseFuture = closeAsync();
+
+        try
+        {
+            containerCloseFuture.get(awaitTime, timeUnit);
         }
-        else
+        finally
         {
-            throw new IllegalArgumentException("Cannot remove service "+serviceName+"; no such service");
+            onClosed();
         }
     }
 
-    public void stop()
+    @SuppressWarnings("rawtypes")
+    public CompletableFuture<Void> closeAsync()
     {
-        for (ServiceController controller : controllers.values())
+        final CompletableFuture<Void> containerCloseFuture = new CompletableFuture<>();
+
+        executeCmd(containerCloseFuture, () ->
         {
-            controller.remove();
+            if (state == ContainerState.OPEN)
+            {
+                state = ContainerState.CLOSING;
+
+                final CompletableFuture[] serviceFutures = new CompletableFuture[controllers.size()];
+
+                for (int i = 0; i < controllers.size(); i++)
+                {
+                    serviceFutures[i] = removeService(controllers.get(i).name);
+                }
+
+                CompletableFuture.allOf(serviceFutures).whenComplete((r,t) ->
+                {
+                    containerCloseFuture.complete(null);
+                });
+            }
+            else
+            {
+                final String errorMessage = String.format("Cannot close service container, container is '%s'.", state);
+                containerCloseFuture.completeExceptionally(new IllegalStateException(errorMessage));
+            }
+        });
+
+        return containerCloseFuture;
+    }
+
+    private void onClosed()
+    {
+        state = ContainerState.CLOSED;
+        agentRunner.close();
+
+        if (actionsExecutor != null)
+        {
+            actionsExecutor.shutdown();
         }
     }
 
     @SuppressWarnings("unchecked")
     public <S> Service<S> getService(ServiceName<?> name)
     {
-        final ServiceController serviceController = controllers.get(name);
+        final ServiceController serviceController = controllersByName.get(name);
 
-        if(serviceController != null && serviceController.state == ServiceController.STARTED)
+        if(serviceController != null && serviceController.isStarted())
         {
             return serviceController.service;
         }
@@ -180,6 +284,46 @@ public class ServiceContainerImpl implements ServiceContainer
         {
             return null;
         }
+    }
+
+    public ServiceController getServiceController(ServiceName<?> serviceName)
+    {
+        return controllersByName.get(serviceName);
+    }
+
+    private List<ServiceGroupReferenceImpl> createReferences(ServiceController controller, Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences)
+    {
+        final List<ServiceGroupReferenceImpl> references = new ArrayList<>();
+
+        for (Entry<ServiceName<?>, ServiceGroupReference<?>> injectedReference : injectedReferences.entrySet())
+        {
+            final ServiceName<?> groupName = injectedReference.getKey();
+            final ServiceGroupReference<?> injector = injectedReference.getValue();
+
+            ServiceGroup group = groups.get(groupName);
+            if (group == null)
+            {
+                group = new ServiceGroup(groupName);
+                groups.put(groupName, group);
+            }
+
+            final ServiceGroupReferenceImpl reference = new ServiceGroupReferenceImpl(controller, injector, group);
+
+            group.addReference(reference);
+            references.add(reference);
+        }
+
+        return references;
+    }
+
+    public ExecutorService getExecutor()
+    {
+        return actionsExecutor;
+    }
+
+    public void executeShortRunning(Runnable runnable)
+    {
+        actionsExecutor.execute(runnable);
     }
 
 }
