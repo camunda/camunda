@@ -1,18 +1,39 @@
 package org.camunda.tngp.util;
 
+import static java.nio.file.FileVisitResult.CONTINUE;
+
+import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import static java.nio.file.FileVisitResult.CONTINUE;
 
 import org.agrona.LangUtil;
 
 public class FileUtil
 {
+
+    public static void closeSilently(Closeable out)
+    {
+        if (out != null)
+        {
+            try
+            {
+                out.close();
+            }
+            catch (Exception e)
+            {
+                // ignore
+            }
+        }
+    }
 
     public static void deleteFolder(String path)
     {
@@ -42,6 +63,54 @@ public class FileUtil
         {
             LangUtil.rethrowUnchecked(e);
         }
+    }
+
+    public static long getAvailableSpace(File logLocation)
+    {
+        long usableSpace = -1;
+
+        try
+        {
+            final FileStore fileStore = Files.getFileStore(logLocation.toPath());
+            usableSpace = fileStore.getUsableSpace();
+        }
+        catch (IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+
+        return usableSpace;
+    }
+
+    @SuppressWarnings("resource")
+    public static FileChannel openChannel(String filename, boolean create)
+    {
+        FileChannel fileChannel = null;
+        try
+        {
+            final File file = new File(filename);
+            if (!file.exists())
+            {
+                if (create)
+                {
+                    file.createNewFile();
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+
+            final RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            fileChannel = raf.getChannel();
+        }
+        catch (Exception e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+
+        return fileChannel;
     }
 
 }
