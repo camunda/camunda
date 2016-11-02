@@ -1,10 +1,11 @@
-package org.camunda.tngp.logstreams.impl;
+package org.camunda.tngp.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.fs.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -21,6 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
 
+import org.camunda.tngp.logstreams.impl.fs.FsLogSegment;
+import org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor;
+import org.camunda.tngp.util.FileUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -249,7 +252,7 @@ public class FsLogSegmentTest
     {
         final ByteBuffer buffer = ByteBuffer.allocate(capacity);
 
-        final FileChannel fileChannel = FileChannelUtil.openChannel(logFilePath, false);
+        final FileChannel fileChannel = FileUtil.openChannel(logFilePath, false);
 
         try
         {

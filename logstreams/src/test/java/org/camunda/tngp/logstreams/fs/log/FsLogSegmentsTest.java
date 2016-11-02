@@ -10,11 +10,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.fs.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
+import org.camunda.tngp.logstreams.impl.fs.FsLogSegment;
+import org.camunda.tngp.logstreams.impl.fs.FsLogSegments;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

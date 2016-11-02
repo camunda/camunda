@@ -2,7 +2,7 @@ package org.camunda.tngp.logstreams.impl.fs;
 
 import java.io.File;
 
-public class FsStorageConfiguration
+public class FsLogStorageConfiguration
 {
     protected final String fragmentFileNameTemplate = "%s" + File.separatorChar + "%02d.data";
     protected final int segmentSize;
@@ -10,7 +10,7 @@ public class FsStorageConfiguration
     protected final int initialSegmentId;
     protected final boolean deleteOnClose;
 
-    public FsStorageConfiguration(int segmentSize, String path, int initialSegmentId, boolean deleteOnClose)
+    public FsLogStorageConfiguration(int segmentSize, String path, int initialSegmentId, boolean deleteOnClose)
     {
         this.segmentSize = segmentSize;
         this.path = path;

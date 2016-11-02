@@ -1,5 +1,12 @@
 package org.camunda.tngp.logstreams.snapshot;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
@@ -8,14 +15,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import static org.assertj.core.api.Assertions.*;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 public class SnapshotStorageTest
 {
@@ -59,7 +58,7 @@ public class SnapshotStorageTest
         snapshot.validateAndClose();
     }
 
-    protected void writeSnapshot(SnapshotWriter writer, String dataToWrite) throws IOException
+    protected void writeSnapshot(SnapshotWriter writer, String dataToWrite) throws Exception
     {
         final OutputStream outputStream = writer.getOutputStream();
         outputStream.write(dataToWrite.getBytes(StandardCharsets.UTF_8));

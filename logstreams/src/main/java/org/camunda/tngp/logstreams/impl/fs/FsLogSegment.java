@@ -15,6 +15,7 @@ import java.nio.channels.FileChannel.MapMode;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.util.FileUtil;
 
 public class FsLogSegment
 {
@@ -47,7 +48,7 @@ public class FsLogSegment
 
     public boolean openSegment(boolean create)
     {
-        fileChannel = FileChannelUtil.openChannel(fileName, create);
+        fileChannel = FileUtil.openChannel(fileName, create);
 
         if (fileChannel != null)
         {
@@ -155,7 +156,7 @@ public class FsLogSegment
         try
         {
             final File file = new File(fileName);
-            final long availableSpace = FileChannelUtil.getAvailableSpace(file.getParentFile());
+            final long availableSpace = FileUtil.getAvailableSpace(file.getParentFile());
 
             if (availableSpace > segmentSize)
             {

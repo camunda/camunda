@@ -4,7 +4,6 @@ import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
@@ -16,24 +15,37 @@ import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 
 public class FsSnapshotWriter implements SnapshotWriter
 {
-    protected File dataFile;
-    protected File checksumFile;
+    protected final FsSnapshotStorageConfiguration config;
+    protected final File dataFile;
+    protected final File checksumFile;
+    protected final FsReadableSnapshot lastSnapshot;
 
     protected DigestOutputStream dataOutputStream;
     protected BufferedOutputStream checksumOutputStream;
-    protected FsReadableSnapshot lastSnapshot;
 
-    public FsSnapshotWriter(File snapshotFile, File checksumFile, FsReadableSnapshot lastSnapshot)
+    public FsSnapshotWriter(FsSnapshotStorageConfiguration config, File snapshotFile, File checksumFile, FsReadableSnapshot lastSnapshot)
     {
+        this.config = config;
         this.dataFile = snapshotFile;
         this.checksumFile = checksumFile;
         this.lastSnapshot = lastSnapshot;
 
+        initOutputStreams(config, snapshotFile, checksumFile);
+    }
+
+    protected void initOutputStreams(FsSnapshotStorageConfiguration config, File snapshotFile, File checksumFile)
+    {
         try
         {
-            dataOutputStream = new DigestOutputStream(new BufferedOutputStream(new FileOutputStream(snapshotFile)),
-                    MessageDigest.getInstance(FsSnapshotStorage.CHECKSUM_ALGO));
-            checksumOutputStream = new BufferedOutputStream(new FileOutputStream(checksumFile));
+            final MessageDigest messageDigest = MessageDigest.getInstance(config.getChecksumAlgorithm());
+
+            final FileOutputStream dataFileOutputStream = new FileOutputStream(snapshotFile);
+            final BufferedOutputStream bufferedDataOutputStream = new BufferedOutputStream(dataFileOutputStream);
+            dataOutputStream = new DigestOutputStream(bufferedDataOutputStream, messageDigest);
+
+            final FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
+            checksumOutputStream = new BufferedOutputStream(checksumFileOutputStream);
+
         }
         catch (Exception e)
         {
@@ -49,7 +61,7 @@ public class FsSnapshotWriter implements SnapshotWriter
     }
 
     @Override
-    public void commit() throws IOException
+    public void commit() throws Exception
     {
         try
         {
@@ -59,7 +71,7 @@ public class FsSnapshotWriter implements SnapshotWriter
 
             final byte[] digestBytes = digest.digest();
             final String digestString = BitUtil.toHex(digestBytes);
-            final String checksumFileContents = String.format("%s %s", digestString, dataFile.getName());
+            final String checksumFileContents = config.checksumContent(digestString, dataFile.getName());
 
             checksumOutputStream.write(checksumFileContents.getBytes(StandardCharsets.UTF_8));
             checksumOutputStream.close();
@@ -73,7 +85,7 @@ public class FsSnapshotWriter implements SnapshotWriter
         catch (Exception e)
         {
             abort();
-            throw e;
+            LangUtil.rethrowUnchecked(e);
         }
     }
 

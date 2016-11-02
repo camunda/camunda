@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.fs.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -22,7 +22,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
 
+import org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor;
+import org.camunda.tngp.logstreams.impl.fs.FsLogStorage;
+import org.camunda.tngp.logstreams.impl.fs.FsLogStorageConfiguration;
 import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.util.FileUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +48,7 @@ public class FsLogStorageTest
     private String logPath;
     private File logDirectory;
 
-    private FsStorageConfiguration fsStorageConfig;
+    private FsLogStorageConfiguration fsStorageConfig;
 
     private FsLogStorage fsLogStorage;
 
@@ -54,7 +58,7 @@ public class FsLogStorageTest
         logPath = tempFolder.getRoot().getAbsolutePath();
         logDirectory = new File(logPath);
 
-        fsStorageConfig = new FsStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
+        fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
 
         fsLogStorage = new FsLogStorage(fsStorageConfig);
     }
@@ -136,7 +140,7 @@ public class FsLogStorageTest
     @Test
     public void shouldDeleteLogOnCloseStorage()
     {
-        fsStorageConfig = new FsStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
+        fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
         fsLogStorage = new FsLogStorage(fsStorageConfig);
 
         fsLogStorage.open();
@@ -310,7 +314,7 @@ public class FsLogStorageTest
     {
         final ByteBuffer buffer = ByteBuffer.allocate(capacity);
 
-        final FileChannel fileChannel = FileChannelUtil.openChannel(logFilePath, false);
+        final FileChannel fileChannel = FileUtil.openChannel(logFilePath, false);
 
         try
         {

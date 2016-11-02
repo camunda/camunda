@@ -22,7 +22,7 @@ public class FsLogStorage implements LogStorage
     protected static final int STATE_OPENED = 1;
     protected static final int STATE_CLOSED = 2;
 
-    protected final FsStorageConfiguration config;
+    protected final FsLogStorageConfiguration config;
 
     /** Readable log segments */
     protected final FsLogSegments logSegments = new FsLogSegments();
@@ -31,7 +31,7 @@ public class FsLogStorage implements LogStorage
 
     protected volatile int state = STATE_CREATED;
 
-    public FsLogStorage(FsStorageConfiguration cfg)
+    public FsLogStorage(FsLogStorageConfiguration cfg)
     {
         this.config = cfg;
     }
@@ -215,7 +215,7 @@ public class FsLogStorage implements LogStorage
         state = STATE_CLOSED;
     }
 
-    public FsStorageConfiguration getConfig()
+    public FsLogStorageConfiguration getConfig()
     {
         return config;
     }

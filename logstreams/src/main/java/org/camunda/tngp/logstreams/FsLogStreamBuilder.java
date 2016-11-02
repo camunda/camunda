@@ -14,7 +14,7 @@ import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.StreamContext;
 import org.camunda.tngp.logstreams.impl.StreamImpl;
 import org.camunda.tngp.logstreams.impl.fs.FsLogStorage;
-import org.camunda.tngp.logstreams.impl.fs.FsStorageConfiguration;
+import org.camunda.tngp.logstreams.impl.fs.FsLogStorageConfiguration;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class FsLogStreamBuilder
@@ -171,7 +171,7 @@ public class FsLogStreamBuilder
         final File file = new File(logDirectory);
         file.mkdirs();
 
-        final FsStorageConfiguration storageConfig = new FsStorageConfiguration(logSegmentSize,
+        final FsLogStorageConfiguration storageConfig = new FsLogStorageConfiguration(logSegmentSize,
                 logDirectory,
                 initialLogSegmentId,
                 deleteOnClose);

@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Objects;
 
 import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorage;
-import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorageCconfiguration;
+import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorageConfiguration;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 
 public class FsSnapshotStorageBuilder
@@ -33,7 +33,7 @@ public class FsSnapshotStorageBuilder
             file.mkdirs();
         }
 
-        final FsSnapshotStorageCconfiguration cfg = new FsSnapshotStorageCconfiguration();
+        final FsSnapshotStorageConfiguration cfg = new FsSnapshotStorageConfiguration();
         cfg.setRootPath(rootPath);
 
         return new FsSnapshotStorage(cfg);
