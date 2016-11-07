@@ -1,7 +1,7 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -18,6 +18,10 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
+import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class LogStreamController implements Agent
@@ -25,6 +29,7 @@ public class LogStreamController implements Agent
     protected final ClosedState closedState = new ClosedState();
     protected final OpeningState openingState = new OpeningState();
     protected final OpenState openState = new OpenState();
+    protected final SnapshottingState snapshottingState = new SnapshottingState();
     protected final FailingState failingState = new FailingState();
     protected final FailedState failedState = new FailedState();
     protected final ClosingState closingState = new ClosingState();
@@ -41,6 +46,8 @@ public class LogStreamController implements Agent
     protected final String name;
     protected final StreamContext streamContext;
     protected final LogStorage logStorage;
+    protected final SnapshotStorage snapshotStorage;
+    protected final SnapshotPolicy snapshotPolicy;
     protected final LogBlockIndex blockIndex;
     protected final AgentRunnerService agentRunnerService;
     protected final BlockPeek blockPeek = new BlockPeek();
@@ -57,13 +64,14 @@ public class LogStreamController implements Agent
     protected CompletableFuture<Void> closeFuture;
     protected CompletableFuture<Void> openFuture;
 
-
     public LogStreamController(String name, StreamContext streamContext)
     {
         this.name = name;
         this.streamContext = streamContext;
         this.blockIndex = streamContext.getBlockIndex();
         this.logStorage = streamContext.getLogStorage();
+        this.snapshotStorage = streamContext.getSnapshotStorage();
+        this.snapshotPolicy = streamContext.getSnapshotPolicy();
         agentRunnerService = streamContext.getAgentRunnerService();
     }
 
@@ -107,6 +115,8 @@ public class LogStreamController implements Agent
                 final Dispatcher writeBuffer = streamContext.getWriteBuffer();
                 writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
 
+                recoverBlockIndex();
+
                 state = openState;
                 openFuture.complete(null);
             }
@@ -121,6 +131,22 @@ public class LogStreamController implements Agent
             }
 
             return 1;
+        }
+
+        protected void recoverBlockIndex() throws Exception
+        {
+            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(name);
+            if (lastSnapshot != null)
+            {
+                lastSnapshot.recoverFromSnapshot(blockIndex);
+                lastSnapshot.validateAndClose();
+
+                blockIndex.recover(logStorage, lastSnapshot.getPosition());
+            }
+            else
+            {
+                blockIndex.recover(logStorage);
+            }
         }
 
     }
@@ -153,12 +179,17 @@ public class LogStreamController implements Agent
                 {
                     onBlockWritten(postion, opResult, blockPeek.getBlockLength());
                     blockPeek.markCompleted();
+
+                    if (snapshotPolicy.apply(postion))
+                    {
+                        state = snapshottingState;
+                    }
                 }
                 else
                 {
-                    state = failingState;
-                    failingState.failedPosition = postion;
                     blockPeek.markFailed();
+
+                    gotoFailingState(postion);
                 }
 
                 return 1;
@@ -277,9 +308,47 @@ public class LogStreamController implements Agent
 
     }
 
+    class SnapshottingState implements LogStreamControllerState
+    {
+        @Override
+        public int doWork()
+        {
+            final long logPosition = writeBufferSubscription.getPosition();
+
+            SnapshotWriter snapshotWriter = null;
+
+            try
+            {
+                snapshotWriter = snapshotStorage.createSnapshot(name, logPosition);
+
+                snapshotWriter.writeSnapshot(blockIndex);
+                snapshotWriter.commit();
+
+                state = openState;
+            }
+            catch (Exception e)
+            {
+                if (snapshotWriter != null)
+                {
+                    snapshotWriter.abort();
+                }
+
+                gotoFailingState(logPosition);
+            }
+
+            return 1;
+        }
+    }
+
+    protected void gotoFailingState(final long postion)
+    {
+        state = failingState;
+        failingState.failedPosition = postion;
+    }
+
     public CompletableFuture<Void> openAsync()
     {
-        final CompletableFuture<Void> future = new CompletableFuture<Void>();
+        final CompletableFuture<Void> future = new CompletableFuture<>();
 
         cmdQueue.add(() ->
         {

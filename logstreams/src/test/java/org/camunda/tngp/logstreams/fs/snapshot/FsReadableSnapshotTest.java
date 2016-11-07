@@ -53,7 +53,7 @@ public class FsReadableSnapshotTest
         config = new FsSnapshotStorageConfiguration();
         config.setRootPath(snapshotRootPath);
 
-        dataFile = createDataFile("snapshot.data", SNAPSHOT_DATA);
+        dataFile = createDataFile("snapshot.snapshot", SNAPSHOT_DATA);
         checksumFile = createChecksumFile("snapshot.sha1", SNAPSHOT_DATA, dataFile.getName());
     }
 
@@ -105,7 +105,7 @@ public class FsReadableSnapshotTest
     @Test
     public void shouldFailToValidateIfFileNameDoesntMatch() throws Exception
     {
-        final File corruptedChecksumFile = createChecksumFile("corrupted-checksum.sha1", SNAPSHOT_DATA, "other-snapshot.data");
+        final File corruptedChecksumFile = createChecksumFile("corrupted-checksum.sha1", SNAPSHOT_DATA, "other-snapshot.snapshot");
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Read invalid snapshot, file name doesn't match");

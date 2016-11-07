@@ -1,13 +1,15 @@
 package org.camunda.tngp.logstreams.impl.fs;
 
 import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FsSnapshotStorageConfiguration
 {
     protected static final String CHECKSUM_ALGORITHM = "SHA1";
 
-    protected static final String SNAPSHOT_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d.data";
-    protected static final String SNAPSHOT_FILE_NAME_PATTERN = "%s-\\d+.data";
+    protected static final String SNAPSHOT_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d.snapshot";
+    protected static final String SNAPSHOT_FILE_NAME_PATTERN = "%s-(\\d+).snapshot";
 
     protected static final String CHECKSUM_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%s-%d." + CHECKSUM_ALGORITHM.toLowerCase();
 
@@ -45,6 +47,23 @@ public class FsSnapshotStorageConfiguration
     {
         final String pattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, name);
         return file.getName().matches(pattern);
+    }
+
+    public Long getPositionOfSnapshotFile(File file, String name)
+    {
+        final String fileName = file.getName();
+
+        final String pattern = String.format(SNAPSHOT_FILE_NAME_PATTERN, name);
+        final Matcher matcher = Pattern.compile(pattern).matcher(fileName);
+        if (matcher.find())
+        {
+            final String position = matcher.group(1);
+            return Long.parseLong(position);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Cannot resolve position of snapshot file: " + fileName);
+        }
     }
 
     public String checksumContent(String checksum, String dataFileName)

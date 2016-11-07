@@ -1,8 +1,15 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.dataOffset;
+import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryAddressOffset;
+import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryLength;
+import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryLogPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryOffset;
+import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.indexSizeOffset;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
@@ -10,6 +17,8 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.BufferedLogStreamReader.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.util.StreamUtil;
 
 /**
  * Block index, mapping an event's position to the physical address of the block in which it resides
@@ -23,7 +32,7 @@ import org.camunda.tngp.logstreams.spi.LogStorage;
  * block in which it resides in storage. Then, the block can be scanned for the event position requested.
  *
  */
-public class LogBlockIndex
+public class LogBlockIndex implements SnapshotSupport
 {
     protected final AtomicBuffer indexBuffer;
 
@@ -177,13 +186,18 @@ public class LogBlockIndex
 
     public void recover(LogStorage logStorage)
     {
+        recover(logStorage, logStorage.getFirstBlockAddress());
+    }
+
+    public void recover(LogStorage logStorage, long startAddress)
+    {
         final ByteBuffer readBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 4);
         final UnsafeBuffer readBufferView = new UnsafeBuffer(readBuffer);
 
         final LoggedEventImpl logEntry = new LoggedEventImpl();
         logEntry.wrap(readBufferView, 0);
 
-        long readAddress = logStorage.getFirstBlockAddress();
+        long readAddress = startAddress;
 
         while (readAddress > 0)
         {
@@ -242,6 +256,22 @@ public class LogBlockIndex
             readAddress = nextReadAddress;
         }
 
+    }
+
+    @Override
+    public void writeSnapshot(OutputStream outputStream) throws Exception
+    {
+        final byte[] byteArray = indexBuffer.byteArray();
+
+        outputStream.write(byteArray);
+    }
+
+    @Override
+    public void recoverFromSnapshot(InputStream inputStream) throws Exception
+    {
+        final byte[] byteArray = StreamUtil.read(inputStream);
+
+        indexBuffer.putBytes(0, byteArray);
     }
 
 }

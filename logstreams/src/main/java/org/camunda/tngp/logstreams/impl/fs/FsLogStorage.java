@@ -138,7 +138,7 @@ public class FsLogStorage implements LogStorage
         final String path = config.getPath();
         final List<FsLogSegment> readableLogSegments = new ArrayList<>();
         final File logDir = new File(path);
-        final List<File> logFiles = Arrays.asList(logDir.listFiles((f) -> f.getName().endsWith(".data")));
+        final List<File> logFiles = Arrays.asList(logDir.listFiles(config::matchesFragmentFileNamePattern));
 
         logFiles.forEach((file) ->
         {

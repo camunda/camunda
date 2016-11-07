@@ -55,10 +55,10 @@ public class FsSnapshotWriterTest
         config = new FsSnapshotStorageConfiguration();
         config.setRootPath(snapshotRootPath);
 
-        snapshotFile = tempFolder.newFile("snapshot.data");
+        snapshotFile = tempFolder.newFile("snapshot.snapshot");
         checksumFile = tempFolder.newFile("checksum.sha1");
 
-        final File lastSnapshotFile = tempFolder.newFile("last-snapshot.data");
+        final File lastSnapshotFile = tempFolder.newFile("last-snapshot.snapshot");
         final File lastChecksumFile = tempFolder.newFile("last-snapshot.sha1");
 
         lastSnapshot = mock(FsReadableSnapshot.class);

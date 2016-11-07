@@ -32,4 +32,17 @@ public interface SnapshotWriter
      */
     void abort();
 
+    /**
+     * Writes the given snapshot to the output stream.
+     *
+     * @param snapshotSupport
+     *            the snapshot object
+     * @throws Exception
+     *             if fails to write the snapshot
+     */
+    default void writeSnapshot(SnapshotSupport snapshotSupport) throws Exception
+    {
+        snapshotSupport.writeSnapshot(getOutputStream());
+    }
+
 }

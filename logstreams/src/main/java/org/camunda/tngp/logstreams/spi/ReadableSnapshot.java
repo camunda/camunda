@@ -29,4 +29,17 @@ public interface ReadableSnapshot
      */
     void validateAndClose() throws Exception;
 
+    /**
+     * Reads the snapshot data and recover the given snapshot object.
+     *
+     * @param snapshotSupport
+     *            the snapshot object
+     * @throws Exception
+     *             if fails to recover the snapshot object
+     */
+    default void recoverFromSnapshot(SnapshotSupport snapshotSupport) throws Exception
+    {
+        snapshotSupport.recoverFromSnapshot(getData());
+    }
+
 }

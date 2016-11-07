@@ -2,6 +2,7 @@ package org.camunda.tngp.logstreams;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Objects;
 
 import org.agrona.concurrent.UnsafeBuffer;
@@ -13,8 +14,11 @@ import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.StreamContext;
 import org.camunda.tngp.logstreams.impl.StreamImpl;
+import org.camunda.tngp.logstreams.impl.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.impl.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.fs.FsLogStorageConfiguration;
+import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class FsLogStreamBuilder
@@ -29,6 +33,8 @@ public class FsLogStreamBuilder
     protected boolean deleteOnClose;
     protected AgentRunnerService agentRunnerService;
     protected CountersManager countersManager;
+    protected SnapshotPolicy snapshotPolicy;
+
     protected Dispatcher writeBuffer;
 
     public FsLogStreamBuilder(String name, int id)
@@ -85,6 +91,12 @@ public class FsLogStreamBuilder
         return this;
     }
 
+    public FsLogStreamBuilder snapshotPolicy(SnapshotPolicy snapshotPolicy)
+    {
+        this.snapshotPolicy = snapshotPolicy;
+        return this;
+    }
+
     public LogStream build()
     {
         final StreamContext ctx = new StreamContext();
@@ -94,6 +106,8 @@ public class FsLogStreamBuilder
 
         initAgentRunnerService(ctx);
         initLogStorage(ctx);
+        initSnapshotPolicy(ctx);
+        initSnapshotStorage(ctx);
         initBlockIndex(ctx);
         initWriteBuffer(ctx);
         initController(ctx);
@@ -156,8 +170,6 @@ public class FsLogStreamBuilder
             return new UnsafeBuffer(ByteBuffer.allocate(c));
         });
 
-        blockIndex.recover(ctx.getLogStorage());
-
         ctx.setBlockIndex(blockIndex);
     }
 
@@ -181,6 +193,23 @@ public class FsLogStreamBuilder
         storage.open();
 
         ctx.setLogStorage(storage);
+    }
+
+    protected void initSnapshotPolicy(StreamContext ctx)
+    {
+        if (snapshotPolicy == null)
+        {
+            final SnapshotPolicy snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
+
+            ctx.setSnapshotPolicy(snapshotPolicy);
+        }
+    }
+
+    protected void initSnapshotStorage(StreamContext ctx)
+    {
+        final SnapshotStorage snapshotStorage = new FsSnapshotStorageBuilder(logDirectory).build();
+
+        ctx.setSnapshotStorage(snapshotStorage);
     }
 
     public String getLogDirectory()

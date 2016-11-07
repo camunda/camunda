@@ -1,7 +1,6 @@
 package org.camunda.tngp.logstreams.impl.fs;
 
 import java.io.BufferedOutputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -12,6 +11,7 @@ import java.security.MessageDigest;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
+import org.camunda.tngp.util.FileUtil;
 
 public class FsSnapshotWriter implements SnapshotWriter
 {
@@ -78,6 +78,7 @@ public class FsSnapshotWriter implements SnapshotWriter
 
             if (lastSnapshot != null)
             {
+                // TODO some how the data file can't be deleted because of another process
                 lastSnapshot.getDataFile().delete();
                 lastSnapshot.getChecksumFile().delete();
             }
@@ -92,25 +93,10 @@ public class FsSnapshotWriter implements SnapshotWriter
     @Override
     public void abort()
     {
-        closeSilently(dataOutputStream);
-        closeSilently(checksumOutputStream);
+        FileUtil.closeSilently(dataOutputStream);
+        FileUtil.closeSilently(checksumOutputStream);
         dataFile.delete();
         checksumFile.delete();
-    }
-
-    static void closeSilently(Closeable out)
-    {
-        if (out != null)
-        {
-            try
-            {
-                out.close();
-            }
-            catch (Exception e)
-            {
-                // ignore
-            }
-        }
     }
 
     public File getChecksumFile()

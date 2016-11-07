@@ -2,6 +2,8 @@ package org.camunda.tngp.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
@@ -140,4 +142,43 @@ public class LogBlockIndexTest
             }
         }
     }
+
+    @Test
+    public void shouldRecoverIndexFromSnapshot() throws Exception
+    {
+        final int capacity = blockIndex.capacity();
+
+        final LogBlockIndex newBlockIndex = new LogBlockIndex(capacity, (c) ->
+        {
+            return new UnsafeBuffer(ByteBuffer.allocate(c));
+        });
+
+        for (int i = 0; i < capacity; i++)
+        {
+            final int pos = i + 1;
+            final int addr = pos * 10;
+
+            blockIndex.addBlock(pos, addr);
+        }
+
+        // when
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        blockIndex.writeSnapshot(outputStream);
+
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+        newBlockIndex.recoverFromSnapshot(inputStream);
+
+        // then
+        assertThat(newBlockIndex.size()).isEqualTo(blockIndex.size());
+
+        for (int i = 0; i < capacity; i++)
+        {
+            final int virtPos = i + 1;
+            final int physPos = virtPos * 10;
+
+            assertThat(newBlockIndex.getLogPosition(i)).isEqualTo(virtPos);
+            assertThat(newBlockIndex.getAddress(i)).isEqualTo(physPos);
+        }
+    }
+
 }

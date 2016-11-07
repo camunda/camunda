@@ -48,6 +48,7 @@ public class LogRecoveryTest
     {
         final String logPath = temFolder.getRoot().getAbsolutePath();
 
+        // TODO make sure to recover from a snapshot
         final LogStream log1 = LogStreams.createFsLogStream("foo", 0)
                 .logRootPath(logPath)
                 .deleteOnClose(false)
@@ -61,7 +62,7 @@ public class LogRecoveryTest
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
 
-        final int workCount = 200000;
+        final int workCount = 200_000;
 
         for (int i = 0; i < workCount; i++)
         {

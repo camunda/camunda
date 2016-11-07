@@ -17,11 +17,6 @@ public class FsSnapshotStorage implements SnapshotStorage
         this.cfg = cfg;
     }
 
-    static long position(String fileName, String snapshotName)
-    {
-        return Long.parseLong(fileName.substring(snapshotName.length() + 1, fileName.length() - 5));
-    }
-
     @Override
     public FsReadableSnapshot getLastSnapshot(String name) throws Exception
     {
@@ -32,10 +27,10 @@ public class FsSnapshotStorage implements SnapshotStorage
 
         if (snapshotFiles.size() > 0)
         {
-            snapshotFiles.sort((f1, f2) -> Long.compare(position(f1.getName(), name), position(f2.getName(), name)));
+            snapshotFiles.sort((f1, f2) -> Long.compare(position(f1, name), position(f2, name)));
 
             final File snapshotFile = snapshotFiles.get(0);
-            final long logPosition = position(snapshotFile.getName(), name);
+            final long logPosition = position(snapshotFile, name);
 
             final String checksumFileName = cfg.checksumFileName(name, logPosition);
             final File checksumFile = new File(checksumFileName);
@@ -54,6 +49,11 @@ public class FsSnapshotStorage implements SnapshotStorage
         }
 
         return snapshot;
+    }
+
+    protected long position(File file, String snapshotName)
+    {
+        return cfg.getPositionOfSnapshotFile(file, snapshotName);
     }
 
     @Override
@@ -84,8 +84,8 @@ public class FsSnapshotStorage implements SnapshotStorage
         }
         catch (IOException e)
         {
-            checksumFile.delete();
             snapshotFile.delete();
+            checksumFile.delete();
             LangUtil.rethrowUnchecked(e);
         }
 

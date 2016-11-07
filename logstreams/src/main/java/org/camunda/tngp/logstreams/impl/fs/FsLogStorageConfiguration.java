@@ -4,7 +4,9 @@ import java.io.File;
 
 public class FsLogStorageConfiguration
 {
-    protected final String fragmentFileNameTemplate = "%s" + File.separatorChar + "%02d.data";
+    protected static final String FRAGMENT_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%02d.data";
+    protected static final String FRAGMENT_FILE_NAME_PATTERN = "\\d{2}.data";
+
     protected final int segmentSize;
     protected final String path;
     protected final int initialSegmentId;
@@ -20,7 +22,7 @@ public class FsLogStorageConfiguration
 
     public String getFragmentFileNameTemplate()
     {
-        return fragmentFileNameTemplate;
+        return FRAGMENT_FILE_NAME_TEMPLATE;
     }
 
     public int getSegmentSize()
@@ -35,7 +37,12 @@ public class FsLogStorageConfiguration
 
     public String fileName(int segmentId)
     {
-        return String.format(fragmentFileNameTemplate, path, segmentId);
+        return String.format(FRAGMENT_FILE_NAME_TEMPLATE, path, segmentId);
+    }
+
+    public boolean matchesFragmentFileNamePattern(File file)
+    {
+        return file.getName().matches(FRAGMENT_FILE_NAME_PATTERN);
     }
 
     public boolean isDeleteOnClose()
