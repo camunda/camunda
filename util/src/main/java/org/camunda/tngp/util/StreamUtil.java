@@ -1,5 +1,6 @@
 package org.camunda.tngp.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -166,4 +167,23 @@ public class StreamUtil
 
         return length - remaining;
     }
+
+    public static byte[] read(final InputStream input) throws IOException
+    {
+        final byte[] byteBuffer = new byte[DEFAULT_BUFFER_SIZE];
+        int readBytes;
+
+        try (final ByteArrayOutputStream buffer = new ByteArrayOutputStream())
+        {
+            while ((readBytes = input.read(byteBuffer, 0, byteBuffer.length)) != -1)
+            {
+                buffer.write(byteBuffer, 0, readBytes);
+            }
+
+            buffer.flush();
+
+            return buffer.toByteArray();
+        }
+    }
+
 }
