@@ -49,6 +49,13 @@ test-create-task-throughput:
          org.camunda.tngp.perftest.CreateTaskThroughputTest
 	gnuplot etc/test-create-task-throughput.gpi
 
+test-task-subscription-throughput:
+	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+         -Dtest.outputFileName=data/test-task-subscription-throughput.txt \
+         -cp target/tngp-qa-perf-tests-0.1.0-SNAPSHOT-jar-with-dependencies.jar \
+         org.camunda.tngp.perftest.TaskSubscriptionThroughputTest
+	gnuplot etc/test-task-subscription-throughput.gpi
+
 clean: undeploy-broker
 	scripts/clean.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
 

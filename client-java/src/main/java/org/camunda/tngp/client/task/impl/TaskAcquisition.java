@@ -140,16 +140,18 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
         final long subscriptionId = taskReader.subscriptionId();
         final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);
 
-        final TaskImpl task = new TaskImpl(
-                client,
-                taskReader.taskId(),
-                taskReader.wfInstanceId(),
-                subscription.getTaskType(),
-                Instant.ofEpochMilli(taskReader.lockTime()),
-                subscription.getTaskQueueId());
+        if (subscription != null && subscription.isOpen())
+        {
+            final TaskImpl task = new TaskImpl(
+                    client,
+                    taskReader.taskId(),
+                    taskReader.wfInstanceId(),
+                    subscription.getTaskType(),
+                    Instant.ofEpochMilli(taskReader.lockTime()),
+                    subscription.getTaskQueueId());
 
-        subscription.addTask(task);
-
+            subscription.addTask(task);
+        }
     }
 
 }

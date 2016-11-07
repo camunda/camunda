@@ -29,7 +29,7 @@ public class LogEntryProcessor<T extends BufferReader>
         int workCount = 0;
         int handlerResult = CONSUME_ENTRY_RESULT;
 
-        while (handlerResult != FAILED_ENTRY_RESULT && logReader.hasNext() && workCount < cycles)
+        while (handlerResult != FAILED_ENTRY_RESULT && workCount < cycles && logReader.hasNext())
         {
             final ReadableLogEntry nextEntry = logReader.next();
             nextEntry.readValue(bufferReader);

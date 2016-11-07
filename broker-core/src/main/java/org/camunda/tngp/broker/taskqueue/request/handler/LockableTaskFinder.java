@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.request.handler;
 
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap.KeySet;
+import org.agrona.collections.LongHashSet;
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
@@ -16,7 +16,7 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
     protected LogReader logReader;
     protected LogEntryProcessor<LogEntryHeaderReader> logEntryProcessor;
 
-    protected KeySet taskTypeHashes;
+    protected LongHashSet taskTypeHashes;
 
     protected TaskInstanceReader taskReader = new TaskInstanceReader();
     protected TaskInstanceReader lockableTask;
@@ -35,7 +35,7 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
 
     public void init(
             long position,
-            KeySet taskTypeHashes)
+            LongHashSet taskTypeHashes)
     {
         this.logReader.seek(position);
         this.taskTypeHashes = taskTypeHashes;

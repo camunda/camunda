@@ -46,6 +46,7 @@ public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>,
 
     protected LogWriter logWriter;
     protected LockableTaskFinder taskFinder;
+    protected LongHashSet taskTypeQuery = new LongHashSet(-1L);
 
     protected TaskInstanceWriter taskInstanceWriter = new TaskInstanceWriter();
 
@@ -108,15 +109,24 @@ public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>,
         long scanStartPosition = Long.MAX_VALUE;
         KeyIterator subscriptionIdIt = keySet.iterator();
 
+        // determines task types to scan for
+        taskTypeQuery.clear();
+
         while (subscriptionIdIt.hasNext())
         {
             final TaskSubscription subscription = taskSubscriptions.get(subscriptionIdIt.nextLong());
-            final DirectBuffer taskType = subscription.getTaskType();
-            final long taskTypePosition = taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1);
 
-            if (taskTypePosition >= 0 && taskTypePosition < scanStartPosition)
+            if (subscription.getCredits() > 0L)
             {
-                scanStartPosition = taskTypePosition;
+                taskTypeQuery.add(subscription.getTaskTypeHash());
+
+                final DirectBuffer taskType = subscription.getTaskType();
+                final long taskTypePosition = taskTypePositionIndex.get(taskType, 0, taskType.capacity(), -1);
+
+                if (taskTypePosition >= 0 && taskTypePosition < scanStartPosition)
+                {
+                    scanStartPosition = taskTypePosition;
+                }
             }
         }
 
@@ -126,11 +136,11 @@ public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>,
         }
 
         // scan for tasks
-        taskFinder.init(scanStartPosition, subscriptionsByType.keySet());
+        taskFinder.init(scanStartPosition, taskTypeQuery);
 
         int numTasksFound = 0;
 
-        while (taskFinder.findNextLockableTask())
+        while (!taskTypeQuery.isEmpty() && taskFinder.findNextLockableTask())
         {
             final TaskInstanceReader task = taskFinder.getLockableTask();
             final DirectBuffer foundTaskType = task.getTaskType();
@@ -142,35 +152,46 @@ public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>,
                 continue;
             }
 
-            final TaskSubscription headSubscription = subscriptionsByType.get((int) task.taskTypeHash());
+            final int taskTypeHash = (int) task.taskTypeHash();
+            final TaskSubscription headSubscription = subscriptionsByType.get(taskTypeHash);
             TaskSubscription candidateSubscription = headSubscription;
-            boolean subscriptionFound = false;
+
+            boolean candidateFound = false;
+            boolean creditsAvailable = false;
 
             do
             {
                 final DirectBuffer taskType = candidateSubscription.getTaskType();
 
-                if (candidateSubscription.getCredits() > 0L &&
-                        LockableTaskFinder.taskTypeEqual(taskType, foundTaskType))
+                if (LockableTaskFinder.taskTypeEqual(taskType, foundTaskType))
                 {
-                    subscriptionFound = true;
+                    candidateFound = true;
+                    creditsAvailable = candidateSubscription.getCredits() > 0L;
                 }
                 else
                 {
                     candidateSubscription = candidateSubscription.getNext();
                 }
             }
-            while (!subscriptionFound && candidateSubscription != headSubscription);
+            while (!(candidateFound && creditsAvailable) && candidateSubscription != headSubscription);
 
-            if (subscriptionFound)
+            if (candidateFound)
             {
-                lockTask(
-                        candidateSubscription,
-                        taskFinder.getLockableTask(),
-                        taskFinder.getLockableTaskPosition(),
-                        logWriter);
-                numTasksFound++;
-                candidateSubscription.setCredits(candidateSubscription.getCredits() - 1);
+                if (creditsAvailable)
+                {
+                    lockTask(
+                            candidateSubscription,
+                            taskFinder.getLockableTask(),
+                            taskFinder.getLockableTaskPosition(),
+                            logWriter);
+                    numTasksFound++;
+                    candidateSubscription.setCredits(candidateSubscription.getCredits() - 1);
+                }
+                else
+                {
+                    // stop searching for tasks, if no matching subscription has credits
+                    taskTypeQuery.remove(taskTypeHash);
+                }
             }
 
             // TODO: could rotate in tasktypemap to ensure fairness

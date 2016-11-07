@@ -9,7 +9,7 @@ mkdir -p ${WORKDIR}
 ssh ${REMOTE_USERNAME}@${REMOTE_HOST} "rm -Rf ${WORKDIR} ; mkdir ${WORKDIR}"
 
 # copy distribution to remote
-scp ../../dist/target/tngp-distribution-0.1.0-SNAPSHOT.tar.gz ${REMOTE_USERNAME}@${REMOTE_HOST}:~/${WORKDIR}/tngp-distribution.tar.gz 
+scp ../../dist/target/tngp-distribution-0.1.0-SNAPSHOT.tar.gz ${REMOTE_USERNAME}@${REMOTE_HOST}:~/${WORKDIR}/tngp-distribution.tar.gz
 
 # extract and start in background
 # PID is saved in file
@@ -18,8 +18,9 @@ ssh ${REMOTE_USERNAME}@${REMOTE_HOST} /bin/bash <<-EOF
 	mkdir tngp-distribution/
 	tar -zxvf tngp-distribution.tar.gz -C tngp-distribution/ --strip-components=1
 	cd tngp-distribution/bin
-    JAVA_OPTS="-XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000" nohup ./broker &> log.txt &
-    echo \$! > broker.pid
+  chmod +x ./broker
+  JAVA_OPTS="-XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000" nohup ./broker &> log.txt &
+  echo \$! > broker.pid
 EOF
 
 sleep 2

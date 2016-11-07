@@ -150,8 +150,8 @@ public class LockTasksOperatorTest
         final TaskInstanceReader task1 = logWriter.getEntryAs(0, TaskInstanceReader.class);
         assertThat(task1.id()).isEqualTo(13L);
 
-        final TaskInstanceReader task2 = logWriter.getEntryAs(0, TaskInstanceReader.class);
-        assertThat(task2.id()).isEqualTo(13L);
+        final TaskInstanceReader task2 = logWriter.getEntryAs(1, TaskInstanceReader.class);
+        assertThat(task2.id()).isEqualTo(14L);
     }
 
     @Test
@@ -179,6 +179,36 @@ public class LockTasksOperatorTest
 
         final TaskInstanceReader task = logWriter.getEntryAs(0, TaskInstanceReader.class);
         assertThat(task.id()).isEqualTo(13L);
+    }
+
+
+    @Test
+    public void shouldLockTasksWherePredecessorBelongsToSaturatedSubscription()
+    {
+        // given
+        logReader.addEntry(taskWriter(12L, TaskInstanceState.NEW, TASK_TYPE1));
+        logReader.addEntry(taskWriter(13L, TaskInstanceState.NEW, TASK_TYPE1));
+        logReader.addEntry(taskWriter(14L, TaskInstanceState.NEW, TASK_TYPE2));
+
+        when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE1)), eq(0), eq(TASK_TYPE1.length), anyLong()))
+            .thenReturn(logReader.getEntryPosition(0));
+        when(taskTypeIndex.get(argThat(hasBytes(TASK_TYPE2)), eq(0), eq(TASK_TYPE2.length), anyLong()))
+            .thenReturn(logReader.getEntryPosition(1));
+
+        final LockTasksOperator operator = new LockTasksOperator(taskTypeIndex, logReader, logWriter, dataFramePool, 1);
+        operator.openSubscription(13, 32, 123123L, 1, TASK_TYPE1_BUF);
+        operator.openSubscription(13, 32, 123123L, 1, TASK_TYPE2_BUF);
+
+        // when
+        operator.lockTasks();
+
+        // then
+        assertThat(logWriter.size()).isEqualTo(2);
+
+        final TaskInstanceReader task1 = logWriter.getEntryAs(0, TaskInstanceReader.class);
+        assertThat(task1.id()).isEqualTo(12L);
+        final TaskInstanceReader task2 = logWriter.getEntryAs(1, TaskInstanceReader.class);
+        assertThat(task2.id()).isEqualTo(14L);
     }
 
 
@@ -290,6 +320,7 @@ public class LockTasksOperatorTest
         // then
         verifyZeroInteractions(deferredResponsePool, dataFramePool);
     }
+
 
     @Test
     public void shouldRemoveSubscription()

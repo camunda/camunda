@@ -1,0 +1,11 @@
+set terminal png size 1024,768 enhanced
+set output 'data/test-task-subscription-throughput.png'
+set title 'Task Subscription Throughput'
+
+set grid ytics mytics
+set ylabel "Tasks Handled"
+set xlabel "Time [s]"
+set mytics 5
+
+plot 'data/test-task-subscription-throughput.txt' using ($1/1000000000):2 with lines notitle
+

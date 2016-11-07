@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.perftest.CommonProperties;
 import org.camunda.tngp.perftest.reporter.FileReportWriter;
 import org.camunda.tngp.perftest.reporter.RateReporter;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
@@ -19,9 +20,7 @@ public abstract class MaxRateThroughputTest
 {
     public static final String TEST_WARMUP_TIMEMS = "test.warmup.timems";
     public static final String TEST_WARMUP_REQUESTRATE = "test.warmup.requestRate";
-    public static final String TEST_TIMEMS = "test.timems";
     public static final String TEST_MAX_CONCURRENT_REQUESTS = "2048";
-    public static final String TEST_OUTPUT_FILE_NAME = "test.outputFileName";
 
     public void run()
     {
@@ -58,9 +57,9 @@ public abstract class MaxRateThroughputTest
     {
         properties.putIfAbsent(TEST_WARMUP_TIMEMS, "30000");
         properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "1000");
-        properties.putIfAbsent(TEST_TIMEMS, "30000");
+        properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "30000");
         properties.putIfAbsent(TEST_MAX_CONCURRENT_REQUESTS, "2048");
-        properties.putIfAbsent(TEST_OUTPUT_FILE_NAME, "data/output.txt");
+        properties.putIfAbsent(CommonProperties.TEST_OUTPUT_FILE_NAME, "data/output.txt");
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "2048");
     }
 
@@ -101,9 +100,9 @@ public abstract class MaxRateThroughputTest
         {
             System.out.format("Executing test\n");
 
-            final int warmupTimeMs = Integer.parseInt(properties.getProperty(TEST_TIMEMS));
+            final int testTimeMs = Integer.parseInt(properties.getProperty(CommonProperties.TEST_TIMEMS));
             final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(TEST_MAX_CONCURRENT_REQUESTS));
-            final String outputFileName = properties.getProperty(TEST_OUTPUT_FILE_NAME);
+            final String outputFileName = properties.getProperty(CommonProperties.TEST_OUTPUT_FILE_NAME);
 
             final FileReportWriter fileReportWriter = new FileReportWriter();
             final RateReporter rateReporter = new RateReporter(1, TimeUnit.SECONDS, fileReportWriter);
@@ -120,7 +119,7 @@ public abstract class MaxRateThroughputTest
 
             final Supplier<Future> requestFn = requestFn(client, conection);
 
-            TestHelper.executeAtMaxRate(requestFn, rateReporter, warmupTimeMs, maxConcurrentRequests);
+            TestHelper.executeAtMaxRate(requestFn, rateReporter, testTimeMs, maxConcurrentRequests);
 
             System.out.format("Finished test.\n");
 

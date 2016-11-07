@@ -22,6 +22,10 @@ def TESTS = [
     [
         name: 'start-wf-instance-latency',
         target: 'test-start-wf-instance-latency'
+    ],
+    [
+        name: 'task-subscription-throughput',
+        target: 'test-task-subscription-throughput'
     ]
 ]
 

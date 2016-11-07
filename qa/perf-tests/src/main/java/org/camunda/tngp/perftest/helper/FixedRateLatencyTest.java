@@ -12,15 +12,14 @@ import java.util.function.Supplier;
 import org.HdrHistogram.Histogram;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.perftest.CommonProperties;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 public abstract class FixedRateLatencyTest
 {
     public static final String TEST_WARMUP_TIMEMS = "test.warmup.timems";
     public static final String TEST_WARMUP_REQUESTRATE = "test.warmup.requestRate";
-    public static final String TEST_TIMEMS = "test.timems";
     public static final String TEST_REQUESTRATE = "test.requestRate";
-    public static final String TEST_OUTPUT_FILE_NAME = "test.outputFileName";
 
     public void run()
     {
@@ -57,9 +56,9 @@ public abstract class FixedRateLatencyTest
     {
         properties.putIfAbsent(TEST_WARMUP_TIMEMS, "30000");
         properties.putIfAbsent(TEST_WARMUP_REQUESTRATE, "1000");
-        properties.putIfAbsent(TEST_TIMEMS, "30000");
+        properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "30000");
         properties.putIfAbsent(TEST_REQUESTRATE, "5000");
-        properties.putIfAbsent(TEST_OUTPUT_FILE_NAME, "data/output.txt");
+        properties.putIfAbsent(CommonProperties.TEST_OUTPUT_FILE_NAME, "data/output.txt");
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "2048");
     }
 
@@ -101,7 +100,7 @@ public abstract class FixedRateLatencyTest
             System.out.format("Executing test\n");
 
             final int requestRate = Integer.parseInt(properties.getProperty(TEST_REQUESTRATE));
-            final int timeMs = Integer.parseInt(properties.getProperty(TEST_TIMEMS));
+            final int timeMs = Integer.parseInt(properties.getProperty(CommonProperties.TEST_TIMEMS));
 
             final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
@@ -116,7 +115,7 @@ public abstract class FixedRateLatencyTest
 
             System.out.format("Finished test. Errors (failed to send request due to backpressure): %d\n", errors);
 
-            final String outputFileName = properties.getProperty(TEST_OUTPUT_FILE_NAME);
+            final String outputFileName = properties.getProperty(CommonProperties.TEST_OUTPUT_FILE_NAME);
             TestHelper.recordHistogram(histogram, outputFileName);
         }
 
