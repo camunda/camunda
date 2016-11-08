@@ -12,6 +12,10 @@ def TESTS = [
         target: 'test-create-task-throughput'
     ],
     [
+        name: 'create-task-throughput-idle-subscription',
+        target: 'test-create-task-throughput-idle-subscription'
+    ],
+    [
         name: 'create-task-latency',
         target: 'test-create-task-latency'
     ],

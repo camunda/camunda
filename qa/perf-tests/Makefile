@@ -49,6 +49,13 @@ test-create-task-throughput:
          org.camunda.tngp.perftest.CreateTaskThroughputTest
 	gnuplot etc/test-create-task-throughput.gpi
 
+test-create-task-throughput-idle-subscription:
+	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
+         -Dtest.outputFileName=data/test-create-task-throughput-idle-subscription.txt \
+         -cp target/tngp-qa-perf-tests-0.1.0-SNAPSHOT-jar-with-dependencies.jar \
+         org.camunda.tngp.perftest.CreateTaskThroughputIdleSubscriptionTest
+	gnuplot etc/test-create-task-throughput-idle-subscription.gpi
+
 test-task-subscription-throughput:
 	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
          -Dtest.outputFileName=data/test-task-subscription-throughput.txt \
