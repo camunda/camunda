@@ -30,18 +30,21 @@ public class InputActivityInstanceHandler implements LogEntryTypeHandler<BpmnAct
             // TODO: this is not so great yet: we have the logWriters abstraction but still need the resource context provider
             //   here to access the id generator
             final TaskQueueContext taskQueueContext = taskQueueContextProvider.getContextForResource(reader.taskQueueId());
-            final IdGenerator taskQueueIdGenerator = taskQueueContext.getTaskInstanceIdGenerator();
+            if (taskQueueContext != null)
+            {
+                final IdGenerator taskQueueIdGenerator = taskQueueContext.getTaskInstanceIdGenerator();
 
-            final DirectBuffer taskType = reader.getTaskType();
-            taskInstanceWriter
-                .id(taskQueueIdGenerator.nextId())
-                .taskType(taskType, 0, taskType.capacity())
-                .state(TaskInstanceState.NEW)
-                .wfRuntimeResourceId(reader.resourceId())
-                .wfActivityInstanceEventKey(reader.key())
-                .wfInstanceId(reader.wfInstanceId());
+                final DirectBuffer taskType = reader.getTaskType();
+                taskInstanceWriter
+                    .id(taskQueueIdGenerator.nextId())
+                    .taskType(taskType, 0, taskType.capacity())
+                    .state(TaskInstanceState.NEW)
+                    .wfRuntimeResourceId(reader.resourceId())
+                    .wfActivityInstanceEventKey(reader.key())
+                    .wfInstanceId(reader.wfInstanceId());
 
-            logWriters.writeToLog(reader.taskQueueId(), taskInstanceWriter);
+                logWriters.writeToLog(reader.taskQueueId(), taskInstanceWriter);
+            }
         }
     }
 }

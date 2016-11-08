@@ -47,5 +47,4 @@ public class EventContext implements ResourceContext
     {
         this.logManager = logManager;
     }
-
 }

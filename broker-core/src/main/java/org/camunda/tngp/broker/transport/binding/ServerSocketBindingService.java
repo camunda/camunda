@@ -5,7 +5,8 @@ import java.net.InetSocketAddress;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;
@@ -27,22 +28,25 @@ public class ServerSocketBindingService implements Service<ServerSocketBinding>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         final Transport transport = transportInjector.getValue();
         final Dispatcher receiveBuffer = receiveBufferInjector.getValue();
 
-        serverSocketBinding = transport.createServerSocketBinding(bindAddress)
+        serviceContext.async(transport.createServerSocketBinding(bindAddress)
             .transportChannelHandler(new ReceiveBufferChannelHandler(receiveBuffer))
-            .bind();
-
-        System.out.println(String.format("Bound %s to %s.", bindingName, bindAddress));
+            .bindAsync()
+            .thenAccept((binding) ->
+            {
+                serverSocketBinding = binding;
+                System.out.format("Bound %s to %s.\n", bindingName, bindAddress);
+            }));
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext serviceStopContext)
     {
-        serverSocketBinding.close();
+        serviceStopContext.async(serverSocketBinding.closeAsync());
     }
 
     @Override

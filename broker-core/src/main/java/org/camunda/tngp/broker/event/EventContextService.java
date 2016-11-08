@@ -15,24 +15,23 @@ package org.camunda.tngp.broker.event;
 import org.camunda.tngp.broker.log.LogManager;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class EventContextService implements Service<EventContext>
 {
-    protected final Injector<LogManager> logManagerInjector = new Injector<>();
+    protected Injector<LogManager> logManagerInjector = new Injector<>();
 
-    protected final EventContext context = new EventContext();
+    protected EventContext context = new EventContext();
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final LogManager logManager = logManagerInjector.getValue();
-
-        context.setLogManager(logManager);
+        context.setLogManager(logManagerInjector.getValue());
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         // nothing to do
     }

@@ -6,7 +6,8 @@ import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class WfDefinitionCacheService implements Service<WfDefinitionCache>
 {
@@ -26,7 +27,7 @@ public class WfDefinitionCacheService implements Service<WfDefinitionCache>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         wfTypeCache = new WfDefinitionCache(
                 numSets,
@@ -37,7 +38,7 @@ public class WfDefinitionCacheService implements Service<WfDefinitionCache>
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         // nothing to do
     }

@@ -16,8 +16,8 @@ import org.camunda.tngp.log.impl.LogImpl;
 import org.camunda.tngp.log.spi.LogStorage;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
-
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 
@@ -43,44 +43,50 @@ public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> impleme
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final Log log = logInjector.getValue();
-
-        final LogStorage logStorage = ((LogImpl)log).getLogContext().getLogStorage();
-        final String logPath = ((FsLogStorage) logStorage).getConfig().getPath();
-
-        indexDirPath = logPath + File.separator;
-        indexWorkFilePath = new File(String.format("%s%s.idx", indexDirPath, serviceContext.getName())).toPath();
-
-        try
+        ctx.run(() ->
         {
-            Files.deleteIfExists(indexWorkFilePath);
+            final Log log = logInjector.getValue();
 
-            final Path lastCheckpoint = getLastCheckpoint();
-            if (lastCheckpoint != null)
+            final LogStorage logStorage = ((LogImpl)log).getLogContext().getLogStorage();
+            final String logPath = ((FsLogStorage) logStorage).getConfig().getPath();
+
+            indexDirPath = logPath + File.separator;
+            indexWorkFilePath = new File(String.format("%s%s.idx", indexDirPath, ctx.getName())).toPath();
+
+            try
             {
-                Files.copy(lastCheckpoint, indexWorkFilePath);
-            }
+                Files.deleteIfExists(indexWorkFilePath);
 
-            randomAccessFile = new RandomAccessFile(indexWorkFilePath.toFile(), "rw");
-            indexStore = new FileChannelIndexStore(randomAccessFile.getChannel());
-            index = createIndex(indexStore, lastCheckpoint == null);
-        }
-        catch (IOException e)
-        {
-            LangUtil.rethrowUnchecked(e);
-        }
+                final Path lastCheckpoint = getLastCheckpoint();
+                if (lastCheckpoint != null)
+                {
+                    Files.copy(lastCheckpoint, indexWorkFilePath);
+                }
+
+                randomAccessFile = new RandomAccessFile(indexWorkFilePath.toFile(), "rw");
+                indexStore = new FileChannelIndexStore(randomAccessFile.getChannel());
+                index = createIndex(indexStore, lastCheckpoint == null);
+            }
+            catch (Exception e)
+            {
+                LangUtil.rethrowUnchecked(e);
+            }
+        });
     }
 
     protected abstract I createIndex(FileChannelIndexStore indexStore, boolean createNew);
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
-        closeSilently(indexStore);
-        closeSilently(randomAccessFile);
-        IoUtil.deleteIfExists(indexWorkFilePath.toFile());
+        stopContext.run(() ->
+        {
+            closeSilently(indexStore);
+            closeSilently(randomAccessFile);
+            IoUtil.deleteIfExists(indexWorkFilePath.toFile());
+        });
     }
 
     @Override

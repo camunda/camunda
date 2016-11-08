@@ -19,7 +19,8 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
@@ -44,64 +45,70 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager = lockedTasksIndexServiceInjector.getValue();
-        final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager = taskTypeIndexServiceInjector.getValue();
-        final DeferredResponsePool responsePool = responsePoolServiceInjector.getValue();
+        ctx.run(() ->
+        {
+            final HashIndexManager<Long2LongHashIndex> lockedTasksIndexManager = lockedTasksIndexServiceInjector.getValue();
+            final HashIndexManager<Bytes2LongHashIndex> taskTypeIndexManager = taskTypeIndexServiceInjector.getValue();
+            final DeferredResponsePool responsePool = responsePoolServiceInjector.getValue();
 
-        taskQueueContext.setLog(logInjector.getValue());
-        taskQueueContext.setTaskInstanceIdGenerator(taskInstanceIdGeneratorInjector.getValue());
-        taskQueueContext.setTaskTypePositionIndex(taskTypeIndexManager);
+            taskQueueContext.setLog(logInjector.getValue());
+            taskQueueContext.setTaskInstanceIdGenerator(taskInstanceIdGeneratorInjector.getValue());
+            taskQueueContext.setTaskTypePositionIndex(taskTypeIndexManager);
 
-        final Log log = logInjector.getValue();
+            final Log log = logInjector.getValue();
 
-        final LogWriter logWriter = new LogWriter(log);
-        taskQueueContext.setLogWriter(logWriter);
+            final LogWriter logWriter = new LogWriter(log);
+            taskQueueContext.setLogWriter(logWriter);
 
-        final Templates templates = Templates.taskQueueLogTemplates();
-        final LogConsumer taskProcessor = new LogConsumer(
-                log.getId(),
-                new BufferedLogReader(log),
-                responsePool,
-                templates,
-                new LogWritersImpl(taskQueueContext, null));
+            final Templates templates = Templates.taskQueueLogTemplates();
+            final LogConsumer taskProcessor = new LogConsumer(
+                    log.getId(),
+                    new BufferedLogReader(log),
+                    responsePool,
+                    templates,
+                    new LogWritersImpl(taskQueueContext, null));
 
-        final LockTasksOperator lockTasksOperator = new LockTasksOperator(
-                taskTypeIndexManager.getIndex(),
-                new BufferedLogReader(log),
-                logWriter,
-                dataFramePoolInjector.getValue(),
-                responsePool.getCapacity() // there cannot be more open adhoc subscriptions than there are requests
-                );
+            final LockTasksOperator lockTasksOperator = new LockTasksOperator(
+                    taskTypeIndexManager.getIndex(),
+                    new BufferedLogReader(log),
+                    logWriter,
+                    dataFramePoolInjector.getValue(),
+                    responsePool.getCapacity() // there cannot be more open adhoc subscriptions than there are requests
+                    );
 
-        final Transport transport = transportInjector.getValue();
-        transport.registerChannelListener(lockTasksOperator);
+            final Transport transport = transportInjector.getValue();
+            transport.registerChannelListener(lockTasksOperator);
 
-        taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
-        taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
+            taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
+            taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
 
-        taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
-        taskProcessor.addIndexWriter(new LockedTasksIndexWriter(lockedTasksIndexManager, templates));
+            taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
+            taskProcessor.addIndexWriter(new LockedTasksIndexWriter(lockedTasksIndexManager, templates));
 
-        taskProcessor.recover(Arrays.asList(new BufferedLogReader(log)));
+            taskProcessor.recover(Arrays.asList(new BufferedLogReader(log)));
 
-        // replay all events before taking new requests;
-        // avoids that we mix up new API requests (that require a response)
-        // with existing API requests (that do not require a response anymore)
-        taskProcessor.fastForwardToLastEvent();
+            // replay all events before taking new requests;
+            // avoids that we mix up new API requests (that require a response)
+            // with existing API requests (that do not require a response anymore)
+            taskProcessor.fastForwardToLastEvent();
 
-        taskQueueContext.setLogConsumer(taskProcessor);
+            taskQueueContext.setLogConsumer(taskProcessor);
 
-        taskQueueContext.setLockedTasksOperator(lockTasksOperator);
+            taskQueueContext.setLockedTasksOperator(lockTasksOperator);
+        });
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
-        taskQueueContext.getLogConsumer().writeSavepoints();
-        final Transport transport = transportInjector.getValue();
-        transport.removeChannelListener(taskQueueContext.getLockedTasksOperator());
+        stopContext.run(() ->
+        {
+            taskQueueContext.getLogConsumer().writeSavepoints();
+            final Transport transport = transportInjector.getValue();
+            transport.removeChannelListener(taskQueueContext.getLockedTasksOperator());
+        });
     }
 
     @Override

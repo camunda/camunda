@@ -4,7 +4,8 @@ import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 
@@ -24,16 +25,16 @@ public class BrokerRequestWorkerContextService implements Service<AsyncRequestWo
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceStartContext)
     {
-        requestSubscription = requestBufferInjector.getValue().openSubscription(String.format("worker-%s", serviceContext.getName()));
+        requestSubscription = requestBufferInjector.getValue().openSubscription(String.format("worker-%s", serviceStartContext.getName()));
 
         ctx.setRequestBufferSubscription(requestSubscription);
         ctx.setResponsePool(responsePoolInjector.getValue());
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         requestSubscription.close();
     }

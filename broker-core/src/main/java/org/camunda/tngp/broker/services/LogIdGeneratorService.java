@@ -7,7 +7,8 @@ import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class LogIdGeneratorService implements Service<IdGenerator>
 {
@@ -16,23 +17,26 @@ public class LogIdGeneratorService implements Service<IdGenerator>
     protected IdGenerator idGenerator;
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final Log log = logInjector.getValue();
-        long lastIdUpperLimit = 0;
-
-        final LogReader logReader = new BufferedLogReader(log);
-        if (logReader.hasNext())
+        ctx.run(() ->
         {
-            lastIdUpperLimit = logReader.next().getPosition() + 1;
-        }
+            final Log log = logInjector.getValue();
+            long lastIdUpperLimit = 0;
 
-        System.out.format("%s recovered last id: %d\n", serviceContext.getName(), lastIdUpperLimit);
-        idGenerator = new PrivateIdGenerator(lastIdUpperLimit);
+            final LogReader logReader = new BufferedLogReader(log);
+            if (logReader.hasNext())
+            {
+                lastIdUpperLimit = logReader.next().getPosition() + 1;
+            }
+
+            System.out.format("%s recovered last id: %d\n", ctx.getName(), lastIdUpperLimit);
+            idGenerator = new PrivateIdGenerator(lastIdUpperLimit);
+        });
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         // nothing to do
     }

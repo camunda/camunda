@@ -12,19 +12,18 @@
  */
 package org.camunda.tngp.broker.event;
 
-import static org.camunda.tngp.broker.event.EventServiceNames.EVENT_CONTEXT_SERVICE;
-import static org.camunda.tngp.broker.log.LogServiceNames.LOG_MANAGER_SERVICE;
+import static org.camunda.tngp.broker.event.EventServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.*;
 
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class EventManagerService extends AbstractResourceContextProvider<EventContext> implements Service<EventManager>, EventManager
 {
     protected final ConfigurationManager configurationManager;
-
-    protected ServiceContext serviceContext;
 
     public EventManagerService(ConfigurationManager configurationManager)
     {
@@ -34,19 +33,17 @@ public class EventManagerService extends AbstractResourceContextProvider<EventCo
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
-        this.serviceContext = serviceContext;
-
         final EventContextService eventContextService = new EventContextService();
         serviceContext.createService(EVENT_CONTEXT_SERVICE, eventContextService)
+            .group(EVENT_CONTEXT_SERVICE_GROUP_NAME)
             .dependency(LOG_MANAGER_SERVICE, eventContextService.getLogManagerInjector())
-            .listener(this)
             .install();
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext serviceStopContext)
     {
         // nothing to do
     }

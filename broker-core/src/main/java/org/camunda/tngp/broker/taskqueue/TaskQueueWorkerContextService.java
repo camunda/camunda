@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.taskqueue;
 
 import org.camunda.tngp.broker.transport.worker.BrokerRequestWorkerContextService;
 import org.camunda.tngp.servicecontainer.Injector;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
 
 public class TaskQueueWorkerContextService extends BrokerRequestWorkerContextService
 {
@@ -17,9 +17,9 @@ public class TaskQueueWorkerContextService extends BrokerRequestWorkerContextSer
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        super.start(serviceContext);
+        super.start(ctx);
         taskQueueContext.setTaskQueueManager(taskQueueManagerInjector.getValue());
     }
 

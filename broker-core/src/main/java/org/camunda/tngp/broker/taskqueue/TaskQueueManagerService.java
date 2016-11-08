@@ -1,12 +1,8 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueContextServiceName;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueIdGeneratorName;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockedTasksIndexServiceName;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerDataFramePoolServiceName;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
+import static org.camunda.tngp.broker.log.LogServiceNames.*;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,25 +16,38 @@ import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.broker.transport.TransportServiceNames;
+import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
-import org.camunda.tngp.servicecontainer.ServiceListener;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class TaskQueueManagerService extends AbstractResourceContextProvider<TaskQueueContext> implements
     Service<TaskQueueManager>,
-    TaskQueueManager,
-    ServiceListener
+    TaskQueueManager
 {
-    protected ServiceContext serviceContext;
+    protected ServiceStartContext serviceContext;
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
 
     protected final List<LogConsumer> inputLogConsumers = new CopyOnWriteArrayList<>();
+
+    protected final ServiceGroupReference<WfRuntimeContext> wfRuntimeContextsReference = ServiceGroupReference.<WfRuntimeContext>create()
+        .onAdd((wfCtxName, wfCtx) ->
+        {
+            final WfInstanceLogProcessorService wfInstanceLogReaderService = new WfInstanceLogProcessorService();
+            serviceContext
+                .createService(TaskQueueServiceNames.workflowEventHandlerService(wfCtx.getResourceName()), wfInstanceLogReaderService)
+                .dependency(wfCtxName, wfInstanceLogReaderService.getWfRuntimeContextInjector())
+                .dependency(TaskQueueServiceNames.TASK_QUEUE_MANAGER, wfInstanceLogReaderService.getTaskQueueManagerInjector())
+                .install();
+        }).build();
+
 
     public TaskQueueManagerService(ConfigurationManager configurationManager)
     {
@@ -90,6 +99,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
 
         final TaskQueueContextService taskQueueContextService = new TaskQueueContextService(taskQueueName, taskQueueId);
         serviceContext.createService(taskQueueContextServiceName(taskQueueName), taskQueueContextService)
+            .group(TASK_QUEUE_CONTEXT_SERVICE_GROUP_NAME)
             .dependency(taskQueueTaskTypePositionIndexName, taskQueueContextService.getTaskTypeIndexServiceInjector())
             .dependency(lockedTasksIndexServiceName, taskQueueContextService.getLockedTasksIndexServiceInjector())
             .dependency(logServiceName, taskQueueContextService.getLogInjector())
@@ -100,12 +110,11 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             .dependency(workerResponsePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getResponsePoolServiceInjector())
             .dependency(workerDataFramePoolServiceName(TaskQueueComponent.WORKER_NAME), taskQueueContextService.getDataFramePoolInjector())
             .dependency(TransportServiceNames.TRANSPORT, taskQueueContextService.getTransportInjector())
-            .listener(this)
             .install();
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         this.serviceContext = serviceContext;
 
@@ -116,7 +125,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         // nothing to do
     }
@@ -137,6 +146,11 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
     public void registerInputLogConsumer(LogConsumer logConsumer)
     {
         this.inputLogConsumers.add(logConsumer);
+    }
+
+    public ServiceGroupReference<WfRuntimeContext> getWfRuntimeContextsReference()
+    {
+        return wfRuntimeContextsReference;
     }
 
 }
