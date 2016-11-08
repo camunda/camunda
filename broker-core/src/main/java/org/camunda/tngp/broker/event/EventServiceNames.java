@@ -17,6 +17,7 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 public class EventServiceNames
 {
     public static final ServiceName<EventManager> EVENT_MANAGER_SERVICE = ServiceName.newServiceName("event.manager", EventManager.class);
-    public static final ServiceName<EventContext> EVENT_CONTEXT_SERVICE = ServiceName.newServiceName("event.manager", EventContext.class);
+    public static final ServiceName<EventContext> EVENT_CONTEXT_SERVICE_GROUP_NAME = ServiceName.newServiceName("event.contexts", EventContext.class);
+    public static final ServiceName<EventContext> EVENT_CONTEXT_SERVICE = ServiceName.newServiceName("event.context", EventContext.class);
 
 }

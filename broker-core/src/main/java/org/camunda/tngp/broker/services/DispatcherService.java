@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.services;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.camunda.tngp.broker.system.threads.AgentRunnerService;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
@@ -7,7 +9,8 @@ import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class DispatcherService implements Service<Dispatcher>
 {
@@ -29,12 +32,12 @@ public class DispatcherService implements Service<Dispatcher>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
         final Counters counters = countersInjector.getValue();
 
         dispatcher = dispatcherBuilder
-                .name(serviceContext.getName())
+                .name(ctx.getName())
                 .conductorExternallyManaged()
                 .countersManager(counters.getCountersManager())
                 .countersBuffer(counters.getCountersBuffer())
@@ -46,16 +49,14 @@ public class DispatcherService implements Service<Dispatcher>
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
-        try
-        {
-            dispatcher.close();
-        }
-        finally
+        final CompletableFuture<Void> closeFuture = dispatcher.closeAsync().thenAccept((v) ->
         {
             agentRunnerInjector.getValue().removeConductorAgent(dispatcherConductor);
-        }
+        });
+
+        ctx.async(closeFuture);
     }
 
     @Override

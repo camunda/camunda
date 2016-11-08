@@ -3,7 +3,8 @@ package org.camunda.tngp.broker.services;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 
 public class DeferredResponsePoolService implements Service<DeferredResponsePool>
@@ -19,13 +20,13 @@ public class DeferredResponsePoolService implements Service<DeferredResponsePool
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
         responsePool = new DeferredResponsePool(sendBufferInector.getValue(), poolCapacity);
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         // nothing to do
     }

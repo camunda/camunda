@@ -12,14 +12,10 @@
  */
 package org.camunda.tngp.broker.event;
 
-import static org.camunda.tngp.broker.event.EventServiceNames.EVENT_MANAGER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerContextServiceName;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerServiceName;
+import static org.camunda.tngp.broker.event.EventServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
 
 import org.camunda.tngp.broker.event.request.handler.PollEventsRequestHandler;
 import org.camunda.tngp.broker.services.DeferredResponsePoolService;
@@ -48,6 +44,7 @@ public class EventComponent implements Component
 
         final EventManagerService eventManagerService = new EventManagerService(configurationManager);
         serviceContainer.createService(EVENT_MANAGER_SERVICE, eventManagerService)
+            .groupReference(EVENT_CONTEXT_SERVICE_GROUP_NAME, eventManagerService.getResourceContextsReference())
             .install();
 
         startWorkers(serviceContainer, eventManagerService);
@@ -67,11 +64,13 @@ public class EventComponent implements Component
         final AsyncRequestWorkerService workerService = new AsyncRequestWorkerService();
         final BrokerRequestWorkerContextService workerContextService = new BrokerRequestWorkerContextService(workerContext);
 
-        final ServiceName<DeferredResponsePool> responsePoolServiceName = serviceContainer.createService(workerResponsePoolServiceName(WORKER_NAME), responsePoolService)
+        final ServiceName<DeferredResponsePool> responsePoolServiceName = workerResponsePoolServiceName(WORKER_NAME);
+        serviceContainer.createService(responsePoolServiceName, responsePoolService)
             .dependency(TRANSPORT_SEND_BUFFER, responsePoolService.getSendBufferInector())
             .install();
 
-        final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = serviceContainer.createService(workerContextServiceName(WORKER_NAME), workerContextService)
+        final ServiceName<AsyncRequestWorkerContext> workerContextServiceName = workerContextServiceName(WORKER_NAME);
+        serviceContainer.createService(workerContextServiceName, workerContextService)
                 .dependency(responsePoolServiceName, workerContextService.getResponsePoolInjector())
                 .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), workerContextService.getRequestBufferInjector())
                 .install();

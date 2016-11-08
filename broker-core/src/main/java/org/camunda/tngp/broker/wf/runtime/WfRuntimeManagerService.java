@@ -1,13 +1,8 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionCacheServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionIdIndexServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionKeyIndexServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfInstanceIdGeneratorServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeContextServiceName;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeWorkflowEventIndexServiceName;
+import static org.camunda.tngp.broker.log.LogServiceNames.*;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.*;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -19,6 +14,8 @@ import org.camunda.tngp.broker.services.LogIdGeneratorService;
 import org.camunda.tngp.broker.services.Long2LongIndexManagerService;
 import org.camunda.tngp.broker.system.AbstractResourceContextProvider;
 import org.camunda.tngp.broker.system.ConfigurationManager;
+import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
+import org.camunda.tngp.broker.wf.TaskQueueLogProcessorService;
 import org.camunda.tngp.broker.wf.WfComponent;
 import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
@@ -26,8 +23,10 @@ import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class WfRuntimeManagerService
     extends
@@ -40,9 +39,22 @@ public class WfRuntimeManagerService
     protected final ConfigurationManager configurationManager;
     protected final List<WfRuntimeCfg> runtimeCfgs;
 
-    protected ServiceContext serviceContext;
+    protected ServiceStartContext serviceContext;
 
     protected final List<LogConsumer> inputLogConsumers = new CopyOnWriteArrayList<>();
+
+    protected final ServiceGroupReference<TaskQueueContext> taskQueueContextsGroupReference = ServiceGroupReference.<TaskQueueContext>create()
+        .onAdd((taskQName, taskQ) ->
+        {
+            final TaskQueueLogProcessorService taskQueueLogReaderService = new TaskQueueLogProcessorService();
+
+            serviceContext
+                .createService(WfRuntimeServiceNames.taskEventHandlerService(taskQ.getResourceName()), taskQueueLogReaderService)
+                .dependency(taskQName, taskQueueLogReaderService.getTaskQueueContext())
+                .dependency(WfRuntimeServiceNames.WF_RUNTIME_MANAGER_NAME, taskQueueLogReaderService.getWfRuntimeManagerInjector())
+                .install();
+
+        }).build();
 
     public WfRuntimeManagerService(ConfigurationManager configurationManager)
     {
@@ -114,6 +126,7 @@ public class WfRuntimeManagerService
 
         final WfRuntimeContextService wfRuntimeContextService = new WfRuntimeContextService(wfRuntimeId, wfRuntimeName);
         serviceContext.createService(wfRuntimeContextServiceName(wfRuntimeName), wfRuntimeContextService)
+            .group(WF_RUNTIME_CONTEXT_GROUP_NAME)
             .dependency(wfInstanceLogServiceName, wfRuntimeContextService.getLogInjector())
             .dependency(wfInstanceIdGeneratorServiceName, wfRuntimeContextService.getIdGeneratorInjector())
             .dependency(wfDefinitionCacheServiceName, wfRuntimeContextService.getWfDefinitionChacheInjector())
@@ -121,12 +134,11 @@ public class WfRuntimeManagerService
             .dependency(workerResponsePoolServiceName(WfComponent.WORKER_NAME), wfRuntimeContextService.getResponsePoolServiceInjector())
             .dependency(wfDefinitionIdIndexServiceName, wfRuntimeContextService.getWfDefinitionIdIndexInjector())
             .dependency(wfDefinitionKeyIndexServiceName, wfRuntimeContextService.getWfDefinitionKeyIndexInjector())
-            .listener(this)
             .install();
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         this.serviceContext = serviceContext;
         for (WfRuntimeCfg wfRuntimeCfg : runtimeCfgs)
@@ -136,7 +148,7 @@ public class WfRuntimeManagerService
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
 
     }
@@ -157,6 +169,11 @@ public class WfRuntimeManagerService
     public List<LogConsumer> getInputLogConsumers()
     {
         return inputLogConsumers;
+    }
+
+    public ServiceGroupReference<TaskQueueContext> getTaskQueueContextsGroupReference()
+    {
+        return taskQueueContextsGroupReference;
     }
 
 }

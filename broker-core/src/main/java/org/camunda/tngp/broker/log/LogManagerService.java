@@ -7,31 +7,25 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
-import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.log.cfg.LogCfg;
 import org.camunda.tngp.broker.log.cfg.LogComponentCfg;
 import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.FsLogBuilder;
 import org.camunda.tngp.log.Logs;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
-import org.camunda.tngp.servicecontainer.ServiceListener;
-import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class LogManagerService implements Service<LogManager>, LogManager
 {
-    protected ServiceContext serviceContext;
+    protected ServiceStartContext serviceContext;
     protected LogComponentCfg logComponentConfig;
     protected List<LogCfg> logCfgs;
-
-    protected final Map<Integer, Log> logsById = new Int2ObjectHashMap<>();
 
     public LogManagerService(ConfigurationManager configurationManager)
     {
@@ -101,32 +95,13 @@ public class LogManagerService implements Service<LogManager>, LogManager
 
         final LogService logService = new LogService(logBuilder);
         serviceContext.createService(logServiceName(logName), logService)
+            .group(LOG_SERVICE_GROUP)
             .dependency(LOG_AGENT_CONTEXT_SERVICE, logService.getLogAgentContext())
-            .listener(new ServiceListener()
-            {
-
-                @Override
-                public <S> void onServiceStopping(ServiceName<S> name, Service<S> service)
-                {
-                    logsById.remove(logId);
-                }
-
-                @Override
-                public <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
-                {
-                    logsById.put(logId, logService.get());
-                }
-            })
             .install();
     }
 
-    public Log getLogById(int id)
-    {
-        return logsById.get(id);
-    }
-
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         this.serviceContext = serviceContext;
 
@@ -148,14 +123,17 @@ public class LogManagerService implements Service<LogManager>, LogManager
             .dependency(AGENT_RUNNER_SERVICE, logAgentContextService.getAgentRunnerServiceInjector())
             .install();
 
-        for (LogCfg logCfg : logCfgs)
+        serviceContext.run(() ->
         {
-            createLog(logCfg);
-        }
+            for (LogCfg logCfg : logCfgs)
+            {
+                createLog(logCfg);
+            }
+        });
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         // nothing to do
     }

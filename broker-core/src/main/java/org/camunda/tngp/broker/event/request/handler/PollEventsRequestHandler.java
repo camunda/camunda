@@ -75,7 +75,7 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
             return writeError(response, "topic id must be greater or equal to 0");
         }
 
-        final Log log = context.getLogManager().getLogById(topicId);
+        final Log log = context.getLogById(topicId);
         if (log == null)
         {
             return writeError(response, "found no topic with id: " + topicId);

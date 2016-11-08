@@ -17,24 +17,14 @@ public class Broker implements AutoCloseable
 
     public Broker(String configFileLocation)
     {
-        System.out.println("Starting broker");
-
         brokerContext = new SystemContext(configFileLocation);
-
         start();
-
-        System.out.println("Broker started.");
     }
 
     public Broker(InputStream configStream)
     {
-        System.out.println("Starting broker");
-
         brokerContext = new SystemContext(configStream);
-
         start();
-
-        System.out.println("Broker started.");
     }
 
     protected void start()
@@ -53,7 +43,6 @@ public class Broker implements AutoCloseable
     @Override
     public void close()
     {
-        System.out.println("Closing broker");
         brokerContext.close();
         System.out.println("Broker closed.");
     }

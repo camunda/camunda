@@ -1,13 +1,14 @@
 package org.camunda.tngp.broker.log;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.log.FsLogBuilder;
 import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.impl.agent.LogAgentContext;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class LogService implements Service<Log>
 {
@@ -23,25 +24,20 @@ public class LogService implements Service<Log>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
-        try
-        {
-            log = logBuilder
-                    .logAgentContext(logAgentContext.getValue())
-                    .build()
-                    .get();
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+        final CompletableFuture<Void> startFuture = ((CompletableFuture<Log>) logBuilder
+            .logAgentContext(logAgentContext.getValue())
+            .build())
+            .thenAccept((log) -> this.log = log);
+
+        serviceContext.async(startFuture);
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
-        log.close();
+        stopContext.async((CompletableFuture<?>) log.closeAsync());
     }
 
     @Override

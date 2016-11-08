@@ -3,7 +3,8 @@ package org.camunda.tngp.broker.transport.worker;
 import org.camunda.tngp.broker.system.threads.AgentRunnerService;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorker;
 import org.camunda.tngp.transport.requestresponse.server.AsyncRequestWorkerContext;
 
@@ -15,7 +16,7 @@ public class AsyncRequestWorkerService implements Service<AsyncRequestWorker>
     protected AsyncRequestWorker worker;
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         final AsyncRequestWorkerContext workerContext = workerContextInjector.getValue();
         final AgentRunnerService agentRunnerService = agentRunnerInjector.getValue();
@@ -31,7 +32,7 @@ public class AsyncRequestWorkerService implements Service<AsyncRequestWorker>
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         agentRunnerInjector.getValue().removeWorkerAgent(worker);
     }

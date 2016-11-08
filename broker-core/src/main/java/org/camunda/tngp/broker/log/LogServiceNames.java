@@ -10,6 +10,7 @@ public class LogServiceNames
     public static final ServiceName<LogManager> LOG_MANAGER_SERVICE = ServiceName.newServiceName("log.manager", LogManager.class);
     public static final ServiceName<Dispatcher> LOG_WRITE_BUFFER_SERVICE = ServiceName.newServiceName("log.writebuffer", Dispatcher.class);
     public static final ServiceName<LogAgentContext> LOG_AGENT_CONTEXT_SERVICE = ServiceName.newServiceName("log.agent-context", LogAgentContext.class);
+    public static final ServiceName<Log> LOG_SERVICE_GROUP = ServiceName.newServiceName("log.service", Log.class);
 
     public static final ServiceName<Log> logServiceName(String logName)
     {

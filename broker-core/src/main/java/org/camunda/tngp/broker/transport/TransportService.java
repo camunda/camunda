@@ -4,7 +4,8 @@ import org.camunda.tngp.broker.system.threads.AgentRunnerService;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder;
 import org.camunda.tngp.transport.Transports;
@@ -23,7 +24,7 @@ public class TransportService implements Service<Transport>
     protected Sender sender;
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         final TransportBuilder transportBuilder = Transports.createTransport(serviceContext.getName());
 
@@ -43,7 +44,7 @@ public class TransportService implements Service<Transport>
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         final AgentRunnerService agentRunnerService = agentRunnerInjector.getValue();
         agentRunnerService.removeConductorAgent(transportConductor);

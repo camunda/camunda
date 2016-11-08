@@ -10,6 +10,7 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 public class TaskQueueServiceNames
 {
     public static final ServiceName<TaskQueueManager> TASK_QUEUE_MANAGER = ServiceName.newServiceName("taskqueue.manager", TaskQueueManager.class);
+    public static final ServiceName<TaskQueueContext> TASK_QUEUE_CONTEXT_SERVICE_GROUP_NAME = ServiceName.newServiceName("taskqueue.context", TaskQueueContext.class);
 
     public static ServiceName<TaskQueueContext> taskQueueContextServiceName(String taskQueueName)
     {

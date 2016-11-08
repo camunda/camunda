@@ -13,7 +13,8 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class WfInstanceLogProcessorService implements Service<LogConsumer>
 {
@@ -24,7 +25,7 @@ public class WfInstanceLogProcessorService implements Service<LogConsumer>
     protected final Injector<WfRuntimeContext> wfRuntimeContextInjector = new Injector<>();
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         final WfRuntimeContext wfRuntimeContext = wfRuntimeContextInjector.getValue();
         final TaskQueueManager taskQueueManager = taskQueueManagerInjector.getValue();
@@ -53,7 +54,7 @@ public class WfInstanceLogProcessorService implements Service<LogConsumer>
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         // TODO: deregister consumer here
         logConsumer.writeSavepoints();
@@ -65,12 +66,12 @@ public class WfInstanceLogProcessorService implements Service<LogConsumer>
         return logConsumer;
     }
 
-    public Injector<TaskQueueManager> getTaskQueueManager()
+    public Injector<TaskQueueManager> getTaskQueueManagerInjector()
     {
         return taskQueueManagerInjector;
     }
 
-    public Injector<WfRuntimeContext> getWfRuntimeContext()
+    public Injector<WfRuntimeContext> getWfRuntimeContextInjector()
     {
         return wfRuntimeContextInjector;
     }

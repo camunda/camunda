@@ -2,10 +2,10 @@ package org.camunda.tngp.broker.services;
 
 import java.util.function.Consumer;
 
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
-
 import org.agrona.collections.Long2ObjectCache;
+import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class Long2ObjectChacheService<V> implements Service<Long2ObjectCache<V>>
 {
@@ -26,13 +26,13 @@ public class Long2ObjectChacheService<V> implements Service<Long2ObjectCache<V>>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         theCache = new Long2ObjectCache<>(numSets, setSize, evictionConsumer);
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         // nothing to do
     }

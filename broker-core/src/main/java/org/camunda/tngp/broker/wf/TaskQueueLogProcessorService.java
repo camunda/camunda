@@ -15,7 +15,8 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class TaskQueueLogProcessorService implements Service<LogConsumer>
 {
@@ -30,41 +31,44 @@ public class TaskQueueLogProcessorService implements Service<LogConsumer>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
-        final WfRuntimeManager wfRuntimeManager = wfRuntimeManagerInjector.getValue();
-
-        final TaskQueueContext taskQueueContext = taskQueueContextInjector.getValue();
-        final Log inputLog = taskQueueContext.getLog();
-
-        final Templates taskQueueLogTemplates = Templates.taskQueueLogTemplates();
-        logConsumer = new LogConsumer(
-                inputLog.getId(),
-                new BufferedLogReader(inputLog),
-                taskQueueLogTemplates,
-                new LogWritersImpl(null, wfRuntimeManager));
-
-        logConsumer.addHandler(Templates.TASK_INSTANCE, new InputTaskHandler());
-
-        final List<LogReader> logReaders = new ArrayList<>();
-        for (WfRuntimeContext resourceContext : wfRuntimeManager.getContexts())
+        serviceContext.run(() ->
         {
-            logReaders.add(new BufferedLogReader(resourceContext.getLog()));
-        }
+            final WfRuntimeManager wfRuntimeManager = wfRuntimeManagerInjector.getValue();
 
-        logConsumer.recover(logReaders);
-        logConsumer.fastForwardToLastEvent();
+            final TaskQueueContext taskQueueContext = taskQueueContextInjector.getValue();
+            final Log inputLog = taskQueueContext.getLog();
 
-        wfRuntimeManager.registerInputLogConsumer(logConsumer);
+            final Templates taskQueueLogTemplates = Templates.taskQueueLogTemplates();
+            logConsumer = new LogConsumer(
+                    inputLog.getId(),
+                    new BufferedLogReader(inputLog),
+                    taskQueueLogTemplates,
+                    new LogWritersImpl(null, wfRuntimeManager));
+
+            logConsumer.addHandler(Templates.TASK_INSTANCE, new InputTaskHandler());
+
+            final List<LogReader> logReaders = new ArrayList<>();
+            for (WfRuntimeContext resourceContext : wfRuntimeManager.getContexts())
+            {
+                logReaders.add(new BufferedLogReader(resourceContext.getLog()));
+            }
+
+            logConsumer.recover(logReaders);
+            logConsumer.fastForwardToLastEvent();
+
+            wfRuntimeManager.registerInputLogConsumer(logConsumer);
+        });
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         logConsumer.writeSavepoints();
     }
 
-    public Injector<WfRuntimeManager> getWfRuntimeManager()
+    public Injector<WfRuntimeManager> getWfRuntimeManagerInjector()
     {
         return wfRuntimeManagerInjector;
     }
