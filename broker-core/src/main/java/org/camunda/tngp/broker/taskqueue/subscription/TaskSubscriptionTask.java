@@ -20,7 +20,7 @@ public class TaskSubscriptionTask implements WorkerTask<TaskQueueWorkerContext>
 
             if (!taskQueueContext.getLockedTasksOperator().hasPendingTasks())
             {
-                workCount += taskQueueContext.getLockedTasksOperator().lockTasks();
+                workCount += taskQueueContext.getLockedTasksOperator().doWork();
             }
         }
 
