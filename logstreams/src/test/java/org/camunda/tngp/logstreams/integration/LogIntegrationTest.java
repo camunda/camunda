@@ -64,7 +64,7 @@ public class LogIntegrationTest
 
         for (int j = 0; j < 50; j++)
         {
-            final int workPerIteration = 20000;
+            final int workPerIteration = 20_000;
 
             for (int i = 0; i < workPerIteration; i++)
             {

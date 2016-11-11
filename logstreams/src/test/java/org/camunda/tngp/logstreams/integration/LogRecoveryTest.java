@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -24,16 +26,28 @@ import org.junit.rules.TemporaryFolder;
 
 public class LogRecoveryTest
 {
+    // ~ overall message size 176 MB
     private static final int MSG_SIZE = 911;
+    private static final int WORK_COUNT = 200_000;
+
+    private static final int LOG_SEGMENT_SIZE = 1024 * 1024 * 16;
+    private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 4;
+
+    private static final String LOG_NAME = "foo";
+    private static final int LOG_ID = 0;
 
     @Rule
     public TemporaryFolder temFolder = new TemporaryFolder();
+
+    private String logPath;
 
     private AgentRunnerService agentRunnerService;
 
     @Before
     public void setup()
     {
+        logPath = temFolder.getRoot().getAbsolutePath();
+
         agentRunnerService = new SharedAgentRunnerService("test-%s", 1, new SimpleAgentRunnerFactory());
     }
 
@@ -44,32 +58,124 @@ public class LogRecoveryTest
     }
 
     @Test
-    public void shouldRecover() throws InterruptedException, ExecutionException
+    public void shouldRecoverIndexFromLogStorage() throws InterruptedException, ExecutionException
     {
-        final String logPath = temFolder.getRoot().getAbsolutePath();
-
-        // TODO make sure to recover from a snapshot
-        final LogStream log1 = LogStreams.createFsLogStream("foo", 0)
+        final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
                 .logRootPath(logPath)
                 .deleteOnClose(false)
-                .logSegmentSize(1024 * 1024 * 8)
+                .logSegmentSize(LOG_SEGMENT_SIZE)
+                .indexBlockSize(INDEX_BLOCK_SIZE)
+                .snapshotPolicy(pos -> false)
                 .agentRunnerService(agentRunnerService)
                 .build();
 
-        log1.open();
+        log.open();
 
-        final EventLogger writer = new EventLogger(log1);
+        writeLogEvents(log, WORK_COUNT, 0);
+        waitUntilFullyWritten(log, WORK_COUNT);
+
+        log.close();
+
+        readLogAndAssertRecoveredIndex(WORK_COUNT);
+    }
+
+    @Test
+    public void shouldRecoverIndexFromSnapshot() throws InterruptedException, ExecutionException
+    {
+        final AtomicBoolean isLastLogEntry = new AtomicBoolean(false);
+
+        final LogStream log = LogStreams.createFsLogStream(LOG_NAME, 0)
+                .logRootPath(logPath)
+                .deleteOnClose(false)
+                .logSegmentSize(LOG_SEGMENT_SIZE)
+                .indexBlockSize(INDEX_BLOCK_SIZE)
+                .snapshotPolicy(pos -> isLastLogEntry.getAndSet(false))
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        log.open();
+
+        writeLogEvents(log, WORK_COUNT, 0);
+        waitUntilFullyWritten(log, WORK_COUNT);
+
+        isLastLogEntry.set(true);
+
+        // write one more event to create the snapshot
+        writeLogEvents(log, 1, WORK_COUNT);
+        waitUntilFullyWritten(log, WORK_COUNT + 1);
+
+        log.close();
+
+        readLogAndAssertRecoveredIndex(WORK_COUNT + 1);
+    }
+
+    @Test
+    public void shouldRecoverIndexFromSnapshotAndLogStorage() throws InterruptedException, ExecutionException
+    {
+        final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
+
+        final LogStream log = LogStreams.createFsLogStream(LOG_NAME, 0)
+                .logRootPath(logPath)
+                .deleteOnClose(false)
+                .logSegmentSize(LOG_SEGMENT_SIZE)
+                .indexBlockSize(INDEX_BLOCK_SIZE)
+                .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        log.open();
+
+        writeLogEvents(log, WORK_COUNT / 2, 0);
+        waitUntilFullyWritten(log, WORK_COUNT / 2);
+
+        isSnapshotPoint.set(true);
+
+        writeLogEvents(log, WORK_COUNT / 2, WORK_COUNT / 2);
+        waitUntilFullyWritten(log, WORK_COUNT);
+
+        log.close();
+
+        readLogAndAssertRecoveredIndex(WORK_COUNT);
+    }
+
+    @Test
+    public void shouldRecoverIndexFromPeriodicallyCreatedSnapshotAndLogStorage() throws InterruptedException, ExecutionException
+    {
+        final int snapshotInterval = 10;
+
+        final AtomicInteger snapshotCount = new AtomicInteger(0);
+
+        final LogStream log = LogStreams.createFsLogStream(LOG_NAME, 0)
+                .logRootPath(logPath)
+                .deleteOnClose(false)
+                .logSegmentSize(LOG_SEGMENT_SIZE)
+                .indexBlockSize(INDEX_BLOCK_SIZE)
+                .snapshotPolicy(pos -> (snapshotCount.incrementAndGet() % snapshotInterval) == 0)
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        log.open();
+
+        writeLogEvents(log, WORK_COUNT, 0);
+        waitUntilFullyWritten(log, WORK_COUNT);
+
+        log.close();
+
+        readLogAndAssertRecoveredIndex(WORK_COUNT);
+    }
+
+    protected void writeLogEvents(final LogStream log, final int workCount, final int offset)
+    {
+        final EventLogger writer = new EventLogger(log);
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
 
-        final int workCount = 200_000;
-
         for (int i = 0; i < workCount; i++)
         {
-            msg.putInt(0, i);
+            msg.putInt(0, offset + i);
 
             writer
-                .key(i)
+                .key(offset + i)
                 .value(msg);
 
             while (writer.tryWrite() < 0)
@@ -77,9 +183,11 @@ public class LogRecoveryTest
                 // spin
             }
         }
+    }
 
-        // wait until fully written
-        final BufferedLogStreamReader log1Reader = new BufferedLogStreamReader(log1);
+    protected void waitUntilFullyWritten(final LogStream log, final int workCount)
+    {
+        final BufferedLogStreamReader log1Reader = new BufferedLogStreamReader(log);
 
         long entryKey = 0;
         while (entryKey < workCount - 1)
@@ -92,19 +200,20 @@ public class LogRecoveryTest
                 entryKey = nextEntry.getLongKey();
             }
         }
+    }
 
-        log1.close();
-
-        final LogStream log2 = LogStreams.createFsLogStream("foo", 0)
+    protected void readLogAndAssertRecoveredIndex(final int workCount)
+    {
+        final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
-                .logSegmentSize(1024 * 1024 * 8)
+                .logSegmentSize(LOG_SEGMENT_SIZE)
                 .agentRunnerService(agentRunnerService)
                 .build();
 
-        log2.open();
+        newLog.open();
 
-        final LogStreamReader logReader = new BufferedLogStreamReader(log2);
+        final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
         logReader.seekToFirstEvent();
 
         int count = 0;
@@ -112,12 +221,6 @@ public class LogRecoveryTest
 
         while (count < workCount)
         {
-            if (count % 10 == 0)
-            {
-                // TODO make sure index is used
-                // logReader.seek(lastPosition + 1);
-            }
-
             if (logReader.hasNext())
             {
                 final LoggedEvent entry = logReader.next();
@@ -134,12 +237,17 @@ public class LogRecoveryTest
 
                 count++;
             }
+
+            if (count % (workCount / 10) == 0)
+            {
+                logReader.seek(lastPosition + 1);
+            }
         }
 
         assertThat(count).isEqualTo(workCount);
         assertThat(logReader.hasNext()).isFalse();
 
-        log2.close();
+        newLog.close();
     }
 
 }

@@ -193,6 +193,7 @@ public class FsLogStorage implements LogStorage
         state = STATE_OPENED;
     }
 
+    @Override
     public void close()
     {
         ensureOpenedStorage();
@@ -213,6 +214,15 @@ public class FsLogStorage implements LogStorage
         }
 
         state = STATE_CLOSED;
+    }
+
+    @Override
+    public void flush() throws Exception
+    {
+        ensureOpenedStorage();
+
+        // TODO flush only dirty segments
+        logSegments.flushAll();
     }
 
     public FsLogStorageConfiguration getConfig()

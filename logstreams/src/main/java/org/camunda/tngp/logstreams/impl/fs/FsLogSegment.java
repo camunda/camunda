@@ -207,20 +207,17 @@ public class FsLogSegment
             }
         }
 
-        // TODO: make configurable
-//        try
-//        {
-//            fileChannel.force(false);
-//        }
-//        catch (IOException e)
-//        {
-//            e.printStackTrace();
-//            return -1;
-//        }
-
         setSizeOrdered(newSize);
 
         return currentSize;
+    }
+
+    public void flush() throws IOException
+    {
+        if (fileChannel.isOpen())
+        {
+            fileChannel.force(false);
+        }
     }
 
     /**

@@ -78,7 +78,7 @@ public class FsSnapshotWriter implements SnapshotWriter
 
             if (lastSnapshot != null)
             {
-                // TODO some how the data file can't be deleted because of another process
+                // TODO some how the data file can't be deleted (on windows)
                 lastSnapshot.getDataFile().delete();
                 lastSnapshot.getChecksumFile().delete();
             }

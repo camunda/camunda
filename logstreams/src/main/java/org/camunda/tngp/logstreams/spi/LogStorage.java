@@ -41,7 +41,7 @@ public interface LogStorage
      * Writes a block containing one or multiple log entries in the storage and returns the address at which
      * the block has been written.
      *
-     * Storage implementations must guarantee atomicity. When this method returns, either all the bytes must
+     * Storage implementations must guarantee eventually atomicity. When this method returns, either all the bytes must
      * be written or none at all.
      *
      * The caller of this method must guarantee that the provided block contains unfragmented log entries.
@@ -94,4 +94,14 @@ public interface LogStorage
      * empty.
      */
     long getFirstBlockAddress();
+
+    /**
+     * Flushes all appended blocks to ensure that all blocks are written completely.
+     * Note that a storage implementation may do nothing if {@link #append(ByteBuffer)} guarantees that
+     * all blocks are written immediately.
+     *
+     * @throws Exception if fails to flush all blocks
+     */
+    void flush() throws Exception;
+
 }

@@ -25,15 +25,21 @@ public class FsLogStreamBuilder
 {
     protected final String name;
     protected final int id;
-    protected int writeBufferSize = 1024  * 1024 * 16;
+
     protected String logRootPath;
     protected String logDirectory;
-    protected int logSegmentSize = 1024 * 1024 * 128;
+
     protected int initialLogSegmentId = 0;
     protected boolean deleteOnClose;
+
     protected AgentRunnerService agentRunnerService;
     protected CountersManager countersManager;
     protected SnapshotPolicy snapshotPolicy;
+
+    protected int logSegmentSize = 1024 * 1024 * 128;
+    protected int writeBufferSize = 1024  * 1024 * 16;
+    protected int maxAppendBlockSize = 1024 * 1024 * 4;
+    protected int indexBlockSize = 1024 * 1024 * 4;
 
     protected Dispatcher writeBuffer;
 
@@ -97,6 +103,18 @@ public class FsLogStreamBuilder
         return this;
     }
 
+    public FsLogStreamBuilder maxAppendBlockSize(int maxAppendBlockSize)
+    {
+        this.maxAppendBlockSize = maxAppendBlockSize;
+        return this;
+    }
+
+    public FsLogStreamBuilder indexBlockSize(int indexBlockSize)
+    {
+        this.indexBlockSize = indexBlockSize;
+        return this;
+    }
+
     public LogStream build()
     {
         final StreamContext ctx = new StreamContext();
@@ -124,6 +142,9 @@ public class FsLogStreamBuilder
 
     protected void initController(StreamContext ctx)
     {
+        ctx.setMaxAppendBlockSize(maxAppendBlockSize);
+        ctx.setIndexBlockSize(indexBlockSize);
+
         final LogStreamController logStreamController = new LogStreamController(name, ctx);
 
         ctx.setLogStreamController(logStreamController);
@@ -199,10 +220,9 @@ public class FsLogStreamBuilder
     {
         if (snapshotPolicy == null)
         {
-            final SnapshotPolicy snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
-
-            ctx.setSnapshotPolicy(snapshotPolicy);
+            snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
         }
+        ctx.setSnapshotPolicy(snapshotPolicy);
     }
 
     protected void initSnapshotStorage(StreamContext ctx)

@@ -184,24 +184,29 @@ public class LogBlockIndex implements SnapshotSupport
         }
     }
 
-    public void recover(LogStorage logStorage)
+    public void recover(LogStorage logStorage, int indexBlockSize)
     {
-        recover(logStorage, logStorage.getFirstBlockAddress());
+        recover(logStorage, 0, indexBlockSize);
     }
 
-    public void recover(LogStorage logStorage, long startAddress)
+    public void recover(LogStorage logStorage, long startPosition, int indexBlockSize)
     {
-        final ByteBuffer readBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 4);
+        final ByteBuffer readBuffer = ByteBuffer.allocateDirect(indexBlockSize);
         final UnsafeBuffer readBufferView = new UnsafeBuffer(readBuffer);
 
         final LoggedEventImpl logEntry = new LoggedEventImpl();
-        logEntry.wrap(readBufferView, 0);
 
-        long readAddress = startAddress;
+        int currentBlockSize = 0;
+
+        long readAddress = logStorage.getFirstBlockAddress();
+        if (startPosition > 0)
+        {
+            // start reading from address of given start position
+            readAddress = Math.max(lookupBlockAddress(startPosition), readAddress);
+        }
 
         while (readAddress > 0)
         {
-            readBuffer.clear();
             long nextReadAddress = logStorage.read(readBuffer, readAddress);
 
             if (nextReadAddress > 0)
@@ -209,10 +214,17 @@ public class LogBlockIndex implements SnapshotSupport
                 int available = readBuffer.position();
                 int offset = 0;
 
-                while ((available - offset) > 0)
+                currentBlockSize += available;
+
+                // read all fragments of the block
+                while (offset < available)
                 {
-                    if ((available - offset) < HEADER_LENGTH)
+                    final int read = available - offset;
+
+                    if (read < HEADER_LENGTH)
                     {
+                        // end of block - read a partly header
+
                         // read remainder of header
                         readBuffer.limit(available);
                         readBuffer.position(offset);
@@ -221,49 +233,59 @@ public class LogBlockIndex implements SnapshotSupport
 
                         nextReadAddress = logStorage.read(readBuffer, nextReadAddress);
 
+                        // continue reading the rest of the fragment
                         offset = 0;
                         available = HEADER_LENGTH;
                     }
 
+                    // read the log entry
                     logEntry.wrap(readBufferView, offset);
 
                     final int fragmentLength = logEntry.getFragmentLength();
 
-                    if ((available - offset) >= fragmentLength)
+                    if (read >= fragmentLength)
                     {
-                        if (offset == 0)
-                        {
-                            final long position = logEntry.getPosition();
-                            addBlock(position, readAddress);
-                        }
+                        final long position = logEntry.getPosition();
 
-                        offset += fragmentLength;
+                        // create index of completely read log entry
+                        // - if index size is reached
+                        if (currentBlockSize >= indexBlockSize && position > startPosition)
+                        {
+                            addBlock(position, readAddress);
+
+                            currentBlockSize = 0;
+                        }
                     }
                     else
                     {
+                        // end of block - read a partly log entry or only the header
+
                         // read the remainder of the fragment
                         readBuffer.position(offset);
                         readBuffer.limit(available);
                         readBuffer.compact();
+
                         readBuffer.limit(fragmentLength);
                         nextReadAddress = logStorage.read(readBuffer, nextReadAddress);
+
+                        // reset the buffer
                         readBufferView.setMemory(0, readBuffer.capacity(), (byte) 0);
-                        available = 0;
-                        offset = 0;
                     }
+
+                    // continue with next fragment
+                    offset += fragmentLength;
                 }
             }
+            // continue with next block
             readAddress = nextReadAddress;
+            readBuffer.clear();
         }
-
     }
 
     @Override
     public void writeSnapshot(OutputStream outputStream) throws Exception
     {
-        final byte[] byteArray = indexBuffer.byteArray();
-
-        outputStream.write(byteArray);
+        StreamUtil.write(indexBuffer, outputStream);
     }
 
     @Override

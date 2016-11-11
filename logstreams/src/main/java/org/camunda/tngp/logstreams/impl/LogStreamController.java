@@ -58,8 +58,8 @@ public class LogStreamController implements Agent
 
     protected Subscription writeBufferSubscription;
 
-    protected final int maxAppendSize = 1024 * 1024 * 4;
-    protected final int indexBlockSize = 1024 * 1024 * 64;
+    protected final int maxAppendBlockSize;
+    protected final int indexBlockSize;
 
     protected CompletableFuture<Void> closeFuture;
     protected CompletableFuture<Void> openFuture;
@@ -72,7 +72,10 @@ public class LogStreamController implements Agent
         this.logStorage = streamContext.getLogStorage();
         this.snapshotStorage = streamContext.getSnapshotStorage();
         this.snapshotPolicy = streamContext.getSnapshotPolicy();
-        agentRunnerService = streamContext.getAgentRunnerService();
+        this.agentRunnerService = streamContext.getAgentRunnerService();
+
+        this.maxAppendBlockSize = streamContext.getMaxAppendBlockSize();
+        this.indexBlockSize = streamContext.getIndexBlockSize();
     }
 
     @Override
@@ -141,11 +144,11 @@ public class LogStreamController implements Agent
                 lastSnapshot.recoverFromSnapshot(blockIndex);
                 lastSnapshot.validateAndClose();
 
-                blockIndex.recover(logStorage, lastSnapshot.getPosition());
+                blockIndex.recover(logStorage, lastSnapshot.getPosition(), indexBlockSize);
             }
             else
             {
-                blockIndex.recover(logStorage);
+                blockIndex.recover(logStorage, indexBlockSize);
             }
         }
 
@@ -164,7 +167,7 @@ public class LogStreamController implements Agent
         @Override
         public int doWork()
         {
-            final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendSize, true);
+            final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
 
             if (bytesAvailable > 0)
             {
@@ -173,16 +176,17 @@ public class LogStreamController implements Agent
 
                 final long postion = buffer.getLong(positionOffset(messageOffset(0)));
 
-                final long opResult = logStorage.append(nioBuffer);
+                final long address = logStorage.append(nioBuffer);
 
-                if (opResult >= 0)
+                if (address >= 0)
                 {
-                    onBlockWritten(postion, opResult, blockPeek.getBlockLength());
+                    onBlockWritten(postion, address, blockPeek.getBlockLength());
                     blockPeek.markCompleted();
 
                     if (snapshotPolicy.apply(postion))
                     {
                         state = snapshottingState;
+                        snapshottingState.lastEventLogPosition = postion;
                     }
                 }
                 else
@@ -256,7 +260,7 @@ public class LogStreamController implements Agent
         @Override
         public int doWork()
         {
-            final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendSize, true);
+            final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
 
             if (available > 0)
             {
@@ -310,16 +314,16 @@ public class LogStreamController implements Agent
 
     class SnapshottingState implements LogStreamControllerState
     {
+        long lastEventLogPosition;
+
         @Override
         public int doWork()
         {
-            final long logPosition = writeBufferSubscription.getPosition();
-
             SnapshotWriter snapshotWriter = null;
 
             try
             {
-                snapshotWriter = snapshotStorage.createSnapshot(name, logPosition);
+                snapshotWriter = snapshotStorage.createSnapshot(name, lastEventLogPosition);
 
                 snapshotWriter.writeSnapshot(blockIndex);
                 snapshotWriter.commit();
@@ -328,12 +332,14 @@ public class LogStreamController implements Agent
             }
             catch (Exception e)
             {
+                e.printStackTrace();
+
                 if (snapshotWriter != null)
                 {
                     snapshotWriter.abort();
                 }
 
-                gotoFailingState(logPosition);
+                gotoFailingState(lastEventLogPosition);
             }
 
             return 1;

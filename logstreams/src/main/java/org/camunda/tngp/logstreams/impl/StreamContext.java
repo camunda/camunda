@@ -26,6 +26,10 @@ public class StreamContext
 
     protected AgentRunnerService agentRunnerService;
 
+    protected int maxAppendBlockSize;
+
+    protected int indexBlockSize;
+
     public int getLogId()
     {
         return logId;
@@ -114,5 +118,25 @@ public class StreamContext
     public void setSnapshotPolicy(SnapshotPolicy snapshotPolicy)
     {
         this.snapshotPolicy = snapshotPolicy;
+    }
+
+    public int getMaxAppendBlockSize()
+    {
+        return maxAppendBlockSize;
+    }
+
+    public void setMaxAppendBlockSize(int maxAppendBlockSize)
+    {
+        this.maxAppendBlockSize = maxAppendBlockSize;
+    }
+
+    public int getIndexBlockSize()
+    {
+        return indexBlockSize;
+    }
+
+    public void setIndexBlockSize(int indexBlockSize)
+    {
+        this.indexBlockSize = indexBlockSize;
     }
 }

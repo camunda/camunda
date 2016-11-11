@@ -1,8 +1,19 @@
 package org.camunda.tngp.logstreams;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
-import static org.camunda.tngp.logstreams.spi.LogStorage.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGHT;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
@@ -379,7 +390,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         @Override
         public int getMessageLength()
         {
-            return buffer.getShort(lengthOffset(fragmentOffset));
+            return buffer.getInt(lengthOffset(fragmentOffset));
         }
 
         @Override

@@ -26,10 +26,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -52,10 +52,13 @@ import org.mockito.stubbing.Answer;
 
 public class LogStreamControllerTest
 {
+    private static final String LOG_NAME = "test";
+
     private static final long LOG_POSITION = 100L;
     private static final long LOG_ADDRESS = 456L;
 
-    private static final String LOG_NAME = "test";
+    private static final int MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 6;
+    private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
 
     private LogStreamController controller;
 
@@ -98,6 +101,8 @@ public class LogStreamControllerTest
         streamContext.setSnapshotStorage(mockSnapshotStorage);
         streamContext.setSnapshotPolicy(mockSnapshotPolicy);
         streamContext.setBlockIndex(mockBlockIndex);
+        streamContext.setMaxAppendBlockSize(MAX_APPEND_BLOCK_SIZE);
+        streamContext.setIndexBlockSize(INDEX_BLOCK_SIZE);
 
         when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
 
@@ -142,7 +147,7 @@ public class LogStreamControllerTest
 
         assertThat(future).isCompleted();
 
-        verify(mockBlockIndex).recover(mockLogStorage);
+        verify(mockBlockIndex).recover(mockLogStorage, INDEX_BLOCK_SIZE);
     }
 
     @Test
@@ -160,7 +165,7 @@ public class LogStreamControllerTest
         verify(mockSnapshot).recoverFromSnapshot(mockBlockIndex);
         verify(mockSnapshot).validateAndClose();
 
-        verify(mockBlockIndex).recover(mockLogStorage, 100L);
+        verify(mockBlockIndex).recover(mockLogStorage, 100L, INDEX_BLOCK_SIZE);
     }
 
     @Test
@@ -299,10 +304,11 @@ public class LogStreamControllerTest
         {
             final BlockPeek blockPeek = (BlockPeek) invocation.getArguments()[0];
 
-            final ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[bytesRead]);
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            final UnsafeBuffer buffer = new UnsafeBuffer(new byte[bytesRead]);
+            final ByteBuffer byteBuffer = ByteBuffer.wrap(buffer.byteArray());
 
-            byteBuffer.putLong(positionOffset(messageOffset(0)), logPosition);
+            final int positionOffset = positionOffset(messageOffset(0));
+            buffer.putLong(positionOffset, logPosition);
 
             blockPeek.setBlock(byteBuffer, new AtomicLongPosition(), 0, 0, bytesRead, 0, bytesRead);
 
