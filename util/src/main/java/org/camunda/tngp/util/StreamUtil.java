@@ -13,6 +13,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class StreamUtil
 {
@@ -183,6 +185,22 @@ public class StreamUtil
             buffer.flush();
 
             return buffer.toByteArray();
+        }
+    }
+
+    public static void write(final DirectBuffer source, final OutputStream output) throws IOException
+    {
+        final UnsafeBuffer readBuffer = new UnsafeBuffer(source);
+        final int size = readBuffer.capacity();
+
+        for (int offset = 0; offset < size; offset += DEFAULT_BUFFER_SIZE)
+        {
+            final int readSize = Math.min(DEFAULT_BUFFER_SIZE, size - offset);
+            final byte[] writeBuffer = new byte[readSize];
+
+            readBuffer.getBytes(offset, writeBuffer);
+
+            output.write(writeBuffer);
         }
     }
 
