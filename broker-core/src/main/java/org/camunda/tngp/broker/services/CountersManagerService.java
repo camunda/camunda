@@ -12,7 +12,8 @@ import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.metrics.cfg.MetricsCfg;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class CountersManagerService implements Service<Counters>
 {
@@ -53,38 +54,44 @@ public class CountersManagerService implements Service<Counters>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final File countersFile = new File(countersFileName);
+        ctx.run(() ->
+        {
+            final File countersFile = new File(countersFileName);
 
-        System.out.format("Using %s for counters.\n", countersFile.getAbsolutePath());
+            System.out.format("Using %s for counters.\n", countersFile.getAbsolutePath());
 
-        IoUtil.deleteIfExists(countersFile);
-        mappedCountersFile = IoUtil.mapNewFile(countersFile, COUNTERS_FILE_SIZE);
+            IoUtil.deleteIfExists(countersFile);
+            mappedCountersFile = IoUtil.mapNewFile(countersFile, COUNTERS_FILE_SIZE);
 
-        final UnsafeBuffer labelsBuffer = new UnsafeBuffer(mappedCountersFile, LABELS_BUFFER_OFFSET, LABELS_BUFFER_SIZE);
-        final UnsafeBuffer countersBuffer = new UnsafeBuffer(mappedCountersFile, COUNTERS_BUFFER_OFFSET, COUNTERS_BUFFER_SIZE);
+            final UnsafeBuffer labelsBuffer = new UnsafeBuffer(mappedCountersFile, LABELS_BUFFER_OFFSET, LABELS_BUFFER_SIZE);
+            final UnsafeBuffer countersBuffer = new UnsafeBuffer(mappedCountersFile, COUNTERS_BUFFER_OFFSET, COUNTERS_BUFFER_SIZE);
 
-        countersManager = new CountersManager(labelsBuffer, countersBuffer);
+            countersManager = new CountersManager(labelsBuffer, countersBuffer);
 
-        counters = new Counters(countersManager, countersBuffer);
+            counters = new Counters(countersManager, countersBuffer);
+        });
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
-        countersManager.forEach((id, label) ->
+        ctx.run(() ->
         {
-            System.err.format("Freeing counter %s \n", label);
-            countersManager.free(id);
+            countersManager.forEach((id, label) ->
+            {
+                System.err.format("Freeing counter %s \n", label);
+                countersManager.free(id);
+            });
+
+            IoUtil.unmap(mappedCountersFile);
+
+            if (deleteCountersFileOnExit)
+            {
+                IoUtil.delete(new File(countersFileName), true);
+            }
         });
-
-        IoUtil.unmap(mappedCountersFile);
-
-        if (deleteCountersFileOnExit)
-        {
-            IoUtil.delete(new File(countersFileName), true);
-        }
     }
 
     @Override

@@ -29,7 +29,8 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 
 public class WfRuntimeContextService implements Service<WfRuntimeContext>
@@ -52,77 +53,83 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final WfDefinitionCache wfDefinitionCache = wfDefinitionChacheInjector.getValue();
-        final IdGenerator idGenerator = idGeneratorInjector.getValue();
+        ctx.run(() ->
+        {
+            final WfDefinitionCache wfDefinitionCache = wfDefinitionChacheInjector.getValue();
+            final IdGenerator idGenerator = idGeneratorInjector.getValue();
 
-        final Log log = logInjector.getValue();
-        final HashIndexManager<Long2LongHashIndex> indexManager = workflowEventIndexInjector.getValue();
+            final Log log = logInjector.getValue();
+            final HashIndexManager<Long2LongHashIndex> indexManager = workflowEventIndexInjector.getValue();
 
-        final LogWriter logWriter = new LogWriter(log);
+            final LogWriter logWriter = new LogWriter(log);
 
-        wfRuntimeContext.setLogWriter(logWriter);
-        wfRuntimeContext.setLog(log);
+            wfRuntimeContext.setLogWriter(logWriter);
+            wfRuntimeContext.setLog(log);
 
-        final Templates templates = Templates.wfRuntimeLogTemplates();
-        final LogConsumer wfRuntimeConsumer = new LogConsumer(
-                log.getId(),
-                new BufferedLogReader(log),
-                responsePoolInjector.getValue(),
-                templates,
-                new LogWritersImpl(wfRuntimeContext, null));
+            final Templates templates = Templates.wfRuntimeLogTemplates();
+            final LogConsumer wfRuntimeConsumer = new LogConsumer(
+                    log.getId(),
+                    new BufferedLogReader(log),
+                    responsePoolInjector.getValue(),
+                    templates,
+                    new LogWritersImpl(wfRuntimeContext, null));
 
-        final EndProcessHandler endProcessHandler = new EndProcessHandler(new BufferedLogReader(log), indexManager.getIndex());
-        final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
-        final WaitEventHandler waitEventHandler = new WaitEventHandler();
+            final EndProcessHandler endProcessHandler = new EndProcessHandler(new BufferedLogReader(log), indexManager.getIndex());
+            final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
+            final WaitEventHandler waitEventHandler = new WaitEventHandler();
 
-        final ActivityEventHandler activityEventHandler = new ActivityEventHandler(wfDefinitionCache, idGenerator);
-        activityEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
-        activityEventHandler.addAspectHandler(waitEventHandler);
-        activityEventHandler.addAspectHandler(endProcessHandler);
-        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_EVENT, activityEventHandler);
+            final ActivityEventHandler activityEventHandler = new ActivityEventHandler(wfDefinitionCache, idGenerator);
+            activityEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
+            activityEventHandler.addAspectHandler(waitEventHandler);
+            activityEventHandler.addAspectHandler(endProcessHandler);
+            wfRuntimeConsumer.addHandler(Templates.ACTIVITY_EVENT, activityEventHandler);
 
-        final ProcessEventHandler processEventHandler = new ProcessEventHandler(wfDefinitionCache, idGenerator);
-        processEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
-        processEventHandler.addAspectHandler(waitEventHandler);
-        wfRuntimeConsumer.addHandler(Templates.PROCESS_EVENT, processEventHandler);
+            final ProcessEventHandler processEventHandler = new ProcessEventHandler(wfDefinitionCache, idGenerator);
+            processEventHandler.addAspectHandler(takeOutgoingFlowsHandler);
+            processEventHandler.addAspectHandler(waitEventHandler);
+            wfRuntimeConsumer.addHandler(Templates.PROCESS_EVENT, processEventHandler);
 
-        final FlowElementEventHandler flowElementEventHandler = new FlowElementEventHandler(wfDefinitionCache, idGenerator);
-        flowElementEventHandler.addAspectHandler(new StartProcessHandler());
-        flowElementEventHandler.addAspectHandler(new CreateActivityInstanceHandler());
-        flowElementEventHandler.addAspectHandler(new TriggerNoneEventHandler());
-        flowElementEventHandler.addAspectHandler(endProcessHandler);
-        wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);
+            final FlowElementEventHandler flowElementEventHandler = new FlowElementEventHandler(wfDefinitionCache, idGenerator);
+            flowElementEventHandler.addAspectHandler(new StartProcessHandler());
+            flowElementEventHandler.addAspectHandler(new CreateActivityInstanceHandler());
+            flowElementEventHandler.addAspectHandler(new TriggerNoneEventHandler());
+            flowElementEventHandler.addAspectHandler(endProcessHandler);
+            wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);
 
-        wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator));
-        wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new BufferedLogReader(log), indexManager.getIndex()));
+            wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator));
+            wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new BufferedLogReader(log), indexManager.getIndex()));
 
-        wfRuntimeConsumer.addHandler(Templates.WF_DEFINITION_REQUEST,
-                new WfDefinitionRequestHandler(new BufferedLogReader(log), idGenerator));
+            wfRuntimeConsumer.addHandler(Templates.WF_DEFINITION_REQUEST,
+                    new WfDefinitionRequestHandler(new BufferedLogReader(log), idGenerator));
 
-        wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
-        wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
-        wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
+            wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
+            wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
+            wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
 
-        wfRuntimeConsumer.recover(Arrays.asList(new BufferedLogReader(log)));
+            wfRuntimeConsumer.recover(Arrays.asList(new BufferedLogReader(log)));
 
 
-        // replay all events before taking new requests;
-        // avoids that we mix up new API requests (that require a response)
-        // with existing API requests (that do not require a response anymore)
+            // replay all events before taking new requests;
+            // avoids that we mix up new API requests (that require a response)
+            // with existing API requests (that do not require a response anymore)
 
-        // TODO: problem: last position points to the position AFTER the last entry
-        //  fast forwarding should be exclusive, or else we read one extra random entry with undefined behavior
-        wfRuntimeConsumer.fastForwardToLastEvent();
+            // TODO: problem: last position points to the position AFTER the last entry
+            //  fast forwarding should be exclusive, or else we read one extra random entry with undefined behavior
+            wfRuntimeConsumer.fastForwardToLastEvent();
 
-        wfRuntimeContext.setLogConsumer(wfRuntimeConsumer);
+            wfRuntimeContext.setLogConsumer(wfRuntimeConsumer);
+        });
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
-        wfRuntimeContext.getLogConsumer().writeSavepoints();
+        stopContext.run(() ->
+        {
+            wfRuntimeContext.getLogConsumer().writeSavepoints();
+        });
     }
 
     @Override

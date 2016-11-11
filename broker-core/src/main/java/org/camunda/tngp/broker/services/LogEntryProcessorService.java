@@ -7,7 +7,8 @@ import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 public abstract class LogEntryProcessorService<T extends BufferReader> implements Service<LogEntryProcessor<T>>
@@ -25,15 +26,18 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         final LogReader logReader = new BufferedLogReader(logInjector.getValue());
 
-        logReader.seek(recoverLastReadPosition());
+        serviceContext.run(() ->
+        {
+            logReader.seek(recoverLastReadPosition());
 
-        final LogEntryHandler<T> entryHandler = createEntryHandler();
+            final LogEntryHandler<T> entryHandler = createEntryHandler();
 
-        logEntryProcessor = new LogEntryProcessor<>(logReader, bufferReader, entryHandler);
+            logEntryProcessor = new LogEntryProcessor<>(logReader, bufferReader, entryHandler);
+        });
     }
 
     protected abstract LogEntryHandler<T> createEntryHandler();
@@ -47,7 +51,7 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
     }
 

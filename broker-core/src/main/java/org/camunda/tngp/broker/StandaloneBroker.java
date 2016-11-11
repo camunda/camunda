@@ -15,17 +15,16 @@ public class StandaloneBroker
             configFile = args[0];
         }
 
-        final Broker taskBroker = new Broker(configFile);
+        final Broker broker = new Broker(configFile);
 
-        getRuntime().addShutdownHook(new Thread()
+        getRuntime().addShutdownHook(new Thread("Broker close Thread")
         {
             @Override
             public void run()
             {
-                taskBroker.close();
+                broker.close();
             }
         });
-
 
         try (Scanner scanner = new Scanner(System.in))
         {

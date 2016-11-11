@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.system;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
@@ -48,6 +49,8 @@ public class SystemContext implements AutoCloseable
 
     public void init()
     {
+        serviceContainer.start();
+
         for (Component brokerComponent : components)
         {
             try
@@ -60,18 +63,12 @@ public class SystemContext implements AutoCloseable
                 throw e;
             }
         }
-
-        // explicitly run gc after startup
-        for (int i = 0; i < 5; i++)
-        {
-            System.gc();
-        }
-
     }
 
     public void close()
     {
-        serviceContainer.stop();
+        System.out.println("Closing...");
+        serviceContainer.close(10, TimeUnit.SECONDS);
     }
 
     public ConfigurationManager getConfigurationManager()

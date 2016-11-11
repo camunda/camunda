@@ -75,7 +75,8 @@ public class TransportComponent implements Component
         }
 
         final DispatcherService receiveBufferService = new DispatcherService(receiveBufferSize);
-        final ServiceName<Dispatcher> receiveBufferName = serviceContainer.createService(serverSocketBindingReceiveBufferName(bindingName), receiveBufferService)
+        final ServiceName<Dispatcher> receiveBufferName = serverSocketBindingReceiveBufferName(bindingName);
+        serviceContainer.createService(serverSocketBindingReceiveBufferName(bindingName), receiveBufferService)
             .dependency(AGENT_RUNNER_SERVICE, receiveBufferService.getAgentRunnerInjector())
             .dependency(COUNTERS_MANAGER_SERVICE, receiveBufferService.getCountersManagerInjector())
             .install();

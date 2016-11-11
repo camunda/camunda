@@ -10,6 +10,7 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 public class WfRuntimeServiceNames
 {
     public static final ServiceName<WfRuntimeManager> WF_RUNTIME_MANAGER_NAME = ServiceName.newServiceName("wf.runtime.manager", WfRuntimeManager.class);
+    public static final ServiceName<WfRuntimeContext> WF_RUNTIME_CONTEXT_GROUP_NAME = ServiceName.newServiceName("wf.runtime.context", WfRuntimeContext.class);
 
     public static ServiceName<IdGenerator> wfInstanceIdGeneratorServiceName(String runtimeName)
     {

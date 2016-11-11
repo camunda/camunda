@@ -12,13 +12,13 @@
  */
 package org.camunda.tngp.broker.event;
 
-import org.camunda.tngp.broker.log.LogManager;
 import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
+import org.camunda.tngp.log.Log;
 
 public class EventContext implements ResourceContext
 {
-    protected LogManager logManager;
+    protected volatile Log[] logs  = new Log[0];
 
     @Override
     public int getResourceId()
@@ -38,14 +38,30 @@ public class EventContext implements ResourceContext
         return null;
     }
 
-    public LogManager getLogManager()
+    public void setLogs(Log[] logs)
     {
-        return logManager;
+        this.logs = logs;
     }
 
-    public void setLogManager(LogManager logManager)
+    public Log[] getLogs()
     {
-        this.logManager = logManager;
+        return logs;
+    }
+
+    public Log getLogById(int id)
+    {
+        final Log[] logsCopy = logs;
+
+        for (int i = 0; i < logsCopy.length; i++)
+        {
+            final Log log = logsCopy[i];
+            if (log.getId() == id)
+            {
+                return log;
+            }
+        }
+
+        return null;
     }
 
 }

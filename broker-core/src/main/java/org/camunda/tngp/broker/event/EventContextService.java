@@ -12,27 +12,43 @@
  */
 package org.camunda.tngp.broker.event;
 
-import org.camunda.tngp.broker.log.LogManager;
-import org.camunda.tngp.servicecontainer.Injector;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.camunda.tngp.log.Log;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class EventContextService implements Service<EventContext>
 {
-    protected final Injector<LogManager> logManagerInjector = new Injector<>();
+    protected EventContext context = new EventContext();
 
-    protected final EventContext context = new EventContext();
+    protected final ServiceGroupReference<Log> logServicesReference = ServiceGroupReference.<Log>create()
+            .onAdd((name, service) ->
+            {
+                final ArrayList<Log> list = new ArrayList<>(Arrays.asList(context.getLogs()));
+                list.add(service);
+                context.setLogs(list.toArray(new Log[list.size()]));
+            })
+            .onRemove((name, service) ->
+            {
+                final ArrayList<Log> list = new ArrayList<>(Arrays.asList(context.getLogs()));
+                list.remove(service);
+                context.setLogs(list.toArray(new Log[list.size()]));
+            })
+            .build();
+
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext ctx)
     {
-        final LogManager logManager = logManagerInjector.getValue();
-
-        context.setLogManager(logManager);
+        // nothing to do
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext ctx)
     {
         // nothing to do
     }
@@ -43,9 +59,9 @@ public class EventContextService implements Service<EventContext>
         return context;
     }
 
-    public Injector<LogManager> getLogManagerInjector()
+    public ServiceGroupReference<Log> getLogServicesReference()
     {
-        return logManagerInjector;
+        return logServicesReference;
     }
 
 }

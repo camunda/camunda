@@ -3,6 +3,7 @@ package org.camunda.bpm.broker.it;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
+import org.agrona.LangUtil;
 import org.camunda.tngp.broker.Broker;
 import org.junit.rules.ExternalResource;
 
@@ -48,6 +49,14 @@ public class EmbeddedBrokerRule extends ExternalResource
     protected void startBroker()
     {
         broker = new Broker(configSupplier.get());
+        try
+        {
+            Thread.sleep(500);
+        }
+        catch (InterruptedException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
     }
 
 }

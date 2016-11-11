@@ -18,7 +18,8 @@ import org.camunda.tngp.broker.system.threads.cfg.ThreadingCfg;
 import org.camunda.tngp.broker.system.threads.cfg.ThreadingCfg.BrokerIdleStrategy;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceContext;
+import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class AgentRunnterServiceImpl implements AgentRunnerService, Service<AgentRunnerService>
 {
@@ -79,7 +80,7 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
     }
 
     @Override
-    public void start(ServiceContext serviceContext)
+    public void start(ServiceStartContext serviceContext)
     {
         final CountersManager countersManager = countersInjector.getValue().getCountersManager();
 
@@ -115,7 +116,7 @@ public class AgentRunnterServiceImpl implements AgentRunnerService, Service<Agen
     }
 
     @Override
-    public void stop()
+    public void stop(ServiceStopContext stopContext)
     {
         for (AgentRunner agentRunner : agentRunners)
         {

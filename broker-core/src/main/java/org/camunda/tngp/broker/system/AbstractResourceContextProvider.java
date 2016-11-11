@@ -3,61 +3,62 @@ package org.camunda.tngp.broker.system;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
-import org.camunda.tngp.servicecontainer.Service;
-import org.camunda.tngp.servicecontainer.ServiceListener;
-import org.camunda.tngp.servicecontainer.ServiceName;
-
-import org.agrona.collections.Int2ObjectHashMap;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 
 @SuppressWarnings("unchecked")
-public abstract class AbstractResourceContextProvider<C extends ResourceContext> implements ResourceContextProvider<C>, ServiceListener
+public abstract class AbstractResourceContextProvider<C extends ResourceContext> implements ResourceContextProvider<C>
 {
-    protected final Int2ObjectHashMap<C> contextMap = new Int2ObjectHashMap<>();
-    protected C[] contexts;
+    protected volatile C[] contexts;
 
-    private final Class<C> type;
+    protected final ServiceGroupReference<C> resourceContextsReference;
 
     public AbstractResourceContextProvider(Class<C> type)
     {
-        this.type = type;
         contexts = (C[]) Array.newInstance(type, 0);
-    }
 
-    @Override
-    public synchronized <S> void onServiceStarted(ServiceName<S> name, Service<S> service)
-    {
-        final C context = (C) service.get();
-        contextMap.put(context.getResourceId(), context);
-
-        final List<C> list = new ArrayList<>(Arrays.asList(contexts));
-        list.add(context);
-        this.contexts = list.toArray((C[]) Array.newInstance(type, list.size()));
-    }
-
-    @Override
-    public synchronized <S> void onServiceStopping(ServiceName<S> name, Service<S> service)
-    {
-        final C context = (C) service.get();
-        contextMap.remove(context.getResourceId(), context);
-
-        final List<C> list = new ArrayList<>(Arrays.asList(contexts));
-        list.remove(context);
-        this.contexts = list.toArray((C[]) Array.newInstance(type, list.size()));
+        resourceContextsReference = ServiceGroupReference.<C>create()
+            .onAdd((name, c) ->
+            {
+                final ArrayList<C> list = new ArrayList<>(Arrays.asList(contexts));
+                list.add(c);
+                contexts = list.toArray((C[]) Array.newInstance(type, list.size()));
+            })
+            .onRemove((name, c) ->
+            {
+                final ArrayList<C> list = new ArrayList<>(Arrays.asList(contexts));
+                list.remove(c);
+                contexts = list.toArray((C[]) Array.newInstance(type, list.size()));
+            }).build();
     }
 
     @Override
     public C getContextForResource(int id)
     {
-        return contextMap.get(id);
+        final C[] copy = contexts;
+
+        for (int i = 0; i < copy.length; i++)
+        {
+            final C c = copy[i];
+            if (c.getResourceId() == id)
+            {
+                return c;
+            }
+        }
+
+        return null;
     }
 
     public C[] getContexts()
     {
         return contexts;
+    }
+
+    public ServiceGroupReference<C> getResourceContextsReference()
+    {
+        return resourceContextsReference;
     }
 
 }
