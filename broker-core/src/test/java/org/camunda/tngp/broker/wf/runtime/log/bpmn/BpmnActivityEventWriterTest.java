@@ -91,7 +91,8 @@ public class BpmnActivityEventWriterTest
                 BpmnActivityEventEncoder.BLOCK_LENGTH +
                 BpmnActivityEventEncoder.flowElementIdStringHeaderLength() +
                 BpmnActivityEventEncoder.taskTypeHeaderLength() +
-                3);
+                3 +
+                BpmnActivityEventEncoder.payloadHeaderLength());
     }
 
 

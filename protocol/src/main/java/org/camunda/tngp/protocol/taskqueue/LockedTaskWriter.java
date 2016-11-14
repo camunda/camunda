@@ -1,11 +1,19 @@
 package org.camunda.tngp.protocol.taskqueue;
 
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
+
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 /**
- * Note: this does not write an entire sbe message but rather one instance of
- * the <code>lockedTask</code> type without any header, etc.
+ * Note:
+ * <ul>
+ *   <li> this does not write a message header
+ *   <li>This writer does not write exactly one sbe message. In fact, it writes a
+ *     <code>lockedTask</code> type message, and then appends a payload buffer. In SBE, this
+ *     cannot be expressed as a single composite
  */
 public class LockedTaskWriter implements BufferWriter
 {
@@ -15,6 +23,7 @@ public class LockedTaskWriter implements BufferWriter
     protected long id;
     protected long lockTime;
     protected long workflowInstanceId;
+    protected UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     public LockedTaskWriter()
     {
@@ -39,10 +48,18 @@ public class LockedTaskWriter implements BufferWriter
         return this;
     }
 
+    public LockedTaskWriter payload(DirectBuffer payload, int offset, int length)
+    {
+        this.payloadBuffer.wrap(payload, offset, length);
+        return this;
+    }
+
     @Override
     public int getLength()
     {
-        return LockedTaskEncoder.ENCODED_LENGTH;
+        return LockedTaskEncoder.ENCODED_LENGTH +
+                SIZE_OF_SHORT +
+                payloadBuffer.capacity();
     }
 
     @Override
@@ -53,6 +70,16 @@ public class LockedTaskWriter implements BufferWriter
             .lockTime(lockTime)
             .wfInstanceId(workflowInstanceId);
 
+        offset += lockedTaskEncoder.encodedLength();
+
+        buffer.putShort(offset, (short) payloadBuffer.capacity());
+        offset += SIZE_OF_SHORT;
+
+        if (payloadBuffer.capacity() > 0)
+        {
+            buffer.putBytes(offset, payloadBuffer, 0, payloadBuffer.capacity());
+        }
+
         reset();
     }
 
@@ -61,6 +88,7 @@ public class LockedTaskWriter implements BufferWriter
         id = LockedTaskEncoder.idNullValue();
         lockTime = LockedTaskEncoder.lockTimeNullValue();
         workflowInstanceId = LockedTaskEncoder.wfInstanceIdNullValue();
+        payloadBuffer.wrap(0, 0);
     }
 
 }

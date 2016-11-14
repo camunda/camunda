@@ -75,6 +75,7 @@ public class TaskInstanceRequestHandlerTest
         when(requestReader.consumerId()).thenReturn(15L);
         when(requestReader.key()).thenReturn(5L);
         when(requestReader.type()).thenReturn(TaskInstanceRequestType.COMPLETE);
+        when(requestReader.payload()).thenReturn(new UnsafeBuffer(PAYLOAD));
 
         // when
         handler.handle(requestReader, responseControl, logWriters);

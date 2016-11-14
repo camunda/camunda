@@ -71,7 +71,8 @@ public class StartWorkflowInstanceRequestWriterTest
         assertThat(encodedLength).isEqualTo(
             MessageHeaderEncoder.ENCODED_LENGTH +
             StartWorkflowInstanceDecoder.BLOCK_LENGTH +
-            StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength()
+            StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength() +
+            StartWorkflowInstanceDecoder.payloadHeaderLength()
         );
     }
 
@@ -130,7 +131,8 @@ public class StartWorkflowInstanceRequestWriterTest
             MessageHeaderEncoder.ENCODED_LENGTH +
             StartWorkflowInstanceDecoder.BLOCK_LENGTH +
             StartWorkflowInstanceDecoder.wfDefinitionKeyHeaderLength() +
-            WF_TYPE_KEY.length
+            WF_TYPE_KEY.length +
+            StartWorkflowInstanceDecoder.payloadHeaderLength()
         );
     }
 

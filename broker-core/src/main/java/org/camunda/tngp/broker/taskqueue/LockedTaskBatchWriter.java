@@ -32,8 +32,7 @@ public class LockedTaskBatchWriter implements BufferWriter
         int size = MessageHeaderEncoder.ENCODED_LENGTH +
                 LockedTaskBatchEncoder.BLOCK_LENGTH;
 
-        size += TasksEncoder.sbeHeaderSize() +
-                (TasksEncoder.sbeBlockLength() * numTasks);
+        size += TasksEncoder.sbeHeaderSize() + tasksBufferLimit;
 
         return size;
     }
@@ -52,7 +51,8 @@ public class LockedTaskBatchWriter implements BufferWriter
         return this;
     }
 
-    public LockedTaskBatchWriter appendTask(LockedTaskWriter taskWriter)
+    public LockedTaskBatchWriter appendTask(
+            LockedTaskWriter taskWriter)
     {
         final int taskLength = taskWriter.getLength();
 

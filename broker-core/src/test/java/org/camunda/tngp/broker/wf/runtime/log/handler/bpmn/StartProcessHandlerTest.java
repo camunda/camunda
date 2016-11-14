@@ -1,11 +1,14 @@
 package org.camunda.tngp.broker.wf.runtime.log.handler.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Mockito.when;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
+import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
@@ -52,19 +55,23 @@ public class StartProcessHandlerTest
         when(flowElementEventReader.key()).thenReturn(53L);
         when(flowElementEventReader.wfDefinitionId()).thenReturn(1234L);
         when(flowElementEventReader.wfInstanceId()).thenReturn(1701L);
+        when(flowElementEventReader.payload()).thenReturn(new UnsafeBuffer(0, 0));
 
         // when
         startProcessHandler.handle(flowElementEventReader, process, logWriters, idGenerator);
 
         // then
-        assertThat(logWriters.writtenEntries()).isEqualTo(1);
-        final BpmnProcessEventReader reader = logWriter.getEntryAs(0, BpmnProcessEventReader.class);
+        assertThat(logWriters.writtenEntries()).isEqualTo(2);
+        final BpmnBranchEventReader branchEvent = logWriter.getEntryAs(0, BpmnBranchEventReader.class);
+        final BpmnProcessEventReader processEvent = logWriter.getEntryAs(1, BpmnProcessEventReader.class);
 
-        assertThat(reader.event()).isEqualTo(ExecutionEventType.PROC_INST_CREATED);
-        assertThat(reader.processId()).isEqualTo(1234L);
-        assertThat(reader.processInstanceId()).isEqualTo(1701L);
-        assertThat(reader.key()).isEqualTo(1701L);
-        assertThat(reader.initialElementId()).isEqualTo(42);
+        assertThatBuffer(branchEvent.materializedPayload()).hasCapacity(0);
+
+        assertThat(processEvent.event()).isEqualTo(ExecutionEventType.PROC_INST_CREATED);
+        assertThat(processEvent.processId()).isEqualTo(1234L);
+        assertThat(processEvent.processInstanceId()).isEqualTo(1701L);
+        assertThat(processEvent.key()).isEqualTo(1701L);
+        assertThat(processEvent.initialElementId()).isEqualTo(42);
 
     }
 

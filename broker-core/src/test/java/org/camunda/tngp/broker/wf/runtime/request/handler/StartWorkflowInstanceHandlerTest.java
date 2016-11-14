@@ -93,6 +93,7 @@ public class StartWorkflowInstanceHandlerTest
 
         when(requestReader.wfDefinitionId()).thenReturn(123L);
         when(requestReader.wfDefinitionKey()).thenReturn(new UnsafeBuffer(0, 0));
+        when(requestReader.payload()).thenReturn(new UnsafeBuffer(0, 0));
 
         handler.requestReader = requestReader;
 
@@ -121,6 +122,7 @@ public class StartWorkflowInstanceHandlerTest
 
         when(requestReader.wfDefinitionId()).thenReturn(StartWorkflowInstanceEncoder.wfDefinitionIdNullValue());
         when(requestReader.wfDefinitionKey()).thenReturn(new UnsafeBuffer(KEY));
+        when(requestReader.payload()).thenReturn(new UnsafeBuffer(0, 0));
 
         handler.requestReader = requestReader;
 

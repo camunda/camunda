@@ -1,8 +1,6 @@
 package org.camunda.tngp.client.cmd;
 
-import org.camunda.tngp.client.ClientCommand;
-
-public interface StartWorkflowInstanceCmd extends ClientCommand<WorkflowInstance>
+public interface StartWorkflowInstanceCmd extends SetPayloadCmd<WorkflowInstance, StartWorkflowInstanceCmd>
 {
     StartWorkflowInstanceCmd workflowDefinitionId(long id);
 

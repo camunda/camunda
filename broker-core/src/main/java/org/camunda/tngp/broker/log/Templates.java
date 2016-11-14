@@ -7,13 +7,14 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.taskqueue.CreateTaskInstanceRequestReader;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
-import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.WorkflowInstanceRequestReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
+import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
 import org.camunda.tngp.protocol.log.ActivityInstanceRequestDecoder;
 import org.camunda.tngp.protocol.log.BpmnActivityEventDecoder;
+import org.camunda.tngp.protocol.log.BpmnBranchEventDecoder;
 import org.camunda.tngp.protocol.log.BpmnFlowElementEventDecoder;
 import org.camunda.tngp.protocol.log.BpmnProcessEventDecoder;
 import org.camunda.tngp.protocol.log.CreateTaskRequestDecoder;
@@ -24,6 +25,7 @@ import org.camunda.tngp.protocol.log.WfDefinitionRequestDecoder;
 import org.camunda.tngp.protocol.log.WorkflowInstanceRequestDecoder;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.protocol.wf.WfDefinitionReader;
+import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 /**
@@ -43,6 +45,8 @@ public class Templates
             newTemplate(BpmnProcessEventDecoder.TEMPLATE_ID, BpmnProcessEventReader.class);
     public static final Template<BpmnFlowElementEventReader> FLOW_ELEMENT_EVENT =
             newTemplate(BpmnFlowElementEventDecoder.TEMPLATE_ID, BpmnFlowElementEventReader.class);
+    public static final Template<BpmnBranchEventReader> BPMN_BRANCH_EVENT =
+            newTemplate(BpmnBranchEventDecoder.TEMPLATE_ID, BpmnBranchEventReader.class);
 
     public static final Template<WorkflowInstanceRequestReader> WF_INSTANCE_REQUEST =
             newTemplate(WorkflowInstanceRequestDecoder.TEMPLATE_ID, WorkflowInstanceRequestReader.class);
@@ -96,7 +100,8 @@ public class Templates
                 WF_INSTANCE_REQUEST,
                 ACTIVITY_INSTANCE_REQUEST,
                 WF_DEFINITION,
-                WF_DEFINITION_REQUEST);
+                WF_DEFINITION_REQUEST,
+                BPMN_BRANCH_EVENT);
     }
 
     public static Templates taskQueueLogTemplates()

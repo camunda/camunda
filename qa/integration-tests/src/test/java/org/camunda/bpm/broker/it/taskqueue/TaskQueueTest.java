@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.camunda.bpm.broker.it.ClientRule;
@@ -161,6 +162,38 @@ public class TaskQueueTest
 
         // when
         assertThat(lockedTasksBatch.getLockedTasks()).isEmpty();
+    }
+
+    @Test
+    public void testLockTaskWithPayload()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final AsyncTasksClient taskService = client.tasks();
+
+        System.out.println("Creating task");
+
+        final Long taskId = taskService.create()
+            .taskQueueId(0)
+            .payload("foo")
+            .taskType("bar")
+            .execute();
+
+        // when
+        final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
+            .taskQueueId(0)
+            .taskType("bar")
+            .lockTime(10000L)
+            .execute();
+
+        // then
+        assertThat(lockedTasksBatch).isNotNull();
+
+        final List<LockedTask> tasks = lockedTasksBatch.getLockedTasks();
+        assertThat(tasks).hasSize(1);
+        assertThat(tasks.get(0).getId()).isEqualTo(taskId);
+        assertThat(tasks.get(0).getPayloadString()).isEqualTo("foo");
+
     }
 
 }

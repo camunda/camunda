@@ -549,6 +549,7 @@ public class LockTasksOperatorTest
         when(reader.id()).thenReturn(id);
         when(reader.lockTime()).thenReturn(lockTime);
         when(reader.wfInstanceId()).thenReturn(wfInstanceId);
+        when(reader.getPayload()).thenReturn(new UnsafeBuffer(0, 0));
 
         return reader;
     }

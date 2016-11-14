@@ -74,13 +74,16 @@ public class WorkflowInstanceRequestHandler implements LogEntryTypeHandler<Workf
 
             responseWriter.id(workflowInstanceId);
 
+            final DirectBuffer payload = requestReader.payload();
+
             // TODO: should this only be done if the response can be written? (like before)
             flowElementEventWriter
                 .key(eventId)
                 .workflowInstanceId(workflowInstanceId)
                 .processId(processGraph.id())
                 .eventType(ExecutionEventType.EVT_OCCURRED)
-                .flowElementId(processGraph.intialFlowNodeId());
+                .flowElementId(processGraph.intialFlowNodeId())
+                .payload(payload, 0, payload.capacity());
 
             logWriters.writeToCurrentLog(flowElementEventWriter);
             responseControl.accept(responseWriter);

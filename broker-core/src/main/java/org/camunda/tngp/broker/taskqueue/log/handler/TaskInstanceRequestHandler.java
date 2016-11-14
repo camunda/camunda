@@ -60,7 +60,7 @@ public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInsta
                 }
                 else
                 {
-                    final DirectBuffer payload = taskInstanceReader.getPayload();
+                    final DirectBuffer payload = reader.payload();
                     final DirectBuffer taskType = taskInstanceReader.getTaskType();
 
                     taskInstanceWriter

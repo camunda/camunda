@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.time.Instant;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.impl.TngpClientImpl;
@@ -442,6 +443,7 @@ public class TaskSubscriptionTest
         final SubscribedTaskReader lockedTask = mock(SubscribedTaskReader.class);
         when(lockedTask.taskId()).thenReturn(id);
         when(lockedTask.subscriptionId()).thenReturn(SUBSCRIPTION_ID);
+        when(lockedTask.payload()).thenReturn(new UnsafeBuffer(0, 0));
 
         return lockedTask;
     }

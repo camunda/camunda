@@ -35,9 +35,11 @@ public class InputActivityInstanceHandler implements LogEntryTypeHandler<BpmnAct
                 final IdGenerator taskQueueIdGenerator = taskQueueContext.getTaskInstanceIdGenerator();
 
                 final DirectBuffer taskType = reader.getTaskType();
+                final DirectBuffer payload = reader.getPayload();
                 taskInstanceWriter
                     .id(taskQueueIdGenerator.nextId())
                     .taskType(taskType, 0, taskType.capacity())
+                    .payload(payload, 0, payload.capacity())
                     .state(TaskInstanceState.NEW)
                     .wfRuntimeResourceId(reader.resourceId())
                     .wfActivityInstanceEventKey(reader.key())

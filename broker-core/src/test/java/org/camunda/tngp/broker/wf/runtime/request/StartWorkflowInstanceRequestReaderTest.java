@@ -32,7 +32,8 @@ public class StartWorkflowInstanceRequestReaderTest
 
         bodyEncoder.wrap(eventBuffer, headerEncoder.encodedLength())
             .wfDefinitionId(123L)
-            .wfDefinitionKey(wfDefinitionKey);
+            .wfDefinitionKey(wfDefinitionKey)
+            .payload("");
 
         eventLength = headerEncoder.encodedLength() + bodyEncoder.encodedLength();
     }

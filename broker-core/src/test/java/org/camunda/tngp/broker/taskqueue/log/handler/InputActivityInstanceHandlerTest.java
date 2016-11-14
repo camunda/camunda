@@ -9,7 +9,7 @@ import org.camunda.tngp.broker.transport.worker.spi.ResourceContextProvider;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
-import org.camunda.tngp.broker.util.mocks.TestWfRuntimeLogEntries;
+import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
@@ -54,7 +54,7 @@ public class InputActivityInstanceHandlerTest
     public void shouldHandleActivityInstanceCreateEvent()
     {
         // given
-        final BpmnActivityEventReader activityInstanceEvent = TestWfRuntimeLogEntries.mockActivityInstanceEvent(ExecutionEventType.ACT_INST_CREATED);
+        final BpmnActivityEventReader activityInstanceEvent = WfRuntimeEvents.mockActivityInstanceEvent(ExecutionEventType.ACT_INST_CREATED);
 
         final InputActivityInstanceHandler handler = new InputActivityInstanceHandler(taskQueueContextProvider);
 
@@ -67,10 +67,10 @@ public class InputActivityInstanceHandlerTest
         final TaskInstanceReader taskInstanceReader = logWriter.getEntryAs(0, TaskInstanceReader.class);
 
         assertThat(taskInstanceReader.id()).isEqualTo(11L);
-        assertThatBuffer(taskInstanceReader.getTaskType()).hasBytes(TestWfRuntimeLogEntries.TASK_TYPE);
-        assertThat(taskInstanceReader.wfRuntimeResourceId()).isEqualTo(TestWfRuntimeLogEntries.WF_RUNTIME_LOG_ID);
-        assertThat(taskInstanceReader.wfActivityInstanceEventKey()).isEqualTo(TestWfRuntimeLogEntries.KEY);
-        assertThat(taskInstanceReader.wfInstanceId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
+        assertThatBuffer(taskInstanceReader.getTaskType()).hasBytes(WfRuntimeEvents.TASK_TYPE);
+        assertThat(taskInstanceReader.wfRuntimeResourceId()).isEqualTo(WfRuntimeEvents.WF_RUNTIME_LOG_ID);
+        assertThat(taskInstanceReader.wfActivityInstanceEventKey()).isEqualTo(WfRuntimeEvents.KEY);
+        assertThat(taskInstanceReader.wfInstanceId()).isEqualTo(WfRuntimeEvents.PROCESS_INSTANCE_ID);
     }
 
 }

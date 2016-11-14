@@ -75,6 +75,7 @@
     <field name="type" id="1" type="TaskInstanceRequestType" />
     <field name="key" id="2" type="uint64" />
     <field name="lockOwnerId" id="3" type="uint64" />
+    <data name="payload" id="4" type="varDataEncoding" />
   </sbe:message>
   
   <sbe:message name="CreateTaskRequest" id="10">
@@ -89,6 +90,7 @@
     <field name="wfDefinitionId" id="3" type="uint64" />
     <field name="wfInstanceId" id="4" type="uint64" />
     <field name="initialElementId" id="5" type="uint16" />
+    <field name="bpmnBranchKey" id="6" type="uint64" />
   </sbe:message>
 
   <sbe:message name="BpmnFlowElementEvent" id="5">
@@ -97,7 +99,9 @@
     <field name="wfDefinitionId" id="3" type="uint64" />
     <field name="wfInstanceId" id="4" type="uint64" />
     <field name="flowElementId" id="5" type="uint16" />
-    <data name="flowElementIdString" id="6" type="varDataEncoding" />
+    <field name="bpmnBranchKey" id="6" type="uint64" />
+    <data name="flowElementIdString" id="7" type="varDataEncoding" />
+    <data name="payload" id="8" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="BpmnActivityEvent" id="6">
@@ -107,8 +111,19 @@
     <field name="wfInstanceId" id="4" type="uint64" />
     <field name="flowElementId" id="5" type="uint16" />
     <field name="taskQueueId" id="6" type="uint16" />
+    <field name="bpmnBranchKey" id="6" type="uint64" />
     <data name="taskType" id="7" type="varDataEncoding" />
     <data name="flowElementIdString" id="8" type="varDataEncoding" />
+    <data name="payload" id="9" type="varDataEncoding" />
+  </sbe:message>
+  
+  <sbe:message name="BpmnBranchEvent" id="11">
+    <field name="key" id="0" type="uint64" /> <!-- TODO: this is obsolete when key is in header; but this is not yet accessible in Java API -->
+    <group name="delta" id="1" dimensionType="groupSizeEncoding">
+	  <field name="commitId" id="2" type="uint64"/>
+	  <data name="diff" id="3" type="varDataEncoding" />
+    </group>
+    <data name="materializedPayload" id="4" type="varDataEncoding" />
   </sbe:message>
   
   <sbe:message name="WorkflowInstanceRequest" id="7">
@@ -116,11 +131,13 @@
     <field name="wfDefinitionId" id="2" type="uint64" />
     <field name="wfInstanceId" id="3" type="uint64" />
     <data name="wfDefinitionKey" id="4" type="varDataEncoding" />
+    <data name="payload" id="5" type="varDataEncoding" />
   </sbe:message>
   
   <sbe:message name="ActivityInstanceRequest" id="8">
     <field name="type" id="1" type="ActivityInstanceRequestType" />
     <field name="key" id="2" type="uint64" />
+    <data name="payload" id="3" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="WfDefinition" id="2" description="A Workflow Type">

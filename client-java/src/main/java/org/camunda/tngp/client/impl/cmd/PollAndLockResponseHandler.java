@@ -41,7 +41,9 @@ public class PollAndLockResponseHandler implements ClientResponseHandler<LockedT
         final Iterator<TasksDecoder> taskIterator = responseDecoder.tasks().iterator();
         while (taskIterator.hasNext())
         {
-            final LockedTaskDecoder taskDecoder = taskIterator.next().task();
+            final TasksDecoder tasksDecoder = taskIterator.next();
+            final LockedTaskDecoder taskDecoder = tasksDecoder.task();
+
 
             final LockedTaskImpl lockedTask = new LockedTaskImpl();
             lockedTask.setLockTime(Instant.ofEpochMilli(taskDecoder.lockTime()));
@@ -52,6 +54,14 @@ public class PollAndLockResponseHandler implements ClientResponseHandler<LockedT
             final Long apiWfInstanceId = (wfInstanceId != LockedTaskDecoder.wfInstanceIdNullValue()) ? wfInstanceId : null;
 
             lockedTask.setWorkflowInstanceId(apiWfInstanceId);
+
+            final int limit = responseDecoder.limit();
+            final int limitBeforePayload = limit + TasksDecoder.taskPayloadHeaderLength();
+            final int payloadLength = tasksDecoder.taskPayloadLength();
+            final int limitAfterPayload = limitBeforePayload + payloadLength;
+
+            lockedTask.setPayload(responseBuffer, limitBeforePayload, payloadLength);
+            responseDecoder.limit(limitAfterPayload);
 
             lockedTasksBatch.addTask(lockedTask);
         }

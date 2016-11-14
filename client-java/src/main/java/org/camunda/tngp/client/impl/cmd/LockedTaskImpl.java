@@ -1,17 +1,17 @@
 package org.camunda.tngp.client.impl.cmd;
 
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.cmd.LockedTask;
+import org.camunda.tngp.client.task.impl.PayloadField;
 
 public class LockedTaskImpl implements LockedTask
 {
     protected long id;
     protected Long workflowInstanceId;
     protected Instant lockTime;
+    protected PayloadField payload = new PayloadField();
 
     public void setId(long taskId)
     {
@@ -47,45 +47,15 @@ public class LockedTaskImpl implements LockedTask
         this.workflowInstanceId = workflowInstanceId;
     }
 
-    public MutableDirectBuffer getPayloadBuffer()
-    {
-        return null;
-    }
-
-    @Override
-    public int payloadLength()
-    {
-        return 0;
-    }
-
-    @Override
-    public int putPayload(ByteBuffer buffer)
-    {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
-    public int putPayload(MutableDirectBuffer buffer, int offset, int lenght)
-    {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
-    public byte[] getPayloadBytes()
-    {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
     @Override
     public String getPayloadString()
     {
-        throw new UnsupportedOperationException("Not implemented");
+        return payload.getPayloadString();
     }
 
-    @Override
-    public InputStream getPayloadStream()
+    public void setPayload(DirectBuffer buffer, int offset, int length)
     {
-        throw new UnsupportedOperationException("Not implemented");
+        payload.initFromPayloadBuffer(buffer, offset, length);
     }
 
 }

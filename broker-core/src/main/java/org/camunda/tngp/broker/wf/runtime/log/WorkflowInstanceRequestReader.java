@@ -15,6 +15,7 @@ public class WorkflowInstanceRequestReader implements BufferReader
     protected WorkflowInstanceRequestDecoder bodyDecoder = new WorkflowInstanceRequestDecoder();
 
     protected UnsafeBuffer wfDefinitionKeyBuffer = new UnsafeBuffer(0, 0);
+    protected UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -29,13 +30,20 @@ public class WorkflowInstanceRequestReader implements BufferReader
         offset += WorkflowInstanceRequestDecoder.wfDefinitionKeyHeaderLength();
 
         final int wfDefinitionKeyLength = bodyDecoder.wfDefinitionKeyLength();
-        if (wfDefinitionKeyLength > 0)
+        wfDefinitionKeyBuffer.wrap(buffer, offset, bodyDecoder.wfDefinitionKeyLength());
+
+        offset += wfDefinitionKeyLength;
+        bodyDecoder.limit(offset);
+        offset += WorkflowInstanceRequestDecoder.payloadHeaderLength();
+
+        final int payloadLength = bodyDecoder.payloadLength();
+        if (payloadLength > 0)
         {
-            wfDefinitionKeyBuffer.wrap(buffer, offset, bodyDecoder.wfDefinitionKeyLength());
+            payloadBuffer.wrap(buffer, offset, payloadLength);
         }
         else
         {
-            wfDefinitionKeyBuffer.wrap(0L, 0);
+            payloadBuffer.wrap(0, 0);
         }
 
     }
@@ -53,6 +61,11 @@ public class WorkflowInstanceRequestReader implements BufferReader
     public ProcessInstanceRequestType type()
     {
         return bodyDecoder.type();
+    }
+
+    public DirectBuffer payload()
+    {
+        return payloadBuffer;
     }
 
 }
