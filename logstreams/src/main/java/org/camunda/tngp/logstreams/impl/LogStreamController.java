@@ -8,11 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
@@ -23,23 +21,45 @@ import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.agent.AgentRunnerService;
+import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.State;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 public class LogStreamController implements Agent
 {
-    protected final ClosedState closedState = new ClosedState();
+    protected static final int TRANSITION_DEFAULT = 0;
+    protected static final int TRANSITION_OPEN = 1;
+    protected static final int TRANSITION_CLOSE = 2;
+    protected static final int TRANSITION_FAIL = 3;
+    protected static final int TRANSITION_SNAPSHOT = 4;
+
     protected final OpeningState openingState = new OpeningState();
     protected final OpenState openState = new OpenState();
     protected final SnapshottingState snapshottingState = new SnapshottingState();
     protected final FailingState failingState = new FailingState();
     protected final FailedState failedState = new FailedState();
     protected final ClosingState closingState = new ClosingState();
+    protected final ClosedState closedState = new ClosedState();
 
-    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(16);
-
-    protected final Consumer<Runnable> cmdConsumer = (r) ->
-    {
-        r.run();
-    };
+    protected final StateMachineAgent<Context> stateMachine = new StateMachineAgent<>(
+            StateMachine.<Context> builder(s -> new Context(s))
+            .initialState(closedState)
+            .from(closedState).take(TRANSITION_OPEN).to(openingState)
+            .from(openingState).take(TRANSITION_DEFAULT).to(openState)
+            .from(openingState).take(TRANSITION_FAIL).to(failingState)
+            .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+            .from(openState).take(TRANSITION_FAIL).to(failingState)
+            .from(openState).take(TRANSITION_CLOSE).to(closingState)
+            .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
+            .from(snapshottingState).take(TRANSITION_FAIL).to(failingState)
+            .from(failingState).take(TRANSITION_DEFAULT).to(failedState)
+            .from(failedState).take(TRANSITION_CLOSE).to(closingState)
+            .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+            .build()
+            );
 
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -53,8 +73,6 @@ public class LogStreamController implements Agent
     protected final BlockPeek blockPeek = new BlockPeek();
 
     protected List<LogStreamFailureListener> failureListeners = new ArrayList<>();
-
-    protected volatile LogStreamControllerState state = closedState;
 
     protected Subscription writeBufferSubscription;
 
@@ -84,34 +102,48 @@ public class LogStreamController implements Agent
         return name;
     }
 
+    @Override
     public int doWork()
     {
-        int workCount = 0;
-
-        if (state.acceptsCommands())
-        {
-            workCount += cmdQueue.drain(cmdConsumer);
-        }
-
-        workCount += state.doWork();
-
-        return workCount;
+        return stateMachine.doWork();
     }
 
-    interface LogStreamControllerState
+    private class Context extends SimpleStateMachineContext
     {
-        int doWork();
+        private int currentBlockSize = 0;
+        private long lastPosition = 0;
 
-        default boolean acceptsCommands()
+        Context(StateMachine<?> stateMachine)
         {
-            return false;
+            super(stateMachine);
         }
+
+        public int getCurrentBlockSize()
+        {
+            return currentBlockSize;
+        }
+
+        public long getLastPosition()
+        {
+            return lastPosition;
+        }
+
+        public void setCurrentBlockSize(int currentBlockSize)
+        {
+            this.currentBlockSize = currentBlockSize;
+        }
+
+        public void setLastPosition(long lastPosition)
+        {
+            this.lastPosition = lastPosition;
+        }
+
     }
 
-    class OpeningState implements LogStreamControllerState
+    class OpeningState implements TransitionState<Context>
     {
         @Override
-        public int doWork()
+        public void work(Context context)
         {
             try
             {
@@ -120,20 +152,19 @@ public class LogStreamController implements Agent
 
                 recoverBlockIndex();
 
-                state = openState;
+                context.take(TRANSITION_DEFAULT);
                 openFuture.complete(null);
             }
             catch (Exception e)
             {
+                context.take(TRANSITION_FAIL);
+
                 openFuture.completeExceptionally(e);
-                state = closedState;
             }
             finally
             {
                 openFuture = null;
             }
-
-            return 1;
         }
 
         protected void recoverBlockIndex() throws Exception
@@ -154,18 +185,10 @@ public class LogStreamController implements Agent
 
     }
 
-    class OpenState implements LogStreamControllerState
+    class OpenState implements State<Context>
     {
-        private int currentBlockSize;
-
         @Override
-        public boolean acceptsCommands()
-        {
-            return true;
-        }
-
-        @Override
-        public int doWork()
+        public int doWork(Context context)
         {
             final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
 
@@ -175,25 +198,25 @@ public class LogStreamController implements Agent
                 final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
                 final long postion = buffer.getLong(positionOffset(messageOffset(0)));
+                context.setLastPosition(postion);
 
                 final long address = logStorage.append(nioBuffer);
 
                 if (address >= 0)
                 {
-                    onBlockWritten(postion, address, blockPeek.getBlockLength());
+                    onBlockWritten(context, postion, address, blockPeek.getBlockLength());
                     blockPeek.markCompleted();
 
                     if (snapshotPolicy.apply(postion))
                     {
-                        state = snapshottingState;
-                        snapshottingState.lastEventLogPosition = postion;
+                        context.take(TRANSITION_SNAPSHOT);
                     }
                 }
                 else
                 {
                     blockPeek.markFailed();
 
-                    gotoFailingState(postion);
+                    context.take(TRANSITION_FAIL);
                 }
 
                 return 1;
@@ -204,8 +227,9 @@ public class LogStreamController implements Agent
             }
         }
 
-        protected void onBlockWritten(long postion, long addr, int blockLength)
+        protected void onBlockWritten(Context context, long postion, long addr, int blockLength)
         {
+            int currentBlockSize = context.getCurrentBlockSize();
             if (currentBlockSize == 0)
             {
                 blockIndex.addBlock(postion, addr);
@@ -220,24 +244,21 @@ public class LogStreamController implements Agent
             {
                 currentBlockSize = newBlockSize;
             }
+            context.setCurrentBlockSize(currentBlockSize);
         }
     }
 
-    class FailingState implements LogStreamControllerState
+    class FailingState implements TransitionState<Context>
     {
-        long failedPosition;
-
         @Override
-        public int doWork()
+        public void work(Context context)
         {
-            state = failedState;
-
             for (int i = 0; i < failureListeners.size(); i++)
             {
                 final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
                 try
                 {
-                    logStreamWriteErrorListener.onFailed(failedPosition);
+                    logStreamWriteErrorListener.onFailed(context.getLastPosition());
                 }
                 catch (Exception e)
                 {
@@ -245,20 +266,14 @@ public class LogStreamController implements Agent
                 }
             }
 
-            return 1;
+            context.take(TRANSITION_DEFAULT);
         }
     }
 
-    class FailedState implements LogStreamControllerState
+    class FailedState implements State<Context>
     {
         @Override
-        public boolean acceptsCommands()
-        {
-            return true;
-        }
-
-        @Override
-        public int doWork()
+        public int doWork(Context context)
         {
             final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
 
@@ -271,11 +286,11 @@ public class LogStreamController implements Agent
         }
     }
 
-    class ClosingState implements LogStreamControllerState
+    class ClosingState implements TransitionState<Context>
     {
 
         @Override
-        public int doWork()
+        public void work(Context context)
         {
             try
             {
@@ -283,52 +298,44 @@ public class LogStreamController implements Agent
             }
             finally
             {
-                state = closedState;
-                closeFuture.complete(null);
-            }
+                context.take(TRANSITION_DEFAULT);
 
-            return 1;
+                closeFuture.complete(null);
+                closeFuture = null;
+            }
         }
 
     }
 
-    class ClosedState implements LogStreamControllerState
+    class ClosedState implements WaitState<Context>
     {
         @Override
-        public boolean acceptsCommands()
-        {
-            return true;
-        }
-
-        @Override
-        public int doWork()
+        public void work(Context context)
         {
             if (isRunning.compareAndSet(true, false))
             {
                 agentRunnerService.remove(LogStreamController.this);
             }
-            return 0;
         }
 
     }
 
-    class SnapshottingState implements LogStreamControllerState
+    class SnapshottingState implements TransitionState<Context>
     {
-        long lastEventLogPosition;
 
         @Override
-        public int doWork()
+        public void work(Context context)
         {
             SnapshotWriter snapshotWriter = null;
 
             try
             {
-                snapshotWriter = snapshotStorage.createSnapshot(name, lastEventLogPosition);
+                snapshotWriter = snapshotStorage.createSnapshot(name, context.getLastPosition());
 
                 snapshotWriter.writeSnapshot(blockIndex);
                 snapshotWriter.commit();
 
-                state = openState;
+                context.take(TRANSITION_DEFAULT);
             }
             catch (Exception e)
             {
@@ -339,29 +346,21 @@ public class LogStreamController implements Agent
                     snapshotWriter.abort();
                 }
 
-                gotoFailingState(lastEventLogPosition);
+                context.take(TRANSITION_FAIL);
             }
-
-            return 1;
         }
-    }
-
-    protected void gotoFailingState(final long postion)
-    {
-        state = failingState;
-        failingState.failedPosition = postion;
     }
 
     public CompletableFuture<Void> openAsync()
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
-        cmdQueue.add(() ->
+        stateMachine.addCommand(context ->
         {
-            if (state == closedState)
+            final boolean opening = context.tryTake(TRANSITION_OPEN);
+            if (opening)
             {
                 openFuture = future;
-                state = openingState;
             }
             else
             {
@@ -389,12 +388,12 @@ public class LogStreamController implements Agent
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
-        cmdQueue.add(() ->
+        stateMachine.addCommand(context ->
         {
-            if (state == openState || state == failedState)
+            final boolean closing = context.tryTake(TRANSITION_CLOSE);
+            if (closing)
             {
                 closeFuture = future;
-                this.state = closingState;
             }
             else
             {
@@ -407,33 +406,27 @@ public class LogStreamController implements Agent
 
     public boolean isClosed()
     {
-        return state == closedState;
+        return stateMachine.getCurrentState() == closedState;
     }
 
     public boolean isOpen()
     {
-        return state == openState;
+        return stateMachine.getCurrentState() == openState;
     }
 
     public boolean isFailed()
     {
-        return state == failedState;
+        return stateMachine.getCurrentState() == failedState;
     }
 
     public void registerFailureListener(LogStreamFailureListener listener)
     {
-        cmdQueue.add(() ->
-        {
-            failureListeners.add(listener);
-        });
+        stateMachine.addCommand(context -> failureListeners.add(listener));
     }
 
     public void removeFailureListener(LogStreamFailureListener listener)
     {
-        cmdQueue.add(() ->
-        {
-            failureListeners.remove(listener);
-        });
+        stateMachine.addCommand(context -> failureListeners.remove(listener));
     }
 
 }
