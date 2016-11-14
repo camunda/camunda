@@ -51,7 +51,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         broker = new Broker(configSupplier.get());
         try
         {
-            Thread.sleep(500);
+            Thread.sleep(1000);
         }
         catch (InterruptedException e)
         {

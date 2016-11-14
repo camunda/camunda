@@ -35,7 +35,8 @@ public class CreateActivityInstanceHandler implements BpmnFlowElementAspectHandl
             .wfDefinitionId(flowElementEventReader.wfDefinitionId())
             .wfInstanceId(flowElementEventReader.wfInstanceId())
             .taskQueueId(flowElementVisitor.taskQueueId())
-            .taskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
+            .taskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
+            .flowElementIdString(flowElementVisitor.stringIdBuffer(), 0, flowElementVisitor.stringIdBytesLength());
 
         logWriters.writeToCurrentLog(eventWriter);
 

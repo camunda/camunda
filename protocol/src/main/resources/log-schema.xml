@@ -97,6 +97,7 @@
     <field name="wfDefinitionId" id="3" type="uint64" />
     <field name="wfInstanceId" id="4" type="uint64" />
     <field name="flowElementId" id="5" type="uint16" />
+    <data name="flowElementIdString" id="6" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="BpmnActivityEvent" id="6">
@@ -107,6 +108,7 @@
     <field name="flowElementId" id="5" type="uint16" />
     <field name="taskQueueId" id="6" type="uint16" />
     <data name="taskType" id="7" type="varDataEncoding" />
+    <data name="flowElementIdString" id="8" type="varDataEncoding" />
   </sbe:message>
   
   <sbe:message name="WorkflowInstanceRequest" id="7">

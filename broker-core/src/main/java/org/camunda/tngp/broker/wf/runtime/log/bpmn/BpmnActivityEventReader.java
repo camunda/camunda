@@ -10,10 +10,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class BpmnActivityEventReader implements BufferReader
 {
-
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final BpmnActivityEventDecoder bodyDecoder = new BpmnActivityEventDecoder();
     protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer flowElementIdStringBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -29,6 +29,13 @@ public class BpmnActivityEventReader implements BufferReader
         final int taskTypeLength = bodyDecoder.taskTypeLength();
 
         taskTypeBuffer.wrap(buffer, offset, taskTypeLength);
+
+        offset += taskTypeLength;
+        bodyDecoder.limit(offset);
+        offset += BpmnActivityEventDecoder.flowElementIdStringHeaderLength();
+        final int flowElementIdStringLength = bodyDecoder.flowElementIdStringLength();
+
+        flowElementIdStringBuffer.wrap(buffer, offset, flowElementIdStringLength);
     }
 
     public long key()
@@ -69,5 +76,10 @@ public class BpmnActivityEventReader implements BufferReader
     public DirectBuffer getTaskType()
     {
         return taskTypeBuffer;
+    }
+
+    public DirectBuffer getFlowElementIdString()
+    {
+        return flowElementIdStringBuffer;
     }
 }

@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.log.LogEntryWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.protocol.log.BpmnFlowElementEventEncoder;
@@ -14,6 +16,8 @@ public class BpmnFlowElementEventWriter extends LogEntryWriter<BpmnFlowElementEv
     protected ExecutionEventType eventType;
     protected int flowElementId;
 
+    protected final UnsafeBuffer flowElementIdStringBuffer = new UnsafeBuffer(0, 0);
+
     public BpmnFlowElementEventWriter()
     {
         super(new BpmnFlowElementEventEncoder());
@@ -22,7 +26,7 @@ public class BpmnFlowElementEventWriter extends LogEntryWriter<BpmnFlowElementEv
     @Override
     protected int getBodyLength()
     {
-        return BpmnFlowElementEventEncoder.BLOCK_LENGTH;
+        return BpmnFlowElementEventEncoder.BLOCK_LENGTH + BpmnFlowElementEventEncoder.flowElementIdStringHeaderLength() + flowElementIdStringBuffer.capacity();
     }
 
     @Override
@@ -33,8 +37,8 @@ public class BpmnFlowElementEventWriter extends LogEntryWriter<BpmnFlowElementEv
             .wfDefinitionId(processId)
             .wfInstanceId(workflowInstanceId)
             .event(eventType.value())
-            .flowElementId(flowElementId);
-
+            .flowElementId(flowElementId)
+            .putFlowElementIdString(flowElementIdStringBuffer, 0, flowElementIdStringBuffer.capacity());
     }
 
     public BpmnFlowElementEventWriter key(long key)
@@ -64,6 +68,12 @@ public class BpmnFlowElementEventWriter extends LogEntryWriter<BpmnFlowElementEv
     public BpmnFlowElementEventWriter flowElementId(int flowElementId)
     {
         this.flowElementId = flowElementId;
+        return this;
+    }
+
+    public BpmnFlowElementEventWriter flowElementIdString(DirectBuffer flowElementIdString, int offset, int length)
+    {
+        flowElementIdStringBuffer.wrap(flowElementIdString, offset, length);
         return this;
     }
 }

@@ -19,6 +19,9 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
 
     protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
 
+    protected final UnsafeBuffer flowElementIdStringBuffer = new UnsafeBuffer(0, 0);
+
+
     public BpmnActivityEventWriter()
     {
         super(new BpmnActivityEventEncoder());
@@ -28,6 +31,8 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
     protected int getBodyLength()
     {
         return BpmnActivityEventEncoder.BLOCK_LENGTH +
+                BpmnActivityEventEncoder.flowElementIdStringHeaderLength() +
+                flowElementIdStringBuffer.capacity() +
                 BpmnActivityEventEncoder.taskTypeHeaderLength() +
                 taskTypeBuffer.capacity();
     }
@@ -42,7 +47,8 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
             .event(eventType.value())
             .flowElementId(flowElementId)
             .taskQueueId(taskQueueId)
-            .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity());
+            .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
+            .putFlowElementIdString(flowElementIdStringBuffer, 0, flowElementIdStringBuffer.capacity());
     }
 
     public BpmnActivityEventWriter key(long key)
@@ -84,6 +90,12 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
     public BpmnActivityEventWriter taskType(DirectBuffer taskType, int offset, int length)
     {
         taskTypeBuffer.wrap(taskType, offset, length);
+        return this;
+    }
+
+    public BpmnActivityEventWriter flowElementIdString(DirectBuffer flowElementIdString, int offset, int length)
+    {
+        flowElementIdStringBuffer.wrap(flowElementIdString, offset, length);
         return this;
     }
 

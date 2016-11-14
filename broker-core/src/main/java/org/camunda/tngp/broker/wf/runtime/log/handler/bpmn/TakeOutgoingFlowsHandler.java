@@ -36,7 +36,7 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
         return writeSequenceFlowEvent(
                 processEventReader.processId(),
                 processEventReader.processInstanceId(),
-                flowElementVisitor.nodeId(),
+                flowElementVisitor,
                 idGenerator,
                 logWriters);
     }
@@ -51,23 +51,24 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
         return writeSequenceFlowEvent(
                 activityEventReader.wfDefinitionId(),
                 activityEventReader.wfInstanceId(),
-                flowElementVisitor.nodeId(),
+                flowElementVisitor,
                 idGenerator,
                 logWriters);
     }
 
-    protected int writeSequenceFlowEvent(long processId, long processInstanceId, int sequenceFlowId, IdGenerator idGenerator, LogWriters logWriters)
+    protected int writeSequenceFlowEvent(long processId, long processInstanceId, FlowElementVisitor flowElementVisitor, IdGenerator idGenerator, LogWriters logWriters)
     {
         eventWriter
             .eventType(ExecutionEventType.SQF_EXECUTED)
-            .flowElementId(sequenceFlowId)
+            .flowElementId(flowElementVisitor.nodeId())
             .key(idGenerator.nextId())
             .processId(processId)
-            .workflowInstanceId(processInstanceId);
+            .workflowInstanceId(processInstanceId)
+            .flowElementIdString(flowElementVisitor.stringIdBuffer(), 0, flowElementVisitor.stringIdBytesLength());
 
         if (DEBUG_LOGGING_ENABLED)
         {
-            System.out.println("Taking flow " + sequenceFlowId);
+            System.out.println("Taking flow " + flowElementVisitor.stringId());
         }
 
         logWriters.writeToCurrentLog(eventWriter);

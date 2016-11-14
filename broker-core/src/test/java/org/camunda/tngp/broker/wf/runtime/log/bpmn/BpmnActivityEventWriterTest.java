@@ -89,6 +89,7 @@ public class BpmnActivityEventWriterTest
         assertThat(estimatedLength).isEqualTo(
                 MessageHeaderEncoder.ENCODED_LENGTH +
                 BpmnActivityEventEncoder.BLOCK_LENGTH +
+                BpmnActivityEventEncoder.flowElementIdStringHeaderLength() +
                 BpmnActivityEventEncoder.taskTypeHeaderLength() +
                 3);
     }

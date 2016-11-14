@@ -78,6 +78,6 @@ public class BpmnProcessEventWriterTest
         final int estimatedLength = writer.getLength();
 
         // then
-        assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + BpmnFlowElementEventEncoder.BLOCK_LENGTH);
+        assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + BpmnFlowElementEventEncoder.BLOCK_LENGTH + BpmnFlowElementEventEncoder.flowElementIdStringHeaderLength());
     }
 }

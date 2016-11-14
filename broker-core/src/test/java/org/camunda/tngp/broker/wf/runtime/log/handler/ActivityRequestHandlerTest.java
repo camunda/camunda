@@ -78,6 +78,7 @@ public class ActivityRequestHandlerTest
         assertThat(newLogEntry.taskQueueId()).isEqualTo(TestWfRuntimeLogEntries.TASK_QUEUE_ID);
         assertThat(newLogEntry.wfDefinitionId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_ID);
         assertThat(newLogEntry.wfInstanceId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
+        assertThatBuffer(newLogEntry.getFlowElementIdString()).hasBytes(TestWfRuntimeLogEntries.FLOW_ELEMENT_ID_STRING);
     }
 
     @Test

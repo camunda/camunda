@@ -25,6 +25,7 @@ public class TestWfRuntimeLogEntries
     public static final int WF_RUNTIME_LOG_ID = 4;
 
     public static final byte[] TASK_TYPE = "foo".getBytes(StandardCharsets.UTF_8);
+    public static final byte[] FLOW_ELEMENT_ID_STRING = "bar".getBytes(StandardCharsets.UTF_8);
 
     public static BpmnActivityEventWriter createActivityInstanceEvent(ExecutionEventType event)
     {
@@ -39,6 +40,8 @@ public class TestWfRuntimeLogEntries
         activityEventWriter.taskQueueId(TASK_QUEUE_ID);
         activityEventWriter.taskType(new UnsafeBuffer(TASK_TYPE), 0, TASK_TYPE.length);
 
+        activityEventWriter.flowElementIdString(new UnsafeBuffer(FLOW_ELEMENT_ID_STRING), 0, FLOW_ELEMENT_ID_STRING.length);
+
         return activityEventWriter;
     }
 
@@ -51,6 +54,7 @@ public class TestWfRuntimeLogEntries
         writer.key(KEY);
         writer.processId(PROCESS_ID);
         writer.workflowInstanceId(PROCESS_INSTANCE_ID);
+        writer.flowElementIdString(new UnsafeBuffer(FLOW_ELEMENT_ID_STRING), 0, FLOW_ELEMENT_ID_STRING.length);
 
         return writer;
     }
@@ -78,6 +82,7 @@ public class TestWfRuntimeLogEntries
         when(reader.key()).thenReturn(KEY);
         when(reader.wfDefinitionId()).thenReturn(PROCESS_ID);
         when(reader.wfInstanceId()).thenReturn(PROCESS_INSTANCE_ID);
+        when(reader.flowElementIdString()).thenReturn(new UnsafeBuffer(FLOW_ELEMENT_ID_STRING));
 
         return reader;
     }
@@ -108,6 +113,7 @@ public class TestWfRuntimeLogEntries
 
         when(reader.taskQueueId()).thenReturn(TASK_QUEUE_ID);
         when(reader.getTaskType()).thenReturn(new UnsafeBuffer(TASK_TYPE));
+        when(reader.getFlowElementIdString()).thenReturn(new UnsafeBuffer(FLOW_ELEMENT_ID_STRING));
 
         return reader;
     }

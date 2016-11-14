@@ -52,6 +52,7 @@ public class ActivityRequestHandler implements LogEntryTypeHandler<ActivityInsta
         logReader.next()
             .readValue(activityInstanceReader);
 
+
         activityInstanceWriter
             .eventType(ExecutionEventType.ACT_INST_COMPLETED)
             .flowElementId(activityInstanceReader.flowElementId())
@@ -64,6 +65,11 @@ public class ActivityRequestHandler implements LogEntryTypeHandler<ActivityInsta
 
         activityInstanceWriter
             .taskType(taskType, 0, taskType.capacity());
+
+        final DirectBuffer flowElementIdString = activityInstanceReader.getFlowElementIdString();
+
+        activityInstanceWriter
+            .flowElementIdString(flowElementIdString, 0, flowElementIdString.capacity());
 
         logWriters.writeToCurrentLog(activityInstanceWriter);
 
