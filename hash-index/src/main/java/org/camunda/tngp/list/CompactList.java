@@ -10,6 +10,7 @@ import static org.camunda.tngp.list.CompactListDescriptor.framedLength;
 import static org.camunda.tngp.list.CompactListDescriptor.requiredBufferCapacity;
 import static org.camunda.tngp.list.CompactListDescriptor.sizeOffset;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.function.Function;
@@ -17,13 +18,14 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.io.DirectBufferInputStream;
 
 /**
  * Compact, off-heap list datastructure
  */
 public class CompactList implements Iterable<MutableDirectBuffer>
 {
-    protected final UnsafeBuffer listBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer listBuffer;
     protected final UnsafeBuffer elementBuffer = new UnsafeBuffer(0, 0);
 
     protected final int framedElementLength;
@@ -47,12 +49,23 @@ public class CompactList implements Iterable<MutableDirectBuffer>
             throw new IllegalArgumentException(errorMessage);
         }
 
+        listBuffer = new UnsafeBuffer(0, 0);
         listBuffer.wrap(underlyingBuffer, 0, requiredBufferCapacity);
 
         // write header
         listBuffer.putInt(sizeOffset(), 0);
         listBuffer.putInt(elementMaxLengthOffset(), elementMaxLength);
         listBuffer.putInt(capacityOffset(), capacity);
+
+        iterator = new CompactListIterator(this);
+    }
+
+    public CompactList(final UnsafeBuffer listBuffer)
+    {
+        this.listBuffer = listBuffer;
+
+        final int elementMaxLength = listBuffer.getInt(elementMaxLengthOffset());
+        framedElementLength = framedLength(elementMaxLength);
 
         iterator = new CompactListIterator(this);
     }
@@ -391,4 +404,8 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         return iterator;
     }
 
+    public InputStream toInputStream()
+    {
+        return new DirectBufferInputStream(listBuffer);
+    }
 }
