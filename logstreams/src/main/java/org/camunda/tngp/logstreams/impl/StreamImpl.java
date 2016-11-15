@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamFailureListener;
+import org.camunda.tngp.logstreams.StreamContext;
 
 public class StreamImpl implements LogStream
 {
@@ -27,6 +28,7 @@ public class StreamImpl implements LogStream
         logStreamController = logContext.getLogStreamController();
     }
 
+    @Override
     public StreamContext getContext()
     {
         return context;

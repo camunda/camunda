@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -166,7 +166,7 @@ public class LogRecoveryTest
 
     protected void writeLogEvents(final LogStream log, final int workCount, final int offset)
     {
-        final EventLogger writer = new EventLogger(log);
+        final LogStreamWriter writer = new LogStreamWriter(log);
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
 

@@ -15,6 +15,7 @@ import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.LogStreamFailureListener;
+import org.camunda.tngp.logstreams.StreamContext;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;

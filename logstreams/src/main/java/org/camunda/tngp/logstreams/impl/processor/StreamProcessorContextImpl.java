@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.agrona.concurrent.status.Position;
-import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.logstreams.processor.RecoveryHandler;
@@ -25,7 +25,7 @@ public class StreamProcessorContextImpl implements StreamProcessorContext
 
     protected LogStreamReader streamReader;
 
-    protected EventLogger eventWriter;
+    protected LogStreamWriter eventWriter;
 
     protected RecoveryHandler recoveryHandler;
 
@@ -77,12 +77,12 @@ public class StreamProcessorContextImpl implements StreamProcessorContext
         this.streamReader = streamReader;
     }
 
-    public EventLogger getEventWriter()
+    public LogStreamWriter getEventWriter()
     {
         return this.eventWriter;
     }
 
-    public void setEventLogger(EventLogger eventWriter)
+    public void setEventLogger(LogStreamWriter eventWriter)
     {
         this.eventWriter = eventWriter;
     }

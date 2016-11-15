@@ -22,8 +22,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.camunda.tngp.logstreams.impl.ReadableFragment;
-import org.camunda.tngp.logstreams.impl.StreamContext;
-import org.camunda.tngp.logstreams.impl.StreamImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.util.buffer.BufferReader;
 
@@ -72,7 +70,7 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     public BufferedLogStreamReader(LogStream logStream)
     {
-        this(((StreamImpl)logStream).getContext());
+        this(logStream.getContext());
     }
 
     public BufferedLogStreamReader(StreamContext ctx)
@@ -84,7 +82,7 @@ public class BufferedLogStreamReader implements LogStreamReader
     @Override
     public void wrap(LogStream logStream)
     {
-        wrap(((StreamImpl)logStream).getContext());
+        wrap(logStream.getContext());
     }
 
     public void wrap(StreamContext ctx)
@@ -96,7 +94,7 @@ public class BufferedLogStreamReader implements LogStreamReader
     @Override
     public void wrap(LogStream logStream, long position)
     {
-        wrap(((StreamImpl)logStream).getContext(), position);
+        wrap(logStream.getContext(), position);
     }
 
     public void wrap(StreamContext ctx, long position)

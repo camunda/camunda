@@ -12,7 +12,6 @@ import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.PositionUtil;
 import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
-import org.camunda.tngp.logstreams.impl.StreamContext;
 import org.camunda.tngp.logstreams.impl.StreamImpl;
 import org.camunda.tngp.logstreams.impl.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.impl.fs.FsLogStorage;

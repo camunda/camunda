@@ -1,7 +1,13 @@
 package org.camunda.tngp.logstreams;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.KEY_TYPE_UINT64;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -9,11 +15,11 @@ import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
-import org.camunda.tngp.logstreams.impl.StreamContext;
-import org.camunda.tngp.logstreams.impl.StreamImpl;
+import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.buffer.BufferWriter;
+import org.camunda.tngp.util.buffer.DirectBufferWriter;
 
-public class EventLogger
+public class LogStreamWriter
 {
     protected DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
@@ -23,22 +29,22 @@ public class EventLogger
     protected boolean positionAsKey;
     protected long key;
 
+    protected final short keyLength = SIZE_OF_LONG;
+
     protected BufferWriter valueWriter;
 
-    public EventLogger()
+    public LogStreamWriter()
     {
     }
 
-    public EventLogger(LogStream log)
+    public LogStreamWriter(LogStream log)
     {
         wrap(log);
     }
 
     public void wrap(LogStream log)
     {
-        final StreamImpl logImpl = (StreamImpl) log;
-
-        final StreamContext logContext = logImpl.getContext();
+        final StreamContext logContext = log.getContext();
 
         this.logWriteBuffer = logContext.getWriteBuffer();
         this.logId = logContext.getLogId();
@@ -46,29 +52,29 @@ public class EventLogger
         reset();
     }
 
-    public EventLogger positionAsKey()
+    public LogStreamWriter positionAsKey()
     {
         positionAsKey = true;
         return this;
     }
 
-    public EventLogger key(long key)
+    public LogStreamWriter key(long key)
     {
         this.key = key;
         return this;
     }
 
-    public EventLogger value(DirectBuffer value, int valueOffset, int valueLength)
+    public LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength)
     {
-        return valueWriter(bufferWriterInstance.init(value, valueOffset, valueLength));
+        return valueWriter(bufferWriterInstance.wrap(value, valueOffset, valueLength));
     }
 
-    public EventLogger value(DirectBuffer value)
+    public LogStreamWriter value(DirectBuffer value)
     {
         return value(value, 0, value.capacity());
     }
 
-    public EventLogger valueWriter(BufferWriter writer)
+    public LogStreamWriter valueWriter(BufferWriter writer)
     {
         this.valueWriter = writer;
         return this;
@@ -78,22 +84,25 @@ public class EventLogger
     {
         positionAsKey = false;
         key = -1L;
-        bufferWriterInstance.buffer = null;
-        bufferWriterInstance.offset = -1;
-        bufferWriterInstance.length = 0;
+        bufferWriterInstance.reset();
         valueWriter = null;
     }
 
     /**
      * Attempts to write the event to the underlying stream.
      *
-     * @return
+     * @return the event position or a negative value if fails to write the
+     *         event
      */
     public long tryWrite()
     {
-        long result = -1;
+        EnsureUtil.ensureNotNull("value", valueWriter);
+        if (!positionAsKey)
+        {
+            EnsureUtil.ensureGreaterThanOrEqual("key", key, 0);
+        }
 
-        final short keyLength = SIZE_OF_LONG;
+        long result = -1;
 
         // claim fragment in log write buffer
         final long claimedPosition = claimLogEntry(valueWriter.getLength(), keyLength);
@@ -138,42 +147,15 @@ public class EventLogger
     {
         final int framedLength = valueLength + headerLength(keyLength);
 
-        long claimedPosition = -2;
+        long claimedPosition = -1;
 
         do
         {
             claimedPosition = logWriteBuffer.claim(claimedFragment, framedLength, logId);
         }
-        while (claimedPosition == -2);
+        while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
         return claimedPosition - DataFrameDescriptor.alignedLength(framedLength);
-    }
-
-    class DirectBufferWriter implements BufferWriter
-    {
-        DirectBuffer buffer;
-        int offset;
-        int length;
-
-        @Override
-        public int getLength()
-        {
-            return length;
-        }
-
-        @Override
-        public void write(MutableDirectBuffer writeBuffer, int writeOffset)
-        {
-            writeBuffer.putBytes(writeOffset, buffer, offset, length);
-        }
-
-        public DirectBufferWriter init(DirectBuffer buffer, int offset, int length)
-        {
-            this.buffer = buffer;
-            this.offset = offset;
-            this.length = length;
-            return this;
-        }
     }
 
 }

@@ -1,16 +1,16 @@
 package org.camunda.tngp.logstreams.processor;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class ControlledEventLogger
 {
-    protected final EventLogger delegate;
+    protected final LogStreamWriter delegate;
 
     protected boolean writeRequested;
 
-    public ControlledEventLogger(EventLogger delegate)
+    public ControlledEventLogger(LogStreamWriter delegate)
     {
         this.delegate = delegate;
     }
@@ -45,7 +45,7 @@ public class ControlledEventLogger
         return this;
     }
 
-    public EventLogger getDelegate()
+    public LogStreamWriter getDelegate()
     {
         return delegate;
     }

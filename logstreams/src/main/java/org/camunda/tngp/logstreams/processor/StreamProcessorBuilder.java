@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.impl.processor.StreamProcessorContextImpl;
 import org.camunda.tngp.logstreams.impl.processor.StreamProcessorControllerImpl;
@@ -67,7 +67,7 @@ public class StreamProcessorBuilder
         ctx.setSourceStream(sourceStream);
         ctx.setStreamProcessor(streamProcessor);
         ctx.setStreamReader(new BufferedLogStreamReader(sourceStream));
-        ctx.setEventLogger(new EventLogger(targetStream));
+        ctx.setEventLogger(new LogStreamWriter(targetStream));
         ctx.setPosition(new AtomicLongPosition());
         ctx.setSnapshotStorage(snapshotStorage);
 

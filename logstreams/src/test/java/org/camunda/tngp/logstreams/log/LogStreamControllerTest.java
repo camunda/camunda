@@ -35,9 +35,9 @@ import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.LogStreamFailureListener;
+import org.camunda.tngp.logstreams.StreamContext;
 import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
-import org.camunda.tngp.logstreams.impl.StreamContext;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
@@ -239,7 +239,7 @@ public class LogStreamControllerTest
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
-        doThrow(new RuntimeException()).when(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
+        doThrow(new RuntimeException("expected exception")).when(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
 
         controller.openAsync();
         // -> opening

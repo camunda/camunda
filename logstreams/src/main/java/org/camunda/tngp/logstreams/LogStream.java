@@ -19,4 +19,6 @@ public interface LogStream extends AutoCloseable
     void registerFailureListener(LogStreamFailureListener listener);
 
     void removeFailureListener(LogStreamFailureListener listener);
+
+    StreamContext getContext();
 }

@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -57,7 +57,7 @@ public class LogIntegrationTest
 
         logStream.open();
 
-        final EventLogger writer = new EventLogger(logStream);
+        final LogStreamWriter writer = new LogStreamWriter(logStream);
         final LogStreamReader logReader = new BufferedLogStreamReader(logStream);
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));

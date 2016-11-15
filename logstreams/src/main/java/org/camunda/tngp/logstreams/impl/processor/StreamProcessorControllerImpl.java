@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.Position;
-import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.logstreams.LoggedEvent;
@@ -167,7 +167,7 @@ public class StreamProcessorControllerImpl implements Agent, StreamProcessorCont
         {
             int workCount = 0;
 
-            final EventLogger delegateLogger = eventLogger.getDelegate();
+            final LogStreamWriter delegateLogger = eventLogger.getDelegate();
 
             final long position = delegateLogger.tryWrite();
             final boolean isWritten = position >= 0;
