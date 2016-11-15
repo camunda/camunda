@@ -5,7 +5,7 @@ def repository = 'camunda-tngp'
 def gitBranch = 'master'
 
 def pom = 'pom.xml'
-def mvnGoals = 'verify'
+def mvnGoals = 'verify source:jar javadoc:javadoc'
 
 def mavenVersion = 'maven-3.3-latest'
 def mavenSettings = 'camunda-maven-settings'
