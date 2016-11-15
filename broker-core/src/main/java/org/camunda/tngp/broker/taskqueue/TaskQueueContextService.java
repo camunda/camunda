@@ -14,9 +14,9 @@ import org.camunda.tngp.broker.taskqueue.log.idx.TaskTypeIndexWriter;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -27,7 +27,7 @@ import org.camunda.tngp.transport.singlemessage.DataFramePool;
 
 public class TaskQueueContextService implements Service<TaskQueueContext>
 {
-    protected final Injector<Log> logInjector = new Injector<>();
+    protected final Injector<LogStream> logInjector = new Injector<>();
     protected final Injector<IdGenerator> taskInstanceIdGeneratorInjector = new Injector<>();
     protected final Injector<HashIndexManager<Long2LongHashIndex>> lockedTasksIndexServiceInjector = new Injector<>();
     protected final Injector<HashIndexManager<Bytes2LongHashIndex>> taskTypeIndexServiceInjector = new Injector<>();
@@ -57,7 +57,7 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
             taskQueueContext.setTaskInstanceIdGenerator(taskInstanceIdGeneratorInjector.getValue());
             taskQueueContext.setTaskTypePositionIndex(taskTypeIndexManager);
 
-            final Log log = logInjector.getValue();
+            final LogStream log = logInjector.getValue();
 
             final LogWriter logWriter = new LogWriter(log);
             taskQueueContext.setLogWriter(logWriter);
@@ -65,14 +65,14 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
             final Templates templates = Templates.taskQueueLogTemplates();
             final LogConsumer taskProcessor = new LogConsumer(
                     log.getId(),
-                    new BufferedLogReader(log),
+                    new BufferedLogStreamReader(log),
                     responsePool,
                     templates,
                     new LogWritersImpl(taskQueueContext, null));
 
             final LockTasksOperator lockTasksOperator = new LockTasksOperator(
                     taskTypeIndexManager.getIndex(),
-                    new BufferedLogReader(log),
+                    new BufferedLogStreamReader(log),
                     logWriter,
                     dataFramePoolInjector.getValue(),
                     responsePool.getCapacity() // there cannot be more open adhoc subscriptions than there are requests
@@ -82,12 +82,12 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
             transport.registerChannelListener(lockTasksOperator);
 
             taskProcessor.addHandler(Templates.TASK_INSTANCE, new TaskInstanceHandler(lockTasksOperator));
-            taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogReader(log), lockedTasksIndexManager.getIndex()));
+            taskProcessor.addHandler(Templates.TASK_INSTANCE_REQUEST, new TaskInstanceRequestHandler(new BufferedLogStreamReader(log), lockedTasksIndexManager.getIndex()));
 
             taskProcessor.addIndexWriter(new TaskTypeIndexWriter(taskTypeIndexManager, templates));
             taskProcessor.addIndexWriter(new LockedTasksIndexWriter(lockedTasksIndexManager, templates));
 
-            taskProcessor.recover(Arrays.asList(new BufferedLogReader(log)));
+            taskProcessor.recover(Arrays.asList(new BufferedLogStreamReader(log)));
 
             // replay all events before taking new requests;
             // avoids that we mix up new API requests (that require a response)
@@ -117,7 +117,7 @@ public class TaskQueueContextService implements Service<TaskQueueContext>
         return taskQueueContext;
     }
 
-    public Injector<Log> getLogInjector()
+    public Injector<LogStream> getLogInjector()
     {
         return logInjector;
     }

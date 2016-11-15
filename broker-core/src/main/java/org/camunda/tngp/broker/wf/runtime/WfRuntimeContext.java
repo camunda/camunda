@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.wf.runtime;
 import org.camunda.tngp.broker.log.LogConsumer;
 import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
-import org.camunda.tngp.log.Log;
+import org.camunda.tngp.logstreams.LogStream;
 
 public class WfRuntimeContext implements ResourceContext
 {
@@ -14,7 +14,7 @@ public class WfRuntimeContext implements ResourceContext
 
     protected LogConsumer logConsumer;
 
-    protected Log log;
+    protected LogStream log;
 
     public WfRuntimeContext(int id, String name)
     {
@@ -32,12 +32,12 @@ public class WfRuntimeContext implements ResourceContext
         this.logWriter = logWriter;
     }
 
-    public Log getLog()
+    public LogStream getLog()
     {
         return log;
     }
 
-    public void setLog(Log log)
+    public void setLog(LogStream log)
     {
         this.log = log;
     }

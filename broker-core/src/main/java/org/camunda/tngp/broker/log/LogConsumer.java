@@ -10,7 +10,7 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.log.ResponseControl.ApiResponseControl;
 import org.camunda.tngp.broker.log.idx.IndexWriter;
 import org.camunda.tngp.broker.log.idx.IndexWriterTracker;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
@@ -26,7 +26,7 @@ public class LogConsumer
     protected LogEntryProcessor<LogEntryHeaderReader> logEntryProcessor;
     protected LogEntryProcessor<LogEntryHeaderReader> recoveryProcessor;
     protected LogConsumerTaskHandler logEntryHandler;
-    protected LogReader logReader;
+    protected LogStreamReader logReader;
     protected DeferredResponsePool apiResponsePool;
     protected boolean handlesApiRequests;
 
@@ -41,7 +41,7 @@ public class LogConsumer
 
     public LogConsumer(
             int logId,
-            LogReader logReader,
+            LogStreamReader logReader,
             Templates templates,
             LogWriters logWriters)
     {
@@ -50,7 +50,7 @@ public class LogConsumer
 
     public LogConsumer(
             int logId,
-            LogReader logReader,
+            LogStreamReader logReader,
             DeferredResponsePool apiResponsePool,
             Templates templates,
             LogWriters logWriters)
@@ -108,7 +108,7 @@ public class LogConsumer
      * Determines the last log entry consumed by this LogConsumer based on the
      * log entry backpointers
      */
-    protected long getLastConsumedPosition(List<LogReader> targetLogReaders)
+    protected long getLastConsumedPosition(List<LogStreamReader> targetLogReaders)
     {
         long lastConsumedPosition = -1L;
 
@@ -116,11 +116,11 @@ public class LogConsumer
 
         for (int i = 0; i < targetLogReaders.size(); i++)
         {
-            final LogReader targetLogReader = targetLogReaders.get(i);
+            final LogStreamReader targetLogReader = targetLogReaders.get(i);
 
             finder.lastProcessedEventPosition = -1L;
 
-            targetLogReader.seekToFirstEntry();
+            targetLogReader.seekToFirstEvent();
             recoveryProcessor.setLogReader(targetLogReader);
             recoveryProcessor.doWork(Integer.MAX_VALUE);
 
@@ -133,7 +133,7 @@ public class LogConsumer
     /**
      * Restores this consumer's state based on the log contents.
      */
-    public void recover(List<LogReader> targetLogReaders)
+    public void recover(List<LogStreamReader> targetLogReaders)
     {
         final long lastIndexedPosition = getLastIndexedPosition();
 
@@ -150,7 +150,7 @@ public class LogConsumer
         }
         else
         {
-            logReader.seekToFirstEntry();
+            logReader.seekToFirstEvent();
         }
     }
 

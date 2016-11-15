@@ -2,9 +2,9 @@ package org.camunda.tngp.broker.services;
 
 import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -15,7 +15,7 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
 {
     protected final T bufferReader;
 
-    protected final Injector<Log> logInjector = new Injector<>();
+    protected final Injector<LogStream> logInjector = new Injector<>();
 
     protected LogEntryProcessor<T> logEntryProcessor;
 
@@ -28,7 +28,7 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        final LogReader logReader = new BufferedLogReader(logInjector.getValue());
+        final LogStreamReader logReader = new BufferedLogStreamReader(logInjector.getValue());
 
         serviceContext.run(() ->
         {
@@ -55,7 +55,7 @@ public abstract class LogEntryProcessorService<T extends BufferReader> implement
     {
     }
 
-    public Injector<Log> getLogInjector()
+    public Injector<LogStream> getLogInjector()
     {
         return logInjector;
     }

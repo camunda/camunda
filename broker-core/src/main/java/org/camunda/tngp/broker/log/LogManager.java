@@ -1,11 +1,11 @@
 package org.camunda.tngp.broker.log;
 
 import org.camunda.tngp.broker.log.cfg.LogCfg;
-import org.camunda.tngp.log.Log;
+import org.camunda.tngp.logstreams.LogStream;
 
 public interface LogManager
 {
     void createLog(LogCfg config);
 
-    Log getLogById(int id);
+    LogStream getLogById(int id);
 }

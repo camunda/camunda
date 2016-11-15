@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.log;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.LOG_SERVICE_GROUP;
+import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,17 +13,16 @@ import java.util.Random;
 
 import org.camunda.tngp.broker.log.cfg.LogCfg;
 import org.camunda.tngp.broker.log.cfg.LogComponentCfg;
-import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
-import org.camunda.tngp.dispatcher.DispatcherBuilder;
-import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.log.FsLogBuilder;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.Logs;
+import org.camunda.tngp.logstreams.FsLogStreamBuilder;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.util.agent.DedicatedAgentRunnerService;
+import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
 
 public class LogManagerService implements Service<LogManager>, LogManager
 {
@@ -31,20 +30,20 @@ public class LogManagerService implements Service<LogManager>, LogManager
     protected LogComponentCfg logComponentConfig;
     protected List<LogCfg> logCfgs;
 
-    protected volatile Log[] logs = new Log[0];
+    protected volatile LogStream[] logs = new LogStream[0];
 
-    protected final ServiceGroupReference<Log> logServicesReference = ServiceGroupReference.<Log>create()
+    protected final ServiceGroupReference<LogStream> logServicesReference = ServiceGroupReference.<LogStream>create()
             .onAdd((name, service) ->
             {
-                final ArrayList<Log> list = new ArrayList<>(Arrays.asList(logs));
+                final ArrayList<LogStream> list = new ArrayList<>(Arrays.asList(logs));
                 list.add(service);
-                logs = list.toArray(new Log[list.size()]);
+                logs = list.toArray(new LogStream[list.size()]);
             })
             .onRemove((name, service) ->
             {
-                final ArrayList<Log> list = new ArrayList<>(Arrays.asList(logs));
+                final ArrayList<LogStream> list = new ArrayList<>(Arrays.asList(logs));
                 list.remove(service);
-                logs = list.toArray(new Log[list.size()]);
+                logs = list.toArray(new LogStream[list.size()]);
             })
             .build();
 
@@ -109,15 +108,15 @@ public class LogManagerService implements Service<LogManager>, LogManager
         }
         logSegmentSize = logSegmentSize * 1024 * 1024;
 
-        final FsLogBuilder logBuilder = Logs.createFsLog(logName, logId)
+        final FsLogStreamBuilder logBuilder = LogStreams.createFsLogStream(logName, logId)
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
+            .agentRunnerService(new DedicatedAgentRunnerService(new SimpleAgentRunnerFactory()))
             .logSegmentSize(logSegmentSize);
 
         final LogService logService = new LogService(logBuilder);
         serviceContext.createService(logServiceName(logName), logService)
             .group(LOG_SERVICE_GROUP)
-            .dependency(LOG_AGENT_CONTEXT_SERVICE, logService.getLogAgentContext())
             .install();
     }
 
@@ -125,24 +124,6 @@ public class LogManagerService implements Service<LogManager>, LogManager
     public void start(ServiceStartContext serviceContext)
     {
         this.serviceContext = serviceContext;
-
-        final int logWriteBufferSize = logComponentConfig.logWriteBufferSize * 1024 * 1024;
-
-        final DispatcherBuilder writeBufferBuilder = Dispatchers.create(null)
-                .bufferSize(logWriteBufferSize)
-                .subscriptions("log-appender");
-
-        final DispatcherService logWriteBufferService = new DispatcherService(writeBufferBuilder);
-        serviceContext.createService(LOG_WRITE_BUFFER_SERVICE, logWriteBufferService)
-            .dependency(AGENT_RUNNER_SERVICE, logWriteBufferService.getAgentRunnerInjector())
-            .dependency(COUNTERS_MANAGER_SERVICE, logWriteBufferService.getCountersManagerInjector())
-            .install();
-
-        final LogAgentContextService logAgentContextService = new LogAgentContextService();
-        serviceContext.createService(LOG_AGENT_CONTEXT_SERVICE, logAgentContextService)
-            .dependency(LOG_WRITE_BUFFER_SERVICE, logAgentContextService.getLogWriteBufferInjector())
-            .dependency(AGENT_RUNNER_SERVICE, logAgentContextService.getAgentRunnerServiceInjector())
-            .install();
 
         serviceContext.run(() ->
         {
@@ -165,13 +146,13 @@ public class LogManagerService implements Service<LogManager>, LogManager
         return this;
     }
 
-    public Log getLogById(int id)
+    public LogStream getLogById(int id)
     {
-        final Log[] logsCopy = logs;
+        final LogStream[] logsCopy = logs;
 
         for (int i = 0; i < logsCopy.length; i++)
         {
-            final Log log = logsCopy[i];
+            final LogStream log = logsCopy[i];
             if (log.getId() == id)
             {
                 return log;
@@ -181,7 +162,7 @@ public class LogManagerService implements Service<LogManager>, LogManager
         return null;
     }
 
-    public ServiceGroupReference<Log> getLogServicesReference()
+    public ServiceGroupReference<LogStream> getLogServicesReference()
     {
         return logServicesReference;
     }

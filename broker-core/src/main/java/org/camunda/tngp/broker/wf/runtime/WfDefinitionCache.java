@@ -11,17 +11,17 @@ import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.ReadableLogEntry;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
+import org.camunda.tngp.logstreams.LoggedEvent;
 import org.camunda.tngp.protocol.wf.WfDefinitionReader;
 
 public class WfDefinitionCache implements LongFunction<ProcessGraph>
 {
     protected final Long2ObjectCache<ProcessGraph> cache;
 
-    protected final Log wfTypeLog;
+    protected final LogStream wfTypeLog;
     protected final Long2LongHashIndex wfTypeIdIndex;
     protected final Bytes2LongHashIndex wfTypeKeyIndex;
 
@@ -29,9 +29,9 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
 
     protected final WfDefinitionReader reader = new WfDefinitionReader();
 
-    protected final LogReader logReader = new BufferedLogReader();
+    protected final LogStreamReader logReader = new BufferedLogStreamReader();
 
-    public WfDefinitionCache(int numSets, int setSize, Log wfTypeLog, Long2LongHashIndex wfTypeIdIndex, Bytes2LongHashIndex wfTypeKeyIndex)
+    public WfDefinitionCache(int numSets, int setSize, LogStream wfTypeLog, Long2LongHashIndex wfTypeIdIndex, Bytes2LongHashIndex wfTypeKeyIndex)
     {
         cache = new Long2ObjectCache<>(numSets, setSize, (v) ->
         {
@@ -74,7 +74,7 @@ public class WfDefinitionCache implements LongFunction<ProcessGraph>
         if (position >= 0)
         {
             logReader.wrap(wfTypeLog, position);
-            final ReadableLogEntry logEntry = logReader.next();
+            final LoggedEvent logEntry = logReader.next();
             logEntry.readValue(reader);
 
             final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(new DirectBufferInputStream(reader.getResource()));

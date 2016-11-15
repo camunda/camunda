@@ -1,22 +1,22 @@
 package org.camunda.tngp.broker.log;
 
-import org.camunda.tngp.log.Log;
+import org.camunda.tngp.logstreams.EventLogger;
+import org.camunda.tngp.logstreams.LogStream;
 
 public class LogWriter
 {
+    protected final EventLogger logEntryWriter = new EventLogger();
+    protected final LogStream stream;
 
-    protected final org.camunda.tngp.log.LogEntryWriter logEntryWriter = new org.camunda.tngp.log.LogEntryWriter();
-    protected final Log log;
 
-
-    public LogWriter(Log log)
+    public LogWriter(LogStream stream)
     {
-        this.log = log;
+        this.stream = stream;
     }
 
     public long write(LogEntryWriter<?, ?> writer)
     {
-        logEntryWriter.wrap(log);
+        logEntryWriter.wrap(stream);
         logEntryWriter.valueWriter(writer);
         logEntryWriter.positionAsKey();
         return logEntryWriter.tryWrite();

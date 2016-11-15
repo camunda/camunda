@@ -8,22 +8,22 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.camunda.tngp.hashindex.HashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.fs.FsLogStorage;
-import org.camunda.tngp.log.impl.LogImpl;
-import org.camunda.tngp.log.spi.LogStorage;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.impl.StreamImpl;
+import org.camunda.tngp.logstreams.impl.fs.FsLogStorage;
+import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
 
 public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> implements Service<HashIndexManager<I>>, HashIndexManager<I>
 {
-    private final Injector<Log> logInjector = new Injector<>();
+    private final Injector<LogStream> logInjector = new Injector<>();
 
     protected final int blockLength;
     protected final int indexSize;
@@ -47,9 +47,9 @@ public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> impleme
     {
         ctx.run(() ->
         {
-            final Log log = logInjector.getValue();
+            final LogStream log = logInjector.getValue();
 
-            final LogStorage logStorage = ((LogImpl)log).getLogContext().getLogStorage();
+            final LogStorage logStorage = ((StreamImpl)log).getContext().getLogStorage();
             final String logPath = ((FsLogStorage) logStorage).getConfig().getPath();
 
             indexDirPath = logPath + File.separator;
@@ -161,7 +161,7 @@ public abstract class HashIndexManagerService<I extends HashIndex<?, ?>> impleme
         return index;
     }
 
-    public Injector<Log> getLogInjector()
+    public Injector<LogStream> getLogInjector()
     {
         return logInjector;
     }

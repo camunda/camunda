@@ -1,8 +1,13 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_CONTEXT_SERVICE_GROUP_NAME;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueContextServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueIdGeneratorName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockedTasksIndexServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueTaskTypePositionIndex;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerDataFramePoolServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -19,8 +24,8 @@ import org.camunda.tngp.broker.transport.TransportServiceNames;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceName;
@@ -77,7 +82,7 @@ public class TaskQueueManagerService extends AbstractResourceContextProvider<Tas
             throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Mandatory configuration property 'logName' is not set.");
         }
 
-        final ServiceName<Log> logServiceName = logServiceName(logName);
+        final ServiceName<LogStream> logServiceName = logServiceName(logName);
         final ServiceName<HashIndexManager<Long2LongHashIndex>> lockedTasksIndexServiceName = taskQueueLockedTasksIndexServiceName(taskQueueName);
         final ServiceName<HashIndexManager<Bytes2LongHashIndex>> taskQueueTaskTypePositionIndexName = taskQueueTaskTypePositionIndex(taskQueueName);
         final ServiceName<IdGenerator> idGeneratorName = taskQueueIdGeneratorName(taskQueueName);

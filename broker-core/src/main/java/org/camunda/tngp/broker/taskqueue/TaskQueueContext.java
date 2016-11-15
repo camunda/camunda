@@ -6,8 +6,8 @@ import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.broker.transport.worker.spi.ResourceContext;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.logstreams.LogStream;
 
 public class TaskQueueContext implements ResourceContext
 {
@@ -15,7 +15,7 @@ public class TaskQueueContext implements ResourceContext
 
     protected final int taskQueueId;
 
-    protected Log log;
+    protected LogStream log;
 
     protected LogWriter logWriter;
 
@@ -43,12 +43,12 @@ public class TaskQueueContext implements ResourceContext
         return taskQueueId;
     }
 
-    public Log getLog()
+    public LogStream getLog()
     {
         return log;
     }
 
-    public void setLog(Log log)
+    public void setLog(LogStream log)
     {
         this.log = log;
     }

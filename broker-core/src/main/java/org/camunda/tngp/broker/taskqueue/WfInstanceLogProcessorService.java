@@ -8,9 +8,9 @@ import org.camunda.tngp.broker.log.LogWritersImpl;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.taskqueue.log.handler.InputActivityInstanceHandler;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -33,20 +33,20 @@ public class WfInstanceLogProcessorService implements Service<LogConsumer>
         serviceContext.run(() ->
         {
             final Templates wfRuntimeTemplates = Templates.wfRuntimeLogTemplates();
-            final Log log = wfRuntimeContext.getLog();
+            final LogStream log = wfRuntimeContext.getLog();
 
             logConsumer = new LogConsumer(
                     log.getId(),
-                    new BufferedLogReader(log),
+                    new BufferedLogStreamReader(log),
                     wfRuntimeTemplates,
                     new LogWritersImpl(null, taskQueueManager));
 
             logConsumer.addHandler(Templates.ACTIVITY_EVENT, new InputActivityInstanceHandler(taskQueueManager));
 
-            final List<LogReader> logReaders = new ArrayList<>();
+            final List<LogStreamReader> logReaders = new ArrayList<>();
             for (TaskQueueContext resourceContext : taskQueueManager.getContexts())
             {
-                logReaders.add(new BufferedLogReader(resourceContext.getLog()));
+                logReaders.add(new BufferedLogStreamReader(resourceContext.getLog()));
             }
 
             logConsumer.recover(logReaders);

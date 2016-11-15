@@ -1,8 +1,14 @@
 package org.camunda.tngp.broker.wf.runtime;
 
-import static org.camunda.tngp.broker.log.LogServiceNames.*;
-import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.*;
-import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.*;
+import static org.camunda.tngp.broker.log.LogServiceNames.logServiceName;
+import static org.camunda.tngp.broker.transport.worker.WorkerServiceNames.workerResponsePoolServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.WF_RUNTIME_CONTEXT_GROUP_NAME;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionCacheServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionIdIndexServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfDefinitionKeyIndexServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfInstanceIdGeneratorServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeContextServiceName;
+import static org.camunda.tngp.broker.wf.runtime.WfRuntimeServiceNames.wfRuntimeWorkflowEventIndexServiceName;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,8 +26,8 @@ import org.camunda.tngp.broker.wf.WfComponent;
 import org.camunda.tngp.broker.wf.cfg.WfRuntimeCfg;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceName;
@@ -90,7 +96,7 @@ public class WfRuntimeManagerService
             throw new RuntimeException("Cannot start workflow runtime " + wfRuntimeName + ": Mandatory configuration property 'repositoryName' is not set.");
         }
 
-        final ServiceName<Log> wfInstanceLogServiceName = logServiceName(wfInstancelogName);
+        final ServiceName<LogStream> wfInstanceLogServiceName = logServiceName(wfInstancelogName);
         final ServiceName<IdGenerator> wfInstanceIdGeneratorServiceName = wfInstanceIdGeneratorServiceName(wfRuntimeName);
         final ServiceName<HashIndexManager<Long2LongHashIndex>> workflowEventIndexServiceName = wfRuntimeWorkflowEventIndexServiceName(wfRuntimeName);
         final ServiceName<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexServiceName = wfDefinitionIdIndexServiceName(wfRuntimeName);

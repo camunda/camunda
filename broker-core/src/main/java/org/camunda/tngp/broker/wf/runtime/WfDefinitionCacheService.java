@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.wf.runtime;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.Log;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -11,7 +11,7 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class WfDefinitionCacheService implements Service<WfDefinitionCache>
 {
-    protected final Injector<Log> wfDefinitionLogInjector = new Injector<>();
+    protected final Injector<LogStream> wfDefinitionLogInjector = new Injector<>();
     protected final Injector<HashIndexManager<Long2LongHashIndex>> wfDefinitionIdIndexInjector = new Injector<>();
     protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexInjector = new Injector<>();
 
@@ -59,7 +59,7 @@ public class WfDefinitionCacheService implements Service<WfDefinitionCache>
         return wfDefinitionKeyIndexInjector;
     }
 
-    public Injector<Log> getWfDefinitionLogInjector()
+    public Injector<LogStream> getWfDefinitionLogInjector()
     {
         return wfDefinitionLogInjector;
     }

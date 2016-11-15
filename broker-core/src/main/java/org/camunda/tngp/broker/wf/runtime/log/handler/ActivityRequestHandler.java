@@ -12,14 +12,14 @@ import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.log.ActivityInstanceRequestType;
 
 public class ActivityRequestHandler implements LogEntryTypeHandler<ActivityInstanceRequestReader>
 {
 
     protected Long2LongHashIndex eventIndex;
-    protected LogReader logReader;
+    protected LogStreamReader logReader;
 
     protected BpmnActivityEventReader activityInstanceReader = new BpmnActivityEventReader();
     protected BpmnActivityEventWriter activityInstanceWriter = new BpmnActivityEventWriter();
@@ -28,7 +28,7 @@ public class ActivityRequestHandler implements LogEntryTypeHandler<ActivityInsta
 
     protected UnsafeBuffer newBranchPayloadBuffer = new UnsafeBuffer(0, 0);
 
-    public ActivityRequestHandler(LogReader logReader, Long2LongHashIndex eventIndex)
+    public ActivityRequestHandler(LogStreamReader logReader, Long2LongHashIndex eventIndex)
     {
         this.eventIndex = eventIndex;
         this.logReader = logReader;

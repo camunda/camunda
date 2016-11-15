@@ -6,14 +6,14 @@ import org.camunda.tngp.broker.log.LogEntryHandler;
 import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.LogEntryProcessor;
 import org.camunda.tngp.broker.log.Templates;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 
 public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
 {
-    protected LogReader logReader;
+    protected LogStreamReader logReader;
     protected LogEntryProcessor<LogEntryHeaderReader> logEntryProcessor;
 
     protected LongHashSet taskTypeHashes;
@@ -24,10 +24,10 @@ public class LockableTaskFinder implements LogEntryHandler<LogEntryHeaderReader>
 
     public LockableTaskFinder()
     {
-        this(new BufferedLogReader());
+        this(new BufferedLogStreamReader());
     }
 
-    public LockableTaskFinder(LogReader logReader)
+    public LockableTaskFinder(LogStreamReader logReader)
     {
         this.logReader = logReader;
         this.logEntryProcessor = new LogEntryProcessor<>(logReader, new LogEntryHeaderReader(), this);

@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.ReadableLogEntry;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
+import org.camunda.tngp.logstreams.LoggedEvent;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-public class StubLogReader implements LogReader
+public class StubLogReader implements LogStreamReader
 {
     private enum IteratorState
     {
@@ -25,16 +25,16 @@ public class StubLogReader implements LogReader
     protected List<StubLogEntry> logEntries = new ArrayList<>();
     protected StubLogEntry currentEntry = null;
 
-    protected Log targetLog;
+    protected LogStream targetLog;
 
     protected long firstEventPosition = 0;
 
-    public StubLogReader(Log targetLog)
+    public StubLogReader(LogStream targetLog)
     {
         wrap(targetLog);
     }
 
-    public StubLogReader(Log targetLog, long position)
+    public StubLogReader(LogStream targetLog, long position)
     {
         wrap(targetLog, position);
     }
@@ -52,18 +52,18 @@ public class StubLogReader implements LogReader
     }
 
     @Override
-    public void wrap(Log log)
+    public void wrap(LogStream log)
     {
         if (targetLog != null && targetLog != log)
         {
             throw new RuntimeException("StubLogReader only works for a single log");
         }
 
-        seekToLastEntry();
+        seekToLastEvent();
     }
 
     @Override
-    public void wrap(Log log, long position)
+    public void wrap(LogStream log, long position)
     {
         if (targetLog != null && targetLog != log)
         {
@@ -118,7 +118,7 @@ public class StubLogReader implements LogReader
     }
 
     @Override
-    public ReadableLogEntry next()
+    public LoggedEvent next()
     {
         if (!hasNext())
         {
@@ -168,7 +168,7 @@ public class StubLogReader implements LogReader
     }
 
     @Override
-    public void seekToLastEntry()
+    public void seekToLastEvent()
     {
         clear();
 
@@ -184,7 +184,7 @@ public class StubLogReader implements LogReader
     }
 
     @Override
-    public void seekToFirstEntry()
+    public void seekToFirstEvent()
     {
         clear();
 

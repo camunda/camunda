@@ -24,9 +24,9 @@ import org.camunda.tngp.broker.wf.runtime.log.idx.WfDefinitionIdIndexWriter;
 import org.camunda.tngp.broker.wf.runtime.log.idx.WfDefinitionKeyIndexWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -37,7 +37,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
 {
     protected final Injector<WfDefinitionCache> wfDefinitionChacheInjector = new Injector<>();
     protected final Injector<IdGenerator> idGeneratorInjector = new Injector<>();
-    protected final Injector<Log> logInjector = new Injector<>();
+    protected final Injector<LogStream> logInjector = new Injector<>();
 
     protected final Injector<HashIndexManager<Long2LongHashIndex>> workflowEventIndexInjector = new Injector<>();
     protected final Injector<HashIndexManager<Bytes2LongHashIndex>> wfDefinitionKeyIndexInjector = new Injector<>();
@@ -60,7 +60,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
             final WfDefinitionCache wfDefinitionCache = wfDefinitionChacheInjector.getValue();
             final IdGenerator idGenerator = idGeneratorInjector.getValue();
 
-            final Log log = logInjector.getValue();
+            final LogStream log = logInjector.getValue();
             final HashIndexManager<Long2LongHashIndex> indexManager = workflowEventIndexInjector.getValue();
 
             final LogWriter logWriter = new LogWriter(log);
@@ -71,12 +71,12 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
             final Templates templates = Templates.wfRuntimeLogTemplates();
             final LogConsumer wfRuntimeConsumer = new LogConsumer(
                     log.getId(),
-                    new BufferedLogReader(log),
+                    new BufferedLogStreamReader(log),
                     responsePoolInjector.getValue(),
                     templates,
                     new LogWritersImpl(wfRuntimeContext, null));
 
-            final EndProcessHandler endProcessHandler = new EndProcessHandler(new BufferedLogReader(log), indexManager.getIndex());
+            final EndProcessHandler endProcessHandler = new EndProcessHandler(new BufferedLogStreamReader(log), indexManager.getIndex());
             final TakeOutgoingFlowsHandler takeOutgoingFlowsHandler = new TakeOutgoingFlowsHandler();
             final WaitEventHandler waitEventHandler = new WaitEventHandler();
 
@@ -99,16 +99,16 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
             wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);
 
             wfRuntimeConsumer.addHandler(Templates.WF_INSTANCE_REQUEST, new WorkflowInstanceRequestHandler(wfDefinitionCache, idGenerator));
-            wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new BufferedLogReader(log), indexManager.getIndex()));
+            wfRuntimeConsumer.addHandler(Templates.ACTIVITY_INSTANCE_REQUEST, new ActivityRequestHandler(new BufferedLogStreamReader(log), indexManager.getIndex()));
 
             wfRuntimeConsumer.addHandler(Templates.WF_DEFINITION_REQUEST,
-                    new WfDefinitionRequestHandler(new BufferedLogReader(log), idGenerator));
+                    new WfDefinitionRequestHandler(new BufferedLogStreamReader(log), idGenerator));
 
             wfRuntimeConsumer.addIndexWriter(new BpmnEventIndexWriter(indexManager, templates));
             wfRuntimeConsumer.addIndexWriter(new WfDefinitionIdIndexWriter(wfDefinitionIdIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
             wfRuntimeConsumer.addIndexWriter(new WfDefinitionKeyIndexWriter(wfDefinitionKeyIndexInjector.getValue(), Templates.wfRuntimeLogTemplates()));
 
-            wfRuntimeConsumer.recover(Arrays.asList(new BufferedLogReader(log)));
+            wfRuntimeConsumer.recover(Arrays.asList(new BufferedLogStreamReader(log)));
 
 
             // replay all events before taking new requests;
@@ -148,7 +148,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
         return idGeneratorInjector;
     }
 
-    public Injector<Log> getLogInjector()
+    public Injector<LogStream> getLogInjector()
     {
         return logInjector;
     }

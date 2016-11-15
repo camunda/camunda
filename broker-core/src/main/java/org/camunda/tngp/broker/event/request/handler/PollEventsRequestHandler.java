@@ -16,10 +16,10 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.event.EventContext;
 import org.camunda.tngp.broker.event.EventErrors;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
-import org.camunda.tngp.log.ReadableLogEntry;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
+import org.camunda.tngp.logstreams.LoggedEvent;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.event.EventBatchWriter;
 import org.camunda.tngp.protocol.event.PollEventsDecoder;
@@ -37,14 +37,14 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
 
     protected final ErrorWriter errorWriter;
 
-    protected final LogReader logReader;
+    protected final LogStreamReader logReader;
 
     public PollEventsRequestHandler()
     {
-        this(new PollEventsRequestReader(), new BufferedLogReader(EVENT_BUFFER_CAPACITY), new EventBatchWriter(EVENT_BUFFER_CAPACITY), new ErrorWriter());
+        this(new PollEventsRequestReader(), new BufferedLogStreamReader(EVENT_BUFFER_CAPACITY), new EventBatchWriter(EVENT_BUFFER_CAPACITY), new ErrorWriter());
     }
 
-    public PollEventsRequestHandler(PollEventsRequestReader requestReader, LogReader logReader, EventBatchWriter batchWriter, ErrorWriter errorWriter)
+    public PollEventsRequestHandler(PollEventsRequestReader requestReader, LogStreamReader logReader, EventBatchWriter batchWriter, ErrorWriter errorWriter)
     {
         this.requestReader = requestReader;
         this.logReader = logReader;
@@ -75,7 +75,7 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
             return writeError(response, "topic id must be greater or equal to 0");
         }
 
-        final Log log = context.getLogManager().getLogById(topicId);
+        final LogStream log = context.getLogManager().getLogById(topicId);
         if (log == null)
         {
             return writeError(response, "found no topic with id: " + topicId);
@@ -87,7 +87,7 @@ public class PollEventsRequestHandler implements BrokerRequestHandler<EventConte
 
         while (eventAppended && eventCount < maxEvents && logReader.hasNext())
         {
-            final ReadableLogEntry logEntry = logReader.next();
+            final LoggedEvent logEntry = logReader.next();
 
             eventAppended = batchWriter.appendEvent(
                 logEntry.getPosition(),

@@ -27,7 +27,7 @@ import org.camunda.tngp.broker.event.EventErrors;
 import org.camunda.tngp.broker.log.LogManager;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.log.Log;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.event.EventBatchReader;
@@ -59,7 +59,7 @@ public class PollEventsRequestHandlerTest
     protected PollEventsRequestReader requestReader;
 
     @Mock
-    protected Log log;
+    protected LogStream log;
 
     @Mock
     protected LogManager logManager;

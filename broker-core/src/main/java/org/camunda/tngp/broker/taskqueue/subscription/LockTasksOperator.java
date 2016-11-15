@@ -17,9 +17,9 @@ import org.camunda.tngp.broker.log.LogWriter;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.request.handler.LockableTaskFinder;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
-import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.LockedTaskWriter;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
@@ -65,7 +65,7 @@ public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>,
 
     public LockTasksOperator(
             Bytes2LongHashIndex taskTypePositionIndex,
-            LogReader logReader,
+            LogStreamReader logReader,
             LogWriter logWriter,
             DataFramePool dataFramePool,
             int upperBoundConcurrentAdhocSubscriptions)

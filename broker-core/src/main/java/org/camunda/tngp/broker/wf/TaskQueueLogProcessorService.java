@@ -10,9 +10,9 @@ import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeContext;
 import org.camunda.tngp.broker.wf.runtime.WfRuntimeManager;
 import org.camunda.tngp.broker.wf.runtime.log.handler.InputTaskHandler;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -38,21 +38,21 @@ public class TaskQueueLogProcessorService implements Service<LogConsumer>
             final WfRuntimeManager wfRuntimeManager = wfRuntimeManagerInjector.getValue();
 
             final TaskQueueContext taskQueueContext = taskQueueContextInjector.getValue();
-            final Log inputLog = taskQueueContext.getLog();
+            final LogStream inputLog = taskQueueContext.getLog();
 
             final Templates taskQueueLogTemplates = Templates.taskQueueLogTemplates();
             logConsumer = new LogConsumer(
                     inputLog.getId(),
-                    new BufferedLogReader(inputLog),
+                    new BufferedLogStreamReader(inputLog),
                     taskQueueLogTemplates,
                     new LogWritersImpl(null, wfRuntimeManager));
 
             logConsumer.addHandler(Templates.TASK_INSTANCE, new InputTaskHandler());
 
-            final List<LogReader> logReaders = new ArrayList<>();
+            final List<LogStreamReader> logReaders = new ArrayList<>();
             for (WfRuntimeContext resourceContext : wfRuntimeManager.getContexts())
             {
-                logReaders.add(new BufferedLogReader(resourceContext.getLog()));
+                logReaders.add(new BufferedLogStreamReader(resourceContext.getLog()));
             }
 
             logConsumer.recover(logReaders);

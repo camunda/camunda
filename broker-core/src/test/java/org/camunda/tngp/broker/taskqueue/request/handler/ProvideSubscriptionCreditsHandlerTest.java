@@ -12,7 +12,7 @@ import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
 import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.taskqueue.ProvideSubscriptionCreditsDecoder;
 import org.camunda.tngp.protocol.taskqueue.ProvideSubscriptionCreditsReader;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
@@ -39,7 +39,7 @@ public class ProvideSubscriptionCreditsHandlerTest
 
         taskOperator = new LockTasksOperator(
                 mock(Bytes2LongHashIndex.class),
-                mock(LogReader.class),
+                mock(LogStreamReader.class),
                 mock(LogWriter.class),
                 mock(DataFramePool.class),
                 1);

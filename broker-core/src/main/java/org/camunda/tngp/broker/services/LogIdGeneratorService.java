@@ -1,10 +1,10 @@
 package org.camunda.tngp.broker.services;
 
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -12,7 +12,7 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class LogIdGeneratorService implements Service<IdGenerator>
 {
-    protected final Injector<Log> logInjector = new Injector<>();
+    protected final Injector<LogStream> logInjector = new Injector<>();
 
     protected IdGenerator idGenerator;
 
@@ -21,10 +21,10 @@ public class LogIdGeneratorService implements Service<IdGenerator>
     {
         ctx.run(() ->
         {
-            final Log log = logInjector.getValue();
+            final LogStream log = logInjector.getValue();
             long lastIdUpperLimit = 0;
 
-            final LogReader logReader = new BufferedLogReader(log);
+            final LogStreamReader logReader = new BufferedLogStreamReader(log);
             if (logReader.hasNext())
             {
                 lastIdUpperLimit = logReader.next().getPosition() + 1;
@@ -47,7 +47,7 @@ public class LogIdGeneratorService implements Service<IdGenerator>
         return idGenerator;
     }
 
-    public Injector<Log> getLogInjector()
+    public Injector<LogStream> getLogInjector()
     {
         return logInjector;
     }

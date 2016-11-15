@@ -1,24 +1,18 @@
 package org.camunda.tngp.broker.log;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.camunda.tngp.log.FsLogBuilder;
-import org.camunda.tngp.log.Log;
-import org.camunda.tngp.log.impl.agent.LogAgentContext;
-import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.logstreams.FsLogStreamBuilder;
+import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
-public class LogService implements Service<Log>
+public class LogService implements Service<LogStream>
 {
-    protected final Injector<LogAgentContext> logAgentContext = new Injector<>();
+    protected final FsLogStreamBuilder logBuilder;
 
-    protected final FsLogBuilder logBuilder;
+    protected LogStream log;
 
-    protected Log log;
-
-    public LogService(FsLogBuilder logBuilder)
+    public LogService(FsLogStreamBuilder logBuilder)
     {
         this.logBuilder = logBuilder;
     }
@@ -26,29 +20,24 @@ public class LogService implements Service<Log>
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        final CompletableFuture<Void> startFuture = ((CompletableFuture<Log>) logBuilder
-            .logAgentContext(logAgentContext.getValue())
-            .build())
-            .thenAccept((log) -> this.log = log);
+        serviceContext.run(() ->
+        {
+            log = logBuilder.build();
+            log.open();
+        });
 
-        serviceContext.async(startFuture);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        stopContext.async((CompletableFuture<?>) log.closeAsync());
+        stopContext.async(log.closeAsync());
     }
 
     @Override
-    public Log get()
+    public LogStream get()
     {
         return log;
-    }
-
-    public Injector<LogAgentContext> getLogAgentContext()
-    {
-        return logAgentContext;
     }
 
 }

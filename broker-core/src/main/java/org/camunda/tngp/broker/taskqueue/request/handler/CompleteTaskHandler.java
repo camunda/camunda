@@ -10,13 +10,13 @@ import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestWriter;
 import org.camunda.tngp.broker.transport.worker.spi.BrokerRequestHandler;
-import org.camunda.tngp.log.BufferedLogReader;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
+import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskDecoder;
 import org.camunda.tngp.protocol.taskqueue.CompleteTaskEncoder;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
-import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 
 public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContext>
@@ -31,7 +31,7 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
     protected TaskInstanceRequestWriter logRequestWriter = new TaskInstanceRequestWriter();
 
     protected static final int READ_BUFFER_SIZE = 1024 * 1024;
-    protected LogReader logReader = new BufferedLogReader();
+    protected LogStreamReader logReader = new BufferedLogStreamReader();
 
     @Override
     public long onRequest(

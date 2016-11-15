@@ -10,18 +10,18 @@ import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventWriter;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.LogReader;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
+import org.camunda.tngp.logstreams.LogStreamReader;
 
 public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActivityInstanceAspectHandler
 {
     protected final BpmnProcessEventWriter eventWriter = new BpmnProcessEventWriter();
 
     protected final Long2LongHashIndex workflowEventIndex;
-    protected final LogReader logReader;
+    protected final LogStreamReader logReader;
     protected final BpmnProcessEventReader latestEventReader = new BpmnProcessEventReader();
 
-    public EndProcessHandler(LogReader logReader, Long2LongHashIndex workflowEventIndex)
+    public EndProcessHandler(LogStreamReader logReader, Long2LongHashIndex workflowEventIndex)
     {
         this.logReader = logReader;
         this.workflowEventIndex = workflowEventIndex;

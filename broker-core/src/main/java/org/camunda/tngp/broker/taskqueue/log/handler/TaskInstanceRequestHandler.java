@@ -10,7 +10,7 @@ import org.camunda.tngp.broker.taskqueue.TaskErrors;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.log.LogReader;
+import org.camunda.tngp.logstreams.LogStreamReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.log.TaskInstanceEncoder;
 import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
@@ -20,7 +20,7 @@ import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInstanceRequestReader>
 {
 
-    protected LogReader logReader;
+    protected LogStreamReader logReader;
     protected Long2LongHashIndex lockedTasksIndex;
 
     protected TaskInstanceReader taskInstanceReader = new TaskInstanceReader();
@@ -29,7 +29,7 @@ public class TaskInstanceRequestHandler implements LogEntryTypeHandler<TaskInsta
     protected SingleTaskAckResponseWriter responseWriter = new SingleTaskAckResponseWriter();
     protected ErrorWriter errorWriter = new ErrorWriter();
 
-    public TaskInstanceRequestHandler(LogReader logReader, Long2LongHashIndex lockedTasksIndex)
+    public TaskInstanceRequestHandler(LogStreamReader logReader, Long2LongHashIndex lockedTasksIndex)
     {
         this.logReader = logReader;
         this.lockedTasksIndex = lockedTasksIndex;

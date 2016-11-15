@@ -1,10 +1,10 @@
 package org.camunda.tngp.broker.util.mocks;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.log.ReadableLogEntry;
+import org.camunda.tngp.logstreams.LoggedEvent;
 import org.camunda.tngp.util.buffer.BufferReader;
 
-public class StubLogEntry implements ReadableLogEntry
+public class StubLogEntry implements LoggedEvent
 {
     protected final long longKey;
     protected final long position;
