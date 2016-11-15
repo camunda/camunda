@@ -246,6 +246,11 @@ public class TransportRequestImpl implements TransportRequest
         return requestTimeout;
     }
 
+    public void setRequestTimeout(long requestTime)
+    {
+        this.requestTime = requestTime;
+    }
+
     @Override
     public DirectBuffer getResponseBuffer()
     {
@@ -319,4 +324,11 @@ public class TransportRequestImpl implements TransportRequest
 
         return isResponseHandled;
     }
+
+    @Override
+    public long getRequestTime()
+    {
+        return requestTime;
+    }
+
 }

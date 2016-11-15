@@ -13,4 +13,6 @@ public interface TransportChannel extends AutoCloseable
 
     void sendControlFrame(ByteBuffer frame);
 
+    boolean isOpen();
+
 }

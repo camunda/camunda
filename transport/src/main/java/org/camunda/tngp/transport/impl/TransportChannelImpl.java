@@ -390,4 +390,11 @@ public abstract class TransportChannelImpl implements TransportChannel
     {
         return channelHandler;
     }
+
+    @Override
+    public boolean isOpen()
+    {
+        return STATE_FIELD.get(this) == STATE_CONNECTED;
+    }
+
 }

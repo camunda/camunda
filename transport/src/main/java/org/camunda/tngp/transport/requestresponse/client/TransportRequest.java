@@ -21,6 +21,8 @@ public interface TransportRequest extends AutoCloseable
 
     long getRequestTimeout();
 
+    long getRequestTime();
+
     DirectBuffer getResponseBuffer();
 
     int getResponseLength();

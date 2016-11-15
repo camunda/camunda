@@ -28,6 +28,8 @@ public interface TransportConnection extends AutoCloseable
      */
     PooledTransportRequest openRequest(int channelId, int length);
 
+    PooledTransportRequest openRequest(int channelId, int length, long requestTimeout);
+
     /**
      * Non blocking open of request. The request buffer is claimed in the transport's
      * send buffer allowing for zero-copy writes to the transport's send buffer.
@@ -38,6 +40,8 @@ public interface TransportConnection extends AutoCloseable
      * Returns false if the request cannot be opened due to back pressure
      */
     boolean openRequest(TransportRequest request, int channelId, int length);
+
+    boolean openRequest(TransportRequest request, int channelId, int length, long requestTimeout);
 
     void close();
 

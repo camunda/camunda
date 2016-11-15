@@ -54,14 +54,19 @@ public class TransportConnectionImpl implements TransportConnection
         STATE_FIELD.set(this, STATE_OPEN);
     }
 
-    @Override
     public PooledTransportRequest openRequest(int channelId, int length)
+    {
+        return openRequest(channelId, length, -1L);
+    }
+
+    @Override
+    public PooledTransportRequest openRequest(int channelId, int length, long requestTimeout)
     {
         final PooledTransportRequest request = requestPool.getRequest();
 
         if (request != null)
         {
-            if (openRequest(request, channelId, length))
+            if (openRequest(request, channelId, length, requestTimeout))
             {
                 return request;
             }
@@ -76,12 +81,27 @@ public class TransportConnectionImpl implements TransportConnection
             final int channelId,
             final int msgLength)
     {
+        return openRequest(request, channelId, msgLength, -1L);
+    }
+
+    @Override
+    public boolean openRequest(
+            final TransportRequest request,
+            final int channelId,
+            final int msgLength,
+            final long requestTimeout)
+    {
         if (STATE_FIELD.get(this) != STATE_OPEN)
         {
             throw new IllegalStateException("Cannot open request on " + this + ", connection is not open.");
         }
 
         final TransportRequestImpl requestImpl = (TransportRequestImpl) request;
+
+        if (requestTimeout > 0)
+        {
+            requestImpl.setRequestTimeout(requestTimeout);
+        }
 
         final int requestResponseHeaderFramedLength = RequestResponseProtocolHeaderDescriptor.framedLength(msgLength);
         final int transportHeaderFramedLength = TransportHeaderDescriptor.framedLength(requestResponseHeaderFramedLength);
@@ -159,8 +179,10 @@ public class TransportConnectionImpl implements TransportConnection
     {
         if (openRequests.size() > 0)
         {
-            for (Object request : openRequests.getObjects())
+            final TransportRequestImpl[] requests = openRequests.getObjects();
+            for (int i = 0; i < requests.length; i++)
             {
+                final TransportRequestImpl request = requests[i];
                 if (request != null)
                 {
                     ((TransportRequestImpl)request).processChannelClosed(transportChannel);
