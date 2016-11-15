@@ -29,6 +29,8 @@ public class FsLogStorage implements LogStorage
 
     protected FsLogSegment currentSegment;
 
+    protected int dirtySegmentId = -1;
+
     protected volatile int state = STATE_CREATED;
 
     public FsLogStorage(FsLogStorageConfiguration cfg)
@@ -71,6 +73,8 @@ public class FsLogStorage implements LogStorage
             if (appendResult >= 0)
             {
                 opresult = position(currentSegment.getSegmentId(), appendResult);
+
+                markSegmentAsDirty(currentSegment);
             }
         }
 
@@ -213,6 +217,8 @@ public class FsLogStorage implements LogStorage
             }
         }
 
+        dirtySegmentId = -1;
+
         state = STATE_CLOSED;
     }
 
@@ -221,8 +227,23 @@ public class FsLogStorage implements LogStorage
     {
         ensureOpenedStorage();
 
-        // TODO flush only dirty segments
-        logSegments.flushAll();
+        if (dirtySegmentId >= 0)
+        {
+            for (int id = dirtySegmentId; id <= currentSegment.getSegmentId(); id++)
+            {
+                logSegments.getSegment(id).flush();
+            }
+
+            dirtySegmentId = -1;
+        }
+    }
+
+    protected void markSegmentAsDirty(FsLogSegment segment)
+    {
+        if (dirtySegmentId < 0)
+        {
+            dirtySegmentId = segment.getSegmentId();
+        }
     }
 
     public FsLogStorageConfiguration getConfig()

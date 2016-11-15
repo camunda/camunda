@@ -1,7 +1,5 @@
 package org.camunda.tngp.logstreams.impl.fs;
 
-import java.io.IOException;
-
 public class FsLogSegments
 {
     protected int initalSegmentId = -1;
@@ -71,15 +69,6 @@ public class FsLogSegments
 
         this.segments = new FsLogSegment[0];
         this.segmentCount = 0;
-    }
-
-    public void flushAll() throws IOException
-    {
-        final FsLogSegment[] segments = this.segments;
-        for (FsLogSegment readableLogSegment : segments)
-        {
-            readableLogSegment.flush();
-        }
     }
 
 }

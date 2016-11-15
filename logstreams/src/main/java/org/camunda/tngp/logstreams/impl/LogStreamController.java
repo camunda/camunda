@@ -331,6 +331,11 @@ public class LogStreamController implements Agent
 
             try
             {
+                // TODO should do recovery if fails to flush because of corrupted block index - see #8
+
+                // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
+                logStorage.flush();
+
                 snapshotWriter = snapshotStorage.createSnapshot(name, context.getLastPosition());
 
                 snapshotWriter.writeSnapshot(blockIndex);

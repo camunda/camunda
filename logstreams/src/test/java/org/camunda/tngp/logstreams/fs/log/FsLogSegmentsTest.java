@@ -15,8 +15,6 @@ package org.camunda.tngp.logstreams.fs.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
-import java.io.IOException;
-
 import org.camunda.tngp.logstreams.impl.fs.FsLogSegment;
 import org.camunda.tngp.logstreams.impl.fs.FsLogSegments;
 import org.junit.Before;
@@ -132,19 +130,6 @@ public class FsLogSegmentsTest
         verify(secondSegment).closeSegment();
 
         assertThat(fsLogSegments.getFirst()).isNull();
-    }
-
-    @Test
-    public void shouldFlushAllSegments() throws IOException
-    {
-        final FsLogSegments fsLogSegments = new FsLogSegments();
-
-        fsLogSegments.init(0, new FsLogSegment[] { firstSegment, secondSegment });
-
-        fsLogSegments.flushAll();
-
-        verify(firstSegment).flush();
-        verify(secondSegment).flush();
     }
 
 }

@@ -203,6 +203,8 @@ public class LogStreamControllerTest
 
         assertThat(controller.isOpen()).isTrue();
 
+        verify(mockLogStorage).flush();
+
         verify(mockSnapshotStorage).createSnapshot(LOG_NAME, LOG_POSITION);
         verify(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
         verify(mockSnapshotWriter).commit();
