@@ -68,7 +68,6 @@ clean: undeploy-broker
 
 build:
 	cd ../.. && mvn clean package -U -DskipTests
-	mvn clean package -U
 
 all-tests: test-create-task-throughput test-create-task-latency test-start-wf-instance-latency test-start-wf-instance-throughput
 
