@@ -45,6 +45,7 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <configuration>
           <configLocation>../.checkstyle.xml</configLocation>
+          <suppressionsLocation>../.suppressions.xml</suppressionsLocation>
         </configuration>
       </plugin>
     </plugins>

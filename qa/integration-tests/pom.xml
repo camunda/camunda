@@ -21,8 +21,8 @@
       <groupId>org.camunda.tngp</groupId>
       <artifactId>tngp-client-java</artifactId>
     </dependency>
-    
-    
+
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>test-util</artifactId>
@@ -50,6 +50,7 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <configuration>
           <configLocation>../../.checkstyle.xml</configLocation>
+          <suppressionsLocation>../../.suppressions.xml</suppressionsLocation>
         </configuration>
       </plugin>
     </plugins>

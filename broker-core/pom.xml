@@ -58,7 +58,7 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-all</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>test-util</artifactId>
@@ -76,7 +76,7 @@
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
@@ -117,6 +117,7 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <configuration>
           <configLocation>../.checkstyle.xml</configLocation>
+          <suppressionsLocation>../.suppressions.xml</suppressionsLocation>
         </configuration>
       </plugin>
     </plugins>
