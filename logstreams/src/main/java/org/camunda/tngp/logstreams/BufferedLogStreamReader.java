@@ -414,6 +414,11 @@ public class BufferedLogStreamReader implements LogStreamReader
             return alignedLength(getMessageLength());
         }
 
+        public int getFragementOffset()
+        {
+            return fragmentOffset;
+        }
+
         @Override
         public long getPosition()
         {
@@ -455,7 +460,6 @@ public class BufferedLogStreamReader implements LogStreamReader
         {
             reader.wrap(buffer, getValueOffset(), getValueLength());
         }
-
     }
 
 }
