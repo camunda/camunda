@@ -2,13 +2,8 @@ package org.camunda.tngp.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.when;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntries;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,14 +11,11 @@ import java.nio.ByteBuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.impl.LogBlockIndex;
-import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.Answer;
 
 public class LogBlockIndexTest
 {
@@ -32,8 +24,7 @@ public class LogBlockIndexTest
 
     private LogBlockIndex blockIndex;
 
-    @Mock
-    private LogStorage mockLogStorage;
+    private MockLogStorage mockLogStorage;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -42,6 +33,8 @@ public class LogBlockIndexTest
     public void setup()
     {
         MockitoAnnotations.initMocks(this);
+
+        mockLogStorage = new MockLogStorage();
 
         blockIndex = createNewBlockIndex(CAPACITY);
     }
@@ -206,16 +199,16 @@ public class LogBlockIndexTest
     @Test
     public void shouldRecoverIndexFromLogStorage()
     {
-        when(mockLogStorage.getFirstBlockAddress()).thenReturn(1L);
+        mockLogStorage
+            .firstBlockAddress(1L)
+            .add(newLogEntry().address(1).position(11).messageLength(INDEX_BLOCK_SIZE / 4).nextAddress(2))
+            .add(newLogEntry().address(2).position(12).messageLength(INDEX_BLOCK_SIZE / 4).nextAddress(3))
+            .add(newLogEntry().address(3).position(13).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(4))
+            .add(newLogEntry().address(4).position(14).messageLength(INDEX_BLOCK_SIZE / 2).nextAddress(5))
+            .add(newLogEntry().address(5).position(15).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(6));
 
         // only create index if index block size is reached
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(1L))).thenAnswer(readLogEntry(11, 2, INDEX_BLOCK_SIZE / 4));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(2L))).thenAnswer(readLogEntry(12, 3, INDEX_BLOCK_SIZE / 4));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(3L))).thenAnswer(readLogEntry(13, 4, INDEX_BLOCK_SIZE - HEADER_LENGTH));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(4L))).thenAnswer(readLogEntry(14, 5, INDEX_BLOCK_SIZE / 2));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(5L))).thenAnswer(readLogEntry(15, 6, INDEX_BLOCK_SIZE - HEADER_LENGTH));
-
-        blockIndex.recover(mockLogStorage, INDEX_BLOCK_SIZE);
+        blockIndex.recover(mockLogStorage.getMock(), INDEX_BLOCK_SIZE);
 
         assertThat(blockIndex.size()).isEqualTo(2);
 
@@ -229,15 +222,15 @@ public class LogBlockIndexTest
     @Test
     public void shouldRecoverIndexFromLogStorageWithMultipleLogEntriesPerBlock()
     {
-        when(mockLogStorage.getFirstBlockAddress()).thenReturn(1L);
+        mockLogStorage
+            .firstBlockAddress(1)
+            .add(newLogEntry().address(1).position(11).messageLength((INDEX_BLOCK_SIZE - HEADER_LENGTH) / 2).nextAddress(2))
+            .add(newLogEntries(2).address(2).position(12).messageLength((INDEX_BLOCK_SIZE - HEADER_LENGTH) / 3).nextAddress(4))
+            .add(newLogEntry().address(4).position(14).messageLength((INDEX_BLOCK_SIZE - HEADER_LENGTH) / 2).nextAddress(5))
+            .add(newLogEntries(3).address(5).position(15).messageLength((INDEX_BLOCK_SIZE - HEADER_LENGTH) / 4).nextAddress(8));
 
         // create index for first log entry in block if index block size is reached
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(1L))).thenAnswer(readLogEntry(11, 2, (INDEX_BLOCK_SIZE - HEADER_LENGTH) / 2));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(2L))).thenAnswer(readLogEntries(12, 4, (INDEX_BLOCK_SIZE - HEADER_LENGTH) / 3, 2));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(4L))).thenAnswer(readLogEntry(14, 5, (INDEX_BLOCK_SIZE - HEADER_LENGTH) / 2));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(5L))).thenAnswer(readLogEntries(15, 8, (INDEX_BLOCK_SIZE - HEADER_LENGTH) / 4, 3));
-
-        blockIndex.recover(mockLogStorage, INDEX_BLOCK_SIZE);
+        blockIndex.recover(mockLogStorage.getMock(), INDEX_BLOCK_SIZE);
 
         assertThat(blockIndex.size()).isEqualTo(2);
 
@@ -251,16 +244,16 @@ public class LogBlockIndexTest
     @Test
     public void shouldRecoverIndexFromLogStorageWithOverlappingLogEntryMessage()
     {
-        when(mockLogStorage.getFirstBlockAddress()).thenReturn(1L);
+        mockLogStorage
+            .firstBlockAddress(1)
+            // second log entry message overlaps the block
+            .add(newLogEntries(2).address(1).position(11).messageLength((int) (0.8 * INDEX_BLOCK_SIZE)).nextAddress(3))
+            // the remaining part of the log entry
+            .add(newLogEntry().address(3).position(12).messageLength((int) (INDEX_BLOCK_SIZE * 0.6)).nextAddress(4))
+            // next log entry
+            .add(newLogEntry().address(4).position(13).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(5));
 
-        // second log entry message overlaps the block
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(1L))).thenAnswer(readLogEntries(11, 3, (int) (0.8 * INDEX_BLOCK_SIZE), 2));
-        // the remaining part of the log entry
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(3L))).thenAnswer(readLogEntry(12, 4, (int) (INDEX_BLOCK_SIZE * 0.6)));
-        // next log entry
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(4L))).thenAnswer(readLogEntry(13, 5, INDEX_BLOCK_SIZE - HEADER_LENGTH));
-
-        blockIndex.recover(mockLogStorage, INDEX_BLOCK_SIZE);
+        blockIndex.recover(mockLogStorage.getMock(), INDEX_BLOCK_SIZE);
 
         assertThat(blockIndex.size()).isEqualTo(2);
 
@@ -274,18 +267,18 @@ public class LogBlockIndexTest
     @Test
     public void shouldRecoverIndexFromLogStorageWithOverlappingLogEntryHeader()
     {
-        when(mockLogStorage.getFirstBlockAddress()).thenReturn(1L);
+        mockLogStorage
+            .firstBlockAddress(1L)
+            // second log entry header overlaps the block
+            .add(newLogEntries(2).address(1).position(11).messageLength(INDEX_BLOCK_SIZE - 2 * HEADER_LENGTH).nextAddress(3))
+            // the remaining part of the second log entry header
+            .add(newLogEntry().address(3).position(12).messageLength(HEADER_LENGTH).nextAddress(4))
+            // the second log entry message
+            .add(newLogEntry().address(4).position(12).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(5))
+            // next log entry
+            .add(newLogEntry().address(5).position(13).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(6));
 
-        // second log entry header overlaps the block
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(1L))).thenAnswer(readLogEntries(11, 3, INDEX_BLOCK_SIZE - 2 * HEADER_LENGTH, 2));
-        // the remaining part of the second log entry header
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(3L))).thenAnswer(readLogEntry(12, 4, HEADER_LENGTH));
-        // the second log entry message
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(4L))).thenAnswer(readLogEntry(12, 5, INDEX_BLOCK_SIZE - HEADER_LENGTH));
-        // next log entry
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(5L))).thenAnswer(readLogEntry(13, 6, INDEX_BLOCK_SIZE - HEADER_LENGTH));
-
-        blockIndex.recover(mockLogStorage, INDEX_BLOCK_SIZE);
+        blockIndex.recover(mockLogStorage.getMock(), INDEX_BLOCK_SIZE);
 
         assertThat(blockIndex.size()).isEqualTo(2);
 
@@ -305,16 +298,17 @@ public class LogBlockIndexTest
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         blockIndex.writeSnapshot(outputStream);
 
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(1L))).thenAnswer(readLogEntry(11, 2, INDEX_BLOCK_SIZE - HEADER_LENGTH));
-        // add one more block after snapshot
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(2L))).thenAnswer(readLogEntry(12, 3, INDEX_BLOCK_SIZE - HEADER_LENGTH));
+        mockLogStorage
+            .add(newLogEntry().address(1).position(11).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(2))
+            // add one more block after snapshot
+            .add(newLogEntry().address(2).position(12).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(3));
 
         final LogBlockIndex newBlockIndex = createNewBlockIndex(CAPACITY);
 
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
         newBlockIndex.recoverFromSnapshot(inputStream);
 
-        newBlockIndex.recover(mockLogStorage, 11, INDEX_BLOCK_SIZE);
+        newBlockIndex.recover(mockLogStorage.getMock(), 11, INDEX_BLOCK_SIZE);
 
         assertThat(newBlockIndex.size()).isEqualTo(2);
 
@@ -323,38 +317,6 @@ public class LogBlockIndexTest
 
         assertThat(newBlockIndex.getAddress(1)).isEqualTo(2);
         assertThat(newBlockIndex.getLogPosition(1)).isEqualTo(12);
-    }
-
-    protected Answer<Integer> readLogEntry(long logPosition, int nextAddress, int messageLength)
-    {
-        return readLogEntries(logPosition, nextAddress, messageLength, 1);
-    }
-
-    protected Answer<Integer> readLogEntries(long logPosition, int nextAddress, int messageLength, int entryCount)
-    {
-        return invocation ->
-        {
-            final ByteBuffer byteBuffer = (ByteBuffer) invocation.getArguments()[0];
-            final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
-
-            int offset = 0;
-
-            for (int i = 0; i < entryCount; i++)
-            {
-                buffer.putInt(lengthOffset(offset), messageLength);
-
-                if (messageOffset(offset) <= byteBuffer.limit())
-                {
-                    buffer.putLong(positionOffset(messageOffset(offset)), logPosition + i);
-                }
-
-                offset += alignedLength(messageLength);
-            }
-
-            byteBuffer.position(Math.min(offset, byteBuffer.limit()));
-
-            return nextAddress;
-        };
     }
 
 }

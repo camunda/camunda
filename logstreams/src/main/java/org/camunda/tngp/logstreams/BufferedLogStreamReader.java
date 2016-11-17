@@ -88,7 +88,7 @@ public class BufferedLogStreamReader implements LogStreamReader
     public void wrap(StreamContext ctx)
     {
         initLog(ctx);
-        seekToLastEvent();
+        seekToFirstEvent();
     }
 
     @Override
@@ -103,13 +103,13 @@ public class BufferedLogStreamReader implements LogStreamReader
         seek(position);
     }
 
-    private void initLog(StreamContext ctx)
+    protected void initLog(StreamContext ctx)
     {
         this.logStorage = ctx.getLogStorage();
         this.blockIndex = ctx.getBlockIndex();
     }
 
-    public void clear()
+    protected void clear()
     {
         curr.wrap(buffer, -1);
         available = 0;
@@ -122,13 +122,21 @@ public class BufferedLogStreamReader implements LogStreamReader
         clear();
 
         final int indexSize = blockIndex.size();
-        if (indexSize == 0)
+        if (indexSize > 0)
         {
-            this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
-            return;
+            nextReadAddr = blockIndex.lookupBlockAddress(seekPosition);
         }
+        else
+        {
+            // fallback: seek without index
+            nextReadAddr = logStorage.getFirstBlockAddress();
 
-        nextReadAddr = blockIndex.lookupBlockAddress(seekPosition);
+            if (nextReadAddr == -1)
+            {
+                this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+                return;
+            }
+        }
 
         if (nextReadAddr < 0)
         {
@@ -176,14 +184,16 @@ public class BufferedLogStreamReader implements LogStreamReader
     {
         final int size = blockIndex.size();
 
-        if (size == 0)
+        if (size > 0)
         {
-            this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+            seek(blockIndex.getLogPosition(0));
+
+            this.iteratorState = IteratorState.INITIALIZED;
         }
         else
         {
-            seek(blockIndex.getLogPosition(0));
-            this.iteratorState = IteratorState.INITIALIZED;
+            // fallback: seek without index
+            seek(Long.MIN_VALUE);
         }
     }
 
@@ -192,11 +202,7 @@ public class BufferedLogStreamReader implements LogStreamReader
     {
         final int size = blockIndex.size();
 
-        if (size == 0)
-        {
-            this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
-        }
-        else
+        if (size > 0)
         {
             final int lastIdx = size - 1;
             final long lastBlockPosition =  blockIndex.getLogPosition(lastIdx);
@@ -208,7 +214,15 @@ public class BufferedLogStreamReader implements LogStreamReader
             {
                 next();
             }
+        }
+        else
+        {
+            // fallback: seek without index
+            seek(Long.MAX_VALUE);
+        }
 
+        if (iteratorState == IteratorState.ACTIVE)
+        {
             // will return last entry again
             this.iteratorState = IteratorState.INITIALIZED;
         }
@@ -260,7 +274,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         return bytesRead >= minBytes;
     }
 
-    public void ensureRemainingBufferCapacity(int requiredCapacity)
+    protected void ensureRemainingBufferCapacity(int requiredCapacity)
     {
         if (ioBuffer.remaining() < requiredCapacity)
         {
@@ -283,10 +297,7 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     public boolean hasNext()
     {
-        if (iteratorState == IteratorState.UNINITIALIZED)
-        {
-            throw new IllegalStateException("Iterator not initialized");
-        }
+        ensureInitialized();
 
         if (iteratorState == IteratorState.INITIALIZED)
         {
@@ -332,6 +343,14 @@ public class BufferedLogStreamReader implements LogStreamReader
         return true;
     }
 
+    protected void ensureInitialized()
+    {
+        if (iteratorState == IteratorState.UNINITIALIZED)
+        {
+            throw new IllegalStateException("Iterator not initialized");
+        }
+    }
+
     public LoggedEvent next()
     {
         if (!hasNext())
@@ -358,6 +377,13 @@ public class BufferedLogStreamReader implements LogStreamReader
     @Override
     public long getPosition()
     {
+        ensureInitialized();
+
+        if (iteratorState == IteratorState.INITIALIZED_EMPTY_LOG)
+        {
+            throw new NoSuchElementException("No log entry available.");
+        }
+
         return curr.getPosition();
     }
 
