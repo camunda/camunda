@@ -16,10 +16,11 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
     protected ExecutionEventType eventType;
     protected int flowElementId;
     protected int taskQueueId;
+    protected long bpmnBranchKey;
 
     protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
-
     protected final UnsafeBuffer flowElementIdStringBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
 
     public BpmnActivityEventWriter()
@@ -34,7 +35,9 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
                 BpmnActivityEventEncoder.flowElementIdStringHeaderLength() +
                 flowElementIdStringBuffer.capacity() +
                 BpmnActivityEventEncoder.taskTypeHeaderLength() +
-                taskTypeBuffer.capacity();
+                taskTypeBuffer.capacity() +
+                BpmnActivityEventEncoder.payloadHeaderLength() +
+                payloadBuffer.capacity();
     }
 
     @Override
@@ -47,8 +50,10 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
             .event(eventType.value())
             .flowElementId(flowElementId)
             .taskQueueId(taskQueueId)
+            .bpmnBranchKey(bpmnBranchKey)
             .putTaskType(taskTypeBuffer, 0, taskTypeBuffer.capacity())
-            .putFlowElementIdString(flowElementIdStringBuffer, 0, flowElementIdStringBuffer.capacity());
+            .putFlowElementIdString(flowElementIdStringBuffer, 0, flowElementIdStringBuffer.capacity())
+            .putPayload(payloadBuffer, 0, payloadBuffer.capacity());
     }
 
     public BpmnActivityEventWriter key(long key)
@@ -96,6 +101,19 @@ public class BpmnActivityEventWriter extends LogEntryWriter<BpmnActivityEventWri
     public BpmnActivityEventWriter flowElementIdString(DirectBuffer flowElementIdString, int offset, int length)
     {
         flowElementIdStringBuffer.wrap(flowElementIdString, offset, length);
+        return this;
+    }
+
+    public BpmnActivityEventWriter payload(DirectBuffer payload, int offset, int length)
+    {
+        this.payloadBuffer.wrap(payload, offset, length);
+        return this;
+    }
+
+
+    public BpmnActivityEventWriter bpmnBranchKey(long bpmnBranchKey)
+    {
+        this.bpmnBranchKey = bpmnBranchKey;
         return this;
     }
 

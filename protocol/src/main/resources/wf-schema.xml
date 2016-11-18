@@ -34,6 +34,7 @@
 	<sbe:message name="StartWorkflowInstance" id="1" description="Starts a new workflow instance">
 		<field name="wfDefinitionId" id="1" type="uint64" />
 		<data name="wfDefinitionKey" id="2" type="varDataEncoding" />
+        <data name="payload" id="3" type="varDataEncoding" />
 	</sbe:message>
 	
 	<sbe:message name="DeployBpmnResourceAck" id="200" description="Bpmn Resource has been successfully deployed">

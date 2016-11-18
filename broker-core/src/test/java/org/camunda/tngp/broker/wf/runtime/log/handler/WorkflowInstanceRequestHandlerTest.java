@@ -69,6 +69,7 @@ public class WorkflowInstanceRequestHandlerTest
         final WorkflowInstanceRequestReader requestReader = mock(WorkflowInstanceRequestReader.class);
         when(requestReader.type()).thenReturn(ProcessInstanceRequestType.NEW);
         when(requestReader.wfDefinitionId()).thenReturn(1234L);
+        when(requestReader.payload()).thenReturn(new UnsafeBuffer(0, 0));
 
         // when
         handler.handle(requestReader, responseControl, logWriters);
@@ -102,6 +103,7 @@ public class WorkflowInstanceRequestHandlerTest
         when(requestReader.type()).thenReturn(ProcessInstanceRequestType.NEW);
         when(requestReader.wfDefinitionId()).thenReturn(StartWorkflowInstanceDecoder.wfDefinitionIdNullValue());
         when(requestReader.wfDefinitionKey()).thenReturn(new UnsafeBuffer(key));
+        when(requestReader.payload()).thenReturn(new UnsafeBuffer(0, 0));
 
         when(wfDefinitionCache.getProcessGraphByTypeId(anyLong())).thenReturn(null);
         when(wfDefinitionCache.getLatestProcessGraphByTypeKey(any(), anyInt(), anyInt())).thenReturn(process); // TODO: make stronger key parameter assumption

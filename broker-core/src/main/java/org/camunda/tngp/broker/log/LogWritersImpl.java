@@ -15,13 +15,13 @@ public class LogWritersImpl implements LogWriters
     }
 
     @Override
-    public void writeToCurrentLog(LogEntryWriter<?, ?> entryWriter)
+    public long writeToCurrentLog(LogEntryWriter<?, ?> entryWriter)
     {
-        writeToResourceContext(thisLogContext, entryWriter);
+        return writeToResourceContext(thisLogContext, entryWriter);
     }
 
     @Override
-    public void writeToLog(int logId, LogEntryWriter<?, ?> entryWriter)
+    public long writeToLog(int logId, LogEntryWriter<?, ?> entryWriter)
     {
         if (resourceContextProvider == null)
         {
@@ -29,7 +29,7 @@ public class LogWritersImpl implements LogWriters
         }
 
         final ResourceContext resourceContext = resourceContextProvider.getContextForResource(logId);
-        writeToResourceContext(resourceContext, entryWriter);
+        return writeToResourceContext(resourceContext, entryWriter);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class LogWritersImpl implements LogWriters
 
     }
 
-    protected void writeToResourceContext(ResourceContext resourceContext, LogEntryWriter<?, ?> entryWriter)
+    protected long writeToResourceContext(ResourceContext resourceContext, LogEntryWriter<?, ?> entryWriter)
     {
 
         if (resourceContext == null)
@@ -59,7 +59,7 @@ public class LogWritersImpl implements LogWriters
             throw new RuntimeException("Cannot write log entry: No resource context provided");
         }
 
-        resourceContext.getLogWriter().write(entryWriter);
+        return resourceContext.getLogWriter().write(entryWriter);
     }
 
 }

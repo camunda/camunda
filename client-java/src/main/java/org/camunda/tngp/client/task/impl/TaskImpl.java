@@ -2,8 +2,10 @@ package org.camunda.tngp.client.task.impl;
 
 import java.time.Instant;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.task.Task;
+import org.camunda.tngp.protocol.taskqueue.SubscribedTaskReader;
 
 public class TaskImpl implements Task
 {
@@ -14,34 +16,39 @@ public class TaskImpl implements Task
     protected final String type;
     protected final Instant lockExpirationTime;
     protected final int taskQueueId;
+    protected final PayloadField payload = new PayloadField();
 
     protected int state;
     protected static final int STATE_LOCKED = 0;
     protected static final int STATE_COMPLETED = 1;
 
+
     public TaskImpl(
             AsyncTasksClient tasksClient,
-            long id,
-            Long wfInstanceId,
-            String type,
-            Instant lockExpirationTime,
-            int taskQueueId)
+            SubscribedTaskReader taskReader,
+            TaskSubscriptionImpl subscription)
     {
         this.tasksClient = tasksClient;
-        this.id = id;
-        this.workflowInstanceId = wfInstanceId;
-        this.type = type;
-        this.lockExpirationTime = lockExpirationTime;
-        this.taskQueueId = taskQueueId;
+        this.id = taskReader.taskId();
+        this.workflowInstanceId = taskReader.wfInstanceId();
+        this.type = subscription.getTaskType();
+        this.lockExpirationTime = Instant.ofEpochMilli(taskReader.lockTime());
+        this.taskQueueId = subscription.getTaskQueueId();
         this.state = STATE_LOCKED;
+
+        final DirectBuffer payloadBuffer = taskReader.payload();
+        payload.initFromPayloadBuffer(payloadBuffer, 0, payloadBuffer.capacity());
     }
 
     @Override
     public void complete()
     {
+        final DirectBuffer payloadBuffer = payload.getPayloadBuffer();
+
         tasksClient.complete()
             .taskId(id)
             .taskQueueId(taskQueueId)
+            .payload(payloadBuffer, 0, payloadBuffer.capacity())
             .execute();
 
         state = STATE_COMPLETED;
@@ -74,6 +81,18 @@ public class TaskImpl implements Task
     public Instant getLockExpirationTime()
     {
         return lockExpirationTime;
+    }
+
+    @Override
+    public String getPayloadString()
+    {
+        return payload.getPayloadString();
+    }
+
+    @Override
+    public void setPayloadString(String updatedPayload)
+    {
+        payload.setPayloadString(updatedPayload);
     }
 
 }

@@ -258,9 +258,11 @@ public class LockTasksOperator implements Consumer<Consumer<LockTasksOperator>>,
             return;
         }
 
+        final DirectBuffer payload = task.getPayload();
         taskWriter.id(taskId)
             .lockTime(task.lockTime())
-            .workflowInstanceId(task.wfInstanceId());
+            .workflowInstanceId(task.wfInstanceId())
+            .payload(payload, 0, payload.capacity());
 
         subscription.onTaskLocked(this, taskWriter);
     }

@@ -20,10 +20,13 @@ import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.log.LogWriters;
 import org.camunda.tngp.broker.test.util.FluentMock;
+import org.camunda.tngp.broker.util.mocks.StubLogReader;
+import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.graph.bpmn.BpmnAspect;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
+import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.junit.Before;
@@ -47,11 +50,17 @@ public class CreateActivityInstanceHandlerTest
 
     protected IdGenerator idGenerator;
 
+    @Mock
+    protected Long2LongHashIndex eventIndex;
+
+    protected StubLogReader logReader;
+
     @Before
     public void initMocks()
     {
         MockitoAnnotations.initMocks(this);
         idGenerator = new PrivateIdGenerator(0);
+        logReader = new StubLogReader(null, 555);
     }
 
     @Before
@@ -82,9 +91,13 @@ public class CreateActivityInstanceHandlerTest
         when(flowEventReader.key()).thenReturn(1234L);
         when(flowEventReader.wfDefinitionId()).thenReturn(467L);
         when(flowEventReader.wfInstanceId()).thenReturn(9876L);
+        when(flowEventReader.bpmnBranchKey()).thenReturn(765L);
 
-        final CreateActivityInstanceHandler handler = new CreateActivityInstanceHandler();
+        final CreateActivityInstanceHandler handler = new CreateActivityInstanceHandler(logReader, eventIndex);
         handler.setEventWriter(eventWriter);
+
+        logReader.addEntry(WfRuntimeEvents.bpmnBranchEvent("payload", 765L));
+        when(eventIndex.get(eq(765L), anyLong())).thenReturn(logReader.getEntryPosition(0));
 
         // when
         handler.handle(flowEventReader, process, logWriters, idGenerator);
@@ -97,6 +110,7 @@ public class CreateActivityInstanceHandlerTest
         verify(eventWriter).wfInstanceId(9876L);
         verify(eventWriter).taskQueueId(6);
         verify(eventWriter).taskType(argThat(hasBytes("foo".getBytes(StandardCharsets.UTF_8))), eq(0), eq(3));
+        verify(eventWriter).payload(argThat(hasBytes("payload".getBytes(StandardCharsets.UTF_8))), eq(0), eq(7));
 
         verify(logWriters).writeToCurrentLog(eventWriter);
         verifyNoMoreInteractions(logWriters);
@@ -106,7 +120,7 @@ public class CreateActivityInstanceHandlerTest
     public void testHandledAspect()
     {
         // given
-        final CreateActivityInstanceHandler handler = new CreateActivityInstanceHandler();
+        final CreateActivityInstanceHandler handler = new CreateActivityInstanceHandler(logReader, eventIndex);
 
         // when
         final BpmnAspect bpmnAspect = handler.getHandledBpmnAspect();

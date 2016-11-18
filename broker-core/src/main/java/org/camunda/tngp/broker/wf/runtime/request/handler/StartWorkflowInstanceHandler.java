@@ -35,6 +35,7 @@ public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRunt
 
         final DirectBuffer wfDefinitionKey = requestReader.wfDefinitionKey();
         final long wfDefinitionId = requestReader.wfDefinitionId();
+        final DirectBuffer payload = requestReader.payload();
 
         if (wfDefinitionId == StartWorkflowInstanceDecoder.wfDefinitionIdNullValue() && wfDefinitionKey.capacity() == 0)
         {
@@ -59,6 +60,7 @@ public class StartWorkflowInstanceHandler implements BrokerRequestHandler<WfRunt
         logRequestWriter.type(ProcessInstanceRequestType.NEW)
             .wfDefinitionId(wfDefinitionId)
             .wfDefinitionKey(wfDefinitionKey, 0, wfDefinitionKey.capacity())
+            .payload(payload, 0, payload.capacity())
             .source(EventSource.API);
 
         logWriter.write(logRequestWriter);

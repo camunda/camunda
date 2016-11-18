@@ -26,13 +26,15 @@ public class OngoingTaskSubscription extends TaskSubscription
     @Override
     public void onTaskLocked(LockTasksOperator taskOperator, LockedTaskWriter task)
     {
+        subscribedTaskWriter
+            .subscriptionId(id)
+            .task(task);
+
         final OutgoingDataFrame dataFrame = dataFramePool.openFrame(
                 subscribedTaskWriter.getLength(),
                 channelId);
 
-        dataFrame.write(subscribedTaskWriter
-                .subscriptionId(id)
-                .task(task));
+        dataFrame.write(subscribedTaskWriter);
 
         dataFrame.commit();
     }

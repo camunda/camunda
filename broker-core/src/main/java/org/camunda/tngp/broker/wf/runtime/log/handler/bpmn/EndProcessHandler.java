@@ -32,6 +32,7 @@ public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActi
     {
         return writeProcessEndEvent(
             flowElementEventReader.wfInstanceId(),
+            flowElementEventReader.bpmnBranchKey(),
             logWriters);
     }
 
@@ -41,11 +42,12 @@ public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActi
     {
         return writeProcessEndEvent(
             activityEventReader.wfInstanceId(),
+            activityEventReader.bpmnBranchKey(),
             logWriters);
 
     }
 
-    protected int writeProcessEndEvent(long processInstanceId, LogWriters logWriters)
+    protected int writeProcessEndEvent(long processInstanceId, long bpmnBranchKey, LogWriters logWriters)
     {
         final long previousEventPosition = workflowEventIndex.get(processInstanceId, -1L);
 
@@ -58,6 +60,7 @@ public class EndProcessHandler implements BpmnFlowElementAspectHandler, BpmnActi
             .processId(latestEventReader.processId())
             .processInstanceId(processInstanceId)
             .initialElementId(latestEventReader.initialElementId())
+            .bpmnBranchKey(bpmnBranchKey)
             .key(latestEventReader.key());
 
         logWriters.writeToCurrentLog(eventWriter);

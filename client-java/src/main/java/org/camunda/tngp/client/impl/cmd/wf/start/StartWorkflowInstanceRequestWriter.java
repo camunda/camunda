@@ -1,13 +1,16 @@
 package org.camunda.tngp.client.impl.cmd.wf.start;
 
+import java.nio.ByteBuffer;
+
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.Constants;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceEncoder;
-import org.camunda.tngp.util.buffer.RequestWriter;
+import org.camunda.tngp.util.buffer.PayloadRequestWriter;
 
-public class StartWorkflowInstanceRequestWriter implements RequestWriter
+public class StartWorkflowInstanceRequestWriter implements PayloadRequestWriter
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final StartWorkflowInstanceEncoder requestEncoder = new StartWorkflowInstanceEncoder();
@@ -17,6 +20,7 @@ public class StartWorkflowInstanceRequestWriter implements RequestWriter
     protected int resourceId;
     protected int shardId;
     protected long wfDefinitionId = -1;
+    protected UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public int getLength()
@@ -24,7 +28,9 @@ public class StartWorkflowInstanceRequestWriter implements RequestWriter
         return headerEncoder.encodedLength() +
                 StartWorkflowInstanceEncoder.BLOCK_LENGTH +
                 StartWorkflowInstanceEncoder.wfDefinitionKeyHeaderLength() +
-                wfDefinitionKey.capacity();
+                wfDefinitionKey.capacity() +
+                StartWorkflowInstanceEncoder.payloadHeaderLength() +
+                payloadBuffer.capacity();
     }
 
     @Override
@@ -42,7 +48,8 @@ public class StartWorkflowInstanceRequestWriter implements RequestWriter
 
         requestEncoder.wrap(writeBuffer, writeOffset)
             .wfDefinitionId(wfDefinitionId)
-            .putWfDefinitionKey(wfDefinitionKey, 0, wfDefinitionKey.capacity());
+            .putWfDefinitionKey(wfDefinitionKey, 0, wfDefinitionKey.capacity())
+            .putPayload(payloadBuffer, 0, payloadBuffer.capacity());
     }
 
     @Override
@@ -87,5 +94,22 @@ public class StartWorkflowInstanceRequestWriter implements RequestWriter
         return this;
     }
 
+    @Override
+    public void payload(byte[] bytes, int offset, int length)
+    {
+        payloadBuffer.wrap(bytes, offset, length);
+    }
+
+    @Override
+    public void payload(DirectBuffer buffer, int offset, int length)
+    {
+        payloadBuffer.wrap(buffer, offset, length);
+    }
+
+    @Override
+    public void payload(ByteBuffer byteBuffer)
+    {
+        payloadBuffer.wrap(byteBuffer);
+    }
 
 }

@@ -93,7 +93,7 @@ public class WfRuntimeContextService implements Service<WfRuntimeContext>
 
             final FlowElementEventHandler flowElementEventHandler = new FlowElementEventHandler(wfDefinitionCache, idGenerator);
             flowElementEventHandler.addAspectHandler(new StartProcessHandler());
-            flowElementEventHandler.addAspectHandler(new CreateActivityInstanceHandler());
+            flowElementEventHandler.addAspectHandler(new CreateActivityInstanceHandler(new BufferedLogReader(log), indexManager.getIndex()));
             flowElementEventHandler.addAspectHandler(new TriggerNoneEventHandler());
             flowElementEventHandler.addAspectHandler(endProcessHandler);
             wfRuntimeConsumer.addHandler(Templates.FLOW_ELEMENT_EVENT, flowElementEventHandler);

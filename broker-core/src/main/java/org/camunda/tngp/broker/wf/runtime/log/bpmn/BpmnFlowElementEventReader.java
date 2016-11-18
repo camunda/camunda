@@ -14,18 +14,35 @@ public class BpmnFlowElementEventReader implements BufferReader
     protected final BpmnFlowElementEventDecoder bodyDecoder = new BpmnFlowElementEventDecoder();
 
     protected final UnsafeBuffer flowElementIdStringBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
         headerDecoder.wrap(buffer, offset);
-        bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        offset += headerDecoder.encodedLength();
+
+        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
         offset += bodyDecoder.encodedLength();
         offset +=  BpmnFlowElementEventDecoder.flowElementIdStringHeaderLength();
         final int flowElementIdStringLength = bodyDecoder.flowElementIdStringLength();
 
         flowElementIdStringBuffer.wrap(buffer, offset, flowElementIdStringLength);
+
+        offset += flowElementIdStringLength;
+        bodyDecoder.limit(offset);
+        offset +=  BpmnFlowElementEventDecoder.payloadHeaderLength();
+        final int payloadLength = bodyDecoder.payloadLength();
+
+        if (payloadLength > 0)
+        {
+            payloadBuffer.wrap(buffer, offset, payloadLength);
+        }
+        else
+        {
+            payloadBuffer.wrap(0, 0);
+        }
     }
 
     public long key()
@@ -58,4 +75,13 @@ public class BpmnFlowElementEventReader implements BufferReader
         return flowElementIdStringBuffer;
     }
 
+    public long bpmnBranchKey()
+    {
+        return bodyDecoder.bpmnBranchKey();
+    }
+
+    public DirectBuffer payload()
+    {
+        return payloadBuffer;
+    }
 }

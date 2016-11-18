@@ -11,7 +11,7 @@ import org.camunda.tngp.broker.log.LogEntryHeaderReader;
 import org.camunda.tngp.broker.log.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.broker.util.mocks.TestWfRuntimeLogEntries;
+import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public class BpmnEventIndexWriterTest
         final BpmnEventIndexWriter indexWriter =
                 new BpmnEventIndexWriter(bpmnEventIndexManager, Templates.wfRuntimeLogTemplates());
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createActivityInstanceEvent(ExecutionEventType.ACT_INST_CREATED));
+        logReader.addEntry(WfRuntimeEvents.createActivityInstanceEvent(ExecutionEventType.ACT_INST_CREATED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
         logReader.next().readValue(reader);
@@ -55,7 +55,7 @@ public class BpmnEventIndexWriterTest
         indexWriter.indexLogEntry(76L, reader);
 
         // then
-        verify(bpmnEventIndex).put(TestWfRuntimeLogEntries.KEY, 76L);
+        verify(bpmnEventIndex).put(WfRuntimeEvents.KEY, 76L);
         verifyNoMoreInteractions(bpmnEventIndex);
 
     }
@@ -67,7 +67,7 @@ public class BpmnEventIndexWriterTest
         final BpmnEventIndexWriter indexWriter =
                 new BpmnEventIndexWriter(bpmnEventIndexManager, Templates.wfRuntimeLogTemplates());
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createActivityInstanceEvent(ExecutionEventType.ACT_INST_COMPLETED));
+        logReader.addEntry(WfRuntimeEvents.createActivityInstanceEvent(ExecutionEventType.ACT_INST_COMPLETED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
         logReader.next().readValue(reader);
@@ -87,7 +87,7 @@ public class BpmnEventIndexWriterTest
         final BpmnEventIndexWriter indexWriter =
                 new BpmnEventIndexWriter(bpmnEventIndexManager, Templates.wfRuntimeLogTemplates());
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createFlowElementEvent());
+        logReader.addEntry(WfRuntimeEvents.createFlowElementEvent());
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
         logReader.next().readValue(reader);
@@ -107,7 +107,7 @@ public class BpmnEventIndexWriterTest
         final BpmnEventIndexWriter indexWriter =
                 new BpmnEventIndexWriter(bpmnEventIndexManager, Templates.wfRuntimeLogTemplates());
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
+        logReader.addEntry(WfRuntimeEvents.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
         logReader.next().readValue(reader);
@@ -116,7 +116,7 @@ public class BpmnEventIndexWriterTest
         indexWriter.indexLogEntry(76L, reader);
 
         // then
-        verify(bpmnEventIndex).put(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID, 76L);
+        verify(bpmnEventIndex).put(WfRuntimeEvents.PROCESS_INSTANCE_ID, 76L);
         verifyNoMoreInteractions(bpmnEventIndex);
     }
 
@@ -127,7 +127,7 @@ public class BpmnEventIndexWriterTest
         final BpmnEventIndexWriter indexWriter =
                 new BpmnEventIndexWriter(bpmnEventIndexManager, Templates.wfRuntimeLogTemplates());
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createProcessEvent(ExecutionEventType.PROC_INST_COMPLETED));
+        logReader.addEntry(WfRuntimeEvents.createProcessEvent(ExecutionEventType.PROC_INST_COMPLETED));
 
         final LogEntryHeaderReader reader = new LogEntryHeaderReader();
         logReader.next().readValue(reader);
@@ -136,7 +136,7 @@ public class BpmnEventIndexWriterTest
         indexWriter.indexLogEntry(76L, reader);
 
         // then
-        verify(bpmnEventIndex).remove(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID, -1L);
+        verify(bpmnEventIndex).remove(WfRuntimeEvents.PROCESS_INSTANCE_ID, -1L);
         verifyNoMoreInteractions(bpmnEventIndex);
     }
 

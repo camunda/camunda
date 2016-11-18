@@ -57,10 +57,13 @@ public class CompleteTaskHandler implements BrokerRequestHandler<TaskQueueContex
             return writeError(response, "Task id is required");
         }
 
+        final DirectBuffer payload = requestReader.getPayload();
+
         logRequestWriter
             .type(TaskInstanceRequestType.COMPLETE)
             .key(taskId)
             .lockOwnerId(consumerId)
+            .payload(payload, 0, payload.capacity())
             .source(EventSource.API);
 
         logWriter.write(logRequestWriter);

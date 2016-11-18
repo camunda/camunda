@@ -1,6 +1,5 @@
 package org.camunda.tngp.client.task.impl;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -144,11 +143,8 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
         {
             final TaskImpl task = new TaskImpl(
                     client,
-                    taskReader.taskId(),
-                    taskReader.wfInstanceId(),
-                    subscription.getTaskType(),
-                    Instant.ofEpochMilli(taskReader.lockTime()),
-                    subscription.getTaskQueueId());
+                    taskReader,
+                    subscription);
 
             subscription.addTask(task);
         }

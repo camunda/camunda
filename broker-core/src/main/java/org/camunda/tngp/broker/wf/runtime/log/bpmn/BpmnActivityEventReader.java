@@ -14,6 +14,7 @@ public class BpmnActivityEventReader implements BufferReader
     protected final BpmnActivityEventDecoder bodyDecoder = new BpmnActivityEventDecoder();
     protected final UnsafeBuffer taskTypeBuffer = new UnsafeBuffer(0, 0);
     protected final UnsafeBuffer flowElementIdStringBuffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -36,6 +37,21 @@ public class BpmnActivityEventReader implements BufferReader
         final int flowElementIdStringLength = bodyDecoder.flowElementIdStringLength();
 
         flowElementIdStringBuffer.wrap(buffer, offset, flowElementIdStringLength);
+
+        offset += flowElementIdStringLength;
+        bodyDecoder.limit(offset);
+        offset += BpmnActivityEventDecoder.payloadHeaderLength();
+        final int payloadLength = bodyDecoder.payloadLength();
+
+        if (payloadLength > 0)
+        {
+            payloadBuffer.wrap(buffer, offset, payloadLength);
+        }
+        else
+        {
+            payloadBuffer.wrap(0, 0);
+        }
+
     }
 
     public long key()
@@ -81,5 +97,15 @@ public class BpmnActivityEventReader implements BufferReader
     public DirectBuffer getFlowElementIdString()
     {
         return flowElementIdStringBuffer;
+    }
+
+    public long bpmnBranchKey()
+    {
+        return bodyDecoder.bpmnBranchKey();
+    }
+
+    public DirectBuffer getPayload()
+    {
+        return payloadBuffer;
     }
 }

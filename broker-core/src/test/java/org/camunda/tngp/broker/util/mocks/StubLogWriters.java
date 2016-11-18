@@ -32,13 +32,13 @@ public class StubLogWriters implements LogWriters
     }
 
     @Override
-    public void writeToCurrentLog(LogEntryWriter<?, ?> logWriter)
+    public long writeToCurrentLog(LogEntryWriter<?, ?> logWriter)
     {
-        writeToLog(thisLogId, logWriter);
+        return writeToLog(thisLogId, logWriter);
     }
 
     @Override
-    public void writeToLog(int logId, LogEntryWriter<?, ?> logWriter)
+    public long writeToLog(int logId, LogEntryWriter<?, ?> logWriter)
     {
         final StubLogWriter stubLogWriter = logWriters.get(logId);
 
@@ -47,7 +47,7 @@ public class StubLogWriters implements LogWriters
             throw new RuntimeException("No writer for log " + logId);
         }
 
-        stubLogWriter.write(logWriter);
+        return stubLogWriter.write(logWriter);
 
     }
 

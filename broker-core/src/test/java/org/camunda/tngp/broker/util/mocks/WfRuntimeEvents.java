@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
+import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventWriter;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
@@ -15,7 +16,7 @@ import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TestWfRuntimeLogEntries
+public class WfRuntimeEvents
 {
     public static final int FLOW_ELEMENT_ID = 1235;
     public static final long KEY = 23456789L;
@@ -114,8 +115,19 @@ public class TestWfRuntimeLogEntries
         when(reader.taskQueueId()).thenReturn(TASK_QUEUE_ID);
         when(reader.getTaskType()).thenReturn(new UnsafeBuffer(TASK_TYPE));
         when(reader.getFlowElementIdString()).thenReturn(new UnsafeBuffer(FLOW_ELEMENT_ID_STRING));
+        when(reader.getPayload()).thenReturn(new UnsafeBuffer(0, 0));
 
         return reader;
     }
 
+    public static BpmnBranchEventWriter bpmnBranchEvent(String payload, long branchKey)
+    {
+        final BpmnBranchEventWriter writer = new BpmnBranchEventWriter();
+        writer.key(branchKey);
+
+        final UnsafeBuffer payloadBuffer = new UnsafeBuffer(payload.getBytes(StandardCharsets.UTF_8));
+        writer.materializedPayload(payloadBuffer, 0, payloadBuffer.capacity());
+
+        return writer;
+    }
 }

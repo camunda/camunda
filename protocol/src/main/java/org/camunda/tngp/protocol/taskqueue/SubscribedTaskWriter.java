@@ -37,7 +37,7 @@ public class SubscribedTaskWriter implements BufferWriter
     @Override
     public int getLength()
     {
-        return MessageHeaderEncoder.ENCODED_LENGTH + SubscribedTaskEncoder.BLOCK_LENGTH;
+        return MessageHeaderEncoder.ENCODED_LENGTH + LOCKED_TASK_OFFSET + taskWriter.getLength();
     }
 
     @Override

@@ -49,4 +49,9 @@ public class BpmnProcessEventReader implements BufferReader
         return bodyDecoder.initialElementId();
     }
 
+    public long bpmnBranchKey()
+    {
+        return bodyDecoder.bpmnBranchKey();
+    }
+
 }

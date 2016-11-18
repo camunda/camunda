@@ -13,6 +13,7 @@ public class BpmnProcessEventWriter extends LogEntryWriter<BpmnProcessEventWrite
     protected long processInstanceId;
     protected ExecutionEventType event;
     protected int initialElementId;
+    protected long bpmnBranchKey;
 
     public BpmnProcessEventWriter()
     {
@@ -33,7 +34,8 @@ public class BpmnProcessEventWriter extends LogEntryWriter<BpmnProcessEventWrite
             .wfDefinitionId(processId)
             .wfInstanceId(processInstanceId)
             .event(event.value())
-            .initialElementId(initialElementId);
+            .initialElementId(initialElementId)
+            .bpmnBranchKey(bpmnBranchKey);
 
     }
 
@@ -58,6 +60,12 @@ public class BpmnProcessEventWriter extends LogEntryWriter<BpmnProcessEventWrite
     public BpmnProcessEventWriter event(ExecutionEventType event)
     {
         this.event = event;
+        return this;
+    }
+
+    public BpmnProcessEventWriter bpmnBranchKey(long bpmnBranchKey)
+    {
+        this.bpmnBranchKey = bpmnBranchKey;
         return this;
     }
 

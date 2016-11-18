@@ -111,10 +111,14 @@ public class LockedTaskBatchWriterTest
         assertThat(taskDecoder.wfInstanceId()).isEqualTo(10076);
         assertThat(taskDecoder.lockTime()).isEqualTo(123L);
 
+        bodyDecoder.limit(bodyDecoder.limit() + TasksDecoder.taskPayloadHeaderLength()); // skip payload
+
         taskDecoder = tasksDecoder.next().task();
         assertThat(taskDecoder.id()).isEqualTo(98);
         assertThat(taskDecoder.wfInstanceId()).isEqualTo(10098);
         assertThat(taskDecoder.lockTime()).isEqualTo(234L);
+
+        bodyDecoder.limit(bodyDecoder.limit() + TasksDecoder.taskPayloadHeaderLength()); // skip payload
 
         taskDecoder = tasksDecoder.next().task();
         assertThat(taskDecoder.id()).isEqualTo(123);
@@ -146,7 +150,7 @@ public class LockedTaskBatchWriterTest
                 LockedTaskBatchEncoder.BLOCK_LENGTH +
                 TasksEncoder.sbeHeaderSize();
 
-        expectedLength += TasksEncoder.sbeBlockLength() * 3; // static length of tasks
+        expectedLength += (TasksEncoder.sbeBlockLength() + TasksEncoder.taskPayloadHeaderLength()) * 3; // static length of tasks
 
         assertThat(length).isEqualTo(expectedLength);
     }

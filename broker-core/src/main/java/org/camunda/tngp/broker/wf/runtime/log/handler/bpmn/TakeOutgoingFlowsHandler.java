@@ -37,6 +37,7 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
                 processEventReader.processId(),
                 processEventReader.processInstanceId(),
                 flowElementVisitor,
+                processEventReader.bpmnBranchKey(),
                 idGenerator,
                 logWriters);
     }
@@ -52,11 +53,17 @@ public class TakeOutgoingFlowsHandler implements BpmnActivityInstanceAspectHandl
                 activityEventReader.wfDefinitionId(),
                 activityEventReader.wfInstanceId(),
                 flowElementVisitor,
+                activityEventReader.bpmnBranchKey(),
                 idGenerator,
                 logWriters);
     }
 
-    protected int writeSequenceFlowEvent(long processId, long processInstanceId, FlowElementVisitor flowElementVisitor, IdGenerator idGenerator, LogWriters logWriters)
+    protected int writeSequenceFlowEvent(long processId,
+            long processInstanceId,
+            FlowElementVisitor flowElementVisitor,
+            long bpmnBranchKey,
+            IdGenerator idGenerator,
+            LogWriters logWriters)
     {
         eventWriter
             .eventType(ExecutionEventType.SQF_EXECUTED)

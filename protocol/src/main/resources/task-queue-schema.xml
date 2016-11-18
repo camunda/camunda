@@ -77,6 +77,7 @@
     <sbe:message name="SubscribedTask" id="401">
         <field name="subscriptionId" id="1" type="uint64" />
         <field name="task" id="2" type="lockedTask" />
+        <data name="taskPayload" id="3" type="varDataEncoding" />
     </sbe:message>
     
 	<sbe:message name="LockedTaskBatch" id="100"
@@ -84,6 +85,7 @@
 		<field name="consumerId" id="1" type="uint16" />
 		<group name="tasks" id="3" dimensionType="groupSizeEncoding">
             <field name="task" id="4" type="lockedTask" />
+            <data name="taskPayload" id="5" type="varDataEncoding" />
 		</group>
 	</sbe:message>
     

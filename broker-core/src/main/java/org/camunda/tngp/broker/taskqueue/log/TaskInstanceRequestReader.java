@@ -6,6 +6,7 @@ import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskInstanceRequestReader implements BufferReader
 {
@@ -13,13 +14,34 @@ public class TaskInstanceRequestReader implements BufferReader
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected TaskInstanceRequestDecoder bodyDecoder = new TaskInstanceRequestDecoder();
 
+    protected UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
+
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
         headerDecoder.wrap(buffer, offset);
+        offset += headerDecoder.encodedLength();
 
-        bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+        offset += headerDecoder.blockLength();
+        offset += TaskInstanceRequestDecoder.payloadHeaderLength();
 
+        final int payloadLength = bodyDecoder.payloadLength();
+
+        if (payloadLength > 0)
+        {
+            payloadBuffer.wrap(buffer, offset, payloadLength);
+        }
+        else
+        {
+            payloadBuffer.wrap(0, 0);
+        }
+
+    }
+
+    public DirectBuffer payload()
+    {
+        return payloadBuffer;
     }
 
     public TaskInstanceRequestType type()

@@ -15,7 +15,7 @@ import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
-import org.camunda.tngp.broker.util.mocks.TestWfRuntimeLogEntries;
+import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
 import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
@@ -88,12 +88,12 @@ public class EndProcessHandlerTest
             .traverseEdge(BpmnEdgeTypes.SEQUENCE_FLOW_TARGET_NODE)
             .nodeId();
 
-        final BpmnFlowElementEventReader flowEventReader = TestWfRuntimeLogEntries.mockFlowElementEvent();
+        final BpmnFlowElementEventReader flowEventReader = WfRuntimeEvents.mockFlowElementEvent();
         when(flowEventReader.event()).thenReturn(ExecutionEventType.EVT_OCCURRED);
         when(flowEventReader.flowElementId()).thenReturn(endEventId);
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
-        when(workflowEventIndex.get(eq(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID), anyLong())).thenReturn(logReader.getEntryPosition(0));
+        logReader.addEntry(WfRuntimeEvents.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
+        when(workflowEventIndex.get(eq(WfRuntimeEvents.PROCESS_INSTANCE_ID), anyLong())).thenReturn(logReader.getEntryPosition(0));
 
         final EndProcessHandler eventHandler = new EndProcessHandler(logReader, workflowEventIndex);
 
@@ -106,10 +106,10 @@ public class EndProcessHandlerTest
 
         final BpmnProcessEventReader newEvent = logWriter.getEntryAs(0, BpmnProcessEventReader.class);
         assertThat(newEvent.event()).isEqualTo(ExecutionEventType.PROC_INST_COMPLETED);
-        assertThat(newEvent.processId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_ID);
-        assertThat(newEvent.processInstanceId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
-        assertThat(newEvent.initialElementId()).isEqualTo(TestWfRuntimeLogEntries.FLOW_ELEMENT_ID);
-        assertThat(newEvent.key()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
+        assertThat(newEvent.processId()).isEqualTo(WfRuntimeEvents.PROCESS_ID);
+        assertThat(newEvent.processInstanceId()).isEqualTo(WfRuntimeEvents.PROCESS_INSTANCE_ID);
+        assertThat(newEvent.initialElementId()).isEqualTo(WfRuntimeEvents.FLOW_ELEMENT_ID);
+        assertThat(newEvent.key()).isEqualTo(WfRuntimeEvents.PROCESS_INSTANCE_ID);
     }
 
     @Test
@@ -122,11 +122,11 @@ public class EndProcessHandlerTest
             .traverseEdge(BpmnEdgeTypes.SEQUENCE_FLOW_TARGET_NODE)
             .nodeId();
 
-        final BpmnActivityEventReader activityInstanceEvent = TestWfRuntimeLogEntries.mockActivityInstanceEvent(ExecutionEventType.EVT_OCCURRED);
+        final BpmnActivityEventReader activityInstanceEvent = WfRuntimeEvents.mockActivityInstanceEvent(ExecutionEventType.EVT_OCCURRED);
         when(activityInstanceEvent.flowElementId()).thenReturn(serviceTaskId);
 
-        logReader.addEntry(TestWfRuntimeLogEntries.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
-        when(workflowEventIndex.get(eq(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID), anyLong())).thenReturn(logReader.getEntryPosition(0));
+        logReader.addEntry(WfRuntimeEvents.createProcessEvent(ExecutionEventType.PROC_INST_CREATED));
+        when(workflowEventIndex.get(eq(WfRuntimeEvents.PROCESS_INSTANCE_ID), anyLong())).thenReturn(logReader.getEntryPosition(0));
 
         final EndProcessHandler eventHandler = new EndProcessHandler(logReader, workflowEventIndex);
 
@@ -139,10 +139,10 @@ public class EndProcessHandlerTest
 
         final BpmnProcessEventReader newEvent = logWriter.getEntryAs(0, BpmnProcessEventReader.class);
         assertThat(newEvent.event()).isEqualTo(ExecutionEventType.PROC_INST_COMPLETED);
-        assertThat(newEvent.processId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_ID);
-        assertThat(newEvent.processInstanceId()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
-        assertThat(newEvent.initialElementId()).isEqualTo(TestWfRuntimeLogEntries.FLOW_ELEMENT_ID);
-        assertThat(newEvent.key()).isEqualTo(TestWfRuntimeLogEntries.PROCESS_INSTANCE_ID);
+        assertThat(newEvent.processId()).isEqualTo(WfRuntimeEvents.PROCESS_ID);
+        assertThat(newEvent.processInstanceId()).isEqualTo(WfRuntimeEvents.PROCESS_INSTANCE_ID);
+        assertThat(newEvent.initialElementId()).isEqualTo(WfRuntimeEvents.FLOW_ELEMENT_ID);
+        assertThat(newEvent.key()).isEqualTo(WfRuntimeEvents.PROCESS_INSTANCE_ID);
     }
 
     @Test

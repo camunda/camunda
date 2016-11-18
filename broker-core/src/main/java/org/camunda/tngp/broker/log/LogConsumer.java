@@ -227,17 +227,17 @@ public class LogConsumer
         }
 
         @Override
-        public void writeToCurrentLog(LogEntryWriter<?, ?> entryWriter)
+        public long writeToCurrentLog(LogEntryWriter<?, ?> entryWriter)
         {
             decorateEventInContext(entryWriter);
-            logWriters.writeToCurrentLog(entryWriter);
+            return logWriters.writeToCurrentLog(entryWriter);
         }
 
         @Override
-        public void writeToLog(int targetLogId, LogEntryWriter<?, ?> entryWriter)
+        public long writeToLog(int targetLogId, LogEntryWriter<?, ?> entryWriter)
         {
             decorateEventInContext(entryWriter);
-            logWriters.writeToLog(targetLogId, entryWriter);
+            return logWriters.writeToLog(targetLogId, entryWriter);
         }
 
         @Override
