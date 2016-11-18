@@ -42,15 +42,23 @@
     </enum>
     <enum name="ProcessInstanceRequestType" encodingType="uint8">
       <validValue name="NEW">0</validValue>
+      <validValue name="X">1</validValue>
+      <validValue name="Y">2</validValue>
     </enum>
     <enum name="ActivityInstanceRequestType" encodingType="uint8">
       <validValue name="COMPLETE">0</validValue>
+      <validValue name="X">1</validValue>
+      <validValue name="Y">2</validValue>
     </enum>
     <enum name="TaskInstanceRequestType" encodingType="uint8">
       <validValue name="COMPLETE">0</validValue>
+      <validValue name="X">1</validValue>
+      <validValue name="Y">2</validValue>
     </enum>
     <enum name="WfDefinitionRequestType" encodingType="uint8">
       <validValue name="NEW">0</validValue>
+      <validValue name="X">1</validValue>
+      <validValue name="Y">2</validValue>
     </enum>
     <type name="Date" primitiveType="uint64" semanticType="Date" />
   </types>
@@ -93,7 +101,7 @@
 
   <sbe:message name="BpmnFlowElementEvent" id="5">
     <field name="key" id="1" type="uint64" />
-    <field name="event" id="2" type="uint16" />
+    <field name="event" id="2" type="uint16" /> <!-- see https://github.com/camunda-tngp/compact-graph-bpmn/blob/master/src/main/resources/schema.xml -->
     <field name="wfDefinitionId" id="3" type="uint64" />
     <field name="wfInstanceId" id="4" type="uint64" />
     <field name="flowElementId" id="5" type="uint16" />
