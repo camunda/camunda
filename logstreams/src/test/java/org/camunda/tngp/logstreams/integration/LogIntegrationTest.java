@@ -8,9 +8,9 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamReader;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.LoggedEvent;
 import org.camunda.tngp.util.agent.AgentRunnerService;
@@ -62,9 +62,9 @@ public class LogIntegrationTest
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
 
-        for (int j = 0; j < 50; j++)
+        for (int j = 0; j < 10; j++)
         {
-            final int workPerIteration = 20_000;
+            final int workPerIteration = 10_000;
 
             for (int i = 0; i < workPerIteration; i++)
             {

@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamReader;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.LoggedEvent;
 import org.camunda.tngp.util.agent.AgentRunnerService;
@@ -26,12 +26,12 @@ import org.junit.rules.TemporaryFolder;
 
 public class LogRecoveryTest
 {
-    // ~ overall message size 176 MB
+    // ~ overall message size 46 MB
     private static final int MSG_SIZE = 911;
-    private static final int WORK_COUNT = 200_000;
+    private static final int WORK_COUNT = 50_000;
 
-    private static final int LOG_SEGMENT_SIZE = 1024 * 1024 * 16;
-    private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 4;
+    private static final int LOG_SEGMENT_SIZE = 1024 * 1024 * 8;
+    private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
 
     private static final String LOG_NAME = "foo";
     private static final int LOG_ID = 0;
@@ -187,16 +187,16 @@ public class LogRecoveryTest
 
     protected void waitUntilFullyWritten(final LogStream log, final int workCount)
     {
-        final BufferedLogStreamReader log1Reader = new BufferedLogStreamReader(log);
+        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log);
+
+        logReader.seekToLastEvent();
 
         long entryKey = 0;
         while (entryKey < workCount - 1)
         {
-            log1Reader.seekToLastEvent();
-
-            if (log1Reader.hasNext())
+            if (logReader.hasNext())
             {
-                final LoggedEvent nextEntry = log1Reader.next();
+                final LoggedEvent nextEntry = logReader.next();
                 entryKey = nextEntry.getLongKey();
             }
         }
@@ -214,7 +214,6 @@ public class LogRecoveryTest
         newLog.open();
 
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
-        logReader.seekToFirstEvent();
 
         int count = 0;
         long lastPosition = -1L;
@@ -236,11 +235,6 @@ public class LogRecoveryTest
                 lastPosition = currentPosition;
 
                 count++;
-            }
-
-            if (count % (workCount / 10) == 0)
-            {
-                logReader.seek(lastPosition + 1);
             }
         }
 

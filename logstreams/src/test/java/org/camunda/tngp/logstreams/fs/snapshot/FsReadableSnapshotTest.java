@@ -88,6 +88,17 @@ public class FsReadableSnapshotTest
     }
 
     @Test
+    public void shouldDeleteFiles() throws Exception
+    {
+        final FsReadableSnapshot fsReadableSnapshot = new FsReadableSnapshot(config, dataFile, checksumFile, 100);
+
+        fsReadableSnapshot.delete();
+
+        assertThat(dataFile).doesNotExist();
+        assertThat(checksumFile).doesNotExist();
+    }
+
+    @Test
     public void shouldFailToValidateIfChecksumDoesntMatch() throws Exception
     {
         final File corruptedChecksumFile = createChecksumFile("corrupted-checksum.sha1", "corrupted-data".getBytes(), dataFile.getName());

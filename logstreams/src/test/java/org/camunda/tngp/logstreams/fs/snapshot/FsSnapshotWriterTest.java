@@ -14,7 +14,8 @@ package org.camunda.tngp.logstreams.fs.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,12 +59,7 @@ public class FsSnapshotWriterTest
         snapshotFile = tempFolder.newFile("snapshot.snapshot");
         checksumFile = tempFolder.newFile("checksum.sha1");
 
-        final File lastSnapshotFile = tempFolder.newFile("last-snapshot.snapshot");
-        final File lastChecksumFile = tempFolder.newFile("last-snapshot.sha1");
-
         lastSnapshot = mock(FsReadableSnapshot.class);
-        when(lastSnapshot.getDataFile()).thenReturn(lastSnapshotFile);
-        when(lastSnapshot.getChecksumFile()).thenReturn(lastChecksumFile);
     }
 
     @Test
@@ -111,8 +107,7 @@ public class FsSnapshotWriterTest
 
         fsSnapshotWriter.commit();
 
-        assertThat(lastSnapshot.getDataFile()).doesNotExist();
-        assertThat(lastSnapshot.getChecksumFile()).doesNotExist();
+        verify(lastSnapshot).delete();
     }
 
     @Test
@@ -123,8 +118,7 @@ public class FsSnapshotWriterTest
 
         fsSnapshotWriter.abort();
 
-        assertThat(lastSnapshot.getDataFile()).exists();
-        assertThat(lastSnapshot.getChecksumFile()).exists();
+        verify(lastSnapshot, never()).delete();
     }
 
 }

@@ -130,6 +130,15 @@ public class FsReadableSnapshot implements ReadableSnapshot
     }
 
     @Override
+    public void delete()
+    {
+        FileUtil.closeSilently(inputStream);
+
+        dataFile.delete();
+        checksumFile.delete();
+    }
+
+    @Override
     public long getPosition()
     {
         return position;
@@ -150,4 +159,5 @@ public class FsReadableSnapshot implements ReadableSnapshot
     {
         return dataFile;
     }
+
 }

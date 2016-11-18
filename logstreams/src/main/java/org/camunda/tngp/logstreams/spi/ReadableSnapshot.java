@@ -30,6 +30,11 @@ public interface ReadableSnapshot
     void validateAndClose() throws Exception;
 
     /**
+     * Deletes the snapshot and related data.
+     */
+    void delete();
+
+    /**
      * Reads the snapshot data and recover the given snapshot object.
      *
      * @param snapshotSupport
