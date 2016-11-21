@@ -237,7 +237,7 @@ public class LogStreamController implements Agent
             }
 
             final int newBlockSize = currentBlockSize + blockLength;
-            if (newBlockSize > indexBlockSize)
+            if (newBlockSize >= indexBlockSize)
             {
                 currentBlockSize = 0;
             }
