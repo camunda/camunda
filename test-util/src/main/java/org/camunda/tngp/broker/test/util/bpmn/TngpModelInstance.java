@@ -5,6 +5,7 @@ import java.util.Collection;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.impl.BpmnModelConstants;
 import org.camunda.bpm.model.bpmn.instance.Association;
+import org.camunda.bpm.model.bpmn.instance.ConditionExpression;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
@@ -108,6 +109,18 @@ public class TngpModelInstance implements BpmnModelInstance
 
         task.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "taskType", taskType);
         task.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "taskQueueId", String.valueOf(taskQueueId));
+
+        return this;
+    }
+
+    public TngpModelInstance conditionExpression(String sequenceFlowId, String arg1, String operator, String arg2)
+    {
+        final SequenceFlow sequenceFlow = wrappedInstance.getModelElementById(sequenceFlowId);
+        final ConditionExpression conditionExpression = sequenceFlow.getModelInstance().newInstance(ConditionExpression.class);
+        conditionExpression.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "arg1", arg1);
+        conditionExpression.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "arg2", arg2);
+        conditionExpression.setAttributeValueNs(BpmnModelConstants.CAMUNDA_NS, "operator", operator);
+        sequenceFlow.setConditionExpression(conditionExpression);
 
         return this;
     }
