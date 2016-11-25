@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3" package="org.camunda.tngp.protocol.clientapi"
+  id="0" version="1" semanticVersion="0.1.0" description="Tngp Protocol" byteOrder="littleEndian">
+
+  <types>
+    <composite name="messageHeader" description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16" />
+      <type name="templateId" primitiveType="uint16" />
+      <type name="schemaId" primitiveType="uint16" />
+      <type name="version" primitiveType="uint16" />
+    </composite>
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint16" />
+      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
+    </composite>
+    <composite name="groupSizeEncoding" description="Repeating group dimensions">
+      <type name="blockLength" primitiveType="uint16" />
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+    </composite>
+  </types>
+
+  <!-- Task Subscription Control Messages 0 - 99 -->
+
+  <sbe:message name="CreateTaskSubscription" id="1">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="lockDuration" id="2" type="uint64" />
+    <field name="initialCredits" id="3" type="uint32" />
+    <data name="taskType" id="4" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="CloseTaskSubscription" id="2">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="subscriptionId" id="2" type="uint64" />
+  </sbe:message>
+
+  <sbe:message name="TaskSubscriptionAck" id="3">
+    <field name="id" id="1" type="uint64" />
+  </sbe:message>
+
+  <sbe:message name="ProvideSubscriptionCredits" id="4">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="subscriptionId" id="2" type="uint64" />
+    <field name="credits" id="2" type="uint32" />
+  </sbe:message>
+
+  <!-- Log Stream Messages 100 - 199 -->
+
+  <sbe:message name="Event" id="100">
+    <field name="topicId" id="1" type="uint32" />
+    <field name="longKey" id="2" type="uint64" />
+    <data name="bytesKey" id="3" type="varDataEncoding" />    
+    <data name="value" id="7" type="varDataEncoding" />
+  </sbe:message>
+  
+  <sbe:message name="Command" id="100">
+    <field name="topicId" id="1" type="uint32" />  
+    <data name="commandData" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="ActionResponse" id="100">
+    <field name="topicId" id="1" type="uint32" />  
+    <data name="responseData" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+</sbe:messageSchema>

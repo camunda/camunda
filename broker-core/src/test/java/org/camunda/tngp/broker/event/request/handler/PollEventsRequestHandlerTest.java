@@ -24,8 +24,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.event.EventContext;
 import org.camunda.tngp.broker.event.EventErrors;
-import org.camunda.tngp.broker.log.LogManager;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
+import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.protocol.error.ErrorReader;
@@ -62,7 +62,7 @@ public class PollEventsRequestHandlerTest
     protected LogStream log;
 
     @Mock
-    protected LogManager logManager;
+    protected ClientApiMessageHandler logManager;
 
     @Mock
     protected EventContext eventContext;
@@ -79,7 +79,7 @@ public class PollEventsRequestHandlerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        when(logManager.getLogById(anyInt())).thenReturn(log);
+        when(logManager.getLogStreamById(anyInt())).thenReturn(log);
         when(eventContext.getLogManager()).thenReturn(logManager);
 
         logReader = new StubLogReader(log);
@@ -285,7 +285,7 @@ public class PollEventsRequestHandlerTest
         when(requestReader.maxEvents()).thenReturn(10);
         when(requestReader.topicId()).thenReturn(41);
 
-        when(logManager.getLogById(41)).thenReturn(null);
+        when(logManager.getLogStreamById(41)).thenReturn(null);
         when(response.allocateAndWrite(any())).thenReturn(true);
 
         // when

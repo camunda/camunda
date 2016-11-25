@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.util.mocks;
 
 import org.agrona.collections.Int2ObjectHashMap;
-import org.camunda.tngp.broker.log.LogEntryWriter;
-import org.camunda.tngp.broker.log.LogWriters;
+import org.camunda.tngp.broker.logstreams.LogEntryWriter;
+import org.camunda.tngp.broker.logstreams.LogWriters;
 
 public class StubLogWriters implements LogWriters
 {

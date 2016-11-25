@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3" package="org.camunda.tngp.protocol.clientapi.data"
+  id="1" version="1" semanticVersion="0.1.0" description="Tngp Client Api Data Messages" byteOrder="littleEndian">
+
+  <types>
+    <composite name="messageHeader" description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16" />
+      <type name="templateId" primitiveType="uint16" />
+      <type name="schemaId" primitiveType="uint16" />
+      <type name="version" primitiveType="uint16" />
+      <type name="streamId" primitiveType="uint16" />
+      <type name="partitionId" primitiveType="uint16" />
+    </composite>
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint16" />
+      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
+    </composite>
+    <composite name="groupSizeEncoding" description="Repeating group dimensions">
+      <type name="blockLength" primitiveType="uint16" />
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+    </composite>
+    
+    <!-- Task Queue  -->
+    
+    <composite name="lockedTask">
+      <type name="id" id="1" primitiveType="uint64" />
+      <type name="lockTime" id="2" primitiveType="uint64" />
+      <type name="wfInstanceId" id="3" primitiveType="uint64" />
+    </composite>
+  </types>
+  
+  <!-- Task Queue -->
+
+  <sbe:message name="CreateTaskInstance" id="0" description="Create a new instance of a Task">
+    <data name="taskType" id="1" type="varDataEncoding" />
+    <data name="payload" id="2" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="PollAndLockTasks" id="1" description="Poll and lock a number of tasks">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="lockTime" id="2" type="uint64" />
+    <field name="maxTasks" id="3" type="uint16" />
+    <data name="taskType" id="4" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="CompleteTask" id="2" description="A task to be completed">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="taskId" id="2" type="uint64" />
+    <data name="payload" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="AbortTask" id="3" description="Aborts working on a task and unlock it">
+    <field name="consumerId" id="1" type="uint32" />
+    <field name="taskId" id="2" type="uint64" />
+  </sbe:message>
+
+  <sbe:message name="SubscribedTask" id="4">
+    <field name="subscriptionId" id="1" type="uint64" />
+    <field name="task" id="2" type="lockedTask" />
+    <data name="taskPayload" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="LockedTaskBatch" id="5" description="A batch of locked tasks">
+    <field name="consumerId" id="1" type="uint16" />
+    <group name="tasks" id="3" dimensionType="groupSizeEncoding">
+      <field name="task" id="4" type="lockedTask" />
+      <data name="taskPayload" id="5" type="varDataEncoding" />
+    </group>
+  </sbe:message>
+
+  <sbe:message name="SingleTaskAck" id="6">
+    <field name="taskId" id="1" type="uint64" />
+  </sbe:message>
+
+</sbe:messageSchema>

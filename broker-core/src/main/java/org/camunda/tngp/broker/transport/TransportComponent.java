@@ -1,25 +1,20 @@
 package org.camunda.tngp.broker.transport;
 
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingServiceName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
+import org.camunda.tngp.broker.logstreams.LogStreamServiceNames;
 import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.SystemContext;
-import org.camunda.tngp.broker.transport.binding.ServerSocketBindingService;
 import org.camunda.tngp.broker.transport.cfg.SocketBindingCfg;
 import org.camunda.tngp.broker.transport.cfg.TransportComponentCfg;
-import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandlerService;
+import org.camunda.tngp.broker.transport.clientapi.ClientApiSocketBindingService;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
-import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class TransportComponent implements Component
 {
@@ -49,16 +44,6 @@ public class TransportComponent implements Component
     {
         final SocketBindingCfg socketBindingCfg = transportComponentCfg.clientApi;
 
-        return bindSocket(serviceContainer, transportComponentCfg, socketBindingCfg, CLIENT_API_SOCKET_BINDING_NAME);
-
-    }
-
-    protected CompletableFuture<Void> bindSocket(
-            final ServiceContainer serviceContainer,
-            final TransportComponentCfg transportComponentCfg,
-            final SocketBindingCfg socketBindingCfg,
-            final String bindingName)
-    {
         final int port = socketBindingCfg.port;
 
         String hostname = socketBindingCfg.hostname;
@@ -75,17 +60,24 @@ public class TransportComponent implements Component
             receiveBufferSize = transportComponentCfg.defaultReceiveBufferSize;
         }
 
-        final DispatcherService receiveBufferService = new DispatcherService(receiveBufferSize);
-        final ServiceName<Dispatcher> receiveBufferName = serverSocketBindingReceiveBufferName(bindingName);
-        serviceContainer.createService(serverSocketBindingReceiveBufferName(bindingName), receiveBufferService)
-            .dependency(AGENT_RUNNER_SERVICE, receiveBufferService.getAgentRunnerInjector())
-            .dependency(COUNTERS_MANAGER_SERVICE, receiveBufferService.getCountersManagerInjector())
+        final DispatcherService controlMessageBufferService = new DispatcherService(receiveBufferSize);
+        serviceContainer.createService(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), controlMessageBufferService)
+            .dependency(AGENT_RUNNER_SERVICE, controlMessageBufferService.getAgentRunnerInjector())
+            .dependency(COUNTERS_MANAGER_SERVICE, controlMessageBufferService.getCountersManagerInjector())
             .install();
 
-        final ServerSocketBindingService socketBindingService = new ServerSocketBindingService(bindingName, bindAddr);
-        return serviceContainer.createService(serverSocketBindingServiceName(bindingName), socketBindingService)
+        final ClientApiMessageHandlerService messageHandlerService = new ClientApiMessageHandlerService();
+        serviceContainer.createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
+            .dependency(TRANSPORT_SEND_BUFFER, messageHandlerService.getSendBufferInjector())
+            .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), messageHandlerService.getControlMessageBufferInjector())
+            .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, messageHandlerService.getLogStreamsGroupReference())
+            .install();
+
+        final ClientApiSocketBindingService socketBindingService = new ClientApiSocketBindingService(CLIENT_API_SOCKET_BINDING_NAME, bindAddr);
+        return serviceContainer.createService(serverSocketBindingServiceName(CLIENT_API_SOCKET_BINDING_NAME), socketBindingService)
             .dependency(TRANSPORT, socketBindingService.getTransportInjector())
-            .dependency(receiveBufferName, socketBindingService.getReceiveBufferInjector())
+            .dependency(CLIENT_API_MESSAGE_HANDLER, socketBindingService.getMessageHandlerInjector())
             .install();
     }
+
 }

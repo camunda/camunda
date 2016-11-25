@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.util.mocks;
 
 
-import org.camunda.tngp.broker.log.LogEntryWriter;
-import org.camunda.tngp.broker.log.LogWriter;
+import org.camunda.tngp.broker.logstreams.LogEntryWriter;
+import org.camunda.tngp.broker.logstreams.LogWriter;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 // TODO: make LogWriter an interface

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.log.LogWriter;
+import org.camunda.tngp.broker.logstreams.LogWriter;
 import org.camunda.tngp.broker.taskqueue.MockTaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
 import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;

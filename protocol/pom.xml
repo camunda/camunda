@@ -106,11 +106,8 @@
             </systemProperty>
           </systemProperties>
           <arguments>
-            <argument>${schema.directory}/task-queue-schema.xml</argument>
-            <argument>${schema.directory}/wf-schema.xml</argument>
-            <argument>${schema.directory}/error.xml</argument>
-            <argument>${schema.directory}/event-schema.xml</argument>
-            <argument>${schema.directory}/log-schema.xml</argument>
+            <argument>${schema.directory}/client-api-control-messages.xml</argument>
+            <argument>${schema.directory}/client-api-data-messages.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
         </configuration>

@@ -4,8 +4,8 @@ import static org.camunda.tngp.broker.test.util.BufferMatcher.*;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
-import org.camunda.tngp.broker.log.LogEntryHeaderReader;
-import org.camunda.tngp.broker.log.Templates;
+import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader;
+import org.camunda.tngp.broker.logstreams.Templates;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.taskqueue.TestTaskQueueLogEntries;

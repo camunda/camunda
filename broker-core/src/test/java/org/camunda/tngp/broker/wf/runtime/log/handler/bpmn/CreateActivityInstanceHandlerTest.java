@@ -18,7 +18,7 @@ import org.camunda.tngp.bpmn.graph.BpmnEdgeTypes;
 import org.camunda.tngp.bpmn.graph.FlowElementVisitor;
 import org.camunda.tngp.bpmn.graph.ProcessGraph;
 import org.camunda.tngp.bpmn.graph.transformer.BpmnModelInstanceTransformer;
-import org.camunda.tngp.broker.log.LogWriters;
+import org.camunda.tngp.broker.logstreams.LogWriters;
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;

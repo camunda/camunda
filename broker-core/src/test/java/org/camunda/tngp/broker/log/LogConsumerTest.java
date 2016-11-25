@@ -19,8 +19,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.log.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.broker.log.idx.IndexWriter;
+import org.camunda.tngp.broker.logstreams.Templates;
+import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader.EventSource;
+import org.camunda.tngp.broker.logstreams.idx.IndexWriter;
 import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;

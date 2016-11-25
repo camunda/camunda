@@ -31,11 +31,6 @@ name = "default-task-queue-log"
 id = 0
 useTempLogDirectory = true
 
-[[log]]
-name = "default-wf-instance-log"
-id = 1
-useTempLogDirectory = true
-
 # Task Queues ------------------------------------------
 
 [task-queues]
@@ -46,20 +41,3 @@ perWorkerResponsePoolCapacity = 32
 name = "default"
 id = 0
 logName = "default-task-queue-log"
-
-# Workflow ---------------------------------------------
-
-[workflow]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
-[[workflow-repository]]
-name = "default"
-id = 0
-logName = "default-wf-definition-log"
-
-[[workflow-runtime]]
-name = "default"
-id = 0
-repositoryName = "default" 
-logName = "default-wf-instance-log"

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.tngp.broker.log.ResponseControl;
+import org.camunda.tngp.broker.logstreams.ResponseControl;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;

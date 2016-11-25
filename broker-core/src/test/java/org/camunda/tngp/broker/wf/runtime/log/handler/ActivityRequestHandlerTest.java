@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.log.ResponseControl;
+import org.camunda.tngp.broker.logstreams.ResponseControl;
 import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
