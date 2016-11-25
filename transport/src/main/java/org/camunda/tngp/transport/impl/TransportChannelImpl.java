@@ -236,6 +236,7 @@ public abstract class TransportChannelImpl implements TransportChannel
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             closeForcibly(e);
         }
 
@@ -271,6 +272,7 @@ public abstract class TransportChannelImpl implements TransportChannel
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             closeForcibly(e);
         }
         finally
@@ -360,7 +362,6 @@ public abstract class TransportChannelImpl implements TransportChannel
 
     public void closeForcibly(IOException originalException)
     {
-        originalException.printStackTrace();
         mediaClose();
         notifyCloseException(originalException);
     }
