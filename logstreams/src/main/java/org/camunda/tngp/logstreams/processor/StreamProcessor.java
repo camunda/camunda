@@ -4,15 +4,20 @@ import org.camunda.tngp.logstreams.LoggedEvent;
 
 public interface StreamProcessor
 {
-    void onEvent(LoggedEvent event, ControlledEventLogger targetEventLogger) throws Exception;
-
-    default void onOpen(StreamProcessorContext ctx)
+    default void open(StreamProcessorContext streamProcessorContext)
     {
-        // empty default impl
+        // do nothing
     }
 
-    default void onClose()
+    default void close()
     {
-        // empty default impl
+        // no nothing
+    }
+
+    EventProcessor onEvent(LoggedEvent event);
+
+    default void afterEvent()
+    {
+        // do nothing
     }
 }
