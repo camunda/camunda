@@ -154,7 +154,7 @@ public class FsLogStreamBuilder
         if (writeBuffer == null)
         {
             // Get position of last entry
-            long position = 0;
+            long lastPosition = 0;
 
             final BufferedLogStreamReader logReader = new BufferedLogStreamReader(ctx);
             logReader.seekToLastEvent();
@@ -162,15 +162,15 @@ public class FsLogStreamBuilder
             if (logReader.hasNext())
             {
                 final LoggedEvent lastEntry = logReader.next();
-                position = lastEntry.getPosition() + 1;
+                lastPosition = lastEntry.getPosition();
             }
 
             // dispatcher needs to generate positions greater than the last position
             int partitionId = 0;
 
-            if (position > 0)
+            if (lastPosition > 0)
             {
-                partitionId = PositionUtil.partitionId(position) + 1;
+                partitionId = PositionUtil.partitionId(lastPosition);
             }
 
             writeBuffer = Dispatchers.create("log-write-buffer")

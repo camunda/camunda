@@ -164,6 +164,44 @@ public class LogRecoveryTest
         readLogAndAssertRecoveredIndex(WORK_COUNT);
     }
 
+    @Test
+    public void shouldRecoverEventPosition() throws InterruptedException, ExecutionException
+    {
+        final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+                .logRootPath(logPath)
+                .deleteOnClose(false)
+                .snapshotPolicy(pos -> false)
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        log.open();
+
+        // write events
+        writeLogEvents(log, 10, 0);
+        waitUntilFullyWritten(log, 10);
+
+        log.close();
+
+        // re-open the log
+        final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+                .logRootPath(logPath)
+                .deleteOnClose(false)
+                .snapshotPolicy(pos -> false)
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        newLog.open();
+
+        // write more events
+        writeLogEvents(newLog, 15, 10);
+        waitUntilFullyWritten(newLog, 25);
+
+        newLog.close();
+
+        // assert that the event position is recovered after re-open and continues after the last event
+        readLogAndAssertRecoveredIndex(25);
+    }
+
     protected void writeLogEvents(final LogStream log, final int workCount, final int offset)
     {
         final LogStreamWriter writer = new LogStreamWriter(log);
