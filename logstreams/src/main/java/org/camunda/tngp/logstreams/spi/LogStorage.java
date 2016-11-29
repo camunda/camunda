@@ -90,6 +90,11 @@ public interface LogStorage
     void close();
 
     /**
+     * @return <code>true</code>, if the storage is open.
+     */
+    boolean isOpen();
+
+    /**
      * Returns the address of the first block in the storage or -1 if the storage is currently
      * empty.
      */

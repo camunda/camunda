@@ -202,6 +202,36 @@ public class LogRecoveryTest
         readLogAndAssertRecoveredIndex(25);
     }
 
+    @Test
+    public void shouldResumeLogStream() throws InterruptedException, ExecutionException
+    {
+        final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+                .logRootPath(logPath)
+                .deleteOnClose(false)
+                .snapshotPolicy(pos -> false)
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        log.open();
+
+        // write events
+        writeLogEvents(log, 10, 0);
+        waitUntilFullyWritten(log, 10);
+
+        log.close();
+
+        // resume the log
+        log.open();
+
+        // write more events
+        writeLogEvents(log, 15, 10);
+        waitUntilFullyWritten(log, 25);
+
+        log.close();
+
+        readLogAndAssertRecoveredIndex(25);
+    }
+
     protected void writeLogEvents(final LogStream log, final int workCount, final int offset)
     {
         final LogStreamWriter writer = new LogStreamWriter(log);

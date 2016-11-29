@@ -148,6 +148,11 @@ public class LogStreamController implements Agent
         {
             try
             {
+                if (!logStorage.isOpen())
+                {
+                    logStorage.open();
+                }
+
                 final Dispatcher writeBuffer = streamContext.getWriteBuffer();
                 writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
 

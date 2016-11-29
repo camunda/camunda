@@ -287,4 +287,10 @@ public class FsLogStorage implements LogStorage
         }
     }
 
+    @Override
+    public boolean isOpen()
+    {
+        return state == STATE_OPENED;
+    }
+
 }
