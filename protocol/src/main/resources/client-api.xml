@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3" package="org.camunda.tngp.protocol.clientapi.data"
-  id="1" version="1" semanticVersion="0.1.0" description="Tngp Client Api Data Messages" byteOrder="littleEndian">
+  id="1" version="1" semanticVersion="0.1.0" description="Tngp Client Api Messages" byteOrder="littleEndian">
 
   <types>
     <composite name="messageHeader" description="Message identifiers and length of message root">
@@ -8,8 +8,6 @@
       <type name="templateId" primitiveType="uint16" />
       <type name="schemaId" primitiveType="uint16" />
       <type name="version" primitiveType="uint16" />
-      <type name="streamId" primitiveType="uint16" />
-      <type name="partitionId" primitiveType="uint16" />
     </composite>
     <composite name="varDataEncoding">
       <type name="length" primitiveType="uint16" />

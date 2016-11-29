@@ -106,8 +106,7 @@
             </systemProperty>
           </systemProperties>
           <arguments>
-            <argument>${schema.directory}/client-api-control-messages.xml</argument>
-            <argument>${schema.directory}/client-api-data-messages.xml</argument>
+            <argument>${schema.directory}/protocol.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
         </configuration>

@@ -8,7 +8,6 @@ import org.camunda.tngp.servicecontainer.ServiceContainer;
 
 public class TaskQueueComponent implements Component
 {
-    public static final String WORKER_NAME = "task-queue-worker.0";
 
     @Override
     public void init(SystemContext context)
