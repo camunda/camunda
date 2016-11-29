@@ -7,6 +7,7 @@ import org.camunda.bpm.model.bpmn.impl.BpmnModelConstants;
 import org.camunda.bpm.model.bpmn.instance.Association;
 import org.camunda.bpm.model.bpmn.instance.ConditionExpression;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
+import org.camunda.bpm.model.bpmn.instance.ExclusiveGateway;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.Model;
@@ -148,6 +149,15 @@ public class TngpModelInstance implements BpmnModelInstance
         }
         scope.removeChildElement(flowNode);
 
+        return this;
+    }
+
+    public TngpModelInstance defaultFlow(String sequenceFlowId)
+    {
+        final SequenceFlow sequenceFlow = getModelElementById(sequenceFlowId);
+        final ExclusiveGateway gateway = (ExclusiveGateway) sequenceFlow.getSource();
+
+        gateway.setDefault(sequenceFlow);
         return this;
     }
 
