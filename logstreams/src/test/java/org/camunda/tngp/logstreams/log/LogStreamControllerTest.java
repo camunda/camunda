@@ -468,6 +468,29 @@ public class LogStreamControllerTest
         verify(mockFailureListener, never()).onFailed(anyLong());
     }
 
+    @Test
+    public void shouldInvokeFailureListenerOnRecovered() throws Exception
+    {
+        when(mockWriteBufferSubscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean())).thenAnswer(peekBlock(LOG_POSITION, 64));
+        when(mockLogStorage.append(any(ByteBuffer.class))).thenReturn(-1L);
+
+        controller.openAsync();
+        // -> opening
+        controller.doWork();
+        // -> open
+        controller.doWork();
+        // -> failing
+        controller.doWork();
+
+        controller.recover();
+        // -> recovered
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockFailureListener).onRecovered();
+    }
+
     protected Answer<Integer> peekBlock(long logPosition, int bytesRead)
     {
         return invocation ->

@@ -36,12 +36,14 @@ public class LogStreamController implements Agent
     protected static final int TRANSITION_CLOSE = 2;
     protected static final int TRANSITION_FAIL = 3;
     protected static final int TRANSITION_SNAPSHOT = 4;
+    protected static final int TRANSITION_RECOVER = 5;
 
     protected final OpeningState openingState = new OpeningState();
     protected final OpenState openState = new OpenState();
     protected final SnapshottingState snapshottingState = new SnapshottingState();
     protected final FailingState failingState = new FailingState();
     protected final FailedState failedState = new FailedState();
+    protected final RecoveredState recoveredState = new RecoveredState();
     protected final ClosingState closingState = new ClosingState();
     protected final ClosedState closedState = new ClosedState();
 
@@ -58,6 +60,8 @@ public class LogStreamController implements Agent
             .from(snapshottingState).take(TRANSITION_FAIL).to(failingState)
             .from(failingState).take(TRANSITION_DEFAULT).to(failedState)
             .from(failedState).take(TRANSITION_CLOSE).to(closingState)
+            .from(failedState).take(TRANSITION_RECOVER).to(recoveredState)
+            .from(recoveredState).take(TRANSITION_DEFAULT).to(openState)
             .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
             .build()
             );
@@ -292,6 +296,28 @@ public class LogStreamController implements Agent
         }
     }
 
+    class RecoveredState implements TransitionState<Context>
+    {
+        @Override
+        public void work(Context context)
+        {
+            for (int i = 0; i < failureListeners.size(); i++)
+            {
+                final LogStreamFailureListener logStreamWriteErrorListener = failureListeners.get(i);
+                try
+                {
+                    logStreamWriteErrorListener.onRecovered();
+                }
+                catch (Exception e)
+                {
+                    System.err.println("Exception while invoking " + logStreamWriteErrorListener + ".");
+                }
+            }
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
     class ClosingState implements TransitionState<Context>
     {
 
@@ -413,6 +439,16 @@ public class LogStreamController implements Agent
         });
 
         return future;
+    }
+
+    public void recover()
+    {
+        // TODO who take care of the log storage and invoke this method?
+
+        stateMachine.addCommand(context ->
+        {
+            context.take(TRANSITION_RECOVER);
+        });
     }
 
     public boolean isClosed()
