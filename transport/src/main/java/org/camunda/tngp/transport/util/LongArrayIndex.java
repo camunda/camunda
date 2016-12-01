@@ -7,7 +7,7 @@ import org.agrona.BitUtil;
  * assigning a unique long key to each object.
  *
  * Supports a single reader/writer for all mutating operations,
- * ie. {@link LongArrayIndex#put(Object)}, {@link LongArrayIndex#remove(long)} and {@link LongArrayIndex#reset()}.
+ * ie. {@link LongArrayIndex#put(Object)}, {@link LongArrayIndex#remove(long, Object)} and {@link LongArrayIndex#reset()}.
  *
  * Can be iterated concurrently by readers who read the size field prior
  * to iteration. The readers are then guaranteed to see the array's state
@@ -57,10 +57,11 @@ public class LongArrayIndex<T>
     }
 
     /**
-     * Puts an object into the array returning the key under which it
-     * can be retrieved.
+     * Puts an object into the array returning
      *
      * @param object stuff to put
+     *
+     * @return the key under which it can be retrieved.
      */
     public long put(final T object)
     {

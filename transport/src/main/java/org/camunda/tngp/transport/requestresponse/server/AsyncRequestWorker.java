@@ -7,20 +7,25 @@ import org.camunda.tngp.dispatcher.Subscription;
 /**
  * <p>
  * Base class for implementing asynchronous request/response server workers processing requests which need to wait on async i/o.
+ * </p>
  *
+ * <p>
  * Setup:
+ * </p>
  * <ul>
  * <li>A request buffer to which incoming requests are submitted</li>
  * <li>A response write buffer to which responses are written</li>
  * <li>An async work dispatcher to which asynchronous work is submitted and operates in pipeline mode</li>
  * </ul>
  *
+ * <p>
  * Requirement: response must be deferred until asynchronous work completes.
  *  Completion is tracked by acting as the last consumer on the async work pipeline.
  * </p>
- * <p>
  *
+ * <p>
  * Workflow:
+ * </p>
  * <ul>
  * <li>requests are taken from the request buffer.</li>
  * <li>the request header is decoded and the corresponding {@link AsyncRequestHandler} is determined</li>
@@ -31,7 +36,6 @@ import org.camunda.tngp.dispatcher.Subscription;
  * <li>the response is then deferred until the async work completes</li>
  * <li>after that the response is committed</li>
  * </ul>
- * </p>
  */
 public class AsyncRequestWorker implements Agent
 {
