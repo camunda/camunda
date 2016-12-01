@@ -20,7 +20,7 @@
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- TODO: Move to common parent -->
     <agrona.version>0.5.3</agrona.version>
-    <camunda.version>7.6.0-SNAPSHOT</camunda.version>
+    <camunda.version>7.6.0</camunda.version>
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
   </properties>
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>util</artifactId>
-      <version>0.0.2-SNAPSHOT</version>
+      <version>1.0.0-alpha2</version>
     </dependency>
 
     <dependency>
