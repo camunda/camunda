@@ -57,7 +57,7 @@ public class ServiceController
 
     protected ServiceOperation operation = null;
     protected ServiceState state = stoppedState;
-    /** when a controller stops, it always goes first into the StopDependents -> AwaitDependentsStop
+    /** when a controller stops, it always goes first into the StopDependents -&gt; AwaitDependentsStop
      * sequence. Then it performs the rest of the stop states, depending on how far it progressed
      * through it's lifecycle.
      */
@@ -250,7 +250,7 @@ public class ServiceController
             if (startContext.action != null)
             {
                 final Runnable action = startContext.action;
-                final CompletableFuture<Void> future = new CompletableFuture<Void>();
+                final CompletableFuture<Void> future = new CompletableFuture<>();
                 future.whenComplete(startContext);
 
                 container.executeShortRunning(()->
@@ -367,7 +367,7 @@ public class ServiceController
                 if (stopContext.action != null)
                 {
                     final Runnable action = stopContext.action;
-                    final CompletableFuture<Void> future = new CompletableFuture<Void>();
+                    final CompletableFuture<Void> future = new CompletableFuture<>();
                     future.whenComplete(stopContext);
 
                     // wrap runnable
@@ -576,7 +576,7 @@ public class ServiceController
             validCheck();
             notAsyncCheck();
             isAsync = true;
-            final CompletableFuture<Void> future = new CompletableFuture<Void>();
+            final CompletableFuture<Void> future = new CompletableFuture<>();
             future.whenComplete(this);
             return future;
         }
@@ -669,7 +669,7 @@ public class ServiceController
             validCheck();
             notAsyncCheck();
             isAsync = true;
-            final CompletableFuture<Void> f = new CompletableFuture<Void>();
+            final CompletableFuture<Void> f = new CompletableFuture<>();
             f.whenComplete(this);
             return f;
         }
