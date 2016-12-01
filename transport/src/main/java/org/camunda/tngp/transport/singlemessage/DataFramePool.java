@@ -6,6 +6,9 @@ public interface DataFramePool
 {
 
     /**
+     * @param messageLength required payload size
+     * @param channelId yes
+     *
      * @return null, if frame could not be opened (e.g. because of no space in the send buffer)
      */
     OutgoingDataFrame openFrame(int messageLength, int channelId);

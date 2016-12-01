@@ -5,6 +5,8 @@ public interface TransportRequestPool
     /**
      * Non-blocking attempt to get a request from the pool.
      * Returns null in case no request is immediately available.
+     *
+     * @return a pooled request
      */
     PooledTransportRequest getRequest();
 
@@ -14,7 +16,7 @@ public interface TransportRequestPool
     void close();
 
     /**
-     * Returns the capacity of the pool (number of how many requests are
+     * @return the capacity of the pool (number of how many requests are
      * managed by the pool.
      */
     int capacity();

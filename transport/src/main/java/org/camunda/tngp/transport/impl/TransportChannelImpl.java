@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.impl.agent.ReceiverCmd;
 import org.camunda.tngp.transport.impl.agent.SenderCmd;
@@ -164,10 +165,9 @@ public abstract class TransportChannelImpl implements TransportChannel
     }
 
     /**
-     * @param protocolHandler
+     * @param msgType see {@link DataFrameDescriptor}
      * @param messageLength exact message length
      * @param frameLength aligned message length
-     * @return
      */
     protected boolean handleProtocolMessage(int msgType, int messageLength, int frameLength)
     {

@@ -13,6 +13,9 @@ public class CompositeChannelHandler implements TransportChannelHandler
 
     /**
      * Handlers must be registered according to the protocol IDs defined in {@link Protocols}.
+     *
+     * @param protocolId see {@link Protocols}
+     * @param handler guess what, it is going to handle messages of that protocol
      */
     public void addHandler(short protocolId, TransportChannelHandler handler)
     {

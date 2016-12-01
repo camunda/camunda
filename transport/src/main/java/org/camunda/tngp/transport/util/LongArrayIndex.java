@@ -7,7 +7,7 @@ import org.agrona.BitUtil;
  * assigning a unique long key to each object.
  *
  * Supports a single reader/writer for all mutating operations,
- * ie. {@link #put(Object)}, {@link #remove(long)} and {{@link #reset()}.
+ * ie. {@link LongArrayIndex#put(Object)}, {@link LongArrayIndex#remove(long)} and {@link LongArrayIndex#reset()}.
  *
  * Can be iterated concurrently by readers who read the size field prior
  * to iteration. The readers are then guaranteed to see the array's state
@@ -59,6 +59,8 @@ public class LongArrayIndex<T>
     /**
      * Puts an object into the array returning the key under which it
      * can be retrieved.
+     *
+     * @param object stuff to put
      */
     public long put(final T object)
     {
@@ -87,6 +89,11 @@ public class LongArrayIndex<T>
     /**
      * Remove the object for the given key if that object is still referenced
      * by the array.
+     *
+     * @param key key of value to select
+     * @param objectToRemove expected value at key
+     *
+     * @return the value
      */
     @SuppressWarnings("unchecked")
     public T remove(final long key, final T objectToRemove)
@@ -107,6 +114,10 @@ public class LongArrayIndex<T>
 
     /**
      * Retrieve without removing the object for the given index
+     *
+     * @param key the key
+     *
+     * @return the value
      */
     @SuppressWarnings("unchecked")
     public T poll(final long key)

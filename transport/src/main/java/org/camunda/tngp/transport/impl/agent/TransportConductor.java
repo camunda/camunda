@@ -294,6 +294,9 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
     /**
      * perform an orderly close of a server socket binding
+     *
+     * @param serverSocketBinding to be closed
+     * @param completableFuture completed once binding is closed
      */
     public void closeServerSocketBinding(
             final ServerSocketBindingImpl serverSocketBinding,

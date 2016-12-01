@@ -70,6 +70,9 @@ public class OutgoingDataFrameImpl implements OutgoingDataFrame
     }
 
     /**
+     * @param messageLength required payload size
+     * @param channelId channel to send message on
+     *
      * @return true if opening the frame was successful
      */
     public boolean open(int messageLength, int channelId)

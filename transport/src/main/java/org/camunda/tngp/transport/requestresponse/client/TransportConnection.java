@@ -9,7 +9,7 @@ package org.camunda.tngp.transport.requestresponse.client;
 public interface TransportConnection extends AutoCloseable
 {
     /**
-     * Return true if this connection is currently open.
+     * @return true if this connection is currently open.
      */
     boolean isOpen();
 
@@ -21,7 +21,7 @@ public interface TransportConnection extends AutoCloseable
      * The request must be completed by calling {@link TransportRequest#commit()}
      * or {@link TransportRequest#abort()}
      *
-     * @param the id of the channel over which the request should be performed
+     * @param channelId the id of the channel over which the request should be performed
      * @param length the size (in bytes) of the send buffer to allocate.
      * @return the pooled request or null in case no resources are currently
      * available to open a request.
@@ -37,7 +37,11 @@ public interface TransportConnection extends AutoCloseable
      * The request must be completed by calling {@link TransportRequest#commit()}
      * or {@link TransportRequest#abort()}
      *
-     * Returns false if the request cannot be opened due to back pressure
+     * @param request to be opened
+     * @param channelId channelId the id of the channel over which the request should be performed
+     * @param length length the size (in bytes) of the send buffer to allocate.
+     *
+     * @return false if the request cannot be opened due to back pressure
      */
     boolean openRequest(TransportRequest request, int channelId, int length);
 

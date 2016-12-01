@@ -8,6 +8,8 @@ public interface TransportConnectionPool extends AutoCloseable
     /**
      * Non-blocking attempt to open a connection.
      * Returns null if no connection is immediately available.
+     *
+     * @return the connection
      */
     TransportConnection openConnection();
 

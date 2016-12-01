@@ -98,6 +98,8 @@ public class DeferredResponse
 
     /**
      * Response becomes enqueued in response pool, accessible via {@link DeferredResponsePool#popDeferred()}
+     *
+     * @return &gt;= 0 if deferring was successful
      */
     public int deferFifo()
     {
