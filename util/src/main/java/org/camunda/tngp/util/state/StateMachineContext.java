@@ -42,4 +42,12 @@ public interface StateMachineContext
      */
     boolean tryTake(int transitionId);
 
+    /**
+     * Set the context in the initial state.
+     */
+    default void reset()
+    {
+        // do nothing by default
+    }
+
 }

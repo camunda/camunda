@@ -19,7 +19,6 @@ public class StateMachine<C extends StateMachineContext>
     private final Transition<C>[] transitions;
 
     private final State<C> intialState;
-    private final Function<StateMachine<C>, C> contextBuilder;
 
     private State<C> currentState;
     private C context;
@@ -32,7 +31,6 @@ public class StateMachine<C extends StateMachineContext>
         this.intialState = initialState;
         this.currentState = initialState;
 
-        this.contextBuilder = contextBuilder;
         this.context = contextBuilder.apply(this);
     }
 
@@ -126,7 +124,7 @@ public class StateMachine<C extends StateMachineContext>
     public void reset()
     {
         currentState = intialState;
-        context = contextBuilder.apply(this);
+        context.reset();
     }
 
     public static StateMachineBuilder<SimpleStateMachineContext> builder()
