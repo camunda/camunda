@@ -12,6 +12,8 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
@@ -485,6 +487,18 @@ public class BufferedLogStreamReader implements LogStreamReader
         public void readValue(BufferReader reader)
         {
             reader.wrap(buffer, getValueOffset(), getValueLength());
+        }
+
+        @Override
+        public long getSourceEventLogStreamId()
+        {
+            return buffer.getLong(sourceEventLogStreamIdOffset(messageOffset(fragmentOffset)));
+        }
+
+        @Override
+        public long getSourceEventPosition()
+        {
+            return buffer.getLong(sourceEventPositionOffset(messageOffset(fragmentOffset)));
         }
     }
 

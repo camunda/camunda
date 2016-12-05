@@ -1,6 +1,7 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 public class LogEntryDescriptor
 {
@@ -8,6 +9,10 @@ public class LogEntryDescriptor
     public static final short KEY_TYPE_BYTES = 2;
 
     public static final int POSITION_OFFSET;
+
+    public static final int SOURCE_EVENT_POSITION_OFFSET;
+
+    public static final int SOURCE_EVENT_LOG_STREAM_ID_OFFSET;
 
     public static final int KEY_TYPE_OFFSET;
 
@@ -22,6 +27,12 @@ public class LogEntryDescriptor
         int offset = 0;
 
         POSITION_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        SOURCE_EVENT_LOG_STREAM_ID_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        SOURCE_EVENT_POSITION_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
         KEY_TYPE_OFFSET = offset;
@@ -63,6 +74,16 @@ public class LogEntryDescriptor
     public static int valueOffset(int offset, int keyLength)
     {
         return HEADER_BLOCK_LENGHT + keyLength + offset;
+    }
+
+    public static int sourceEventPositionOffset(int offset)
+    {
+        return SOURCE_EVENT_POSITION_OFFSET + offset;
+    }
+
+    public static int sourceEventLogStreamIdOffset(int offset)
+    {
+        return SOURCE_EVENT_LOG_STREAM_ID_OFFSET + offset;
     }
 
 }

@@ -8,6 +8,8 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffse
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -28,6 +30,9 @@ public class LogStreamWriter
 
     protected boolean positionAsKey;
     protected long key;
+
+    protected long sourceEventPosition = -1L;
+    protected long sourceEventLogStreamId = -1L;
 
     protected final short keyLength = SIZE_OF_LONG;
 
@@ -64,6 +69,13 @@ public class LogStreamWriter
         return this;
     }
 
+    public LogStreamWriter sourceEvent(long logStreamId, long position)
+    {
+        this.sourceEventLogStreamId = logStreamId;
+        this.sourceEventPosition = position;
+        return this;
+    }
+
     public LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength)
     {
         return valueWriter(bufferWriterInstance.wrap(value, valueOffset, valueLength));
@@ -84,8 +96,10 @@ public class LogStreamWriter
     {
         positionAsKey = false;
         key = -1L;
-        bufferWriterInstance.reset();
         valueWriter = null;
+        sourceEventLogStreamId = -1L;
+        sourceEventPosition = -1L;
+        bufferWriterInstance.reset();
     }
 
     /**
@@ -119,6 +133,10 @@ public class LogStreamWriter
 
                 // write log entry header
                 writeBuffer.putLong(positionOffset(bufferOffset), claimedPosition);
+
+                writeBuffer.putLong(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamId);
+                writeBuffer.putLong(sourceEventPositionOffset(bufferOffset), sourceEventPosition);
+
                 writeBuffer.putShort(keyTypeOffset(bufferOffset), KEY_TYPE_UINT64);
                 writeBuffer.putShort(keyLengthOffset(bufferOffset), keyLength);
                 writeBuffer.putLong(keyOffset, keyToWrite);

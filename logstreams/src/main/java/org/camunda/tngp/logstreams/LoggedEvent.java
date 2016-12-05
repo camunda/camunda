@@ -14,6 +14,18 @@ public interface LoggedEvent
     long getPosition();
 
     /**
+     * @return the log stream id of the event which causes this event. Returns a
+     *         negative value if no such an event exists.
+     */
+    long getSourceEventLogStreamId();
+
+    /**
+     * @return the position of the event which causes this event. Returns a
+     *         negative value if no such an event exists.
+     */
+    long getSourceEventPosition();
+
+    /**
      * @return the key of the event
      */
     long getLongKey();

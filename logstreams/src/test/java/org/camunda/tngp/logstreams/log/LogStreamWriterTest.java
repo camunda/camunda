@@ -22,6 +22,8 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffse
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -160,6 +162,35 @@ public class LogStreamWriterTest
         assertThat(writeBuffer.getShort(keyTypeOffset(MESSAGE_OFFSET))).isEqualTo(KEY_TYPE_UINT64);
         assertThat(writeBuffer.getShort(keyLengthOffset(MESSAGE_OFFSET))).isEqualTo((short) SIZE_OF_LONG);
         assertThat(writeBuffer.getLong(keyOffset(MESSAGE_OFFSET))).isEqualTo(position);
+    }
+
+    @Test
+    public void shouldWriteEventWithSourceEvent()
+    {
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
+
+        writer
+            .positionAsKey()
+            .value(new UnsafeBuffer(EVENT_VALUE))
+            .sourceEvent(2L, 3L)
+            .tryWrite();
+
+        assertThat(writeBuffer.getLong(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(2L);
+        assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(3L);
+    }
+
+    @Test
+    public void shouldWriteEventWithoutSourceEvent()
+    {
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
+
+        writer
+            .positionAsKey()
+            .value(new UnsafeBuffer(EVENT_VALUE))
+            .tryWrite();
+
+        assertThat(writeBuffer.getLong(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
+        assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
     }
 
     @Test

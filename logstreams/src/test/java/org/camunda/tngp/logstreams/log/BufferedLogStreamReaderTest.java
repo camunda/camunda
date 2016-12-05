@@ -75,7 +75,13 @@ public class BufferedLogStreamReaderTest
         when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
         when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
 
-        mockLogStorage.add(newLogEntry().address(10).position(1).key(2).value("event".getBytes()));
+        mockLogStorage.add(newLogEntry()
+                .address(10)
+                .position(1)
+                .key(2)
+                .sourceEventLogStreamId(3L)
+                .sourceEventPosition(4L)
+                .value("event".getBytes()));
 
         reader.wrap(mockLogStream);
 
@@ -87,6 +93,9 @@ public class BufferedLogStreamReaderTest
         assertThat(event).isNotNull();
         assertThat(event.getPosition()).isEqualTo(1L);
         assertThat(event.getLongKey()).isEqualTo(2L);
+
+        assertThat(event.getSourceEventLogStreamId()).isEqualTo(3L);
+        assertThat(event.getSourceEventPosition()).isEqualTo(4L);
 
         final DirectBufferReader readBuffer = new DirectBufferReader();
         event.readValue(readBuffer);
