@@ -26,6 +26,11 @@ public interface LoggedEvent
     long getSourceEventPosition();
 
     /**
+     * @return the id of the stream processor which created this event.
+     */
+    long getStreamProcessorId();
+
+    /**
      * @return the key of the event
      */
     long getLongKey();

@@ -22,6 +22,7 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -87,6 +88,8 @@ public class MockLogStorage
         private long sourceEventLogStreamId = 1L;
         private long sourceEventPosition = -1L;
 
+        private long streamProcessorId = -1L;
+
         private long key = 0;
         private int messageLength = 0;
 
@@ -120,6 +123,12 @@ public class MockLogStorage
         public MockLogEntryBuilder sourceEventPosition(long position)
         {
             this.sourceEventPosition = position;
+            return this;
+        }
+
+        public MockLogEntryBuilder streamProcessorId(long streamProcessorId)
+        {
+            this.streamProcessorId = streamProcessorId;
             return this;
         }
 
@@ -180,6 +189,8 @@ public class MockLogStorage
 
                         buffer.putLong(sourceEventLogStreamIdOffset(messageOffset), sourceEventLogStreamId);
                         buffer.putLong(sourceEventPositionOffset(messageOffset), sourceEventPosition);
+
+                        buffer.putLong(streamProcessorIdOffset(messageOffset), streamProcessorId);
 
                         buffer.putLong(keyOffset(messageOffset), key + i);
                         buffer.putShort(keyLengthOffset(messageOffset), (short) SIZE_OF_LONG);

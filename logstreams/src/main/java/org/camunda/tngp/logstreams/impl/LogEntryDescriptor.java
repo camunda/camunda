@@ -14,6 +14,8 @@ public class LogEntryDescriptor
 
     public static final int SOURCE_EVENT_LOG_STREAM_ID_OFFSET;
 
+    public static final int STREAM_PROCESSOR_ID_OFFSET;
+
     public static final int KEY_TYPE_OFFSET;
 
     public static final int KEY_LENGTH_OFFSET;
@@ -33,6 +35,9 @@ public class LogEntryDescriptor
         offset += SIZE_OF_LONG;
 
         SOURCE_EVENT_POSITION_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        STREAM_PROCESSOR_ID_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
         KEY_TYPE_OFFSET = offset;
@@ -84,6 +89,11 @@ public class LogEntryDescriptor
     public static int sourceEventLogStreamIdOffset(int offset)
     {
         return SOURCE_EVENT_LOG_STREAM_ID_OFFSET + offset;
+    }
+
+    public static int streamProcessorIdOffset(int offset)
+    {
+        return STREAM_PROCESSOR_ID_OFFSET + offset;
     }
 
 }

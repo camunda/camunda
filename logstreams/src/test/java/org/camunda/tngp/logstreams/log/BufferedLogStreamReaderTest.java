@@ -81,6 +81,7 @@ public class BufferedLogStreamReaderTest
                 .key(2)
                 .sourceEventLogStreamId(3L)
                 .sourceEventPosition(4L)
+                .streamProcessorId(5L)
                 .value("event".getBytes()));
 
         reader.wrap(mockLogStream);
@@ -96,6 +97,8 @@ public class BufferedLogStreamReaderTest
 
         assertThat(event.getSourceEventLogStreamId()).isEqualTo(3L);
         assertThat(event.getSourceEventPosition()).isEqualTo(4L);
+
+        assertThat(event.getStreamProcessorId()).isEqualTo(5L);
 
         final DirectBufferReader readBuffer = new DirectBufferReader();
         event.readValue(readBuffer);

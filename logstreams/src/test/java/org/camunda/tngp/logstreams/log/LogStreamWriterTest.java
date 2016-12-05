@@ -24,6 +24,7 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -191,6 +192,20 @@ public class LogStreamWriterTest
 
         assertThat(writeBuffer.getLong(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
+    }
+
+    @Test
+    public void shouldWriteEventWithStreamProcessorId()
+    {
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
+
+        writer
+            .positionAsKey()
+            .streamProcessorId(2L)
+            .value(new UnsafeBuffer(EVENT_VALUE))
+            .tryWrite();
+
+        assertThat(writeBuffer.getLong(streamProcessorIdOffset(MESSAGE_OFFSET))).isEqualTo(2L);
     }
 
     @Test

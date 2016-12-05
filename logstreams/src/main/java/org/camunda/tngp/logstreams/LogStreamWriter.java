@@ -10,6 +10,7 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -33,6 +34,8 @@ public class LogStreamWriter
 
     protected long sourceEventPosition = -1L;
     protected long sourceEventLogStreamId = -1L;
+
+    protected long streamProcessorId = -1L;
 
     protected final short keyLength = SIZE_OF_LONG;
 
@@ -76,6 +79,12 @@ public class LogStreamWriter
         return this;
     }
 
+    public LogStreamWriter streamProcessorId(long streamProcessorId)
+    {
+        this.streamProcessorId = streamProcessorId;
+        return this;
+    }
+
     public LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength)
     {
         return valueWriter(bufferWriterInstance.wrap(value, valueOffset, valueLength));
@@ -99,6 +108,8 @@ public class LogStreamWriter
         valueWriter = null;
         sourceEventLogStreamId = -1L;
         sourceEventPosition = -1L;
+        streamProcessorId = -1L;
+
         bufferWriterInstance.reset();
     }
 
@@ -136,6 +147,8 @@ public class LogStreamWriter
 
                 writeBuffer.putLong(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamId);
                 writeBuffer.putLong(sourceEventPositionOffset(bufferOffset), sourceEventPosition);
+
+                writeBuffer.putLong(streamProcessorIdOffset(bufferOffset), streamProcessorId);
 
                 writeBuffer.putShort(keyTypeOffset(bufferOffset), KEY_TYPE_UINT64);
                 writeBuffer.putShort(keyLengthOffset(bufferOffset), keyLength);
