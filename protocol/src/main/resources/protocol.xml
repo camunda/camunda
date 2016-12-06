@@ -18,30 +18,21 @@
       <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
     </composite>
 
-    <composite name="taskData" description="Data related to a task">
-      <type name="lockTime" id="1" primitiveType="uint64" />
-      <data name="taskType" id="1" type="varDataEncoding" />
-      <group name="headers" id="2" dimensionType="groupSizeEncoding">
-        <data name="headerName" id="3" type="varDataEncoding" />
-        <data name="headerValue" id="4" type="varDataEncoding" />
-      </group>
-      <data name="payload" id="5" type="varDataEncoding" />
-    </composite>
-    
-    <enum name="taskCommandType" encodingType="uint8" semanticType="String" description="The type of command executed on the task">
+    <enum name="taskEventType" encodingType="uint8" semanticType="String" description="The type of event occured on the task">
       <validValue name="CREATE">0</validValue>
-      <validValue name="LOCK">1</validValue>
-      <validValue name="COMPLETE">2</validValue>
-      <validValue name="EXPIRE_LOCK">3</validValue>
-      <validValue name="ABORT">4</validValue>
-    </enum>
-
-    <enum name="taskEventType" encodingType="uint8" semanticType="String" description="The type of event occured on a task">
-      <validValue name="CREATED">0</validValue>
-      <validValue name="LOCKED">1</validValue>
-      <validValue name="COMPLETED">2</validValue>
-      <validValue name="LOCK_EXPIRED">3</validValue>
-      <validValue name="ABORTED">4</validValue>
+      <validValue name="CREATED">1</validValue>
+      <validValue name="LOCK">2</validValue>
+      <validValue name="LOCKED">3</validValue>
+      <validValue name="LOCK_FAILED">4</validValue>
+      <validValue name="COMPLETE">5</validValue>
+      <validValue name="COMPLETED">6</validValue>
+      <validValue name="COMPLETE_FAILED">7</validValue>
+      <validValue name="EXPIRE_LOCK">8</validValue>
+      <validValue name="LOCK_EXPIRED">9</validValue>
+      <validValue name="LOCK_EXPIRATION_FAILED">10</validValue>
+      <validValue name="ABORT">11</validValue>
+      <validValue name="ABORTED">12</validValue>
+      <validValue name="ABORT_FAILED">13</validValue>
     </enum>
 
   </types>
@@ -50,7 +41,7 @@
 
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
     <field name="errorCode" id="1" type="uint16" />
-    <data name="errorMessage" id="2" type="varDataEncoding" />
+    <data name="errorData" id="2" type="varDataEncoding" />
   </sbe:message>
 
   <!-- Control Messages 0 - 99 -->
@@ -88,33 +79,38 @@
     </group>
   </sbe:message>
 
-  <sbe:message name="ExecuteCommandRequest" id="101">
+  <sbe:message name="PublishEventsResponse" id="101">
     <field name="topicId" id="1" type="uint32" />
+    <group name="positions" id="2" dimensionType="groupSizeEncoding">
+      <field name="position" id="3" type="uint64" />
+    </group>
+  </sbe:message>
+
+  <sbe:message name="ExecuteCommandRequest" id="102">
+    <field name="topicId" id="1" type="uint32" />
+    <field name="longKey" id="3" type="uint64" />
+    <data name="bytesKey" id="4" type="varDataEncoding" />
     <data name="command" id="3" type="varDataEncoding" />
   </sbe:message>
 
-  <sbe:message name="ExecuteCommandResponse" id="102">
-    <data name="responseData" id="3" type="varDataEncoding" />
-  </sbe:message>
-
-  <sbe:message name="PublishEventsAck" id="103">
-    <group name="positions" id="1" dimensionType="groupSizeEncoding">
-      <field name="position" id="2" type="uint64" />
-    </group>
+  <sbe:message name="ExecuteCommandResponse" id="103">
+    <field name="topicId" id="1" type="uint32" />
+    <field name="longKey" id="3" type="uint64" />
+    <data name="bytesKey" id="4" type="varDataEncoding" />
+    <data name="data" id="3" type="varDataEncoding" />
   </sbe:message>
 
   <!-- Commands 200 - 399 -->
 
-  <sbe:message name="TaskCmd" id="200">
-    <field name="cmdType" id="1" type="taskCommandType" />
-    <ref name="taskData" id="2" type="taskData" />
-  </sbe:message>
-
-  <!-- Events 400 - 999 -->
-
-  <sbe:message name="TaskEvent" id="400">
+  <sbe:message name="TaskEvent" id="200">
     <field name="eventType" id="1" type="taskEventType" />
-    <ref name="taskData" id="2" type="taskData" />
+    <field name="lockTime" id="1" type="uint64" />
+    <group name="headers" id="2" dimensionType="groupSizeEncoding">
+      <data name="headerName" id="3" type="varDataEncoding" />
+      <data name="headerValue" id="4" type="varDataEncoding" />
+    </group>
+    <data name="taskType" id="1" type="varDataEncoding" />
+    <data name="payload" id="5" type="varDataEncoding" />
   </sbe:message>
 
 </sbe:messageSchema>

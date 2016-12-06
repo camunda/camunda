@@ -36,7 +36,7 @@ public class BpmnFlowElementEventWriterTest
             .key(1234L)
             .processId(8765L)
             .processInstanceId(45678L)
-            .write(eventBuffer, 0);
+            .get(eventBuffer, 0);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -72,10 +72,10 @@ public class BpmnFlowElementEventWriterTest
             .key(1234L)
             .processId(8765L)
             .processInstanceId(45678L)
-            .write(eventBuffer, 0);
+            .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getLength();
+        final int estimatedLength = writer.getEncodedLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + BpmnProcessEventEncoder.BLOCK_LENGTH);

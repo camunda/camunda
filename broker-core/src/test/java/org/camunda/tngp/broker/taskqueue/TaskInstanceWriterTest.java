@@ -41,7 +41,7 @@ public class TaskInstanceWriterTest
             .payload(new UnsafeBuffer(PAYLOAD), 0, PAYLOAD.length)
             .prevVersionPosition(9876)
             .state(TaskInstanceState.LOCKED)
-            .write(buffer, 67);
+            .get(buffer, 67);
 
         // then
         headerDecoder.wrap(buffer, 67);
@@ -90,7 +90,7 @@ public class TaskInstanceWriterTest
             .state(TaskInstanceState.LOCKED);
 
         // when
-        final int length = writer.getLength();
+        final int length = writer.getEncodedLength();
 
         // then
         assertThat(length).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH +

@@ -29,7 +29,7 @@ public class LockedTaskBatchWriterTest
         // when
         writer
             .consumerId(1)
-            .write(buffer, 54);
+            .get(buffer, 54);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -60,7 +60,7 @@ public class LockedTaskBatchWriterTest
             .consumerId(1);
 
         // when
-        final int length = writer.getLength();
+        final int length = writer.getEncodedLength();
 
         // then
         final int expectedLength =
@@ -85,7 +85,7 @@ public class LockedTaskBatchWriterTest
                 .appendTask(taskWriter.id(76).workflowInstanceId(10076).lockTime(123L))
                 .appendTask(taskWriter.id(98).workflowInstanceId(10098).lockTime(234L))
                 .appendTask(taskWriter.id(123).workflowInstanceId(10123).lockTime(345L))
-            .write(buffer, 54);
+            .get(buffer, 54);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -142,7 +142,7 @@ public class LockedTaskBatchWriterTest
                 .appendTask(taskWriter.id(123).workflowInstanceId(10123).lockTime(345L));
 
         // when
-        final int length = writer.getLength();
+        final int length = writer.getEncodedLength();
 
         // then
         int expectedLength =

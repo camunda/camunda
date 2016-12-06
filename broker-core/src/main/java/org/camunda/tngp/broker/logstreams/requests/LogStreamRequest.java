@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.logstreams.requests;
 
-
 /**
  * Holds information about a request which was written to a log stream and is processed asynchronously.
  *
@@ -30,7 +29,7 @@ public class LogStreamRequest
     /**
      * The queue to which the request was deferred.
      */
-    protected LogStreamRequestQueue queue;
+    protected LogStreamRequestManager queue;
 
     public long getLogStreamPosition()
     {
@@ -88,7 +87,7 @@ public class LogStreamRequest
         queue = null;
     }
 
-    public void open(LogStreamRequestQueue streamRequestQueue)
+    public void open(LogStreamRequestManager streamRequestQueue)
     {
         queue = streamRequestQueue;
     }

@@ -20,7 +20,7 @@ public class SingleTaskAckResponseWriterTest
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
         // when
-        writer.write(buffer, 50);
+        writer.get(buffer, 50);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -49,10 +49,10 @@ public class SingleTaskAckResponseWriterTest
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
         // when
-        writer.write(buffer, 50);
+        writer.get(buffer, 50);
 
         // then
-        assertThat(writer.getLength()).isEqualTo(MessageHeaderDecoder.ENCODED_LENGTH +
+        assertThat(writer.getEncodedLength()).isEqualTo(MessageHeaderDecoder.ENCODED_LENGTH +
                 SingleTaskAckDecoder.BLOCK_LENGTH);
 
     }

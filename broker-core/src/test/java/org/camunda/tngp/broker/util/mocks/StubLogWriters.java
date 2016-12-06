@@ -47,7 +47,7 @@ public class StubLogWriters implements LogWriters
             throw new RuntimeException("No writer for log " + logId);
         }
 
-        return stubLogWriter.write(logWriter);
+        return stubLogWriter.put(logWriter);
 
     }
 

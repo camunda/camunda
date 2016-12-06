@@ -32,7 +32,7 @@ public class StartWorkflowInstanceResponseWriterTest
         // when
         writer
             .id(45678L)
-            .write(eventBuffer, 12);
+            .get(eventBuffer, 12);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -60,10 +60,10 @@ public class StartWorkflowInstanceResponseWriterTest
 
         writer
             .id(45678L)
-            .write(eventBuffer, 0);
+            .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getLength();
+        final int estimatedLength = writer.getEncodedLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + StartWorkflowInstanceResponseEncoder.BLOCK_LENGTH);

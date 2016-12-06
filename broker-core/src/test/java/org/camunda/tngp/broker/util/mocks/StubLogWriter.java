@@ -20,7 +20,7 @@ public class StubLogWriter extends LogWriter
     @Override
     public long write(LogEntryWriter<?, ?> writer)
     {
-        final int length = writer.getLength();
+        final int length = writer.getEncodedLength();
         collector.add(writer);
 
         final long result = tailPosition;

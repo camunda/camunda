@@ -65,7 +65,7 @@ public class PollEventsRequestHandlerTest
     protected ClientApiMessageHandler logManager;
 
     @Mock
-    protected EventContext eventContext;
+    protected DecodedEvent eventContext;
 
     @Captor
     protected ArgumentCaptor<BufferWriter> captor;

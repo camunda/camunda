@@ -1,108 +1,116 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.logstreams.requests.LogStreamRequestQueue;
-import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.broker.logstreams.requests.LogStreamRequest;
+import org.camunda.tngp.broker.logstreams.requests.LogStreamRequestManager;
+import org.camunda.tngp.broker.taskqueue.processor.stuff.EncodedStuff;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LoggedEvent;
-import org.camunda.tngp.logstreams.processor.EventProcessingActions;
+import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessorAction;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
-import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.clientapi.TaskCmdDecoder;
-import org.camunda.tngp.protocol.clientapi.TaskCmdEncoder;
-import org.camunda.tngp.protocol.clientapi.TaskCommandType;
-import org.camunda.tngp.protocol.clientapi.TaskDataDecoder;
-import org.camunda.tngp.protocol.clientapi.TaskEventDecoder;
-import org.camunda.tngp.protocol.clientapi.TaskEventEncoder;
+import org.camunda.tngp.protocol.clientapi.TaskEventType;
 
-import uk.co.real_logic.sbe.ir.generated.MessageHeaderDecoder;
-
-public class TaskInstanceStreamProcessor implements StreamProcessor<TaskInstanceEventContext>
+public class TaskInstanceStreamProcessor implements StreamProcessor
 {
-    protected LogStreamRequestQueue requestqueue;
-    protected Dispatcher responseSendBuffer;
+    protected final TaskEvent taskEvent = new TaskEvent();
 
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
 
-    protected final TaskCmdDecoder taskCmdDecoder = new TaskCmdDecoder();
-    protected final TaskCmdEncoder taskCmdEncoder = new TaskCmdEncoder();
+    protected final CmdResponseWriter responseWriter = null;
+    protected final LogStreamRequestManager requestQueue = null;
+    protected final Long2LongHashIndex taskIndex = null;
+    protected int streamId;
 
-    protected final TaskEventDecoder taskEventDecoder = new TaskEventDecoder();
-    protected final TaskEventEncoder taskEventEncoder = new TaskEventEncoder();
+    protected EncodedStuff encodedEvent = new EncodedStuff();
 
-    protected Long2LongHashIndex lastPositionIndex;
-
-    protected final ProcessCreateTaskCmd processCreateTaskCmd = new ProcessCreateTaskCmd();
-
+    protected long eventPosition = 0;
+    protected long eventKey = 0;
 
     @Override
     public void open(StreamProcessorContext streamProcessorContext)
     {
-
+        streamId = streamProcessorContext.getSourceStream().getId();
     }
 
     @Override
-    public TaskInstanceEventContext createContext()
+    public EventProcessor onEvent(LoggedEvent event)
     {
-        return new TaskInstanceEventContext();
-    }
+        eventPosition = event.getPosition();
+        eventKey = event.getLongKey();
 
-    @Override
-    public void handleEvent(LoggedEvent event, TaskInstanceEventContext context, EventProcessingActions<TaskInstanceEventContext> eventProcessingActions)
-    {
-        final DirectBuffer buffer = event.getValueBuffer();
-        int offset = event.getValueOffset();
+        taskEvent.decode(event.getValueBuffer(), event.getValueOffset());
 
-        headerDecoder.wrap(buffer, offset);
-        offset += headerDecoder.encodedLength();
+        final TaskEventType evtType = taskEvent.getEvtType();
 
-        final int templateId = headerDecoder.templateId();
+        EventProcessor eventProcessor = null;
 
-        if (taskCmdDecoder.sbeTemplateId() == templateId)
+        if (evtType != null)
         {
-            taskCmdDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-
-            readTaskData(taskCmdDecoder.taskData(), context);
-
-            final TaskCommandType cmdType = taskCmdDecoder.cmdType();
-            switch (cmdType)
+            switch (evtType)
             {
                 case CREATE:
-
-                    eventProcessingActions
-                        .processEvent(processCreateTaskCmd)
-                        .executeSideEffects(null)
-                        .writeEvents(null)
-                        .updateState(null);
-
+                    eventProcessor = createTaskProcessor;
                     break;
 
                 default:
                     break;
             }
         }
-        else
-        {
-            taskEventDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-        }
+
+        return eventProcessor;
     }
 
-    private void readTaskData(TaskDataDecoder taskDataDecoder, TaskInstanceEventContext context)
+    @Override
+    public void afterEvent()
     {
-        taskDataDecoder.
+        taskEvent.reset();
     }
 
-    class ProcessCreateTaskCmd implements StreamProcessorAction<TaskInstanceEventContext>
+    class CreateTaskProcessor implements EventProcessor
     {
 
         @Override
-        public boolean execute(TaskInstanceEventContext ctx)
+        public void processEvent()
         {
+            taskEvent.setEvtType(TaskEventType.CREATED);
 
-            return true;
+            encodedEvent.encode(taskEvent);
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            final LogStreamRequest request = requestQueue.poll(eventPosition);
+
+            boolean success = true;
+
+            if (request != null)
+            {
+                success = responseWriter.forRequest(request)
+                    .topicId(streamId)
+                    .longKey(eventKey)
+                    .event(encodedEvent.getBuffer(), 0, encodedEvent.getEncodedLength())
+                    .tryWriteResponse();
+            }
+
+            return success;
+        }
+
+        @Override
+        public boolean writeEvents(LogStreamWriter writer)
+        {
+            final long position = writer.key(eventKey)
+                .value(encodedEvent.getBuffer(), 0, encodedEvent.getEncodedLength())
+                .tryWrite();
+
+            return position >= 0;
+        }
+
+        @Override
+        public void updateState()
+        {
+            taskIndex.put(eventKey, eventPosition);
         }
 
     }

@@ -40,7 +40,7 @@ public class BpmnActivityEventWriterTest
             .flowElementId(5678)
             .taskQueueId(7)
             .taskType(new UnsafeBuffer("foobar".getBytes(StandardCharsets.UTF_8)), 3, 3)
-            .write(eventBuffer, 0);
+            .get(eventBuffer, 0);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -80,10 +80,10 @@ public class BpmnActivityEventWriterTest
             .flowElementId(5678)
             .taskQueueId(7)
             .taskType(new UnsafeBuffer("foobar".getBytes(StandardCharsets.UTF_8)), 3, 3)
-            .write(eventBuffer, 0);
+            .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getLength();
+        final int estimatedLength = writer.getEncodedLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(

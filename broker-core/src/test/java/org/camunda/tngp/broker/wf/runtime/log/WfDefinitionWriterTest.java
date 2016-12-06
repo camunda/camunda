@@ -27,7 +27,7 @@ public class WfDefinitionWriterTest
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4);
 
         // when
-        writer.write(buffer, 0);
+        writer.get(buffer, 0);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -67,7 +67,7 @@ public class WfDefinitionWriterTest
                 .wfDefinitionKey(TYPE);
 
         // when
-        writer.write(buffer, 0);
+        writer.get(buffer, 0);
 
         // then
         final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();

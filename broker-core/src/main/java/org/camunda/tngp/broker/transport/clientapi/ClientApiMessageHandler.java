@@ -8,7 +8,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.requests.LogStreamRequest;
-import org.camunda.tngp.broker.logstreams.requests.LogStreamRequestQueue;
+import org.camunda.tngp.broker.logstreams.requests.LogStreamRequestManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreamWriter;
@@ -86,7 +86,7 @@ public class ClientApiMessageHandler
 
             final long topicId = executeCommandRequestDecoder.topicId();
             final LogStream logStream = logStreamsById.get(topicId);
-            final LogStreamRequestQueue requestQueue = null;
+            final LogStreamRequestManager requestQueue = null;
 
             if (logStream != null)
             {

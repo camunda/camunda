@@ -23,7 +23,7 @@ public class WfDefinitionReaderTest
             .id(1)
             .wfDefinitionKey(TYPE)
             .resource(new UnsafeBuffer(PAYLOAD), 3, 4)
-            .write(buffer, 0);
+            .get(buffer, 0);
 
         reader.wrap(buffer, 0, 512);
 
