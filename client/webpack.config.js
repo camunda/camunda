@@ -29,13 +29,13 @@ module.exports = {
         test: /\.scss$/,
         loaders: [
           'style-loader',
-          'css-loader?sourceMap',
+          'css-loader',
           'sass-loader?sourceMap'
         ]
       },
       {
         test: /\.(jpg|png)$/,
-        loader: 'url-loader'
+        loader: 'file-loader'
       },
       {
         test: /\.js$/,
@@ -64,7 +64,6 @@ module.exports = {
     })
   ],
   devServer: {
-    publicPath: '/dist/',
     contentBase: './dist',
     port: 9000,
     inline: true,

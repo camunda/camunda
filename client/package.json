@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "./node_modules/.bin/webpack",
+    "compile": "rm -rf dist/ && ./node_modules/.bin/webpack",
+    "serve": "./node_modules/.bin/webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -16,8 +17,10 @@
     "babel-plugin-transform-react-jsx": "^6.8.0",
     "babel-preset-latest": "^6.16.0",
     "css-loader": "^0.26.0",
+    "file-loader": "^0.9.0",
     "html-webpack-plugin": "^2.24.1",
     "json-loader": "^0.5.4",
+    "node-sass": "^3.13.0",
     "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
     "webpack": "^1.13.3",
