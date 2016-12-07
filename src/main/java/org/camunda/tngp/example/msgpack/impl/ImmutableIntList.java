@@ -24,6 +24,11 @@ public class ImmutableIntList
         size++;
     }
 
+    public void removeLast()
+    {
+        size--;
+    }
+
     public int get(int index)
     {
         // TODO: could also become an iterator

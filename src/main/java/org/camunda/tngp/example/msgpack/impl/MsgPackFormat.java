@@ -6,7 +6,9 @@ public enum MsgPackFormat
     STR_8(MsgPackType.STRING, 0xd9, 0xff),
     STR_16(MsgPackType.STRING, 0xda, 0xff),
     STR_32(MsgPackType.STRING, 0xdb, 0xff),
-    FIXMAP(MsgPackType.MAP, 0x80, 0xf0);
+    FIXMAP(MsgPackType.MAP, 0x80, 0xf0),
+    FIXARR(MsgPackType.ARRAY, 0x90, 0xf0),
+    ;
 
     protected MsgPackType type;
     protected int prefix;
@@ -31,18 +33,17 @@ public enum MsgPackFormat
 
     public static MsgPackFormat getFormat(byte formatByte)
     {
-        if (FIXSTR.applies(formatByte))
+        MsgPackFormat[] values = values();
+
+        for (int i = 0; i < values.length; i++)
         {
-            return MsgPackFormat.FIXSTR;
+            if (values[i].applies(formatByte))
+            {
+                return values[i];
+            }
         }
-        else if (STR_8.applies(formatByte))
-        {
-            return MsgPackFormat.STR_8;
-        }
-        else
-        {
-            throw new RuntimeException("unrecognized format");
-        }
+
+        throw new RuntimeException("unrecognized format");
     }
 
 }

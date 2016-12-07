@@ -1,5 +1,6 @@
 package org.camunda.tngp.example.msgpack.impl;
 
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 public class ByteUtil
@@ -28,7 +29,13 @@ public class ByteUtil
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < bytes.length; i++)
         {
-            sb.append(Integer.toBinaryString(Byte.toUnsignedInt(bytes[i])));
+            String binaryString = Integer.toBinaryString(Byte.toUnsignedInt(bytes[i]));
+            int missingLeadingZeroes = 8 - binaryString.length();
+            for (int j = 0; j < missingLeadingZeroes; j++)
+            {
+                sb.append("0");
+            }
+            sb.append(binaryString);
             sb.append(", ");
         }
         return sb.toString();
