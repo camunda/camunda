@@ -1,0 +1,30 @@
+{
+  "name": "optimize-client",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "./node_modules/.bin/webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "babel-core": "^6.18.2",
+    "babel-loader": "^6.2.8",
+    "babel-plugin-transform-object-rest-spread": "^6.19.0",
+    "babel-plugin-transform-react-jsx": "^6.8.0",
+    "babel-preset-latest": "^6.16.0",
+    "css-loader": "^0.26.0",
+    "html-webpack-plugin": "^2.24.1",
+    "json-loader": "^0.5.4",
+    "sass-loader": "^4.0.2",
+    "style-loader": "^0.13.1",
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.2"
+  },
+  "dependencies": {
+    "bpmn-js": "^0.18.3",
+    "lodash.isequal": "^4.4.0"
+  }
+}
