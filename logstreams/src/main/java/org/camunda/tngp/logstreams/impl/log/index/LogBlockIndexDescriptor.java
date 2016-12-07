@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams.impl;
+package org.camunda.tngp.logstreams.impl.log.index;
 
 import static org.agrona.BitUtil.*;
 

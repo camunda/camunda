@@ -1,8 +1,8 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.log;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;

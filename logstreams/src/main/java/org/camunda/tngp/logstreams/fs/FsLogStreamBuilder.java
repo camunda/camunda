@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.fs;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -10,12 +10,16 @@ import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.PositionUtil;
-import org.camunda.tngp.logstreams.impl.LogBlockIndex;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.StreamImpl;
-import org.camunda.tngp.logstreams.impl.TimeBasedSnapshotPolicy;
-import org.camunda.tngp.logstreams.impl.fs.FsLogStorage;
-import org.camunda.tngp.logstreams.impl.fs.FsLogStorageConfiguration;
+import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
+import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.StreamContext;
+import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;

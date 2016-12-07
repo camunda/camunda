@@ -1,20 +1,16 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.waitUntilFullyWritten;
+import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.writeLogEvents;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.LogStream;
-import org.camunda.tngp.logstreams.LogStreamReader;
-import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.LoggedEvent;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
@@ -71,12 +67,12 @@ public class LogRecoveryTest
 
         log.open();
 
-        writeLogEvents(log, WORK_COUNT, 0);
+        writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
         waitUntilFullyWritten(log, WORK_COUNT);
 
         log.close();
 
-        readLogAndAssertRecoveredIndex(WORK_COUNT);
+        readLogAndAssertEvents(WORK_COUNT);
     }
 
     @Test
@@ -95,18 +91,18 @@ public class LogRecoveryTest
 
         log.open();
 
-        writeLogEvents(log, WORK_COUNT, 0);
+        writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
         waitUntilFullyWritten(log, WORK_COUNT);
 
         isLastLogEntry.set(true);
 
         // write one more event to create the snapshot
-        writeLogEvents(log, 1, WORK_COUNT);
+        writeLogEvents(log, 1, MSG_SIZE, WORK_COUNT);
         waitUntilFullyWritten(log, WORK_COUNT + 1);
 
         log.close();
 
-        readLogAndAssertRecoveredIndex(WORK_COUNT + 1);
+        readLogAndAssertEvents(WORK_COUNT + 1);
     }
 
     @Test
@@ -125,17 +121,17 @@ public class LogRecoveryTest
 
         log.open();
 
-        writeLogEvents(log, WORK_COUNT / 2, 0);
+        writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
         waitUntilFullyWritten(log, WORK_COUNT / 2);
 
         isSnapshotPoint.set(true);
 
-        writeLogEvents(log, WORK_COUNT / 2, WORK_COUNT / 2);
+        writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
         waitUntilFullyWritten(log, WORK_COUNT);
 
         log.close();
 
-        readLogAndAssertRecoveredIndex(WORK_COUNT);
+        readLogAndAssertEvents(WORK_COUNT);
     }
 
     @Test
@@ -156,12 +152,12 @@ public class LogRecoveryTest
 
         log.open();
 
-        writeLogEvents(log, WORK_COUNT, 0);
+        writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
         waitUntilFullyWritten(log, WORK_COUNT);
 
         log.close();
 
-        readLogAndAssertRecoveredIndex(WORK_COUNT);
+        readLogAndAssertEvents(WORK_COUNT);
     }
 
     @Test
@@ -177,7 +173,7 @@ public class LogRecoveryTest
         log.open();
 
         // write events
-        writeLogEvents(log, 10, 0);
+        writeLogEvents(log, 10, MSG_SIZE, 0);
         waitUntilFullyWritten(log, 10);
 
         log.close();
@@ -193,13 +189,13 @@ public class LogRecoveryTest
         newLog.open();
 
         // write more events
-        writeLogEvents(newLog, 15, 10);
+        writeLogEvents(newLog, 15, MSG_SIZE, 10);
         waitUntilFullyWritten(newLog, 25);
 
         newLog.close();
 
         // assert that the event position is recovered after re-open and continues after the last event
-        readLogAndAssertRecoveredIndex(25);
+        readLogAndAssertEvents(25);
     }
 
     @Test
@@ -215,7 +211,7 @@ public class LogRecoveryTest
         log.open();
 
         // write events
-        writeLogEvents(log, 10, 0);
+        writeLogEvents(log, 10, MSG_SIZE, 0);
         waitUntilFullyWritten(log, 10);
 
         log.close();
@@ -224,53 +220,15 @@ public class LogRecoveryTest
         log.open();
 
         // write more events
-        writeLogEvents(log, 15, 10);
+        writeLogEvents(log, 15, MSG_SIZE, 10);
         waitUntilFullyWritten(log, 25);
 
         log.close();
 
-        readLogAndAssertRecoveredIndex(25);
+        readLogAndAssertEvents(25);
     }
 
-    protected void writeLogEvents(final LogStream log, final int workCount, final int offset)
-    {
-        final LogStreamWriter writer = new LogStreamWriter(log);
-
-        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
-
-        for (int i = 0; i < workCount; i++)
-        {
-            msg.putInt(0, offset + i);
-
-            writer
-                .key(offset + i)
-                .value(msg);
-
-            while (writer.tryWrite() < 0)
-            {
-                // spin
-            }
-        }
-    }
-
-    protected void waitUntilFullyWritten(final LogStream log, final int workCount)
-    {
-        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log);
-
-        logReader.seekToLastEvent();
-
-        long entryKey = 0;
-        while (entryKey < workCount - 1)
-        {
-            if (logReader.hasNext())
-            {
-                final LoggedEvent nextEntry = logReader.next();
-                entryKey = nextEntry.getLongKey();
-            }
-        }
-    }
-
-    protected void readLogAndAssertRecoveredIndex(final int workCount)
+    protected void readLogAndAssertEvents(int workCount)
     {
         final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
                 .logRootPath(logPath)
@@ -283,31 +241,7 @@ public class LogRecoveryTest
 
         final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
 
-        int count = 0;
-        long lastPosition = -1L;
-
-        while (count < workCount)
-        {
-            if (logReader.hasNext())
-            {
-                final LoggedEvent entry = logReader.next();
-                final long currentPosition = entry.getPosition();
-
-                assertThat(currentPosition > lastPosition);
-
-                final DirectBuffer valueBuffer = entry.getValueBuffer();
-                final long value = valueBuffer.getInt(entry.getValueOffset());
-                assertThat(value).isEqualTo(entry.getLongKey());
-                assertThat(entry.getValueLength()).isEqualTo(MSG_SIZE);
-
-                lastPosition = currentPosition;
-
-                count++;
-            }
-        }
-
-        assertThat(count).isEqualTo(workCount);
-        assertThat(logReader.hasNext()).isFalse();
+        LogIntegrationTestUtil.readLogAndAssertEvents(logReader, workCount, MSG_SIZE);
 
         newLog.close();
     }

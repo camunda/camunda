@@ -1,10 +1,10 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.fs;
 
 import java.io.File;
 import java.util.Objects;
 
-import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorage;
-import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorageConfiguration;
+import org.camunda.tngp.logstreams.impl.snapshot.fs.FsSnapshotStorage;
+import org.camunda.tngp.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 
 public class FsSnapshotStorageBuilder

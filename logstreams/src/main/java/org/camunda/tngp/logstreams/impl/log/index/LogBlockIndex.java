@@ -1,12 +1,12 @@
-package org.camunda.tngp.logstreams.impl;
+package org.camunda.tngp.logstreams.impl.log.index;
 
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.dataOffset;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryAddressOffset;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryLength;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryLogPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.entryOffset;
-import static org.camunda.tngp.logstreams.impl.LogBlockIndexDescriptor.indexSizeOffset;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.dataOffset;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryAddressOffset;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLength;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLogPositionOffset;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryOffset;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.indexSizeOffset;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.BufferedLogStreamReader.LoggedEventImpl;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.StreamUtil;

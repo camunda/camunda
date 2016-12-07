@@ -1,18 +1,14 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.readLogAndAssertEvents;
+import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.writeLogEvents;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.LogStream;
-import org.camunda.tngp.logstreams.LogStreamReader;
-import org.camunda.tngp.logstreams.LogStreamWriter;
 import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.LoggedEvent;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
@@ -57,55 +53,15 @@ public class LogIntegrationTest
 
         logStream.open();
 
-        final LogStreamWriter writer = new LogStreamWriter(logStream);
         final LogStreamReader logReader = new BufferedLogStreamReader(logStream);
-
-        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_SIZE));
 
         for (int j = 0; j < 10; j++)
         {
             final int workPerIteration = 10_000;
 
-            for (int i = 0; i < workPerIteration; i++)
-            {
-                msg.putInt(0, i);
+            writeLogEvents(logStream, workPerIteration, MSG_SIZE, 0);
 
-                writer
-                    .key(i)
-                    .value(msg);
-
-                while (writer.tryWrite() < 0)
-                {
-                    // spin
-                }
-            }
-
-
-            int count = 0;
-            long lastPosition = -1L;
-
-            while (count < workPerIteration)
-            {
-                if (logReader.hasNext())
-                {
-                    final LoggedEvent entry = logReader.next();
-                    final long currentPosition = entry.getPosition();
-
-                    assertThat(currentPosition > lastPosition);
-
-                    final DirectBuffer valueBuffer = entry.getValueBuffer();
-                    final long value = valueBuffer.getInt(entry.getValueOffset());
-                    assertThat(value).isEqualTo(entry.getLongKey());
-                    assertThat(entry.getValueLength()).isEqualTo(MSG_SIZE);
-
-                    lastPosition = currentPosition;
-
-                    count++;
-                }
-            }
-
-            assertThat(count).isEqualTo(workPerIteration);
-            assertThat(logReader.hasNext()).isFalse();
+            readLogAndAssertEvents(logReader, workPerIteration, MSG_SIZE);
         }
 
         logStream.close();

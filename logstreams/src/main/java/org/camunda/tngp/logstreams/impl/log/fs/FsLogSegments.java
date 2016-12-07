@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.impl.log.fs;
 
 public class FsLogSegments
 {

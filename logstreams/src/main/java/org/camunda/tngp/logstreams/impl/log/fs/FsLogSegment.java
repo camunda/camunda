@@ -1,9 +1,9 @@
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.impl.log.fs;
 
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor.SEGMENT_CAPACITY_OFFSET;
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor.SEGMENT_ID_OFFSET;
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_CAPACITY_OFFSET;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_ID_OFFSET;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
 
 import java.io.File;
 import java.io.IOException;

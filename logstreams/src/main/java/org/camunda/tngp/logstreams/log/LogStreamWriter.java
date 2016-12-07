@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.log;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;

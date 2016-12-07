@@ -21,8 +21,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
 
-import org.camunda.tngp.logstreams.impl.fs.FsLogSegment;
-import org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor;
+import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment;
+import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import org.camunda.tngp.util.FileUtil;
 import org.junit.Before;
 import org.junit.Rule;

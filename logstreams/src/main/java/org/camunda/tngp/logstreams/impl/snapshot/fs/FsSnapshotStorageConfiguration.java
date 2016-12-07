@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.impl.snapshot.fs;
 
 import java.io.File;
 import java.util.regex.Matcher;

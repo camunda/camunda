@@ -1,23 +1,49 @@
 package org.camunda.tngp.logstreams.processor;
 
-import org.camunda.tngp.logstreams.LoggedEvent;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 
+/**
+ * Process events from a log stream.
+ */
 public interface StreamProcessor
 {
-    default void open(StreamProcessorContext streamProcessorContext)
+
+    /**
+     * Returns a specific processor to process the event which is read from the
+     * log stream.
+     *
+     * @param event
+     *            the event to process
+     *
+     * @return specific processor to process the event
+     */
+    EventProcessor onEvent(LoggedEvent event);
+
+    /**
+     * Callback which is invoked by the controller when an event is processed.
+     * An implementation can provide any clean up logic here.
+     */
+    default void afterEvent()
     {
         // do nothing
     }
 
+    /**
+     * Callback which is invoked by the controller when it opens. An
+     * implementation can provide any setup logic here.
+     */
+    default void open(StreamProcessorContext context)
+    {
+        // do nothing
+    }
+
+    /**
+     * Callback which is invoked by the controller when it closes. An
+     * implementation can provide any clean up logic here.
+     */
     default void close()
     {
         // no nothing
     }
 
-    EventProcessor onEvent(LoggedEvent event);
-
-    default void afterEvent()
-    {
-        // do nothing
-    }
 }

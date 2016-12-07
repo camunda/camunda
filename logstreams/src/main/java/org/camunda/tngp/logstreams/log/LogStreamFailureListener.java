@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.log;
 
 public interface LogStreamFailureListener
 {

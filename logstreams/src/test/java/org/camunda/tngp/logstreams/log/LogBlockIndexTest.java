@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.impl.LogBlockIndex;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

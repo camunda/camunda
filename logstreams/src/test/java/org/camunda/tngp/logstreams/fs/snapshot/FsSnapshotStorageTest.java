@@ -18,10 +18,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.camunda.tngp.logstreams.impl.fs.FsReadableSnapshot;
-import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorage;
-import org.camunda.tngp.logstreams.impl.fs.FsSnapshotStorageConfiguration;
-import org.camunda.tngp.logstreams.impl.fs.FsSnapshotWriter;
+import org.camunda.tngp.logstreams.impl.snapshot.fs.FsReadableSnapshot;
+import org.camunda.tngp.logstreams.impl.snapshot.fs.FsSnapshotStorage;
+import org.camunda.tngp.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
+import org.camunda.tngp.logstreams.impl.snapshot.fs.FsSnapshotWriter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

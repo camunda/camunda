@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.log;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.util.buffer.BufferReader;

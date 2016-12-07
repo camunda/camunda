@@ -1,11 +1,11 @@
-package org.camunda.tngp.logstreams.impl.fs;
+package org.camunda.tngp.logstreams.impl.log.fs;
 
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionId;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
 import static org.camunda.tngp.dispatcher.impl.PositionUtil.position;
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegment.END_OF_SEGMENT;
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegment.NO_DATA;
-import static org.camunda.tngp.logstreams.impl.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
 
 import java.io.File;
 import java.nio.ByteBuffer;

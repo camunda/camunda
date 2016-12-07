@@ -24,11 +24,7 @@ import static org.mockito.Mockito.when;
 import java.util.NoSuchElementException;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.logstreams.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.LogStream;
-import org.camunda.tngp.logstreams.LoggedEvent;
-import org.camunda.tngp.logstreams.StreamContext;
-import org.camunda.tngp.logstreams.impl.LogBlockIndex;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.util.buffer.DirectBufferReader;
 import org.junit.Before;
 import org.junit.Rule;

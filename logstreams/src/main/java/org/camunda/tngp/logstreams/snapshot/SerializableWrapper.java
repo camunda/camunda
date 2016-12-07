@@ -1,4 +1,4 @@
-package org.camunda.tngp.logstreams;
+package org.camunda.tngp.logstreams.snapshot;
 
 import java.io.InputStream;
 import java.io.ObjectInputStream;

@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.util.concurrent.ExecutionException;
 
-import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreams;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;

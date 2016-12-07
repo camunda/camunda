@@ -3,27 +3,24 @@ package org.camunda.tngp.logstreams.impl;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.logstreams.LogStream;
-import org.camunda.tngp.logstreams.LogStreamFailureListener;
-import org.camunda.tngp.logstreams.StreamContext;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
+import org.camunda.tngp.logstreams.log.StreamContext;
 
 public class StreamImpl implements LogStream
 {
     protected final int streamId;
-    protected final Dispatcher writeBuffer;
     protected final StreamContext context;
 
     protected final LogBlockIndex blockIndex;
 
-    protected long firstFailedPosition;
     protected final LogStreamController logStreamController;
 
     public StreamImpl(StreamContext logContext)
     {
         this.context = logContext;
         streamId = logContext.getLogId();
-        writeBuffer = logContext.getWriteBuffer();
         blockIndex = logContext.getBlockIndex();
         logStreamController = logContext.getLogStreamController();
     }

@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.logstreams.impl;
+package org.camunda.tngp.logstreams.snapshot;
 
 import java.time.Duration;
 

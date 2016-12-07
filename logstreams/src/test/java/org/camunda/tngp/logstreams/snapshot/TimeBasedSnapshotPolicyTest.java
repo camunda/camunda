@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.time.Instant;
 
-import org.camunda.tngp.logstreams.impl.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
