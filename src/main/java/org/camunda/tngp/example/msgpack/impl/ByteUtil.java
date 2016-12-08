@@ -16,12 +16,29 @@ public class ByteUtil
             boolean equal = true;
             for (int i = 0; i < arr1.length && equal; i++)
             {
-                equal = arr1[i] == buf2.getByte(i);
+                equal = arr1[i] == buf2.getByte(buf2Offset + i);
             }
             return equal;
         }
-
     }
+
+    public static boolean equal(DirectBuffer buf1, int buf1Offset, int buf1Length, DirectBuffer buf2, int buf2Offset, int buf2Length)
+    {
+        if (buf1Length != buf2Length)
+        {
+            return false;
+        }
+        else
+        {
+            boolean equal = true;
+            for (int i = 0; i < buf1Length && equal; i++)
+            {
+                equal = buf1.getByte(buf1Offset + i) == buf2.getByte(buf2Offset + i);
+            }
+            return equal;
+        }
+    }
+
 
     public static String bytesToBinary(byte[] bytes)
     {
@@ -38,5 +55,37 @@ public class ByteUtil
             sb.append(", ");
         }
         return sb.toString();
+    }
+
+    /**
+     * with respect to utf8
+     */
+    public static boolean isNumeric(DirectBuffer buffer, int offset, int length)
+    {
+        for (int i = offset; i < offset + length; i++)
+        {
+            byte curr = buffer.getByte(i);
+            if (curr < 48 || curr > 57)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static int parseInteger(DirectBuffer buffer, int offset, int length)
+    {
+        int value = 0;
+        int exponent = 1;
+        for (int i = length - 1; i >= 0; i--)
+        {
+            byte curr = buffer.getByte(offset + i);
+            value += (curr - 48) * exponent;
+            exponent *= 10;
+        }
+
+        return value;
+
     }
 }
