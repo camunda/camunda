@@ -90,7 +90,7 @@ with using more than one template on parent node and simple DOM manipulation.
 import {jsx} from 'view-utils';
 
 export function DynamicJsxComponent({title}) { // constructor function
-    const template = <div> // template function create by jsx
+    const template = <div> // template function created by jsx
       <b>{title}</b> = <i></i>
     </div>;
 
@@ -113,7 +113,7 @@ and so on create declarative description of changes.
 import {jsx} from 'view-utils';
 
 export function DynamicJsxComponent2({title}) { // constructor function
-    return <div> // template function create by jsx
+    return <div> // template function created by jsx
       <b>{title}</b> = <i><Text property="name" /></i>
     </div>;
 }
