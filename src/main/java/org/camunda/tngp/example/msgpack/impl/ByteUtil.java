@@ -1,6 +1,5 @@
 package org.camunda.tngp.example.msgpack.impl;
 
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 public class ByteUtil

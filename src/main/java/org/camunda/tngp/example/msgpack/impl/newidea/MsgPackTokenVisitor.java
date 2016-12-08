@@ -11,6 +11,8 @@ public class MsgPackTokenVisitor
     protected Stack<ContainerContext> context = new Stack<>();
     protected MsgPackFilter[] filters;
     protected ImmutableIntList matchingPositions = new ImmutableIntList(100);
+    protected int matchingContainer = -1;
+    protected int matchingContainerStartPosition;
 
     public MsgPackTokenVisitor(MsgPackFilter[] filters)
     {
@@ -36,7 +38,16 @@ public class MsgPackTokenVisitor
 
         if (filterMatch && isLastFilter(currentContainer.applyingFilter))
         {
-            matchingPositions.add(position);
+            if (currentValue.getType().isScalar())
+            {
+                matchingPositions.add(position);
+                matchingPositions.add(position + currentValue.getTotalLength());
+            }
+            else
+            {
+                matchingContainer = this.context.size();
+                matchingContainerStartPosition = position;
+            }
         }
 
 
@@ -46,7 +57,7 @@ public class MsgPackTokenVisitor
             int filterIndex;
             if (currentContainer != null)
             {
-                if (filterMatch)
+                if (filterMatch && !isLastFilter(currentContainer.applyingFilter))
                 {
                     filterIndex = currentContainer.applyingFilter + 1;
                 }
@@ -69,6 +80,13 @@ public class MsgPackTokenVisitor
 
         while (currentContainer != null && currentContainer.currentElement + 1 >= currentContainer.numElements)
         {
+            if (matchingContainer == this.context.size() - 1)
+            {
+                matchingPositions.add(matchingContainerStartPosition);
+                matchingPositions.add(position + currentValue.getTotalLength());
+                matchingContainer = -1;
+            }
+
             this.context.pop();
             currentContainer = this.context.isEmpty() ? null : this.context.peek();
         }

@@ -5,6 +5,9 @@ import java.util.Stack;
 import org.camunda.tngp.example.msgpack.impl.ByteUtil;
 import org.camunda.tngp.example.msgpack.impl.MsgPackType;
 
+/**
+ * Only works for maps that have scalar values as keys
+ */
 public class MapValueWithKeyFilter implements MsgPackFilter
 {
     public static final int NO_MATCHING_VALUE = -1;

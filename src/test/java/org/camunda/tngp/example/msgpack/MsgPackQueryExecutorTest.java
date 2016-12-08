@@ -45,8 +45,9 @@ public class MsgPackQueryExecutorTest
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
-        assertThat(positions.getSize()).isEqualTo(1);
+        assertThat(positions.getSize()).isEqualTo(2);
         assertThat(positions.get(0)).isEqualTo(9);
+        assertThat(positions.get(1)).isEqualTo(13);
     }
 
     @Test
@@ -75,9 +76,11 @@ public class MsgPackQueryExecutorTest
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
-        assertThat(positions.getSize()).isEqualTo(2);
+        assertThat(positions.getSize()).isEqualTo(4);
         assertThat(positions.get(0)).isEqualTo(9);
-        assertThat(positions.get(1)).isEqualTo(17);
+        assertThat(positions.get(1)).isEqualTo(13);
+        assertThat(positions.get(2)).isEqualTo(17);
+        assertThat(positions.get(3)).isEqualTo(21);
     }
 
     @Test
@@ -114,8 +117,42 @@ public class MsgPackQueryExecutorTest
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
-        assertThat(positions.getSize()).isEqualTo(1);
-        assertThat(positions.get(0)).isEqualTo(86);
+        assertThat(positions.getSize()).isEqualTo(2);
+        assertThat(positions.get(0)).isEqualTo(86); // from
+        assertThat(positions.get(1)).isEqualTo(97); // to
+    }
+
+    @Test
+    public void testQueryMatchingMap()
+    {
+        // given
+        MsgPackFilter[] filters = new MsgPackFilter[1];
+        filters[0] = new MapValueWithKeyFilter("target".getBytes(StandardCharsets.UTF_8));
+        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
+        MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
+
+        DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
+        {
+            p.packMapHeader(2);              // 1
+                p.packString("foo");         // 4
+                p.packString("foo");         // 4
+                p.packString("target");      // 7
+                p.packMapHeader(1);          // 1
+                    p.packString("foo");     // 4
+                    p.packString("foo");     // 4
+        });
+
+        System.out.println(encodedMessage.capacity());
+
+        // when
+        executor.wrap(encodedMessage, 0, encodedMessage.capacity());
+        executor.traverse();
+
+        // then
+        ImmutableIntList positions = valueVisitor.getMatchingPositions();
+        assertThat(positions.getSize()).isEqualTo(2);
+        assertThat(positions.get(0)).isEqualTo(16); // from
+        assertThat(positions.get(1)).isEqualTo(25); // to
     }
 
     protected static class MapKeyFilter implements MsgPackFilter
