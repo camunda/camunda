@@ -489,6 +489,27 @@ public class LogStreamControllerTest
         verify(mockFailureListener).onRecovered();
     }
 
+    @Test
+    public void shouldGetCurrentAppenderPosition()
+    {
+        when(mockWriteBufferSubscription.getPosition()).thenReturn(1L, 2L);
+
+        controller.openAsync();
+        // -> opening
+        controller.doWork();
+
+        assertThat(controller.getCurrentAppenderPosition()).isEqualTo(1L);
+        assertThat(controller.getCurrentAppenderPosition()).isEqualTo(2L);
+    }
+
+    @Test
+    public void shouldNotGetCurrentAppenderPositionIfNotOpen()
+    {
+        when(mockWriteBufferSubscription.getPosition()).thenReturn(1L);
+
+        assertThat(controller.getCurrentAppenderPosition()).isEqualTo(-1);
+    }
+
     protected Answer<Integer> peekBlock(long logPosition, int bytesRead)
     {
         return invocation ->

@@ -452,6 +452,18 @@ public class LogStreamController implements Agent
         });
     }
 
+    public long getCurrentAppenderPosition()
+    {
+        if (writeBufferSubscription != null)
+        {
+            return writeBufferSubscription.getPosition();
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
     public boolean isClosed()
     {
         return stateMachine.getCurrentState() == closedState;

@@ -38,16 +38,9 @@ public class StreamImpl implements LogStream
     }
 
     @Override
-    public long getInitialPosition()
+    public long getCurrentAppenderPosition()
     {
-        if (blockIndex.size() >= 1)
-        {
-            return blockIndex.getLogPosition(0);
-        }
-        else
-        {
-            return -1;
-        }
+        return logStreamController.getCurrentAppenderPosition();
     }
 
     @Override
