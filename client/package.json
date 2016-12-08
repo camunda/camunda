@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "rm -rf dist/ && ./node_modules/.bin/webpack",
+    "compile": "rm -rf dist/ && ./node_modules/.bin/webpack --config webpack-production.config.js",
     "serve": "./node_modules/.bin/webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -24,7 +24,9 @@
     "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
     "webpack": "^1.13.3",
-    "webpack-dev-server": "^1.16.2"
+    "webpack-dev-server": "^1.16.2",
+    "url-loader": "^0.5.7",
+    "extract-loader": "^0.1.0"
   },
   "dependencies": {
     "bpmn-js": "^0.18.3",

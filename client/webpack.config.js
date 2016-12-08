@@ -29,13 +29,13 @@ module.exports = {
         test: /\.scss$/,
         loaders: [
           'style-loader',
-          'css-loader',
+          'css-loader?sourceMap',
           'sass-loader?sourceMap'
         ]
       },
       {
         test: /\.(jpg|png)$/,
-        loader: 'file-loader'
+        loader: 'url-loader'
       },
       {
         test: /\.js$/,
