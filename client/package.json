@@ -6,27 +6,38 @@
   "scripts": {
     "compile": "rm -rf dist/ && ./node_modules/.bin/webpack --config webpack-production.config.js",
     "serve": "./node_modules/.bin/webpack-dev-server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/karma start",
+    "test-watch": "./node_modules/.bin/karma start --no-single-run"
   },
   "author": "",
   "license": "UNLICENSED",
   "devDependencies": {
     "babel-core": "^6.18.2",
     "babel-loader": "^6.2.8",
+    "babel-plugin-rewire": "^1.0.0",
     "babel-plugin-transform-object-rest-spread": "^6.19.0",
     "babel-plugin-transform-react-jsx": "^6.8.0",
     "babel-preset-latest": "^6.16.0",
+    "chai": "^3.5.0",
+    "chai-dom": "^1.4.3",
     "css-loader": "^0.26.0",
+    "extract-loader": "^0.1.0",
     "file-loader": "^0.9.0",
     "html-webpack-plugin": "^2.24.1",
     "json-loader": "^0.5.4",
+    "karma": "^1.3.0",
+    "karma-chrome-launcher": "^2.0.0",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.1",
+    "karma-webpack": "^1.8.0",
+    "mocha": "^3.2.0",
     "node-sass": "^3.13.0",
     "sass-loader": "^4.0.2",
+    "sinon": "2.0.0-pre.4",
     "style-loader": "^0.13.1",
-    "webpack": "^1.13.3",
-    "webpack-dev-server": "^1.16.2",
     "url-loader": "^0.5.7",
-    "extract-loader": "^0.1.0"
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.2"
   },
   "dependencies": {
     "bpmn-js": "^0.18.3",
