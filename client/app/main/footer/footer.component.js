@@ -1,7 +1,8 @@
-import {jsx} from 'view-utils';
+import {jsx, Text} from 'view-utils';
 
 const template = <footer className="footer">
-  Camunda Optimize Footer
+  <div>Camunda Optimize Footer</div>
+  <div className="footer__version"><Text property="version" /></div>
 </footer>;
 
 export function Footer() {

@@ -55,8 +55,8 @@ It should adjust DOM elements created by ``template`` function to reflect new st
  
 Example of simple component:
 ```javascript
-function Component({title}) {
-    return (parentNode, eventsBus) => {
+export function DomComponent({title}) { // constructor function
+    return (parentNode, eventsBus) => { // template function
       const childNode = document.createElement('div');
       childNode.innerHTML = `<b>${title}</b> = <i></i>`;
       
@@ -64,7 +64,7 @@ function Component({title}) {
       
       const nameNode = childNode.querySelector('i');
       
-      return ({name}) => {
+      return ({name}) => { // update function
         nameNode.innerHTML = name;
       }
     };
@@ -78,8 +78,57 @@ Example of static component with jsx:
 ```javascript
 import {jsx} from 'view-utils';
 
-function Component({text}) {
-    return <div>{text}</div>;
+export function StaticJsxComponent({text}) { // constructor function
+    return <div>{text}</div>; // template function
+}
+```
+
+Dynamic component with jsx can be implemented 
+with using more than one template on parent node and simple DOM manipulation.
+
+```javascript
+import {jsx} from 'view-utils';
+
+export function DynamicJsxComponent({title}) { // constructor function
+    const template = <div> // template function create by jsx
+      <b>{title}</b> = <i></i>
+    </div>;
+
+    return (parentNode, eventsBus) => { // template function
+      template(node, eventsBus); // use jsx template function
+      
+      const nameNode = childNode.querySelector('i');
+      
+      return ({name}) => { // update function
+        nameNode.innerHTML = name;
+      }
+    };
+}
+```
+
+You can also use helper components like ``List``, ``Match``, ``Select``, ``Text`` 
+and so on create declarative description of changes.
+
+```javascript
+import {jsx} from 'view-utils';
+
+export function DynamicJsxComponent2({title}) { // constructor function
+    return <div> // template function create by jsx
+      <b>{title}</b> = <i><Text property="name" /></i>
+    </div>;
+}
+```
+
+Nesting component is also simple just import it in your code and use with jsx.
+
+```javascript
+import {jsx} from 'view-utils';
+import {DynamicJsxComponent2} from './whatever';
+
+export function Parent() {
+    return <div>
+     <DynamicJsxComponent2 title="Kitty name" />
+    </div>;
 }
 ```
 
