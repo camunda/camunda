@@ -1,15 +1,13 @@
 import {jsx} from 'view-utils';
+import {Header} from './header';
+import {Footer} from './footer';
 
-export function component() {
+export function Main() {
   return <div className="container">
-    <header className="header">
-      <h1 className="header__title">Camunda Optimize</h1>
-    </header>
+    <Header/>
     <div className="content">
       Yay!
     </div>
-    <footer className="footer">
-      Camunda Optimize Footer
-    </footer>
+    <Footer/>
   </div>;
 }

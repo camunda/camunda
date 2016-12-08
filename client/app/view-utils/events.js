@@ -84,6 +84,7 @@ class Events {
     return this._listeners[name];
   }
 }
+
 class Event {
   constructor({name, data, stopped = false}) {
     this.name = name;

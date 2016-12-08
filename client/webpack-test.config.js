@@ -15,9 +15,10 @@ function deleteUnneededConfigEntries() {
 }
 
 function addTestRoot() {
-  config.resolve.modules.push(
+  config.resolve.root = [
+    config.resolve.root,
     path.resolve(__dirname, 'test')
-  );
+  ];
 }
 
 function addBabelRewirePlugin() {
@@ -39,7 +40,12 @@ function addTestFilesBabelLoader() {
     loader: 'babel-loader',
     query: {
       presets: ['latest'],
-      plugins: ['transform-object-rest-spread']
+      plugins: [
+        'transform-object-rest-spread',
+        ['transform-react-jsx', {
+          'pragma': 'jsx'
+        }]
+      ]
     }
   });
 }

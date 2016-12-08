@@ -1,12 +1,12 @@
 import './styles.scss';
-import {component, reducer} from 'main';
-import {runUpdate, createEventsBus, pipe, ACTION_EVENT_NAME} from 'view-utils';
+import {Main, reducer} from './main';
+import {runUpdate, createEventsBus, pipe, jsx, ACTION_EVENT_NAME} from './view-utils';
 
-const builder = component();
+const template = <Main />;
 const eventsBus = createEventsBus();
 const updateComponent = runUpdate.bind(
   null,
-  builder(document.body, eventsBus)
+  template(document.body, eventsBus)
 );
 
 // Very simplistic redux store implementation
