@@ -51,7 +51,7 @@ public class MsgPackQueryExecutorTest
     }
 
     @Test
-    public void testQueryMultipleResults()
+    public void testQueryMultipleResult()
     {
         // given
         MsgPackFilter[] filters = new MsgPackFilter[1];
