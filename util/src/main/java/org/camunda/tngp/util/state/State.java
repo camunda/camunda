@@ -27,4 +27,9 @@ public interface State<C extends StateMachineContext>
         return true;
     }
 
+    default void onExit()
+    {
+        // do nothing
+    }
+
 }

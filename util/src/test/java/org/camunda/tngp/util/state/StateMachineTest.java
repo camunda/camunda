@@ -14,6 +14,9 @@ package org.camunda.tngp.util.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -51,6 +54,28 @@ public class StateMachineTest
     private final State<SimpleStateMachineContext> g = context ->
     {
         return 2;
+    };
+
+    private final State<CustomStateMachineContext> h = new ComposedState<CustomStateMachineContext>()
+    {
+        private int counter = 0;
+
+        private FailSafeStep<CustomStateMachineContext> step1 = context -> context.setData("step1");
+
+        private Step<CustomStateMachineContext> step2 = context ->
+        {
+            context.setData("step2");
+            counter += 1;
+            return counter % 2 == 0;
+        };
+
+        private FailSafeStep<CustomStateMachineContext> step3 = context -> context.setData("step3");
+
+        @Override
+        protected List<Step<CustomStateMachineContext>> steps()
+        {
+            return Arrays.asList(step1, step2, step3);
+        }
     };
 
     private class CustomStateMachineContext extends SimpleStateMachineContext
@@ -175,6 +200,24 @@ public class StateMachineTest
         thrown.expect(NoSuchTransitionException.class);
 
         stateMachine.take(TRANSITION_PREVIOUS);
+    }
+
+    @Test
+    public void shouldExecuteComposedStateSteps()
+    {
+        final StateMachine<CustomStateMachineContext> stateMachine = StateMachine. <CustomStateMachineContext> builder(s -> new CustomStateMachineContext(s))
+                .initialState(h)
+                .build();
+
+        // step1 -> step2 (fail)
+        stateMachine.doWork();
+
+        assertThat(stateMachine.getContext().getData()).isEqualTo("step2");
+
+        // step2 -> step3
+        stateMachine.doWork();
+
+        assertThat(stateMachine.getContext().getData()).isEqualTo("step3");
     }
 
 }
