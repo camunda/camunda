@@ -9,7 +9,7 @@ import org.msgpack.core.MessagePack;
 public class MsgPackUtil
 {
 
-    protected static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter)
+    public static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter)
     {
         MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
         try
@@ -26,7 +26,7 @@ public class MsgPackUtil
     }
 
     @FunctionalInterface
-    protected static interface CheckedConsumer<T>
+    public static interface CheckedConsumer<T>
     {
         void accept(T t) throws Exception;
     }
