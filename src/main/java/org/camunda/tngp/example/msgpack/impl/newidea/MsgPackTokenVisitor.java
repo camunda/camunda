@@ -1,21 +1,28 @@
 package org.camunda.tngp.example.msgpack.impl.newidea;
 
+import org.agrona.BitUtil;
 import org.camunda.tngp.example.msgpack.impl.ImmutableIntList;
 import org.camunda.tngp.example.msgpack.impl.MsgPackType;
 
 public class MsgPackTokenVisitor
 {
 
+
     protected MsgPackFilter[] filters;
+    protected MsgPackFilterContext filterInstances;
+    protected int numFilterInstances;
+
     protected ImmutableIntList matchingPositions = new ImmutableIntList(100);
     protected int matchingContainer = -1;
     protected int matchingContainerStartPosition;
 
-    protected MsgPackTraversalContext context2 = new MsgPackTraversalContext(30);
+    protected MsgPackTraversalContext context = new MsgPackTraversalContext(30, BitUtil.SIZE_OF_INT);
 
-    public MsgPackTokenVisitor(MsgPackFilter[] filters)
+    public MsgPackTokenVisitor(MsgPackFilter[] filters, MsgPackFilterContext filterInstances)
     {
         this.filters = filters;
+        this.filterInstances = filterInstances;
+        this.numFilterInstances = filterInstances.size();
     }
 
     public void visitElement(int position, MsgPackToken currentValue)
@@ -23,29 +30,30 @@ public class MsgPackTokenVisitor
         // count current element
         int currentFilter = 0;
 
-        if (context2.hasElements())
+        if (context.hasElements())
         {
-            context2.moveToLastElement();
-            context2.currentElement(context2.currentElement() + 1);
-            currentFilter = context2.applyingFilter();
+            context.moveToLastElement();
+            context.currentElement(context.currentElement() + 1);
+            currentFilter = context.applyingFilter();
         }
 
         // evaluate filter
         boolean filterMatch = false;
         if (currentFilter >= 0)
         {
-            MsgPackFilter filter = filters[currentFilter];
-            filterMatch = filter.matches(context2, currentValue);
+            filterInstances.moveTo(currentFilter);
+            MsgPackFilter filter = filters[filterInstances.filterId()];
+            filterMatch = filter.matches(context, filterInstances.dynamicContext(), currentValue);
         }
 
         // build new context
         if (MsgPackType.ARRAY == currentValue.getType() || MsgPackType.MAP == currentValue.getType())
         {
-            context2.appendElement();
-            context2.currentElement(-1);
-            context2.numElements(currentValue.getSize());
-            context2.applyingFilter(-1);
-            context2.setIsMap(MsgPackType.MAP == currentValue.getType());
+            context.appendElement();
+            context.currentElement(-1);
+            context.numElements(currentValue.getSize());
+            context.applyingFilter(-1);
+            context.setIsMap(MsgPackType.MAP == currentValue.getType());
         }
 
         // post-process filter match
@@ -60,34 +68,34 @@ public class MsgPackTokenVisitor
                 }
                 else
                 {
-                    matchingContainer = this.context2.size() - 1;
+                    matchingContainer = this.context.size() - 1;
                     matchingContainerStartPosition = position;
                 }
             }
             else
             {
-                context2.applyingFilter(currentFilter + 1);
+                context.applyingFilter(currentFilter + 1);
             }
         }
 
         // destroy context
-        while (context2.hasElements() && context2.currentElement() + 1 >= context2.numElements())
+        while (context.hasElements() && context.currentElement() + 1 >= context.numElements())
         {
 
-            if (matchingContainer == context2.size() - 1)
+            if (matchingContainer == context.size() - 1)
             {
                 matchingPositions.add(matchingContainerStartPosition);
                 matchingPositions.add(position + currentValue.getTotalLength());
                 matchingContainer = -1;
             }
 
-            context2.removeLastElement();
+            context.removeLastElement();
         }
     }
 
     protected boolean isLastFilter(int filterIndex)
     {
-        return filterIndex + 1 == filters.length;
+        return filterIndex + 1 == numFilterInstances;
     }
 
     public ImmutableIntList getMatchingPositions()

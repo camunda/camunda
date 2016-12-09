@@ -36,10 +36,7 @@ public class JsonPathTest
         JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
         JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
 
-        // TODO: rewrite MsgPackTokenVisitor so that this array copy is not required
-        MsgPackFilter[] filters = Arrays.copyOf(jsonPathQuery.filters, jsonPathQuery.getSize());
-
-        MsgPackTokenVisitor visitor = new MsgPackTokenVisitor(filters);
+        MsgPackTokenVisitor visitor = new MsgPackTokenVisitor(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
         MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());
 

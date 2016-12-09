@@ -1,6 +1,10 @@
 package org.camunda.tngp.example.msgpack.impl.newidea;
 
+import java.nio.charset.StandardCharsets;
+
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.example.msgpack.impl.ByteUtil;
 import org.camunda.tngp.example.msgpack.impl.MsgPackType;
@@ -11,54 +15,52 @@ import org.camunda.tngp.example.msgpack.impl.MsgPackType;
 public class MapValueWithKeyFilter implements MsgPackFilter
 {
     public static final int NO_MATCHING_VALUE = -1;
-    protected int matchingValueIndex;
-
-    protected UnsafeBuffer queryBuffer = new UnsafeBuffer(0, 0);
-
-    public MapValueWithKeyFilter(DirectBuffer queryKeyBuffer, int offset, int length)
-    {
-        this();
-        this.queryBuffer.wrap(queryKeyBuffer, offset, length);
-    }
-
-    public MapValueWithKeyFilter(byte[] bytes)
-    {
-        this();
-        this.queryBuffer.wrap(bytes);
-
-    }
-
-    protected MapValueWithKeyFilter()
-    {
-        reset();
-    }
-
-    protected void reset()
-    {
-        matchingValueIndex = NO_MATCHING_VALUE;
-    }
 
     @Override
-    public boolean matches(MsgPackTraversalContext ctx, MsgPackToken value)
+    public boolean matches(MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value)
     {
-        if (ctx.hasElements())
+
+        if (ctx.hasElements() && ctx.isMap())
         {
-            if (ctx.isMap() && ctx.currentElement() == matchingValueIndex)
+            MutableDirectBuffer dynamicContext = ctx.dynamicContext();
+
+            int currentElement = ctx.currentElement();
+            if (currentElement == 0)
             {
-                reset();
+                // initialization
+                dynamicContext.putInt(0, NO_MATCHING_VALUE);
+            }
+
+            int matchingValueIndex = dynamicContext.getInt(0);
+            int queryLength = filterContext.getInt(0);
+
+            if (currentElement == matchingValueIndex)
+            {
+                dynamicContext.putInt(0, NO_MATCHING_VALUE);
                 return true;
             }
-            if (ctx.isMap() &&
-                    ctx.currentElement() % 2 == 0 && // map keys have even positions
+            if (ctx.currentElement() % 2 == 0 && // map keys have even positions
                     value.getType() == MsgPackType.STRING &&
                     ByteUtil.equal(
-                            queryBuffer, 0, queryBuffer.capacity(),
+                            filterContext, BitUtil.SIZE_OF_INT, queryLength,
                             value.getValueBuffer(), 0, value.getValueBuffer().capacity()))
             {
-                matchingValueIndex = ctx.currentElement() + 1;
+                dynamicContext.putInt(0, currentElement + 1);
             }
         }
 
         return false;
+    }
+
+    public static void encodeDynamicContext(MutableDirectBuffer contextBuffer, DirectBuffer keyBuffer, int keyOffset, int keyLength)
+    {
+        contextBuffer.putInt(0, keyLength);
+        contextBuffer.putBytes(BitUtil.SIZE_OF_INT, keyBuffer, keyOffset, keyLength);
+    }
+
+    public static void encodeDynamicContext(MutableDirectBuffer contextBuffer, String key)
+    {
+        UnsafeBuffer keyBuffer = new UnsafeBuffer(key.getBytes(StandardCharsets.UTF_8));
+        encodeDynamicContext(contextBuffer, keyBuffer, 0, keyBuffer.capacity());
     }
 }

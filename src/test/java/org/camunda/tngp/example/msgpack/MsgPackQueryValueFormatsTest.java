@@ -2,7 +2,6 @@ package org.camunda.tngp.example.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.agrona.DirectBuffer;
@@ -11,8 +10,9 @@ import org.camunda.tngp.example.msgpack.impl.ByteUtil;
 import org.camunda.tngp.example.msgpack.impl.ImmutableIntList;
 import org.camunda.tngp.example.msgpack.impl.newidea.MapValueWithKeyFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
-import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraverser;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilterContext;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraverser;
 import org.camunda.tngp.example.msgpack.impl.newidea.RootCollectionFilter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,8 +76,12 @@ public class MsgPackQueryValueFormatsTest
 
         MsgPackFilter[] filters = new MsgPackFilter[2];
         filters[0] = new RootCollectionFilter();
-        filters[1] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
-        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
+        filters[1] = new MapValueWithKeyFilter();
+
+        MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "foo");
+
+        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
         MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());
 

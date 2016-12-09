@@ -11,6 +11,7 @@ import org.camunda.tngp.example.msgpack.impl.MsgPackType;
 import org.camunda.tngp.example.msgpack.impl.newidea.ArrayIndexFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MapValueWithKeyFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilterContext;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackToken;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraversalContext;
@@ -28,7 +29,9 @@ public class MsgPackQueryExecutorTest
         MsgPackFilter[] filters = new MsgPackFilter[2];
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapKeyFilter("foo");
-        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
+
+        MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
         MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
@@ -58,7 +61,9 @@ public class MsgPackQueryExecutorTest
         MsgPackFilter[] filters = new MsgPackFilter[2];
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapKeyFilter("foo");
-        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
+
+        MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
         MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
@@ -91,10 +96,18 @@ public class MsgPackQueryExecutorTest
         // given
         MsgPackFilter[] filters = new MsgPackFilter[4];
         filters[0] = new RootCollectionFilter();
-        filters[1] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
-        filters[2] = new ArrayIndexFilter(1);
-        filters[3] = new MapValueWithKeyFilter("bar".getBytes(StandardCharsets.UTF_8));
-        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
+        filters[1] = new MapValueWithKeyFilter();
+        filters[2] = new ArrayIndexFilter();
+
+        MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1, 2, 1);
+        filterInstances.moveTo(1);
+        MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "foo");
+        filterInstances.moveTo(2);
+        ArrayIndexFilter.encodeDynamicContext(filterInstances.dynamicContext(), 1);
+        filterInstances.moveTo(3);
+        MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "bar");
+
+        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
         MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
@@ -131,8 +144,12 @@ public class MsgPackQueryExecutorTest
         // given
         MsgPackFilter[] filters = new MsgPackFilter[2];
         filters[0] = new RootCollectionFilter();
-        filters[1] = new MapValueWithKeyFilter("target".getBytes(StandardCharsets.UTF_8));
-        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
+        filters[1] = new MapValueWithKeyFilter();
+
+        MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "target");
+
+        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
         MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
@@ -169,7 +186,7 @@ public class MsgPackQueryExecutorTest
         }
 
         @Override
-        public boolean matches(MsgPackTraversalContext ctx, MsgPackToken value)
+        public boolean matches(MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value)
         {
             if (ctx.isMap() && ctx.currentElement() % 2 == 0) // => map key has odd index
             {

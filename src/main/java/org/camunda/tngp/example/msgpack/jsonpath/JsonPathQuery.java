@@ -1,36 +1,35 @@
 package org.camunda.tngp.example.msgpack.jsonpath;
 
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilterContext;
 
 public class JsonPathQuery
 {
-    protected static final int MAX_DEPTH = 100;
+    protected static final int MAX_DEPTH = 30;
+    protected static final int MAX_FILTER_CONTEXT_LENGTH = 50;
 
-    // TODO: encode filters in byte array to make them garbage-free
-    protected MsgPackFilter[] filters = new MsgPackFilter[MAX_DEPTH];
+    protected MsgPackFilter[] filters;
+    protected MsgPackFilterContext filterInstances = new MsgPackFilterContext(MAX_DEPTH, MAX_FILTER_CONTEXT_LENGTH);
     protected int size;
+
+    public JsonPathQuery(MsgPackFilter[] filters)
+    {
+        this.filters = filters;
+    }
 
     public void reset()
     {
-        size = 0;
+        filterInstances.clear();
     }
 
-    public void addFilter(MsgPackFilter filter)
+    public MsgPackFilterContext getFilterInstances()
     {
-        filters[size] = filter;
-        size++;
+        return filterInstances;
     }
 
-    public int getSize()
+    public MsgPackFilter[] getFilters()
     {
-        return size;
-    }
-
-    public MsgPackFilter getFilter(int index)
-    {
-        // TODO: range check
-
-        return filters[index];
+        return filters;
     }
 
 }

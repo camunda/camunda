@@ -1,13 +1,8 @@
 package org.camunda.tngp.example.msgpack.impl.newidea;
 
-import java.nio.ByteBuffer;
-
 import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.list.CompactList;
 
-public class MsgPackTraversalContext
+public class MsgPackTraversalContext extends AbstractDynamicContext
 {
 
     protected static final int CURRENT_ELEMENT_OFFSET = 0;
@@ -15,56 +10,11 @@ public class MsgPackTraversalContext
     protected static final int APPLYING_FILTER_OFFSET = BitUtil.SIZE_OF_INT * 2;
     protected static final int CONTAINER_TYPE_OFFSET = BitUtil.SIZE_OF_INT * 3;
 
-    protected static final int ELEMENT_SIZE = BitUtil.SIZE_OF_INT * 4;
-    protected static final DirectBuffer EMPTY_BYTES = new UnsafeBuffer(new byte[ELEMENT_SIZE]);
+    protected static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT * 4;
 
-    protected CompactList traversalStack;
-    protected UnsafeBuffer cursorView = new UnsafeBuffer(0, 0);
-
-    public MsgPackTraversalContext(int maxTraversalDepth)
+    public MsgPackTraversalContext(int maxTraversalDepth, int dynamicContextSize)
     {
-        traversalStack = new CompactList(
-                ELEMENT_SIZE,
-                maxTraversalDepth,
-                (size) -> ByteBuffer.allocate(size * ELEMENT_SIZE));
-    }
-
-    public boolean hasElements()
-    {
-        return traversalStack.size() > 0;
-    }
-
-    public int size()
-    {
-        return traversalStack.size();
-    }
-
-    // cursor operations
-
-    public void moveTo(int element)
-    {
-        traversalStack.wrap(element, cursorView);
-    }
-
-    public void moveToLastElement()
-    {
-        traversalStack.wrap(traversalStack.size() - 1, cursorView);
-    }
-
-    public void appendElement()
-    {
-        traversalStack.add(EMPTY_BYTES, 0, ELEMENT_SIZE);
-        moveToLastElement();
-    }
-
-    public void removeLastElement()
-    {
-        traversalStack.remove(traversalStack.size() - 1);
-
-        if (size() > 0)
-        {
-            moveToLastElement();
-        }
+        super(maxTraversalDepth, STATIC_ELEMENT_SIZE, dynamicContextSize);
     }
 
     public int currentElement()
