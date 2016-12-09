@@ -16,6 +16,7 @@ import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackQueryExecutor;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackToken;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
+import org.camunda.tngp.example.msgpack.impl.newidea.RootCollectionFilter;
 import org.junit.Test;
 
 public class MsgPackQueryExecutorTest
@@ -25,8 +26,9 @@ public class MsgPackQueryExecutorTest
     public void testQuerySingleResult()
     {
         // given
-        MsgPackFilter[] filters = new MsgPackFilter[1];
-        filters[0] = new MapKeyFilter("foo");
+        MsgPackFilter[] filters = new MsgPackFilter[2];
+        filters[0] = new RootCollectionFilter();
+        filters[1] = new MapKeyFilter("foo");
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
         MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
 
@@ -54,8 +56,9 @@ public class MsgPackQueryExecutorTest
     public void testQueryMultipleResult()
     {
         // given
-        MsgPackFilter[] filters = new MsgPackFilter[1];
-        filters[0] = new MapKeyFilter("foo");
+        MsgPackFilter[] filters = new MsgPackFilter[2];
+        filters[0] = new RootCollectionFilter();
+        filters[1] = new MapKeyFilter("foo");
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
         MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
 
@@ -87,10 +90,11 @@ public class MsgPackQueryExecutorTest
     public void testNestedQuery()
     {
         // given
-        MsgPackFilter[] filters = new MsgPackFilter[3];
-        filters[0] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
-        filters[1] = new ArrayIndexFilter(1);
-        filters[2] = new MapValueWithKeyFilter("bar".getBytes(StandardCharsets.UTF_8));
+        MsgPackFilter[] filters = new MsgPackFilter[4];
+        filters[0] = new RootCollectionFilter();
+        filters[1] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
+        filters[2] = new ArrayIndexFilter(1);
+        filters[3] = new MapValueWithKeyFilter("bar".getBytes(StandardCharsets.UTF_8));
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
         MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
 
@@ -126,8 +130,9 @@ public class MsgPackQueryExecutorTest
     public void testQueryMatchingMap()
     {
         // given
-        MsgPackFilter[] filters = new MsgPackFilter[1];
-        filters[0] = new MapValueWithKeyFilter("target".getBytes(StandardCharsets.UTF_8));
+        MsgPackFilter[] filters = new MsgPackFilter[2];
+        filters[0] = new RootCollectionFilter();
+        filters[1] = new MapValueWithKeyFilter("target".getBytes(StandardCharsets.UTF_8));
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
         MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
 

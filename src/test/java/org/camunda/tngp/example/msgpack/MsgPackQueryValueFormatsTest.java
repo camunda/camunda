@@ -13,6 +13,7 @@ import org.camunda.tngp.example.msgpack.impl.newidea.MapValueWithKeyFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackQueryExecutor;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
+import org.camunda.tngp.example.msgpack.impl.newidea.RootCollectionFilter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,7 +34,6 @@ public class MsgPackQueryValueFormatsTest
             { function((p) -> p.packBoolean(false)) },
             { function((p) -> p.packDouble(1.444d)) },
             { function((p) -> p.packFloat(1.555f)) },
-            // TODO: packLong does not write fixnum
             { function((p) -> p.packLong(longOfLength(5))) },   // <= 7 bit positive fixnum
             { function((p) -> p.packLong(-longOfLength(3))) },  // <= 5 bit negative fixnum
             { function((p) -> p.packLong(longOfLength(8))) },   // <= 8 bit unsigned int
@@ -74,8 +74,9 @@ public class MsgPackQueryValueFormatsTest
            valueWriter.accept(p);
         });
 
-        MsgPackFilter[] filters = new MsgPackFilter[1];
-        filters[0] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
+        MsgPackFilter[] filters = new MsgPackFilter[2];
+        filters[0] = new RootCollectionFilter();
+        filters[1] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
         MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
         executor.wrap(buffer, 0, buffer.capacity());

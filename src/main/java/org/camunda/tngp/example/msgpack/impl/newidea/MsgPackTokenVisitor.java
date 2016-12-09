@@ -23,57 +23,70 @@ public class MsgPackTokenVisitor
     {
         // count element in current context
         ContainerContext currentContainer = this.context.isEmpty() ? null : this.context.peek();
+        int currentFilter = 0;
         if (currentContainer != null)
         {
             currentContainer.currentElement++;
+            currentFilter = currentContainer.applyingFilter;
         }
+
+
 
         // evaluate filter
         boolean filterMatch = false;
-        if (currentContainer != null && currentContainer.applyingFilter >= 0)
+        if (currentFilter >= 0)
         {
-            MsgPackFilter filter = filters[currentContainer.applyingFilter];
+            MsgPackFilter filter = filters[currentFilter];
             filterMatch = filter.matches(context, currentValue);
         }
-
-        if (filterMatch && isLastFilter(currentContainer.applyingFilter))
-        {
-            if (currentValue.getType().isScalar())
-            {
-                matchingPositions.add(position);
-                matchingPositions.add(position + currentValue.getTotalLength());
-            }
-            else
-            {
-                matchingContainer = this.context.size();
-                matchingContainerStartPosition = position;
-            }
-        }
-
 
         // build new context
         if (MsgPackType.ARRAY == currentValue.getType() || MsgPackType.MAP == currentValue.getType())
         {
-            int filterIndex;
-            if (currentContainer != null)
+//            int filterIndex;
+//            if (currentContainer != null)
+//            {
+//                if (filterMatch && !isLastFilter(currentContainer.applyingFilter))
+//                {
+//                    filterIndex = currentContainer.applyingFilter + 1;
+//                }
+//                else
+//                {
+//                    filterIndex = -1;
+//                }
+//            }
+//            else
+//            {
+//                filterIndex = 0;
+//            }
+
+            currentContainer = new ContainerContext(currentValue.getSize(), -1, -1, MsgPackType.MAP == currentValue.getType());
+            this.context.push(currentContainer);
+        }
+
+        // post-process filter match
+        if (filterMatch)
+        {
+            if (isLastFilter(currentFilter))
             {
-                if (filterMatch && !isLastFilter(currentContainer.applyingFilter))
+                if (currentValue.getType().isScalar())
                 {
-                    filterIndex = currentContainer.applyingFilter + 1;
+                    matchingPositions.add(position);
+                    matchingPositions.add(position + currentValue.getTotalLength());
                 }
                 else
                 {
-                    filterIndex = -1;
+                    matchingContainer = this.context.size() - 1;
+                    matchingContainerStartPosition = position;
                 }
             }
             else
             {
-                filterIndex = 0;
+                currentContainer.applyingFilter = currentFilter + 1;
             }
-
-            ContainerContext context = new ContainerContext(currentValue.getSize(), -1, filterIndex, MsgPackType.MAP == currentValue.getType());
-            this.context.push(context);
         }
+
+
 
         // destroy context
         currentContainer = this.context.isEmpty() ? null : this.context.peek();
