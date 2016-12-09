@@ -3,19 +3,18 @@ package org.camunda.tngp.example.msgpack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Stack;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.example.msgpack.impl.ByteUtil;
 import org.camunda.tngp.example.msgpack.impl.ImmutableIntList;
 import org.camunda.tngp.example.msgpack.impl.MsgPackType;
 import org.camunda.tngp.example.msgpack.impl.newidea.ArrayIndexFilter;
-import org.camunda.tngp.example.msgpack.impl.newidea.ContainerContext;
 import org.camunda.tngp.example.msgpack.impl.newidea.MapValueWithKeyFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
-import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackQueryExecutor;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackToken;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraversalContext;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraverser;
 import org.camunda.tngp.example.msgpack.impl.newidea.RootCollectionFilter;
 import org.junit.Test;
 
@@ -30,7 +29,7 @@ public class MsgPackQueryExecutorTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapKeyFilter("foo");
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
-        MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
+        MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -42,8 +41,8 @@ public class MsgPackQueryExecutorTest
         });
 
         // when
-        executor.wrap(encodedMessage, 0, encodedMessage.capacity());
-        executor.traverse();
+        traverser.wrap(encodedMessage, 0, encodedMessage.capacity());
+        traverser.traverse(valueVisitor);
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
@@ -60,7 +59,7 @@ public class MsgPackQueryExecutorTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapKeyFilter("foo");
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
-        MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
+        MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -74,8 +73,8 @@ public class MsgPackQueryExecutorTest
         });
 
         // when
-        executor.wrap(encodedMessage, 0, encodedMessage.capacity());
-        executor.traverse();
+        traverser.wrap(encodedMessage, 0, encodedMessage.capacity());
+        traverser.traverse(valueVisitor);
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
@@ -96,7 +95,7 @@ public class MsgPackQueryExecutorTest
         filters[2] = new ArrayIndexFilter(1);
         filters[3] = new MapValueWithKeyFilter("bar".getBytes(StandardCharsets.UTF_8));
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
-        MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
+        MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -116,8 +115,8 @@ public class MsgPackQueryExecutorTest
         System.out.println(encodedMessage.capacity());
 
         // when
-        executor.wrap(encodedMessage, 0, encodedMessage.capacity());
-        executor.traverse();
+        traverser.wrap(encodedMessage, 0, encodedMessage.capacity());
+        traverser.traverse(valueVisitor);
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
@@ -134,7 +133,7 @@ public class MsgPackQueryExecutorTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapValueWithKeyFilter("target".getBytes(StandardCharsets.UTF_8));
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
-        MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
+        MsgPackTraverser traverser = new MsgPackTraverser();
 
         DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -150,8 +149,8 @@ public class MsgPackQueryExecutorTest
         System.out.println(encodedMessage.capacity());
 
         // when
-        executor.wrap(encodedMessage, 0, encodedMessage.capacity());
-        executor.traverse();
+        traverser.wrap(encodedMessage, 0, encodedMessage.capacity());
+        traverser.traverse(valueVisitor);
 
         // then
         ImmutableIntList positions = valueVisitor.getMatchingPositions();
@@ -170,11 +169,9 @@ public class MsgPackQueryExecutorTest
         }
 
         @Override
-        public boolean matches(Stack<ContainerContext> ctx, MsgPackToken value)
+        public boolean matches(MsgPackTraversalContext ctx, MsgPackToken value)
         {
-            ContainerContext context = ctx.isEmpty() ? null : ctx.peek();
-            // TODO: check if map (and no array)
-            if (context.getCurrentElement() % 2 == 0) // => map key has odd index
+            if (ctx.isMap() && ctx.currentElement() % 2 == 0) // => map key has odd index
             {
                 if (value.getType() == MsgPackType.STRING)
                 {

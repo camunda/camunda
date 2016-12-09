@@ -10,7 +10,7 @@ import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.example.msgpack.impl.ImmutableIntList;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
-import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackQueryExecutor;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraverser;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
 import org.junit.Test;
 import org.msgpack.core.MessagePack;
@@ -40,11 +40,11 @@ public class JsonPathTest
         MsgPackFilter[] filters = Arrays.copyOf(jsonPathQuery.filters, jsonPathQuery.getSize());
 
         MsgPackTokenVisitor visitor = new MsgPackTokenVisitor(filters);
-        MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor(visitor);
-        queryExecutor.wrap(buffer, 0, buffer.capacity());
+        MsgPackTraverser traverser = new MsgPackTraverser();
+        traverser.wrap(buffer, 0, buffer.capacity());
 
         // when
-        queryExecutor.traverse();
+        traverser.traverse(visitor);
 
         // then
         ImmutableIntList matchingPositions = visitor.getMatchingPositions();

@@ -4,19 +4,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.example.msgpack.impl.MsgPackFormat;
 
-public class MsgPackQueryExecutor
+public class MsgPackTraverser
 {
 
     protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
     protected int currentPosition;
 
     protected MsgPackToken currentValue = new MsgPackToken();
-    protected MsgPackTokenVisitor visitor;
-
-    public MsgPackQueryExecutor(MsgPackTokenVisitor visitor)
-    {
-        this.visitor = visitor;
-    }
 
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
@@ -29,7 +23,7 @@ public class MsgPackQueryExecutor
         return currentValue;
     }
 
-    public void traverse()
+    public void traverse(MsgPackTokenVisitor visitor)
     {
         while (hasNext())
         {

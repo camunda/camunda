@@ -1,18 +1,17 @@
 package org.camunda.tngp.example.msgpack.impl.newidea;
 
-import java.util.Stack;
-
 import org.camunda.tngp.example.msgpack.impl.ImmutableIntList;
 import org.camunda.tngp.example.msgpack.impl.MsgPackType;
 
 public class MsgPackTokenVisitor
 {
 
-    protected Stack<ContainerContext> context = new Stack<>();
     protected MsgPackFilter[] filters;
     protected ImmutableIntList matchingPositions = new ImmutableIntList(100);
     protected int matchingContainer = -1;
     protected int matchingContainerStartPosition;
+
+    protected MsgPackTraversalContext context2 = new MsgPackTraversalContext(30);
 
     public MsgPackTokenVisitor(MsgPackFilter[] filters)
     {
@@ -21,47 +20,32 @@ public class MsgPackTokenVisitor
 
     public void visitElement(int position, MsgPackToken currentValue)
     {
-        // count element in current context
-        ContainerContext currentContainer = this.context.isEmpty() ? null : this.context.peek();
+        // count current element
         int currentFilter = 0;
-        if (currentContainer != null)
+
+        if (context2.hasElements())
         {
-            currentContainer.currentElement++;
-            currentFilter = currentContainer.applyingFilter;
+            context2.moveToLastElement();
+            context2.currentElement(context2.currentElement() + 1);
+            currentFilter = context2.applyingFilter();
         }
-
-
 
         // evaluate filter
         boolean filterMatch = false;
         if (currentFilter >= 0)
         {
             MsgPackFilter filter = filters[currentFilter];
-            filterMatch = filter.matches(context, currentValue);
+            filterMatch = filter.matches(context2, currentValue);
         }
 
         // build new context
         if (MsgPackType.ARRAY == currentValue.getType() || MsgPackType.MAP == currentValue.getType())
         {
-//            int filterIndex;
-//            if (currentContainer != null)
-//            {
-//                if (filterMatch && !isLastFilter(currentContainer.applyingFilter))
-//                {
-//                    filterIndex = currentContainer.applyingFilter + 1;
-//                }
-//                else
-//                {
-//                    filterIndex = -1;
-//                }
-//            }
-//            else
-//            {
-//                filterIndex = 0;
-//            }
-
-            currentContainer = new ContainerContext(currentValue.getSize(), -1, -1, MsgPackType.MAP == currentValue.getType());
-            this.context.push(currentContainer);
+            context2.appendElement();
+            context2.currentElement(-1);
+            context2.numElements(currentValue.getSize());
+            context2.applyingFilter(-1);
+            context2.setIsMap(MsgPackType.MAP == currentValue.getType());
         }
 
         // post-process filter match
@@ -76,32 +60,28 @@ public class MsgPackTokenVisitor
                 }
                 else
                 {
-                    matchingContainer = this.context.size() - 1;
+                    matchingContainer = this.context2.size() - 1;
                     matchingContainerStartPosition = position;
                 }
             }
             else
             {
-                currentContainer.applyingFilter = currentFilter + 1;
+                context2.applyingFilter(currentFilter + 1);
             }
         }
 
-
-
         // destroy context
-        currentContainer = this.context.isEmpty() ? null : this.context.peek();
-
-        while (currentContainer != null && currentContainer.currentElement + 1 >= currentContainer.numElements)
+        while (context2.hasElements() && context2.currentElement() + 1 >= context2.numElements())
         {
-            if (matchingContainer == this.context.size() - 1)
+
+            if (matchingContainer == context2.size() - 1)
             {
                 matchingPositions.add(matchingContainerStartPosition);
                 matchingPositions.add(position + currentValue.getTotalLength());
                 matchingContainer = -1;
             }
 
-            this.context.pop();
-            currentContainer = this.context.isEmpty() ? null : this.context.peek();
+            context2.removeLastElement();
         }
     }
 

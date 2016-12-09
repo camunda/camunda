@@ -1,7 +1,5 @@
 package org.camunda.tngp.example.msgpack.impl.newidea;
 
-import java.util.Stack;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.example.msgpack.impl.ByteUtil;
@@ -41,32 +39,26 @@ public class MapValueWithKeyFilter implements MsgPackFilter
     }
 
     @Override
-    public boolean matches(Stack<ContainerContext> ctx, MsgPackToken value)
+    public boolean matches(MsgPackTraversalContext ctx, MsgPackToken value)
     {
-        ContainerContext parent = ctx.isEmpty() ? null : ctx.peek();
-        if (parent != null)
+        if (ctx.hasElements())
         {
-            if (parent.isMap() && parent.currentElement == matchingValueIndex)
+            if (ctx.isMap() && ctx.currentElement() == matchingValueIndex)
             {
                 reset();
                 return true;
             }
-            if (isMapKey(parent, parent.currentElement) &&
+            if (ctx.isMap() &&
+                    ctx.currentElement() % 2 == 0 && // map keys have even positions
                     value.getType() == MsgPackType.STRING &&
                     ByteUtil.equal(
                             queryBuffer, 0, queryBuffer.capacity(),
                             value.getValueBuffer(), 0, value.getValueBuffer().capacity()))
             {
-                matchingValueIndex = parent.currentElement + 1;
+                matchingValueIndex = ctx.currentElement() + 1;
             }
         }
 
         return false;
     }
-
-    protected boolean isMapKey(ContainerContext container, int valueIndex)
-    {
-        return container.isMap() && valueIndex % 2 == 0;
-    }
-
 }

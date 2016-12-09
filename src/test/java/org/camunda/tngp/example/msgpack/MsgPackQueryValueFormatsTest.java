@@ -11,7 +11,7 @@ import org.camunda.tngp.example.msgpack.impl.ByteUtil;
 import org.camunda.tngp.example.msgpack.impl.ImmutableIntList;
 import org.camunda.tngp.example.msgpack.impl.newidea.MapValueWithKeyFilter;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackFilter;
-import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackQueryExecutor;
+import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTraverser;
 import org.camunda.tngp.example.msgpack.impl.newidea.MsgPackTokenVisitor;
 import org.camunda.tngp.example.msgpack.impl.newidea.RootCollectionFilter;
 import org.junit.Test;
@@ -78,11 +78,11 @@ public class MsgPackQueryValueFormatsTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapValueWithKeyFilter("foo".getBytes(StandardCharsets.UTF_8));
         MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters);
-        MsgPackQueryExecutor executor = new MsgPackQueryExecutor(valueVisitor);
-        executor.wrap(buffer, 0, buffer.capacity());
+        MsgPackTraverser traverser = new MsgPackTraverser();
+        traverser.wrap(buffer, 0, buffer.capacity());
 
         // when
-        executor.traverse();
+        traverser.traverse(valueVisitor);
 
         // then
         ImmutableIntList matchingPositions = valueVisitor.getMatchingPositions();
