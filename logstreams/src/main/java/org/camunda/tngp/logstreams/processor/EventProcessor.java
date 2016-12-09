@@ -9,8 +9,8 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 public interface EventProcessor
 {
     /**
-     * Process the event. Do no execute any side effect, or write an
-     * event, or update the internal state.
+     * Process the event. Do no execute any side effect, or write an event, or
+     * update the internal state.
      */
     void processEvent();
 
@@ -37,12 +37,14 @@ public interface EventProcessor
      *            the log stream writer to write the event to the target log
      *            stream.
      *
-     * @return <code>true</code>, if the write operation completes successfully
-     *         or no event was written.
+     * @return
+     *         <li>the position of the written event, or</li>
+     *         <li>zero, if no event was written, or</li>
+     *         <li>a negate value, if the write operation fails.</li>
      */
-    default boolean writeEvent(LogStreamWriter writer)
+    default long writeEvent(LogStreamWriter writer)
     {
-        return true;
+        return 0;
     }
 
     /**

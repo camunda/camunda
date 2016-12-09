@@ -12,10 +12,16 @@
  */
 package org.camunda.tngp.logstreams.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.readLogAndAssertEvents;
+import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.waitUntilFullyWritten;
 import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.writeLogEvents;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
@@ -26,6 +32,8 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
+import org.camunda.tngp.logstreams.snapshot.SerializableWrapper;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
@@ -48,6 +56,7 @@ public class StreamProcessorIntegrationTest
     private LogStream sourceLogStream;
 
     private LogStream targetLogStream;
+    private SnapshotStorage snapshotStorage;
 
     @Before
     public void setup()
@@ -55,6 +64,8 @@ public class StreamProcessorIntegrationTest
         agentRunnerService = new SharedAgentRunnerService("test-%s", 1, new SimpleAgentRunnerFactory());
 
         final String logPath = tempFolder.getRoot().getAbsolutePath();
+
+        snapshotStorage = LogStreams.createFsSnapshotStore(logPath).build();
 
         sourceLogStream = LogStreams.createFsLogStream("source", 0)
                 .logRootPath(logPath)
@@ -95,14 +106,12 @@ public class StreamProcessorIntegrationTest
             }
 
             @Override
-            public boolean writeEvent(LogStreamWriter writer)
+            public long writeEvent(LogStreamWriter writer)
             {
-                final long position = writer
+                return writer
                         .key(event.getLongKey())
                         .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
                         .tryWrite();
-
-                return position >= 0;
             }
         };
 
@@ -111,6 +120,7 @@ public class StreamProcessorIntegrationTest
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(position -> false)
             .build();
 
         streamProcessorController.openAsync().get();
@@ -121,6 +131,65 @@ public class StreamProcessorIntegrationTest
         readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
 
         streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldCreateSnapshotOfResource() throws FileNotFoundException, Exception
+    {
+        final SerializableWrapper<Counter> resourceCounter = new SerializableWrapper<>(new Counter());
+
+        final StreamProcessor streamProcessor = (LoggedEvent event) -> new EventProcessor()
+        {
+            @Override
+            public void processEvent()
+            {
+                final Counter counter = resourceCounter.getObject();
+                counter.increment();
+            }
+
+            @Override
+            public long writeEvent(LogStreamWriter writer)
+            {
+                return writer
+                        .key(event.getLongKey())
+                        .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+                        .tryWrite();
+            }
+
+        };
+
+        final AtomicBoolean isLastLogEntry = new AtomicBoolean(false);
+
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("processor", 1, streamProcessor)
+            .resource(resourceCounter)
+            .sourceStream(sourceLogStream)
+            .targetStream(targetLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> isLastLogEntry.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
+        waitUntilFullyWritten(targetLogStream, WORK_COUNT);
+
+        isLastLogEntry.set(true);
+
+        // write one more event to create the snapshot
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilFullyWritten(targetLogStream, WORK_COUNT + 1);
+
+        streamProcessorController.closeAsync().get();
+
+        // search for the snapshot file
+        final File[] files = tempFolder.getRoot().listFiles((dir, name) -> name.endsWith("snapshot"));
+        assertThat(files.length).isEqualTo(1);
+
+        // restore the resource from snapshot and verify it
+        resourceCounter.recoverFromSnapshot(new FileInputStream(files[0]));
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
     }
 
 }

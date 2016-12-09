@@ -12,12 +12,17 @@
  */
 package org.camunda.tngp.logstreams.processor;
 
+import java.time.Duration;
 import java.util.Objects;
 
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorBuilder
@@ -31,6 +36,13 @@ public class StreamProcessorBuilder
     protected LogStream targetStream;
 
     protected AgentRunnerService agentRunnerService;
+
+    protected SnapshotPolicy snapshotPolicy;
+    protected SnapshotStorage snapshotStorage;
+    protected SnapshotSupport stateResource;
+
+    private LogStreamReader logStreamReader;
+    private LogStreamWriter logStreamWriter;
 
     public StreamProcessorBuilder(long id, String name, StreamProcessor streamProcessor)
     {
@@ -57,13 +69,43 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorController build()
+    public StreamProcessorBuilder snapshotPolicy(SnapshotPolicy snapshotPolicy)
+    {
+        this.snapshotPolicy = snapshotPolicy;
+        return this;
+    }
+
+    public StreamProcessorBuilder snapshotStorage(SnapshotStorage snapshotStorage)
+    {
+        this.snapshotStorage = snapshotStorage;
+        return this;
+    }
+
+    public StreamProcessorBuilder resource(SnapshotSupport stateResource)
+    {
+        this.stateResource = stateResource;
+        return this;
+    }
+
+    protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
         Objects.requireNonNull(sourceStream, "No source stream provided.");
         Objects.requireNonNull(targetStream, "No target stream provided.");
         Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
 
+        if (snapshotPolicy == null)
+        {
+            snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
+        }
+
+        logStreamReader = new BufferedLogStreamReader();
+        logStreamWriter = new LogStreamWriter();
+    }
+
+    public StreamProcessorController build()
+    {
+        initContext();
 
         final StreamProcessorContext ctx = new StreamProcessorContext();
 
@@ -77,11 +119,12 @@ public class StreamProcessorBuilder
 
         ctx.setAgentRunnerService(agentRunnerService);
 
-        final LogStreamReader logStreamReader = new BufferedLogStreamReader();
         ctx.setLogStreamReader(logStreamReader);
-
-        final LogStreamWriter logStreamWriter = new LogStreamWriter();
         ctx.setLogStreamWriter(logStreamWriter);
+
+        ctx.setSnapshotPolicy(snapshotPolicy);
+        ctx.setSnapshotStorage(snapshotStorage);
+        ctx.setStateResource(stateResource);
 
         return new StreamProcessorController(ctx);
     }

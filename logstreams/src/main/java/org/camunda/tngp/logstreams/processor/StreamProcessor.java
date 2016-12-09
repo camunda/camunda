@@ -32,7 +32,7 @@ public interface StreamProcessor
      * Callback which is invoked by the controller when it opens. An
      * implementation can provide any setup logic here.
      */
-    default void open(StreamProcessorContext context)
+    default void onOpen(StreamProcessorContext context)
     {
         // do nothing
     }
@@ -41,7 +41,7 @@ public interface StreamProcessor
      * Callback which is invoked by the controller when it closes. An
      * implementation can provide any clean up logic here.
      */
-    default void close()
+    default void onClose()
     {
         // no nothing
     }

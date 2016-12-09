@@ -1,11 +1,10 @@
 package org.camunda.tngp.logstreams.processor;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
@@ -22,14 +21,11 @@ public class StreamProcessorContext
     protected LogStreamReader logStreamReader;
     protected LogStreamWriter logStreamWriter;
 
+    protected SnapshotPolicy snapshotPolicy;
+    protected SnapshotStorage snapshotStorage;
+    protected SnapshotSupport stateResource;
+
     protected AgentRunnerService agentRunnerService;
-
-    protected final Map<String, SnapshotSupport> resources = new HashMap<>();
-
-    public SnapshotSupport getResource(String name)
-    {
-        return resources.get(name);
-    }
 
     public LogStream getSourceStream()
     {
@@ -109,6 +105,36 @@ public class StreamProcessorContext
     public void setLogStreamWriter(LogStreamWriter logStreamWriter)
     {
         this.logStreamWriter = logStreamWriter;
+    }
+
+    public SnapshotPolicy getSnapshotPolicy()
+    {
+        return snapshotPolicy;
+    }
+
+    public void setSnapshotPolicy(SnapshotPolicy snapshotPolicy)
+    {
+        this.snapshotPolicy = snapshotPolicy;
+    }
+
+    public SnapshotStorage getSnapshotStorage()
+    {
+        return snapshotStorage;
+    }
+
+    public void setSnapshotStorage(SnapshotStorage snapshotStorage)
+    {
+        this.snapshotStorage = snapshotStorage;
+    }
+
+    public SnapshotSupport getStateResource()
+    {
+        return stateResource;
+    }
+
+    public void setStateResource(SnapshotSupport stateResource)
+    {
+        this.stateResource = stateResource;
     }
 
 }
