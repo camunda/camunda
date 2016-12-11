@@ -31,7 +31,7 @@ public class LogIntegrationTestUtil
     {
         final LogStreamWriter writer = new LogStreamWriter(log);
 
-        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(messageSize));
+        final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(messageSize));
 
         for (int i = 0; i < workCount; i++)
         {

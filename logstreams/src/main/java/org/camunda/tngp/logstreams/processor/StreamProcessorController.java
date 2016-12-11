@@ -236,7 +236,7 @@ public class StreamProcessorController implements Agent
 
         private Step<Context> writeEventStep = context ->
         {
-            logStreamWriter.streamProcessorId(streamProcessorContext.getId());
+            logStreamWriter.producerId(streamProcessorContext.getId());
             final long eventPosition = eventProcessor.writeEvent(logStreamWriter);
 
             if (eventPosition > 0)

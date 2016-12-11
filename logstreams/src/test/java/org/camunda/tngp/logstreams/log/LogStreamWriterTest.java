@@ -12,25 +12,12 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.KEY_TYPE_UINT64;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.agrona.BitUtil.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
@@ -49,6 +36,7 @@ public class LogStreamWriterTest
 {
     private static final int LOG_ID = 1;
     private static final byte[] EVENT_VALUE = "test".getBytes();
+    private static final byte[] EVENT_METADATA = "metadata".getBytes();
 
     private static final int MESSAGE_OFFSET = messageOffset(0);
 
@@ -60,6 +48,9 @@ public class LogStreamWriterTest
 
     @Mock
     private BufferWriter mockBufferWriter;
+
+    @Mock
+    private BufferWriter mockMetadataWriter;
 
     private UnsafeBuffer writeBuffer;
 
@@ -99,7 +90,7 @@ public class LogStreamWriterTest
         assertThat(writeBuffer.getLong(positionOffset(MESSAGE_OFFSET))).isEqualTo(position);
 
         final byte[] valueBuffer = new byte[EVENT_VALUE.length];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG), valueBuffer);
+        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(EVENT_VALUE);
     }
 
@@ -114,7 +105,7 @@ public class LogStreamWriterTest
             .tryWrite();
 
         final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG), valueBuffer);
+        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(new byte[] { EVENT_VALUE[1], EVENT_VALUE[2] });
     }
 
@@ -128,8 +119,40 @@ public class LogStreamWriterTest
             .valueWriter(mockBufferWriter)
             .tryWrite();
 
-        final int valueOffset = valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG);
+        final int valueOffset = valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0);
         verify(mockBufferWriter).write(any(), eq(valueOffset));
+    }
+
+    @Test
+    public void shouldWriteEventWithMetadataBuffer()
+    {
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
+
+        writer
+            .key(4L)
+            .metadata(new UnsafeBuffer(EVENT_METADATA), 3, 4)
+            .valueWriter(mockBufferWriter)
+            .tryWrite();
+
+        final byte[] valueBuffer = new byte[2];
+        writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET, SIZE_OF_LONG), valueBuffer);
+        assertThat(valueBuffer).isEqualTo(new byte[] { EVENT_METADATA[3], EVENT_METADATA[4] });
+    }
+
+    @Test
+    public void shouldWriteEventWithMetadataWriter()
+    {
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(24));
+        when(mockMetadataWriter.getLength()).thenReturn(EVENT_METADATA.length);
+
+        writer
+            .key(4L)
+            .metadataWriter(mockMetadataWriter)
+            .valueWriter(mockBufferWriter)
+            .tryWrite();
+
+        final int valueOffset = metadataOffset(MESSAGE_OFFSET, SIZE_OF_LONG);
+        verify(mockMetadataWriter).write(any(), eq(valueOffset));
     }
 
     @Test
@@ -170,10 +193,10 @@ public class LogStreamWriterTest
         writer
             .positionAsKey()
             .value(new UnsafeBuffer(EVENT_VALUE))
-            .sourceEvent(2L, 3L)
+            .sourceEvent(2, 3L)
             .tryWrite();
 
-        assertThat(writeBuffer.getLong(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(2L);
+        assertThat(writeBuffer.getInt(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(2);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(3L);
     }
 
@@ -187,7 +210,7 @@ public class LogStreamWriterTest
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
 
-        assertThat(writeBuffer.getLong(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
+        assertThat(writeBuffer.getInt(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(-1);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
     }
 
@@ -198,11 +221,11 @@ public class LogStreamWriterTest
 
         writer
             .positionAsKey()
-            .streamProcessorId(2L)
+            .producerId(2)
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
 
-        assertThat(writeBuffer.getLong(streamProcessorIdOffset(MESSAGE_OFFSET))).isEqualTo(2L);
+        assertThat(writeBuffer.getInt(producerIdOffset(MESSAGE_OFFSET))).isEqualTo(2);
     }
 
     @Test
@@ -270,8 +293,7 @@ public class LogStreamWriterTest
 
             claimedFragment.wrap(writeBuffer, 0, alignedLength(length));
 
-            final int fragmentLength = headerLength(SIZE_OF_LONG) + EVENT_VALUE.length;
-            final long claimedPosition = offset + alignedLength(fragmentLength);
+            final long claimedPosition = offset + alignedLength(length);
             return claimedPosition;
         };
     }

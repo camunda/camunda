@@ -325,7 +325,7 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        verify(mockLogStreamWriter).streamProcessorId(STREAM_PROCESSOR_ID);
+        verify(mockLogStreamWriter).producerId(STREAM_PROCESSOR_ID);
     }
 
     @Test

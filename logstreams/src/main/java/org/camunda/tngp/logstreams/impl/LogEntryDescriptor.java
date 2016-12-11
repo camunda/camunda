@@ -1,12 +1,46 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.agrona.BitUtil.*;
 
+import org.agrona.BitUtil;
+
+/**
+ *  * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |            VERSION             |              R               |
+ *  +---------------------------------------------------------------+
+ *  |                            POSITION                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                           PRODUCER ID                         |
+ *  +---------------------------------------------------------------+
+ *  |                      SOURCE EVENT STREAM ID                   |
+ *  +---------------------------------------------------------------+
+ *  |                      SOURCE EVENT POSITION                    |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |            KEY TYPE            |         KEY LENGTH           |
+ *  +---------------------------------------------------------------+
+ *  |                            ...KEY...                          |
+ *  +---------------------------------------------------------------+
+ *  |         METADATA LENGTH        |       ...METADATA...         |
+ *  +---------------------------------------------------------------+
+ *  |                           ...VALUE...                         |
+ *  +---------------------------------------------------------------+
+ * </pre>
+ *
+ *
+ */
 public class LogEntryDescriptor
 {
     public static final short KEY_TYPE_UINT64 = 1;
     public static final short KEY_TYPE_BYTES = 2;
+
+    public static final int METADATA_HEADER_LENGTH = BitUtil.SIZE_OF_SHORT;
+
+    public static final int VERSION_OFFSET;
 
     public static final int POSITION_OFFSET;
 
@@ -14,7 +48,7 @@ public class LogEntryDescriptor
 
     public static final int SOURCE_EVENT_LOG_STREAM_ID_OFFSET;
 
-    public static final int STREAM_PROCESSOR_ID_OFFSET;
+    public static final int PRODUCER_ID_OFFSET;
 
     public static final int KEY_TYPE_OFFSET;
 
@@ -28,16 +62,22 @@ public class LogEntryDescriptor
     {
         int offset = 0;
 
+        VERSION_OFFSET = offset;
+        offset += SIZE_OF_SHORT;
+
+        // reserved offset
+        offset += SIZE_OF_SHORT;
+
         POSITION_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
+        PRODUCER_ID_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
         SOURCE_EVENT_LOG_STREAM_ID_OFFSET = offset;
-        offset += SIZE_OF_LONG;
+        offset += SIZE_OF_INT;
 
         SOURCE_EVENT_POSITION_OFFSET = offset;
-        offset += SIZE_OF_LONG;
-
-        STREAM_PROCESSOR_ID_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
         KEY_TYPE_OFFSET = offset;
@@ -51,9 +91,9 @@ public class LogEntryDescriptor
         KEY_OFFSET = offset;
     }
 
-    public static int headerLength(int keyLength)
+    public static int headerLength(int keyLength, int metadataLength)
     {
-        return HEADER_BLOCK_LENGHT + keyLength;
+        return HEADER_BLOCK_LENGHT + keyLength + METADATA_HEADER_LENGTH + metadataLength;
     }
 
     public static int positionOffset(int offset)
@@ -76,11 +116,6 @@ public class LogEntryDescriptor
         return KEY_OFFSET + offset;
     }
 
-    public static int valueOffset(int offset, int keyLength)
-    {
-        return HEADER_BLOCK_LENGHT + keyLength + offset;
-    }
-
     public static int sourceEventPositionOffset(int offset)
     {
         return SOURCE_EVENT_POSITION_OFFSET + offset;
@@ -91,9 +126,24 @@ public class LogEntryDescriptor
         return SOURCE_EVENT_LOG_STREAM_ID_OFFSET + offset;
     }
 
-    public static int streamProcessorIdOffset(int offset)
+    public static int producerIdOffset(int offset)
     {
-        return STREAM_PROCESSOR_ID_OFFSET + offset;
+        return PRODUCER_ID_OFFSET + offset;
+    }
+
+    public static int metadataLengthOffset(int offset, int keyLength)
+    {
+        return KEY_OFFSET + keyLength + offset;
+    }
+
+    public static int metadataOffset(int offset, int keyLength)
+    {
+        return KEY_OFFSET + keyLength + METADATA_HEADER_LENGTH + offset;
+    }
+
+    public static int valueOffset(int offset, int keyLength, int metadataLength)
+    {
+        return KEY_OFFSET + keyLength + METADATA_HEADER_LENGTH + metadataLength + offset;
     }
 
 }

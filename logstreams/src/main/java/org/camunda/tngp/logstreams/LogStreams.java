@@ -17,7 +17,7 @@ public class LogStreams
         return new FsSnapshotStorageBuilder(rootPath);
     }
 
-    public static StreamProcessorBuilder createStreamProcessor(String name, long id, StreamProcessor streamProcessor)
+    public static StreamProcessorBuilder createStreamProcessor(String name, int id, StreamProcessor streamProcessor)
     {
         return new StreamProcessorBuilder(id, name, streamProcessor);
     }

@@ -75,9 +75,9 @@ public class BufferedLogStreamReaderTest
                 .address(10)
                 .position(1)
                 .key(2)
-                .sourceEventLogStreamId(3L)
+                .sourceEventLogStreamId(3)
                 .sourceEventPosition(4L)
-                .streamProcessorId(5L)
+                .producerId(5)
                 .value("event".getBytes()));
 
         reader.wrap(mockLogStream);
@@ -91,10 +91,10 @@ public class BufferedLogStreamReaderTest
         assertThat(event.getPosition()).isEqualTo(1L);
         assertThat(event.getLongKey()).isEqualTo(2L);
 
-        assertThat(event.getSourceEventLogStreamId()).isEqualTo(3L);
+        assertThat(event.getSourceEventLogStreamId()).isEqualTo(3);
         assertThat(event.getSourceEventPosition()).isEqualTo(4L);
 
-        assertThat(event.getStreamProcessorId()).isEqualTo(5L);
+        assertThat(event.getProducerId()).isEqualTo(5);
 
         final DirectBufferReader readBuffer = new DirectBufferReader();
         event.readValue(readBuffer);
@@ -117,6 +117,37 @@ public class BufferedLogStreamReaderTest
         assertThat(hasNext).isTrue();
 
         final LoggedEvent event = reader.next();
+
+        final DirectBuffer valueBuffer = event.getValueBuffer();
+        final byte[] readValueBuffer = new byte[event.getValueLength()];
+        valueBuffer.getBytes(event.getValueOffset(), readValueBuffer);
+
+        assertThat(readValueBuffer).isEqualTo("event".getBytes());
+    }
+
+    @Test
+    public void shouldReadEventMetadataBuffer()
+    {
+        when(mockBlockIndex.size()).thenReturn(1);
+        when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
+        when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
+
+        mockLogStorage.add(newLogEntry().address(10).metadata("metadata".getBytes()).value("event".getBytes()));
+
+        reader.wrap(mockLogStream);
+
+        final boolean hasNext = reader.hasNext();
+        assertThat(hasNext).isTrue();
+
+        final LoggedEvent event = reader.next();
+
+        final DirectBuffer metadataBuffer = event.getMetadata();
+        final byte[] readMetadataBuffer = new byte[event.getMetadataLength()];
+        metadataBuffer.getBytes(event.getMetadataOffset(), readMetadataBuffer);
+
+        assertThat(readMetadataBuffer).isEqualTo("metadata".getBytes());
+
+        // AND: value can also be read
 
         final DirectBuffer valueBuffer = event.getValueBuffer();
         final byte[] readValueBuffer = new byte[event.getValueLength()];

@@ -12,23 +12,11 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -85,15 +73,17 @@ public class MockLogStorage
 
         private long position = 0;
 
-        private long sourceEventLogStreamId = 1L;
+        private int sourceEventLogStreamId = 1;
         private long sourceEventPosition = -1L;
 
-        private long streamProcessorId = -1L;
+        private int producerId = -1;
 
         private long key = 0;
         private int messageLength = 0;
 
         private byte[] value = null;
+
+        private byte[] metadata = null;
 
         private final int amount;
 
@@ -114,7 +104,7 @@ public class MockLogStorage
             return this;
         }
 
-        public MockLogEntryBuilder sourceEventLogStreamId(long logStreamId)
+        public MockLogEntryBuilder sourceEventLogStreamId(int logStreamId)
         {
             this.sourceEventLogStreamId = logStreamId;
             return this;
@@ -126,9 +116,9 @@ public class MockLogStorage
             return this;
         }
 
-        public MockLogEntryBuilder streamProcessorId(long streamProcessorId)
+        public MockLogEntryBuilder producerId(int producerId)
         {
-            this.streamProcessorId = streamProcessorId;
+            this.producerId = producerId;
             return this;
         }
 
@@ -141,6 +131,12 @@ public class MockLogStorage
         public MockLogEntryBuilder value(byte[] value)
         {
             this.value = value;
+            return this;
+        }
+
+        public MockLogEntryBuilder metadata(byte[] metadata)
+        {
+            this.metadata = metadata;
             return this;
         }
 
@@ -158,17 +154,20 @@ public class MockLogStorage
 
         public void build(LogStorage mockLogStorage)
         {
+            final short metadataLength = (short) (metadata != null ? metadata.length : 0);
+            final int headerLength = headerLength(SIZE_OF_LONG, metadataLength);
+
             // min. message length
-            messageLength = Math.max(messageLength, headerLength(SIZE_OF_LONG));
+            messageLength = Math.max(messageLength, headerLength);
 
             if (value == null)
             {
-                value = new byte[messageLength - headerLength(SIZE_OF_LONG)];
+                value = new byte[messageLength - headerLength];
                 new Random().nextBytes(value);
             }
             else
             {
-                messageLength = headerLength(SIZE_OF_LONG) + value.length;
+                messageLength = headerLength + value.length;
             }
 
             when(mockLogStorage.read(any(ByteBuffer.class), eq(address))).thenAnswer(invocation ->
@@ -187,15 +186,21 @@ public class MockLogStorage
                     {
                         buffer.putLong(positionOffset(messageOffset), position + i);
 
-                        buffer.putLong(sourceEventLogStreamIdOffset(messageOffset), sourceEventLogStreamId);
-                        buffer.putLong(sourceEventPositionOffset(messageOffset), sourceEventPosition);
+                        buffer.putInt(producerIdOffset(messageOffset), producerId);
 
-                        buffer.putLong(streamProcessorIdOffset(messageOffset), streamProcessorId);
+                        buffer.putInt(sourceEventLogStreamIdOffset(messageOffset), sourceEventLogStreamId);
+                        buffer.putLong(sourceEventPositionOffset(messageOffset), sourceEventPosition);
 
                         buffer.putLong(keyOffset(messageOffset), key + i);
                         buffer.putShort(keyLengthOffset(messageOffset), (short) SIZE_OF_LONG);
 
-                        final int valueOffset = valueOffset(messageOffset, SIZE_OF_LONG);
+                        buffer.putShort(metadataLengthOffset(messageOffset, SIZE_OF_LONG), metadataLength);
+                        if (metadata != null)
+                        {
+                            buffer.putBytes(metadataOffset(messageOffset, SIZE_OF_LONG), metadata);
+                        }
+
+                        final int valueOffset = valueOffset(messageOffset, SIZE_OF_LONG, metadataLength);
                         final byte[] valueToWrite = Arrays.copyOf(value, Math.min(value.length, byteBuffer.limit() - valueOffset));
                         buffer.putBytes(valueOffset, valueToWrite);
                     }

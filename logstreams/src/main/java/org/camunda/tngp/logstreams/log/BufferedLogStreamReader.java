@@ -1,22 +1,8 @@
 package org.camunda.tngp.logstreams.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGHT;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
-import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.logstreams.spi.LogStorage.*;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
@@ -454,10 +440,47 @@ public class BufferedLogStreamReader implements LogStreamReader
             return buffer.getLong(positionOffset(messageOffset(fragmentOffset)));
         }
 
+        private int getKeyLength(final int entryHeaderOffset)
+        {
+            return buffer.getShort(keyLengthOffset(entryHeaderOffset));
+        }
+
         @Override
         public long getLongKey()
         {
-            return buffer.getLong(keyOffset(messageOffset(fragmentOffset)));
+            final int entryHeaderOffset = messageOffset(fragmentOffset);
+
+            return buffer.getLong(keyOffset(entryHeaderOffset));
+        }
+
+        @Override
+        public DirectBuffer getMetadata()
+        {
+            return buffer;
+        }
+
+        @Override
+        public int getMetadataOffset()
+        {
+            final int entryHeaderOffset = messageOffset(fragmentOffset);
+            final int keyLength = getKeyLength(entryHeaderOffset);
+
+            return metadataOffset(entryHeaderOffset, keyLength);
+        }
+
+        @Override
+        public short getMetadataLength()
+        {
+            final int entryHeaderOffset = messageOffset(fragmentOffset);
+            final int keyLength = getKeyLength(entryHeaderOffset);
+
+            return buffer.getShort(metadataLengthOffset(entryHeaderOffset, keyLength));
+        }
+
+        @Override
+        public void readMetadata(BufferReader reader)
+        {
+            reader.wrap(buffer, getMetadataOffset(), getMetadataLength());
         }
 
         @Override
@@ -470,18 +493,20 @@ public class BufferedLogStreamReader implements LogStreamReader
         public int getValueOffset()
         {
             final int entryHeaderOffset = messageOffset(fragmentOffset);
-            final int keyLength = buffer.getShort(keyLengthOffset(entryHeaderOffset));
+            final int keyLength = getKeyLength(entryHeaderOffset);
+            final short metadataLength = getMetadataLength();
 
-            return valueOffset(entryHeaderOffset, keyLength);
+            return valueOffset(entryHeaderOffset, keyLength, metadataLength);
         }
 
         @Override
         public int getValueLength()
         {
             final int entryHeaderOffset = messageOffset(fragmentOffset);
-            final int keyLength = buffer.getShort(keyLengthOffset(entryHeaderOffset));
+            final int keyLength = getKeyLength(entryHeaderOffset);
+            final short metadataLength = getMetadataLength();
 
-            return buffer.getInt(lengthOffset(fragmentOffset)) - headerLength(keyLength);
+            return buffer.getInt(lengthOffset(fragmentOffset)) - headerLength(keyLength, metadataLength);
         }
 
         @Override
@@ -491,9 +516,9 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
 
         @Override
-        public long getSourceEventLogStreamId()
+        public int getSourceEventLogStreamId()
         {
-            return buffer.getLong(sourceEventLogStreamIdOffset(messageOffset(fragmentOffset)));
+            return buffer.getInt(sourceEventLogStreamIdOffset(messageOffset(fragmentOffset)));
         }
 
         @Override
@@ -503,9 +528,9 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
 
         @Override
-        public long getStreamProcessorId()
+        public int getProducerId()
         {
-            return buffer.getLong(streamProcessorIdOffset(messageOffset(fragmentOffset)));
+            return buffer.getInt(producerIdOffset(messageOffset(fragmentOffset)));
         }
     }
 

@@ -10,7 +10,7 @@ import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorContext
 {
-    protected long id;
+    protected int id;
     protected String name;
 
     protected StreamProcessor streamProcessor;
@@ -67,12 +67,12 @@ public class StreamProcessorContext
         this.name = name;
     }
 
-    public long getId()
+    public int getId()
     {
         return id;
     }
 
-    public void setId(long id)
+    public void setId(int id)
     {
         this.id = id;
     }

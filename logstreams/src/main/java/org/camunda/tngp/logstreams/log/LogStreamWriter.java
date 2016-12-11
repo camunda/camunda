@@ -1,16 +1,8 @@
 package org.camunda.tngp.logstreams.log;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.KEY_TYPE_UINT64;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.streamProcessorIdOffset;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -24,7 +16,8 @@ import org.camunda.tngp.util.buffer.DirectBufferWriter;
 
 public class LogStreamWriter
 {
-    protected DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
+    protected final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
+    protected final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
     protected Dispatcher logWriteBuffer;
     protected int logId;
@@ -33,11 +26,13 @@ public class LogStreamWriter
     protected long key;
 
     protected long sourceEventPosition = -1L;
-    protected long sourceEventLogStreamId = -1L;
+    protected int sourceEventLogStreamId = -1;
 
-    protected long streamProcessorId = -1L;
+    protected int producerId = -1;
 
     protected final short keyLength = SIZE_OF_LONG;
+
+    protected BufferWriter metadataWriter;
 
     protected BufferWriter valueWriter;
 
@@ -72,16 +67,33 @@ public class LogStreamWriter
         return this;
     }
 
-    public LogStreamWriter sourceEvent(long logStreamId, long position)
+    public LogStreamWriter sourceEvent(int logStreamId, long position)
     {
         this.sourceEventLogStreamId = logStreamId;
         this.sourceEventPosition = position;
         return this;
     }
 
-    public LogStreamWriter streamProcessorId(long streamProcessorId)
+    public LogStreamWriter producerId(int producerId)
     {
-        this.streamProcessorId = streamProcessorId;
+        this.producerId = producerId;
+        return this;
+    }
+
+    public LogStreamWriter metadata(DirectBuffer buffer, int offset, int length)
+    {
+        metadataWriterInstance.wrap(buffer, offset, length);
+        return this;
+    }
+
+    public LogStreamWriter metadata(DirectBuffer buffer)
+    {
+        return metadata(buffer, 0, buffer.capacity());
+    }
+
+    public LogStreamWriter metadataWriter(BufferWriter writer)
+    {
+        this.metadataWriter = writer;
         return this;
     }
 
@@ -105,12 +117,14 @@ public class LogStreamWriter
     {
         positionAsKey = false;
         key = -1L;
+        metadataWriter = metadataWriterInstance;
         valueWriter = null;
-        sourceEventLogStreamId = -1L;
+        sourceEventLogStreamId = -1;
         sourceEventPosition = -1L;
-        streamProcessorId = -1L;
+        producerId = -1;
 
         bufferWriterInstance.reset();
+        metadataWriterInstance.reset();
     }
 
     /**
@@ -129,8 +143,11 @@ public class LogStreamWriter
 
         long result = -1;
 
+        final int valueLength = valueWriter.getLength();
+        final int metadataLength = metadataWriter.getLength();
+
         // claim fragment in log write buffer
-        final long claimedPosition = claimLogEntry(valueWriter.getLength(), keyLength);
+        final long claimedPosition = claimLogEntry(valueLength, keyLength, metadataLength);
 
         if (claimedPosition >= 0)
         {
@@ -139,20 +156,28 @@ public class LogStreamWriter
                 final MutableDirectBuffer writeBuffer = claimedFragment.getBuffer();
                 final int bufferOffset = claimedFragment.getOffset();
                 final int keyOffset = keyOffset(bufferOffset);
-                final int valueWriteOffset = keyOffset + keyLength;
+                final int metadataLengthOffset = keyOffset + keyLength;
+                final int metadataOffset = metadataLengthOffset + METADATA_HEADER_LENGTH;
+                final int valueWriteOffset = metadataOffset + metadataLength;
                 final long keyToWrite = positionAsKey ? claimedPosition : key;
 
                 // write log entry header
                 writeBuffer.putLong(positionOffset(bufferOffset), claimedPosition);
 
-                writeBuffer.putLong(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamId);
-                writeBuffer.putLong(sourceEventPositionOffset(bufferOffset), sourceEventPosition);
+                writeBuffer.putInt(producerIdOffset(bufferOffset), producerId);
 
-                writeBuffer.putLong(streamProcessorIdOffset(bufferOffset), streamProcessorId);
+                writeBuffer.putInt(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamId);
+                writeBuffer.putLong(sourceEventPositionOffset(bufferOffset), sourceEventPosition);
 
                 writeBuffer.putShort(keyTypeOffset(bufferOffset), KEY_TYPE_UINT64);
                 writeBuffer.putShort(keyLengthOffset(bufferOffset), keyLength);
                 writeBuffer.putLong(keyOffset, keyToWrite);
+
+                writeBuffer.putShort(metadataLengthOffset, (short) metadataLength);
+                if (metadataLength > 0)
+                {
+                    metadataWriter.write(writeBuffer, metadataOffset);
+                }
 
                 // write log entry
                 valueWriter.write(writeBuffer, valueWriteOffset);
@@ -174,9 +199,9 @@ public class LogStreamWriter
         return result;
     }
 
-    private long claimLogEntry(final int valueLength, final short keyLength)
+    private long claimLogEntry(final int valueLength, final short keyLength, final int metadataLength)
     {
-        final int framedLength = valueLength + headerLength(keyLength);
+        final int framedLength = valueLength + headerLength(keyLength, metadataLength);
 
         long claimedPosition = -1;
 

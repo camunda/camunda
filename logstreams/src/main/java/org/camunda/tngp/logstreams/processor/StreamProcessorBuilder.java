@@ -27,7 +27,7 @@ import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorBuilder
 {
-    protected long id;
+    protected int id;
     protected String name;
 
     protected StreamProcessor streamProcessor;
@@ -44,7 +44,7 @@ public class StreamProcessorBuilder
     private LogStreamReader logStreamReader;
     private LogStreamWriter logStreamWriter;
 
-    public StreamProcessorBuilder(long id, String name, StreamProcessor streamProcessor)
+    public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
     {
         this.id = id;
         this.name = name;
