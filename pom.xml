@@ -2,7 +2,22 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.camunda.tngp.msgpack</groupId>
   <artifactId>msgpack-json-path</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
+  
+  <parent>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-release-parent</artifactId>
+    <version>2.5</version>
+    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
+    <relativePath />
+  </parent>
+  
+  <properties>
+    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
+    <version.msgpack>0.8.11</version.msgpack>
+  </properties>
   
   <dependencies>
     <dependency>
@@ -21,13 +36,13 @@
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
-      <version>0.8.11</version>
+      <version>${version.msgpack}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>jackson-dataformat-msgpack</artifactId>
-      <version>0.8.11</version>
+      <version>${version.msgpack}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -57,4 +72,30 @@
       </plugin>
     </plugins>
   </build>
+  
+  <profiles>
+    <profile>
+      <id>sonatype-oss-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <configuration>
+              <!-- skip gpg signing as the release is not pushed to maven central -->
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  
+
+  <scm>
+    <url>https://github.com/camunda-tngp/msgpack-json-path</url>
+    <connection>scm:git:git@github.com:camunda-tngp/msgpack-json-path.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda-tngp/msgpack-json-path.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 </project>
