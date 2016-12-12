@@ -32,12 +32,17 @@ public class MsgPackTokenVisitor
 
     protected MsgPackTraversalContext context = new MsgPackTraversalContext(MAX_TRAVERSAL_DEPTH, BitUtil.SIZE_OF_INT);
 
-    public MsgPackTokenVisitor(MsgPackFilter[] filters, MsgPackFilterContext filterInstances)
+    public MsgPackTokenVisitor()
+    {
+        this.matchingPositions = new CompactList(RESULT_SIZE, MAX_RESULTS, (size) -> ByteBuffer.allocate(size));
+    }
+
+    public void init(MsgPackFilter[] filters, MsgPackFilterContext filterInstances)
     {
         this.filters = filters;
         this.filterInstances = filterInstances;
         this.numFilterInstances = filterInstances.size();
-        this.matchingPositions = new CompactList(RESULT_SIZE, MAX_RESULTS, (size) -> ByteBuffer.allocate(size));
+        this.matchingPositions.clear();
     }
 
     public void visitElement(int position, MsgPackToken currentValue)

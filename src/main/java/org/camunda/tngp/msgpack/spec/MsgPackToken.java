@@ -23,17 +23,19 @@ public class MsgPackToken
     protected int size;
 
     // int
-    protected long numericValue;
+    protected long integerValue;
 
-    // float32
-    protected float floatValue;
+    // float32/float64
+    protected double floatValue;
 
-    // float64
-    protected double doubleValue;
-
-    public void wrap(DirectBuffer buffer, int valueOffset, MsgPackFormat format)
+    /*
+     * strictfp modifier to ensure no information is lost when converting 32-bit float to double,
+     * see https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.1.2
+     */
+    public strictfp void wrap(DirectBuffer buffer, int valueOffset)
     {
-        this.format = format;
+        final byte currentFormatByte = buffer.getByte(valueOffset);
+        this.format = MsgPackFormat.getFormat(currentFormatByte);
 
         final int valueLength;
         switch (format)
@@ -109,24 +111,24 @@ public class MsgPackToken
             case FIXNUM_POSITIVE:
             case FIXNUM_NEGATIVE:
                 totalLength = 1;
-                numericValue = buffer.getByte(valueOffset);
+                integerValue = buffer.getByte(valueOffset);
                 break;
             case UINT_8:
                 totalLength = 2;
-                numericValue = buffer.getByte(valueOffset + 1) & 0xff;
+                integerValue = buffer.getByte(valueOffset + 1) & 0xff;
                 break;
             case UINT_16:
                 totalLength = 3;
-                numericValue = buffer.getShort(valueOffset + 1, ByteOrder.BIG_ENDIAN) & 0xffff;
+                integerValue = buffer.getShort(valueOffset + 1, ByteOrder.BIG_ENDIAN) & 0xffff;
                 break;
             case UINT_32:
                 totalLength = 5;
-                numericValue = ((long) buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN))
+                integerValue = ((long) buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN))
                         & 0xffff_ffffL;
                 break;
             case UINT_64:
                 totalLength = 9;
-                numericValue = buffer.getLong(valueOffset + 1, ByteOrder.BIG_ENDIAN);
+                integerValue = buffer.getLong(valueOffset + 1, ByteOrder.BIG_ENDIAN);
                 break;
             case FLOAT_32:
                 totalLength = 5;
@@ -134,7 +136,7 @@ public class MsgPackToken
                 return;
             case FLOAT_64:
                 totalLength = 9;
-                doubleValue = buffer.getDouble(valueOffset + 1, ByteOrder.BIG_ENDIAN);
+                floatValue = buffer.getDouble(valueOffset + 1, ByteOrder.BIG_ENDIAN);
                 return;
             default:
                 throw new RuntimeException("Unknown format");
@@ -186,20 +188,14 @@ public class MsgPackToken
      * values of negative fixnum (signed) and unsigned integer can return
      * the same long value while representing different numbers
      */
-    public long getNaturalNumericValue()
+    public long getIntegerValue()
     {
-        return numericValue;
+        return integerValue;
     }
 
-    public double getDoubleValue()
-    {
-        return doubleValue;
-    }
-
-    public float getFloatValue()
+    public double getFloatValue()
     {
         return floatValue;
     }
-
 
 }

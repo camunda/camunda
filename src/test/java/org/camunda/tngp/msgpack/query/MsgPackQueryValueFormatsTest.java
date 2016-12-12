@@ -11,6 +11,7 @@ import org.camunda.tngp.msgpack.filter.RootCollectionFilter;
 import org.camunda.tngp.msgpack.util.ByteUtil;
 import org.camunda.tngp.msgpack.util.MsgPackUtil;
 import org.camunda.tngp.msgpack.util.MsgPackUtil.CheckedConsumer;
+import org.camunda.tngp.msgpack.util.TestUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -75,10 +76,11 @@ public class MsgPackQueryValueFormatsTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapValueWithKeyFilter();
 
-        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1);
         MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "foo");
 
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
+        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor();
+        valueVisitor.init(filters, filterInstances);
         final MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());
 

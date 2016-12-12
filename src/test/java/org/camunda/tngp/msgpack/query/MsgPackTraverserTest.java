@@ -14,10 +14,14 @@ import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackType;
 import org.camunda.tngp.msgpack.util.ByteUtil;
 import org.camunda.tngp.msgpack.util.MsgPackUtil;
+import org.camunda.tngp.msgpack.util.TestUtil;
 import org.junit.Test;
 
 public class MsgPackTraverserTest
 {
+
+    protected MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor();
+    protected MsgPackTraverser traverser = new MsgPackTraverser();
 
     @Test
     public void testQuerySingleResult()
@@ -27,9 +31,8 @@ public class MsgPackTraverserTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapKeyFilter("foo");
 
-        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
-        final MsgPackTraverser traverser = new MsgPackTraverser();
+        final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1);
+        valueVisitor.init(filters, filterInstances);
 
         final DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -60,9 +63,8 @@ public class MsgPackTraverserTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapKeyFilter("foo");
 
-        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
-        final MsgPackTraverser traverser = new MsgPackTraverser();
+        final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1);
+        valueVisitor.init(filters, filterInstances);
 
         final DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -100,7 +102,7 @@ public class MsgPackTraverserTest
         filters[1] = new MapValueWithKeyFilter();
         filters[2] = new ArrayIndexFilter();
 
-        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1, 2, 1);
+        final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1, 2, 1);
         filterInstances.moveTo(1);
         MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "foo");
         filterInstances.moveTo(2);
@@ -108,8 +110,7 @@ public class MsgPackTraverserTest
         filterInstances.moveTo(3);
         MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "bar");
 
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
-        final MsgPackTraverser traverser = new MsgPackTraverser();
+        valueVisitor.init(filters, filterInstances);
 
         final DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -146,11 +147,10 @@ public class MsgPackTraverserTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapValueWithKeyFilter();
 
-        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1);
         MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "target");
 
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
-        final MsgPackTraverser traverser = new MsgPackTraverser();
+        valueVisitor.init(filters, filterInstances);
 
         final DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {
@@ -183,10 +183,9 @@ public class MsgPackTraverserTest
         filters[0] = new RootCollectionFilter();
         filters[1] = new WildcardFilter();
 
-        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1);
 
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
-        final MsgPackTraverser traverser = new MsgPackTraverser();
+        valueVisitor.init(filters, filterInstances);
 
         final DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
         {

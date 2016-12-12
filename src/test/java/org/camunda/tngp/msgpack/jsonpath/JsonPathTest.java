@@ -33,7 +33,8 @@ public class JsonPathTest
         final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
         final JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
 
-        final MsgPackTokenVisitor visitor = new MsgPackTokenVisitor(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
+        final MsgPackTokenVisitor visitor = new MsgPackTokenVisitor();
+        visitor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
         final MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());
 

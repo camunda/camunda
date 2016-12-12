@@ -2,7 +2,6 @@ package org.camunda.tngp.msgpack.query;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.msgpack.spec.MsgPackFormat;
 import org.camunda.tngp.msgpack.spec.MsgPackToken;
 
 public class MsgPackTraverser
@@ -41,10 +40,7 @@ public class MsgPackTraverser
             throw new RuntimeException("no next element");
         }
 
-        final byte currentFormatByte = buffer.getByte(currentPosition);
-        final MsgPackFormat currentElementFormat = MsgPackFormat.getFormat(currentFormatByte);
-
-        currentValue.wrap(buffer, currentPosition, currentElementFormat);
+        currentValue.wrap(buffer, currentPosition);
         currentPosition += currentValue.getTotalLength();
     }
 
