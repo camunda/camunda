@@ -9,12 +9,11 @@ public enum MsgPackType
     FLOAT(true),
     ARRAY(false),
     MAP(false),
-    STRING(true),
-    ;
+    STRING(true);
 
     protected boolean isScalar;
 
-    private MsgPackType(boolean isScalar)
+    MsgPackType(boolean isScalar)
     {
         this.isScalar = isScalar;
     }

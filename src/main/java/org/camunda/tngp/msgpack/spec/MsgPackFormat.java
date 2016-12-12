@@ -22,14 +22,13 @@ public enum MsgPackFormat
     UINT_32(MsgPackType.INTEGER, 0xce, 0xff),
     UINT_64(MsgPackType.INTEGER, 0xcf, 0xff),
     FLOAT_32(MsgPackType.INTEGER, 0xca, 0xff),
-    FLOAT_64(MsgPackType.INTEGER, 0xcb, 0xff),
-    ;
+    FLOAT_64(MsgPackType.INTEGER, 0xcb, 0xff);
 
     protected MsgPackType type;
     protected int prefix;
     protected int bitmask;
 
-    private MsgPackFormat(MsgPackType type, int prefix, int bitmask)
+    MsgPackFormat(MsgPackType type, int prefix, int bitmask)
     {
         this.type = type;
         this.prefix = prefix;
@@ -48,7 +47,7 @@ public enum MsgPackFormat
 
     public static MsgPackFormat getFormat(byte formatByte)
     {
-        MsgPackFormat[] values = values();
+        final MsgPackFormat[] values = values();
 
         for (int i = 0; i < values.length; i++)
         {

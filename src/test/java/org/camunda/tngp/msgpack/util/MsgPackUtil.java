@@ -11,22 +11,23 @@ public class MsgPackUtil
 
     public static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter)
     {
-        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+        final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
         try
         {
             msgWriter.accept(packer);
             packer.close();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
-        byte[] bytes = packer.toByteArray();
-        System.out.println(ByteUtil.bytesToBinary(bytes));
+        final byte[] bytes = packer.toByteArray();
+//        System.out.println(ByteUtil.bytesToBinary(bytes));
         return new UnsafeBuffer(bytes);
     }
 
     @FunctionalInterface
-    public static interface CheckedConsumer<T>
+    public interface CheckedConsumer<T>
     {
         void accept(T t) throws Exception;
     }
@@ -34,7 +35,7 @@ public class MsgPackUtil
     public static MsgPackFilterContext generateDefaultInstances(int... filterIds)
     {
 
-        MsgPackFilterContext filterInstances = new MsgPackFilterContext(filterIds.length, 10);
+        final MsgPackFilterContext filterInstances = new MsgPackFilterContext(filterIds.length, 10);
         for (int i = 0; i < filterIds.length; i++)
         {
             filterInstances.appendElement();

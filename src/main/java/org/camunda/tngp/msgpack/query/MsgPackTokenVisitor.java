@@ -57,7 +57,7 @@ public class MsgPackTokenVisitor
         if (currentFilter >= 0)
         {
             filterInstances.moveTo(currentFilter);
-            MsgPackFilter filter = filters[filterInstances.filterId()];
+            final MsgPackFilter filter = filters[filterInstances.filterId()];
             filterMatch = filter.matches(context, filterInstances.dynamicContext(), currentValue);
         }
 

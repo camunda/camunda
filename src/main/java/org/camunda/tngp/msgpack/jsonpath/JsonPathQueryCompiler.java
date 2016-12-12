@@ -19,7 +19,8 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
 
     protected static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[3];
 
-    static {
+    static
+    {
         JSON_PATH_FILTERS[ROOT_COLLECTION_FILTER_ID] = new RootCollectionFilter();
         JSON_PATH_FILTERS[MAP_VALUE_FILTER_ID] = new MapValueWithKeyFilter();
         JSON_PATH_FILTERS[ARRAY_INDEX_FILTER_ID] = new ArrayIndexFilter();
@@ -47,7 +48,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
     public void visit(JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength)
     {
 
-        MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
+        final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
 
         if (mode == ParsingMode.DEFAULT)
         {
@@ -77,7 +78,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
                 case LITERAL:
                     if (ByteUtil.isNumeric(valueBuffer, valueOffset, valueLength))
                     {
-                        int arrayIndex = ByteUtil.parseInteger(valueBuffer, valueOffset, valueLength);
+                        final int arrayIndex = ByteUtil.parseInteger(valueBuffer, valueOffset, valueLength);
                         filterInstances.appendElement();
                         filterInstances.filterId(ARRAY_INDEX_FILTER_ID);
                         ArrayIndexFilter.encodeDynamicContext(filterInstances.dynamicContext(), arrayIndex);

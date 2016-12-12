@@ -9,7 +9,7 @@ public class MsgPackFilterContext extends AbstractDynamicContext
 
     protected static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT;
 
-    public MsgPackFilterContext(int capacity,int dynamicContextSize)
+    public MsgPackFilterContext(int capacity, int dynamicContextSize)
     {
         super(capacity, STATIC_ELEMENT_SIZE, dynamicContextSize);
     }

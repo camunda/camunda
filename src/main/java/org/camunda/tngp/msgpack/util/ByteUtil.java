@@ -42,11 +42,11 @@ public class ByteUtil
 
     public static String bytesToBinary(byte[] bytes)
     {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < bytes.length; i++)
         {
-            String binaryString = Integer.toBinaryString(Byte.toUnsignedInt(bytes[i]));
-            int missingLeadingZeroes = 8 - binaryString.length();
+            final String binaryString = Integer.toBinaryString(Byte.toUnsignedInt(bytes[i]));
+            final int missingLeadingZeroes = 8 - binaryString.length();
             for (int j = 0; j < missingLeadingZeroes; j++)
             {
                 sb.append("0");
@@ -64,7 +64,7 @@ public class ByteUtil
     {
         for (int i = offset; i < offset + length; i++)
         {
-            byte curr = buffer.getByte(i);
+            final byte curr = buffer.getByte(i);
             if (curr < 48 || curr > 57)
             {
                 return false;
@@ -83,7 +83,7 @@ public class ByteUtil
         int exponent = 1;
         for (int i = length - 1; i >= 0; i--)
         {
-            byte curr = buffer.getByte(offset + i);
+            final byte curr = buffer.getByte(offset + i);
             value += (curr - 48) * exponent;
             exponent *= 10;
         }

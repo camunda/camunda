@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.msgpack.jsonpath.JsonPathToken;
-import org.camunda.tngp.msgpack.jsonpath.JsonPathTokenizer;
 import org.junit.Test;
 
 public class JsonPathTokenizerTest
@@ -18,18 +16,18 @@ public class JsonPathTokenizerTest
     public void testTokenization()
     {
         // given
-        List<Token> tokens = new ArrayList<>();
-        JsonPathTokenizer tokenizer = new JsonPathTokenizer();
+        final List<Token> tokens = new ArrayList<>();
+        final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
 
-        String jsonPath = "$.key1.key2[index]";
-        UnsafeBuffer jsonPathBuffer = new UnsafeBuffer(jsonPath.getBytes(StandardCharsets.UTF_8));
+        final String jsonPath = "$.key1.key2[index]";
+        final UnsafeBuffer jsonPathBuffer = new UnsafeBuffer(jsonPath.getBytes(StandardCharsets.UTF_8));
 
         // when
         tokenizer.tokenize(
-                jsonPathBuffer,
-                0,
-                jsonPathBuffer.capacity(),
-                (type, buf, offset, length) -> tokens.add(new Token(type, offset, length)));
+            jsonPathBuffer,
+            0,
+            jsonPathBuffer.capacity(),
+            (type, buf, offset, length) -> tokens.add(new Token(type, offset, length)));
 
         // then
         assertThat(tokens).hasSize(10);
@@ -49,18 +47,18 @@ public class JsonPathTokenizerTest
     public void testTokenizationFollowingSubscript()
     {
         // given
-        List<Token> tokens = new ArrayList<>();
-        JsonPathTokenizer tokenizer = new JsonPathTokenizer();
+        final List<Token> tokens = new ArrayList<>();
+        final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
 
-        String jsonPath = "$.a[b].c";
-        UnsafeBuffer jsonPathBuffer = new UnsafeBuffer(jsonPath.getBytes(StandardCharsets.UTF_8));
+        final String jsonPath = "$.a[b].c";
+        final UnsafeBuffer jsonPathBuffer = new UnsafeBuffer(jsonPath.getBytes(StandardCharsets.UTF_8));
 
         // when
         tokenizer.tokenize(
-                jsonPathBuffer,
-                0,
-                jsonPathBuffer.capacity(),
-                (type, buf, offset, length) -> tokens.add(new Token(type, offset, length)));
+            jsonPathBuffer,
+            0,
+            jsonPathBuffer.capacity(),
+            (type, buf, offset, length) -> tokens.add(new Token(type, offset, length)));
 
         // then
         assertThat(tokens).hasSize(10);
@@ -93,8 +91,14 @@ public class JsonPathTokenizerTest
         @Override
         public boolean equals(Object obj)
         {
-            Token otherToken = (Token) obj;
+            final Token otherToken = (Token) obj;
             return type == otherToken.type && position == otherToken.position && length == otherToken.length;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return super.hashCode();
         }
 
         @Override

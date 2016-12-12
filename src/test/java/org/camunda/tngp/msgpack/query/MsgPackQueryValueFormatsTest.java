@@ -64,22 +64,22 @@ public class MsgPackQueryValueFormatsTest
     public void testValueQuery()
     {
         // given
-        DirectBuffer buffer = MsgPackUtil.encodeMsgPack((p) ->
+        final DirectBuffer buffer = MsgPackUtil.encodeMsgPack((p) ->
         {
-           p.packMapHeader(1);
-           p.packString("foo");
-           valueWriter.accept(p);
+            p.packMapHeader(1);
+            p.packString("foo");
+            valueWriter.accept(p);
         });
 
-        MsgPackFilter[] filters = new MsgPackFilter[2];
+        final MsgPackFilter[] filters = new MsgPackFilter[2];
         filters[0] = new RootCollectionFilter();
         filters[1] = new MapValueWithKeyFilter();
 
-        MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
         MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "foo");
 
-        MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
-        MsgPackTraverser traverser = new MsgPackTraverser();
+        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
+        final MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());
 
         // when
@@ -89,12 +89,12 @@ public class MsgPackQueryValueFormatsTest
         assertThat(valueVisitor.numResults()).isEqualTo(1);
 
         valueVisitor.moveToResult(0);
-        int resultStart = valueVisitor.currentResultPosition();
-        int resultLength = valueVisitor.currentResultLength();
+        final int resultStart = valueVisitor.currentResultPosition();
+        final int resultLength = valueVisitor.currentResultLength();
 
-        DirectBuffer expectedValue = MsgPackUtil.encodeMsgPack((p) ->
+        final DirectBuffer expectedValue = MsgPackUtil.encodeMsgPack((p) ->
         {
-           valueWriter.accept(p);
+            valueWriter.accept(p);
         });
 
         assertThat(ByteUtil.equal(

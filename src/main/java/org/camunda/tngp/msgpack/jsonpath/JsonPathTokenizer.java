@@ -37,8 +37,8 @@ public class JsonPathTokenizer
             JsonPathToken currentToken = null;
             for (int i = 0; i < STATIC_TOKENS.length && currentToken == null; i++)
             {
-                StaticToken token = STATIC_TOKENS[i];
-                byte[] tokenRepresentation = token.representation;
+                final StaticToken token = STATIC_TOKENS[i];
+                final byte[] tokenRepresentation = token.representation;
                 if (ByteUtil.equal(tokenRepresentation, buffer, position, tokenRepresentation.length))
                 {
                     if (lastStaticTokenEndPosition < position)

@@ -23,18 +23,18 @@ public class JsonPathTest
     public void testJsonPath() throws IOException
     {
         // given
-        Map<String, Object> json = new HashMap<>();
+        final Map<String, Object> json = new HashMap<>();
         json.put("foo", "bar");
 
-        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-        byte[] msgPackBytes = objectMapper.writeValueAsBytes(json);
-        UnsafeBuffer buffer = new UnsafeBuffer(msgPackBytes);
+        final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+        final byte[] msgPackBytes = objectMapper.writeValueAsBytes(json);
+        final UnsafeBuffer buffer = new UnsafeBuffer(msgPackBytes);
 
-        JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-        JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
+        final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
+        final JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
 
-        MsgPackTokenVisitor visitor = new MsgPackTokenVisitor(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
-        MsgPackTraverser traverser = new MsgPackTraverser();
+        final MsgPackTokenVisitor visitor = new MsgPackTokenVisitor(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
+        final MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());
 
         // when
@@ -44,9 +44,9 @@ public class JsonPathTest
         assertThat(visitor.numResults()).isEqualTo(1);
 
         visitor.moveToResult(0);
-        int start = visitor.currentResultPosition();
-        int length = visitor.currentResultLength();
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msgPackBytes, start, length);
+        final int start = visitor.currentResultPosition();
+        final int length = visitor.currentResultLength();
+        final MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msgPackBytes, start, length);
 
         assertThat(unpacker.unpackString()).isEqualTo("bar");
 

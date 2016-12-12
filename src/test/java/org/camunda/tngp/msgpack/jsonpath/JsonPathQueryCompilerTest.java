@@ -6,8 +6,6 @@ import org.camunda.tngp.msgpack.filter.ArrayIndexFilter;
 import org.camunda.tngp.msgpack.filter.MapValueWithKeyFilter;
 import org.camunda.tngp.msgpack.filter.MsgPackFilter;
 import org.camunda.tngp.msgpack.filter.RootCollectionFilter;
-import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
-import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
 import org.camunda.tngp.msgpack.query.MsgPackFilterContext;
 import org.junit.Test;
 
@@ -18,13 +16,13 @@ public class JsonPathQueryCompilerTest
     public void testQueryCompiler()
     {
         // given
-        JsonPathQueryCompiler compiler = new JsonPathQueryCompiler();
+        final JsonPathQueryCompiler compiler = new JsonPathQueryCompiler();
 
         // when
-        JsonPathQuery jsonPathQuery = compiler.compile("$.key1.key2[1].key3");
+        final JsonPathQuery jsonPathQuery = compiler.compile("$.key1.key2[1].key3");
 
         // then
-        MsgPackFilter[] filters = jsonPathQuery.getFilters();
+        final MsgPackFilter[] filters = jsonPathQuery.getFilters();
         assertThat(filters).hasSize(3);
         // note: these assertions are stricter than necessary;
         // all we need as that each filter is once in the list and
@@ -33,7 +31,7 @@ public class JsonPathQueryCompilerTest
         assertThat(filters[1]).isInstanceOf(MapValueWithKeyFilter.class);
         assertThat(filters[2]).isInstanceOf(ArrayIndexFilter.class);
 
-        MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
+        final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
         assertThat(filterInstances.size()).isEqualTo(5);
 
         assertFilterAtPosition(filterInstances, 0, 0);

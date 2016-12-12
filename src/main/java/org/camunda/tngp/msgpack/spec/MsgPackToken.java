@@ -35,7 +35,7 @@ public class MsgPackToken
     {
         this.format = format;
 
-        int valueLength;
+        final int valueLength;
         switch (format)
         {
             case FIXSTR:
@@ -72,7 +72,7 @@ public class MsgPackToken
                 break;
             case MAP_32:
                 totalLength = 5; // only counting header
-                int numElements = buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN);
+                final int numElements = buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN);
                 if (numElements < 0 || numElements > MAX_MAP_ELEMENTS)
                 {
                     throw new RuntimeException("no more than 2**30 map entries supported");

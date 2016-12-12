@@ -26,9 +26,9 @@ public abstract class AbstractDynamicContext
         this.dynamicContextSize = dynamicContextSize;
         this.elementSize = staticElementSize + dynamicContextSize;
         context = new CompactList(
-                elementSize,
-                capacity,
-                (size) -> ByteBuffer.allocate(size));
+            elementSize,
+            capacity,
+            (size) -> ByteBuffer.allocate(size));
         emptyElement = new UnsafeBuffer(new byte[elementSize]);
     }
 

@@ -11,7 +11,7 @@ public class ArrayIndexFilter implements MsgPackFilter
     @Override
     public boolean matches(MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value)
     {
-        int queryIndex = filterContext.getInt(0);
+        final int queryIndex = filterContext.getInt(0);
         return !ctx.isMap() && queryIndex == ctx.currentElement();
     }
 

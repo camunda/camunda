@@ -15,7 +15,7 @@ public class ByteUtilTest
     public void testIsNumeric()
     {
         // given
-        DirectBuffer buffer = new UnsafeBuffer("foo0123456789bar".getBytes(StandardCharsets.UTF_8));
+        final DirectBuffer buffer = new UnsafeBuffer("foo0123456789bar".getBytes(StandardCharsets.UTF_8));
 
         // then
         assertThat(ByteUtil.isNumeric(buffer, 0, buffer.capacity())).isFalse();
@@ -28,10 +28,23 @@ public class ByteUtilTest
     public void testParseInteger()
     {
         // given
-        DirectBuffer buffer = new UnsafeBuffer("foo56781bar".getBytes(StandardCharsets.UTF_8));
+        final DirectBuffer buffer = new UnsafeBuffer("foo56781bar".getBytes(StandardCharsets.UTF_8));
 
         // then
         assertThat(ByteUtil.parseInteger(buffer, 3, 5)).isEqualTo(56781);
 
+    }
+
+    @Test
+    public void testBytesToBinary()
+    {
+        // given
+        final byte[] bytes = new byte[]{ - 0x01, 0x1a };
+
+        // when
+        final String binary = ByteUtil.bytesToBinary(bytes);
+
+        // then
+        assertThat(binary).isEqualTo("11111111, 00011010, ");
     }
 }

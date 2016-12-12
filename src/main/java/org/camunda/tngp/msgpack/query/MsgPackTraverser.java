@@ -28,7 +28,7 @@ public class MsgPackTraverser
     {
         while (hasNext())
         {
-            int nextElementPosition = currentPosition;
+            final int nextElementPosition = currentPosition;
             wrapNextElement();
             visitor.visitElement(nextElementPosition, currentValue);
         }
@@ -41,8 +41,8 @@ public class MsgPackTraverser
             throw new RuntimeException("no next element");
         }
 
-        byte currentFormatByte = buffer.getByte(currentPosition);
-        MsgPackFormat currentElementFormat = MsgPackFormat.getFormat(currentFormatByte);
+        final byte currentFormatByte = buffer.getByte(currentPosition);
+        final MsgPackFormat currentElementFormat = MsgPackFormat.getFormat(currentFormatByte);
 
         currentValue.wrap(buffer, currentPosition, currentElementFormat);
         currentPosition += currentValue.getTotalLength();
