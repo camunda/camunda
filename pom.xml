@@ -1,25 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.camunda.tngp.example</groupId>
-  <artifactId>msgpack-sandbox</artifactId>
+  <groupId>org.camunda.tngp.msgpack</groupId>
+  <artifactId>msgpack-json-path</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   
   <dependencies>
     <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>msgpack-core</artifactId>
-      <version>0.8.11</version>
-    </dependency>
-    <dependency>
-	  <groupId>org.msgpack</groupId>
-	  <artifactId>jackson-dataformat-msgpack</artifactId>
-	  <version>0.8.11</version>
-	</dependency>
-	<dependency>
       <groupId>org.agrona</groupId>
       <artifactId>Agrona</artifactId>
       <version>0.5.3</version>
-	</dependency>
+    </dependency>
   
     <!-- for CompactList -->
     <dependency>
@@ -27,8 +17,20 @@
       <artifactId>hash-index</artifactId>
       <version>1.0.0-alpha1</version>
     </dependency>
-	
-	<dependency>
+  
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>msgpack-core</artifactId>
+      <version>0.8.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+      <version>0.8.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
@@ -41,7 +43,6 @@
       <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
-    
   </dependencies>
   
   <build>
