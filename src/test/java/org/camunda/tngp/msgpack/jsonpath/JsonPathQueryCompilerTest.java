@@ -23,6 +23,8 @@ public class JsonPathQueryCompilerTest
         final JsonPathQuery jsonPathQuery = compiler.compile("$.key1.key2[1].key3");
 
         // then
+        assertThat(jsonPathQuery.isValid()).isTrue();
+
         final MsgPackFilter[] filters = jsonPathQuery.getFilters();
         assertThat(filters).hasSize(4);
         // note: these assertions are stricter than necessary;

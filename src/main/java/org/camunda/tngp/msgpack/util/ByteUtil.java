@@ -5,9 +5,9 @@ import org.agrona.DirectBuffer;
 public class ByteUtil
 {
 
-    public static boolean equal(byte[] arr1, DirectBuffer buf2, int buf2Offset, int buf2Length)
+    public static boolean equal(byte[] arr1, DirectBuffer buf2, int buf2Offset, int length)
     {
-        if (arr1.length != buf2Length)
+        if (arr1.length != length || buf2.capacity() < buf2Offset + length)
         {
             return false;
         }

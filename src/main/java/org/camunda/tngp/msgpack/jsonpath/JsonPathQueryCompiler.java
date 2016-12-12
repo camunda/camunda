@@ -53,6 +53,11 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
     @Override
     public void visit(JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength)
     {
+        if (!jsonPathQuery.isValid())
+        {
+            // ignore tokens once query is invalid
+            return;
+        }
 
         final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
 
@@ -73,7 +78,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
                 case SUBSCRIPT_OPERATOR_END:
                     return; // ignore
                 default:
-                    throw new RuntimeException("Unexpected json-path token " + type);
+                    jsonPathQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
             }
 
         }
@@ -106,7 +111,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
                     filterInstances.filterId(WILDCARD_FILTER_ID);
                     return;
                 default:
-                    throw new RuntimeException("Unexpected json-path token " + type);
+                    jsonPathQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
             }
         }
 
