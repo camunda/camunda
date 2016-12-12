@@ -8,6 +8,7 @@ import org.camunda.tngp.msgpack.filter.ArrayIndexFilter;
 import org.camunda.tngp.msgpack.filter.MapValueWithKeyFilter;
 import org.camunda.tngp.msgpack.filter.MsgPackFilter;
 import org.camunda.tngp.msgpack.filter.RootCollectionFilter;
+import org.camunda.tngp.msgpack.filter.WildcardFilter;
 import org.camunda.tngp.msgpack.query.MsgPackFilterContext;
 import org.camunda.tngp.msgpack.util.ByteUtil;
 
@@ -16,14 +17,16 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
     protected static final int ROOT_COLLECTION_FILTER_ID = 0;
     protected static final int MAP_VALUE_FILTER_ID = 1;
     protected static final int ARRAY_INDEX_FILTER_ID = 2;
+    protected static final int WILDCARD_FILTER_ID = 3;
 
-    protected static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[3];
+    protected static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[4];
 
     static
     {
         JSON_PATH_FILTERS[ROOT_COLLECTION_FILTER_ID] = new RootCollectionFilter();
         JSON_PATH_FILTERS[MAP_VALUE_FILTER_ID] = new MapValueWithKeyFilter();
         JSON_PATH_FILTERS[ARRAY_INDEX_FILTER_ID] = new ArrayIndexFilter();
+        JSON_PATH_FILTERS[WILDCARD_FILTER_ID] = new WildcardFilter();
     }
 
     protected JsonPathQuery jsonPathQuery = new JsonPathQuery(JSON_PATH_FILTERS);
@@ -95,6 +98,10 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
                 case START_INPUT:
                 case END_INPUT:
                     return; // ignore
+                case WILDCARD:
+                    filterInstances.appendElement();
+                    filterInstances.filterId(WILDCARD_FILTER_ID);
+                    return;
                 default:
                     throw new RuntimeException("Unexpected json-path token " + type);
             }

@@ -9,6 +9,7 @@ import org.camunda.tngp.msgpack.filter.ArrayIndexFilter;
 import org.camunda.tngp.msgpack.filter.MapValueWithKeyFilter;
 import org.camunda.tngp.msgpack.filter.MsgPackFilter;
 import org.camunda.tngp.msgpack.filter.RootCollectionFilter;
+import org.camunda.tngp.msgpack.filter.WildcardFilter;
 import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackType;
 import org.camunda.tngp.msgpack.util.ByteUtil;
@@ -172,6 +173,44 @@ public class MsgPackTraverserTest
         valueVisitor.moveToResult(0);
         assertThat(valueVisitor.currentResultPosition()).isEqualTo(16);
         assertThat(valueVisitor.currentResultLength()).isEqualTo(9);
+    }
+
+    @Test
+    public void testWildcardFilter()
+    {
+        // given
+        final MsgPackFilter[] filters = new MsgPackFilter[2];
+        filters[0] = new RootCollectionFilter();
+        filters[1] = new WildcardFilter();
+
+        final MsgPackFilterContext filterInstances = MsgPackUtil.generateDefaultInstances(0, 1);
+
+        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor(filters, filterInstances);
+        final MsgPackTraverser traverser = new MsgPackTraverser();
+
+        final DirectBuffer encodedMessage = MsgPackUtil.encodeMsgPack((p) ->
+        {
+            p.packMapHeader(2);      // 1 {
+            p.packString("key1");    // 5   "":
+            p.packString("val1");    // 5   "",
+            p.packString("key2");    // 5   "":
+            p.packString("val2");    // 5   ""}
+        });
+
+        // when
+        traverser.wrap(encodedMessage, 0, encodedMessage.capacity());
+        traverser.traverse(valueVisitor);
+
+        // then
+        assertThat(valueVisitor.numResults()).isEqualTo(2);
+
+        valueVisitor.moveToResult(0);
+        assertThat(valueVisitor.currentResultPosition()).isEqualTo(6);
+        assertThat(valueVisitor.currentResultLength()).isEqualTo(5);
+
+        valueVisitor.moveToResult(1);
+        assertThat(valueVisitor.currentResultPosition()).isEqualTo(16);
+        assertThat(valueVisitor.currentResultLength()).isEqualTo(5);
     }
 
     protected static class MapKeyFilter implements MsgPackFilter
