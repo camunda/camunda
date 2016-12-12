@@ -79,7 +79,7 @@ public class MsgPackQueryValueFormatsTest
         final MsgPackFilterContext filterInstances = TestUtil.generateDefaultInstances(0, 1);
         MapValueWithKeyFilter.encodeDynamicContext(filterInstances.dynamicContext(), "foo");
 
-        final MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor();
+        final MsgPackQueryExecutor valueVisitor = new MsgPackQueryExecutor();
         valueVisitor.init(filters, filterInstances);
         final MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());

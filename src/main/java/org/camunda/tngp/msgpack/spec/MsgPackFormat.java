@@ -57,7 +57,7 @@ public enum MsgPackFormat
             }
         }
 
-        throw new RuntimeException("unrecognized format");
+        return null;
     }
 
 }

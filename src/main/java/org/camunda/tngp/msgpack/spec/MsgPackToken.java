@@ -28,14 +28,29 @@ public class MsgPackToken
     // float32/float64
     protected double floatValue;
 
+    protected String error;
+
     /*
      * strictfp modifier to ensure no information is lost when converting 32-bit float to double,
      * see https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.1.2
      */
-    public strictfp void wrap(DirectBuffer buffer, int valueOffset)
+    /**
+     * @param buffer
+     * @param valueOffset
+     * @return true if offset defines valid message pack value
+     */
+    public strictfp boolean wrap(DirectBuffer buffer, int valueOffset)
     {
+        this.error = null;
+
         final byte currentFormatByte = buffer.getByte(valueOffset);
         this.format = MsgPackFormat.getFormat(currentFormatByte);
+
+        if (format == null)
+        {
+            this.error = "Unrecognized token format";
+            return false;
+        }
 
         final int valueLength;
         switch (format)
@@ -59,7 +74,7 @@ public class MsgPackToken
                 valueLength = buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN);
                 if (valueLength < 0)
                 {
-                    throw new RuntimeException("maximum String length supported is 2**31 bytes");
+                    error = "maximum String length supported is 2**31 bytes";
                 }
                 valueBuffer.wrap(buffer, valueOffset + 5, valueLength);
                 totalLength = valueLength + 5;
@@ -77,7 +92,7 @@ public class MsgPackToken
                 final int numElements = buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN);
                 if (numElements < 0 || numElements > MAX_MAP_ELEMENTS)
                 {
-                    throw new RuntimeException("no more than 2**30 map entries supported");
+                    error = "no more than 2**30 map entries supported";
                 }
                 size = numElements << 1;
                 break;
@@ -94,7 +109,7 @@ public class MsgPackToken
                 size = buffer.getInt(valueOffset + 1, ByteOrder.BIG_ENDIAN);
                 if (size < 0)
                 {
-                    throw new RuntimeException("no more than 2**31 array elements supported");
+                    error = "no more than 2**31 array elements supported";
                 }
                 break;
             case NIL:
@@ -133,14 +148,16 @@ public class MsgPackToken
             case FLOAT_32:
                 totalLength = 5;
                 floatValue = buffer.getFloat(valueOffset + 1, ByteOrder.BIG_ENDIAN);
-                return;
+                break;
             case FLOAT_64:
                 totalLength = 9;
                 floatValue = buffer.getDouble(valueOffset + 1, ByteOrder.BIG_ENDIAN);
-                return;
+                break;
             default:
-                throw new RuntimeException("Unknown format");
+                error = "Unrecognized token format";
         }
+
+        return error == null;
     }
 
     public DirectBuffer valueBuffer()
@@ -196,6 +213,11 @@ public class MsgPackToken
     public double getFloatValue()
     {
         return floatValue;
+    }
+
+    public String getError()
+    {
+        return error;
     }
 
 }

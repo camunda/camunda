@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.msgpack.query.MsgPackTokenVisitor;
+import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
 import org.camunda.tngp.msgpack.query.MsgPackTraverser;
 import org.junit.Test;
 import org.msgpack.core.MessagePack;
@@ -33,7 +33,7 @@ public class JsonPathTest
         final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
         final JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
 
-        final MsgPackTokenVisitor visitor = new MsgPackTokenVisitor();
+        final MsgPackQueryExecutor visitor = new MsgPackQueryExecutor();
         visitor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
         final MsgPackTraverser traverser = new MsgPackTraverser();
         traverser.wrap(buffer, 0, buffer.capacity());

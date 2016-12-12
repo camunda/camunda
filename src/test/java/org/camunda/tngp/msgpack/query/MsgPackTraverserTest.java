@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.msgpack.filter.ArrayIndexFilter;
 import org.camunda.tngp.msgpack.filter.MapValueWithKeyFilter;
 import org.camunda.tngp.msgpack.filter.MsgPackFilter;
@@ -20,7 +21,7 @@ import org.junit.Test;
 public class MsgPackTraverserTest
 {
 
-    protected MsgPackTokenVisitor valueVisitor = new MsgPackTokenVisitor();
+    protected MsgPackQueryExecutor valueVisitor = new MsgPackQueryExecutor();
     protected MsgPackTraverser traverser = new MsgPackTraverser();
 
     @Test
@@ -45,9 +46,10 @@ public class MsgPackTraverserTest
 
         // when
         traverser.wrap(encodedMessage, 0, encodedMessage.capacity());
-        traverser.traverse(valueVisitor);
+        final boolean success = traverser.traverse(valueVisitor);
 
         // then
+        assertThat(success).isTrue();
         assertThat(valueVisitor.numResults()).isEqualTo(1);
 
         valueVisitor.moveToResult(0);
@@ -210,6 +212,34 @@ public class MsgPackTraverserTest
         valueVisitor.moveToResult(1);
         assertThat(valueVisitor.currentResultPosition()).isEqualTo(16);
         assertThat(valueVisitor.currentResultLength()).isEqualTo(5);
+    }
+
+    @Test
+    public void testInputValidation()
+    {
+        // given
+        final DirectBuffer encodedValidMessage = MsgPackUtil.encodeMsgPack((p) ->
+        {
+            p.packString("foo");
+        });
+        final byte[] bytes = new byte[encodedValidMessage.capacity() + 1];
+
+        encodedValidMessage.getBytes(0, bytes, 0, encodedValidMessage.capacity());
+        bytes[bytes.length - 1] = (byte) 0xc7; // according to msgpack-spec, this is ext8, but we don't support it
+
+        final UnsafeBuffer encodedInvalidMessage = new UnsafeBuffer(bytes);
+
+        final MsgPackTraverser traverser = new MsgPackTraverser();
+        traverser.wrap(encodedInvalidMessage, 0, encodedInvalidMessage.capacity());
+
+        // when
+        final boolean success = traverser.traverse((p, c) ->
+        { }); // ignore
+
+        // then
+        assertThat(success).isFalse();
+        assertThat(traverser.getInvalidPosition()).isEqualTo(encodedValidMessage.capacity());
+        assertThat(traverser.getErrorMessage()).isEqualTo("Unrecognized token format");
     }
 
     protected static class MapKeyFilter implements MsgPackFilter

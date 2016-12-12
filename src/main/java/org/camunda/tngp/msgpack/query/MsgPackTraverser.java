@@ -7,6 +7,11 @@ import org.camunda.tngp.msgpack.spec.MsgPackToken;
 public class MsgPackTraverser
 {
 
+    protected static final int NO_INVALID_POSITION = -1;
+
+    protected int invalidPosition;
+    protected String errorMessage;
+
     protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
     protected int currentPosition;
 
@@ -16,6 +21,8 @@ public class MsgPackTraverser
     {
         this.buffer.wrap(buffer, offset, length);
         this.currentPosition = 0;
+        this.invalidPosition = NO_INVALID_POSITION;
+        this.errorMessage = null;
     }
 
     public MsgPackToken getCurrentElement()
@@ -23,25 +30,53 @@ public class MsgPackTraverser
         return currentValue;
     }
 
-    public void traverse(MsgPackTokenVisitor visitor)
+    /**
+     * @param visitor
+     * @return true if document could be traversed successfully
+     */
+    public boolean traverse(MsgPackTokenVisitor visitor)
     {
         while (hasNext())
         {
             final int nextElementPosition = currentPosition;
-            wrapNextElement();
+            final boolean success = wrapNextElement();
+
+            if (!success)
+            {
+                return false;
+            }
+
             visitor.visitElement(nextElementPosition, currentValue);
         }
+
+        return true;
     }
 
-    protected void wrapNextElement()
+    public int getInvalidPosition()
     {
-        if (!hasNext())
+        return invalidPosition;
+    }
+
+    public String getErrorMessage()
+    {
+        return errorMessage;
+    }
+
+    protected boolean wrapNextElement()
+    {
+        final boolean success = currentValue.wrap(buffer, currentPosition);
+        if (success)
         {
-            throw new RuntimeException("no next element");
+            currentPosition += currentValue.getTotalLength();
+        }
+        {
+            invalidPosition = currentPosition;
+            errorMessage = currentValue.getError();
         }
 
-        currentValue.wrap(buffer, currentPosition);
-        currentPosition += currentValue.getTotalLength();
+        return success;
+
+
     }
 
     protected boolean hasNext()
