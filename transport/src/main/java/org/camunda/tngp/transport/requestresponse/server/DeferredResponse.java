@@ -1,8 +1,5 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
@@ -17,6 +14,8 @@ public class DeferredResponse
 {
     protected final Dispatcher sendBuffer;
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
+    protected TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
+    protected RequestResponseProtocolHeaderDescriptor requestResponseHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
 
     protected int channelId;
     protected long connectionId;
@@ -69,11 +68,13 @@ public class DeferredResponse
             final MutableDirectBuffer buffer = claimedFragment.getBuffer();
             final int claimedOffset = claimedFragment.getOffset();
 
-            TransportHeaderDescriptor.writeHeader(buffer, claimedOffset, Protocols.REQUEST_RESPONSE);
+            transportHeaderDescriptor.wrap(buffer, claimedOffset)
+                .protocolId(Protocols.REQUEST_RESPONSE);
             final int requestResponseOffset = claimedOffset + TransportHeaderDescriptor.headerLength();
 
-            buffer.putLong(connectionIdOffset(requestResponseOffset), connectionId);
-            buffer.putLong(requestIdOffset(requestResponseOffset), requestId);
+            requestResponseHeaderDescriptor.wrap(buffer, requestResponseOffset)
+                .connectionId(connectionId)
+                .requestId(requestId);
         }
 
         return isAllocated;

@@ -12,6 +12,7 @@ public class OutgoingDataFrameImpl implements OutgoingDataFrame
 {
 
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
+    protected TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     protected final DataFramePoolImpl framePool;
     protected final Dispatcher sendBuffer;
 
@@ -110,10 +111,8 @@ public class OutgoingDataFrameImpl implements OutgoingDataFrame
     protected void writeHeader()
     {
         // protocol header
-        TransportHeaderDescriptor.writeHeader(
-                claimedFragment.getBuffer(),
-                claimedFragment.getOffset(),
-                Protocols.FULL_DUPLEX_SINGLE_MESSAGE);
+        transportHeaderDescriptor.wrap(claimedFragment.getBuffer(), claimedFragment.getOffset())
+            .protocolId(Protocols.FULL_DUPLEX_SINGLE_MESSAGE);
 
         // here may come a single-message-specific header if any
     }

@@ -1,23 +1,21 @@
 package org.camunda.tngp.transport.requestresponse.client;
 
-import static java.util.concurrent.TimeUnit.*;
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.transport.TransportChannel;
-import org.camunda.tngp.transport.protocol.Protocols;
-import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
-import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.dispatcher.ClaimedFragment;
+import org.camunda.tngp.transport.TransportChannel;
+import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 
 /**
  * reusable request implementation
@@ -36,8 +34,9 @@ public class TransportRequestImpl implements TransportRequest
     protected volatile int state;
 
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
-
     protected final UnsafeBuffer responseBuffer = new UnsafeBuffer(0, 0);
+    protected TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
+    protected RequestResponseProtocolHeaderDescriptor requestResponseHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
 
     protected final IdleStrategy responseAwaitIdleStrategy;
 
@@ -133,12 +132,12 @@ public class TransportRequestImpl implements TransportRequest
     {
         final MutableDirectBuffer claimedBuffer = claimedFragment.getBuffer();
 
-        TransportHeaderDescriptor.writeHeader(claimedBuffer, claimedFragment.getOffset(), Protocols.REQUEST_RESPONSE);
+        transportHeaderDescriptor.wrap(claimedBuffer, claimedFragment.getOffset())
+            .protocolId(Protocols.REQUEST_RESPONSE);
 
-        final int requestResponseHeaderOffset = claimedFragment.getOffset() + TransportHeaderDescriptor.headerLength();
-
-        claimedBuffer.putLong(connectionIdOffset(requestResponseHeaderOffset), connectionId);
-        claimedBuffer.putLong(requestIdOffset(requestResponseHeaderOffset), id);
+        requestResponseHeaderDescriptor.wrap(claimedBuffer, claimedFragment.getOffset() + TransportHeaderDescriptor.headerLength())
+            .connectionId(connectionId)
+            .requestId(id);
     }
 
     @Override

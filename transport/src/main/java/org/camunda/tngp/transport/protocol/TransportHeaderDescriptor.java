@@ -35,9 +35,20 @@ public class TransportHeaderDescriptor
         return offset + PROTOCOL_ID_OFFSET;
     }
 
-    public static void writeHeader(MutableDirectBuffer buffer, int offset, short protocolId)
+    protected MutableDirectBuffer buffer;
+    protected int offset;
+
+    public TransportHeaderDescriptor wrap(MutableDirectBuffer buffer, int offset)
+    {
+        this.buffer = buffer;
+        this.offset = offset;
+        return this;
+    }
+
+    public TransportHeaderDescriptor protocolId(short protocolId)
     {
         buffer.putShort(offset, protocolId);
+        return this;
     }
 
 }

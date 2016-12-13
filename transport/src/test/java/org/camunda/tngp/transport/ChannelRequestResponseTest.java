@@ -44,7 +44,8 @@ public class ChannelRequestResponseTest
     {
         // 1K message
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
-        TransportHeaderDescriptor.writeHeader(msg, 0, Protocols.REQUEST_RESPONSE);
+        new TransportHeaderDescriptor().wrap(msg, 0)
+            .protocolId(Protocols.REQUEST_RESPONSE);
 
         final ClientFragmentHandler fragmentHandler = new ClientFragmentHandler();
         final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
