@@ -49,7 +49,7 @@ public class ProtocolSingleMessageTest
                 OutgoingDataFrame dataFrame;
                 do
                 {
-                    dataFrame = dataFramePool.openFrame(BitUtil.SIZE_OF_INT, channel.getId());
+                    dataFrame = dataFramePool.openFrame(channel.getId(), BitUtil.SIZE_OF_INT);
                 }
                 while (dataFrame == null);
 

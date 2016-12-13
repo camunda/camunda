@@ -51,7 +51,7 @@ public class MixedProtocolsTest
                 request.getClaimedRequestBuffer().putInt(request.getClaimedOffset(), i);
                 request.commit();
 
-                final OutgoingDataFrame dataFrame = dataFramePool.openFrame(1024, channel.getId());
+                final OutgoingDataFrame dataFrame = dataFramePool.openFrame(channel.getId(), 1024);
                 dataFrame.getBuffer().putInt(0, i);
                 dataFrame.commit();
 

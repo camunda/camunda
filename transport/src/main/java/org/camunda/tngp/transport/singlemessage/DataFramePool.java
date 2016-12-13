@@ -6,12 +6,12 @@ public interface DataFramePool
 {
 
     /**
-     * @param messageLength required payload size
      * @param channelId yes
+     * @param messageLength required payload size
      *
      * @return null, if frame could not be opened (e.g. because of no space in the send buffer)
      */
-    OutgoingDataFrame openFrame(int messageLength, int channelId);
+    OutgoingDataFrame openFrame(int channelId, int messageLength);
 
     static DataFramePool newBoundedPool(int capacity, Dispatcher sendBuffer)
     {

@@ -19,7 +19,7 @@ public class DataFramePoolImpl implements DataFramePool
     }
 
     @Override
-    public OutgoingDataFrame openFrame(int messageLength, int channelId)
+    public OutgoingDataFrame openFrame(int channelId, int messageLength)
     {
         final OutgoingDataFrameImpl frame = framePool.poll();
 
