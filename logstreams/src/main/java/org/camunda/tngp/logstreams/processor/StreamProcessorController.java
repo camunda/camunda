@@ -429,13 +429,17 @@ public class StreamProcessorController implements Agent
             {
                 final long sourceEventPosition = targetEvent.getSourceEventPosition();
 
-                // TODO seek the event in a more efficient way
-                final boolean found = sourceLogStreamReader.seek(sourceEventPosition);
-
-                if (found && sourceLogStreamReader.hasNext())
+                // assuming that the log stream reader seek to a nearby position before
+                LoggedEvent sourceEvent = null;
+                long currentSourceEventPosition = -1L;
+                while (sourceLogStreamReader.hasNext() && currentSourceEventPosition < sourceEventPosition)
                 {
-                    final LoggedEvent sourceEvent = sourceLogStreamReader.next();
+                    sourceEvent = sourceLogStreamReader.next();
+                    currentSourceEventPosition = sourceEvent.getPosition();
+                }
 
+                if (sourceEvent != null && currentSourceEventPosition == sourceEventPosition)
+                {
                     // re-process the event from source stream
                     final EventProcessor eventProcessor = streamProcessor.onEvent(sourceEvent);
                     eventProcessor.processEvent();

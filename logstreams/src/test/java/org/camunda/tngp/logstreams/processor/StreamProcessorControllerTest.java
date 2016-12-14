@@ -713,9 +713,10 @@ public class StreamProcessorControllerTest
         when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
         when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
 
-        when(mockSourceLogStreamReader.seek(3L)).thenReturn(true);
         when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
         when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockSourceEvent.getPosition()).thenReturn(3L);
 
         open();
         // -> recovery - no more events
@@ -728,8 +729,6 @@ public class StreamProcessorControllerTest
 
         verify(mockTargetLogStreamReader, times(2)).hasNext();
         verify(mockTargetLogStreamReader, times(1)).next();
-
-        verify(mockSourceLogStreamReader).seek(3L);
 
         final InOrder inOrder = inOrder(mockStreamProcessor, mockEventProcessor);
 
@@ -752,9 +751,10 @@ public class StreamProcessorControllerTest
         when(mockTargetEvent.getProducerId()).thenReturn(99, STREAM_PROCESSOR_ID);
         when(mockTargetEvent.getSourceEventPosition()).thenReturn(4L);
 
-        when(mockSourceLogStreamReader.seek(anyLong())).thenReturn(true);
         when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
         when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockSourceEvent.getPosition()).thenReturn(4L);
 
         open();
         // -> recovery - re-process event
