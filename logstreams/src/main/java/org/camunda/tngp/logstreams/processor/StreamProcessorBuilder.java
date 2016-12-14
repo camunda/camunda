@@ -41,7 +41,8 @@ public class StreamProcessorBuilder
     protected SnapshotStorage snapshotStorage;
     protected SnapshotSupport stateResource;
 
-    private LogStreamReader logStreamReader;
+    private LogStreamReader sourceLogStreamReader;
+    private LogStreamReader targetLogStreamReader;
     private LogStreamWriter logStreamWriter;
 
     public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
@@ -90,16 +91,20 @@ public class StreamProcessorBuilder
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
+        Objects.requireNonNull(stateResource, "No state resource provided.");
         Objects.requireNonNull(sourceStream, "No source stream provided.");
         Objects.requireNonNull(targetStream, "No target stream provided.");
         Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
+        Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
 
         if (snapshotPolicy == null)
         {
             snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
         }
 
-        logStreamReader = new BufferedLogStreamReader();
+        sourceLogStreamReader = new BufferedLogStreamReader();
+        targetLogStreamReader = new BufferedLogStreamReader();
+
         logStreamWriter = new LogStreamWriter();
     }
 
@@ -119,7 +124,8 @@ public class StreamProcessorBuilder
 
         ctx.setAgentRunnerService(agentRunnerService);
 
-        ctx.setLogStreamReader(logStreamReader);
+        ctx.setSourceLogStreamReader(sourceLogStreamReader);
+        ctx.setTargetLogStreamReader(targetLogStreamReader);
         ctx.setLogStreamWriter(logStreamWriter);
 
         ctx.setSnapshotPolicy(snapshotPolicy);

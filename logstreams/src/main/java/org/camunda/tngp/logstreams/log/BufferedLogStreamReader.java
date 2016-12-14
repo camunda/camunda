@@ -1,8 +1,24 @@
 package org.camunda.tngp.logstreams.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
-import static org.camunda.tngp.logstreams.spi.LogStorage.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGHT;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataLengthOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
@@ -106,7 +122,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         iteratorState = IteratorState.UNINITIALIZED;
     }
 
-    public void seek(long seekPosition)
+    public boolean seek(long seekPosition)
     {
         clear();
 
@@ -123,21 +139,21 @@ public class BufferedLogStreamReader implements LogStreamReader
             if (nextReadAddr == -1)
             {
                 this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
-                return;
+                return false;
             }
         }
 
         if (nextReadAddr < 0)
         {
             clear();
-            return;
+            return false;
         }
 
         // read at least header of initial fragment
         if (!readMore(headerLength))
         {
             clear();
-            return;
+            return false;
         }
 
         final int fragmentLength = curr.getFragmentLength();
@@ -148,7 +164,7 @@ public class BufferedLogStreamReader implements LogStreamReader
             if (!readMore(available - fragmentLength))
             {
                 clear();
-                return;
+                return false;
             }
         }
 
@@ -157,15 +173,17 @@ public class BufferedLogStreamReader implements LogStreamReader
         while (hasNext())
         {
             final LoggedEvent entry  = next();
+            final long entryPosition = entry.getPosition();
 
-            if (entry.getPosition() >= seekPosition)
+            if (entryPosition >= seekPosition)
             {
                 iteratorState = IteratorState.INITIALIZED;
-                return;
+                return entryPosition == seekPosition;
             }
         }
 
         iteratorState = IteratorState.ACTIVE;
+        return false;
     }
 
     @Override
@@ -531,6 +549,30 @@ public class BufferedLogStreamReader implements LogStreamReader
         public int getProducerId()
         {
             return buffer.getInt(producerIdOffset(messageOffset(fragmentOffset)));
+        }
+
+        @Override
+        public String toString()
+        {
+            final StringBuilder builder = new StringBuilder();
+            builder.append("LoggedEvent [type=");
+            builder.append(getType());
+            builder.append(", version=");
+            builder.append(getVersion());
+            builder.append(", streamId=");
+            builder.append(getStreamId());
+            builder.append(", position=");
+            builder.append(getPosition());
+            builder.append(", longKey=");
+            builder.append(getLongKey());
+            builder.append(", sourceEventLogStreamId=");
+            builder.append(getSourceEventLogStreamId());
+            builder.append(", sourceEventPosition=");
+            builder.append(getSourceEventPosition());
+            builder.append(", producerId=");
+            builder.append(getProducerId());
+            builder.append("]");
+            return builder.toString();
         }
     }
 

@@ -45,4 +45,10 @@ public class SerializableWrapper<T extends Serializable> implements SnapshotSupp
         final ObjectInputStream ois = new ObjectInputStream(inputStream);
         object = (T) ois.readObject();
     }
+
+    @Override
+    public void reset()
+    {
+        // do nothing
+    }
 }

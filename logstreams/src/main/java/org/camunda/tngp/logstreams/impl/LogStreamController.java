@@ -51,7 +51,6 @@ public class LogStreamController implements Agent
     protected final StateMachineAgent<Context> stateMachine = new StateMachineAgent<>(
             StateMachine.<Context> builder(s -> new Context(s))
             .initialState(closedState)
-            .from(closedState).take(TRANSITION_OPEN).to(openingState)
             .from(openingState).take(TRANSITION_DEFAULT).to(openState)
             .from(openingState).take(TRANSITION_FAIL).to(failingState)
             .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
@@ -64,6 +63,7 @@ public class LogStreamController implements Agent
             .from(failedState).take(TRANSITION_RECOVER).to(recoveredState)
             .from(recoveredState).take(TRANSITION_DEFAULT).to(openState)
             .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+            .from(closedState).take(TRANSITION_OPEN).to(openingState)
             .build()
             );
 
@@ -363,7 +363,7 @@ public class LogStreamController implements Agent
 
             try
             {
-                // TODO should do recovery if fails to flush because of corrupted block index - see #8
+                // should do recovery if fails to flush because of corrupted block index - see #8
 
                 // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
                 logStorage.flush();

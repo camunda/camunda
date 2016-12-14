@@ -20,4 +20,9 @@ public interface SnapshotSupport
      * @param inputStream the stream to read from
      */
     void recoverFromSnapshot(InputStream inputStream) throws Exception;
+
+    /**
+     * Set the snapshot in the initial state.
+     */
+    void reset();
 }

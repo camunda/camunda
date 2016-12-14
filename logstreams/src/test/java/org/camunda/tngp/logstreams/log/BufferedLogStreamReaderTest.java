@@ -300,13 +300,42 @@ public class BufferedLogStreamReaderTest
 
         reader.wrap(mockLogStream);
 
-        reader.seek(3);
+        final boolean found = reader.seek(3);
 
         reader.hasNext();
         final LoggedEvent event = reader.next();
 
+        assertThat(found).isTrue();
         assertThat(event.getPosition()).isEqualTo(3L);
         assertThat(reader.getPosition()).isEqualTo(3L);
+    }
+
+    @Test
+    public void shouldSeekToNextPositionIfNotExist()
+    {
+        when(mockBlockIndex.size()).thenReturn(2);
+
+        when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
+        when(mockBlockIndex.getLogPosition(1)).thenReturn(5L);
+
+        when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
+        when(mockBlockIndex.lookupBlockAddress(3L)).thenReturn(10L);
+        when(mockBlockIndex.lookupBlockAddress(5L)).thenReturn(15L);
+
+        mockLogStorage
+            .add(newLogEntries(2).address(10).position(1).nextAddress(15))
+            .add(newLogEntries(3).address(15).position(5));
+
+        reader.wrap(mockLogStream);
+
+        final boolean found = reader.seek(3);
+
+        reader.hasNext();
+        final LoggedEvent event = reader.next();
+
+        assertThat(found).isFalse();
+        assertThat(event.getPosition()).isEqualTo(5L);
+        assertThat(reader.getPosition()).isEqualTo(5L);
     }
 
     @Test
@@ -392,10 +421,11 @@ public class BufferedLogStreamReaderTest
 
         reader.wrap(mockLogStream);
 
-        reader.seek(3);
+        final boolean found = reader.seek(3);
 
         final boolean hasNext = reader.hasNext();
 
+        assertThat(found).isFalse();
         assertThat(hasNext).isFalse();
     }
 

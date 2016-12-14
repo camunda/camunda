@@ -47,11 +47,7 @@ public class LogBlockIndex implements SnapshotSupport
         this.indexBuffer = bufferAllocator.apply(requiredBufferCapacity);
         this.capacity = capacity;
 
-        // verify alignment to ensure atomicity of updates to the index metadata
-        indexBuffer.verifyAlignment();
-
-        // set initial size
-        indexBuffer.putIntVolatile(indexSizeOffset(), 0);
+        reset();
     }
 
     /**
@@ -294,6 +290,18 @@ public class LogBlockIndex implements SnapshotSupport
         final byte[] byteArray = StreamUtil.read(inputStream);
 
         indexBuffer.putBytes(0, byteArray);
+    }
+
+    @Override
+    public void reset()
+    {
+        // verify alignment to ensure atomicity of updates to the index metadata
+        indexBuffer.verifyAlignment();
+
+        // set initial size
+        indexBuffer.putIntVolatile(indexSizeOffset(), 0);
+
+        indexBuffer.setMemory(dataOffset(), capacity * entryLength(), (byte) 0);
     }
 
 }

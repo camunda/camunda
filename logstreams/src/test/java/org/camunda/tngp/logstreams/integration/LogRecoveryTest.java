@@ -1,13 +1,14 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.waitUntilFullyWritten;
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.camunda.tngp.logstreams.LogStreams;
+import org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -68,7 +69,7 @@ public class LogRecoveryTest
         log.open();
 
         writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilFullyWritten(log, WORK_COUNT);
+        waitUntilWrittenKey(log, WORK_COUNT);
 
         log.close();
 
@@ -92,13 +93,13 @@ public class LogRecoveryTest
         log.open();
 
         writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilFullyWritten(log, WORK_COUNT);
+        waitUntilWrittenKey(log, WORK_COUNT);
 
         isLastLogEntry.set(true);
 
         // write one more event to create the snapshot
         writeLogEvents(log, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilFullyWritten(log, WORK_COUNT + 1);
+        waitUntilWrittenKey(log, WORK_COUNT + 1);
 
         log.close();
 
@@ -122,12 +123,12 @@ public class LogRecoveryTest
         log.open();
 
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
-        waitUntilFullyWritten(log, WORK_COUNT / 2);
+        waitUntilWrittenKey(log, WORK_COUNT / 2);
 
         isSnapshotPoint.set(true);
 
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
-        waitUntilFullyWritten(log, WORK_COUNT);
+        waitUntilWrittenKey(log, WORK_COUNT);
 
         log.close();
 
@@ -153,7 +154,7 @@ public class LogRecoveryTest
         log.open();
 
         writeLogEvents(log, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilFullyWritten(log, WORK_COUNT);
+        waitUntilWrittenKey(log, WORK_COUNT);
 
         log.close();
 
@@ -174,7 +175,7 @@ public class LogRecoveryTest
 
         // write events
         writeLogEvents(log, 10, MSG_SIZE, 0);
-        waitUntilFullyWritten(log, 10);
+        waitUntilWrittenKey(log, 10);
 
         log.close();
 
@@ -190,7 +191,7 @@ public class LogRecoveryTest
 
         // write more events
         writeLogEvents(newLog, 15, MSG_SIZE, 10);
-        waitUntilFullyWritten(newLog, 25);
+        waitUntilWrittenKey(newLog, 25);
 
         newLog.close();
 
@@ -212,7 +213,7 @@ public class LogRecoveryTest
 
         // write events
         writeLogEvents(log, 10, MSG_SIZE, 0);
-        waitUntilFullyWritten(log, 10);
+        waitUntilWrittenKey(log, 10);
 
         log.close();
 
@@ -221,7 +222,7 @@ public class LogRecoveryTest
 
         // write more events
         writeLogEvents(log, 15, MSG_SIZE, 10);
-        waitUntilFullyWritten(log, 25);
+        waitUntilWrittenKey(log, 25);
 
         log.close();
 

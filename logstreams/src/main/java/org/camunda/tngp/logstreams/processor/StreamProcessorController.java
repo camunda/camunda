@@ -18,10 +18,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.concurrent.Agent;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
@@ -39,29 +41,42 @@ public class StreamProcessorController implements Agent
     protected static final int TRANSITION_DEFAULT = 0;
     protected static final int TRANSITION_OPEN = 1;
     protected static final int TRANSITION_CLOSE = 2;
-    protected static final int TRANSITION_PROCESS = 3;
-    protected static final int TRANSITION_SNAPSHOT = 4;
-    protected static final int TRANSITION_FAIL = 5;
+    protected static final int TRANSITION_FAIL = 3;
+    protected static final int TRANSITION_PROCESS = 4;
+    protected static final int TRANSITION_SNAPSHOT = 5;
+    protected static final int TRANSITION_RECOVER = 6;
 
     protected final State<Context> openingState = new OpeningState();
     protected final State<Context> openedState = new OpenedState();
     protected final State<Context> processState = new ProcessState();
     protected final State<Context> snapshottingState = new SnapshottingState();
+    protected final State<Context> recoveringState = new RecoveringState();
+    protected final State<Context> reprocessingState = new ReprocessingState();
     protected final State<Context> closingState = new ClosingState();
     protected final State<Context> closedState = new ClosedState();
     protected final State<Context> failedState = new FailedState();
 
     protected final StateMachineAgent<Context> stateMachineAgent = new StateMachineAgent<>(StateMachine.<Context> builder(s -> new Context(s))
             .initialState(closedState)
-            .from(openingState).take(TRANSITION_DEFAULT).to(openedState)
+            .from(openingState).take(TRANSITION_DEFAULT).to(recoveringState)
+            .from(openingState).take(TRANSITION_FAIL).to(failedState)
+            .from(recoveringState).take(TRANSITION_DEFAULT).to(reprocessingState)
+            .from(recoveringState).take(TRANSITION_FAIL).to(failedState)
+            .from(reprocessingState).take(TRANSITION_DEFAULT).to(openedState)
+            .from(reprocessingState).take(TRANSITION_FAIL).to(failedState)
             .from(openedState).take(TRANSITION_PROCESS).to(processState)
             .from(openedState).take(TRANSITION_CLOSE).to(closingState)
             .from(openedState).take(TRANSITION_FAIL).to(failedState)
             .from(processState).take(TRANSITION_DEFAULT).to(openedState)
             .from(processState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+            .from(processState).take(TRANSITION_FAIL).to(failedState)
+            .from(processState).take(TRANSITION_CLOSE).to(closingState)
             .from(snapshottingState).take(TRANSITION_DEFAULT).to(openedState)
             .from(snapshottingState).take(TRANSITION_FAIL).to(failedState)
+            .from(snapshottingState).take(TRANSITION_CLOSE).to(closingState)
             .from(failedState).take(TRANSITION_CLOSE).to(closedState)
+            .from(failedState).take(TRANSITION_OPEN).to(openedState)
+            .from(failedState).take(TRANSITION_RECOVER).to(recoveringState)
             .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
             .from(closedState).take(TRANSITION_OPEN).to(openingState)
             .build());
@@ -69,7 +84,8 @@ public class StreamProcessorController implements Agent
     protected final StreamProcessor streamProcessor;
     protected final StreamProcessorContext streamProcessorContext;
 
-    protected final LogStreamReader logStreamReader;
+    protected final LogStreamReader sourceLogStreamReader;
+    protected final LogStreamReader targetLogStreamReader;
     protected final LogStreamWriter logStreamWriter;
 
     protected final SnapshotPolicy snapshotPolicy;
@@ -85,7 +101,8 @@ public class StreamProcessorController implements Agent
         this.streamProcessorContext = context;
         this.agentRunnerService = context.getAgentRunnerService();
         this.streamProcessor = context.getStreamProcessor();
-        this.logStreamReader = context.getLogStreamReader();
+        this.sourceLogStreamReader = context.getSourceLogStreamReader();
+        this.targetLogStreamReader = context.getTargetLogStreamReader();
         this.logStreamWriter = context.getLogStreamWriter();
         this.snapshotPolicy = context.getSnapshotPolicy();
         this.snapshotStorage = context.getSnapshotStorage();
@@ -177,17 +194,26 @@ public class StreamProcessorController implements Agent
         @Override
         public void work(Context context)
         {
-            logStreamReader.wrap(streamProcessorContext.getSourceStream());
-            logStreamWriter.wrap(streamProcessorContext.getTargetStream());
+            final LogStream targetStream = streamProcessorContext.getTargetStream();
 
-            streamProcessorContext.getTargetStream().registerFailureListener(targetLogStreamFailureListener);
+            try
+            {
+                targetLogStreamReader.wrap(targetStream);
+                logStreamWriter.wrap(targetStream);
+                sourceLogStreamReader.wrap(streamProcessorContext.getSourceStream());
 
-            // restore resource snapshot -> #23
+                targetStream.removeFailureListener(targetLogStreamFailureListener);
+                targetStream.registerFailureListener(targetLogStreamFailureListener);
 
-            streamProcessor.onOpen(streamProcessorContext);
+                context.take(TRANSITION_DEFAULT);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
 
-            context.take(TRANSITION_DEFAULT);
-            context.completeFuture();
+                context.take(TRANSITION_FAIL);
+                context.completeFutureExceptionally(e);
+            }
         }
     }
 
@@ -198,11 +224,11 @@ public class StreamProcessorController implements Agent
         {
             int workCount = 0;
 
-            if (logStreamReader.hasNext())
+            if (sourceLogStreamReader.hasNext())
             {
                 workCount = 1;
 
-                final LoggedEvent event = logStreamReader.next();
+                final LoggedEvent event = sourceLogStreamReader.next();
                 context.setEvent(event);
 
                 context.take(TRANSITION_PROCESS);
@@ -214,6 +240,9 @@ public class StreamProcessorController implements Agent
 
     private class ProcessState extends ComposedState<Context>
     {
+        private EventProcessor eventProcessor;
+        private long eventPosition;
+
         @Override
         protected List<Step<Context>> steps()
         {
@@ -223,8 +252,6 @@ public class StreamProcessorController implements Agent
                     writeEventStep,
                     updateStateStep);
         }
-
-        private EventProcessor eventProcessor;
 
         private FailSafeStep<Context> processEventStep = context ->
         {
@@ -236,13 +263,11 @@ public class StreamProcessorController implements Agent
 
         private Step<Context> writeEventStep = context ->
         {
-            logStreamWriter.producerId(streamProcessorContext.getId());
-            final long eventPosition = eventProcessor.writeEvent(logStreamWriter);
+            logStreamWriter
+                .producerId(streamProcessorContext.getId())
+                .sourceEvent(streamProcessorContext.getSourceStream().getId(), context.getEvent().getPosition());
 
-            if (eventPosition > 0)
-            {
-                context.setLastWrittenEventPosition(eventPosition);
-            }
+            eventPosition = eventProcessor.writeEvent(logStreamWriter);
             return eventPosition >= 0;
         };
 
@@ -251,6 +276,8 @@ public class StreamProcessorController implements Agent
             eventProcessor.updateState();
 
             streamProcessor.afterEvent();
+
+            context.setLastWrittenEventPosition(eventPosition);
 
             if (snapshotPolicy.apply(context.getEvent().getPosition()))
             {
@@ -275,17 +302,25 @@ public class StreamProcessorController implements Agent
 
             if (appenderPosition >= lastWrittenEventPosition)
             {
-                writeSnapshot(lastWrittenEventPosition);
+                final boolean successful = writeSnapshot(lastWrittenEventPosition);
+                if (successful)
+                {
+                    context.take(TRANSITION_DEFAULT);
+                }
+                else
+                {
+                    context.take(TRANSITION_FAIL);
+                }
 
-                context.take(TRANSITION_DEFAULT);
                 workCount += 1;
             }
 
             return workCount;
         }
 
-        protected void writeSnapshot(final long eventPosition)
+        protected boolean writeSnapshot(final long eventPosition)
         {
+            boolean successful = false;
             SnapshotWriter snapshotWriter = null;
             try
             {
@@ -293,15 +328,124 @@ public class StreamProcessorController implements Agent
 
                 snapshotWriter.writeSnapshot(streamProcessorContext.getStateResource());
                 snapshotWriter.commit();
+                successful = true;
             }
             catch (Exception e)
             {
-                // handle failure -> #23
                 e.printStackTrace();
 
                 if (snapshotWriter != null)
                 {
                     snapshotWriter.abort();
+                }
+            }
+            return successful;
+        }
+    }
+
+    private class RecoveringState implements TransitionState<Context>
+    {
+        @Override
+        public void work(Context context)
+        {
+            try
+            {
+                streamProcessorContext.getStateResource().reset();
+
+                recoverFromSnapshot();
+
+                context.take(TRANSITION_DEFAULT);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+
+                context.take(TRANSITION_FAIL);
+                context.completeFutureExceptionally(e);
+            }
+        }
+
+        private void recoverFromSnapshot() throws Exception
+        {
+            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
+
+            if (lastSnapshot != null)
+            {
+                // recover last snapshot
+                lastSnapshot.recoverFromSnapshot(streamProcessorContext.getStateResource());
+                lastSnapshot.validateAndClose();
+
+                // read the last event from snapshot
+                final boolean found = targetLogStreamReader.seek(lastSnapshot.getPosition());
+
+                if (found && targetLogStreamReader.hasNext())
+                {
+                    final LoggedEvent lastEventFromSnapshot = targetLogStreamReader.next();
+                    // resume the next position on source log stream to continue from
+                    sourceLogStreamReader.seek(lastEventFromSnapshot.getSourceEventPosition() + 1);
+                }
+                else
+                {
+                    throw new IllegalStateException("Cannot found event with the snapshot position in target log stream.");
+                }
+            }
+        }
+    }
+
+    private class ReprocessingState implements State<Context>
+    {
+        @Override
+        public int doWork(Context context)
+        {
+            if (targetLogStreamReader.hasNext())
+            {
+                final LoggedEvent targetEvent = targetLogStreamReader.next();
+                try
+                {
+                    processEvent(targetEvent);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    context.take(TRANSITION_FAIL);
+                    context.completeFutureExceptionally(e);
+                }
+            }
+            else
+            {
+                // all events are re-processed
+                streamProcessor.onOpen(streamProcessorContext);
+
+                context.take(TRANSITION_DEFAULT);
+                context.completeFuture();
+            }
+            return 1;
+        }
+
+        protected void processEvent(final LoggedEvent targetEvent)
+        {
+            // ignore events from other producers
+            if (targetEvent.getProducerId() == streamProcessorContext.getId())
+            {
+                final long sourceEventPosition = targetEvent.getSourceEventPosition();
+
+                // TODO seek the event in a more efficient way
+                final boolean found = sourceLogStreamReader.seek(sourceEventPosition);
+
+                if (found && sourceLogStreamReader.hasNext())
+                {
+                    final LoggedEvent sourceEvent = sourceLogStreamReader.next();
+
+                    // re-process the event from source stream
+                    final EventProcessor eventProcessor = streamProcessor.onEvent(sourceEvent);
+                    eventProcessor.processEvent();
+                    eventProcessor.updateState();
+                    streamProcessor.afterEvent();
+                }
+                else
+                {
+                    // source or target log is maybe corrupted
+                    throw new IllegalStateException("Cannot find source event of written event: " + targetEvent);
                 }
             }
         }
@@ -314,8 +458,9 @@ public class StreamProcessorController implements Agent
         {
             streamProcessor.onClose();
 
+            streamProcessorContext.getTargetStream().removeFailureListener(targetLogStreamFailureListener);
+
             context.take(TRANSITION_DEFAULT);
-            context.completeFuture();
         }
     }
 
@@ -326,6 +471,8 @@ public class StreamProcessorController implements Agent
         {
             if (isRunning.compareAndSet(true, false))
             {
+                context.completeFuture();
+
                 agentRunnerService.remove(StreamProcessorController.this);
             }
         }
@@ -357,9 +504,16 @@ public class StreamProcessorController implements Agent
         {
             stateMachineAgent.addCommand(context ->
             {
-                // recover stream processor -> #23
-                context.getFailedEventPosition();
-
+                final long failedEventPosition = context.getFailedEventPosition();
+                if (failedEventPosition > 0 && failedEventPosition <= context.getLastWrittenEventPosition())
+                {
+                    context.take(TRANSITION_RECOVER);
+                }
+                else
+                {
+                    // no recovery required if the log stream failed after all events of the processor are written
+                    context.take(TRANSITION_OPEN);
+                }
                 context.setFailedEventPosition(-1);
             });
         }
@@ -392,6 +546,15 @@ public class StreamProcessorController implements Agent
             if (future != null)
             {
                 future.complete(null);
+                future = null;
+            }
+        }
+
+        public void completeFutureExceptionally(Throwable e)
+        {
+            if (future != null)
+            {
+                future.completeExceptionally(e);
                 future = null;
             }
         }

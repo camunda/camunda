@@ -110,4 +110,13 @@ public class ComposedSnapshot implements SnapshotSupport
         }
     }
 
+    @Override
+    public void reset()
+    {
+        for (int i = 0; i < count; i++)
+        {
+            parts[i].reset();
+        }
+    }
+
 }

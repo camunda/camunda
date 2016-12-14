@@ -13,17 +13,21 @@
 package org.camunda.tngp.logstreams.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.readLogAndAssertEvents;
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.waitUntilFullyWritten;
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.logstreams.LogStreams;
+import org.camunda.tngp.logstreams.impl.LogStreamController;
+import org.camunda.tngp.logstreams.integration.util.ControllableFsLogStorage;
+import org.camunda.tngp.logstreams.integration.util.ControllableFsLogStreamBuilder;
+import org.camunda.tngp.logstreams.integration.util.Counter;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -51,19 +55,24 @@ public class StreamProcessorIntegrationTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    protected AgentRunnerService agentRunnerService;
+    private AgentRunnerService agentRunnerService;
 
     private LogStream sourceLogStream;
-
     private LogStream targetLogStream;
+
     private SnapshotStorage snapshotStorage;
+    private SerializableWrapper<Counter> resourceCounter;
+
+    private String logPath;
 
     @Before
     public void setup()
     {
         agentRunnerService = new SharedAgentRunnerService("test-%s", 1, new SimpleAgentRunnerFactory());
 
-        final String logPath = tempFolder.getRoot().getAbsolutePath();
+        resourceCounter = new SerializableWrapper<>(new Counter());
+
+        logPath = tempFolder.getRoot().getAbsolutePath();
 
         snapshotStorage = LogStreams.createFsSnapshotStore(logPath).build();
 
@@ -97,30 +106,14 @@ public class StreamProcessorIntegrationTest
     @Test
     public void shouldCopyEventsToTargetStream() throws InterruptedException, ExecutionException
     {
-        final StreamProcessor copyStreamProcessor = (LoggedEvent event) -> new EventProcessor()
-        {
-            @Override
-            public void processEvent()
-            {
-                // do nothing
-            }
-
-            @Override
-            public long writeEvent(LogStreamWriter writer)
-            {
-                return writer
-                        .key(event.getLongKey())
-                        .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
-                        .tryWrite();
-            }
-        };
-
         final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("copy-processor", 1, copyStreamProcessor)
+            .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
+            .resource(new SerializableWrapper<>(new Counter()))
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
             .snapshotPolicy(position -> false)
+            .snapshotStorage(snapshotStorage)
             .build();
 
         streamProcessorController.openAsync().get();
@@ -134,10 +127,8 @@ public class StreamProcessorIntegrationTest
     }
 
     @Test
-    public void shouldCreateSnapshotOfResource() throws FileNotFoundException, Exception
+    public void shouldWriteEventsToSourceStream() throws InterruptedException, ExecutionException
     {
-        final SerializableWrapper<Counter> resourceCounter = new SerializableWrapper<>(new Counter());
-
         final StreamProcessor streamProcessor = (LoggedEvent event) -> new EventProcessor()
         {
             @Override
@@ -151,17 +142,40 @@ public class StreamProcessorIntegrationTest
             public long writeEvent(LogStreamWriter writer)
             {
                 return writer
-                        .key(event.getLongKey())
+                        .key(event.getLongKey() + 1)
                         .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
                         .tryWrite();
             }
 
         };
 
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("increment-processor", 1, streamProcessor)
+            .resource(new SerializableWrapper<>(new Counter()))
+            .sourceStream(sourceLogStream)
+            .targetStream(sourceLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(position -> false)
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        streamProcessorController.openAsync().get();
+
+        // just write one initial event
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, 0);
+
+        waitUntilWrittenKey(sourceLogStream, WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldRecoverFromSnapshot() throws FileNotFoundException, Exception
+    {
         final AtomicBoolean isLastLogEntry = new AtomicBoolean(false);
 
         final StreamProcessorController streamProcessorController = LogStreams
-            .createStreamProcessor("processor", 1, streamProcessor)
+            .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
             .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
@@ -173,23 +187,274 @@ public class StreamProcessorIntegrationTest
         streamProcessorController.openAsync().get();
 
         writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
-        waitUntilFullyWritten(targetLogStream, WORK_COUNT);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
 
         isLastLogEntry.set(true);
 
         // write one more event to create the snapshot
         writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilFullyWritten(targetLogStream, WORK_COUNT + 1);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
 
         streamProcessorController.closeAsync().get();
 
-        // search for the snapshot file
-        final File[] files = tempFolder.getRoot().listFiles((dir, name) -> name.endsWith("snapshot"));
-        assertThat(files.length).isEqualTo(1);
+        // reset the resource manually to ensure that recovery happens
+        resourceCounter.getObject().reset();
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
 
-        // restore the resource from snapshot and verify it
-        resourceCounter.recoverFromSnapshot(new FileInputStream(files[0]));
+        streamProcessorController.openAsync().get();
+
+        // write one more event to verify that the processor resume on snapshot position
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT + 1);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 2);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 2);
+
+        streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldRecoverFromSnapshotAndReprocessEvents() throws FileNotFoundException, Exception
+    {
+        final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
+
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
+            .resource(resourceCounter)
+            .sourceStream(sourceLogStream)
+            .targetStream(targetLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT / 2);
+
+        isSnapshotPoint.set(true);
+
+        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+
+        // reset the resource manually to ensure that recovery happens
+        resourceCounter.getObject().reset();
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
+
+        streamProcessorController.openAsync().get();
+
+        // write one more event to verify that the processor resume on snapshot position
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
+
         assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
+
+        streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldRecoverWithoutSnapshot() throws FileNotFoundException, Exception
+    {
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
+            .resource(resourceCounter)
+            .sourceStream(sourceLogStream)
+            .targetStream(targetLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> false)
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+
+        // reset the resource manually to ensure that recovery happens
+        resourceCounter.getObject().reset();
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
+
+        streamProcessorController.openAsync().get();
+
+        // write one more event to verify that the processor resume on snapshot position
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT + 1);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
+
+        streamProcessorController.closeAsync().get();
+    }
+
+    @Test
+    public void shouldRecoverWithTwoProcessors() throws FileNotFoundException, Exception
+    {
+        final SerializableWrapper<Counter> resourceCounter2 = new SerializableWrapper<>(new Counter());
+
+        final AtomicBoolean isSnapshotPoint1 = new AtomicBoolean(false);
+        final AtomicBoolean isSnapshotPoint2 = new AtomicBoolean(false);
+
+        final StreamProcessorController streamProcessorController1 = LogStreams
+            .createStreamProcessor("processor-1", 1, new CopyStreamProcessor(resourceCounter))
+            .resource(resourceCounter)
+            .sourceStream(sourceLogStream)
+            .targetStream(targetLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> isSnapshotPoint1.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        final StreamProcessorController streamProcessorController2 = LogStreams
+            .createStreamProcessor("processor-2", 2, new CopyStreamProcessor(resourceCounter2))
+            .resource(resourceCounter2)
+            .sourceStream(sourceLogStream)
+            .targetStream(targetLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> isSnapshotPoint2.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
+
+        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
+        waitUntilWrittenEvents(targetLogStream, WORK_COUNT);
+
+        isSnapshotPoint1.set(true);
+
+        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
+        waitUntilWrittenEvents(targetLogStream, 2 * WORK_COUNT);
+
+        isSnapshotPoint2.set(true);
+
+        // write one more event to create the snapshot
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenEvents(targetLogStream, 2 * WORK_COUNT + 2);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
+        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(WORK_COUNT + 1);
+
+        CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
+
+        // reset the resource manually to ensure that recovery happens
+        resourceCounter.getObject().reset();
+        resourceCounter2.getObject().reset();
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
+        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(0);
+
+        CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
+
+        // write one more event to verify that the processors resume on snapshot position
+        writeLogEvents(sourceLogStream, 1, MSG_SIZE, WORK_COUNT + 1);
+        waitUntilWrittenEvents(targetLogStream, 2 * WORK_COUNT + 4);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT + 2);
+        assertThat(resourceCounter2.getObject().getCount()).isEqualTo(WORK_COUNT + 2);
+
+        CompletableFuture.allOf(streamProcessorController1.closeAsync(), streamProcessorController2.closeAsync()).get();
+    }
+
+    @Test
+    public void shouldRecoverAfterLogStreamFailure() throws InterruptedException, ExecutionException
+    {
+        final LogStream controllableTargetLogStream = new ControllableFsLogStreamBuilder("target-controllable", 3)
+                .logRootPath(tempFolder.getRoot().getAbsolutePath())
+                .deleteOnClose(true)
+                .logSegmentSize(1024 * 1024 * 16)
+                .agentRunnerService(agentRunnerService)
+                .build();
+
+        final ControllableFsLogStorage controllableTargetLogStorage = (ControllableFsLogStorage) controllableTargetLogStream.getContext().getLogStorage();
+        final LogStreamController targetLogStreamController = controllableTargetLogStream.getContext().getLogStreamController();
+
+        final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
+
+        final StreamProcessorController streamProcessorController = LogStreams
+            .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
+            .resource(resourceCounter)
+            .sourceStream(sourceLogStream)
+            .targetStream(controllableTargetLogStream)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
+            .snapshotStorage(snapshotStorage)
+            .build();
+
+        controllableTargetLogStream.open();
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
+        waitUntilWrittenKey(controllableTargetLogStream, WORK_COUNT / 2);
+
+        isSnapshotPoint.set(true);
+
+        writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
+        waitUntilWrittenKey(controllableTargetLogStream, (int) (WORK_COUNT * 0.75));
+
+        controllableTargetLogStorage.setFailure(true);
+
+        while (!streamProcessorController.isFailed())
+        {
+            // wait until the stream controller is in fail state
+        }
+
+        controllableTargetLogStorage.setFailure(false);
+
+        // reset the resource manually to ensure that recovery happens
+        resourceCounter.getObject().reset();
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
+
+        // notify the controller that the log storage is recovered
+        targetLogStreamController.recover();
+
+        // verify that the stream processor recover and resume processing
+        waitUntilWrittenKey(controllableTargetLogStream, WORK_COUNT);
+
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+        controllableTargetLogStream.close();
+    }
+
+    private class CopyStreamProcessor implements StreamProcessor
+    {
+        private final SerializableWrapper<Counter> resourceCounter;
+
+        CopyStreamProcessor(SerializableWrapper<Counter> resourceCounter)
+        {
+            this.resourceCounter = resourceCounter;
+        }
+
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            return new EventProcessor()
+            {
+                @Override
+                public void processEvent()
+                {
+                    final Counter counter = resourceCounter.getObject();
+                    counter.increment();
+                }
+
+                @Override
+                public long writeEvent(LogStreamWriter writer)
+                {
+                    return writer
+                            .key(event.getLongKey())
+                            .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+                            .tryWrite();
+                }
+
+            };
+        }
     }
 
 }

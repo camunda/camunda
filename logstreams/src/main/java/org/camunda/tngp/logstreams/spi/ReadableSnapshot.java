@@ -44,6 +44,7 @@ public interface ReadableSnapshot
      */
     default void recoverFromSnapshot(SnapshotSupport snapshotSupport) throws Exception
     {
+        snapshotSupport.reset();
         snapshotSupport.recoverFromSnapshot(getData());
     }
 

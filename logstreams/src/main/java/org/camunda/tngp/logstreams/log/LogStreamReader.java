@@ -43,12 +43,14 @@ public interface LogStreamReader extends Iterator<LoggedEvent>
     void wrap(LogStream log, long position);
 
     /**
-     * Seek to the given log position if exists.
+     * Seek to the given log position if exists. Otherwise, it seek to the next position after this.
      *
      * @param position
      *            the position in the log to seek to
+     *
+     * @return <code>true</code>, if the given position exists.
      */
-    void seek(long position);
+    boolean seek(long position);
 
     /**
      * Seek to the log position of the first event.

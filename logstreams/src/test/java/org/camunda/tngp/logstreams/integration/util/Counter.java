@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.logstreams.integration;
+package org.camunda.tngp.logstreams.integration.util;
 
 import java.io.Serializable;
 
@@ -30,6 +30,10 @@ public class Counter implements Serializable
         count += 1;
     }
 
+    public void reset()
+    {
+        count = 0;
+    }
 
     @Override
     public String toString()

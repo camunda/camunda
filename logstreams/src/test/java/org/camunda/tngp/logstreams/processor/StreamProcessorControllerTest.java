@@ -14,9 +14,11 @@ package org.camunda.tngp.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -66,7 +68,10 @@ public class StreamProcessorControllerTest
     private LogStream mockTargetLogStream;
 
     @Mock
-    private LogStreamReader mockLogStreamReader;
+    private LogStreamReader mockSourceLogStreamReader;
+
+    @Mock
+    private LogStreamReader mockTargetLogStreamReader;
 
     @Mock
     private LogStreamWriter mockLogStreamWriter;
@@ -87,7 +92,10 @@ public class StreamProcessorControllerTest
     private SnapshotSupport mockStateResource;
 
     @Mock
-    private LoggedEvent mockEvent;
+    private LoggedEvent mockSourceEvent;
+
+    @Mock
+    private LoggedEvent mockTargetEvent;
 
     private LogStreamFailureListener targetLogStreamFailureListener;
 
@@ -103,7 +111,8 @@ public class StreamProcessorControllerTest
         context.setStreamProcessor(mockStreamProcessor);
         context.setSourceStream(mockSourceLogStream);
         context.setTargetStream(mockTargetLogStream);
-        context.setLogStreamReader(mockLogStreamReader);
+        context.setSourceLogStreamReader(mockSourceLogStreamReader);
+        context.setTargetLogStreamReader(mockTargetLogStreamReader);
         context.setLogStreamWriter(mockLogStreamWriter);
         context.setSnapshotPolicy(mockSnapshotPolicy);
         context.setSnapshotStorage(mockSnapshotStorage);
@@ -112,6 +121,9 @@ public class StreamProcessorControllerTest
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
+
+        when(mockLogStreamWriter.producerId(anyInt())).thenReturn(mockLogStreamWriter);
+        when(mockLogStreamWriter.sourceEvent(anyInt(), anyLong())).thenReturn(mockLogStreamWriter);
 
         controller = new StreamProcessorController(context);
 
@@ -136,6 +148,15 @@ public class StreamProcessorControllerTest
 
         final CompletableFuture<Void> future = controller.openAsync();
 
+        // -> opening
+        controller.doWork();
+
+        assertThat(future).isNotCompleted();
+        assertThat(controller.isOpen()).isFalse();
+
+        // -> recovery
+        controller.doWork();
+        // -> re-processing
         controller.doWork();
 
         assertThat(future).isCompleted();
@@ -143,7 +164,8 @@ public class StreamProcessorControllerTest
 
         verify(mockAgentRunnerService).run(any(Agent.class));
 
-        verify(mockLogStreamReader).wrap(mockSourceLogStream);
+        verify(mockSourceLogStreamReader).wrap(mockSourceLogStream);
+        verify(mockTargetLogStreamReader).wrap(mockTargetLogStream);
         verify(mockLogStreamWriter).wrap(mockTargetLogStream);
         verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
     }
@@ -151,8 +173,7 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldNotOpenIfNotClosed()
     {
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         assertThat(controller.isOpen()).isTrue();
 
@@ -166,16 +187,15 @@ public class StreamProcessorControllerTest
 
         verify(mockAgentRunnerService, times(1)).run(any(Agent.class));
 
-        verify(mockLogStreamReader, times(1)).wrap(mockSourceLogStream);
+        verify(mockSourceLogStreamReader, times(1)).wrap(mockSourceLogStream);
         verify(mockLogStreamWriter, times(1)).wrap(mockTargetLogStream);
         verify(mockStreamProcessor, times(1)).onOpen(any(StreamProcessorContext.class));
     }
 
     @Test
-    public void shouldClose()
+    public void shouldCloseWhilePollEvents()
     {
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         assertThat(controller.isClosed()).isFalse();
 
@@ -195,6 +215,68 @@ public class StreamProcessorControllerTest
     }
 
     @Test
+    public void shouldCloseWhileProcessing()
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(false);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        assertThat(future).isCompleted();
+        assertThat(controller.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldCloseWhileSnapshotting()
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+        // -> snapshotting
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        assertThat(future).isCompleted();
+        assertThat(controller.isClosed()).isTrue();
+    }
+
+    @Test
     public void shouldNotCloseIfNotOpen()
     {
         assertThat(controller.isClosed()).isTrue();
@@ -211,32 +293,30 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldPollEventsWhenOpen()
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(false, true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(false, true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
         // -> open
         controller.doWork();
 
-        verify(mockLogStreamReader, times(2)).hasNext();
-        verify(mockLogStreamReader, times(1)).next();
+        verify(mockSourceLogStreamReader, times(2)).hasNext();
+        verify(mockSourceLogStreamReader, times(1)).next();
     }
 
     @Test
     public void shouldProcessPolledEvent()
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -248,7 +328,7 @@ public class StreamProcessorControllerTest
         final InOrder inOrder = inOrder(mockStreamProcessor, mockEventProcessor);
 
         inOrder.verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
-        inOrder.verify(mockStreamProcessor).onEvent(mockEvent);
+        inOrder.verify(mockStreamProcessor).onEvent(mockSourceEvent);
 
         inOrder.verify(mockEventProcessor).processEvent();
         inOrder.verify(mockEventProcessor).executeSideEffects();
@@ -261,14 +341,13 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldRetryExecuteSideEffectsIfFail()
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(false, true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -286,14 +365,13 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldRetryWriteEventIfFail()
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(-1L, 1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -309,16 +387,15 @@ public class StreamProcessorControllerTest
     }
 
     @Test
-    public void shouldAddStreamProcessorIdToWrittenEvent()
+    public void shouldAddProducerIdToWrittenEvent()
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -329,10 +406,32 @@ public class StreamProcessorControllerTest
     }
 
     @Test
+    public void shouldAddSourceEventToWrittenEvent()
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
+
+        when(mockSourceLogStream.getId()).thenReturn(3);
+        when(mockSourceEvent.getPosition()).thenReturn(4L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        verify(mockLogStreamWriter).sourceEvent(3, 4L);
+    }
+
+    @Test
     public void shouldCreateSnapshot() throws Exception
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
@@ -340,8 +439,7 @@ public class StreamProcessorControllerTest
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -360,8 +458,8 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldNotCreateSnapshotIfPolicyNotApplied() throws Exception
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
@@ -369,8 +467,7 @@ public class StreamProcessorControllerTest
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -387,8 +484,8 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldCreateSnapshotWhenLogAppenderWroteNewlyCreatedEvent() throws Exception
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
@@ -396,8 +493,7 @@ public class StreamProcessorControllerTest
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L, 2L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -410,7 +506,7 @@ public class StreamProcessorControllerTest
 
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockLogStreamReader, times(1)).hasNext();
+        verify(mockSourceLogStreamReader, times(1)).hasNext();
         verify(mockTargetLogStream, times(2)).getCurrentAppenderPosition();
 
         verify(mockSnapshotStorage, times(1)).createSnapshot(STREAM_PROCESSOR_NAME, 2L);
@@ -419,10 +515,36 @@ public class StreamProcessorControllerTest
     }
 
     @Test
-    public void shouldFailWhileSnapshotting() throws Exception
+    public void shouldFailLogStreamWhileProcessing() throws Exception
     {
-        when(mockLogStreamReader.hasNext()).thenReturn(true);
-        when(mockLogStreamReader.next()).thenReturn(mockEvent);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(-1L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        targetLogStreamFailureListener.onFailed(2L);
+
+        // -> failed
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+
+        verify(mockEventProcessor, never()).updateState();
+    }
+
+    @Test
+    public void shouldFailLogStreamWhileSnapshotting() throws Exception
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
 
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
@@ -430,8 +552,7 @@ public class StreamProcessorControllerTest
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
 
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -447,15 +568,14 @@ public class StreamProcessorControllerTest
 
         assertThat(controller.isFailed()).isTrue();
 
-        verify(mockLogStreamReader, times(1)).hasNext();
+        verify(mockSourceLogStreamReader, times(1)).hasNext();
         verify(mockSnapshotStorage, never()).createSnapshot(STREAM_PROCESSOR_NAME, 2L);
     }
 
     @Test
-    public void shouldFailWhilePollEvents() throws Exception
+    public void shouldFailLogStreamWhilePollEvents() throws Exception
     {
-        controller.openAsync();
-        controller.doWork();
+        open();
 
         // -> open
         controller.doWork();
@@ -467,7 +587,264 @@ public class StreamProcessorControllerTest
 
         assertThat(controller.isFailed()).isTrue();
 
-        verify(mockLogStreamReader, times(1)).hasNext();
+        verify(mockSourceLogStreamReader, times(1)).hasNext();
+    }
+
+    @Test
+    public void shouldRecoverAfterFailLogStream() throws Exception
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        targetLogStreamFailureListener.onFailed(2L);
+        // -> failed
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+
+        targetLogStreamFailureListener.onRecovered();
+        // -> recover
+        controller.doWork();
+        // -> re-process - no more events
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockSourceLogStreamReader, times(1)).hasNext();
+        verify(mockSourceLogStreamReader, never()).seek(anyLong());
+
+        verify(mockSnapshotStorage, times(2)).getLastSnapshot(STREAM_PROCESSOR_NAME);
+        verify(mockStreamProcessor, times(2)).onOpen(any(StreamProcessorContext.class));
+
+        verify(mockStateResource, times(2)).reset();
+    }
+
+    @Test
+    public void shouldNotRecoverIfFailedEventPositionIsAfterWrittenEventPosition() throws Exception
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        targetLogStreamFailureListener.onFailed(3L);
+        // -> failed
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+
+        targetLogStreamFailureListener.onRecovered();
+        // -> open
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockSourceLogStreamReader, times(2)).hasNext();
+        verify(mockSnapshotStorage, times(1)).getLastSnapshot(STREAM_PROCESSOR_NAME);
+        verify(mockStreamProcessor, times(1)).onOpen(any(StreamProcessorContext.class));
+
+        verify(mockStateResource, times(1)).reset();
+    }
+
+    @Test
+    public void shouldRegisterFailureListener() throws Exception
+    {
+        open();
+
+        controller.closeAsync();
+        controller.doWork();
+
+        verify(mockTargetLogStream, times(1)).registerFailureListener(targetLogStreamFailureListener);
+        verify(mockTargetLogStream, times(2)).removeFailureListener(targetLogStreamFailureListener);
+    }
+
+    @Test
+    public void shouldRecoverFromSnapshot() throws Exception
+    {
+        when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
+        when(mockReadableSnapshot.getPosition()).thenReturn(5L);
+
+        when(mockTargetLogStreamReader.seek(5L)).thenReturn(true);
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        open();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockSnapshotStorage).getLastSnapshot(STREAM_PROCESSOR_NAME);
+
+        verify(mockReadableSnapshot).recoverFromSnapshot(mockStateResource);
+        verify(mockReadableSnapshot).validateAndClose();
+
+        verify(mockTargetLogStreamReader).seek(5L);
+        verify(mockTargetLogStreamReader, times(2)).hasNext();
+        verify(mockTargetLogStreamReader, times(1)).next();
+
+        verify(mockSourceLogStreamReader).seek(4L);
+    }
+
+    @Test
+    public void shouldReprocessEventsOnRecovery() throws Exception
+    {
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        when(mockSourceLogStreamReader.seek(3L)).thenReturn(true);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        open();
+        // -> recovery - no more events
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockSnapshotStorage).getLastSnapshot(STREAM_PROCESSOR_NAME);
+        verify(mockTargetLogStreamReader, never()).seek(anyLong());
+
+        verify(mockTargetLogStreamReader, times(2)).hasNext();
+        verify(mockTargetLogStreamReader, times(1)).next();
+
+        verify(mockSourceLogStreamReader).seek(3L);
+
+        final InOrder inOrder = inOrder(mockStreamProcessor, mockEventProcessor);
+
+        inOrder.verify(mockStreamProcessor).onEvent(mockSourceEvent);
+        inOrder.verify(mockEventProcessor).processEvent();
+        inOrder.verify(mockEventProcessor).updateState();
+        inOrder.verify(mockStreamProcessor).afterEvent();
+
+        inOrder.verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
+
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldIgnoreEventsFromOtherProducerOnRecovery() throws Exception
+    {
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(99, STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(4L);
+
+        when(mockSourceLogStreamReader.seek(anyLong())).thenReturn(true);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        open();
+        // -> recovery - re-process event
+        controller.doWork();
+        // -> recovery - no more events
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockTargetLogStreamReader, times(3)).hasNext();
+        verify(mockTargetLogStreamReader, times(2)).next();
+
+        verify(mockStreamProcessor, times(1)).onEvent(mockSourceEvent);
+        verify(mockEventProcessor, times(1)).processEvent();
+        verify(mockEventProcessor, times(1)).updateState();
+        verify(mockStreamProcessor, times(1)).afterEvent();
+        verify(mockStreamProcessor, times(1)).onOpen(any(StreamProcessorContext.class));
+    }
+
+    @Test
+    public void shouldFailToRecoverFromSnapshot() throws Exception
+    {
+        when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
+
+        doThrow(new RuntimeException("expected excetion")).when(mockReadableSnapshot).validateAndClose();
+
+        final CompletableFuture<Void> future = controller.openAsync();
+        // -> opening
+        controller.doWork();
+        // -> recover
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+
+        assertThat(future).isCompletedExceptionally();
+    }
+
+    @Test
+    public void shouldFailToRecoverIfSouceEventNotFound() throws Exception
+    {
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        when(mockSourceLogStreamReader.seek(3L)).thenReturn(false);
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(false);
+
+        open();
+
+        assertThat(controller.isFailed()).isTrue();
+    }
+
+
+    @Test
+    public void shouldFailToCreateSnapshot() throws Exception
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
+
+        doThrow(new RuntimeException("expected exception")).when(mockSnapshotWriter).commit();
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+        // -> snapshotting
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+    }
+
+    protected void open()
+    {
+        controller.openAsync();
+        // -> opening
+        controller.doWork();
+        // -> recovery
+        controller.doWork();
+        // -> re-processing
+        controller.doWork();
     }
 
 }

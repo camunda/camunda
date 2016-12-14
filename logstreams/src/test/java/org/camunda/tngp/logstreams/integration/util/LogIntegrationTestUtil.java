@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.logstreams.integration;
+package org.camunda.tngp.logstreams.integration.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,19 +48,35 @@ public class LogIntegrationTestUtil
         }
     }
 
-    public static void waitUntilFullyWritten(final LogStream log, final int workCount)
+    public static void waitUntilWrittenKey(final LogStream log, final int key)
     {
         final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log);
 
         logReader.seekToLastEvent();
 
         long entryKey = 0;
-        while (entryKey < workCount - 1)
+        while (entryKey < key - 1)
         {
             if (logReader.hasNext())
             {
                 final LoggedEvent nextEntry = logReader.next();
                 entryKey = nextEntry.getLongKey();
+            }
+        }
+    }
+
+    public static void waitUntilWrittenEvents(final LogStream log, final int eventCount)
+    {
+        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log);
+
+        long count = 0;
+        while (count < eventCount)
+        {
+            if (logReader.hasNext())
+            {
+                logReader.next();
+
+                count += 1;
             }
         }
     }

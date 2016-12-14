@@ -1,7 +1,7 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.readLogAndAssertEvents;
-import static org.camunda.tngp.logstreams.integration.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 
 import java.util.concurrent.ExecutionException;
 

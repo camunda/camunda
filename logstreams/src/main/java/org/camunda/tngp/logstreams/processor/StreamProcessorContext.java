@@ -18,7 +18,8 @@ public class StreamProcessorContext
     protected LogStream sourceStream;
     protected LogStream targetStream;
 
-    protected LogStreamReader logStreamReader;
+    protected LogStreamReader sourceLogStreamReader;
+    protected LogStreamReader targetLogStreamReader;
     protected LogStreamWriter logStreamWriter;
 
     protected SnapshotPolicy snapshotPolicy;
@@ -87,14 +88,14 @@ public class StreamProcessorContext
         this.agentRunnerService = agentRunnerService;
     }
 
-    public void setLogStreamReader(LogStreamReader logStreamReader)
+    public void setSourceLogStreamReader(LogStreamReader sourceLogStreamReader)
     {
-        this.logStreamReader = logStreamReader;
+        this.sourceLogStreamReader = sourceLogStreamReader;
     }
 
-    public LogStreamReader getLogStreamReader()
+    public LogStreamReader getSourceLogStreamReader()
     {
-        return logStreamReader;
+        return sourceLogStreamReader;
     }
 
     public LogStreamWriter getLogStreamWriter()
@@ -135,6 +136,16 @@ public class StreamProcessorContext
     public void setStateResource(SnapshotSupport stateResource)
     {
         this.stateResource = stateResource;
+    }
+
+    public LogStreamReader getTargetLogStreamReader()
+    {
+        return targetLogStreamReader;
+    }
+
+    public void setTargetLogStreamReader(LogStreamReader targetLogStreamReader)
+    {
+        this.targetLogStreamReader = targetLogStreamReader;
     }
 
 }
