@@ -40,6 +40,13 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer>
         return hasBytes(expected, 0);
     }
 
+    public BufferAssert hasBytes(DirectBuffer buffer, int offset, int length)
+    {
+        final byte[] bytes = new byte[length];
+        buffer.getBytes(0, bytes);
+        return hasBytes(bytes);
+    }
+
     public BufferAssert hasCapacity(int expectedCapacity)
     {
         isNotNull();
