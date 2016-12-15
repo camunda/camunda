@@ -11,7 +11,6 @@ public class JsonPathQuery
 
     protected MsgPackFilter[] filters;
     protected MsgPackFilterContext filterInstances = new MsgPackFilterContext(MAX_DEPTH, MAX_FILTER_CONTEXT_LENGTH);
-    protected int size;
 
     protected int invalidPosition;
     protected String errorMessage;
