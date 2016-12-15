@@ -1,7 +1,9 @@
 import './styles.scss';
 import {Main, reducer} from './main';
 import {runUpdate, createEventsBus, pipe, jsx, ACTION_EVENT_NAME} from './view-utils';
+import {getRouter} from 'router';
 
+const router = getRouter();
 const template = <Main />;
 const eventsBus = createEventsBus();
 const updateComponent = runUpdate.bind(
@@ -39,3 +41,5 @@ updateComponent(store.getState()); // First update
 document.addEventListener(ACTION_EVENT_NAME, ({reduxAction}) => {
   store.dispatch(reduxAction);
 });
+
+router.onUrlChange();

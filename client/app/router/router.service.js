@@ -18,24 +18,27 @@ function createNewRouter() {
     addRoutes,
     goTo,
     getUrl,
-    getRouteReducer
+    getRouteReducer,
+    onUrlChange
   };
 
-  window.onpopstate = () => {
+  window.onpopstate = onUrlChange;
+
+  return router;
+
+  function onUrlChange() {
     const path = $document.location.pathname + $document.location.search;
 
     for (let {test, name} of routes) {
       const params = test(path);
 
-      if (!params) {
+      if (params) {
         dispatchAction(createRouteAction(name, params));
 
         break;
       }
     }
-  };
-
-  return router;
+  }
 
   function addRoutes(...newRoutes) {
     routes = routes.concat(
