@@ -60,12 +60,22 @@ function assertAllChildrenAreCase(children) {
   return children.every(({predicate}) => typeof predicate === 'function');
 }
 
-export function Case({predicate, isDefault = false, children}) {
+export function Case({predicate, children}) {
   const component = (node, eventsBus) => {
     return addChildren(node, eventsBus, children);
   };
 
-  component.predicate = isDefault ? truePredicate() : predicate;
+  component.predicate = predicate;
+
+  return component;
+}
+
+export function Default({children}) {
+  const component = (node, eventsBus) => {
+    return addChildren(node, eventsBus, children);
+  };
+
+  component.predicate = truePredicate;
 
   return component;
 }
