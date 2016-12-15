@@ -27,7 +27,7 @@ function createStore(reducer, callback) {
 const store = createStore(reducer, () => {
   setTimeout(
     pipe(
-      store.getState(),
+      store.getState,
       updateComponent
     ),
     0

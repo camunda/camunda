@@ -2,15 +2,14 @@ import {includes} from './includes';
 import {addChildren} from './jsx';
 import {runUpdate} from './runUpdate';
 import {DESTROY_EVENT} from './events';
+import {$document} from './dom';
 
-export function List({key, children}) {
-  return (templateNode, eventsBus) => {
+export function List({onlyChild = false, key, children}) {
+  return (parent, eventsBus) => {
     let nodes = [];
-    let parent = templateNode.parentNode;
-    const startMarker = document.createComment('LIST START');
+    const startMarker = $document.createComment('LIST START');
 
-    parent.insertBefore(startMarker, templateNode);
-    parent.removeChild(templateNode);
+    parent.appendChild(startMarker);
 
     return (values) => {
       const valuesWithKey = values.map(
@@ -23,7 +22,8 @@ export function List({key, children}) {
         startMarker,
         nodes,
         valuesWithKey,
-        getNewNode.bind(null, templateNode, eventsBus, children)
+        getNewNode.bind(null, eventsBus, children),
+        onlyChild ? parent : null
       );
     };
   };
@@ -53,16 +53,16 @@ function wrapWithKey(keyProperty, value, index) {
   };
 }
 
-function getNewNode(templateNode, eventsBus, children) {
-  const node = templateNode.cloneNode(true);
-  const updates = addChildren(node, eventsBus, children);
+function getNewNode(eventsBus, children) {
+  const node = document.createDocumentFragment();
+  const updates = addChildren(node, eventsBus, children, true);
   const update = runUpdate.bind(
     null,
     updates
   );
 
   return {
-    node,
+    children: Array.prototype.slice.call(node.children),
     update,
     fireEvent: fireEvent.bind(null, updates)
   };
@@ -75,73 +75,88 @@ function fireEvent(updates, name, data) {
     });
 }
 
-function render(startMarker, nodes, valuesWithKey, getNewNode) {
-  removeNodes(nodes);
+function render(startMarker, nodes, valuesWithKey, getNewNode, parent) {
+  if (nodes.length) {
+    removeNodes(nodes, parent);
+  }
 
-  return insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode);
+  if (valuesWithKey.length > 0) {
+    return insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode, parent);
+  } else {
+    fireDestroyEventForNotUsed(nodes);
+
+    return [];
+  }
 }
 
-function removeNodes(nodes) {
-  nodes.forEach(({node}) => node.parentNode.removeChild(node));
+function removeNodes(nodes, parent) {
+  if (!parent) {
+    nodes.forEach(({node}) => node.parentNode.removeChild(node));
+  } else {
+    parent.innerHTML = '';
+  }
 }
 
-function insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode) {
-  const {updated, notUsed} = splitNodes(nodes, valuesWithKey);
-  const startValue = {
-    nodes: [],
-    previous: startMarker
-  };
+function insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode, parent) {
+  const notUsed = splitNodes(nodes, valuesWithKey);
 
-  const {nodes: newNodes} = valuesWithKey.reduce(({nodes, previous}, {key, value}) => {
-    const {node, update, ...rest} = getNextNode(key);
+  const fragment = document.createDocumentFragment();
 
-    insertAfter(node, previous);
+  const newNodes = valuesWithKey.map(({node: updatedNode, key, value}) => {
+    const {children, update, ...rest} = updatedNode || getNextNode();
 
-    update(value);
-
-    nodes.push({
-      ...rest,
-      node,
-      update,
-      key
+    children.forEach(node => {
+      fragment.appendChild(node);
     });
 
     return {
-      nodes,
-      previous: node
+      ...rest,
+      children,
+      update,
+      value,
+      key
     };
-  }, startValue);
+  });
+
+  if (parent) {
+    parent.appendChild(fragment);
+  } else {
+    insertAfter(fragment, startMarker);
+  }
+
+  newNodes.forEach(({update, value}) => {
+    update(value);
+  });
 
   fireDestroyEventForNotUsed(notUsed);
 
   return newNodes;
 
-  function getNextNode(key) {
-    return updated[key] || notUsed.shift() || getNewNode();
+  function getNextNode() {
+    return notUsed.shift() || getNewNode();
   }
 }
 
 function fireDestroyEventForNotUsed(notUsed) {
-  notUsed.forEach(({fireEvent}) => fireEvent(DESTROY_EVENT))
+  notUsed.forEach(({fireEvent}) => fireEvent(DESTROY_EVENT, {}))
 }
 
 function splitNodes(nodes, valuesWithKey) {
-  const startValue = {
-    updated: {},
-    notUsed: []
-  };
-  const valuesKeys = valuesWithKey.map(({key}) => key);
+  const nodesByKey = nodes.reduce((nodesByKey, node) => {
+    nodesByKey[node.key] = node;
 
-  return nodes
-    .reduce(({updated, notUsed}, nodeEntry) => {
-      if (nodeEntry.key && includes(valuesKeys, nodeEntry.key)) {
-        updated[nodeEntry.key] = nodeEntry;
-      } else {
-        notUsed.push(nodeEntry);
-      }
+    return nodesByKey;
+  }, {});
 
-      return {updated, notUsed};
-    }, startValue);
+  valuesWithKey
+    .forEach(valueWithKey => {
+      valueWithKey.node = nodesByKey[valueWithKey.key];
+      delete nodesByKey[valueWithKey.key];
+    });
+
+  return Object
+    .keys(nodesByKey)
+    .map(key => nodesByKey[key]);
 }
 
 function insertAfter(node, target) {

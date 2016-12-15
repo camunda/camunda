@@ -10,6 +10,7 @@ module.exports = {
     vendor: ['bpmn-js', 'lodash.isequal']
   },
   output: {
+    publicPath: '/',
     filename: '[name].[hash].js',
     path: path.join(__dirname, 'dist')
   },
@@ -67,6 +68,7 @@ module.exports = {
     contentBase: './dist',
     port: 9000,
     inline: true,
-    open: true
+    open: true,
+    historyApiFallback: true
   }
 };

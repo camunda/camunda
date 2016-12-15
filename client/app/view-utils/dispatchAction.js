@@ -1,3 +1,5 @@
+import {$document} from './dom';
+
 export const ACTION_EVENT_NAME = 'ACTION_EVENT';
 
 export function dispatchAction(action) {
@@ -5,5 +7,5 @@ export function dispatchAction(action) {
 
   actionEvent.reduxAction = action;
 
-  document.dispatchEvent(actionEvent);
+  $document.dispatchEvent(actionEvent);
 }

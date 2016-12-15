@@ -45,14 +45,14 @@ function findChild(children, state) {
 function replaceChild(node, update, eventsBus, child) {
   removeChild(node, update);
 
-  return addChild(node, eventsBus, child);
+  return addChild(node, eventsBus, child, true);
 }
 
-function removeChild(node, {eventBus} = {}) {
+function removeChild(node, {eventsBus} = {}) {
   node.innerHTML = '';
 
-  if (eventBus) {
-    eventBus.fireEvent(DESTROY_EVENT);
+  if (eventsBus) {
+    eventsBus.fireEvent(DESTROY_EVENT, {});
   }
 }
 

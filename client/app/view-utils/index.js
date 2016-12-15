@@ -13,3 +13,5 @@ export {runUpdate} from './runUpdate';
 export {createEventsBus, ALL_EVENTS, DESTROY_EVENT} from './events';
 export {Match, Case} from './match';
 export {Text} from './text';
+export {$document, $window} from './dom';
+export {Children} from './children';

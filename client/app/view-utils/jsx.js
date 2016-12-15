@@ -1,4 +1,5 @@
 import {createEventsBus} from './events';
+import {$document} from './dom';
 
 export function jsx(element, attributes, ...children) {
   if (typeof element === 'function') {
@@ -10,14 +11,14 @@ export function jsx(element, attributes, ...children) {
 
 function handleComponent(component, attributes, children) {
   return component({
-    ...attributes,
-    children
+    children,
+    ...attributes
   });
 }
 
 function handleHtml(element, attributes, children) {
   return (node, eventsBus) => {
-    const elementNode = document.createElement(element);
+    const elementNode = $document.createElement(element);
 
     node.appendChild(elementNode);
 
@@ -62,7 +63,7 @@ export function addChildren(elementNode, eventsBus, children) {
 export function addChild(elementNode, eventsBus, child) {
   if (typeof child === 'string') {
     elementNode.appendChild(
-      document.createTextNode(child)
+      $document.createTextNode(child)
     );
 
     return [];
