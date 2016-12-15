@@ -15,10 +15,10 @@ package org.camunda.tngp.util.state;
 public interface TransitionState<C extends StateMachineContext> extends State<C>
 {
 
-    void work(C context);
+    void work(C context) throws Exception;
 
     @Override
-    default int doWork(C context)
+    default int doWork(C context) throws Exception
     {
         work(context);
         return 1;

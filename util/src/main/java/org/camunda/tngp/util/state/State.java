@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.util.state;
 
+import org.camunda.tngp.util.LangUtil;
+
 public interface State<C extends StateMachineContext>
 {
     /**
@@ -20,11 +22,16 @@ public interface State<C extends StateMachineContext>
      *
      * @return the workload
      */
-    int doWork(C context);
+    int doWork(C context) throws Exception;
 
     default boolean isInterruptable()
     {
         return true;
+    }
+
+    default void onFailure(C context, Exception e)
+    {
+        LangUtil.rethrowUnchecked(e);
     }
 
     default void onExit()

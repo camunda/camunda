@@ -10,17 +10,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.util.state;
+package org.camunda.tngp.util;
 
-public interface WaitState<C extends StateMachineContext> extends State<C>
+public class LangUtil
 {
-    void work(C context) throws Exception;
 
-    @Override
-    default int doWork(C context) throws Exception
+    public static void rethrowUnchecked(final Throwable ex)
     {
-        work(context);
-        return 0;
+        LangUtil.<RuntimeException> rethrow(ex);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void rethrow(final Throwable t) throws T
+    {
+        throw (T) t;
     }
 
 }

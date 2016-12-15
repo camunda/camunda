@@ -101,7 +101,20 @@ public class StateMachine<C extends StateMachineContext>
      */
     public int doWork()
     {
-        return currentState.doWork(context);
+        int workCount = 0;
+        try
+        {
+            workCount = currentState.doWork(context);
+        }
+        catch (NoSuchTransitionException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            currentState.onFailure(context, e);
+        }
+        return workCount;
     }
 
     /**

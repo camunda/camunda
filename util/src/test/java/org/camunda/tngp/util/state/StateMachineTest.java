@@ -13,6 +13,7 @@
 package org.camunda.tngp.util.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.List;
@@ -76,6 +77,39 @@ public class StateMachineTest
         {
             return Arrays.asList(step1, step2, step3);
         }
+    };
+
+    private final State<CustomStateMachineContext> i = new State<CustomStateMachineContext>()
+    {
+
+        @Override
+        public int doWork(CustomStateMachineContext context) throws Exception
+        {
+            throw new RuntimeException("expected");
+        }
+
+        public void onFailure(CustomStateMachineContext context, Exception e)
+        {
+            context.setData("fail");
+        };
+    };
+
+    private final State<CustomStateMachineContext> j = new State<CustomStateMachineContext>()
+    {
+
+        @Override
+        public int doWork(CustomStateMachineContext context) throws Exception
+        {
+            // try to take not existing transition
+            context.take(99);
+
+            return 1;
+        }
+
+        public void onFailure(CustomStateMachineContext context, Exception e)
+        {
+            fail("should not handle missing transition failure");
+        };
     };
 
     private class CustomStateMachineContext extends SimpleStateMachineContext
@@ -218,6 +252,31 @@ public class StateMachineTest
         stateMachine.doWork();
 
         assertThat(stateMachine.getContext().getData()).isEqualTo("step3");
+    }
+
+    @Test
+    public void shouldHandleFailure()
+    {
+        final StateMachine<CustomStateMachineContext> stateMachine = StateMachine. <CustomStateMachineContext> builder(s -> new CustomStateMachineContext(s))
+                .initialState(i)
+                .build();
+
+        // throws exception
+        stateMachine.doWork();
+
+        assertThat(stateMachine.getContext().getData()).isEqualTo("fail");
+    }
+
+    @Test
+    public void shouldNotHandleMissingTransitionFailure()
+    {
+        final StateMachine<CustomStateMachineContext> stateMachine = StateMachine. <CustomStateMachineContext> builder(s -> new CustomStateMachineContext(s))
+                .initialState(j)
+                .build();
+
+        thrown.expect(NoSuchTransitionException.class);
+
+        stateMachine.doWork();
     }
 
 }
