@@ -18,9 +18,9 @@ public class JsonGenerator
 
     public void generate(OutputStream outStream) throws Exception
     {
-        OutputStreamWriter outWriter = new OutputStreamWriter(outStream, StandardCharsets.UTF_8);
+        final OutputStreamWriter outWriter = new OutputStreamWriter(outStream, StandardCharsets.UTF_8);
 
-        int numLeafElements = (int) Math.pow(numKeysPerLevel, maxLevel + 1);
+        final int numLeafElements = (int) Math.pow(numKeysPerLevel, maxLevel + 1);
 
         int currentLevel = 0;
         outWriter.write("{");
@@ -28,7 +28,7 @@ public class JsonGenerator
         {
             while (currentLevel < maxLevel)
             {
-                int offsetOnLevel = offsetOnLevel(i, currentLevel, maxLevel, numKeysPerLevel);
+                final int offsetOnLevel = offsetOnLevel(i, currentLevel, maxLevel, numKeysPerLevel);
                 if (offsetOnLevel > 0)
                 {
                     outWriter.append(",");
@@ -42,7 +42,7 @@ public class JsonGenerator
                 currentLevel++;
             }
 
-            int offsetOnLevel = offsetOnLevel(i, currentLevel, maxLevel, numKeysPerLevel);
+            final int offsetOnLevel = offsetOnLevel(i, currentLevel, maxLevel, numKeysPerLevel);
 
             outWriter.write("\"");
             outWriter.write((char) (offsetOnLevel + 65));
@@ -75,8 +75,8 @@ public class JsonGenerator
 
     protected static int offsetOnLevel(int index, int level, int maxLevel, int numKeysPerLevel)
     {
-        int stepSize = (int) Math.pow(numKeysPerLevel, maxLevel - level);
-        int parentStepSize = stepSize * numKeysPerLevel;
+        final int stepSize = (int) Math.pow(numKeysPerLevel, maxLevel - level);
+        final int parentStepSize = stepSize * numKeysPerLevel;
         return (index % parentStepSize) / stepSize;
     }
 

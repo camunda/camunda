@@ -26,25 +26,25 @@ public class JsonConversionMsgPackJsonPathProcessor implements JsonPathProcessor
     @Override
     public String evaluateJsonPath(byte[] json, String jsonPath) throws Exception
     {
-        InputStream jsonStream = new ByteArrayInputStream(json);
-        ByteArrayOutputStream msgPackStream = new ByteArrayOutputStream();
+        final InputStream jsonStream = new ByteArrayInputStream(json);
+        final ByteArrayOutputStream msgPackStream = new ByteArrayOutputStream();
         documentConverter.convertToMsgPack(jsonStream, msgPackStream);
 
-        byte[] msgPack = msgPackStream.toByteArray();
+        final byte[] msgPack = msgPackStream.toByteArray();
 
         msgPackBuffer.wrap(msgPack);
 
-        JsonPathQuery query = queryCompiler.compile(jsonPath);
+        final JsonPathQuery query = queryCompiler.compile(jsonPath);
         queryExecutor.init(query.getFilters(), query.getFilterInstances());
         traverser.wrap(msgPackBuffer, 0, msgPackBuffer.capacity());
         traverser.traverse(queryExecutor);
         queryExecutor.moveToResult(0);
 
-        int resultLength = queryExecutor.currentResultLength();
-        byte[] result = new byte[resultLength];
+        final int resultLength = queryExecutor.currentResultLength();
+        final byte[] result = new byte[resultLength];
 
         System.arraycopy(msgPack, queryExecutor.currentResultPosition(), result, 0, resultLength);
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(result);
+        final MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(result);
 
         return Integer.toString(unpacker.unpackInt());
     }

@@ -19,19 +19,18 @@ public class MsgPackJaywayJsonPathProcessor implements JsonPathProcessor
 
     public MsgPackJaywayJsonPathProcessor()
     {
-        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+        final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
         jacksonConfig = Configuration.defaultConfiguration()
                 .mappingProvider(new JacksonMappingProvider(objectMapper))
-                .jsonProvider(new CustomJacksonJsonProvider(objectMapper))
-                ;
+                .jsonProvider(new CustomJacksonJsonProvider(objectMapper));
     }
 
     @Override
     public String evaluateJsonPath(byte[] msgPack, String jsonPath) throws Exception
     {
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(msgPack);
-        JsonPath query = JsonPath.compile(jsonPath);
-        Object result = query.read(inputStream, jacksonConfig);
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(msgPack);
+        final JsonPath query = JsonPath.compile(jsonPath);
+        final Object result = query.read(inputStream, jacksonConfig);
         return result.toString();
     }
 
@@ -48,7 +47,8 @@ public class MsgPackJaywayJsonPathProcessor implements JsonPathProcessor
             try
             {
                 return objectReader.readValue(jsonStream);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 throw new InvalidJsonException(e);
             }

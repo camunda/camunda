@@ -19,13 +19,13 @@ public class JsonBenchmark
     }
 
     protected static final JsonPathProcessor[] JSON_PATH_JSON_PROCESSORS = new JsonPathProcessor[]{
-            new JaywayJsonPathProcessor(),
-            new JsonConversionMsgPackJsonPathProcessor(),
+        new JaywayJsonPathProcessor(),
+        new JsonConversionMsgPackJsonPathProcessor(),
     };
 
     protected static final JsonPathProcessor[] JSON_PATH_MSGPACK_PROCESSORS = new JsonPathProcessor[]{
-            new MsgPackJaywayJsonPathProcessor(),
-            new MsgPackJsonPathProcessor(),
+        new MsgPackJaywayJsonPathProcessor(),
+        new MsgPackJsonPathProcessor(),
     };
 
     protected static DocumentConverter converter = JacksonDocumentConverter.newDefaultConverter();
@@ -35,30 +35,30 @@ public class JsonBenchmark
 //        int levelsOfNesting = 5;
 //        int numValuesPerLevel = 26; // cannot be more than 26 to avoid invalid characters :)
 
-        int levelsOfNesting = 6;
-        int numValuesPerLevel = 10;
+        final int levelsOfNesting = 6;
+        final int numValuesPerLevel = 10;
 
 
-        JsonGenerator generator = new JsonGenerator(levelsOfNesting - 1, numValuesPerLevel);
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final JsonGenerator generator = new JsonGenerator(levelsOfNesting - 1, numValuesPerLevel);
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         generator.generate(outStream);
 
-        byte[] json = outStream.toByteArray();
+        final byte[] json = outStream.toByteArray();
         System.out.println("Size: " + json.length);
-        String jsonPathExpression = generateJsonPathExpression(levelsOfNesting, numValuesPerLevel);
+        final String jsonPathExpression = generateJsonPathExpression(levelsOfNesting, numValuesPerLevel);
 
 //        System.out.println(new String(json, StandardCharsets.UTF_8));
         System.out.println(jsonPathExpression);
 
 
-        long[] jsonBasedResults = runBenchmark(json, jsonPathExpression, JSON_PATH_JSON_PROCESSORS);
+        final long[] jsonBasedResults = runBenchmark(json, jsonPathExpression, JSON_PATH_JSON_PROCESSORS);
 
 
-        ByteArrayOutputStream msgPackOutStream = new ByteArrayOutputStream();
+        final ByteArrayOutputStream msgPackOutStream = new ByteArrayOutputStream();
         converter.convertToMsgPack(new ByteArrayInputStream(json), msgPackOutStream);
-        byte[] msgPack = msgPackOutStream.toByteArray();
+        final byte[] msgPack = msgPackOutStream.toByteArray();
 
-        long[] msgPackBasedResults = runBenchmark(msgPack, jsonPathExpression, JSON_PATH_MSGPACK_PROCESSORS);
+        final long[] msgPackBasedResults = runBenchmark(msgPack, jsonPathExpression, JSON_PATH_MSGPACK_PROCESSORS);
 
         System.out.println("Benchmark results:");
         printResults(jsonBasedResults, JSON_PATH_JSON_PROCESSORS);
@@ -68,13 +68,13 @@ public class JsonBenchmark
 
     protected static long[] runBenchmark(byte[] data, String jsonPath, JsonPathProcessor[] processors) throws Exception
     {
-        long[] results = new long[processors.length];
+        final long[] results = new long[processors.length];
         for (int i = 0; i < processors.length; i++)
         {
-            JsonPathProcessor processor = processors[i];
-            long startTime = System.currentTimeMillis();
-            String result = processor.evaluateJsonPath(data, jsonPath);
-            long endTime = System.currentTimeMillis();
+            final JsonPathProcessor processor = processors[i];
+            final long startTime = System.currentTimeMillis();
+            final String result = processor.evaluateJsonPath(data, jsonPath);
+            final long endTime = System.currentTimeMillis();
             results[i] = endTime - startTime;
             System.out.println(result);
             System.gc();
@@ -95,8 +95,8 @@ public class JsonBenchmark
 
     protected static String generateJsonPathExpression(int levelsOfNesting, int numValuesPerLevel)
     {
-        Random r = new Random();
-        StringBuilder sb = new StringBuilder();
+        final Random r = new Random();
+        final StringBuilder sb = new StringBuilder();
         sb.append("$");
         for (int i = 0; i < levelsOfNesting; i++)
         {
