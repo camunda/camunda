@@ -11,5 +11,9 @@ router
     {
       name: 'b',
       url: '/b/:b?c=:c'
+    },
+    {
+      name: 'default',
+      url: '/'
     }
   );

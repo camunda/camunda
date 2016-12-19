@@ -1,4 +1,4 @@
-import {addChildren} from 'view-utils';
+import {addChildren, runUpdate} from 'view-utils';
 
 let lastRoute;
 

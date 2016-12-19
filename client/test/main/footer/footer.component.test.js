@@ -3,7 +3,7 @@ import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
 import {Footer} from 'main/footer/footer.component';
 
-describe('Footer', () => {
+describe('<Footer>', () => {
   let node;
   let update;
 

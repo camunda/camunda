@@ -1,4 +1,4 @@
-const CHANGE_ROUTE_ACTION = 'CHANGE_ROUTE_ACTION';
+export const CHANGE_ROUTE_ACTION = 'CHANGE_ROUTE_ACTION';
 
 export function createRouteAction(name, params) {
   return {

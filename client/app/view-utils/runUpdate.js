@@ -19,7 +19,7 @@ function updateArray(updates, state) {
   updates.forEach(update => {
     if (Array.isArray(update)) {
       return updateArray(update, state);
-    } else if (update.update) {
+    } else if (update && update.update) {
       return updateObject(update, state);
     }
 
@@ -36,5 +36,9 @@ function updateObject({update}, state) {
 }
 
 function updateFunction(update, state) {
+  if (typeof update !== 'function') {
+    return;
+  }
+
   return update(state);
 }

@@ -4,7 +4,7 @@ import {createMockComponent} from 'testHelpers/createMockComponent';
 import {jsx} from 'view-utils';
 import {Main, __set__, __ResetDependency__} from 'main/main.component';
 
-describe('Main', () => {
+describe('<Main>', () => {
   let node;
 
   beforeEach(() => {

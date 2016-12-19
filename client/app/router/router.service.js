@@ -22,7 +22,7 @@ function createNewRouter() {
     onUrlChange
   };
 
-  window.onpopstate = onUrlChange;
+  $window.onpopstate = onUrlChange;
 
   return router;
 

@@ -3,7 +3,7 @@ import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
 import {Header} from 'main/header/header.component';
 
-describe('Header', () => {
+describe('<Header>', () => {
   let node;
 
   beforeEach(() => {
