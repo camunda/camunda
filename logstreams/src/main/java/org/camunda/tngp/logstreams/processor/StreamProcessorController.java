@@ -190,6 +190,11 @@ public class StreamProcessorController implements Agent
         return stateMachineAgent.getCurrentState() == failedState;
     }
 
+    protected boolean isSourceStreamWriter()
+    {
+        return streamProcessorContext.getTargetStream().getId() == streamProcessorContext.getSourceStream().getId();
+    }
+
     protected final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
     {
         e.printStackTrace();
@@ -308,12 +313,14 @@ public class StreamProcessorController implements Agent
         {
             int workCount = 0;
 
+            final long sourceEventPosition = context.getEvent().getPosition();
             final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
             final long appenderPosition = streamProcessorContext.getTargetStream().getCurrentAppenderPosition();
 
             if (appenderPosition >= lastWrittenEventPosition)
             {
-                writeSnapshot(lastWrittenEventPosition);
+                final long snapshotPosition = isSourceStreamWriter() ? sourceEventPosition : lastWrittenEventPosition;
+                writeSnapshot(snapshotPosition);
 
                 context.take(TRANSITION_DEFAULT);
 
@@ -352,6 +359,8 @@ public class StreamProcessorController implements Agent
         {
             streamProcessorContext.getStateResource().reset();
 
+            long snapshotPosition = -1;
+
             final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
 
             if (lastSnapshot != null)
@@ -361,19 +370,23 @@ public class StreamProcessorController implements Agent
                 lastSnapshot.validateAndClose();
 
                 // read the last event from snapshot
-                final boolean found = targetLogStreamReader.seek(lastSnapshot.getPosition());
+                snapshotPosition = lastSnapshot.getPosition();
+                final boolean found = targetLogStreamReader.seek(snapshotPosition);
 
                 if (found && targetLogStreamReader.hasNext())
                 {
                     final LoggedEvent lastEventFromSnapshot = targetLogStreamReader.next();
+
                     // resume the next position on source log stream to continue from
-                    sourceLogStreamReader.seek(lastEventFromSnapshot.getSourceEventPosition() + 1);
+                    final long sourceEventPosition = isSourceStreamWriter() ? snapshotPosition : lastEventFromSnapshot.getSourceEventPosition();
+                    sourceLogStreamReader.seek(sourceEventPosition + 1);
                 }
                 else
                 {
                     throw new IllegalStateException("Cannot found event with the snapshot position in target log stream.");
                 }
             }
+            context.setSnapshotPosition(snapshotPosition);
 
             context.take(TRANSITION_DEFAULT);
         }
@@ -393,7 +406,7 @@ public class StreamProcessorController implements Agent
             if (targetLogStreamReader.hasNext())
             {
                 final LoggedEvent targetEvent = targetLogStreamReader.next();
-                processEvent(targetEvent);
+                processEvent(context, targetEvent);
             }
             else
             {
@@ -406,17 +419,22 @@ public class StreamProcessorController implements Agent
             return 1;
         }
 
-        protected void processEvent(final LoggedEvent targetEvent)
+        protected void processEvent(Context context, final LoggedEvent targetEvent)
         {
             // ignore events from other producers
             if (targetEvent.getProducerId() == streamProcessorContext.getId())
             {
-                // TODO dont reprocess the event if target = source and event position is less or equal to the snapshot position
                 final long sourceEventPosition = targetEvent.getSourceEventPosition();
 
-                // assuming that the log stream reader seek to a nearby position before
+                if (isSourceStreamWriter() && sourceEventPosition <= context.getSnapshotPosition())
+                {
+                    // ignore the event when it was processed before creating the snapshot
+                    return;
+                }
+
+                // seek to the source event (assuming that the reader is near the position)
                 LoggedEvent sourceEvent = null;
-                long currentSourceEventPosition = -1L;
+                long currentSourceEventPosition = -1;
                 while (sourceLogStreamReader.hasNext() && currentSourceEventPosition < sourceEventPosition)
                 {
                     sourceEvent = sourceLogStreamReader.next();
@@ -525,6 +543,7 @@ public class StreamProcessorController implements Agent
     {
         private LoggedEvent event;
         private long lastWrittenEventPosition = -1;
+        private long snapshotPosition = -1;
         private long failedEventPosition = -1;
         private CompletableFuture<Void> future;
 
@@ -584,6 +603,16 @@ public class StreamProcessorController implements Agent
         public void setFailedEventPosition(long failedEventPosition)
         {
             this.failedEventPosition = failedEventPosition;
+        }
+
+        public void setSnapshotPosition(long snapshotPosition)
+        {
+            this.snapshotPosition = snapshotPosition;
+        }
+
+        public long getSnapshotPosition()
+        {
+            return snapshotPosition;
         }
     }
 

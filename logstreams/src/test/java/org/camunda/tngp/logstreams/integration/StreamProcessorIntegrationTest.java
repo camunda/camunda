@@ -141,21 +141,31 @@ public class StreamProcessorIntegrationTest
             @Override
             public long writeEvent(LogStreamWriter writer)
             {
-                return writer
-                        .key(event.getLongKey() + 1)
+                final long nextKey = event.getLongKey() + 1;
+                if (nextKey < WORK_COUNT)
+                {
+                    return writer
+                        .key(nextKey)
                         .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
                         .tryWrite();
+                }
+                else
+                {
+                    return 0;
+                }
             }
 
         };
 
+        final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
+
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", 1, streamProcessor)
-            .resource(new SerializableWrapper<>(new Counter()))
+            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(sourceLogStream)
             .agentRunnerService(agentRunnerService)
-            .snapshotPolicy(position -> false)
+            .snapshotPolicy(position -> isSnapshotPoint.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
 
@@ -163,8 +173,31 @@ public class StreamProcessorIntegrationTest
 
         // just write one initial event
         writeLogEvents(sourceLogStream, 1, MSG_SIZE, 0);
+        waitUntilWrittenKey(sourceLogStream, WORK_COUNT / 2);
+
+        isSnapshotPoint.set(true);
 
         waitUntilWrittenKey(sourceLogStream, WORK_COUNT);
+
+        while (resourceCounter.getObject().getCount() < WORK_COUNT)
+        {
+            // wait until last event is processed
+        }
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+
+        // reset the resource manually to ensure that recovery happens
+        resourceCounter.getObject().reset();
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(0);
+
+        streamProcessorController.openAsync().get();
+
+        while (resourceCounter.getObject().getCount() < WORK_COUNT)
+        {
+            // wait until last event is processed again
+        }
+        assertThat(resourceCounter.getObject().getCount()).isEqualTo(WORK_COUNT);
 
         streamProcessorController.closeAsync().get();
     }
