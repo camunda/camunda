@@ -833,6 +833,35 @@ public class StreamProcessorControllerTest
         // -> snapshotting
         controller.doWork();
 
+        // just continue if fails to create the snapshot
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockSnapshotWriter).abort();
+    }
+
+    @Test
+    public void shouldFailToProcessEvent() throws Exception
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        doThrow(new RuntimeException("expected exception")).when(mockEventProcessor).executeSideEffects();
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+
+        // verify that it can't be recovered
+        targetLogStreamFailureListener.onFailed(2L);
+        targetLogStreamFailureListener.onRecovered();
+
+        controller.doWork();
+
         assertThat(controller.isFailed()).isTrue();
     }
 

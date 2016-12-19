@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.logstreams.log.LogStream;
@@ -189,6 +190,14 @@ public class StreamProcessorController implements Agent
         return stateMachineAgent.getCurrentState() == failedState;
     }
 
+    protected final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
+    {
+        e.printStackTrace();
+
+        context.take(TRANSITION_FAIL);
+        context.completeFutureExceptionally(e);
+    };
+
     private class OpeningState implements TransitionState<Context>
     {
         @Override
@@ -196,24 +205,20 @@ public class StreamProcessorController implements Agent
         {
             final LogStream targetStream = streamProcessorContext.getTargetStream();
 
-            try
-            {
-                targetLogStreamReader.wrap(targetStream);
-                logStreamWriter.wrap(targetStream);
-                sourceLogStreamReader.wrap(streamProcessorContext.getSourceStream());
+            targetLogStreamReader.wrap(targetStream);
+            logStreamWriter.wrap(targetStream);
+            sourceLogStreamReader.wrap(streamProcessorContext.getSourceStream());
 
-                targetStream.removeFailureListener(targetLogStreamFailureListener);
-                targetStream.registerFailureListener(targetLogStreamFailureListener);
+            targetStream.removeFailureListener(targetLogStreamFailureListener);
+            targetStream.registerFailureListener(targetLogStreamFailureListener);
 
-                context.take(TRANSITION_DEFAULT);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
+            context.take(TRANSITION_DEFAULT);
+        }
 
-                context.take(TRANSITION_FAIL);
-                context.completeFutureExceptionally(e);
-            }
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            stateFailureHandler.accept(context, e);
         }
     }
 
@@ -288,6 +293,12 @@ public class StreamProcessorController implements Agent
                 context.take(TRANSITION_DEFAULT);
             }
         };
+
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            stateFailureHandler.accept(context, new RuntimeException("log stream processor failed to process event. It stop processing further events.", e));
+        }
     }
 
     private class SnapshottingState implements State<Context>
@@ -302,15 +313,9 @@ public class StreamProcessorController implements Agent
 
             if (appenderPosition >= lastWrittenEventPosition)
             {
-                final boolean successful = writeSnapshot(lastWrittenEventPosition);
-                if (successful)
-                {
-                    context.take(TRANSITION_DEFAULT);
-                }
-                else
-                {
-                    context.take(TRANSITION_FAIL);
-                }
+                writeSnapshot(lastWrittenEventPosition);
+
+                context.take(TRANSITION_DEFAULT);
 
                 workCount += 1;
             }
@@ -318,9 +323,8 @@ public class StreamProcessorController implements Agent
             return workCount;
         }
 
-        protected boolean writeSnapshot(final long eventPosition)
+        protected void writeSnapshot(final long eventPosition)
         {
-            boolean successful = false;
             SnapshotWriter snapshotWriter = null;
             try
             {
@@ -328,7 +332,6 @@ public class StreamProcessorController implements Agent
 
                 snapshotWriter.writeSnapshot(streamProcessorContext.getStateResource());
                 snapshotWriter.commit();
-                successful = true;
             }
             catch (Exception e)
             {
@@ -339,34 +342,16 @@ public class StreamProcessorController implements Agent
                     snapshotWriter.abort();
                 }
             }
-            return successful;
         }
     }
 
     private class RecoveringState implements TransitionState<Context>
     {
         @Override
-        public void work(Context context)
+        public void work(Context context) throws Exception
         {
-            try
-            {
-                streamProcessorContext.getStateResource().reset();
+            streamProcessorContext.getStateResource().reset();
 
-                recoverFromSnapshot();
-
-                context.take(TRANSITION_DEFAULT);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-
-                context.take(TRANSITION_FAIL);
-                context.completeFutureExceptionally(e);
-            }
-        }
-
-        private void recoverFromSnapshot() throws Exception
-        {
             final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
 
             if (lastSnapshot != null)
@@ -389,6 +374,14 @@ public class StreamProcessorController implements Agent
                     throw new IllegalStateException("Cannot found event with the snapshot position in target log stream.");
                 }
             }
+
+            context.take(TRANSITION_DEFAULT);
+        }
+
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            stateFailureHandler.accept(context, e);
         }
     }
 
@@ -400,16 +393,7 @@ public class StreamProcessorController implements Agent
             if (targetLogStreamReader.hasNext())
             {
                 final LoggedEvent targetEvent = targetLogStreamReader.next();
-                try
-                {
-                    processEvent(targetEvent);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                    context.take(TRANSITION_FAIL);
-                    context.completeFutureExceptionally(e);
-                }
+                processEvent(targetEvent);
             }
             else
             {
@@ -427,6 +411,7 @@ public class StreamProcessorController implements Agent
             // ignore events from other producers
             if (targetEvent.getProducerId() == streamProcessorContext.getId())
             {
+                // TODO dont reprocess the event if target = source and event position is less or equal to the snapshot position
                 final long sourceEventPosition = targetEvent.getSourceEventPosition();
 
                 // assuming that the log stream reader seek to a nearby position before
@@ -452,6 +437,12 @@ public class StreamProcessorController implements Agent
                     throw new IllegalStateException("Cannot find source event of written event: " + targetEvent);
                 }
             }
+        }
+
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            stateFailureHandler.accept(context, e);
         }
     }
 
@@ -498,8 +489,11 @@ public class StreamProcessorController implements Agent
         {
             stateMachineAgent.addCommand(context ->
             {
-                context.setFailedEventPosition(failedPosition);
-                context.take(TRANSITION_FAIL);
+                final boolean failed = context.tryTake(TRANSITION_FAIL);
+                if (failed)
+                {
+                    context.setFailedEventPosition(failedPosition);
+                }
             });
         }
 
@@ -509,7 +503,11 @@ public class StreamProcessorController implements Agent
             stateMachineAgent.addCommand(context ->
             {
                 final long failedEventPosition = context.getFailedEventPosition();
-                if (failedEventPosition > 0 && failedEventPosition <= context.getLastWrittenEventPosition())
+                if (failedEventPosition < 0)
+                {
+                    // ignore
+                }
+                else if (failedEventPosition <= context.getLastWrittenEventPosition())
                 {
                     context.take(TRANSITION_RECOVER);
                 }
