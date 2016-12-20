@@ -9,34 +9,4 @@ body {
   margin: 0;
 }
 
-.container {
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
-  margin: 0.4rem;
-}
-
-.header {
-  border: 1px solid $color-red;
-  margin-bottom: 0.4rem;
-  background-color: rgba($color-red, 0.2);
-}
-
-.header__title {
-  text-align: center;
-}
-
-.content {
-  flex: 20 20 auto;
-}
-
-.footer {
-  text-align: center;
-  border: 1px solid $color-red;
-  background-color: rgba($color-red, 0.2);
-  padding: 0.4rem 0;
-}
-
-.footer__version {
-  font-weight: 800;
-}
+@import 'main/main.styles';

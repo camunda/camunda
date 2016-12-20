@@ -1,5 +1,6 @@
 import {Select} from './select';
 import {jsx} from './jsx';
+import {updateOnlyWhenStateChanges} from './updateOnlyWhenStateChanges';
 
 export function setInputValue(input, value) {
   const {selectionStart, selectionEnd, selectionDirection} = input;
@@ -13,7 +14,9 @@ export function setInputValue(input, value) {
 
 function InputSetter() {
   return (input) => {
-    return setInputValue.bind(null, input);
+    return updateOnlyWhenStateChanges(
+      setInputValue.bind(null, input)
+    );
   };
 }
 

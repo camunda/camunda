@@ -32,6 +32,7 @@
     "karma-webpack": "^1.8.0",
     "mocha": "^3.2.0",
     "node-sass": "^3.13.0",
+    "promise-mock": "^1.1.0",
     "sass-loader": "^4.0.2",
     "sinon": "2.0.0-pre.4",
     "style-loader": "^0.13.1",
@@ -41,6 +42,8 @@
   },
   "dependencies": {
     "bpmn-js": "^0.18.3",
-    "lodash.isequal": "^4.4.0"
+    "lodash.isequal": "^4.4.0",
+    "promise-polyfill": "^6.0.2",
+    "redux": "^3.6.0"
   }
 }

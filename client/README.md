@@ -141,7 +141,7 @@ For testing use ``chai``, ``chai-dom`` and ``sinon``.
 In ``test/testHelpers`` you can find functions that will be useful during testing. 
 Like ``mountTemplate`` which adds your template to dom and 
 return object with ``node``, ``update`` and ``eventsBus`` properties.
-You can use ``node`` is parent node of your component. ``update`` is function
+``node`` is parent node of your component. ``update`` is function
 which updates your component you can pass mocked state to it and ``eventsBus`` is well events bus.
 
 

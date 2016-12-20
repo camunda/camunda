@@ -13,6 +13,10 @@ router
       url: '/b/:b?c=:c'
     },
     {
+      name: 'login',
+      url: '/login?name=:name&params=:params'
+    },
+    {
       name: 'default',
       url: '/'
     }

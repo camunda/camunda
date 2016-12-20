@@ -8,43 +8,32 @@ describe('<Router>', () => {
   let node;
   let update;
   let eventsBus;
-  let addChildren;
-  let childrenUpdate;
-  const children = 'children';
+  let childUpdate;
+  let ChildComp;
 
   beforeEach(() => {
-    childrenUpdate = sinon.spy();
-    addChildren = sinon
-      .stub()
-      .returns(childrenUpdate);
+    childUpdate = sinon.spy();
+    ChildComp = () => {
+      return () => childUpdate
+    };
 
-    __set__('addChildren', addChildren);
-
-    ({node, update, eventsBus} = mountTemplate(<Router children={children}/>));
-  });
-
-  afterEach(() => {
-    __ResetDependency__('addChildren');
-  });
-
-  it('should pass node, eventsBus and children to addChildren', () => {
-    expect(addChildren.calledWith(node, eventsBus, children)).to.eql(true);
+    ({node, update, eventsBus} = mountTemplate(<Router routerProperty="router"><ChildComp/></Router>));
   });
 
   it('should set lastRoute on update', () => {
     const route = 'route';
 
-    update({route});
+    update({router: {route}});
 
     expect(getLastRoute()).to.equal(route);
   });
 
-  it('should call children update with wtate on update', () => {
-    const state = {a: 1, childState: 2};
+  it('should call children update with state on update', () => {
+    const state = {a: 1, router: {childState: 2}};
 
     update(state);
 
-    expect(childrenUpdate.calledOnce).to.eql(true);
-    expect(childrenUpdate.calledWith(state)).to.eql(true);
+    expect(childUpdate.calledOnce).to.eql(true);
+    expect(childUpdate.calledWith(state)).to.eql(true);
   });
 });

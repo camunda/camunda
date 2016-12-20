@@ -1,16 +1,14 @@
-import {addChildren, runUpdate} from 'view-utils';
+import {withChildren, runUpdate} from 'view-utils';
 
 let lastRoute;
 
-export function Router({children}) {
+export const Router = withChildren(RouterRoot);
+
+function RouterRoot({routerProperty}) {
   return (node, eventBus) => {
-    return [
-      ({route}) => {
-        lastRoute = route;
-      }
-    ].concat(
-      addChildren(node, eventBus, children)
-    );
+    return ({[routerProperty]: {route}}) => {
+      lastRoute = route;
+    };
   }
 }
 

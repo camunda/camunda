@@ -5,6 +5,12 @@ var webpack = require('webpack');
 config.plugins = addProductionPlugins();
 config.module.loaders = correctLoadersForProduction(config.module.loaders);
 
+// ATTENTION: Might need to be adjusted
+// Root of static resources
+// So every static resource will be have absolute path (from web server server root ofc) if that is set with this value
+// as prefix or very path will be relative otherwise (relative paths will break loading of resources in spa apps).
+config.output.publicPath = '/';
+
 module.exports = config;
 
 function addProductionPlugins() {

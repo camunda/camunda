@@ -4,7 +4,7 @@ import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {StaticLink, getLastRoute, __set__, __ResetDependency__} from 'router/staticLink.component';
 
-describe('<StaticLink />', () => {
+describe('<StaticLink>', () => {
   const name = 'name1';
   let router;
   let params;

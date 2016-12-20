@@ -1,9 +1,15 @@
 import {createRouterReducer, getRouter} from 'router';
+import {combineReducers} from 'redux';
+import {reducer as loginReducer} from './login';
+import {reducer as loginFormReducer} from './loginForm';
 
 //For now child reducer is just child, but that will change
 const router = getRouter();
 const routerReducer = createRouterReducer(router);
 
-export function reducer(state = {version: 'alpha-cat-1'}, action) {
-  return routerReducer(state, action);
-}
+export const reducer = combineReducers({
+  login: loginReducer,
+  router: routerReducer,
+  loginForm: loginFormReducer,
+  version: (state = 'alpha-cat-2') => state,
+});
