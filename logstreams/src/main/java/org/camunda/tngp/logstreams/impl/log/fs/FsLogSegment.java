@@ -276,4 +276,27 @@ public class FsLogSegment
         // invoked by appender when segment is filled
         state = STATE_FILLED;
     }
+
+    public boolean isConsistent() throws IOException
+    {
+        final long currentFileSize = fileChannel.size();
+        final int committedSize = getSize();
+
+        return currentFileSize == committedSize;
+    }
+
+    public void truncateUncommittedData() throws IOException
+    {
+        final int committedSize = getSize();
+
+        closeSegment();
+
+        try (FileChannel fileChannel = FileUtil.openChannel(fileName, false))
+        {
+            fileChannel.truncate(committedSize);
+        }
+
+        openSegment(false);
+    }
+
 }

@@ -8,6 +8,7 @@ import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
 import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -194,7 +195,31 @@ public class FsLogStorage implements LogStorage
         final FsLogSegment[] segmentsArray = readableLogSegments.toArray(new FsLogSegment[readableLogSegments.size()]);
         logSegments.init(config.initialSegmentId, segmentsArray);
 
+        checkConsistency();
+
         state = STATE_OPENED;
+    }
+
+    protected void checkConsistency()
+    {
+        try
+        {
+            if (!currentSegment.isConsistent())
+            {
+                // try to auto-repair segment
+                currentSegment.truncateUncommittedData();
+            }
+
+            if (!currentSegment.isConsistent())
+            {
+                throw new RuntimeException("Inconsistent log segment: " + currentSegment.getFileName());
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new RuntimeException("Fail to check consistency", e);
+        }
     }
 
     @Override

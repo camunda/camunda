@@ -234,8 +234,7 @@ public class FsLogSegmentTest
     @Test
     public void shouldRestoreExistingSegment() throws IOException
     {
-        fsLogSegment.openSegment(true);
-
+        fsLogSegment.allocate(1, CAPACITY);
         fsLogSegment.append(ByteBuffer.wrap(MSG));
 
         final int currentSize = fsLogSegment.getSize();
@@ -246,6 +245,48 @@ public class FsLogSegmentTest
 
         assertThat(isOpen).isTrue();
         assertThat(fsLogSegment.getSize()).isEqualTo(currentSize);
+    }
+
+    @Test
+    public void shouldCheckConsistency() throws IOException
+    {
+        fsLogSegment.allocate(1, CAPACITY);
+        fsLogSegment.append(ByteBuffer.wrap(MSG));
+
+        assertThat(fsLogSegment.isConsistent()).isTrue();
+
+        // modify the underlying file
+        try (FileChannel fileChannel = FileUtil.openChannel(logFileName, false))
+        {
+            final long fileSize = fileChannel.size();
+
+            fileChannel.position(fileSize);
+            fileChannel.write(ByteBuffer.wrap("foo".getBytes()));
+
+            assertThat(fsLogSegment.isConsistent()).isFalse();
+        }
+    }
+
+    @Test
+    public void shouldTruncateDataIfOverlapSize() throws IOException
+    {
+        fsLogSegment.allocate(1, CAPACITY);
+        fsLogSegment.append(ByteBuffer.wrap(MSG));
+
+        // append the underlying file
+        try (FileChannel fileChannel = FileUtil.openChannel(logFileName, false))
+        {
+            final long originalFileSize = fileChannel.size();
+
+            fileChannel.position(originalFileSize);
+            fileChannel.write(ByteBuffer.wrap("foo".getBytes()));
+
+            assertThat(fileChannel.size()).isGreaterThan(originalFileSize);
+
+            fsLogSegment.truncateUncommittedData();
+
+            assertThat(fileChannel.size()).isEqualTo(originalFileSize);
+        }
     }
 
     protected byte[] readLogFile(final String logFilePath, final long address, final int capacity)

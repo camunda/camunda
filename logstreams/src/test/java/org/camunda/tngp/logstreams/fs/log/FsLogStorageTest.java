@@ -310,6 +310,54 @@ public class FsLogStorageTest
         assertThat(readBuffer.array()).isEqualTo(MSG);
     }
 
+    @Test
+    public void shouldRepairSegmentIfInconsistentOnOpen() throws IOException
+    {
+        // append the log storage
+        fsLogStorage.open();
+        fsLogStorage.append(ByteBuffer.wrap(MSG));
+        fsLogStorage.close();
+
+        try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false))
+        {
+            final long originalFileSize = fileChannel.size();
+
+            // append the underlying file
+            fileChannel.position(originalFileSize);
+            fileChannel.write(ByteBuffer.wrap("foo".getBytes()));
+
+            assertThat(fileChannel.size()).isGreaterThan(originalFileSize);
+
+            // open the log storage to trigger auto-repair
+            fsLogStorage.open();
+
+            // verify that the log storage is restored
+            assertThat(fileChannel.size()).isEqualTo(originalFileSize);
+        }
+    }
+
+    @Test
+    public void shouldFailIfSegmentIsInconsistentOnOpen() throws IOException
+    {
+        // append the log storage
+        fsLogStorage.open();
+        fsLogStorage.append(ByteBuffer.wrap(MSG));
+        fsLogStorage.close();
+
+        try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false))
+        {
+            final long fileSize = fileChannel.size();
+
+            // remove bytes of the underlying file
+            fileChannel.truncate(fileSize - 1);
+
+            thrown.expect(RuntimeException.class);
+            thrown.expectMessage("Inconsistent log segment");
+
+            fsLogStorage.open();
+        }
+    }
+
     protected byte[] readLogFile(final String logFilePath, final long address, final int capacity)
     {
         final ByteBuffer buffer = ByteBuffer.allocate(capacity);
