@@ -1,17 +1,13 @@
 package org.camunda.tngp.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.framedRecordLength;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class Bytes2LongHashIndexMinimalBlockSizeTest
 {
@@ -26,10 +22,9 @@ public class Bytes2LongHashIndexMinimalBlockSizeTest
     public void createIndex()
     {
         final int indexSize = 32;
-        final int blockLength = BLOCK_DATA_OFFSET  + framedRecordLength(64, SIZE_OF_LONG);
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Bytes2LongHashIndex(indexStore, indexSize, blockLength, 64);
+        index = new Bytes2LongHashIndex(indexStore, indexSize, 1, 64);
         index = new Bytes2LongHashIndex(indexStore);
 
         // generate keys

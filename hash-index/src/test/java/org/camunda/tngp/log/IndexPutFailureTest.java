@@ -18,7 +18,7 @@ public class IndexPutFailureTest
     public void setUp()
     {
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, 32448, 4 * 1024);
+        index = new Long2LongHashIndex(indexStore, 32448, 2048);
     }
 
     @After

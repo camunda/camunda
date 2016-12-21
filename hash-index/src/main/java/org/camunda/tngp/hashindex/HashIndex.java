@@ -1,10 +1,28 @@
 package org.camunda.tngp.hashindex;
 
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
-
-import org.camunda.tngp.hashindex.store.IndexStore;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_COUNT_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_LENGTH_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.INDEX_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.INDEX_SIZE_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.RECORD_KEY_LENGTH_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.RECORD_VALUE_LENGTH_OFFSET;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.TYPE_RECORD;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.TYPE_TOMBSTONE;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.blockDepth;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.blockFillCount;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.blockId;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.decrementBlockFillCount;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.framedRecordLength;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.incrementBlockFillCount;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.indexEntryOffset;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.recordKeyOffset;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.recordTypeOffset;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.recordValueOffset;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.requiredIndexBufferSize;
 
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.hashindex.store.IndexStore;
 
 /**
  * Simple index data structure using extensible hashing.
@@ -56,7 +74,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             Class<K> keyHandlerType,
             Class<V> valueHandlerType,
             int indexSize,
-            int blockLength,
+            int blockSize,
             int keyLength,
             int valueLength)
     {
@@ -69,6 +87,8 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         final int indexBufferSize = requiredIndexBufferSize(indexSize);
         indexStore.allocate(indexBufferSize);
         this.loadedIndexBuffer = new LoadedBuffer(indexStore, true, 0, indexBufferSize);
+
+        final int blockLength = BLOCK_DATA_OFFSET  + blockSize * framedRecordLength(keyLength, valueLength);
 
         // init metadata
         blockLength(blockLength);

@@ -1,8 +1,6 @@
 package org.camunda.tngp.log;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
-import static org.agrona.BitUtil.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
@@ -25,10 +23,9 @@ public class Bytes2LongHashIndexLargeBlockSizeTest
     public void createIndex() throws IOException
     {
         final int indexSize = 32;
-        final int blockLength = BLOCK_DATA_OFFSET  + 3 * framedRecordLength(64, SIZE_OF_LONG);
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Bytes2LongHashIndex(indexStore, indexSize, blockLength, 64);
+        index = new Bytes2LongHashIndex(indexStore, indexSize, 3, 64);
         index = new Bytes2LongHashIndex(indexStore);
 
         // generate keys

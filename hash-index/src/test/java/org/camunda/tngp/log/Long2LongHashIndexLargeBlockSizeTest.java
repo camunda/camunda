@@ -1,15 +1,12 @@
 package org.camunda.tngp.log;
 
-import static org.agrona.BitUtil.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
 
 public class Long2LongHashIndexLargeBlockSizeTest
 {
@@ -22,10 +19,9 @@ public class Long2LongHashIndexLargeBlockSizeTest
     public void createIndex()
     {
         final int indexSize = 16;
-        final int blockLength = BLOCK_DATA_OFFSET  + 3 * framedRecordLength(SIZE_OF_LONG, SIZE_OF_LONG); // 3 entries fit into a block
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, indexSize, blockLength);
+        index = new Long2LongHashIndex(indexStore, indexSize, 3);
     }
 
     @After
@@ -161,7 +157,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE)).isEqualTo(i);
         }
 
         assertThat(index.blockCount()).isEqualTo(8);
@@ -177,7 +173,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE) == i);
+            assertThat(index.get(i, MISSING_VALUE)).isEqualTo(i);
         }
 
         assertThat(index.blockCount()).isEqualTo(8);
