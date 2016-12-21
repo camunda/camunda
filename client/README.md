@@ -24,7 +24,7 @@ yarn run serve
 yarn run compile
 ```
 
-Should create ``dist`` folder with builded application.
+Should create ``dist`` folder with built application.
 
 ## Testing
 
