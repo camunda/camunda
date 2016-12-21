@@ -7,7 +7,7 @@ module.exports = {
   target: 'web',
   entry: {
     app: path.resolve(__dirname, 'app', 'app.js'),
-    vendor: ['bpmn-js', 'lodash.isequal']
+    vendor: ['bpmn-js', 'lodash.isequal', 'redux', 'promise-polyfill']
   },
   output: {
     publicPath: '/',

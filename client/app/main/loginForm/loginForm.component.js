@@ -1,9 +1,5 @@
 import {jsx, SetInputFieldValue, OnEvent, dispatchAction, Select, Match, Case} from 'view-utils';
-import {getRouter, getLastRoute} from 'router';
-import {login} from '../login';
-import {createChangeLoginPasswordAction, createChangeLoginUserAction, createLoginErrorAction} from './loginForm.reducer';
-
-const router = getRouter();
+import {performLogin, changePassword, changeUser} from './loginForm.service';
 
 export function LoginForm({selector}) {
   return <Select selector={selector}>
@@ -46,30 +42,6 @@ export function LoginForm({selector}) {
   function submit({state: {user, password}, event}) {
     event.preventDefault();
 
-    login(user, password)
-      .then(() => {
-        const {name, params: encodedParams} = getLastRoute().params;
-
-        const params = JSON.parse(
-          decodeURI(
-            encodedParams
-          )
-        );
-
-        dispatchAction(createLoginErrorAction(false));
-
-        router.goTo(name, params);
-      })
-      .catch(() => {
-        dispatchAction(createLoginErrorAction(true));
-      });
-  }
-
-  function changeUser({node: input}) {
-    dispatchAction(createChangeLoginUserAction(input.value));
-  }
-
-  function changePassword({node: input}) {
-    dispatchAction(createChangeLoginPasswordAction(input.value));
+    performLogin(user, password);
   }
 }
