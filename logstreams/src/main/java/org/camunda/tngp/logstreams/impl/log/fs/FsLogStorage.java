@@ -152,20 +152,6 @@ public class FsLogStorage implements LogStorage
             final UnsafeBuffer metadataSection = new UnsafeBuffer(mappedBuffer, 0, METADATA_LENGTH);
             metadataSection.putInt(SEGMENT_SIZE_OFFSET, segmentOffset);
             mappedBuffer.force();
-
-            // move: segment.bak -> segment.bak.truncated
-            Files.move(backup, applicable, REPLACE_EXISTING);
-
-            // delete log segments in reverse order
-            for (int i = currentSegmentId; segmentId <= i; i--)
-            {
-                final FsLogSegment segmentToDelete = logSegments.getSegment(i);
-                segmentToDelete.closeSegment();
-                segmentToDelete.delete();
-            }
-
-            // move: segment.bak.truncated -> segment
-            Files.move(applicable, source);
         }
         catch (final IOException e)
         {
@@ -185,6 +171,27 @@ public class FsLogStorage implements LogStorage
                     LangUtil.rethrowUnchecked(e);
                 }
             }
+        }
+
+        try
+        {
+            // move: segment.bak -> segment.bak.truncated
+            Files.move(backup, applicable, REPLACE_EXISTING);
+
+            // delete log segments in reverse order
+            for (int i = currentSegmentId; segmentId <= i; i--)
+            {
+                final FsLogSegment segmentToDelete = logSegments.getSegment(i);
+                segmentToDelete.closeSegment();
+                segmentToDelete.delete();
+            }
+
+            // move: segment.bak.truncated -> segment
+            Files.move(applicable, source);
+        }
+        catch (final IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
         }
 
         final List<FsLogSegment> segments = new ArrayList<>();
