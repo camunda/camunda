@@ -367,7 +367,6 @@ public class StreamProcessorController implements Agent
             {
                 // recover last snapshot
                 lastSnapshot.recoverFromSnapshot(streamProcessorContext.getStateResource());
-                lastSnapshot.validateAndClose();
 
                 // read the last event from snapshot
                 snapshotPosition = lastSnapshot.getPosition();

@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import org.agrona.BitUtil;
 import org.camunda.tngp.logstreams.impl.snapshot.fs.FsReadableSnapshot;
 import org.camunda.tngp.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
+import org.camunda.tngp.logstreams.snapshot.InvalidSnapshotException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,7 +108,7 @@ public class FsReadableSnapshotTest
 
         readCompleteStream(fsReadableSnapshot.getData());
 
-        thrown.expect(RuntimeException.class);
+        thrown.expect(InvalidSnapshotException.class);
         thrown.expectMessage("Read invalid snapshot, checksum doesn't match");
 
         fsReadableSnapshot.validateAndClose();

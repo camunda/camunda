@@ -184,7 +184,6 @@ public class LogStreamController implements Agent
             if (lastSnapshot != null)
             {
                 lastSnapshot.recoverFromSnapshot(blockIndex);
-                lastSnapshot.validateAndClose();
 
                 blockIndex.recover(logStorage, lastSnapshot.getPosition(), indexBlockSize);
             }

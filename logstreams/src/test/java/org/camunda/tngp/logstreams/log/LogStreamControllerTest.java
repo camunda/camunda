@@ -44,6 +44,7 @@ import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.junit.Before;
@@ -222,7 +223,6 @@ public class LogStreamControllerTest
         assertThat(future).isCompleted();
 
         verify(mockSnapshot).recoverFromSnapshot(mockBlockIndex);
-        verify(mockSnapshot).validateAndClose();
 
         verify(mockBlockIndex).recover(mockLogStorage, 100L, INDEX_BLOCK_SIZE);
     }
@@ -233,7 +233,7 @@ public class LogStreamControllerTest
         when(mockSnapshotStorage.getLastSnapshot(LOG_NAME)).thenReturn(mockSnapshot);
         when(mockSnapshot.getPosition()).thenReturn(100L);
 
-        doThrow(new RuntimeException()).when(mockSnapshot).validateAndClose();
+        doThrow(new RuntimeException()).when(mockSnapshot).recoverFromSnapshot(any(SnapshotSupport.class));
 
         final CompletableFuture<Void> future = controller.openAsync();
 

@@ -733,7 +733,6 @@ public class StreamProcessorControllerTest
         verify(mockSnapshotStorage).getLastSnapshot(STREAM_PROCESSOR_NAME);
 
         verify(mockReadableSnapshot).recoverFromSnapshot(mockStateResource);
-        verify(mockReadableSnapshot).validateAndClose();
 
         verify(mockTargetLogStreamReader).seek(5L);
         verify(mockTargetLogStreamReader, times(2)).hasNext();
@@ -763,7 +762,6 @@ public class StreamProcessorControllerTest
         verify(mockSnapshotStorage).getLastSnapshot(STREAM_PROCESSOR_NAME);
 
         verify(mockReadableSnapshot).recoverFromSnapshot(mockStateResource);
-        verify(mockReadableSnapshot).validateAndClose();
 
         verify(mockTargetLogStreamReader).seek(5L);
         verify(mockTargetLogStreamReader, times(2)).hasNext();

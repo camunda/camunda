@@ -13,6 +13,7 @@ import java.util.Arrays;
 
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
+import org.camunda.tngp.logstreams.snapshot.InvalidSnapshotException;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.util.FileUtil;
 
@@ -114,7 +115,7 @@ public class FsReadableSnapshot implements ReadableSnapshot
     }
 
     @Override
-    public void validateAndClose() throws Exception
+    public void validateAndClose() throws InvalidSnapshotException
     {
         final MessageDigest messageDigest = inputStream.getMessageDigest();
 
@@ -125,7 +126,7 @@ public class FsReadableSnapshot implements ReadableSnapshot
 
         if (!digestsEqual)
         {
-            throw new RuntimeException("Read invalid snapshot, checksum doesn't match.");
+            throw new InvalidSnapshotException("Read invalid snapshot, checksum doesn't match.");
         }
     }
 
