@@ -45,7 +45,7 @@ public class LogRecoveryTest
     {
         logPath = temFolder.getRoot().getAbsolutePath();
 
-        agentRunnerService = new SharedAgentRunnerService("test-%s", 1, new SimpleAgentRunnerFactory());
+        agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
     }
 
     @After

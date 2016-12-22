@@ -1,33 +1,46 @@
 package org.camunda.tngp.util.agent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
+import org.camunda.tngp.util.EnsureUtil;
 
+/**
+ * {@link AgentRunnerService} which distributes the agents on a given number of threads.
+ */
 public class SharedAgentRunnerService implements AgentRunnerService
 {
+    protected static final Comparator<AgentGroup> GROUP_SIZE_COMPARATOR = Comparator.comparingInt(group -> group.size());
+
     protected final int threadCount;
-    protected final AgentRunnerFactory agentRunnerFactory;
     protected final List<AgentGroup> agentGroups = new ArrayList<>();
     protected final List<AgentRunner> agentRunners = new ArrayList<>();
 
-    public SharedAgentRunnerService(String nameTemplate, int threadCount, AgentRunnerFactory agentRunnerFactory)
+    public SharedAgentRunnerService(AgentRunnerFactory agentRunnerFactory, String name)
     {
+        this(agentRunnerFactory, name, 1);
+    }
+
+    public SharedAgentRunnerService(AgentRunnerFactory agentRunnerFactory, String name, int threadCount)
+    {
+        EnsureUtil.ensureGreaterThan("thread count", threadCount, 0);
+
         this.threadCount = threadCount;
-        this.agentRunnerFactory = agentRunnerFactory;
 
         for (int i = 0; i < threadCount; i++)
         {
-            final AgentGroup group = new AgentGroup(String.format(nameTemplate, i));
+            final AgentGroup group = new AgentGroup(name + "-" + i);
             final AgentRunner runner = agentRunnerFactory.createAgentRunner(group);
-            AgentRunner.startOnThread(runner);
 
             agentGroups.add(group);
             agentRunners.add(runner);
         }
+
+        agentRunners.forEach(AgentRunner::startOnThread);
     }
 
     @Override
@@ -54,10 +67,9 @@ public class SharedAgentRunnerService implements AgentRunnerService
     {
         Objects.requireNonNull(agent, "Agent cannot be null.");
 
-        final int groupId = agent.hashCode() % threadCount;
-        final AgentGroup group = agentGroups.get(groupId);
+        final AgentGroup smallestGroup = agentGroups.stream().min(GROUP_SIZE_COMPARATOR).get();
 
-        group.addAgent(agent);
+        smallestGroup.addAgent(agent);
     }
 
     @Override
@@ -65,10 +77,7 @@ public class SharedAgentRunnerService implements AgentRunnerService
     {
         Objects.requireNonNull(agent, "Agent cannot be null.");
 
-        final int groupId = agent.hashCode() % threadCount;
-        final AgentGroup group = agentGroups.get(groupId);
-
-        group.removeAgent(agent);
+        agentGroups.stream().forEach(group -> group.removeAgent(agent));
     }
 
 }

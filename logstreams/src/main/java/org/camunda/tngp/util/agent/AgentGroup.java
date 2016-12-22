@@ -16,7 +16,7 @@ public class AgentGroup implements Agent
         this.roleName = groupName;
     }
 
-    public synchronized void addAgent(Agent a)
+    public synchronized void addAgent(Agent agent)
     {
         final int currentLength = agents.length;
         final int newLength = currentLength + 1;
@@ -24,7 +24,7 @@ public class AgentGroup implements Agent
         final Agent[] newArray = new Agent[newLength];
         System.arraycopy(agents, 0, newArray, 0, currentLength);
 
-        newArray[currentLength] = a;
+        newArray[currentLength] = agent;
 
         agents = newArray; // volatile store
     }
@@ -65,22 +65,25 @@ public class AgentGroup implements Agent
         return roleName;
     }
 
-    public synchronized void removeAgent(Agent a)
+    public synchronized void removeAgent(Agent agent)
     {
-        try
-        {
-            a.onClose();
-        }
-        finally
-        {
-            final Agent[] agents = this.agents;
+        final Agent[] agents = this.agents;
 
-            final ArrayList<Agent> list = new ArrayList<>(Arrays.asList(agents));
-            list.remove(a);
+        final ArrayList<Agent> list = new ArrayList<>(Arrays.asList(agents));
+        final boolean removed = list.remove(agent);
+
+        if (removed)
+        {
+            agent.onClose();
+
             final Agent[] newArray = list.toArray(new Agent[list.size()]);
-
             this.agents = newArray; // volatile store
         }
+    }
+
+    public int size()
+    {
+        return agents.length;
     }
 
 }
