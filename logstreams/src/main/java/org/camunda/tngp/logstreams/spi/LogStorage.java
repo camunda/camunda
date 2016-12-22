@@ -52,6 +52,13 @@ public interface LogStorage
     long append(ByteBuffer blockBuffer);
 
     /**
+     * Truncates the log up to the given address.
+     *
+     * @param addr The address at which to truncate the log.
+     */
+    void truncate(long addr);
+
+    /**
      * Reads bytes into the read buffer starting at addr. Returns an operation result status code
      * which is either
      * <ul>

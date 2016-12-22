@@ -12,16 +12,19 @@
  */
 package org.camunda.tngp.logstreams.fs.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
+import org.camunda.tngp.dispatcher.impl.PositionUtil;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
@@ -356,6 +359,363 @@ public class FsLogStorageTest
 
             fsLogStorage.open();
         }
+    }
+
+    @Test
+    public void shouldNotTruncateIfNotOpen()
+    {
+        thrown.expect(IllegalStateException.class);
+        thrown.expectMessage("log storage is not open");
+
+        fsLogStorage.truncate(0);
+    }
+
+    @Test
+    public void shouldNotTruncateIfClosed()
+    {
+        fsLogStorage.open();
+
+        fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        fsLogStorage.close();
+
+        thrown.expect(IllegalStateException.class);
+        thrown.expectMessage("log storage is already closed");
+
+        fsLogStorage.truncate(0);
+    }
+
+    @Test
+    public void shouldNotTruncateIfGivenSegmentIsLessThanInitialSegment()
+    {
+        fsLogStorage.open();
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot truncate log: invalid address");
+
+        final long addr = PositionUtil.position(-1, 0);
+        fsLogStorage.truncate(addr);
+    }
+
+    @Test
+    public void shouldNotTruncateIfGivenSegmentIsGreaterThanCurrentSegment()
+    {
+        fsLogStorage.open();
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot truncate log: invalid address");
+
+        final long addr = PositionUtil.position(1, 0);
+        fsLogStorage.truncate(addr);
+    }
+
+    @Test
+    public void shouldNotTruncateIfGivenOffsetIsLessThanMetadataLength()
+    {
+        fsLogStorage.open();
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot truncate log: invalid address");
+
+        final long addr = PositionUtil.position(0, 0);
+        fsLogStorage.truncate(addr);
+    }
+
+    @Test
+    public void shouldNotTruncateIfGivenOffsetIsEqualToCurrentSize()
+    {
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        final int offset = PositionUtil.partitionOffset(address);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot truncate log: invalid address");
+
+        final long addr = PositionUtil.position(0, offset + MSG.length);
+        fsLogStorage.truncate(addr);
+    }
+
+    @Test
+    public void shouldNotTruncateIfGivenOffsetIsGreaterThanCurrentSize()
+    {
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        final int offset = PositionUtil.partitionOffset(address);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot truncate log: invalid address");
+
+        final long addr = PositionUtil.position(0, offset + MSG.length + 1);
+        fsLogStorage.truncate(addr);
+    }
+
+    @Test
+    public void shouldRemoveBakFilesWhenOpeningStorage() throws Exception
+    {
+        fsLogStorage.open();
+        fsLogStorage.close();
+
+        final String initialSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId());
+        final String initialSegmentBakFileName = initialSegmentFileName + ".bak";
+
+        final Path initialSegmentPath = Paths.get(initialSegmentFileName);
+        final Path initialSegmentBakPath = Paths.get(initialSegmentBakFileName);
+
+        Files.copy(initialSegmentPath, initialSegmentBakPath);
+        assertThat(logDirectory.listFiles().length).isEqualTo(2);
+
+        // when
+        fsLogStorage.open();
+
+        assertThat(logDirectory.listFiles().length).isEqualTo(1);
+        assertThat(logDirectory.listFiles()[0].getPath()).doesNotEndWith(".bak");
+    }
+
+    @Test
+    public void shouldApplyTruncatedInitialSegment() throws Exception
+    {
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        fsLogStorage.close();
+
+        final String initialSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId());
+        final String initialSegmentTruncatedFileName = initialSegmentFileName + ".bak.truncated";
+
+        final Path initialSegmentPath = Paths.get(initialSegmentFileName);
+        final Path initialSegmentBakPath = Paths.get(initialSegmentTruncatedFileName);
+
+        Files.copy(initialSegmentPath, initialSegmentBakPath);
+        Files.delete(initialSegmentPath);
+
+        assertThat(logDirectory.listFiles().length).isEqualTo(1);
+
+        // when
+        fsLogStorage.open();
+
+        // then
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        final long result = fsLogStorage.read(readBuffer, address);
+        assertThat(result).isEqualTo(address + MSG.length);
+        assertThat(readBuffer.array()).isEqualTo(MSG);
+    }
+
+    @Test
+    public void shouldApplyTruncatedNextSegment() throws Exception
+    {
+        fsLogStorage.open();
+
+        final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+        final byte[] largeBlock = new byte[remainingCapacity];
+
+        new Random().nextBytes(largeBlock);
+        fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        fsLogStorage.close();
+
+        final String nextSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId() + 1);
+        final String nextSegmentTruncatedFileName = nextSegmentFileName + ".bak.truncated";
+
+        final Path nextSegmentPath = Paths.get(nextSegmentFileName);
+        final Path nextSegmentBakPath = Paths.get(nextSegmentTruncatedFileName);
+
+        Files.copy(nextSegmentPath, nextSegmentBakPath);
+        Files.delete(nextSegmentPath);
+
+        // when
+        fsLogStorage.open();
+
+        // then
+        final String[] files = logDirectory.list();
+        for (int i = 0; i < files.length; i++)
+        {
+            assertThat(files[i]).doesNotEndWith(".bak.truncated");
+        }
+
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        final long result = fsLogStorage.read(readBuffer, address);
+        assertThat(result).isEqualTo(address + MSG.length);
+        assertThat(readBuffer.array()).isEqualTo(MSG);
+    }
+
+    @Test
+    public void shouldNotApplyTruncatedSegment() throws Exception
+    {
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        fsLogStorage.close();
+
+        final String initialSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId());
+        final String initialSegmentTruncatedFileName = initialSegmentFileName + ".bak.truncated";
+
+        final Path initialSegmentPath = Paths.get(initialSegmentFileName);
+        final Path initialSegmentBakPath = Paths.get(initialSegmentTruncatedFileName);
+
+        Files.copy(initialSegmentPath, initialSegmentBakPath);
+
+        // when
+        fsLogStorage.open();
+
+        // then
+        assertThat(logDirectory.listFiles().length).isEqualTo(1);
+        assertThat(logDirectory.listFiles()[0].getPath()).doesNotEndWith(".bak.truncated");
+
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        final long result = fsLogStorage.read(readBuffer, address);
+        assertThat(result).isEqualTo(address + MSG.length);
+        assertThat(readBuffer.array()).isEqualTo(MSG);
+    }
+
+    @Test
+    public void shouldRemoveTruncatedInitialSegment() throws Exception
+    {
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        fsLogStorage.close();
+
+        final String initialSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId());
+        final String initialSegmentTruncatedFileName = initialSegmentFileName + ".bak.truncated";
+
+        final Path initialSegmentPath = Paths.get(initialSegmentFileName);
+        final Path initialSegmentBakPath = Paths.get(initialSegmentTruncatedFileName);
+
+        Files.copy(initialSegmentPath, initialSegmentBakPath);
+        Files.delete(initialSegmentPath);
+
+        assertThat(logDirectory.listFiles().length).isEqualTo(1);
+
+        // when
+        fsLogStorage.open();
+
+        // then
+        assertThat(logDirectory.listFiles().length).isEqualTo(1);
+        assertThat(logDirectory.listFiles()[0].getPath()).doesNotEndWith(".bak.truncated");
+
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        final long result = fsLogStorage.read(readBuffer, address);
+        assertThat(result).isEqualTo(address + MSG.length);
+        assertThat(readBuffer.array()).isEqualTo(MSG);
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenMultipleTruncatedFilesDetected() throws Exception
+    {
+        fsLogStorage.open();
+
+        final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+        final byte[] largeBlock = new byte[remainingCapacity];
+
+        // segment: 0
+        new Random().nextBytes(largeBlock);
+        fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+        // segment: 1
+        new Random().nextBytes(largeBlock);
+        fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+        fsLogStorage.close();
+
+        final String initialSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId());
+        final String initialSegmentTruncatedFileName = initialSegmentFileName + ".bak.truncated";
+
+        final Path initialSegmentPath = Paths.get(initialSegmentFileName);
+        final Path initialSegmentBakPath = Paths.get(initialSegmentTruncatedFileName);
+
+        Files.copy(initialSegmentPath, initialSegmentBakPath);
+
+        final String nextSegmentFileName = fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId() + 1);
+        final String nextSegmentTruncatedFileName = nextSegmentFileName + ".bak.truncated";
+
+        final Path nextSegmentPath = Paths.get(nextSegmentFileName);
+        final Path nextSegmentBakPath = Paths.get(nextSegmentTruncatedFileName);
+
+        Files.copy(nextSegmentPath, nextSegmentBakPath);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot open log storage: multiple truncated files detected");
+
+        fsLogStorage.open();
+    }
+
+    @Test
+    public void shouldTruncateLastEntryInSameSegment()
+    {
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+
+        fsLogStorage.open();
+
+        final long firstEntry = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        final long secondEntry = fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        fsLogStorage.truncate(secondEntry);
+
+        final long result = fsLogStorage.read(readBuffer, firstEntry);
+        assertThat(result).isEqualTo(firstEntry + MSG.length);
+        assertThat(readBuffer.array()).isEqualTo(MSG);
+
+        assertThat(fsLogStorage.read(readBuffer, secondEntry)).isEqualTo(LogStorage.OP_RESULT_NO_DATA);
+    }
+
+    @Test
+    public void shouldTruncateUpToAddress()
+    {
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+
+        fsLogStorage.open();
+
+        assertThat(logDirectory.listFiles().length).isEqualTo(1);
+
+        final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+        final byte[] largeBlock = new byte[remainingCapacity];
+
+        // segment: 0
+        new Random().nextBytes(largeBlock);
+        long address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+        assertThat(address).isGreaterThan(0);
+
+        // segment: 1
+        new Random().nextBytes(largeBlock);
+        address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+        assertThat(address).isGreaterThan(0);
+
+        // segment: 2
+        new Random().nextBytes(largeBlock);
+        address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+        assertThat(address).isGreaterThan(0);
+
+        // segment: 3
+        final long addressMessage = fsLogStorage.append(ByteBuffer.wrap(MSG));
+        assertThat(addressMessage).isGreaterThan(0);
+
+        final byte[] largeBlockAfterMessage = new byte[SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH - MSG.length];
+        new Random().nextBytes(largeBlockAfterMessage);
+        final long addressTruncate = fsLogStorage.append(ByteBuffer.wrap(largeBlockAfterMessage));
+        assertThat(addressTruncate).isGreaterThan(0);
+
+        // segment: 4
+        new Random().nextBytes(largeBlock);
+        address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+        assertThat(address).isGreaterThan(0);
+
+        // segment: 5
+        new Random().nextBytes(largeBlock);
+        address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+        assertThat(address).isGreaterThan(0);
+
+        assertThat(logDirectory.listFiles().length).isEqualTo(6);
+
+        fsLogStorage.truncate(addressTruncate);
+
+        assertThat(logDirectory.listFiles().length).isEqualTo(4);
+
+        final long result = fsLogStorage.read(readBuffer, addressMessage);
+        assertThat(result).isEqualTo(addressMessage + MSG.length);
+        assertThat(readBuffer.array()).isEqualTo(MSG);
+
+        assertThat(fsLogStorage.read(readBuffer, addressTruncate)).isEqualTo(LogStorage.OP_RESULT_NO_DATA);
+
+        fsLogStorage.close();
     }
 
     protected byte[] readLogFile(final String logFilePath, final long address, final int capacity)
