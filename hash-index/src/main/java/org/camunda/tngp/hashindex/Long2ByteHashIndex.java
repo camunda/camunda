@@ -35,14 +35,11 @@ public class Long2ByteHashIndex extends HashIndex<LongKeyHandler, ByteArrayValue
         super(indexStore, LongKeyHandler.class, ByteArrayValueHandler.class);
     }
 
-    public byte[] get(long key, byte[] missingValue)
+    public byte[] get(long key)
     {
-        checkValueLength(missingValue);
-
         keyHandler.theKey = key;
-        valueHandler.theValue = missingValue;
-        get();
-        return valueHandler.theValue;
+        final boolean found = get();
+        return found ? valueHandler.theValue : null;
     }
 
     public boolean put(long key, byte[] value)
@@ -54,14 +51,11 @@ public class Long2ByteHashIndex extends HashIndex<LongKeyHandler, ByteArrayValue
         return put();
     }
 
-    public byte[] remove(long key, byte[] missingValue)
+    public byte[] remove(long key)
     {
-        checkValueLength(missingValue);
-
         keyHandler.theKey = key;
-        valueHandler.theValue = missingValue;
-        remove();
-        return valueHandler.theValue;
+        final boolean removed = remove();
+        return removed ? valueHandler.theValue : null;
     }
 
     protected void checkValueLength(byte[] value)

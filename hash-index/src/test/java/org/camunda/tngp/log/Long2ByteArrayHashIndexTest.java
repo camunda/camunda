@@ -27,7 +27,6 @@ public class Long2ByteArrayHashIndexTest
 {
     private static final byte[] VALUE = "bar".getBytes();
     private static final byte[] ANOTHER_VALUE = "plo".getBytes();
-    private static final byte[] MISSING_VALUE = "foo".getBytes();
 
     private Long2ByteHashIndex index;
     private FileChannelIndexStore indexStore;
@@ -52,20 +51,20 @@ public class Long2ByteArrayHashIndexTest
     }
 
     @Test
-    public void shouldReturnMissingValueForEmptyMap()
+    public void shouldReturnNullForEmptyMap()
     {
         // given that the map is empty
-        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        assertThat(index.get(0)).isNull();
     }
 
     @Test
-    public void shouldReturnMissingValueForNonExistingKey()
+    public void shouldReturnNullForNonExistingKey()
     {
         // given
         index.put(1, VALUE);
 
         // then
-        assertThat(index.get(0, MISSING_VALUE) == MISSING_VALUE);
+        assertThat(index.get(0)).isNull();
     }
 
     @Test
@@ -75,7 +74,7 @@ public class Long2ByteArrayHashIndexTest
         index.put(1, VALUE);
 
         // if then
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(VALUE);
+        assertThat(index.get(1)).isEqualTo(VALUE);
     }
 
     @Test
@@ -85,11 +84,11 @@ public class Long2ByteArrayHashIndexTest
         index.put(1, VALUE);
 
         // if
-        final byte[] removeResult = index.remove(1, MISSING_VALUE);
+        final byte[] removeResult = index.remove(1);
 
         //then
         assertThat(removeResult).isEqualTo(VALUE);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(MISSING_VALUE);
+        assertThat(index.get(1)).isNull();
     }
 
     @Test
@@ -100,12 +99,26 @@ public class Long2ByteArrayHashIndexTest
         index.put(2, ANOTHER_VALUE);
 
         // if
-        final byte[] removeResult = index.remove(1, MISSING_VALUE);
+        final byte[] removeResult = index.remove(1);
 
         //then
         assertThat(removeResult).isEqualTo(VALUE);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(MISSING_VALUE);
-        assertThat(index.get(2, MISSING_VALUE)).isEqualTo(ANOTHER_VALUE);
+        assertThat(index.get(1)).isNull();
+        assertThat(index.get(2)).isEqualTo(ANOTHER_VALUE);
+    }
+
+    @Test
+    public void shouldNotRemoveValueForNonExistingKey()
+    {
+        // given
+        index.put(1, VALUE);
+
+        // if
+        final byte[] removeResult = index.remove(0);
+
+        //then
+        assertThat(removeResult).isNull();
+        assertThat(index.get(1)).isEqualTo(VALUE);
     }
 
     @Test
@@ -119,8 +132,8 @@ public class Long2ByteArrayHashIndexTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.get(0, MISSING_VALUE)).isEqualTo(VALUE);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(ANOTHER_VALUE);
+        assertThat(index.get(0)).isEqualTo(VALUE);
+        assertThat(index.get(1)).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -135,8 +148,8 @@ public class Long2ByteArrayHashIndexTest
 
         // then
         assertThat(index.blockCount()).isEqualTo(3);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(VALUE);
-        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(ANOTHER_VALUE);
+        assertThat(index.get(1)).isEqualTo(VALUE);
+        assertThat(index.get(3)).isEqualTo(ANOTHER_VALUE);
     }
 
     @Test
@@ -154,7 +167,7 @@ public class Long2ByteArrayHashIndexTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE)).isEqualTo(i % 2 == 0 ? VALUE : ANOTHER_VALUE);
+            assertThat(index.get(i)).isEqualTo(i % 2 == 0 ? VALUE : ANOTHER_VALUE);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
@@ -170,7 +183,7 @@ public class Long2ByteArrayHashIndexTest
 
         for (int i = 0; i < 16; i++)
         {
-            assertThat(index.get(i, MISSING_VALUE)).isEqualTo(i < 8 ? VALUE : ANOTHER_VALUE);
+            assertThat(index.get(i)).isEqualTo(i < 8 ? VALUE : ANOTHER_VALUE);
         }
 
         assertThat(index.blockCount()).isEqualTo(16);
@@ -209,22 +222,6 @@ public class Long2ByteArrayHashIndexTest
         thrown.expect(IllegalArgumentException.class);
 
         index.put(0, "too long".getBytes());
-    }
-
-    @Test
-    public void cannotGetValueIfMissingValueIsTooLong()
-    {
-        thrown.expect(IllegalArgumentException.class);
-
-        index.get(0, "too long".getBytes());
-    }
-
-    @Test
-    public void cannotRemoveValueIfMissingValueIsTooLong()
-    {
-        thrown.expect(IllegalArgumentException.class);
-
-        index.remove(0, "too long".getBytes());
     }
 
 }
