@@ -2,8 +2,9 @@ import {jsx, Match, Default} from 'view-utils';
 import {Header} from './header';
 import {Footer} from './footer';
 import {Router, RouteView, StaticLink} from 'router';
-import {LoginRoot, Authenticated} from './login';
+import {LoginRoot} from './login';
 import {LoginForm} from './loginForm';
+import {DynamicLoader} from 'dynamicLoader';
 
 export function Main() {
   return <Router routerProperty="router">
@@ -21,13 +22,7 @@ export function Main() {
                 </a>
               </RouteView>
               <RouteView name="b">
-                <Authenticated routeName="login">
-                  bbb
-                  <a>
-                    <StaticLink name="a" params={{a: 'alina', b: 24}}></StaticLink>
-                    open a
-                  </a>
-                </Authenticated>
+                <DynamicLoader module="b" selector="b" />
               </RouteView>
               <RouteView name="login">
                 <LoginForm selector="loginForm" />

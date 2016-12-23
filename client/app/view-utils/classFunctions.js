@@ -4,7 +4,11 @@ export function hasClass(el, className) {
 
 export function addClass(el, className) {
   if (el.classList) {
-    el.classList.add(className);
+    const classes = className.split(/\s+/);
+
+    classes.forEach(className =>
+      el.classList.add(className)
+    );
   } else if (!hasClass(el, className)) {
     el.className += ' ' + className;
   }
@@ -12,7 +16,11 @@ export function addClass(el, className) {
 
 export function removeClass(el, className) {
   if (el.classList) {
-    el.classList.remove(className);
+    const classes = className.split(/\s+/);
+
+    classes.forEach(className =>
+      el.classList.remove(className)
+    );
   } else {
     el.className = el.className.replace(new RegExp('\\b'+ className+'\\b', 'g'), '');
   }

@@ -35,11 +35,7 @@ export function Match({didStateChange, children}) {
 }
 
 function findChild(children, state) {
-  for (let child of children) {
-    if (child.predicate(state)) {
-      return child;
-    }
-  }
+  return children.find(({predicate}) => predicate(state));
 }
 
 function replaceChild(node, update, eventsBus, child) {

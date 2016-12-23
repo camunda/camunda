@@ -2,6 +2,7 @@ import {createRouterReducer, getRouter} from 'router';
 import {combineReducers} from 'redux';
 import {reducer as loginReducer} from './login';
 import {reducer as loginFormReducer} from './loginForm';
+import {createDynamicReducer} from 'dynamicLoader';
 
 //For now child reducer is just child, but that will change
 const router = getRouter();
@@ -12,4 +13,5 @@ export const reducer = combineReducers({
   router: routerReducer,
   loginForm: loginFormReducer,
   version: (state = 'alpha-cat-2') => state,
+  b: createDynamicReducer('b')
 });

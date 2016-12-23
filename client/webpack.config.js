@@ -7,7 +7,7 @@ module.exports = {
   target: 'web',
   entry: {
     app: path.resolve(__dirname, 'app', 'app.js'),
-    vendor: ['bpmn-js', 'lodash.isequal', 'redux', 'promise-polyfill']
+    vendor: ['lodash.isequal', 'redux', 'babel-polyfill']
   },
   output: {
     publicPath: '/',
@@ -66,6 +66,7 @@ module.exports = {
   ],
   devServer: {
     contentBase: './dist',
+    host: '0.0.0.0',
     port: 9000,
     inline: true,
     open: true,

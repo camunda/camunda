@@ -29,7 +29,8 @@ function createNewRouter() {
   function onUrlChange() {
     const path = $document.location.pathname + $document.location.search;
 
-    for (let {test, name} of routes) {
+    for (let i = 0; i < routes.length; i++) {
+      const {name, test} = routes[i];
       const params = test(path);
 
       if (params) {
@@ -65,19 +66,18 @@ function createNewRouter() {
   }
 
   function getUrl(routeName, params) {
-    for (let {name, construct} of routes) {
-      if (name === routeName) {
-        return construct(params);
-      }
-    }
+    const {construct} = routes.find(({name}) => {
+      return routeName === name;
+    });
+
+    return construct(params);
   }
 
   function getRouteReducer(name) {
-    for (let {name: routeName, reducer} of routes) {
-      if (name === routeName) {
-        return reducer;
-      }
-    }
+    return routes
+      .find(({name: routeName}) => {
+        return routeName === name;
+      }).reducer;
   }
 }
 

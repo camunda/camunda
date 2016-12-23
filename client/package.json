@@ -43,9 +43,9 @@
     "webpack-dev-server": "^1.16.2"
   },
   "dependencies": {
+    "babel-polyfill": "^6.20.0",
     "bpmn-js": "^0.18.3",
     "lodash.isequal": "^4.4.0",
-    "promise-polyfill": "^6.0.2",
     "redux": "^3.6.0"
   }
 }

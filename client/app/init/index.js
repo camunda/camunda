@@ -1,4 +1,3 @@
-import './polyfill';
 import {Main, reducer} from 'main';
 import {mountMain} from './mount';
 import {initStore} from './store';
