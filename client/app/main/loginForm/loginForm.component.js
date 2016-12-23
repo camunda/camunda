@@ -19,14 +19,14 @@ export function LoginForm({selector}) {
         <span className="login__text">user:</span>
         <input type="text">
           <SetInputFieldValue getValue="user" />
-          <OnEvent event="keyup" listener={changeUser} />
+          <OnEvent event="keyup" listener={onUserKeyup} />
         </input>
       </div>
       <div className="login__section">
         <span className="login__text">password:</span>
         <input type="password">
           <SetInputFieldValue getValue="password" />
-          <OnEvent event="keyup" listener={changePassword} />
+          <OnEvent event="keyup" listener={onPasswordKeyup} />
         </input>
       </div>
       <div className="login__section" style="flex-direction: row-reverse">
@@ -43,5 +43,13 @@ export function LoginForm({selector}) {
     event.preventDefault();
 
     performLogin(user, password);
+  }
+
+  function onUserKeyup({node}) {
+    changeUser(node.value);
+  }
+
+  function onPasswordKeyup({node}) {
+    changePassword(node.value);
   }
 }

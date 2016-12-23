@@ -123,27 +123,23 @@ describe('loginForm service', () => {
 
   describe('changeUser', () => {
     it('expected action to be dispatched on change', () => {
-      const node = {
-        value: 'd1'
-      };
+      const user = 'd1';
 
-      changeUser({node});
+      changeUser(user);
 
       expect(dispatchAction.calledWith(userChangeAction)).to.eql(true);
-      expect(createChangeLoginUserAction.calledWith(node.value)).to.eql(true);
+      expect(createChangeLoginUserAction.calledWith(user)).to.eql(true);
     });
   });
 
   describe('changePassword', () => {
     it('expected action to be dispatched on change', () => {
-      const node = {
-        value: 'd1'
-      };
+      const password = 'p1';
 
-      changePassword({node});
+      changePassword(password);
 
       expect(dispatchAction.calledWith(passChangeAction)).to.eql(true);
-      expect(createChangeLoginPasswordAction.calledWith(node.value)).to.eql(true);
+      expect(createChangeLoginPasswordAction.calledWith(password)).to.eql(true);
     });
   });
 });

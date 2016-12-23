@@ -25,10 +25,10 @@ export function performLogin(user, password) {
     });
 }
 
-export function changeUser({node: input}) {
-  dispatchAction(createChangeLoginUserAction(input.value));
+export function changeUser(user) {
+  dispatchAction(createChangeLoginUserAction(user));
 }
 
-export function changePassword({node: input}) {
-  dispatchAction(createChangeLoginPasswordAction(input.value));
+export function changePassword(password) {
+  dispatchAction(createChangeLoginPasswordAction(password));
 }
