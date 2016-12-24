@@ -5,12 +5,12 @@ import {StaticLink} from 'router';
 export function BComponent({selector}) {
   return <Authenticated routeName="login">
     <Select selector={selector}>
-      bbb
+      b view <br />
       <a>
         <StaticLink name="a" params={{a: 'alina', b: 24}}></StaticLink>
         open a <br />
-        <Text property="b" />
       </a>
+      <Text property="b" />
     </Select>
   </Authenticated>;
 }
