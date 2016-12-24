@@ -2,7 +2,7 @@ import {jsx, Match, Default} from 'view-utils';
 import {Header} from './header';
 import {Footer} from './footer';
 import {Router, RouteView, StaticLink} from 'router';
-import {LoginRoot} from './login';
+import {LoginRoot, Authenticated} from './login';
 import {LoginForm} from './loginForm';
 import {DynamicLoader} from 'dynamicLoader';
 
@@ -22,7 +22,9 @@ export function Main() {
                 </a>
               </RouteView>
               <RouteView name="b">
-                <DynamicLoader module="b" selector="b" />
+                <Authenticated routeName="login">
+                  <DynamicLoader module="b" selector="b" />
+                </Authenticated>
               </RouteView>
               <RouteView name="login">
                 <LoginForm selector="loginForm" />
