@@ -66,18 +66,23 @@ function createNewRouter() {
   }
 
   function getUrl(routeName, params) {
-    const {construct} = routes.find(({name}) => {
-      return routeName === name;
-    });
+    const route = findRoute(routeName);
 
-    return construct(params);
+    if (route && typeof route.construct === 'function') {
+      return route.construct(params);
+    }
   }
 
   function getRouteReducer(name) {
-    return routes
-      .find(({name: routeName}) => {
-        return routeName === name;
-      }).reducer;
+    const route = findRoute(name);
+
+    return route && route.reducer;
+  }
+
+  function findRoute(name) {
+    return routes.find(({name: routeName}) => {
+      return routeName === name;
+    });
   }
 }
 
