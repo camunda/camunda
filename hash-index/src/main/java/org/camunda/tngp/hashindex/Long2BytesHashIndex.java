@@ -22,15 +22,15 @@ import org.camunda.tngp.hashindex.types.LongKeyHandler;
  * {@link HashIndex} that maps Long keys to Byte Array values. All values have a
  * fixed size which is defined on creation.
  */
-public class Long2ByteHashIndex extends HashIndex<LongKeyHandler, ByteArrayValueHandler>
+public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValueHandler>
 {
 
-    public Long2ByteHashIndex(IndexStore indexStore, int indexSize, int blockLength, int valueLength)
+    public Long2BytesHashIndex(IndexStore indexStore, int indexSize, int blockLength, int valueLength)
     {
         super(indexStore, LongKeyHandler.class, ByteArrayValueHandler.class, indexSize, blockLength, SIZE_OF_LONG, valueLength);
     }
 
-    public Long2ByteHashIndex(IndexStore indexStore)
+    public Long2BytesHashIndex(IndexStore indexStore)
     {
         super(indexStore, LongKeyHandler.class, ByteArrayValueHandler.class);
     }

@@ -10,12 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.log;
+package org.camunda.tngp.hashindex;
 
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.hashindex.Long2ByteHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
@@ -23,12 +22,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class Long2ByteArrayHashIndexTest
+public class Long2BytesHashIndexTest
 {
     private static final byte[] VALUE = "bar".getBytes();
     private static final byte[] ANOTHER_VALUE = "plo".getBytes();
 
-    private Long2ByteHashIndex index;
+    private Long2BytesHashIndex index;
     private FileChannelIndexStore indexStore;
 
     @Rule
@@ -41,7 +40,7 @@ public class Long2ByteArrayHashIndexTest
         final int valueLength = 3 * SIZE_OF_BYTE;
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2ByteHashIndex(indexStore, indexSize, 1, valueLength);
+        index = new Long2BytesHashIndex(indexStore, indexSize, 1, valueLength);
     }
 
     @After

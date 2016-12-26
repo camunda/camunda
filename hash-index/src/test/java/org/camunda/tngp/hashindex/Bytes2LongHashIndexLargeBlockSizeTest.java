@@ -1,10 +1,9 @@
-package org.camunda.tngp.log;
+package org.camunda.tngp.hashindex;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 
-import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;

@@ -1,6 +1,5 @@
-package org.camunda.tngp.log;
+package org.camunda.tngp.hashindex;
 
-import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;

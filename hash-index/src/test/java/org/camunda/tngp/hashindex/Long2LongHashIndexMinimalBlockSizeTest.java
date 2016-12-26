@@ -1,14 +1,13 @@
-package org.camunda.tngp.log;
+package org.camunda.tngp.hashindex;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
-import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class Long2LongHashIndexLargeBlockSizeTest
+public class Long2LongHashIndexMinimalBlockSizeTest
 {
     static final long MISSING_VALUE = -2;
 
@@ -21,7 +20,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
         final int indexSize = 16;
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, indexSize, 3);
+        index = new Long2LongHashIndex(indexStore, indexSize, 1);
     }
 
     @After
@@ -88,7 +87,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
     }
 
     @Test
-    public void shouldNotSplitBeforeBlockIsFull()
+    public void shouldSplit()
     {
         // given
         index.put(0, 0);
@@ -97,49 +96,25 @@ public class Long2LongHashIndexLargeBlockSizeTest
         index.put(1, 1);
 
         // then
-        assertThat(index.blockCount()).isEqualTo(1);
+        assertThat(index.blockCount()).isEqualTo(2);
         assertThat(index.get(0, MISSING_VALUE)).isEqualTo(0);
         assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
     }
 
     @Test
-    public void shouldSplitWhenBlockIsFull()
+    public void shouldSplitTwoTimes()
     {
         // given
         index.put(1, 1);
-        index.put(2, 2);
-        index.put(3, 3);
         assertThat(index.blockCount()).isEqualTo(1);
 
         // if
-        index.put(4, 4);
-
-        // then
-        assertThat(index.blockCount()).isEqualTo(2);
-        assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
-        assertThat(index.get(2, MISSING_VALUE)).isEqualTo(2);
-        assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
-        assertThat(index.get(4, MISSING_VALUE)).isEqualTo(4);
-    }
-
-    @Test
-    public void shouldSplitMultipleTimesWhenBlockIsFull()
-    {
-        // given
-        index.put(1, 1);
         index.put(3, 3);
-        index.put(5, 5);
-        assertThat(index.blockCount()).isEqualTo(1);
-
-        // if
-        index.put(7, 7);
 
         // then
         assertThat(index.blockCount()).isEqualTo(3);
         assertThat(index.get(1, MISSING_VALUE)).isEqualTo(1);
         assertThat(index.get(3, MISSING_VALUE)).isEqualTo(3);
-        assertThat(index.get(5, MISSING_VALUE)).isEqualTo(5);
-        assertThat(index.get(7, MISSING_VALUE)).isEqualTo(7);
     }
 
     @Test
@@ -160,7 +135,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
             assertThat(index.get(i, MISSING_VALUE)).isEqualTo(i);
         }
 
-        assertThat(index.blockCount()).isEqualTo(8);
+        assertThat(index.blockCount()).isEqualTo(16);
     }
 
     @Test
@@ -176,7 +151,7 @@ public class Long2LongHashIndexLargeBlockSizeTest
             assertThat(index.get(i, MISSING_VALUE)).isEqualTo(i);
         }
 
-        assertThat(index.blockCount()).isEqualTo(8);
+        assertThat(index.blockCount()).isEqualTo(16);
     }
 
     @Test
@@ -192,6 +167,22 @@ public class Long2LongHashIndexLargeBlockSizeTest
             assertThat(index.put(i, i)).isTrue();
         }
 
-        assertThat(index.blockCount()).isEqualTo(8);
+        assertThat(index.blockCount()).isEqualTo(16);
+    }
+
+    @Test
+    public void cannotPutValueIfIndexFull()
+    {
+        // given
+        index.put(0, 0);
+        try
+        {
+            index.put(16, 0);
+            fail("Exception expected");
+        }
+        catch (final RuntimeException e)
+        {
+            // expected
+        }
     }
 }
