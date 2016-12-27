@@ -7,7 +7,6 @@ module.exports = {
   target: 'web',
   entry: {
     app: path.resolve(__dirname, 'app', 'app.js'),
-    vendor: ['lodash.isequal', 'redux', 'babel-polyfill']
   },
   output: {
     publicPath: '/',
@@ -39,6 +38,10 @@ module.exports = {
         loader: 'url-loader'
       },
       {
+        test: /\.gif$/,
+        loader: 'url-loader'
+      },
+      {
         test: /\.js$/,
         include: [
           path.resolve(__dirname, 'app'),
@@ -58,7 +61,7 @@ module.exports = {
   },
   plugins: [
     new webpack.optimize.CommonsChunkPlugin({
-      names: ['vendor', 'manifest']
+      names: ['manifest']
     }),
     new HtmlWebpackPlugin({
       title: 'Camunda Optimize'

@@ -31,7 +31,7 @@ function addProductionPlugins() {
 
 function correctLoadersForProduction(loaders) {
   return loaders.map(function(loader) {
-    if (loader.loader === 'url-loader') {
+    if (loader.loader === 'url-loader' && !loader.test.test('.gif')) {
       return Object.assign(loader, {
         loader: 'file-loader'
       });
