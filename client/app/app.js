@@ -1,14 +1,11 @@
-import './styles.scss';
+import {addSplash} from './splash';
 
-const loader = document.createElement('div');
+const removeSplash = addSplash();
 
-loader.className = 'start-loader';
-
-document.body.appendChild(loader);
-
-require.ensure(['lodash.isequal', 'redux', 'babel-polyfill', './init'], () => {
-  document.body.removeChild(loader);
+require.ensure(['lodash.isequal', 'redux', 'babel-polyfill', './init', './styles.scss'], () => {
+  removeSplash();
 
   require('./init');
+  require('./styles.scss');
 });
 
