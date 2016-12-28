@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.logstreams;
 
-import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceName;
 
 public class LogStreamServiceNames

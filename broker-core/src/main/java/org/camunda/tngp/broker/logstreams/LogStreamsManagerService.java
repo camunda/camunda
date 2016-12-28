@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.logstreams;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,11 +9,11 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Random;
 
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamsComponentCfg;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamCfg;
+import org.camunda.tngp.broker.logstreams.cfg.LogStreamsComponentCfg;
 import org.camunda.tngp.broker.system.ConfigurationManager;
-import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.logstreams.LogStreams;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;

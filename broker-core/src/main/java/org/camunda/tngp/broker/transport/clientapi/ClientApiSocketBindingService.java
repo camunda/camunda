@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;
 
@@ -39,6 +40,12 @@ public class ClientApiSocketBindingService implements Service<ServerSocketBindin
                 serverSocketBinding = binding;
                 System.out.format("Bound %s to %s.\n", bindingName, bindAddress);
             }));
+    }
+
+    @Override
+    public void stop(ServiceStopContext arg0)
+    {
+
     }
 
     @Override

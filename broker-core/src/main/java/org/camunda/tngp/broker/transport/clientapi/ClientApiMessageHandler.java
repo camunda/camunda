@@ -1,8 +1,11 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.transport.protocol.Protocols.*;
+import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
+import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
 
 import java.util.function.Consumer;
+
+import javax.swing.ButtonGroup;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -10,8 +13,9 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.requests.LogStreamRequest;
 import org.camunda.tngp.broker.logstreams.requests.LogStreamRequestManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.logstreams.LogStream;
-import org.camunda.tngp.logstreams.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.PublishEventsRequestDecoder;
@@ -46,53 +50,34 @@ public class ClientApiMessageHandler
         cmdQueue.drain(cmdConsumer);
 
         int messageOffset = offset + TransportHeaderDescriptor.headerLength();
-        final int protocol = buffer.getInt(TransportHeaderDescriptor.protocolIdOffset(offset));
+        int messageLength = length - TransportHeaderDescriptor.headerLength();
 
+        final int protocol = buffer.getInt(TransportHeaderDescriptor.protocolIdOffset(offset));
         if (protocol == REQUEST_RESPONSE)
         {
             messageOffset += RequestResponseProtocolHeaderDescriptor.headerLength();
+            messageLength -= RequestResponseProtocolHeaderDescriptor.headerLength();
         }
         else if (protocol == FULL_DUPLEX_SINGLE_MESSAGE)
         {
             messageOffset += SingleMessageHeaderDescriptor.HEADER_LENGTH;
+            messageLength -= SingleMessageHeaderDescriptor.HEADER_LENGTH;
         }
 
         messageHeaderDecoder.wrap(buffer, messageOffset);
+
         final int templateId = messageHeaderDecoder.templateId();
 
-        if (100 <= templateId && templateId <= 199)
+        switch (templateId)
         {
-            isHandled = handleDataMessage(transportChannel, protocol, templateId, buffer, offset, messageOffset);
-        }
-        else if (1 <= templateId && templateId <= 99)
-        {
-            isHandled = handleControlMessage(templateId, transportChannel, buffer, offset, length);
-        }
-        else
-        {
-            // TODO: error, unrecognized message
-        }
+            case ExecuteCommandRequestDecoder.TEMPLATE_ID:
 
-        return isHandled;
-    }
+                executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
-    private boolean handleDataMessage(TransportChannel transportChannel, int templateId, int protocol, DirectBuffer buffer, int offset, int messageOffset)
-    {
-        boolean isHandled = false;
+                final long topicId = executeCommandRequestDecoder.topicId();
+                final LogStream logStream = logStreamsById.get(topicId);
 
-        if (executeCommandRequestDecoder.sbeTemplateId() == templateId)
-        {
-            executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
-
-            final long topicId = executeCommandRequestDecoder.topicId();
-            final LogStream logStream = logStreamsById.get(topicId);
-            final LogStreamRequestManager requestQueue = null;
-
-            if (logStream != null)
-            {
-                final LogStreamRequest request = requestQueue.open();
-
-                if (request != null)
+                if (logStream != null)
                 {
                     logStreamWriter.wrap(logStream);
 
@@ -103,49 +88,50 @@ public class ClientApiMessageHandler
 
                     if (eventPosition >= 0)
                     {
-                        request.setChannelId(transportChannel.getId());
-                        request.setLogStreamPosition(eventPosition);
-
                         if (protocol == REQUEST_RESPONSE)
                         {
-                            request.setConnectionId(buffer.getLong(RequestResponseProtocolHeaderDescriptor.connectionIdOffset(offset)));
-                            request.setRequestId(buffer.getLong(RequestResponseProtocolHeaderDescriptor.requestIdOffset(offset)));
                         }
 
-                        request.enqueue();
                         isHandled = true;
                     }
                     else
                     {
-                        request.close();
                         isHandled = false;
                     }
                 }
-            }
-            else
-            {
-                // TODO: send STREAM_NOT_FOUND error message
-            }
-        }
-        else
-        {
-            // TODO: publish events
+                else
+                {
+                    // TODO: send STREAM_NOT_FOUND error message
+                }
+
+                break;
+
+            case PublishEventsRequestDecoder.TEMPLATE_ID:
+
+                isHandled = handlePublishEventsRequest(transportChannel, buffer);
+
+                break;
+
+            case ControlMessageRequestDecoder.TEMPLATE_ID:
+
+                long publishPosition = -1;
+
+                do
+                {
+                    publishPosition = controlMessageDispatcher.offer(buffer, messageOffset, messageLength, transportChannel.getId());
+                }
+                while (publishPosition == -2);
+
+                isHandled = publishPosition >= 0;
+
+                break;
+
+            default:
+
+                break;
         }
 
         return isHandled;
-    }
-
-    private boolean handleControlMessage(int templateId, TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
-    {
-        long publishPosition = -1;
-
-        do
-        {
-            publishPosition = controlMessageDispatcher.offer(buffer, offset, length, transportChannel.getId());
-        }
-        while (publishPosition == -2);
-
-        return publishPosition >= 0;
     }
 
     public void addStream(LogStream logStream)

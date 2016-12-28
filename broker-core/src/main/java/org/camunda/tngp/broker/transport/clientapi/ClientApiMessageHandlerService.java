@@ -1,11 +1,12 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.logstreams.LogStream;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler>
 {
@@ -27,6 +28,12 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
         final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
 
         service = new ClientApiMessageHandler(sendBuffer, controlMessageBuffer);
+    }
+
+    @Override
+    public void stop(ServiceStopContext arg0)
+    {
+        // nothing to do
     }
 
     @Override

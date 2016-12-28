@@ -37,38 +37,12 @@
 
   </types>
 
-  <!-- Error Response -->
+  <!-- L1  -->
 
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
     <field name="errorCode" id="1" type="uint16" />
     <data name="errorData" id="2" type="varDataEncoding" />
   </sbe:message>
-
-  <!-- Control Messages 0 - 99 -->
-
-  <sbe:message name="CreateTaskSubscription" id="1">
-    <field name="consumerId" id="1" type="uint16" />
-    <field name="lockDuration" id="2" type="uint64" />
-    <field name="initialCredits" id="3" type="uint32" />
-    <data name="taskType" id="4" type="varDataEncoding" />
-  </sbe:message>
-
-  <sbe:message name="CloseTaskSubscription" id="2">
-    <field name="consumerId" id="1" type="uint16" />
-    <field name="subscriptionId" id="2" type="uint64" />
-  </sbe:message>
-
-  <sbe:message name="TaskSubscriptionAck" id="3">
-    <field name="id" id="1" type="uint64" />
-  </sbe:message>
-
-  <sbe:message name="ProvideSubscriptionCredits" id="4">
-    <field name="consumerId" id="1" type="uint16" />
-    <field name="subscriptionId" id="2" type="uint64" />
-    <field name="credits" id="2" type="uint32" />
-  </sbe:message>
-
-  <!-- Log Stream Messages 100 - 199 -->
 
   <sbe:message name="PublishEventsRequest" id="100">
     <field name="topicId" id="1" type="uint32" />
@@ -97,10 +71,18 @@
     <field name="topicId" id="1" type="uint32" />
     <field name="longKey" id="3" type="uint64" />
     <data name="bytesKey" id="4" type="varDataEncoding" />
+    <data name="command" id="3" type="varDataEncoding" />
+  </sbe:message>
+  
+  <sbe:message name="ControlMessageRequest" id="104">
     <data name="data" id="3" type="varDataEncoding" />
   </sbe:message>
 
-  <!-- Commands 200 - 399 -->
+  <sbe:message name="ControlMessageResponse" id="105">
+    <data name="data" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+  <!-- L2 Commands 200 - 399 -->
 
   <sbe:message name="TaskEvent" id="200">
     <field name="eventType" id="1" type="taskEventType" />
@@ -111,6 +93,30 @@
     </group>
     <data name="taskType" id="1" type="varDataEncoding" />
     <data name="payload" id="5" type="varDataEncoding" />
+  </sbe:message>
+  
+   <!-- L2 Control Messages 0 - 99 -->
+
+  <sbe:message name="CreateTaskSubscription" id="300">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="lockDuration" id="2" type="uint64" />
+    <field name="initialCredits" id="3" type="uint32" />
+    <data name="taskType" id="4" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="CloseTaskSubscription" id="301">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="subscriptionId" id="2" type="uint64" />
+  </sbe:message>
+
+  <sbe:message name="TaskSubscriptionAck" id="302">
+    <field name="id" id="1" type="uint64" />
+  </sbe:message>
+
+  <sbe:message name="ProvideSubscriptionCredits" id="303">
+    <field name="consumerId" id="1" type="uint16" />
+    <field name="subscriptionId" id="2" type="uint64" />
+    <field name="credits" id="2" type="uint32" />
   </sbe:message>
 
 </sbe:messageSchema>

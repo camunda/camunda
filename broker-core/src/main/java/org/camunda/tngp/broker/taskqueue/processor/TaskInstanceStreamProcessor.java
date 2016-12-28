@@ -4,8 +4,8 @@ import org.camunda.tngp.broker.logstreams.requests.LogStreamRequest;
 import org.camunda.tngp.broker.logstreams.requests.LogStreamRequestManager;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.EncodedStuff;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
-import org.camunda.tngp.logstreams.LogStreamWriter;
-import org.camunda.tngp.logstreams.LoggedEvent;
+import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
@@ -28,7 +28,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected long eventKey = 0;
 
     @Override
-    public void open(StreamProcessorContext streamProcessorContext)
+    public void onOpen(StreamProcessorContext streamProcessorContext)
     {
         streamId = streamProcessorContext.getSourceStream().getId();
     }
@@ -98,13 +98,11 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         }
 
         @Override
-        public boolean writeEvents(LogStreamWriter writer)
+        public long writeEvent(LogStreamWriter writer)
         {
-            final long position = writer.key(eventKey)
+            return writer.key(eventKey)
                 .value(encodedEvent.getBuffer(), 0, encodedEvent.getEncodedLength())
                 .tryWrite();
-
-            return position >= 0;
         }
 
         @Override

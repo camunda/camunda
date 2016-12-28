@@ -8,12 +8,12 @@ import org.camunda.tngp.broker.taskqueue.processor.stuff.DataStuff;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.EncodableDataStuff;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.ListField;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.VarLengthField;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.clientapi.TaskEventDecoder;
 import org.camunda.tngp.protocol.clientapi.TaskEventEncoder;
 import org.camunda.tngp.protocol.clientapi.TaskEventEncoder.HeadersEncoder;
 import org.camunda.tngp.protocol.clientapi.TaskEventType;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 
 public class TaskEvent implements EncodableDataStuff
 {
