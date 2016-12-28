@@ -22,6 +22,13 @@ module.exports = {
   module: {
     loaders: [
       {
+        test: /\.html$/,
+        loader: 'html-loader',
+        include: [
+          path.resolve(__dirname, 'app'),
+        ]
+      },
+      {
         test: /\.json$/,
         loader: 'json-loader'
       },
@@ -31,15 +38,24 @@ module.exports = {
           'style-loader',
           'css-loader?sourceMap',
           'sass-loader?sourceMap'
+        ],
+        include: [
+          path.resolve(__dirname, 'app'),
         ]
       },
       {
         test: /\.(jpg|png)$/,
-        loader: 'url-loader'
+        loader: 'url-loader',
+        include: [
+          path.resolve(__dirname, 'app'),
+        ]
       },
       {
         test: /\.gif$/,
-        loader: 'url-loader'
+        loader: 'url-loader',
+        include: [
+          path.resolve(__dirname, 'app'),
+        ]
       },
       {
         test: /\.js$/,
@@ -64,7 +80,8 @@ module.exports = {
       names: ['manifest']
     }),
     new HtmlWebpackPlugin({
-      title: 'Camunda Optimize'
+      title: 'Catmunda Optimize',
+      template: 'app/index.html'
     })
   ],
   devServer: {

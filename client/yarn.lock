@@ -139,6 +139,10 @@ assertion-error@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/assertion-error/-/assertion-error-1.0.2.tgz#13ca515d86206da0bac66e834dd397d87581094c"
 
+ast-types@0.9.2:
+  version "0.9.2"
+  resolved "https://registry.yarnpkg.com/ast-types/-/ast-types-0.9.2.tgz#2cc19979d15c655108bf565323b8e7ee38751f6b"
+
 async-each@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/async-each/-/async-each-1.0.1.tgz#19d386a1d9edc6e7c1c85d388aedbcc56d33602d"
@@ -1637,6 +1641,13 @@ es6-symbol@3, es6-symbol@^3.0.2, es6-symbol@~3.1:
     d "~0.1.1"
     es5-ext "~0.10.11"
 
+es6-templates@^0.2.2:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/es6-templates/-/es6-templates-0.2.3.tgz#5cb9ac9fb1ded6eb1239342b81d792bbb4078ee4"
+  dependencies:
+    recast "~0.11.12"
+    through "~2.3.6"
+
 escape-html@~1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/escape-html/-/escape-html-1.0.3.tgz#0258eae4d3d0c0974de1c169188ef0051d1d1988"
@@ -1648,6 +1659,10 @@ escape-string-regexp@1.0.5, escape-string-regexp@^1.0.2:
 esprima@^2.6.0:
   version "2.7.3"
   resolved "https://registry.yarnpkg.com/esprima/-/esprima-2.7.3.tgz#96e3b70d5779f6ad49cd032673d1c312767ba581"
+
+esprima@~3.1.0:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/esprima/-/esprima-3.1.3.tgz#fdca51cee6133895e3c88d535ce49dbff62a4633"
 
 esutils@^2.0.0, esutils@^2.0.2:
   version "2.0.2"
@@ -2102,7 +2117,17 @@ html-comment-regex@^1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/html-comment-regex/-/html-comment-regex-1.1.1.tgz#668b93776eaae55ebde8f3ad464b307a4963625e"
 
-html-minifier@^3.1.0:
+html-loader@^0.4.4:
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/html-loader/-/html-loader-0.4.4.tgz#f2b5b9acd5e035ff3ab5fd369c13c97a7bb014da"
+  dependencies:
+    es6-templates "^0.2.2"
+    fastparse "^1.1.1"
+    html-minifier "^3.0.1"
+    loader-utils "^0.2.15"
+    object-assign "^4.1.0"
+
+html-minifier@^3.0.1, html-minifier@^3.1.0:
   version "3.2.3"
   resolved "https://registry.yarnpkg.com/html-minifier/-/html-minifier-3.2.3.tgz#d2ff536e24d95726c332493d8f77d84dbed85372"
   dependencies:
@@ -3497,7 +3522,7 @@ pretty-error@^2.0.2:
     renderkid "~2.0.0"
     utila "~0.4"
 
-private@^0.1.6:
+private@^0.1.6, private@~0.1.5:
   version "0.1.6"
   resolved "https://registry.yarnpkg.com/private/-/private-0.1.6.tgz#55c6a976d0f9bafb9924851350fe47b9b5fbb7c1"
 
@@ -3665,6 +3690,15 @@ readdirp@^2.0.0:
     minimatch "^3.0.2"
     readable-stream "^2.0.2"
     set-immediate-shim "^1.0.1"
+
+recast@~0.11.12:
+  version "0.11.18"
+  resolved "https://registry.yarnpkg.com/recast/-/recast-0.11.18.tgz#07af6257ca769868815209401d4d60eef1b5b947"
+  dependencies:
+    ast-types "0.9.2"
+    esprima "~3.1.0"
+    private "~0.1.5"
+    source-map "~0.5.0"
 
 redent@^1.0.0:
   version "1.0.0"
@@ -4052,7 +4086,7 @@ source-map@^0.1.41:
   dependencies:
     amdefine ">=0.0.4"
 
-source-map@^0.5.0, source-map@^0.5.3, source-map@^0.5.6, source-map@~0.5.1:
+source-map@^0.5.0, source-map@^0.5.3, source-map@^0.5.6, source-map@~0.5.0, source-map@~0.5.1:
   version "0.5.6"
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.5.6.tgz#75ce38f52bf0733c5a7f0c118d81334a2bb5f412"
 
@@ -4220,6 +4254,10 @@ tar@^2.0.0, tar@~2.2.1:
 text-encoding@0.5.2:
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/text-encoding/-/text-encoding-0.5.2.tgz#85b4660819f088777609465551690fea137d824a"
+
+through@~2.3.6:
+  version "2.3.8"
+  resolved "https://registry.yarnpkg.com/through/-/through-2.3.8.tgz#0dd4c9ffaabc357960b1b724115d7e0e86a2e1f5"
 
 timers-browserify@^2.0.2:
   version "2.0.2"
