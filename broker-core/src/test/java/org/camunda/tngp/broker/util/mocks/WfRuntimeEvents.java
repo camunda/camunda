@@ -5,16 +5,8 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventWriter;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnFlowElementEventWriter;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnProcessEventWriter;
-import org.camunda.tngp.graph.bpmn.ExecutionEventType;
-
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 
 public class WfRuntimeEvents
 {
@@ -64,7 +56,7 @@ public class WfRuntimeEvents
     {
         final BpmnProcessEventWriter writer = new BpmnProcessEventWriter();
 
-        writer.event(event);
+        writer.eventWriter(event);
         writer.initialElementId(FLOW_ELEMENT_ID);
         writer.key(PROCESS_INSTANCE_ID);
         writer.processId(PROCESS_ID);

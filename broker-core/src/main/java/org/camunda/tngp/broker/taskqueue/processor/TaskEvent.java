@@ -4,8 +4,8 @@ import java.util.Iterator;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.logstreams.processor.BrokerEvent;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.DataStuff;
-import org.camunda.tngp.broker.taskqueue.processor.stuff.EncodableDataStuff;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.ListField;
 import org.camunda.tngp.broker.taskqueue.processor.stuff.VarLengthField;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
@@ -15,7 +15,7 @@ import org.camunda.tngp.protocol.clientapi.TaskEventEncoder;
 import org.camunda.tngp.protocol.clientapi.TaskEventEncoder.HeadersEncoder;
 import org.camunda.tngp.protocol.clientapi.TaskEventType;
 
-public class TaskEvent implements EncodableDataStuff
+public class TaskEvent implements BrokerEvent
 {
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final TaskEventDecoder decoder = new TaskEventDecoder();
@@ -66,16 +66,18 @@ public class TaskEvent implements EncodableDataStuff
         }
     }
 
-    public int getEncodedLength()
+    @Override
+    public int getLength()
     {
         return headerEncoder.encodedLength() +
                 encoder.sbeBlockLength() +
-                headers.getEncodedLength() +
-                taskType.getEncodedLength() +
-                payload.getEncodedLength();
+                headers.getLength() +
+                taskType.getLength() +
+                payload.getLength();
     }
 
-    public void encode(MutableDirectBuffer buffer, int offset)
+    @Override
+    public void write(MutableDirectBuffer buffer, int offset)
     {
         headerEncoder.wrap(buffer, offset);
 
@@ -176,11 +178,11 @@ public class TaskEvent implements EncodableDataStuff
         }
 
         @Override
-        public int getEncodedLength()
+        public int getLength()
         {
             int length = 0;
-            length += headerName.getEncodedLength();
-            length += headerValue.getEncodedLength();
+            length += headerName.getLength();
+            length += headerValue.getLength();
             return length;
         }
     }

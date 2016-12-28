@@ -1,13 +1,14 @@
 package org.camunda.tngp.broker.taskqueue.log.idx;
 
-import static org.camunda.tngp.broker.test.util.BufferMatcher.*;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.camunda.tngp.broker.test.util.BufferMatcher.hasBytes;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader;
-import org.camunda.tngp.broker.logstreams.Templates;
-import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
+import javax.xml.transform.Templates;
+
 import org.camunda.tngp.broker.taskqueue.TestTaskQueueLogEntries;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;

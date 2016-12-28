@@ -11,9 +11,7 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler>
 {
     private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
-
     private final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
-
     protected ClientApiMessageHandler service;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()

@@ -7,9 +7,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader;
-import org.camunda.tngp.broker.logstreams.Templates;
-import org.camunda.tngp.broker.services.HashIndexManager;
+import javax.xml.transform.Templates;
+
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;

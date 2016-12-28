@@ -18,8 +18,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
-import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;

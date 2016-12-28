@@ -8,11 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.taskqueue.TaskErrors;
-import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
-import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
-import org.camunda.tngp.broker.taskqueue.subscription.OngoingTaskSubscription;
-import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.taskqueue.CloseTaskSubscriptionDecoder;

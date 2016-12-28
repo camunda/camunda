@@ -5,12 +5,11 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.taskqueue.PollAndLockTasksEncoder;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class PollAndLockTaskRequestReaderTest
 {

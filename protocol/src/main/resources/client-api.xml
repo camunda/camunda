@@ -18,8 +18,7 @@
       <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
     </composite>
     
-    <!-- Task Queue  -->
-    
+    <!-- Task Queue  -->    
     <composite name="lockedTask">
       <type name="id" id="1" primitiveType="uint64" />
       <type name="lockTime" id="2" primitiveType="uint64" />

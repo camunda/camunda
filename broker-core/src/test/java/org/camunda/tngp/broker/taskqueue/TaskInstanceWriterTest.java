@@ -5,14 +5,12 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskInstanceWriterTest
 {
@@ -90,7 +88,7 @@ public class TaskInstanceWriterTest
             .state(TaskInstanceState.LOCKED);
 
         // when
-        final int length = writer.getEncodedLength();
+        final int length = writer.getLength();
 
         // then
         assertThat(length).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH +

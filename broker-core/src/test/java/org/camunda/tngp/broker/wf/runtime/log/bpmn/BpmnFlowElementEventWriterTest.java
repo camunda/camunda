@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.protocol.log.BpmnProcessEventDecoder;
 import org.camunda.tngp.protocol.log.BpmnProcessEventEncoder;
@@ -9,8 +10,6 @@ import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class BpmnFlowElementEventWriterTest
 {
@@ -31,7 +30,7 @@ public class BpmnFlowElementEventWriterTest
 
         // when
         writer
-            .event(ExecutionEventType.EVT_OCCURRED)
+            .eventWriter(ExecutionEventType.EVT_OCCURRED)
             .initialElementId(75)
             .key(1234L)
             .processId(8765L)
@@ -67,7 +66,7 @@ public class BpmnFlowElementEventWriterTest
         final BpmnProcessEventWriter writer = new BpmnProcessEventWriter();
 
         writer
-            .event(ExecutionEventType.EVT_OCCURRED)
+            .eventWriter(ExecutionEventType.EVT_OCCURRED)
             .initialElementId(75)
             .key(1234L)
             .processId(8765L)
@@ -75,7 +74,7 @@ public class BpmnFlowElementEventWriterTest
             .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getEncodedLength();
+        final int estimatedLength = writer.getLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + BpmnProcessEventEncoder.BLOCK_LENGTH);

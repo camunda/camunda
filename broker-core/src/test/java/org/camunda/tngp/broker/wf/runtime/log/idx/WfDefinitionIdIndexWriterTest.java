@@ -4,11 +4,9 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader;
-import org.camunda.tngp.broker.logstreams.Templates;
-import org.camunda.tngp.broker.services.HashIndexManager;
+import javax.xml.transform.Templates;
+
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionWriter;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.junit.Before;
 import org.junit.Test;

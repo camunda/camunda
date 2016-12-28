@@ -45,7 +45,7 @@ public class ClientApiSocketBindingService implements Service<ServerSocketBindin
     @Override
     public void stop(ServiceStopContext arg0)
     {
-
+        // nothing to do
     }
 
     @Override

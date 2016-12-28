@@ -2,15 +2,13 @@ package org.camunda.tngp.broker.wf.runtime.request;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceResponseWriter;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.wf.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseDecoder;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceResponseEncoder;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class StartWorkflowInstanceResponseWriterTest
 {
@@ -63,7 +61,7 @@ public class StartWorkflowInstanceResponseWriterTest
             .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getEncodedLength();
+        final int estimatedLength = writer.getLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH + StartWorkflowInstanceResponseEncoder.BLOCK_LENGTH);

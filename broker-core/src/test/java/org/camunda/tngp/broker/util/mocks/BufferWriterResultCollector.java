@@ -3,11 +3,10 @@ package org.camunda.tngp.broker.util.mocks;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.ReflectUtil;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class BufferWriterResultCollector
 {

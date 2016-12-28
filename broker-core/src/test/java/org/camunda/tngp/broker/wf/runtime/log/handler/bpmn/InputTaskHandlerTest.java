@@ -7,13 +7,9 @@ import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader;
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader.EventSource;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
-import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
-import org.camunda.tngp.broker.wf.runtime.log.handler.InputTaskHandler;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.junit.Before;

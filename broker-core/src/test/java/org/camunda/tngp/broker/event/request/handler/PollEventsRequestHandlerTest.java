@@ -22,12 +22,9 @@ import static org.mockito.Mockito.when;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.event.EventContext;
-import org.camunda.tngp.broker.event.EventErrors;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
-import org.camunda.tngp.logstreams.LogStream;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.event.EventBatchReader;

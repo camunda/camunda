@@ -9,10 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.broker.taskqueue.TaskErrors;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
-import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestReader;
-import org.camunda.tngp.broker.taskqueue.request.handler.TaskTypeHash;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
@@ -20,18 +17,16 @@ import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.StubResponseControl;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.protocol.error.ErrorReader;
-import org.camunda.tngp.protocol.taskqueue.SingleTaskAckResponseReader;
-import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.camunda.tngp.protocol.log.TaskInstanceDecoder;
 import org.camunda.tngp.protocol.log.TaskInstanceEncoder;
 import org.camunda.tngp.protocol.log.TaskInstanceRequestType;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
+import org.camunda.tngp.protocol.taskqueue.SingleTaskAckResponseReader;
+import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class TaskInstanceRequestHandlerTest
 {

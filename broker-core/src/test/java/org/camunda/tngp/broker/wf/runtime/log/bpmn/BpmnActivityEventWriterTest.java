@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.protocol.log.BpmnActivityEventDecoder;
 import org.camunda.tngp.protocol.log.BpmnActivityEventEncoder;
@@ -11,8 +12,6 @@ import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class BpmnActivityEventWriterTest
 {
@@ -83,7 +82,7 @@ public class BpmnActivityEventWriterTest
             .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getEncodedLength();
+        final int estimatedLength = writer.getLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(

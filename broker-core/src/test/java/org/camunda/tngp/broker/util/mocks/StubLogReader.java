@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.LogStream;
-import org.camunda.tngp.logstreams.LogStreamReader;
-import org.camunda.tngp.logstreams.LoggedEvent;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class StubLogReader implements LogStreamReader

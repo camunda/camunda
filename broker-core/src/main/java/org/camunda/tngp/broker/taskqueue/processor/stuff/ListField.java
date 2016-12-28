@@ -62,13 +62,13 @@ public class ListField<T extends DataStuff> implements DataStuff
         size = 0;
     }
 
-    public int getEncodedLength()
+    public int getLength()
     {
         int length = GroupSizeEncodingEncoder.ENCODED_LENGTH;
 
         for (int i = 0; i < size; i++)
         {
-            length += list[i].getEncodedLength();
+            length += list[i].getLength();
         }
 
         return length;

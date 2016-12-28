@@ -60,7 +60,7 @@ public class LockedTaskBatchWriterTest
             .consumerId(1);
 
         // when
-        final int length = writer.getEncodedLength();
+        final int length = writer.getLength();
 
         // then
         final int expectedLength =
@@ -142,7 +142,7 @@ public class LockedTaskBatchWriterTest
                 .appendTask(taskWriter.id(123).workflowInstanceId(10123).lockTime(345L));
 
         // when
-        final int length = writer.getEncodedLength();
+        final int length = writer.getLength();
 
         // then
         int expectedLength =

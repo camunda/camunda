@@ -5,12 +5,10 @@ import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.tngp.broker.wf.runtime.StartWorkflowInstanceRequestReader;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.wf.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.wf.StartWorkflowInstanceEncoder;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class StartWorkflowInstanceRequestReaderTest
 {

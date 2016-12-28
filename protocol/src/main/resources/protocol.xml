@@ -17,6 +17,10 @@
       <type name="blockLength" primitiveType="uint16" />
       <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
     </composite>
+    
+    <enum name="errorCode" encodingType="uint8" semanticType="String" description="The error code of an error">
+      <validValue name="TOPIC_NOT_FOUND">0</validValue>
+    </enum>
 
     <enum name="taskEventType" encodingType="uint8" semanticType="String" description="The type of event occured on the task">
       <validValue name="CREATE">0</validValue>
@@ -36,14 +40,23 @@
     </enum>
 
   </types>
+  
+  <sbe:message name="BrokerEventMetadata" id="1000" description="Descriptor for Event Metadata">
+    <field name="reqChannelId" id="1" type="uint32" />
+    <field name="reqConnectionId" id="2" type="uint64" />
+    <field name="reqRequestId" id="3" type="uint64" />
+    <field name="raftTermId" id="4" type="uint32" />
+  </sbe:message>
 
   <!-- L1  -->
 
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
-    <field name="errorCode" id="1" type="uint16" />
+    <field name="errorCode" id="1" type="errorCode" />
     <data name="errorData" id="2" type="varDataEncoding" />
+    <data name="failedRequest" id="3" type="varDataEncoding" /> <!-- include the failed request -->
   </sbe:message>
 
+<!-- 
   <sbe:message name="PublishEventsRequest" id="100">
     <field name="topicId" id="1" type="uint32" />
     <group name="events" id="2" dimensionType="groupSizeEncoding">
@@ -59,6 +72,7 @@
       <field name="position" id="3" type="uint64" />
     </group>
   </sbe:message>
+-->
 
   <sbe:message name="ExecuteCommandRequest" id="102">
     <field name="topicId" id="1" type="uint32" />
@@ -71,7 +85,7 @@
     <field name="topicId" id="1" type="uint32" />
     <field name="longKey" id="3" type="uint64" />
     <data name="bytesKey" id="4" type="varDataEncoding" />
-    <data name="command" id="3" type="varDataEncoding" />
+    <data name="event" id="3" type="varDataEncoding" />
   </sbe:message>
   
   <sbe:message name="ControlMessageRequest" id="104">

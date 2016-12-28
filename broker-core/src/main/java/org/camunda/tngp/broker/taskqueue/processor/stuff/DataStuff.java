@@ -4,5 +4,5 @@ public interface DataStuff
 {
     void reset();
 
-    int getEncodedLength();
+    int getLength();
 }

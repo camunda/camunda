@@ -18,21 +18,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.xml.transform.Templates;
+
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.logstreams.Templates;
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.broker.logstreams.idx.IndexWriter;
-import org.camunda.tngp.broker.services.HashIndexManager;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
-import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionRequestWriter;
-import org.camunda.tngp.broker.wf.runtime.log.WfDefinitionWriter;
 import org.camunda.tngp.protocol.error.ErrorWriter;
 import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.log.WfDefinitionRequestType;
 import org.camunda.tngp.protocol.wf.WfDefinitionReader;
+import org.camunda.tngp.protocol.wf.WfDefinitionRequestReader;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
 import org.camunda.tngp.transport.requestresponse.server.DeferredResponsePool;
 import org.camunda.tngp.util.buffer.BufferWriter;

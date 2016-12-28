@@ -1,9 +1,11 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
+import java.util.Objects;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.logstreams.requests.LogStreamRequest;
+import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
@@ -11,6 +13,7 @@ import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class CmdResponseWriter
 {
@@ -22,16 +25,16 @@ public class CmdResponseWriter
             ExecuteCommandResponseEncoder.BLOCK_LENGTH +
             ExecuteCommandResponseEncoder.BLOCK_LENGTH +
             ExecuteCommandResponseEncoder.bytesKeyHeaderLength() +
-            ExecuteCommandResponseEncoder.dataHeaderLength();
+            ExecuteCommandResponseEncoder.eventHeaderLength();
 
     protected final Dispatcher sendBuffer;
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
     protected int topicId;
     protected long longKey;
-    protected LogStreamRequest request;
     protected final UnsafeBuffer bytesKey = new UnsafeBuffer(0, 0);
-    protected final UnsafeBuffer event = new UnsafeBuffer(0, 0);
+    protected BufferWriter eventWriter;
+    protected BrokerEventMetadata metadata;
 
     public CmdResponseWriter(Dispatcher sendBuffer)
     {
@@ -56,28 +59,32 @@ public class CmdResponseWriter
         return this;
     }
 
-    public CmdResponseWriter forRequest(LogStreamRequest request)
+    public CmdResponseWriter brokerEventMetadata(BrokerEventMetadata metadata)
     {
-        this.request = request;
+        this.metadata = metadata;
         return this;
     }
 
-    public CmdResponseWriter event(DirectBuffer buffer, int offset, int length)
+    public CmdResponseWriter eventWriter(BufferWriter writer)
     {
-        event.wrap(buffer, offset, length);
+        this.eventWriter = writer;
         return this;
     }
 
     public boolean tryWriteResponse()
     {
-        final int responseLength = headerSize + bytesKey.capacity() +  event.capacity();
+        Objects.requireNonNull(metadata);
+        Objects.requireNonNull(eventWriter);
+
+        final int eventLengh = eventWriter.getLength();
+        final int responseLength = headerSize + bytesKey.capacity() + eventLengh;
 
         long claimedOffset = -1;
 
         do
         {
             // dispatcher header
-            claimedOffset = sendBuffer.claim(claimedFragment, responseLength, request.getChannelId());
+            claimedOffset = sendBuffer.claim(claimedFragment, responseLength, metadata.getReqChannelId());
         }
         while (claimedOffset == -2);
 
@@ -95,8 +102,8 @@ public class CmdResponseWriter
                 offset += TransportHeaderDescriptor.HEADER_LENGTH;
 
                 // request/response protocol header
-                buffer.putLong(RequestResponseProtocolHeaderDescriptor.connectionIdOffset(offset), request.getConnectionId());
-                buffer.putLong(RequestResponseProtocolHeaderDescriptor.requestIdOffset(offset), request.getRequestId());
+                buffer.putLong(RequestResponseProtocolHeaderDescriptor.connectionIdOffset(offset), metadata.getReqConnectionId());
+                buffer.putLong(RequestResponseProtocolHeaderDescriptor.requestIdOffset(offset), metadata.getReqRequestId());
                 offset += RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
 
                 // protocol header
@@ -114,8 +121,12 @@ public class CmdResponseWriter
 
                 responseEncoder.topicId(topicId)
                     .longKey(longKey)
-                    .putBytesKey(bytesKey, 0, bytesKey.capacity())
-                    .putData(event, 0, event.capacity());
+                    .putBytesKey(bytesKey, 0, bytesKey.capacity());
+
+                int limit = responseEncoder.limit();
+                buffer.putShort(limit, (short) eventLengh);
+                limit += ExecuteCommandResponseEncoder.eventHeaderLength();
+                eventWriter.write(buffer, limit);
 
                 claimedFragment.commit();
 
@@ -128,7 +139,6 @@ public class CmdResponseWriter
             }
             finally
             {
-                request.close();
                 reset();
             }
         }
@@ -140,9 +150,9 @@ public class CmdResponseWriter
     {
         topicId = (int) ExecuteCommandResponseEncoder.topicIdNullValue();
         longKey = ExecuteCommandResponseEncoder.longKeyNullValue();
-        request = null;
         bytesKey.wrap(0, 0);
-        event.wrap(0, 0);
+        eventWriter = null;
+        metadata = null;
     }
 
 }

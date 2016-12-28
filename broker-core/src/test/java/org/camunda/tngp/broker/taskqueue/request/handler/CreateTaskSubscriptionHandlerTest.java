@@ -12,10 +12,6 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.taskqueue.TaskErrors;
-import org.camunda.tngp.broker.taskqueue.TaskQueueContext;
-import org.camunda.tngp.broker.taskqueue.subscription.LockTasksOperator;
-import org.camunda.tngp.broker.taskqueue.subscription.TaskSubscription;
 import org.camunda.tngp.broker.test.util.BufferWriterUtil;
 import org.camunda.tngp.protocol.error.ErrorReader;
 import org.camunda.tngp.protocol.taskqueue.CreateTaskSubscriptionEncoder;

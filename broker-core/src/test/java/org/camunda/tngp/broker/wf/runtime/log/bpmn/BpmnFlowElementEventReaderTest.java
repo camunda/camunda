@@ -2,13 +2,12 @@ package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.protocol.log.BpmnFlowElementEventEncoder;
 import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class BpmnFlowElementEventReaderTest
 {

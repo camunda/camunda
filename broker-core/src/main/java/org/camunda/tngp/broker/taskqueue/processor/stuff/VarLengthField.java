@@ -40,7 +40,7 @@ public class VarLengthField implements DataStuff
     }
 
     @Override
-    public int getEncodedLength()
+    public int getLength()
     {
         return BitUtil.SIZE_OF_SHORT + length;
     }

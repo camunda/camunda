@@ -1,13 +1,12 @@
 package org.camunda.tngp.broker.wf.runtime.log;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.log.WfDefinitionDecoder;
 import org.camunda.tngp.protocol.log.WfDefinitionEncoder;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class WfDefinitionWriterTest
 {

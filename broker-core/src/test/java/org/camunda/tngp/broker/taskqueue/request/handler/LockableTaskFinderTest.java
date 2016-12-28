@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.protocol.log.TaskInstanceState;
 import org.camunda.tngp.protocol.taskqueue.TaskInstanceReader;

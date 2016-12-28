@@ -6,13 +6,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader;
-import org.camunda.tngp.broker.logstreams.Templates;
-import org.camunda.tngp.broker.logstreams.LogEntryHeaderReader.EventSource;
-import org.camunda.tngp.broker.services.HashIndexManager;
-import org.camunda.tngp.broker.taskqueue.TaskInstanceWriter;
+import javax.xml.transform.Templates;
+
 import org.camunda.tngp.broker.taskqueue.TestTaskQueueLogEntries;
-import org.camunda.tngp.broker.taskqueue.log.TaskInstanceRequestWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.protocol.log.TaskInstanceEncoder;

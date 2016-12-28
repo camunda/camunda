@@ -11,17 +11,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.logstreams.ResponseControl;
 import org.camunda.tngp.broker.test.util.ArgumentAnswer;
 import org.camunda.tngp.broker.util.mocks.StubLogReader;
 import org.camunda.tngp.broker.util.mocks.StubLogWriter;
 import org.camunda.tngp.broker.util.mocks.StubLogWriters;
 import org.camunda.tngp.broker.util.mocks.WfRuntimeEvents;
-import org.camunda.tngp.broker.wf.runtime.log.ActivityInstanceRequestReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnActivityEventWriter;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventReader;
-import org.camunda.tngp.broker.wf.runtime.log.bpmn.BpmnBranchEventWriter;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.protocol.log.ActivityInstanceRequestType;

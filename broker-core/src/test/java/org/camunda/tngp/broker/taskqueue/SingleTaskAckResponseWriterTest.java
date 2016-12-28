@@ -2,11 +2,10 @@ package org.camunda.tngp.broker.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.taskqueue.SingleTaskAckDecoder;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class SingleTaskAckResponseWriterTest
 {
@@ -52,7 +51,7 @@ public class SingleTaskAckResponseWriterTest
         writer.get(buffer, 50);
 
         // then
-        assertThat(writer.getEncodedLength()).isEqualTo(MessageHeaderDecoder.ENCODED_LENGTH +
+        assertThat(writer.getLength()).isEqualTo(MessageHeaderDecoder.ENCODED_LENGTH +
                 SingleTaskAckDecoder.BLOCK_LENGTH);
 
     }

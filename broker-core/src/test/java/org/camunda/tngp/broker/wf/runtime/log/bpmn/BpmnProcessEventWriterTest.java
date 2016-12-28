@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.wf.runtime.log.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.graph.bpmn.ExecutionEventType;
 import org.camunda.tngp.protocol.log.BpmnFlowElementEventDecoder;
 import org.camunda.tngp.protocol.log.BpmnFlowElementEventEncoder;
@@ -9,8 +10,6 @@ import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.log.MessageHeaderEncoder;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class BpmnProcessEventWriterTest
 {
@@ -75,7 +74,7 @@ public class BpmnProcessEventWriterTest
             .get(eventBuffer, 0);
 
         // when
-        final int estimatedLength = writer.getEncodedLength();
+        final int estimatedLength = writer.getLength();
 
         // then
         assertThat(estimatedLength).isEqualTo(MessageHeaderEncoder.ENCODED_LENGTH +
