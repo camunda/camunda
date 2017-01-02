@@ -1,18 +1,17 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
+import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
-import org.camunda.tngp.protocol.clientapi.TaskEventType;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
-    protected final TaskEvent taskEvent = new TaskEvent();
-
     protected final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
@@ -25,6 +24,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected long eventPosition = 0;
     protected long eventKey = 0;
 
+    protected final TaskEvent taskEvent = new TaskEvent();
+
     public void onOpen(StreamProcessorContext context)
     {
         streamId = context.getSourceStream().getId();
@@ -36,24 +37,19 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();
 
-        taskEvent.decode(event.getValueBuffer(), event.getValueOffset());
-        sourceEventMetadata.wrap(event.getMetadata(), event.getMetadataOffset(), event.getMetadataLength());
-
-        final TaskEventType evtType = taskEvent.getEvtType();
+        event.readMetadata(sourceEventMetadata);
+        event.readValue(taskEvent);
 
         EventProcessor eventProcessor = null;
 
-        if (evtType != null)
+        switch (taskEvent.getEventType())
         {
-            switch (evtType)
-            {
-                case CREATE:
-                    eventProcessor = createTaskProcessor;
-                    break;
+            case CREATE:
+                eventProcessor = createTaskProcessor;
+                break;
 
-                default:
-                    break;
-            }
+            default:
+                break;
         }
 
         return eventProcessor;
@@ -71,7 +67,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            taskEvent.setEvtType(TaskEventType.CREATED);
+            taskEvent.setEventType(TaskEventType.CREATED);
         }
 
         @Override

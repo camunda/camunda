@@ -1,9 +1,8 @@
 package org.camunda.tngp.broker.logstreams.processor;
 
-import org.camunda.tngp.broker.taskqueue.processor.stuff.DataStuff;
-import org.camunda.tngp.util.buffer.BufferWriter;
+import org.camunda.tngp.broker.util.msgpack.Recyclable;
 
-public interface BrokerEvent extends DataStuff, BufferWriter
+public interface BrokerEvent extends Recyclable
 {
 
 }
