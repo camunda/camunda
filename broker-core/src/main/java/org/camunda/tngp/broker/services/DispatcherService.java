@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.services;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.camunda.tngp.broker.system.threads.AgentRunnerService;
+import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -14,7 +14,7 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class DispatcherService implements Service<Dispatcher>
 {
-    protected final Injector<AgentRunnerService> agentRunnerInjector = new Injector<>();
+    protected final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
     protected final Injector<Counters> countersInjector = new Injector<>();
 
     protected DispatcherBuilder dispatcherBuilder;
@@ -45,7 +45,7 @@ public class DispatcherService implements Service<Dispatcher>
 
         dispatcherConductor = dispatcherBuilder.getConductorAgent();
 
-        agentRunnerInjector.getValue().runConductorAgent(dispatcherConductor);
+        agentRunnerInjector.getValue().conductorAgentRunnerSerive().run(dispatcherConductor);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class DispatcherService implements Service<Dispatcher>
     {
         final CompletableFuture<Void> closeFuture = dispatcher.closeAsync().thenAccept((v) ->
         {
-            agentRunnerInjector.getValue().removeConductorAgent(dispatcherConductor);
+            agentRunnerInjector.getValue().conductorAgentRunnerSerive().remove(dispatcherConductor);
         });
 
         ctx.async(closeFuture);
@@ -65,7 +65,7 @@ public class DispatcherService implements Service<Dispatcher>
         return dispatcher;
     }
 
-    public Injector<AgentRunnerService> getAgentRunnerInjector()
+    public Injector<AgentRunnerServices> getAgentRunnerInjector()
     {
         return agentRunnerInjector;
     }

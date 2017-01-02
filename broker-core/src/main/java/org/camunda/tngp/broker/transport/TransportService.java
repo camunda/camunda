@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.transport;
 
-import org.camunda.tngp.broker.system.threads.AgentRunnerService;
+import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -16,7 +16,7 @@ import org.camunda.tngp.transport.impl.agent.TransportConductor;
 public class TransportService implements Service<Transport>
 {
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
-    protected final Injector<AgentRunnerService> agentRunnerInjector = new Injector<>();
+    protected final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
 
     protected Transport transport;
     protected TransportConductor transportConductor;
@@ -37,19 +37,19 @@ public class TransportService implements Service<Transport>
         receiver = transportBuilder.getReceiver();
         sender = transportBuilder.getSender();
 
-        final AgentRunnerService agentRunnerService = agentRunnerInjector.getValue();
-        agentRunnerService.runConductorAgent(transportConductor);
-        agentRunnerService.runNetworkingAgent(receiver);
-        agentRunnerService.runNetworkingAgent(sender);
+        final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
+        agentRunnerServices.networkReceiverAgentRunnerService().run(receiver);
+        agentRunnerServices.networkSenderAgentRunnerService().run(sender);
+        agentRunnerServices.conductorAgentRunnerSerive().run(transportConductor);
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        final AgentRunnerService agentRunnerService = agentRunnerInjector.getValue();
-        agentRunnerService.removeConductorAgent(transportConductor);
-        agentRunnerService.removeNetworkingAgent(sender);
-        agentRunnerService.removeNetworkingAgent(receiver);
+        final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
+        agentRunnerServices.networkReceiverAgentRunnerService().remove(receiver);
+        agentRunnerServices.networkSenderAgentRunnerService().remove(sender);
+        agentRunnerServices.conductorAgentRunnerSerive().remove(transportConductor);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class TransportService implements Service<Transport>
         return transport;
     }
 
-    public Injector<AgentRunnerService> getAgentRunnerInjector()
+    public Injector<AgentRunnerServices> getAgentRunnerInjector()
     {
         return agentRunnerInjector;
     }

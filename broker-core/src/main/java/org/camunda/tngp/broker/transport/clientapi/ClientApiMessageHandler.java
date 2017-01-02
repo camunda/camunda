@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.transport.protocol.Protocols.*;
+import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
+import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
@@ -20,7 +21,6 @@ import org.camunda.tngp.protocol.clientapi.ErrorResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
-import org.camunda.tngp.protocol.clientapi.PublishEventsRequestDecoder;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
@@ -31,7 +31,6 @@ public class ClientApiMessageHandler
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
-    protected final PublishEventsRequestDecoder publishEventsRequestDecoder = new PublishEventsRequestDecoder();
     protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
     protected final ClaimedFragment errorMessageBuffer = new ClaimedFragment();
 

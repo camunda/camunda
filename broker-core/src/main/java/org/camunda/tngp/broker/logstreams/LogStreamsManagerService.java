@@ -12,16 +12,18 @@ import java.util.Random;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamCfg;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamsComponentCfg;
 import org.camunda.tngp.broker.system.ConfigurationManager;
+import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
-import org.camunda.tngp.util.agent.DedicatedAgentRunnerService;
-import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
 
 public class LogStreamsManagerService implements Service<LogStreamsManagerService>
 {
+    protected final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
+
     protected ServiceStartContext serviceContext;
     protected LogStreamsComponentCfg logComponentConfig;
     protected List<LogStreamCfg> logCfgs;
@@ -89,7 +91,7 @@ public class LogStreamsManagerService implements Service<LogStreamsManagerServic
         final LogStream logStream = LogStreams.createFsLogStream(logName, logId)
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
-            .agentRunnerService(new DedicatedAgentRunnerService(new SimpleAgentRunnerFactory()))
+            .agentRunnerService(agentRunnerInjector.getValue().logAppenderAgentRunnerService())
             .logSegmentSize(logSegmentSize)
             .build();
 
@@ -123,6 +125,11 @@ public class LogStreamsManagerService implements Service<LogStreamsManagerServic
     public LogStreamsManagerService get()
     {
         return this;
+    }
+
+    public Injector<AgentRunnerServices> getAgentRunnerInjector()
+    {
+        return agentRunnerInjector;
     }
 
 }

@@ -14,7 +14,7 @@ public class ThreadingComponent implements Component
     {
         final ServiceContainer serviceContainer = context.getServiceContainer();
 
-        final AgentRunnterServiceImpl service = new AgentRunnterServiceImpl(context.getConfigurationManager());
+        final AgentRunnerServicesImpl service = new AgentRunnerServicesImpl(context.getConfigurationManager());
         serviceContainer.createService(AGENT_RUNNER_SERVICE, service)
             .dependency(COUNTERS_MANAGER_SERVICE, service.getCountersManagerInjector())
             .install();
