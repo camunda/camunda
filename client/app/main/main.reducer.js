@@ -1,6 +1,6 @@
 import {createRouterReducer, getRouter} from 'router';
 import {combineReducers} from 'redux';
-import {reducer as loginReducer} from './login';
+import {reducer as loginReducer} from 'login';
 import {reducer as loginFormReducer} from './loginForm';
 import {createDynamicReducer} from 'dynamicLoader';
 

@@ -1,6 +1,6 @@
 import {dispatchAction} from 'view-utils';
 import {getRouter, getLastRoute} from 'router';
-import {login} from '../login';
+import {login} from 'login';
 import {createChangeLoginPasswordAction, createChangeLoginUserAction, createLoginErrorAction} from './loginForm.reducer';
 
 const router = getRouter();
