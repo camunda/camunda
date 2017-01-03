@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "compile": "rm -rf dist/ && ./node_modules/.bin/webpack --config webpack-production.config.js",
-    "pretty-compile": "rm -rf dist/ && ./node_modules/.bin/webpack",
-    "serve": "./node_modules/.bin/webpack-dev-server",
+    "compile-win": "./node_modules/.bin/webpack --config webpack-production.config.js",
+    "pretty-compile": "rm -rf dist/ && ./node_modules/.bin/webpack --config webpack-development.config.js",
+    "serve": "./node_modules/.bin/webpack-dev-server --config webpack-development.config.js",
     "serve-compile": "yarn run compile && ./node_modules/.bin/http-server dist/ -o",
     "test": "./node_modules/.bin/karma start",
     "test-watch": "./node_modules/.bin/karma start --no-single-run"

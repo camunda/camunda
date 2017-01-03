@@ -44,6 +44,10 @@ module.exports = {
         ]
       },
       {
+        test: /\.(eot|svg|ttf|woff|woff2)$/,
+        loader: 'file-loader?name=fonts/[name].[ext]'
+      },
+      {
         test: /\.(jpg|png)$/,
         loader: 'url-loader',
         include: [
@@ -80,7 +84,7 @@ module.exports = {
       names: ['manifest']
     }),
     new HtmlWebpackPlugin({
-      title: 'Catmunda Optimize',
+      title: 'Camunda Optimize',
       template: 'app/index.html'
     })
   ],

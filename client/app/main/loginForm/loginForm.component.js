@@ -3,34 +3,40 @@ import {performLogin, changePassword, changeUser} from './loginForm.service';
 
 export function LoginForm({selector}) {
   return <Select selector={selector}>
-    <form className="login">
-      <div>
+    <form className="form-horizontal form-signin">
+      <OnEvent event="submit" listener={submit} />
+      <h2>Login</h2>
+      <div className="form-group">
+        <label className="col-sm-2 control-label">User</label>
+        <div className="col-sm-10">
+          <input type="text" className="form-control" placeholder="Username">
+            <SetInputFieldValue getValue="user" />
+            <OnEvent event={['keyup', 'change']} listener={onUserKeyup} />
+          </input>
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="col-sm-2 control-label">Password</label>
+        <div className="col-sm-10">
+          <input type="password" className="form-control" placeholder="Password">
+            <SetInputFieldValue getValue="password" />
+            <OnEvent event={['keyup', 'change']} listener={onPasswordKeyup} />
+          </input>
+        </div>
+      </div>
+      <div className="form-group">
         <Match>
           <Case predicate={isError}>
-            <div class="login__error">
-              Incorrect login attempt! Calling cat police force!
+            <div className="col-sm-offset-2 col-sm-10 text-danger">
+              Login incorrect. Check username / password.
             </div>
           </Case>
         </Match>
       </div>
-      <OnEvent event="submit" listener={submit} />
-      <h1 className="login__title">Login</h1>
-      <div className="login__section">
-        <span className="login__text">user:</span>
-        <input type="text">
-          <SetInputFieldValue getValue="user" />
-          <OnEvent event={['keyup', 'change']} listener={onUserKeyup} />
-        </input>
-      </div>
-      <div className="login__section">
-        <span className="login__text">password:</span>
-        <input type="password">
-          <SetInputFieldValue getValue="password" />
-          <OnEvent event={['keyup', 'change']} listener={onPasswordKeyup} />
-        </input>
-      </div>
-      <div className="login__section" style="flex-direction: row-reverse">
-        <button type="submit">Login</button>
+      <div className="form-group">
+        <div className="col-sm-offset-2 col-sm-10">
+          <button type="submit" className="btn btn-primary">Login</button>
+        </div>
       </div>
     </form>
   </Select>;

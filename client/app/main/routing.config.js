@@ -10,6 +10,7 @@ router
     },
     {
       name: 'default',
-      url: '/'
+      url: '/',
+      test: url => (/\/$|\/index.html$/g).test(url)
     }
   );

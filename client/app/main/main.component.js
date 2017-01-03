@@ -9,24 +9,22 @@ import {DynamicLoader} from 'dynamicLoader';
 export function Main() {
   return <Router routerProperty="router">
     <LoginRoot>
-      <div className="container">
-        <Header/>
-        <div className="content">
-          <div class="content__views">
-            <Match>
-              <RouteView name="login">
-                <LoginForm selector="loginForm" />
-              </RouteView>
-              <RouteView name="default">
-                <Authenticated routeName="login">
-                  <DynamicLoader module="processDisplay" selector="processDisplay" />
-                </Authenticated>
-              </RouteView>
-            </Match>
-          </div>
+      <Header/>
+      <div className="page-body container-fluid">
+        <div className="content__views">
+          <Match>
+            <RouteView name="login">
+              <LoginForm selector="loginForm" />
+            </RouteView>
+            <RouteView name="default">
+              <Authenticated routeName="login">
+                <DynamicLoader module="processDisplay" selector="processDisplay" />
+              </Authenticated>
+            </RouteView>
+          </Match>
         </div>
-        <Footer/>
       </div>
+      <Footer/>
     </LoginRoot>
   </Router>;
 }

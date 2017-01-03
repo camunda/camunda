@@ -1,10 +1,9 @@
-.login {
+.form-signin {
   display: block;
   margin: 4rem auto;
   padding: 1rem 3rem;
   width: 40vw;
-  background-color: rgba($color-red, 0.2);
-  border: 1px solid $color-red;
+  border: 1px solid lightgray;
 }
 
 .login__title {

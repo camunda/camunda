@@ -146,4 +146,3 @@ export function createUrlConstructForRoute(patternUrl) {
     }, '');
   };
 }
-
