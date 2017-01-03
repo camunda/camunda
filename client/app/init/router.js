@@ -1,3 +1,4 @@
+import 'main/routing.config';
 import {getRouter} from 'router';
 
 export function initRouter() {

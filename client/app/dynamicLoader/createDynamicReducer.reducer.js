@@ -1,12 +1,25 @@
 import {onModuleLoaded} from './registry.service';
 
 export function createDynamicReducer(module) {
-  let reducer = () => 'loading';
+  let reducer;
 
   onModuleLoaded(module)
     .then(({reducer: _reducer}) => {
       reducer = _reducer;
     });
 
-  return (state, action) => reducer(state, action);
+  return ({loading, ...state} = {}, action) => {
+    if (!reducer) {
+      return {
+        ...state,
+        loading: true
+      };
+    } else {
+      return {
+        ...state,
+        loading: false,
+        ...reducer(state, action)
+      };
+    }
+  };
 }

@@ -1,11 +1,11 @@
 import {addModuleLoader} from 'dynamicLoader';
 
-addModuleLoader('b', () => {
+addModuleLoader('processDisplay', () => {
   return new Promise(resolve => {
-    require.ensure(['./b', 'bpmn-js'], () => {
-      const bModule = require('./b');
+    require.ensure(['./processDisplay', 'bpmn-js'], () => {
+      const {ProcessDisplay, reducer} = require('./processDisplay');
 
-      resolve({component: bModule.BComponent, reducer: bModule.reducer});
+      resolve({component: ProcessDisplay, reducer: reducer});
     });
   });
 });

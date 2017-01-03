@@ -13,5 +13,5 @@ export const reducer = combineReducers({
   router: routerReducer,
   loginForm: loginFormReducer,
   version: (state = 'alpha-cat-2') => state,
-  b: createDynamicReducer('b')
+  processDisplay: createDynamicReducer('processDisplay')
 });

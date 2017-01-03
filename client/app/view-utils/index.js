@@ -7,7 +7,7 @@ export {noop} from './noop';
 export {dispatchAction, ACTION_EVENT_NAME} from './dispatchAction';
 export {updateOnlyWhenStateChanges} from './updateOnlyWhenStateChanges';
 export {includes} from './includes';
-export {SetInputFieldValue} from './setInputFieldValue';
+export {SetInputFieldValue, setInputValue} from './setInputFieldValue';
 export {jsx, addChild, addChildren} from './jsx';
 export {runUpdate} from './runUpdate';
 export {createEventsBus, ALL_EVENTS, DESTROY_EVENT} from './events';
