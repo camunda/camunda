@@ -11,6 +11,6 @@ router
     {
       name: 'default',
       url: '/',
-      test: url => (/\/$|\/index.html$/g).test(url)
+      test: url => (/\/$|\/index.html$/g).test(url) && {}
     }
   );

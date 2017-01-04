@@ -15,7 +15,6 @@ describe('<Header>', () => {
   });
 
   it('should have footer class', () => {
-    expect(node.querySelector('header')).to.have.class('header');
+    expect(node.querySelector('header')).to.have.class('cam-brand-header');
   });
 });
-

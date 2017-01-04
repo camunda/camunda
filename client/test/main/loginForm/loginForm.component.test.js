@@ -32,13 +32,13 @@ describe('<LoginForm>', () => {
   });
 
   it('should render form login element', () => {
-    expect(node.querySelector('form.login')).to.exist;
+    expect(node.querySelector('form.form-signin')).to.exist;
   });
 
   it('should render user field', () => {
     const [section] = selectByText(
-      node.querySelectorAll('.login__section'),
-      'user:'
+      node.querySelectorAll('.form-group'),
+      'User'
     );
 
     expect(section).to.exist;
@@ -47,8 +47,8 @@ describe('<LoginForm>', () => {
 
   it('should render password field', () => {
     const [section] = selectByText(
-      node.querySelectorAll('.login__section'),
-      'password:'
+      node.querySelectorAll('.form-group'),
+      'Password'
     );
 
     expect(section).to.exist;
@@ -72,8 +72,8 @@ describe('<LoginForm>', () => {
     });
 
     const [section] = selectByText(
-      node.querySelectorAll('.login__section'),
-      'user:'
+      node.querySelectorAll('.form-group'),
+      'User'
     );
     const field = section.querySelector('input');
 
@@ -90,8 +90,8 @@ describe('<LoginForm>', () => {
     });
 
     const [section] = selectByText(
-      node.querySelectorAll('.login__section'),
-      'password:'
+      node.querySelectorAll('.form-group'),
+      'Password'
     );
     const field = section.querySelector('input');
 
@@ -99,7 +99,7 @@ describe('<LoginForm>', () => {
   });
 
   it('should not display error message by default', () => {
-    expect(node).not.to.contain.text('Incorrect login attempt! Calling cat police force!');
+    expect(node).not.to.contain.text('Login incorrect. Check username / password.');
   });
 
   it('should display error message when error is true on state', () => {
@@ -109,7 +109,7 @@ describe('<LoginForm>', () => {
       }
     });
 
-    expect(node).to.contain.text('Incorrect login attempt! Calling cat police force!');
+    expect(node).to.contain.text('Login incorrect. Check username / password.');
   });
 
   it('should call changeUser when user field changes', () => {

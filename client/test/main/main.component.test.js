@@ -29,10 +29,10 @@ describe('<Main>', () => {
   });
 
   it('should have container element', () => {
-    expect(node.querySelector('.container')).to.exist;
+    expect(node.querySelector('.container-fluid')).to.exist;
   });
 
   it('should have content element', () => {
-    expect(node.querySelector('.content')).to.exist;
+    expect(node.querySelector('.content__views')).to.exist;
   });
 });
