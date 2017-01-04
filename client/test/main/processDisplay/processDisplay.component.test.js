@@ -5,20 +5,29 @@ import {ProcessDisplay, __set__, __ResetDependency__} from 'main/processDisplay/
 
 describe('<ProcessDisplay>', () => {
   let Filters;
+  let Diagram;
   let node;
 
   beforeEach(() => {
     Filters = createMockComponent('Filters');
     __set__('Filters', Filters);
 
-    ({node} = mountTemplate(<ProcessDisplay/>));
+    Diagram = createMockComponent('Diagram');
+    __set__('Diagram', Diagram);
+
+    ({node} = mountTemplate(<ProcessDisplay selector="processDisplay"/>));
   });
 
   afterEach(() => {
     __ResetDependency__('Filters');
+    __ResetDependency__('Diagram');
   });
 
   it('should display <Filters> component', () => {
     expect(node).to.contain.text('Filters');
+  });
+
+  it('should display <Diagram> component', () => {
+    expect(node).to.contain.text('Diagram');
   });
 });
