@@ -1,12 +1,13 @@
 package org.camunda.tngp.util;
 
-import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.*;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.nio.file.CopyOption;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -113,4 +114,18 @@ public class FileUtil
         return fileChannel;
     }
 
+    public static void moveFile(String source, String target, CopyOption... options)
+    {
+        final Path sourcePath = Paths.get(source);
+        final Path targetPath = Paths.get(target);
+
+        try
+        {
+            Files.move(sourcePath, targetPath, options);
+        }
+        catch (Exception e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+    }
 }
