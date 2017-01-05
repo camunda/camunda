@@ -21,7 +21,7 @@ public abstract class ComposedState<C extends StateMachineContext> implements St
         /**
          * Executes the step.
          *
-         * @return <code>true</code>, if the step was executed successfully
+         * @return <code>true</code>, if the step was executed successfully and should continue with the next step.
          */
         boolean doWork(C context);
     }
