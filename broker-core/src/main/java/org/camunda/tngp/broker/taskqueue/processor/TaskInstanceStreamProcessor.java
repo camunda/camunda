@@ -17,7 +17,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
 
-    protected final CmdResponseWriter responseWriter = null;
+    protected CmdResponseWriter responseWriter;
+
+    // TODO inject index
     protected final Long2LongHashIndex taskIndex = null;
     protected int streamId;
 
@@ -25,6 +27,11 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected long eventKey = 0;
 
     protected final TaskEvent taskEvent = new TaskEvent();
+
+    public TaskInstanceStreamProcessor(CmdResponseWriter responseWriter)
+    {
+        this.responseWriter = responseWriter;
+    }
 
     public void onOpen(StreamProcessorContext context)
     {
@@ -38,6 +45,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         eventKey = event.getLongKey();
 
         event.readMetadata(sourceEventMetadata);
+
+        taskEvent.reset();
         event.readValue(taskEvent);
 
         EventProcessor eventProcessor = null;
@@ -100,7 +109,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            taskIndex.put(eventKey, eventPosition);
+            // TODO update state
+            //taskIndex.put(eventKey, eventPosition);
         }
 
     }

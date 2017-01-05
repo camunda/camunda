@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
@@ -30,13 +30,14 @@ public class ClientApiMessageHandler
 {
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    protected final RequestResponseProtocolHeaderDescriptor requestResponseProtocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
     protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
     protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
     protected final ClaimedFragment errorMessageBuffer = new ClaimedFragment();
 
     protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
 
-    protected final Int2ObjectHashMap<LogStream> logStreamsById = new Int2ObjectHashMap<>();
+    protected final Long2ObjectHashMap<LogStream> logStreamsById = new Long2ObjectHashMap<>();
     protected final LogStreamWriter logStreamWriter = new LogStreamWriter();
     protected final Dispatcher sendBuffer;
     protected final Dispatcher controlMessageDispatcher;
@@ -61,11 +62,13 @@ public class ClientApiMessageHandler
         int messageOffset = offset + TransportHeaderDescriptor.headerLength();
         int messageLength = length - TransportHeaderDescriptor.headerLength();
 
-        final int protocol = buffer.getInt(TransportHeaderDescriptor.protocolIdOffset(offset));
+        final int protocol = buffer.getShort(TransportHeaderDescriptor.protocolIdOffset(offset));
         if (protocol == REQUEST_RESPONSE)
         {
-            eventMetadata.reqConnectionId(RequestResponseProtocolHeaderDescriptor.connectionIdOffset(messageOffset));
-            eventMetadata.reqRequestId(RequestResponseProtocolHeaderDescriptor.requestIdOffset(messageOffset));
+            requestResponseProtocolHeaderDescriptor.wrap(buffer, messageOffset);
+
+            eventMetadata.reqConnectionId(requestResponseProtocolHeaderDescriptor.connectionId());
+            eventMetadata.reqRequestId(requestResponseProtocolHeaderDescriptor.requestId());
             messageOffset += RequestResponseProtocolHeaderDescriptor.headerLength();
             messageLength -= RequestResponseProtocolHeaderDescriptor.headerLength();
         }
@@ -79,6 +82,9 @@ public class ClientApiMessageHandler
 
         final int templateId = messageHeaderDecoder.templateId();
 
+        messageOffset += messageHeaderDecoder.encodedLength();
+        messageLength -= messageHeaderDecoder.encodedLength();
+
         switch (templateId)
         {
             case ExecuteCommandRequestDecoder.TEMPLATE_ID:
@@ -86,8 +92,9 @@ public class ClientApiMessageHandler
                 executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
                 final long topicId = executeCommandRequestDecoder.topicId();
-                final int eventLength = executeCommandRequestDecoder.commandLength();
+
                 final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
+                final int eventLength = executeCommandRequestDecoder.commandLength();
 
                 final LogStream logStream = logStreamsById.get(topicId);
 
@@ -155,6 +162,8 @@ public class ClientApiMessageHandler
 
         if (sendBuffer.claim(errorMessageBuffer, encodedLength) >= 0)
         {
+            errorResponseEncoder.wrap(errorMessageBuffer.getBuffer(), errorMessageBuffer.getOffset());
+
             try
             {
                 errorResponseEncoder

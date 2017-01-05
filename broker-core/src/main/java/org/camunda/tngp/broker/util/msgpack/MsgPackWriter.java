@@ -1,7 +1,30 @@
 package org.camunda.tngp.broker.util.msgpack;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.*;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.BIN16;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.BIN32;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.BIN8;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.BYTE_ORDER;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.FALSE;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.FIXMAP_PREFIX;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.FIXSTR_PREFIX;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.INT16;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.INT32;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.INT64;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.INT8;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.MAP16;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.MAP32;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.STR16;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.STR32;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.STR8;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.TRUE;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.UINT16;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.UINT32;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.UINT64;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackCodes.UINT8;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -53,8 +76,8 @@ public class MsgPackWriter
 
     public MsgPackWriter writeRaw(DirectBuffer buff, int offset, int length)
     {
-        this.buffer.putBytes(offset, buff, offset, length);
-        offset += length;
+        this.buffer.putBytes(this.offset, buff, offset, length);
+        this.offset += length;
 
         return this;
     }

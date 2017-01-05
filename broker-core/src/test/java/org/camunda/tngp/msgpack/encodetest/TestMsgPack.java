@@ -1,11 +1,15 @@
 package org.camunda.tngp.msgpack.encodetest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
+import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 import org.junit.Test;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -94,6 +98,27 @@ public class TestMsgPack
         System.out.format("Throughput (avg, ops/s): %g\n", ((double)iterations) / TimeUnit.NANOSECONDS.toSeconds(runtime));
         System.out.format("Read Throughput (avg, MB/s): %g\n", ((double)bytesRead) / TimeUnit.NANOSECONDS.toSeconds(runtime) / 1000 / 1000);
         System.out.format("Write Throughput (avg, MB/s): %g\n", ((double)bytesWritten) / TimeUnit.NANOSECONDS.toSeconds(runtime) / 1000 / 1000);
+    }
+
+    @Test
+    public void shouldDeserialize()
+    {
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
+
+        final TaskEvent taskEvent = new TaskEvent();
+
+        taskEvent
+            .setEventType(TaskEventType.CREATE)
+            .setType(new StringValue("type"));
+
+        taskEvent.write(buffer, 0);
+
+        taskEvent.reset();
+
+        taskEvent.wrap(buffer);
+
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATE);
+        assertThat(taskEvent.getType().toString()).isEqualTo("type");
     }
 
 }
