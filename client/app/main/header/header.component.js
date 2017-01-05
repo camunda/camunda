@@ -1,5 +1,6 @@
 import {jsx} from 'view-utils';
 import {StaticLink} from 'router';
+import {AppMenu} from './appMenu';
 
 const template = <header className="cam-brand-header">
   <div className="container-fluid">
@@ -8,6 +9,7 @@ const template = <header className="cam-brand-header">
       <span className="brand-logo"></span>
       <span className="brand-name">Camunda Optimize</span>
     </a>
+    <AppMenu/>
   </div>
 </header>;
 

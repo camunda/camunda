@@ -10,11 +10,11 @@ describe('<Header>', () => {
     ({node} = mountTemplate(<Header/>));
   });
 
-  it('should contain footer text', () => {
+  it('should contain header text', () => {
     expect(node).to.contain.text('Camunda Optimize');
   });
 
-  it('should have footer class', () => {
+  it('should have header class', () => {
     expect(node.querySelector('header')).to.have.class('cam-brand-header');
   });
 });
