@@ -345,6 +345,32 @@ public class StreamProcessorControllerTest
     }
 
     @Test
+    public void shouldSkipPolledEventIfNoProcessorIsAvailable()
+    {
+        when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
+        when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockStreamProcessor.onEvent(mockSourceEvent)).thenReturn(null);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockStreamProcessor).onEvent(mockSourceEvent);
+
+        verify(mockEventProcessor, never()).processEvent();
+        verify(mockEventProcessor, never()).executeSideEffects();
+        verify(mockEventProcessor, never()).writeEvent(mockLogStreamWriter);
+        verify(mockEventProcessor, never()).updateState();
+        verify(mockStreamProcessor, never()).afterEvent();
+    }
+
+    @Test
     public void shouldRetryExecuteSideEffectsIfFail()
     {
         when(mockSourceLogStreamReader.hasNext()).thenReturn(true);

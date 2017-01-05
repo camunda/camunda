@@ -10,12 +10,12 @@ public interface StreamProcessor
 
     /**
      * Returns a specific processor to process the event which is read from the
-     * log stream.
+     * log stream, if available.
      *
      * @param event
      *            the event to process
      *
-     * @return specific processor to process the event
+     * @return specific processor to process the event, or <code>null</code> if the event can't  be processed
      */
     EventProcessor onEvent(LoggedEvent event);
 

@@ -263,10 +263,22 @@ public class StreamProcessorController implements Agent
                     updateStateStep);
         }
 
-        private FailSafeStep<Context> processEventStep = context ->
+        private Step<Context> processEventStep = context ->
         {
+            boolean processEvent = false;
+
             eventProcessor = streamProcessor.onEvent(context.getEvent());
-            eventProcessor.processEvent();
+
+            if (eventProcessor != null)
+            {
+                eventProcessor.processEvent();
+                processEvent = true;
+            }
+            else
+            {
+                context.take(TRANSITION_DEFAULT);
+            }
+            return processEvent;
         };
 
         private Step<Context> sideEffectsStep = context -> eventProcessor.executeSideEffects();
