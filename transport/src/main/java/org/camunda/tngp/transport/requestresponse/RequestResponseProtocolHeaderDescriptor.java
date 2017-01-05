@@ -2,7 +2,8 @@ package org.camunda.tngp.transport.requestresponse;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class RequestResponseProtocolHeaderDescriptor
 {
@@ -43,35 +44,33 @@ public class RequestResponseProtocolHeaderDescriptor
         return offset + REQUEST_ID_OFFSET;
     }
 
-    protected MutableDirectBuffer buffer;
-    protected int offset;
+    protected UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
-    public RequestResponseProtocolHeaderDescriptor wrap(MutableDirectBuffer buffer, int offset)
+    public RequestResponseProtocolHeaderDescriptor wrap(DirectBuffer buffer, int offset)
     {
-        this.buffer = buffer;
-        this.offset = offset;
+        this.buffer.wrap(buffer, offset, HEADER_LENGTH);
         return this;
     }
 
     public RequestResponseProtocolHeaderDescriptor connectionId(long connectionId)
     {
-        buffer.putLong(connectionIdOffset(offset), connectionId);
+        buffer.putLong(CONNECTION_ID_OFFSET, connectionId);
         return this;
     }
 
     public long connectionId()
     {
-        return buffer.getLong(connectionIdOffset(offset));
+        return buffer.getLong(CONNECTION_ID_OFFSET);
     }
 
     public RequestResponseProtocolHeaderDescriptor requestId(long requestId)
     {
-        buffer.putLong(requestIdOffset(offset), requestId);
+        buffer.putLong(REQUEST_ID_OFFSET, requestId);
         return this;
     }
 
     public long requestId()
     {
-        return buffer.getLong(requestIdOffset(offset));
+        return buffer.getLong(REQUEST_ID_OFFSET);
     }
 }

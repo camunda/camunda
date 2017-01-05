@@ -1,7 +1,8 @@
 package org.camunda.tngp.transport.protocol;
 
 import org.agrona.BitUtil;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class TransportHeaderDescriptor
 {
@@ -35,19 +36,17 @@ public class TransportHeaderDescriptor
         return offset + PROTOCOL_ID_OFFSET;
     }
 
-    protected MutableDirectBuffer buffer;
-    protected int offset;
+    protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
-    public TransportHeaderDescriptor wrap(MutableDirectBuffer buffer, int offset)
+    public TransportHeaderDescriptor wrap(DirectBuffer buffer, int offset)
     {
-        this.buffer = buffer;
-        this.offset = offset;
+        this.buffer.wrap(buffer, offset, HEADER_LENGTH);
         return this;
     }
 
     public TransportHeaderDescriptor protocolId(short protocolId)
     {
-        buffer.putShort(offset, protocolId);
+        buffer.putShort(PROTOCOL_ID_OFFSET, protocolId);
         return this;
     }
 
