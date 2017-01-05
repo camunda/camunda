@@ -7,7 +7,7 @@ public class ThreadingCfg
         BACKOFF, BUSY_SPIN;
     }
 
-    public int numberOfThreads = 1;
+    public int numberOfThreads = -1;
     public int maxIdleTimeMs = 200;
     public BrokerIdleStrategy idleStrategy = BrokerIdleStrategy.BACKOFF;
 }

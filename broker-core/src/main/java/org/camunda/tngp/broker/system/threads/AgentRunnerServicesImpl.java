@@ -32,7 +32,7 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     protected static final String AGENT_NAME_LOG_STREAM_PROCESSOR = "log-stream-processor";
     protected static final String AGENT_NAME_CONDUCTOR = "conductor";
 
-    static int maxThreadCount = Runtime.getRuntime().availableProcessors() - 1;
+    static int maxThreadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
 
     protected final Injector<Counters> countersInjector = new Injector<>();
 
@@ -61,6 +61,11 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
                     maxThreadCount + "). Falling back max thread count.");
             numberOfThreads = maxThreadCount;
         }
+        else if (numberOfThreads < 1)
+        {
+            // use max threads by default
+            numberOfThreads = maxThreadCount;
+        }
 
         availableThreads = numberOfThreads;
         brokerIdleStrategy = cfg.idleStrategy;
@@ -71,8 +76,7 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     public void start(ServiceStartContext serviceContext)
     {
         final CountersManager countersManager = countersInjector.getValue().getCountersManager();
-        final IdleStrategy idleStrategy = createIdleStrategy(brokerIdleStrategy);
-        final AgentRunnerFactory agentRunnerFactory = new DefaultAgentRunnerFactory(countersManager, idleStrategy);
+        final AgentRunnerFactory agentRunnerFactory = new DefaultAgentRunnerFactory(countersManager, brokerIdleStrategy);
 
         if (availableThreads >= 5)
         {
@@ -148,16 +152,7 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
         }
     }
 
-    protected IdleStrategy createIdleStrategy(BrokerIdleStrategy idleStrategy)
-    {
-        switch (idleStrategy)
-        {
-            case BUSY_SPIN:
-                return new BusySpinIdleStrategy();
-            default:
-                return new BackoffIdleStrategy(1000, 100, 100, TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
-        }
-    }
+
 
     @Override
     public void stop(ServiceStopContext stopContext)
@@ -225,12 +220,23 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     class DefaultAgentRunnerFactory implements AgentRunnerFactory
     {
         private final CountersManager countersManager;
-        private final IdleStrategy idleStrategy;
+        private final BrokerIdleStrategy brokerIdleStrategy;
 
-        DefaultAgentRunnerFactory(CountersManager countersManager, IdleStrategy idleStrategy)
+        DefaultAgentRunnerFactory(CountersManager countersManager, BrokerIdleStrategy brokerIdleStrategy)
         {
             this.countersManager = countersManager;
-            this.idleStrategy = idleStrategy;
+            this.brokerIdleStrategy = brokerIdleStrategy;
+        }
+
+        protected IdleStrategy createIdleStrategy(BrokerIdleStrategy idleStrategy)
+        {
+            switch (idleStrategy)
+            {
+                case BUSY_SPIN:
+                    return new BusySpinIdleStrategy();
+                default:
+                    return new BackoffIdleStrategy(1000, 100, 100, TimeUnit.MILLISECONDS.toNanos(maxIdleTimeMs));
+            }
         }
 
         @Override
@@ -239,6 +245,9 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
             final String errorCounterName = String.format("%s.errorCounter", agent.roleName());
             final AtomicCounter errorCounter = countersManager.newCounter(errorCounterName);
             errorCounters.add(errorCounter);
+
+            final IdleStrategy idleStrategy = createIdleStrategy(brokerIdleStrategy);
+
             return new AgentRunner(idleStrategy, (t) -> t.printStackTrace(), errorCounter, agent);
         }
     };
