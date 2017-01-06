@@ -2,16 +2,18 @@ package org.camunda.tngp.hashindex;
 
 import java.nio.ByteBuffer;
 
-import org.camunda.tngp.hashindex.store.IndexStore;
-
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.hashindex.store.IndexStore;
 
 public class LoadedBuffer
 {
     protected final IndexStore indexStore;
 
     protected final boolean isDirect;
+
+    protected final long initialOffset;
+    protected final int initialCapacity;
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
@@ -26,6 +28,9 @@ public class LoadedBuffer
     {
         this.indexStore = indexStore;
         this.isDirect = isDirect;
+        this.initialOffset = initialOffset;
+        this.initialCapacity = initialCapacity;
+
         load(initialOffset, initialCapacity);
     }
 
@@ -81,6 +86,13 @@ public class LoadedBuffer
     public long getPosition()
     {
         return position;
+    }
+
+    public void clear()
+    {
+        buffer.wrap(0, 0);
+
+        load(initialOffset, initialCapacity);
     }
 
 }

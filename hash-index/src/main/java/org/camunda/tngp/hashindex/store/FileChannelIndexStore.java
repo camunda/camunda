@@ -9,6 +9,7 @@ import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 import org.agrona.LangUtil;
+import org.camunda.tngp.hashindex.HashIndexDescriptor;
 
 public class FileChannelIndexStore implements IndexStore, Closeable
 {
@@ -50,16 +51,18 @@ public class FileChannelIndexStore implements IndexStore, Closeable
     }
 
     @Override
-    public void read(ByteBuffer buffer, long position)
+    public int read(ByteBuffer buffer, long position)
     {
+        int bytesRead = 0;
         try
         {
-            fileChannel.read(buffer, position);
+            bytesRead = fileChannel.read(buffer, position);
         }
         catch (IOException e)
         {
             LangUtil.rethrowUnchecked(e);
         }
+        return bytesRead;
     }
 
     @Override
@@ -162,6 +165,23 @@ public class FileChannelIndexStore implements IndexStore, Closeable
         catch (IOException ex)
         {
             throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void clear()
+    {
+        // don't override the required metadata
+        int offset = HashIndexDescriptor.BLOCK_COUNT_OFFSET;
+        while (offset < allocatedLength)
+        {
+            final int size = (int) Math.min(1024, allocatedLength - offset);
+            final byte[] zeroBytes = new byte[size];
+            Arrays.fill(zeroBytes, (byte) 0);
+
+            write(ByteBuffer.wrap(zeroBytes), offset);
+
+            offset += size;
         }
     }
 

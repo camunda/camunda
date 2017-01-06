@@ -223,4 +223,30 @@ public class Long2BytesHashIndexTest
         index.put(0, "too long".getBytes());
     }
 
+    @Test
+    public void shouldReset()
+    {
+        // given
+        index.put(0, VALUE);
+
+        // when
+        index.reset();
+
+        // then
+        assertThat(index.get(0)).isEqualTo(VALUE);
+    }
+
+    @Test
+    public void shouldClear()
+    {
+        // given
+        index.put(0, VALUE);
+
+        // when
+        index.clear();
+
+        // then
+        assertThat(index.get(0)).isNull();
+    }
+
 }

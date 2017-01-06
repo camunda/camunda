@@ -99,6 +99,12 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         // allocate and create first block
         final long firstBlockOffset = indexStore.allocate(blockLength);
         this.loadedBlockBuffer = new LoadedBuffer(indexStore, true, firstBlockOffset, blockLength);
+
+        allocateInitialBlock(firstBlockOffset);
+    }
+
+    protected void allocateInitialBlock(long firstBlockOffset)
+    {
         final MutableDirectBuffer firstBlockBuffer = loadedBlockBuffer.getBuffer();
         blockFillCount(firstBlockBuffer, 0);
         blockId(firstBlockBuffer, 0);
@@ -106,7 +112,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
         // update index
         blockCount(1);
-        for (int i = 0; i < indexSize; i++)
+        for (int i = 0; i < indexSize(); i++)
         {
             loadedIndexBuffer.getBuffer()
                 .putLong(indexEntryOffset(i), firstBlockOffset);
@@ -132,6 +138,29 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         catch (InstantiationException | IllegalAccessException e)
         {
             throw new RuntimeException("Could not instantiate " + type, e);
+        }
+    }
+
+    public void clear()
+    {
+        indexStore.clear();
+
+        reset();
+    }
+
+    public void reset()
+    {
+        this.loadedSplitWorkBuffer.clear();
+        this.loadedBlockBuffer.clear();
+
+        this.loadedIndexBuffer.clear();
+        this.loadedIndexBuffer.load(0, requiredIndexBufferSize(indexSize()));
+
+        if (blockCount() == 0)
+        {
+            // allocate and create first block
+            final long firstBlockOffset = indexStore.allocate(blockLength());
+            allocateInitialBlock(firstBlockOffset);
         }
     }
 
