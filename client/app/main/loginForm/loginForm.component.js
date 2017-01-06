@@ -1,4 +1,4 @@
-import {jsx, SetInputFieldValue, OnEvent, dispatchAction, Select, Match, Case} from 'view-utils';
+import {jsx, SetInputFieldValue, OnEvent, Select, Match, Case} from 'view-utils';
 import {performLogin, changePassword, changeUser} from './loginForm.service';
 
 export function LoginForm({selector}) {

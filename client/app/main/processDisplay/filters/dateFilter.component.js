@@ -41,7 +41,7 @@ function SetDateValue({defaultDate}) {
       if (lastValue !== value) {
         let date = value;
 
-        if (!value instanceof Date) {
+        if (!(value instanceof Date)) {
           date = defaultDate;
         }
 
@@ -49,5 +49,5 @@ function SetDateValue({defaultDate}) {
         lastValue = date;
       }
     };
-  }
+  };
 }

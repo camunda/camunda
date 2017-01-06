@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
-import {StaticLink, getLastRoute, __set__, __ResetDependency__} from 'router/staticLink.component';
+import {StaticLink, __set__, __ResetDependency__} from 'router/staticLink.component';
 
 describe('<StaticLink>', () => {
   const name = 'name1';

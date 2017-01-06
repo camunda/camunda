@@ -8,6 +8,6 @@ export function Text({property}) {
 
     return ({[property] : value}) => {
       textNode.data = value.toString();
-    }
-  }
+    };
+  };
 }

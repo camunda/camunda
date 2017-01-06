@@ -20,6 +20,16 @@ module.exports = {
     ]
   },
   module: {
+    preLoaders: [
+      {
+        test: /\.js$/,
+        loader: "eslint-loader",
+        include: [
+          path.resolve(__dirname, 'app'),
+          path.resolve(__dirname, 'test')
+        ]
+      }
+    ],
     loaders: [
       {
         test: /\.html$/,
@@ -94,5 +104,8 @@ module.exports = {
     inline: true,
     open: true,
     historyApiFallback: true
+  },
+  eslint: {
+    configFile: './.eslintrc.json'
   }
 };

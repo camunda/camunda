@@ -1,0 +1,54 @@
+{
+  "rules": {
+    "keyword-spacing": [ 2 ],
+    "object-curly-spacing": [ 2, "never"],
+    "space-before-blocks": [ 2, "always"],
+    "indent": [ 2, 2, {
+      "VariableDeclarator": {
+        "let": 2,
+        "const": 3
+      },
+      "SwitchCase": 1
+    }],
+    "no-unused-vars": [ 2, { "args": "none" } ],
+    "no-var": 2,
+    "space-before-function-paren": [ 2, "never" ],
+    "quotes": [ 2, "single" ],
+    "semi": [ 2, "always" ],
+    "react/jsx-no-undef": 2,
+    "react/jsx-pascal-case": 2,
+    "react/jsx-uses-vars": 2,
+    "react/jsx-uses-react": 2,
+    "no-console": 1
+  },
+  "settings": {
+    "react": {
+      "pragma": "jsx"
+    }
+  },
+  "env": {
+    "node": true,
+    "browser": true,
+    "es6": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true,
+      "experimentalObjectRestSpread": true
+    }
+  },
+  "plugins": [
+    "react"
+  ],
+  "globals": {
+    "expect": false,
+    "it": false,
+    "describe": false,
+    "beforeEach": false,
+    "afterEach": false,
+    "before": false,
+    "after": false
+  }
+}

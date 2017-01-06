@@ -124,7 +124,7 @@ export function createUrlTestForRoute(patternUrl) {
 
       return params;
     }, {});
-  }
+  };
 }
 
 export function createUrlConstructForRoute(patternUrl) {

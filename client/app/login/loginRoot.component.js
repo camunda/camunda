@@ -8,8 +8,8 @@ function LoginRoot_() {
   return () => {
     return ({login}) => {
       loginCache = login;
-    }
-  }
+    };
+  };
 }
 
 export function getLogin() {

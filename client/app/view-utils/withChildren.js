@@ -17,4 +17,4 @@ export function withChildren(Component) {
       ];
     };
   };
-};
+}

@@ -9,7 +9,6 @@ describe('<Filters>', () => {
   let dispatchAction;
   let createChangeFilterAction;
   let node;
-  let update;
   let startDateFilter;
   let endDateFilter;
 
@@ -20,7 +19,7 @@ describe('<Filters>', () => {
     createChangeFilterAction = sinon.stub().returns(changeAction);
     __set__('createChangeFilterAction', createChangeFilterAction);
 
-    ({node, update} = mountTemplate(<Filters/>));
+    ({node} = mountTemplate(<Filters/>));
 
     startDateFilter = selectByText(
       node.querySelectorAll('.filters__filter'),

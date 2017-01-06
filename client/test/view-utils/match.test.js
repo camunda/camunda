@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {jsx, Text, DESTROY_EVENT} from 'view-utils';
-import {Match, Case, Default} from 'view-utils/match';
+import {Match, Case} from 'view-utils/match';
 
 describe('<Match>', () => {
   const key = 'key';
@@ -10,13 +10,12 @@ describe('<Match>', () => {
   let SecondChild;
   let update;
   let node;
-  let eventsBus;
 
   beforeEach(() => {
     FirstChild = createMockComponent('first-child');
     SecondChild = createMockComponent('second-child');
 
-    ({node, update, eventsBus} = mountTemplate(<Match>
+    ({node, update} = mountTemplate(<Match>
       <Case predicate={state => state[key] % 2 === 1}>
         t1 = <Text property={key} />
         <FirstChild/>

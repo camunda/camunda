@@ -141,7 +141,7 @@ function insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode, parent)
 }
 
 function fireDestroyEventForNotUsed(notUsed) {
-  notUsed.forEach(({fireEvent}) => fireEvent(DESTROY_EVENT, {}))
+  notUsed.forEach(({fireEvent}) => fireEvent(DESTROY_EVENT, {}));
 }
 
 function splitNodes(nodes, valuesWithKey) {

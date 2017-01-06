@@ -1,5 +1,5 @@
 import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
+import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {Diagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/diagram.component';
@@ -16,7 +16,6 @@ describe('<Diagram>', () => {
   let canvas;
   let elements;
   let elementRegistry;
-  let node;
   let update;
 
   beforeEach(() => {
@@ -61,7 +60,7 @@ describe('<Diagram>', () => {
     };
     __set__('Viewer', Viewer);
 
-    ({node, update} = mountTemplate(<Diagram />));
+    ({update} = mountTemplate(<Diagram />));
   });
 
   afterEach(() => {

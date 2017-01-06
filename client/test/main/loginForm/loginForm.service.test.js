@@ -100,7 +100,7 @@ describe('loginForm service', () => {
         expect(router.goTo.calledWith(
           lastRoute.params.name,
           JSON.parse(lastRoute.params.params)
-        )).to.eql(true, 'expected to be redirected to previous route')
+        )).to.eql(true, 'expected to be redirected to previous route');
       });
     });
 

@@ -16,5 +16,5 @@ export function StaticLink({name, params, replace = false}) {
     }
 
     return [];
-  }
+  };
 }

@@ -43,7 +43,7 @@ describe('<AppMenu>', () => {
     afterEach(() => {
       __ResetDependency__('clearLogin');
       __ResetDependency__('getLogin');
-    })
+    });
 
     it('has a logout button', () => {
       expect(node).to.contain.text('Logout');

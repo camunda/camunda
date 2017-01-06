@@ -1,7 +1,7 @@
-import {jsx, Match, Select} from 'view-utils';
+import {jsx, Match} from 'view-utils';
 import {Header} from './header';
 import {Footer} from './footer';
-import {Router, RouteView, StaticLink} from 'router';
+import {Router, RouteView} from 'router';
 import {LoginRoot, Authenticated} from 'login';
 import {LoginForm} from './loginForm';
 import {DynamicLoader} from 'dynamicLoader';

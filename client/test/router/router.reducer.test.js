@@ -22,7 +22,7 @@ describe('Router reducer', () => {
     };
 
     reducer = createRouterReducer(router);
-    params = {g1: 123}
+    params = {g1: 123};
   });
 
   it('should set new route on state', () => {

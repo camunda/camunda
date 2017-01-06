@@ -5,7 +5,7 @@
 
 export function runUpdate(update, state) {
   if (Array.isArray(update)) {
-    return updateArray(update, state)
+    return updateArray(update, state);
   }
 
   if (update.update) {

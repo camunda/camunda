@@ -10,13 +10,12 @@ describe('<List>', () => {
   let Child;
   let node;
   let update;
-  let eventsBus;
   let values;
 
   beforeEach(() => {
     Child = createMockComponent('child');
 
-    ({node, update, eventsBus} = mountTemplate(<List key={key}>
+    ({node, update} = mountTemplate(<List key={key}>
       key-<Text property="key" />
       <div className={childClass}>
         order-<Text property="key" />
@@ -151,7 +150,7 @@ describe('<List>', () => {
     beforeEach(() => {
       SecondChild = createMockComponent('second-child');
 
-      ({node, update, eventsBus} = mountTemplate(<List key={key}>
+      ({node, update} = mountTemplate(<List key={key}>
         <div className={childClass}>
           <Match>
             <Case predicate={({key}) => key % 2 === 1}>

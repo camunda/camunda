@@ -9,5 +9,5 @@ export function addSplash() {
 
   return () => {
     document.body.removeChild(element);
-  }
+  };
 }

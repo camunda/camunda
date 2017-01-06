@@ -3,7 +3,7 @@ import {$document} from './dom';
 
 export function jsx(element, attributes, ...children) {
   if (typeof element === 'function') {
-    return handleComponent(element, attributes, children)
+    return handleComponent(element, attributes, children);
   }
 
   return handleHtml(element, attributes, children);
@@ -26,7 +26,7 @@ function handleHtml(element, attributes, children) {
       setAttributes(elementNode, attributes);
     }
 
-    return addChildren(elementNode, eventsBus, children)
+    return addChildren(elementNode, eventsBus, children);
   };
 }
 

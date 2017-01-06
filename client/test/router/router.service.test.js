@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {getRouter, createUrlTestForRoute, createUrlConstructForRoute, __set__, __ResetDependency__} from 'router/router.service';
+import {getRouter, __set__, __ResetDependency__} from 'router/router.service';
 
 describe('Router service', () => {
   describe('getRouter', () => {

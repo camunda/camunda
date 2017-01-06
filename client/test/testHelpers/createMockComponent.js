@@ -1,4 +1,4 @@
-import {jsx, noop} from 'view-utils';
+import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {mockFunction} from  './mockFunction';
 

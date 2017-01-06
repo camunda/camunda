@@ -31,7 +31,7 @@ export function createRouterReducer(router) {
     }
 
     return resultState;
-  }
+  };
 }
 
 function shouldClearChildState({route: stateRoute}, {route: actionRoute}) {

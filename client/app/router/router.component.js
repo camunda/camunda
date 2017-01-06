@@ -1,4 +1,4 @@
-import {withChildren, runUpdate} from 'view-utils';
+import {withChildren} from 'view-utils';
 
 let lastRoute;
 
@@ -9,7 +9,7 @@ function RouterRoot({routerProperty}) {
     return ({[routerProperty]: {route}}) => {
       lastRoute = route;
     };
-  }
+  };
 }
 
 export function getLastRoute() {

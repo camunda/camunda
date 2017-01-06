@@ -20,14 +20,14 @@ export function DynamicLoader({module, ...props}) {
             type: '@@LOADED',
             module
           });
-        })
+        });
     } else {
       update = applyComponent(componet, target, eventsBus);
     }
 
     return (state) => {
       runUpdate(update, state);
-    }
+    };
   };
 
   function fetchComponent(target, eventsBus) {

@@ -2,22 +2,20 @@ import {expect} from 'chai';
 import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
-import {Router, getLastRoute, __set__, __ResetDependency__} from 'router/router.component';
+import {Router, getLastRoute} from 'router/router.component';
 
 describe('<Router>', () => {
-  let node;
   let update;
-  let eventsBus;
   let childUpdate;
   let ChildComp;
 
   beforeEach(() => {
     childUpdate = sinon.spy();
     ChildComp = () => {
-      return () => childUpdate
+      return () => childUpdate;
     };
 
-    ({node, update, eventsBus} = mountTemplate(<Router routerProperty="router"><ChildComp/></Router>));
+    ({update} = mountTemplate(<Router routerProperty="router"><ChildComp/></Router>));
   });
 
   it('should set lastRoute on update', () => {

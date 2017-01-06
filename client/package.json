@@ -10,7 +10,9 @@
     "serve": "./node_modules/.bin/webpack-dev-server --config webpack-development.config.js",
     "serve-compile": "yarn run compile && ./node_modules/.bin/http-server dist/ -o",
     "test": "./node_modules/.bin/karma start",
-    "test-watch": "./node_modules/.bin/karma start --no-single-run"
+    "test-watch": "./node_modules/.bin/karma start --no-single-run",
+    "eslint": "eslint app test || true",
+    "eslint-fix": "eslint app test --fix || true"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -26,6 +28,9 @@
     "chai": "^3.5.0",
     "chai-dom": "^1.4.3",
     "css-loader": "^0.26.0",
+    "eslint": "^3.12.2",
+    "eslint-loader": "^1.6.1",
+    "eslint-plugin-react": "^6.8.0",
     "extract-loader": "^0.1.0",
     "file-loader": "^0.9.0",
     "html-loader": "^0.4.4",
