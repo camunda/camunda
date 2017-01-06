@@ -2,6 +2,8 @@ import {addChild, addChildren} from './jsx';
 import {runUpdate} from './runUpdate';
 import {updateOnlyWhenStateChanges} from './updateOnlyWhenStateChanges';
 import {DESTROY_EVENT} from './events';
+import {$document} from './dom';
+import {insertAfter} from './insertAfter';
 
 const truePredicate = () => true;
 
@@ -11,6 +13,10 @@ export function Match({didStateChange, children}) {
   return (node, eventsBus) => {
     let lastChild;
     let update;
+    let childNodes = [];
+    const startMarker = $document.createComment('START MATCH');
+
+    node.append(startMarker);
 
     return updateOnlyWhenStateChanges(
       (state) => {
@@ -18,15 +24,16 @@ export function Match({didStateChange, children}) {
 
         if (child) {
           if (child !== lastChild) {
-            update = replaceChild(node, update, eventsBus, child);
+            ({update, childNodes} = replaceChild(startMarker, childNodes, update, eventsBus, child));
             lastChild = child;
           }
 
           runUpdate(update, state);
         } else {
-          removeChild(node, update);
+          removeChild(childNodes, update);
           update = undefined;
           lastChild = undefined;
+          childNodes = [];
         }
       },
       didStateChange
@@ -38,14 +45,23 @@ function findChild(children, state) {
   return children.find(({predicate}) => predicate(state));
 }
 
-function replaceChild(node, update, eventsBus, child) {
-  removeChild(node, update);
+function replaceChild(startMarker, childNodes, update, eventsBus, child) {
+  removeChild(childNodes, update);
 
-  return addChild(node, eventsBus, child, true);
+  const fragment = document.createDocumentFragment();
+  const newUpdate = addChild(fragment, eventsBus, child, true);
+  const newChildNodes = Array.prototype.slice.call(fragment.childNodes);
+
+  insertAfter(fragment, startMarker);
+
+  return {
+    update: newUpdate,
+    childNodes: newChildNodes
+  };
 }
 
-function removeChild(node, {eventsBus} = {}) {
-  node.innerHTML = '';
+function removeChild(childNodes, {eventsBus} = {}) {
+  childNodes.forEach(node => node.parentNode.removeChild(node));
 
   if (eventsBus) {
     eventsBus.fireEvent(DESTROY_EVENT, {});

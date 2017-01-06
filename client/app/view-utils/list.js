@@ -3,6 +3,7 @@ import {addChildren} from './jsx';
 import {runUpdate} from './runUpdate';
 import {DESTROY_EVENT} from './events';
 import {$document} from './dom';
+import {insertAfter} from './insertAfter';
 
 export function List({onlyChild = false, key, children}) {
   return (parent, eventsBus) => {
@@ -159,8 +160,4 @@ function splitNodes(nodes, valuesWithKey) {
   return Object
     .keys(nodesByKey)
     .map(key => nodesByKey[key]);
-}
-
-function insertAfter(node, target) {
-  target.parentNode.insertBefore(node, target.nextSibling);
 }

@@ -17,3 +17,4 @@ export {$document, $window} from './dom';
 export {Children} from './children';
 export {withChildren} from './withChildren';
 export {OnEvent} from './onEvent';
+export {insertAfter} from './insertAfter';
