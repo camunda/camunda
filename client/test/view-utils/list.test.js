@@ -17,8 +17,9 @@ describe('<List>', () => {
     Child = createMockComponent('child');
 
     ({node, update, eventsBus} = mountTemplate(<List key={key}>
+      key-<Text property="key" />
       <div className={childClass}>
-        key-<Text property="key" />
+        order-<Text property="key" />
         <Child/>
       </div>
     </List>));
@@ -73,8 +74,8 @@ describe('<List>', () => {
     it('should keep order of children', () => {
       const children = node.querySelectorAll(`.${childClass}`);
 
-      expect(children[0]).to.contain.text('key-1');
-      expect(children[1]).to.contain.text('key-2');
+      expect(children[0]).to.contain.text('order-1');
+      expect(children[1]).to.contain.text('order-2');
     });
 
     it('should update children', () => {

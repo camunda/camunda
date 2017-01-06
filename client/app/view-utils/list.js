@@ -63,7 +63,7 @@ function getNewNode(eventsBus, children) {
   );
 
   return {
-    children: Array.prototype.slice.call(node.children),
+    children: Array.prototype.slice.call(node.childNodes),
     update,
     fireEvent: fireEvent.bind(null, updates)
   };

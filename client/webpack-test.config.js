@@ -9,6 +9,7 @@ addTestFilesBabelLoader();
 module.exports = config;
 
 function deleteUnneededConfigEntries() {
+  delete config.devtool; // It is much quicker that way and source map do not work anyway
   delete config.entry;
   delete config.output;
   delete config.plugins;
