@@ -71,7 +71,7 @@ export function addChild(elementNode, eventsBus, child) {
 
   const childEventBus = createEventsBus(eventsBus);
 
-  return {
+  return { //TODO: make this optional, because it is used only in List
     update: child(elementNode, childEventBus),
     eventsBus: childEventBus
   };

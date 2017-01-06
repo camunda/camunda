@@ -91,7 +91,9 @@ function render(startMarker, nodes, valuesWithKey, getNewNode, parent) {
 
 function removeNodes(nodes, parent) {
   if (!parent) {
-    nodes.forEach(({node}) => node.parentNode.removeChild(node));
+    nodes.forEach(({children}) => {
+      children.forEach(node => node.parentNode.removeChild(node));
+    });
   } else {
     parent.innerHTML = '';
   }
