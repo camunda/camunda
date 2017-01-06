@@ -64,7 +64,7 @@
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>hash-index</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
       </dependency>
 
       <dependency>

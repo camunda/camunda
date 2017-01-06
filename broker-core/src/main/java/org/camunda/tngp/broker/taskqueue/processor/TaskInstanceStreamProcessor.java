@@ -1,9 +1,13 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
+
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
-import org.camunda.tngp.hashindex.Long2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2BytesHashIndex;
+import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
@@ -19,8 +23,12 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected CmdResponseWriter responseWriter;
 
-    // TODO inject index
-    protected final Long2LongHashIndex taskIndex = null;
+    // TODO inject index store
+    protected final IndexStore indexStore = null;
+    protected Long2BytesHashIndex taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, 2 * SIZE_OF_BYTE);
+
+    protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
+
     protected int streamId;
 
     protected long eventPosition = 0;
