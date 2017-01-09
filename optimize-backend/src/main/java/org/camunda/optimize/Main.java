@@ -1,12 +1,18 @@
 package org.camunda.optimize;
 
+import org.camunda.optimize.service.es.TransportClientFactory;
+import org.camunda.optimize.service.security.AuthenticationProvider;
+import org.camunda.optimize.service.security.impl.AuthenticationProviderImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.elasticsearch.client.transport.TransportClient;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import javax.inject.Singleton;
 import java.net.URL;
 
 /**
@@ -19,7 +25,15 @@ public class Main {
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
         .packages("org.camunda.optimize.rest")
-        .register(JacksonFeature.class);
+        .register(JacksonFeature.class)
+        .register(new AbstractBinder() {
+          @Override
+          protected void configure() {
+            //TODO:dynamically iterate all factories and register them?
+            bindFactory(TransportClientFactory.class).to(TransportClient.class);
+            bind(AuthenticationProviderImpl.class).to(AuthenticationProvider.class).in(Singleton.class);
+          }
+        });
 
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
     context.setContextPath("/");

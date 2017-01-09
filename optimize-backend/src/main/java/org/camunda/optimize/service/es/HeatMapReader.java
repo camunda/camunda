@@ -1,4 +1,4 @@
-package org.camunda.optimize.es;
+package org.camunda.optimize.service.es;
 
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;

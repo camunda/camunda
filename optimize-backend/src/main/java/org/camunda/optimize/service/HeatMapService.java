@@ -1,6 +1,6 @@
 package org.camunda.optimize.service;
 
-import org.camunda.optimize.es.HeatMapReader;
+import org.camunda.optimize.service.es.HeatMapReader;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;

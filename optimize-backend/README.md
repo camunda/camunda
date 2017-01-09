@@ -44,6 +44,14 @@ logger = ESLoggerFactory.getLogger('myscript')
 logger.info("TEST")
 ```
 
+### Pre-populating data
+
+in order to work with authentication, please add a user to corresponding index type
+
+```
+curl -XPUT http://localhost:9200/optimize/users/1?pretty -d '{ "username":"admin", "password":"admin"}'
+```
+
 ## REST API
 
 in order to run API you have to run 
@@ -60,6 +68,49 @@ mvn -DskipTests clean package
 java -jar ./es-java/es-java-rest/target/es-java-rest-0.0.1-SNAPSHOT-jar-with-dependencies.jar
 ```
 
+### Authentication
+
+in order to check if you are authenticated or not you can use following request
+
+```
+curl http://localhost:8080/api/authentication/test
+```
+
+which will reply with something like 
+
+```
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1"/>
+<title>Error 401 </title>
+</head>
+<body>
+<h2>HTTP ERROR: 401</h2>
+<p>Problem accessing /api/authentication/test. Reason:
+<pre>    Unauthorized</pre></p>
+<hr /><i><small>Powered by Jetty://</small></i>
+</body>
+</html>
+```
+
+since you did not provide any valid bearer token. In order to perform authentication for the first time 
+one hast to send POST request with username and password to /authenticate endpoint
+
+```
+curl -XPOST http://localhost:8080/api/authentication -d '{ "username":"admin", "password": "admin"}' -H "Content-Type: application/json"
+```
+
+which will return a Bearer token 
+
+```
+eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhZG1pbiIsImV4cCI6MTQ4Mzk2NTMyNn0.8LtTNQCygAvajH_HeXAkOCFPi20e-3KHPlC6D009HUg
+```
+
+that can be used to access a secure endpoint 
+
+```
+curl http://localhost:8080/api/authentication/test -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhZG1pbiIsImV4cCI6MTQ4Mzk2NTMyNn0.8LtTNQCygAvajH_HeXAkOCFPi20e-3KHPlC6D009HUg"
+```
 ### Enunciate documentation 
 
 you can generate documentation using [enunciate](http://enunciate.webcohesion.com/) 

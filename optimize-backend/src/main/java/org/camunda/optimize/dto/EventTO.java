@@ -2,13 +2,14 @@ package org.camunda.optimize.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
 
 /**
  * @author Askar Akhmerov
  */
-public class EventTO {
+public class EventTO implements Serializable {
   private String activityId;
   private String state;
   private Map<String, Object> payload;

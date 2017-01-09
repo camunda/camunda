@@ -1,4 +1,4 @@
-package org.camunda.optimize.rest.config;
+package org.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

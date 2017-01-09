@@ -1,11 +1,12 @@
 package org.camunda.optimize.dto;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * @author Askar Akhmerov
  */
-public class HeatMapRequestTO {
+public class HeatMapRequestTO implements Serializable {
   protected String key;
   private List<String> correlationActivities;
 
