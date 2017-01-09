@@ -1,6 +1,8 @@
 var shell = require('shelljs');
 var path = require('path');
-var express = require('express');
+var http = require('http');
+var serveStatic = require('serve-static');
+var fs = require('fs');
 
 var webpack = path.resolve(__dirname, '..', 'node_modules', '.bin', 'webpack');
 var config = path.resolve(__dirname, '..', 'webpack-production.config.js');
@@ -10,36 +12,69 @@ var index = path.resolve(dist, 'index.html');
 shell.rm('-rf', dist);
 shell.exec(`${webpack} --config ${config}`);
 
-var app = express();
-var gzExtensions = ['*.js', '*.css', '*.eot', '*.ttf', '*.svg'];
+var serve = serveStatic(dist);
+var gzExtensions = ['.js', '.css', '.eot', '.ttf', '.svg'];
 var contentTypes = {
-  '*.js': 'application/javascript',
-  '*.css': 'text/css',
-  '*.tff': 'application/x-font-ttf',
-  '*.svg': 'image/svg+xml'
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.tff': 'application/x-font-ttf',
+  '.svg': 'image/svg+xml'
 };
 
-gzExtensions.forEach(function(extension) {
-  app.get(extension, function(req, res, next) {
+function redirectGzips(req, res, next) {
+  var extension = gzExtensions.filter(matchesExtension.bind(null, req.url))[0];
+
+  if (extension) {
     req.url = req.url + '.gz';
-    res.set('Content-Encoding', 'gzip');
+    res.setHeader('Content-Encoding', 'gzip');
 
     if (contentTypes[extension]) {
-      res.set('Content-Type', contentTypes[extension]);
+      res.setHeader('Content-Type', contentTypes[extension]);
     }
+  }
 
-    next();
+  next();
+}
+
+function matchesExtension(url, extension) {
+  return url.substr(url.length - extension.length) === extension;
+}
+
+function serveIndex(req, res) {
+  var stat = fs.statSync(index);
+  var indexStream = fs.createReadStream(index);
+
+  res.writeHead(200, {
+    'Content-Type': 'text/html',
+    'Content-Length': stat.size
   });
-});
 
-app.use(express.static(dist));
+  indexStream.pipe(res);
+}
 
-app.listen('3000', function() {
+var server = http.createServer(applyMiddlewares([
+  redirectGzips,
+  serve,
+  serveIndex
+]));
+
+function applyMiddlewares(functions) {
+  return applyMiddleware(0);
+
+  function applyMiddleware(index) {
+    return function(req, res) {
+      var middleWare = functions[index];
+      var next = function() {
+        applyMiddleware(index + 1)(req, res);
+      };
+
+      middleWare(req, res, next);
+    };
+  }
+}
+
+server.listen('3000', function() {
   console.log('*****************************************************************************************');
   console.log('Server started at localhost:3000');
   console.log('*****************************************************************************************');
-});
-
-app.get('*', function(req, res) {
-  res.sendFile(index);
 });
