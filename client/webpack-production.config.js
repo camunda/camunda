@@ -1,6 +1,6 @@
 var config = require('./webpack.config');
 var webpack = require('webpack');
-// var CompressionPlugin = require("compression-webpack-plugin");
+var CompressionPlugin = require("compression-webpack-plugin");
 
 config.plugins = addProductionPlugins();
 config.module.loaders = correctLoadersForProduction(config.module.loaders);
@@ -22,14 +22,12 @@ function addProductionPlugins() {
       compress: {
         warnings: false
       }
+    }),
+    new CompressionPlugin({
+      asset: '[path].gz[query]',
+      algorithm: 'gzip',
+      test: /\.js$|\.css|\.eot|\.ttf|\.svg$/
     })
-    // new CompressionPlugin({
-    //   asset: "[path].gz[query]",
-    //   algorithm: "gzip",
-    //   test: /\.js$|\.html$/,
-    //   threshold: 5240,
-    //   minRatio: 0.8
-    // })
   ]);
 }
 
