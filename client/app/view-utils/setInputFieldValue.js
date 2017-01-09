@@ -11,7 +11,6 @@ export function setInputValue(input, value) {
   input.selectionDirection = selectionDirection;
 }
 
-
 function InputSetter() {
   return (input) => {
     return updateOnlyWhenStateChanges(

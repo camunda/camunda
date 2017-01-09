@@ -3,6 +3,7 @@ var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
+  cache: true,
   devtool: 'source-map',
   target: 'web',
   entry: {
@@ -78,6 +79,7 @@ module.exports = {
         ],
         loader: 'babel-loader',
         query: {
+          cacheDirectory: true,
           presets: ['latest'],
           plugins: [
             'transform-object-rest-spread',
