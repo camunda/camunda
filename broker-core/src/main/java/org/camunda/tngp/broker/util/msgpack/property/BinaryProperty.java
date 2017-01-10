@@ -20,4 +20,10 @@ public class BinaryProperty extends BaseProperty<BinaryValue>
         getPropertyValue().wrap(data);
         ensureSet();
     }
+
+    public void setValue(DirectBuffer data, int offset, int length)
+    {
+        getPropertyValue().wrap(data, offset, length);
+        ensureSet();
+    }
 }

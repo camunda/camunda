@@ -22,115 +22,69 @@
       <validValue name="TOPIC_NOT_FOUND">0</validValue>
     </enum>
 
-    <enum name="taskEventType" encodingType="uint8" semanticType="String" description="The type of event occured on the task">
-      <validValue name="CREATE">0</validValue>
-      <validValue name="CREATED">1</validValue>
-      <validValue name="LOCK">2</validValue>
-      <validValue name="LOCKED">3</validValue>
-      <validValue name="LOCK_FAILED">4</validValue>
-      <validValue name="COMPLETE">5</validValue>
-      <validValue name="COMPLETED">6</validValue>
-      <validValue name="COMPLETE_FAILED">7</validValue>
-      <validValue name="EXPIRE_LOCK">8</validValue>
-      <validValue name="LOCK_EXPIRED">9</validValue>
-      <validValue name="LOCK_EXPIRATION_FAILED">10</validValue>
-      <validValue name="ABORT">11</validValue>
-      <validValue name="ABORTED">12</validValue>
-      <validValue name="ABORT_FAILED">13</validValue>
-    </enum>
-
   </types>
   
-  <sbe:message name="BrokerEventMetadata" id="1000" description="Descriptor for Event Metadata">
-    <field name="reqChannelId" id="1" type="uint32" />
-    <field name="reqConnectionId" id="2" type="uint64" />
-    <field name="reqRequestId" id="3" type="uint64" />
-    <field name="raftTermId" id="4" type="uint32" />
-  </sbe:message>
-
-  <!-- L1  -->
+  <!-- L1 General Messages 0 - 99 -->
 
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
     <field name="errorCode" id="1" type="errorCode" />
     <data name="errorData" id="2" type="varDataEncoding" />
     <data name="failedRequest" id="3" type="varDataEncoding" /> <!-- include the failed request -->
   </sbe:message>
-
-<!-- 
-  <sbe:message name="PublishEventsRequest" id="100">
-    <field name="topicId" id="1" type="uint32" />
-    <group name="events" id="2" dimensionType="groupSizeEncoding">
-      <field name="longKey" id="3" type="uint64" />
-      <data name="bytesKey" id="4" type="varDataEncoding" />
-      <data name="event" id="5" type="varDataEncoding" />
-    </group>
+  
+  <sbe:message name="ControlMessageRequest" id="10">
+    <data name="data" id="1" type="varDataEncoding" />
   </sbe:message>
 
-  <sbe:message name="PublishEventsResponse" id="101">
-    <field name="topicId" id="1" type="uint32" />
-    <group name="positions" id="2" dimensionType="groupSizeEncoding">
-      <field name="position" id="3" type="uint64" />
-    </group>
-  </sbe:message>
--->
-
-  <sbe:message name="ExecuteCommandRequest" id="102">
-    <field name="topicId" id="1" type="uint32" />
-    <field name="longKey" id="3" type="uint64" />
-    <data name="bytesKey" id="4" type="varDataEncoding" />
-    <data name="command" id="3" type="varDataEncoding" />
+  <sbe:message name="ControlMessageResponse" id="11">
+    <data name="data" id="1" type="varDataEncoding" />
   </sbe:message>
 
-  <sbe:message name="ExecuteCommandResponse" id="103">
+  <sbe:message name="ExecuteCommandRequest" id="20">
     <field name="topicId" id="1" type="uint32" />
-    <field name="longKey" id="3" type="uint64" />
-    <data name="bytesKey" id="4" type="varDataEncoding" />
-    <data name="event" id="3" type="varDataEncoding" />
+    <field name="longKey" id="2" type="uint64" />
+    <data name="bytesKey" id="3" type="varDataEncoding" />
+    <data name="command" id="4" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="ExecuteCommandResponse" id="21">
+    <field name="topicId" id="1" type="uint32" />
+    <field name="longKey" id="2" type="uint64" />
+    <data name="bytesKey" id="3" type="varDataEncoding" />
+    <data name="event" id="4" type="varDataEncoding" />
   </sbe:message>
   
-  <sbe:message name="ControlMessageRequest" id="104">
-    <data name="data" id="3" type="varDataEncoding" />
-  </sbe:message>
+  <!-- L2 Control Messages 100 - 199 -->
 
-  <sbe:message name="ControlMessageResponse" id="105">
-    <data name="data" id="3" type="varDataEncoding" />
-  </sbe:message>
-
-  <!-- L2 Commands 200 - 399 -->
-
-  <sbe:message name="TaskEvent" id="200">
-    <field name="eventType" id="1" type="taskEventType" />
-    <field name="lockTime" id="1" type="uint64" />
-    <group name="headers" id="2" dimensionType="groupSizeEncoding">
-      <data name="headerName" id="3" type="varDataEncoding" />
-      <data name="headerValue" id="4" type="varDataEncoding" />
-    </group>
-    <data name="taskType" id="1" type="varDataEncoding" />
-    <data name="payload" id="5" type="varDataEncoding" />
-  </sbe:message>
-  
-   <!-- L2 Control Messages 0 - 99 -->
-
-  <sbe:message name="CreateTaskSubscription" id="300">
+  <sbe:message name="CreateTaskSubscription" id="100">
     <field name="consumerId" id="1" type="uint16" />
     <field name="lockDuration" id="2" type="uint64" />
     <field name="initialCredits" id="3" type="uint32" />
     <data name="taskType" id="4" type="varDataEncoding" />
   </sbe:message>
 
-  <sbe:message name="CloseTaskSubscription" id="301">
+  <sbe:message name="CloseTaskSubscription" id="101">
     <field name="consumerId" id="1" type="uint16" />
     <field name="subscriptionId" id="2" type="uint64" />
   </sbe:message>
 
-  <sbe:message name="TaskSubscriptionAck" id="302">
+  <sbe:message name="TaskSubscriptionAck" id="102">
     <field name="id" id="1" type="uint64" />
   </sbe:message>
 
-  <sbe:message name="ProvideSubscriptionCredits" id="303">
+  <sbe:message name="ProvideSubscriptionCredits" id="103">
     <field name="consumerId" id="1" type="uint16" />
     <field name="subscriptionId" id="2" type="uint64" />
     <field name="credits" id="2" type="uint32" />
+  </sbe:message>
+  
+  <!-- L2 Common Messages 200 - 399 -->
+
+  <sbe:message name="BrokerEventMetadata" id="200" description="Descriptor for Event Metadata">
+    <field name="reqChannelId" id="1" type="uint32" />
+    <field name="reqConnectionId" id="2" type="uint64" />
+    <field name="reqRequestId" id="3" type="uint64" />
+    <field name="raftTermId" id="4" type="uint32" />
   </sbe:message>
 
 </sbe:messageSchema>

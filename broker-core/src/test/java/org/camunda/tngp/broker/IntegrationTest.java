@@ -9,9 +9,9 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
-import org.camunda.tngp.broker.taskqueue.processor.CmdResponseWriter;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
+import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -81,13 +81,13 @@ public class IntegrationTest
 
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(tempFolder.getRoot().getAbsolutePath()).build();
 
-        final CmdResponseWriter responseWriter = mock(CmdResponseWriter.class, new Answer<CmdResponseWriter>()
+        final CommandResponseWriter responseWriter = mock(CommandResponseWriter.class, new Answer<CommandResponseWriter>()
         {
 
             @Override
-            public CmdResponseWriter answer(InvocationOnMock invocation) throws Throwable
+            public CommandResponseWriter answer(InvocationOnMock invocation) throws Throwable
             {
-                return (CmdResponseWriter) invocation.getMock();
+                return (CommandResponseWriter) invocation.getMock();
             }
         });
 

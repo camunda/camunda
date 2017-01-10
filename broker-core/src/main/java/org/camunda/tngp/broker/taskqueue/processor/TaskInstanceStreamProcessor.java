@@ -6,7 +6,9 @@ import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
+import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
@@ -21,10 +23,10 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
 
-    protected CmdResponseWriter responseWriter;
+    protected CommandResponseWriter responseWriter;
 
     // TODO inject index store
-    protected final IndexStore indexStore = null;
+    protected final IndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
     protected Long2BytesHashIndex taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, 2 * SIZE_OF_BYTE);
 
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
@@ -36,7 +38,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected final TaskEvent taskEvent = new TaskEvent();
 
-    public TaskInstanceStreamProcessor(CmdResponseWriter responseWriter)
+    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter)
     {
         this.responseWriter = responseWriter;
     }

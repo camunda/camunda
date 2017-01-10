@@ -7,7 +7,18 @@ public enum TaskEventType
 
     LOCK,
     LOCKED,
+    LOCK_FAILED,
 
     COMPLETE,
-    COMPLETED;
+    COMPLETED,
+    COMPLETE_FAILED,
+
+    EXPIRE_LOCK,
+    LOCK_EXPIRED,
+    LOCK_EXPIRATION_FAILED,
+
+    ABORT,
+    ABORTED,
+    ABORT_FAILED;
+
 }

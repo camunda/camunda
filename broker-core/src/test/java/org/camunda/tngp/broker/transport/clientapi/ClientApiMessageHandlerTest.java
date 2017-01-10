@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker;
+package org.camunda.tngp.broker.transport.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
@@ -11,10 +11,8 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
@@ -55,6 +53,8 @@ public class ClientApiMessageHandlerTest
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandRequestEncoder commandRequestEncoder = new ExecuteCommandRequestEncoder();
     protected final ControlMessageRequestEncoder controlRequestEncoder = new ControlMessageRequestEncoder();
+
+    int fragmentOffset = 0;
 
     private LogStream logStream;
     private ClientApiMessageHandler messageHandler;
@@ -166,7 +166,7 @@ public class ClientApiMessageHandlerTest
 
         final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
 
-        errorResponseDecoder.wrap(sendBuffer, DataFrameDescriptor.HEADER_LENGTH, errorResponseDecoder.sbeBlockLength(), errorResponseDecoder.sbeSchemaVersion());
+        errorResponseDecoder.wrap(sendBuffer, fragmentOffset, errorResponseDecoder.sbeBlockLength(), errorResponseDecoder.sbeSchemaVersion());
 
         assertThat(errorResponseDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
         assertThat(errorResponseDecoder.errorData()).isEqualTo("Cannot execute command. Topic with id '9' id not found");
@@ -284,6 +284,8 @@ public class ClientApiMessageHandlerTest
         {
             final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
             final int length = (int) invocation.getArguments()[1];
+
+            fragmentOffset = claimedFragment.getOffset();
 
             claimedFragment.wrap(sendBuffer, 0, alignedLength(length));
 

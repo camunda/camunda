@@ -3,10 +3,10 @@ package org.camunda.tngp.broker.taskqueue.data;
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
-import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
+import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 
 public class TaskEvent extends UnpackedObject
@@ -63,5 +63,18 @@ public class TaskEvent extends UnpackedObject
     {
         return payloadProp.getValue();
     }
+
+    public TaskEvent setPayload(DirectBuffer payload)
+    {
+        payloadProp.setValue(payload);
+        return this;
+    }
+
+    public TaskEvent setPayload(DirectBuffer payload, int offset, int length)
+    {
+        payloadProp.setValue(payload, offset, length);
+        return this;
+    }
+
 }
 

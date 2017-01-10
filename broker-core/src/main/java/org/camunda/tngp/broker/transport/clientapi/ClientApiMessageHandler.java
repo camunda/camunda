@@ -30,6 +30,7 @@ public class ClientApiMessageHandler
 {
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     protected final RequestResponseProtocolHeaderDescriptor requestResponseProtocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
     protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
     protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
@@ -62,7 +63,9 @@ public class ClientApiMessageHandler
         int messageOffset = offset + TransportHeaderDescriptor.headerLength();
         int messageLength = length - TransportHeaderDescriptor.headerLength();
 
-        final int protocol = buffer.getShort(TransportHeaderDescriptor.protocolIdOffset(offset));
+        transportHeaderDescriptor.wrap(buffer, offset);
+
+        final int protocol = transportHeaderDescriptor.protocolId();
         if (protocol == REQUEST_RESPONSE)
         {
             requestResponseProtocolHeaderDescriptor.wrap(buffer, messageOffset);
