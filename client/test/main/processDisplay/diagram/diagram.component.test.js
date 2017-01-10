@@ -2,12 +2,17 @@ import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
+import {setupPromiseMocking} from 'testHelpers';
 import {Diagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/diagram.component';
 
 const dayInMs = 24 * 60 * 60 * 1000;
 
 describe('<Diagram>', () => {
-  const diagram = 'diagram-xml';
+  const diagram = 'p1';
+  const diagramXml = 'diagram-xml';
+  const heatmapNode = document.createElement('img');
+  let getDiagramXml;
+  let getHeatmap;
   let filters;
   let Viewer;
   let viewer;
@@ -18,7 +23,16 @@ describe('<Diagram>', () => {
   let elementRegistry;
   let update;
 
+  setupPromiseMocking();
+
   beforeEach(() => {
+
+    getDiagramXml = sinon.stub().returns(Promise.resolve(diagramXml));
+    __set__('getDiagramXml', getDiagramXml);
+
+    getHeatmap = sinon.stub().returns(Promise.resolve(heatmapNode));
+    __set__('getHeatmap', getHeatmap);
+
     overlays = {
       add: sinon.spy(),
       remove: sinon.spy()
@@ -26,7 +40,11 @@ describe('<Diagram>', () => {
 
     canvas = {
       resized: sinon.spy(),
-      zoom: sinon.spy()
+      zoom: sinon.spy(),
+      _viewport: {
+        appendChild: sinon.spy(),
+        removeChild: sinon.spy()
+      }
     };
 
     elements = [
@@ -61,9 +79,14 @@ describe('<Diagram>', () => {
     __set__('Viewer', Viewer);
 
     ({update} = mountTemplate(<Diagram />));
+
+    update({diagram, filters});
+    Promise.runAll();
   });
 
   afterEach(() => {
+    __ResetDependency__('getDiagramXml');
+    __ResetDependency__('getHeatmap');
     __ResetDependency__('Viewer');
   });
 
@@ -72,64 +95,20 @@ describe('<Diagram>', () => {
   });
 
   it('should import xml on update', () => {
-    update({diagram, filters});
-
-    expect(viewer.importXML.calledWith(diagram)).to.eql(true);
+    expect(viewer.importXML.calledWith(diagramXml)).to.eql(true);
   });
 
   it('should reset zoom after importing xml', () => {
-    update({diagram, filters});
-
     expect(canvas.resized.calledOnce).to.eql(true, 'expected canvas.resized to be called');
     expect(canvas.zoom.calledWith('fit-viewport', 'auto'))
       .to.eql(true, 'expected canvas.zoom to be called with "fit-viewport", "auto"');
   });
 
-  it('should add overlays for elements', () => {
-    update({diagram, filters});
-
-    expect(overlays.add.calledWith(elements[0].id)).to.eql(true);
-  });
-
-  describe('overlay options', () => {
-    let options;
-
-    beforeEach(() => {
-      update({diagram, filters});
-
-      ([, options] = overlays.add.firstCall.args);
-    });
-
-    it('should set position', () => {
-      expect(options.position).to.eql({
-        bottom: 0,
-        right: 0
-      });
-    });
-
-    it('should set minimal and maximal zoom for showing overlay', () => {
-      expect(options.show).to.eql({
-        minZoom: -Infinity,
-        maxZoom: +Infinity
-      });
-    });
-
-    it('should set overlay content to be between 0 and 5', () => {
-      const matched = options.html.match(/[0-9]+/);
-
-      expect(matched).to.exist;
-
-      const number = +matched[0];
-
-      expect(number).to.be.within(0, 5);
-    });
+  it('should add a heatmap', () => {
+    expect(canvas._viewport.appendChild.calledOnce).to.eql(true, 'expected heatmap to be attached to viewport node');
   });
 
   describe('after first xml load', () => {
-    beforeEach(() => {
-      update({diagram, filters});
-    });
-
     it('should not import xml when diagram did not change', () => {
       const filters = {
         startDate: 1,
@@ -144,36 +123,32 @@ describe('<Diagram>', () => {
     });
 
     it('should import xml when diagram changed', () => {
-      const diagram = 'other-diagram-xml';
+      const diagram = 'p2';
 
       viewer.importXML.reset();
 
       update({diagram, filters});
+      Promise.runAll();
 
-      expect(viewer.importXML.calledWith(diagram)).to.eql(true);
+      expect(viewer.importXML.calledWith(diagramXml)).to.eql(true);
     });
 
-    it('should remove old overlays', () => {
+    it('should remove old heatmap', () => {
       const filters = {
         startDate: 1,
         endDate: 7 * dayInMs
       };
 
-      overlays.remove.reset();
-
       update({diagram, filters});
+      Promise.runAll();
 
-      expect(overlays.remove.calledWith(elements[0].id)).to.eql(true);
+      expect(canvas._viewport.removeChild.calledWith(heatmapNode)).to.eql(true);
     });
 
-    it('should update overlays only when state changed', () => {
-      overlays.remove.reset();
-      overlays.add.reset();
-
+    it('should update heatmap only when state changed', () => {
       update({diagram, filters});
 
-      expect(overlays.add.called).to.eql(false, 'expected no overlays to be added');
-      expect(overlays.remove.called).to.eql(false, 'expected no overlays to be removed');
+      expect(canvas._viewport.removeChild.called).to.eql(false, 'expected heatmap not to be removed');
     });
   });
 });

@@ -1,5 +1,3 @@
-import bpmnFile from './bpmnFile';
-
-export function reducer(state = {diagram: bpmnFile}) {
+export function reducer(state = {diagram: 'aProcessInstanceId'}) {
   return state;
 }

@@ -1,7 +1,7 @@
 import {jsx, updateOnlyWhenStateChanges} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-
-const dayInMs = 24 * 60 * 60 * 1000;
+import {getHeatmap} from './diagram.service';
+import {getDiagramXml} from './diagramBackend.mock';
 
 export function Diagram() {
   return <div className="diagram">
@@ -17,55 +17,46 @@ function BpmnViewer() {
       container: node
     });
     let lastDiagram;
+    let heatmap;
     let loaded = false;
-    let lastOverlays = [];
 
     const update = ({diagram, filters}) => {
       if (lastDiagram !== diagram) {
-        viewer.importXML(diagram, (err) => {
-          if (err) {
-            node.innerHTML = `Could not load diagram, got error ${err}`;
-          }
+        getDiagramXml(diagram).then(xml => {
+          viewer.importXML(xml, (err) => {
+            if (err) {
+              node.innerHTML = `Could not load diagram, got error ${err}`;
+            }
 
-          resetZoom(viewer);
-          loaded = true;
-          updateOverlays(filters);
+            resetZoom(viewer);
+            loaded = true;
+            updateHeatmap(diagram, filters);
+          });
+
+          lastDiagram = diagram;
         });
-
-        lastDiagram = diagram;
       } else if (loaded) {
-        updateOverlays(filters);
+        updateHeatmap(diagram, filters);
       }
     };
 
     return updateOnlyWhenStateChanges(update);
 
-    function updateOverlays({startDate, endDate}) {
-      const overlays = viewer.get('overlays');
-      const diff = endDate && startDate ? (endDate - startDate) / dayInMs : 10;
+    function updateHeatmap(diagram, {startDate, endDate}) {
 
-      lastOverlays.forEach(overlay =>
-        overlays.remove(overlay)
-      );
+      removeHeatmap();
 
-      lastOverlays = viewer
-        .get('elementRegistry')
-        .filter(({type}) => type === 'bpmn:Task')
-        .map(({id}) => {
-          overlays.add(id, {
-            position: {
-              bottom: 0,
-              right: 0
-            },
-            show: {
-              minZoom: -Infinity,
-              maxZoom: +Infinity
-            },
-            html: `<div class="diagram__overlay">${Math.round(diff * Math.random())}</div>`
-          });
+      getHeatmap(viewer, diagram).then(newHeatmap => {
+        viewer.get('canvas')._viewport.appendChild(newHeatmap);
+        heatmap = newHeatmap;
+      });
 
-          return id;
-        });
+    }
+
+    function removeHeatmap() {
+      if (heatmap) {
+        viewer.get('canvas')._viewport.removeChild(heatmap);
+      }
     }
   };
 }
