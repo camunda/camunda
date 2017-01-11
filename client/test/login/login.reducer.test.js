@@ -15,38 +15,16 @@ describe('login.reducer', () => {
     expect(
       reducer(undefined, createLoginAction(user, token))
     ).to.eql({
-      login: {
-        user,
-        token
-      }
-    });
-  });
-
-  it('should not change other properties of state', () => {
-    const originalState = {a: 1};
-
-    expect(
-      reducer(originalState, createLoginAction(user, token))
-    ).to.eql({
-      login: {
-        user,
-        token
-      },
-      a: 1
+      user,
+      token
     });
   });
 
   it('should clear login on clear login action', () => {
-    const originalState = {
-      login: {user, token},
-      a: 1
-    };
+    const originalState = {user, token};
 
     expect(
       reducer(originalState, createClearLoginAction())
-    ).to.eql({
-      login: null,
-      a: 1
-    });
+    ).to.eql(null);
   });
 });

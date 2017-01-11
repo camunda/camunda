@@ -2,10 +2,7 @@ export const LOGIN_ACTION = 'LOGIN_ACTION';
 
 export function reducer(state = null, action) {
   if (action.type === LOGIN_ACTION) {
-    return {
-      ...state,
-      login: action.login
-    };
+    return action.login;
   }
 
   return state;
