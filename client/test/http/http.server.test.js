@@ -11,27 +11,16 @@ describe('http service', () => {
     const method = 'GET';
     const responseText = 'response text';
 
-    let $XMLHttpRequest;
-    let http;
+    let $fetch;
 
     beforeEach(() => {
-      $XMLHttpRequest = function() {
-        http = this;
+      $fetch = sinon.stub();
 
-        this.open = sinon.spy();
-        this.send = sinon.spy();
-        this.setRequestHeader = sinon.spy();
-        this.readyState = $XMLHttpRequest.DONE;
-        this.status = 200;
-        this.responseText = responseText;
-      };
-      $XMLHttpRequest.DONE = 'DONE';
-
-      __set__('$XMLHttpRequest', $XMLHttpRequest);
+      __set__('$fetch', $fetch);
     });
 
     afterEach(() => {
-      __ResetDependency__('$XMLHttpRequest');
+      __ResetDependency__('$fetch');
     });
 
     it('should open http request with given method and url', () => {
@@ -40,7 +29,10 @@ describe('http service', () => {
         method
       });
 
-      expect(http.open.calledWith(method, url, true)).to.eql(true);
+      const {method: actualMethod} = $fetch.firstCall.args[1];
+
+      expect($fetch.calledWith(url)).to.eql(true);
+      expect(actualMethod).to.eql(method);
     });
 
     it('should set headers', () => {
@@ -54,7 +46,9 @@ describe('http service', () => {
         headers
       });
 
-      expect(http.setRequestHeader.calledWith('g', 1)).to.eql(true);
+      const {headers: {g}} = $fetch.firstCall.args[1];
+
+      expect(g).to.eql(headers.g);
     });
 
     it('should set default Content-Type to application/json', () => {
@@ -63,21 +57,25 @@ describe('http service', () => {
         method
       });
 
-      expect(http.setRequestHeader.calledWith('Content-Type', 'application/json')).to.eql(true);
+      const {headers: {'Content-Type': contentType}} = $fetch.firstCall.args[1];
+
+      expect(contentType).to.eql('application/json');
     });
 
     it('should provide option to override Content-Type header', () => {
-      const ContentType = 'text';
+      const contentType = 'text';
 
       request({
         url,
         method,
         headers: {
-          'Content-Type': ContentType
+          'Content-Type': contentType
         }
       });
 
-      expect(http.setRequestHeader.calledWith('Content-Type', ContentType)).to.eql(true);
+      const {headers: {'Content-Type': actualContentType}} = $fetch.firstCall.args[1];
+
+      expect(actualContentType).to.eql(contentType);
     });
 
     it('should stringify json body objects', () => {
@@ -91,50 +89,9 @@ describe('http service', () => {
         body
       });
 
-      expect(http.send.calledWith(JSON.stringify(body))).to.eql(true);
-    });
+      const {body: actualBody} = $fetch.firstCall.args[1];
 
-    it('should return promise with responseText', (done) => {
-      request({
-        url,
-        method
-      }).then(response =>{
-        expect(response).to.eql(responseText);
-
-        done();
-      });
-
-      http.onreadystatechange();
-      Promise.runAll();
-    });
-
-    it('should reject response if status is wrong', (done) => {
-      $XMLHttpRequest = function() {
-        http = this;
-
-        this.open = sinon.spy();
-        this.send = sinon.spy();
-        this.setRequestHeader = sinon.spy();
-        this.readyState = $XMLHttpRequest.DONE;
-        this.status = 404;
-        this.responseText = responseText;
-      };
-      $XMLHttpRequest.DONE = 'DONE';
-
-      __set__('$XMLHttpRequest', $XMLHttpRequest);
-
-      request({
-        url,
-        method
-      }).catch(({status, response}) =>{
-        expect(response).to.eql(responseText);
-        expect(status).to.eql(404);
-
-        done();
-      });
-
-      http.onreadystatechange();
-      Promise.runAll();
+      expect(actualBody).to.eql(JSON.stringify(body));
     });
   });
 
