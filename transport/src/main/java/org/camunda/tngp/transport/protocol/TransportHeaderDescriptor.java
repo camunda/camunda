@@ -50,4 +50,9 @@ public class TransportHeaderDescriptor
         return this;
     }
 
+    public int protocolId()
+    {
+        return buffer.getShort(PROTOCOL_ID_OFFSET);
+    }
+
 }
