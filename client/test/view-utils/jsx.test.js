@@ -90,7 +90,7 @@ describe('jsx', () => {
     it('should return array with childUpdate', () => {
       expect(childTemplate.calledWith(childNode)).to.eql(true);
 
-      expect(updates[0].update).to.eql(childUpdate);
+      expect(updates[0]).to.eql(childUpdate);
     });
 
     it('should create and append static element', () => {

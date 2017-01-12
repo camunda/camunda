@@ -54,13 +54,13 @@ function setAttribute(elementNode, attribute, value) {
   elementNode.setAttribute(attribute, value);
 }
 
-export function addChildren(elementNode, eventsBus, children) {
+export function addChildren(elementNode, eventsBus, children, shouldAddEventsBus) {
   return children.reduce((updates, child) => {
-    return updates.concat(addChild(elementNode, eventsBus, child));
+    return updates.concat(addChild(elementNode, eventsBus, child, shouldAddEventsBus));
   }, []);
 }
 
-export function addChild(elementNode, eventsBus, child) {
+export function addChild(elementNode, eventsBus, child, shouldAddEventsBus) {
   if (typeof child === 'string') {
     elementNode.appendChild(
       $document.createTextNode(child)
@@ -70,9 +70,14 @@ export function addChild(elementNode, eventsBus, child) {
   }
 
   const childEventBus = createEventsBus(eventsBus);
+  const update = child(elementNode, childEventBus);
 
-  return { //TODO: make this optional, because it is used only in List
-    update: child(elementNode, childEventBus),
-    eventsBus: childEventBus
-  };
+  if (shouldAddEventsBus) {
+    return {
+      update,
+      eventsBus: childEventBus
+    };
+  }
+
+  return update;
 }
