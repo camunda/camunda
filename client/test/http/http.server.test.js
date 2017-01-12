@@ -9,7 +9,6 @@ describe('http service', () => {
   describe('request', () => {
     const url = 'https://hanka.grzeska.nie.lubi.com';
     const method = 'GET';
-    const responseText = 'response text';
 
     let $fetch;
 
