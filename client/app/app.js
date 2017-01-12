@@ -4,10 +4,11 @@ const removeSplash = addSplash();
 
 require.ensure(['lodash.isequal', 'redux', './init'], () => {
   if (isPolyfillNeeded()) {
-    require.ensure(['babel-polyfill'], () => {
+    require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
       removeSplash();
 
       require('babel-polyfill');
+      require('whatwg-fetch');
 
       require('./init');
     });
