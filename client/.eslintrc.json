@@ -19,7 +19,25 @@
     "react/jsx-pascal-case": 2,
     "react/jsx-uses-vars": 2,
     "react/jsx-uses-react": 2,
-    "no-console": 1
+    "no-console": 1,
+    "no-fallthrough": 2,
+    "linebreak-style": [2, "unix"],
+    "eol-last": [2, "always"],
+    "max-depth": [1, 4],
+    "max-lines": [2, 300],
+    "newline-after-var": 2,
+    "newline-per-chained-call": [2, { "ignoreChainWithDepth": 2 }],
+    "no-multiple-empty-lines": [2, {"max": 1}],
+    "no-tabs": 2,
+    "no-trailing-spaces": 2,
+    "one-var-declaration-per-line": 2,
+    "no-const-assign": 2,
+    "arrow-spacing": 2,
+    "prefer-const": 2,
+    "padded-blocks": [2, "never"],
+    "comma-style": [2, "last"],
+    "comma-spacing": [2, { "before": false, "after": true }],
+    "no-debugger": 1
   },
   "settings": {
     "react": {

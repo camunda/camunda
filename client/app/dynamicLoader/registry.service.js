@@ -1,6 +1,6 @@
-let modules = {};
-let loaders = {};
-let listeners = {};
+const modules = {};
+const loaders = {};
+const listeners = {};
 
 export function addModuleLoader(name, loader) {
   loaders[name] = loader;

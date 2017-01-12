@@ -44,6 +44,7 @@ describe('<DynamicLoader>', () => {
 
   it('should set loader loading classes on div', () => {
     const div = node.children[0];
+
     expect(div).to.have.class('loader');
     expect(div).to.have.class('loading');
   });

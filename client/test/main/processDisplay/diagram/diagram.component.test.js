@@ -26,7 +26,6 @@ describe('<Diagram>', () => {
   setupPromiseMocking();
 
   beforeEach(() => {
-
     getDiagramXml = sinon.stub().returns(Promise.resolve(diagramXml));
     __set__('getDiagramXml', getDiagramXml);
 

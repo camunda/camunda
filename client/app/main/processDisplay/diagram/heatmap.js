@@ -11,12 +11,12 @@ const SEQUENCEFLOW_RADIUS = 30,
       RESOLUTION = 4;
 
 export default function generateHeatmap(viewer, data) {
-
   const dimensions = getDimensions(viewer);
   const heatmapData = generateData(data, viewer, dimensions);
 
   const max = Math.max.apply(null, Object.values(data));
-  let map = createMap(dimensions);
+  const map = createMap(dimensions);
+
   map.setData({
     min: 0,
     max: max * COOLNESS,
@@ -30,7 +30,10 @@ export default function generateHeatmap(viewer, data) {
 }
 
 function getDimensions(viewer) {
-  const dimensions = viewer.get('canvas').getDefaultLayer().getBBox();
+  const dimensions = viewer
+    .get('canvas')
+    .getDefaultLayer()
+    .getBBox();
 
   return {
     width: (dimensions.width + 2 * EDGE_BUFFER),
@@ -41,14 +44,16 @@ function getDimensions(viewer) {
 }
 
 function createMap(dimensions) {
-  let container = document.createElement('div');
+  const container = document.createElement('div');
 
   container.style.width = (dimensions.width / RESOLUTION) + 'px';
   container.style.height = (dimensions.height / RESOLUTION) + 'px';
   container.style.position = 'absolute';
 
   document.body.appendChild(container);
-  let map = HeatmapJS.create({container});
+
+  const map = HeatmapJS.create({container});
+
   document.body.removeChild(container);
 
   container.firstChild.setAttribute('width', dimensions.width / RESOLUTION);
@@ -57,16 +62,12 @@ function createMap(dimensions) {
   return map;
 }
 
-
 function generateData(values, viewer, {x: xOffset, y: yOffset}) {
-
-  let data = [];
-
+  const data = [];
   const elementRegistry = viewer.get('elementRegistry');
 
-  for (let key in values) {
-
-    let element = elementRegistry.get(key);
+  for (const key in values) {
+    const element = elementRegistry.get(key);
 
     if (!element) {
       // for example for multi instance bodies
@@ -91,7 +92,6 @@ function generateData(values, viewer, {x: xOffset, y: yOffset}) {
     for (let i = 0; i < element.incoming.length; i++) {
       drawSequenceFlow(data, element.incoming[i].waypoints, Math.min(values[key], values[element.incoming[i].source.id]), {xOffset, yOffset});
     }
-
   }
 
   return data;
@@ -103,19 +103,19 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
   }
 
   for (let i = 1; i < waypoints.length; i++) {
-    let start = waypoints[i-1];
-    let end = waypoints[i];
+    const start = waypoints[i-1];
+    const end = waypoints[i];
 
-    let movementVector = {
+    const movementVector = {
       x: end.x - start.x,
       y: end.y - start.y
     };
-    let normalizedMovementVector = {
+    const normalizedMovementVector = {
       x: movementVector.x / (Math.abs(movementVector.x) + Math.abs(movementVector.y)) * SEQUENCEFLOW_STEPWIDTH,
       y: movementVector.y / (Math.abs(movementVector.x) + Math.abs(movementVector.y)) * SEQUENCEFLOW_STEPWIDTH
     };
 
-    let numberSteps = Math.sqrt(movementVector.x * movementVector.x + movementVector.y * movementVector.y) / SEQUENCEFLOW_STEPWIDTH;
+    const numberSteps = Math.sqrt(movementVector.x * movementVector.x + movementVector.y * movementVector.y) / SEQUENCEFLOW_STEPWIDTH;
 
     for (let j = 0; j < numberSteps; j++) {
       data.push({
@@ -125,6 +125,5 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
         radius: SEQUENCEFLOW_RADIUS / RESOLUTION
       });
     }
-
   }
 }

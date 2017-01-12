@@ -4,8 +4,7 @@ import {getHeatmapData} from './diagramBackend.mock';
 export function getHeatmap(viewer, processInstanceId) {
   return getHeatmapData(processInstanceId).then(data => {
     const heat = generateHeatmap(viewer, data);
-
-    let node = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    const node = document.createElementNS('http://www.w3.org/2000/svg', 'image');
 
     Object.keys(heat.dimensions).forEach(prop => {
       node.setAttributeNS(null, prop, heat.dimensions[prop]);

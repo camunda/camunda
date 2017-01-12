@@ -43,14 +43,12 @@ function BpmnViewer() {
     return updateOnlyWhenStateChanges(update);
 
     function updateHeatmap(diagram, {startDate, endDate}) {
-
       removeHeatmap();
 
       getHeatmap(viewer, diagram).then(newHeatmap => {
         viewer.get('canvas')._viewport.appendChild(newHeatmap);
         heatmap = newHeatmap;
       });
-
     }
 
     function removeHeatmap() {

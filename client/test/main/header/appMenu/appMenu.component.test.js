@@ -5,7 +5,6 @@ import {jsx} from 'view-utils';
 import {AppMenu, __set__, __ResetDependency__} from 'main/header/appMenu/appMenu.component';
 
 describe('<AppMenu>', () => {
-
   describe('default state', () => {
     let node;
 
@@ -17,7 +16,6 @@ describe('<AppMenu>', () => {
       expect(node).to.not.contain.text('Logout');
     });
   });
-
 
   describe('logged in state', () => {
     let node;
@@ -37,7 +35,6 @@ describe('<AppMenu>', () => {
 
       ({node, update} = mountTemplate(<AppMenu/>));
       update(getLogin());
-
     });
 
     afterEach(() => {

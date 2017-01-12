@@ -28,7 +28,6 @@ describe('<Children>', () => {
     expect(Child.mocks.update.calledWith(state)).to.eql(true);
   });
 
-
   it('should pass node to child template', () => {
     expect(Child.mocks.template.calledWith(node)).to.eql(true);
   });

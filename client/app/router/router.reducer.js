@@ -12,7 +12,7 @@ export function createRouteAction(name, params) {
 
 export function createRouterReducer(router) {
   return (state = {route: null, childState: null}, action) => {
-    let resultState = {...state};
+    const resultState = {...state};
 
     if (action.type === CHANGE_ROUTE_ACTION) {
       if (shouldClearChildState(state, action)) {
