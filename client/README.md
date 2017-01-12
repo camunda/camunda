@@ -51,5 +51,6 @@ return object with ``node``, ``update`` and ``eventsBus`` properties.
 which updates your component you can pass mocked state to it and ``eventsBus`` is well events bus.
 
 
+## Documentation
 
-
+You can find the documentation of the frontend structure in the [Github Wiki](https://github.com/camunda/camunda-optimize/wiki/Frontend-Wiki)
