@@ -1,15 +1,15 @@
-import {jsx, Select} from 'view-utils';
+import {jsx, withSelector} from 'view-utils';
 import {Filters, getFilters} from './filters';
 import {Diagram} from './diagram';
 
-export function ProcessDisplay({selector}) {
+export const ProcessDisplay = withSelector(Process);
+
+function Process() {
+  const DiagramWithSelector = withSelector(Diagram);
+
   return <div className="process-display">
-    <Select selector={selector}>
-      <Filters/>
-      <Select selector={getDiagramState}>
-        <Diagram/>
-      </Select>
-    </Select>
+    <Filters/>
+    <DiagramWithSelector selector={getDiagramState} />
   </div>;
 
   function getDiagramState(state) {

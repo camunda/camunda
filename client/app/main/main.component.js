@@ -7,7 +7,7 @@ import {LoginForm} from './loginForm';
 import {DynamicLoader} from 'dynamicLoader';
 
 export function Main() {
-  return <Router routerProperty="router">
+  return <Router selector="router">
     <LoginRoot>
       <Header/>
       <div className="page-body container-fluid">

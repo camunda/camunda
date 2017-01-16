@@ -1,12 +1,14 @@
-import {withChildren} from 'view-utils';
+import {withChildren, withSelector} from 'view-utils';
 
 let lastRoute;
 
-export const Router = withChildren(RouterRoot);
+export const Router = withChildren(
+  withSelector(RouterRoot)
+);
 
-function RouterRoot({routerProperty}) {
-  return (node, eventBus) => {
-    return ({[routerProperty]: {route}}) => {
+function RouterRoot() {
+  return () => {
+    return ({route}) => {
       lastRoute = route;
     };
   };

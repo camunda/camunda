@@ -15,7 +15,7 @@ describe('<Router>', () => {
       return () => childUpdate;
     };
 
-    ({update} = mountTemplate(<Router routerProperty="router"><ChildComp/></Router>));
+    ({update} = mountTemplate(<Router selector="router"><ChildComp/></Router>));
   });
 
   it('should set lastRoute on update', () => {
