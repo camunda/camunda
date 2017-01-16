@@ -12,7 +12,8 @@
     "test": "./node_modules/.bin/karma start",
     "test-watch": "./node_modules/.bin/karma start --no-single-run",
     "eslint": "eslint app test || true",
-    "eslint-fix": "eslint app test --fix || true"
+    "eslint-fix": "eslint app test --fix || true",
+    "start-backend": "node scripts/run-backend.js"
   },
   "author": "",
   "license": "UNLICENSED",
