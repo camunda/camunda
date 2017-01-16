@@ -12,8 +12,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>Agrona</artifactId>
+      <groupId>org.camunda.tngp.msgpack</groupId>
+      <artifactId>msgpack-core</artifactId>
     </dependency>
 
     <!-- for CompactList -->

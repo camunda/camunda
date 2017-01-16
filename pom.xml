@@ -12,9 +12,10 @@
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
-  
+
   <modules>
-    <module>core</module>
+    <module>msgpack-core</module>
+    <module>json-path</module>
     <module>benchmark</module>
   </modules>
 
@@ -24,15 +25,20 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <version.msgpack>0.8.11</version.msgpack>
   </properties>
-  
+
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.camunda.tngp.msgpack</groupId>
+        <artifactId>msgpack-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.camunda.tngp.msgpack</groupId>
         <artifactId>msgpack-json-path</artifactId>
         <version>${project.version}</version>
       </dependency>
-    
+
       <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>Agrona</artifactId>

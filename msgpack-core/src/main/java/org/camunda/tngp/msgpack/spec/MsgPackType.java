@@ -9,7 +9,10 @@ public enum MsgPackType
     FLOAT(true),
     ARRAY(false),
     MAP(false),
-    STRING(true);
+    BINARY(true),
+    STRING(true),
+    EXTENSION(true),
+    NEVER_USED(true);
 
     protected boolean isScalar;
 

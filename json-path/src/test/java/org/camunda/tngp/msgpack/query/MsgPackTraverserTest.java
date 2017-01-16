@@ -239,7 +239,7 @@ public class MsgPackTraverserTest
         // then
         assertThat(success).isFalse();
         assertThat(traverser.getInvalidPosition()).isEqualTo(encodedValidMessage.capacity());
-        assertThat(traverser.getErrorMessage()).isEqualTo("Unrecognized token format");
+        assertThat(traverser.getErrorMessage()).isEqualTo("Unsupported token format");
     }
 
     protected static class MapKeyFilter implements MsgPackFilter
