@@ -105,7 +105,12 @@ module.exports = {
     port: 9000,
     inline: true,
     open: true,
-    historyApiFallback: true
+    historyApiFallback: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080/'
+      }
+    }
   },
   eslint: {
     configFile: './.eslintrc.json'
