@@ -5,14 +5,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.camunda.tngp.client.impl.cmd.ClientErrorResponseHandler;
-import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
-import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
-import org.camunda.tngp.transport.requestresponse.client.RequestTimeoutException;
-
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.camunda.tngp.client.impl.cmd.ClientErrorResponseHandler;
+import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
+import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
+import org.camunda.tngp.transport.requestresponse.client.RequestTimeoutException;
 
 public class ResponseFuture<R> implements Future<R>
 {

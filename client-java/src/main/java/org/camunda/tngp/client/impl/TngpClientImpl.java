@@ -44,6 +44,10 @@ import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.msgpack.jackson.dataformat.JsonArrayFormat;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsClient
@@ -60,6 +64,8 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
     protected DummyChannelResolver channelResolver;
     protected ClientCmdExecutor cmdExecutor;
+
+    protected final ObjectMapper objectMapper;
 
     protected TaskSubscriptionManager taskSubscriptionManager;
 
@@ -113,7 +119,10 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
-        taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
+        //taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
+
+        objectMapper = new ObjectMapper(new MessagePackFactory());
+        objectMapper.setAnnotationIntrospector(new JsonArrayFormat());
 
         eventsClient = new TngpEventsClientImpl(cmdExecutor);
     }
@@ -127,14 +136,14 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
         channelResolver.setChannelId(channel.getId());
 
-        taskSubscriptionManager.start();
+        // taskSubscriptionManager.start();
     }
 
     public void disconnect()
     {
-        taskSubscriptionManager.closeAllSubscriptions();
+        //taskSubscriptionManager.closeAllSubscriptions();
 
-        taskSubscriptionManager.stop();
+        //taskSubscriptionManager.stop();
 
         channel.close();
         channel = null;
@@ -215,7 +224,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     @Override
     public CreateAsyncTaskCmd create()
     {
-        return new CreateTaskCmdImpl(cmdExecutor);
+        return new CreateTaskCmdImpl(cmdExecutor, objectMapper);
     }
 
     @Override

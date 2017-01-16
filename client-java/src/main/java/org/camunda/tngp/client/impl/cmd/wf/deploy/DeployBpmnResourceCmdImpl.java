@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.agrona.LangUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
@@ -12,13 +13,10 @@ import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.util.buffer.RequestWriter;
-import org.agrona.LangUtil;
 
 public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinition> implements DeployBpmnResourceCmd
 {
     protected final int wfRepositoryId = 0;
-
-    protected DeployBpmnResourceRequestWriter requestWriter = new DeployBpmnResourceRequestWriter();
 
     public DeployBpmnResourceCmdImpl(ClientCmdExecutor cmdExecutor)
     {
@@ -28,7 +26,6 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
     @Override
     public DeployBpmnResourceCmd resourceBytes(byte[] resourceBytes)
     {
-        requestWriter.resource(resourceBytes);
         return this;
     }
 
@@ -60,8 +57,7 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
         try (final InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourceName))
         {
             return resourceStream(resourceStream);
-        }
-        catch (IOException e)
+        } catch (IOException e)
         {
             final String exceptionMsg = String.format("Cannot deploy bpmn resource from classpath: Eception while closing stream: %s", e.getMessage());
             throw new RuntimeException(exceptionMsg, e);
@@ -74,8 +70,7 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
         try (final InputStream resourceStream = new FileInputStream(filename))
         {
             return resourceStream(resourceStream);
-        }
-        catch (IOException e)
+        } catch (IOException e)
         {
             final String exceptionMsg = String.format("Cannot deploy bpmn resource from classpath: %s", e.getMessage());
             throw new RuntimeException(exceptionMsg, e);
@@ -92,12 +87,7 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
     @Override
     public RequestWriter getRequestWriter()
     {
-        return requestWriter;
-    }
-
-    public void setRequestWriter(DeployBpmnResourceRequestWriter requestWriter)
-    {
-        this.requestWriter = requestWriter;
+        return null;
     }
 
 }

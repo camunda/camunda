@@ -2,7 +2,7 @@ package org.camunda.bpm.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.nio.charset.StandardCharsets;
 
@@ -12,8 +12,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.Process;
-import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.junit.Rule;
@@ -58,7 +58,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage("Failed request (1-2): Cannot deploy Bpmn Resource");
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
 
         // when
         workflowService.deploy()
@@ -76,7 +76,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 201"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
 
         // when
         workflowService.deploy()
@@ -94,7 +94,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 203"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
 
         // when
         workflowService.deploy()
@@ -127,7 +127,7 @@ public class DeployBpmnResourceTest
         // then
         exception.expect(BrokerRequestException.class);
         exception.expectMessage(containsString("ERROR 204"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(1, 2));
+        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
 
         // when
         workflowService.deploy()

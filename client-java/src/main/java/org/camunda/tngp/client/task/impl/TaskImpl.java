@@ -5,7 +5,6 @@ import java.time.Instant;
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.task.Task;
-import org.camunda.tngp.protocol.taskqueue.SubscribedTaskReader;
 
 public class TaskImpl implements Task
 {
@@ -25,19 +24,18 @@ public class TaskImpl implements Task
 
     public TaskImpl(
             AsyncTasksClient tasksClient,
-            SubscribedTaskReader taskReader,
             TaskSubscriptionImpl subscription)
     {
         this.tasksClient = tasksClient;
-        this.id = taskReader.taskId();
-        this.workflowInstanceId = taskReader.wfInstanceId();
+        this.id = -1;
+        this.workflowInstanceId = -1L;
         this.type = subscription.getTaskType();
-        this.lockExpirationTime = Instant.ofEpochMilli(taskReader.lockTime());
+        this.lockExpirationTime = Instant.ofEpochMilli(0);
         this.taskQueueId = subscription.getTaskQueueId();
         this.state = STATE_LOCKED;
 
-        final DirectBuffer payloadBuffer = taskReader.payload();
-        payload.initFromPayloadBuffer(payloadBuffer, 0, payloadBuffer.capacity());
+        // final DirectBuffer payloadBuffer = taskReader.payload();
+        // payload.initFromPayloadBuffer(payloadBuffer, 0, payloadBuffer.capacity());
     }
 
     @Override

@@ -2,15 +2,12 @@ package org.camunda.tngp.client.impl.cmd;
 
 import java.nio.ByteBuffer;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.cmd.SetPayloadCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.util.buffer.PayloadRequestWriter;
-import org.agrona.DirectBuffer;
 
-@SuppressWarnings("unchecked")
-public abstract class AbstractSetPayloadCmd<R, C extends ClientCommand<R>>
-    extends AbstractCmdImpl<R> implements SetPayloadCmd<R, C>
+public abstract class AbstractSetPayloadCmd<R, C extends ClientCommand<R>> extends AbstractCmdImpl<R> implements SetPayloadCmd<R, C>
 {
     public AbstractSetPayloadCmd(final ClientCmdExecutor cmdExecutor, final ClientResponseHandler<R> responseHandler)
     {
@@ -18,38 +15,35 @@ public abstract class AbstractSetPayloadCmd<R, C extends ClientCommand<R>>
     }
 
     @Override
-    public C payload(String payload)
-    {
-        return payload(payload.getBytes(CHARSET));
-    }
-
-    @Override
     public C payload(byte[] payload)
     {
-        return payload(payload, 0, payload.length);
+        return payload(new String(payload, CHARSET));
     }
 
     @Override
     public C payload(byte[] payload, int offset, int length)
     {
-        getRequestWriter().payload(payload, 0, length);
-        return (C) this;
+        final String payloadAsString = new String(payload, offset, length, CHARSET);
+
+        return payload(payloadAsString);
     }
 
     @Override
     public C payload(ByteBuffer byteBuffer)
     {
-        getRequestWriter().payload(byteBuffer);
-        return (C) this;
+        final byte[] bytes = new byte[byteBuffer.capacity()];
+        byteBuffer.get(bytes);
+
+        return payload(bytes);
     }
 
     @Override
     public C payload(DirectBuffer buffer, int offset, int length)
     {
-        getRequestWriter().payload(buffer, offset, length);
-        return (C) this;
-    }
+        final byte[] bytes = new byte[length];
+        buffer.getBytes(offset, bytes);
 
-    public abstract PayloadRequestWriter getRequestWriter();
+        return payload(bytes);
+    }
 
 }

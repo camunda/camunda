@@ -10,14 +10,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.client.event.impl.builder;
+package org.camunda.tngp.client.impl.cmd.taskqueue;
 
-import org.agrona.DirectBuffer;
-import org.camunda.tngp.client.event.Event;
-
-public interface EventBuilder
+public enum TaskEventType
 {
+    CREATE,
+    CREATED,
 
-    Event build(long position, DirectBuffer buffer);
+    LOCK,
+    LOCKED,
+    LOCK_FAILED,
+
+    COMPLETE,
+    COMPLETED,
+    COMPLETE_FAILED,
+
+    EXPIRE_LOCK,
+    LOCK_EXPIRED,
+    LOCK_EXPIRATION_FAILED,
+
+    ABORT,
+    ABORTED,
+    ABORT_FAILED;
 
 }

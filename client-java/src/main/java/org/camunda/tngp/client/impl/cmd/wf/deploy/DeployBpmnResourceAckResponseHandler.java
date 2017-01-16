@@ -1,38 +1,27 @@
 package org.camunda.tngp.client.impl.cmd.wf.deploy;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.protocol.wf.DeployBpmnResourceAckResponseReader;
-
-import org.agrona.DirectBuffer;
 
 public class DeployBpmnResourceAckResponseHandler implements ClientResponseHandler<WorkflowDefinition>
 {
-    protected DeployBpmnResourceAckResponseReader responseReader = new DeployBpmnResourceAckResponseReader();
 
     @Override
     public int getResponseSchemaId()
     {
-        return responseReader.getSchemaId();
+        return -1;
     }
 
     @Override
     public int getResponseTemplateId()
     {
-        return responseReader.getTemplateId();
+        return -1;
     }
 
     @Override
     public WorkflowDefinition readResponse(DirectBuffer responseBuffer, int offset, int length)
     {
-        responseReader.wrap(responseBuffer, offset, length);
-        return new WorkflowDefinitionImpl(responseReader.wfDefinitionId());
+        return null;
     }
-
-    public void setResponseReader(DeployBpmnResourceAckResponseReader responseReader)
-    {
-        this.responseReader = responseReader;
-
-    }
-
 }

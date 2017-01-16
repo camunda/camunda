@@ -1,11 +1,10 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class CloseTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
 {
-
-    protected CloseTaskSubscriptionRequestWriter requestWriter = new CloseTaskSubscriptionRequestWriter();
 
     public CloseTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor)
     {
@@ -13,21 +12,19 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
     }
 
     @Override
-    public CloseTaskSubscriptionRequestWriter getRequestWriter()
+    public RequestWriter getRequestWriter()
     {
-        return requestWriter;
+        return null;
     }
 
     public CloseTaskSubscriptionCmdImpl consumerId(short consumerId)
     {
-        requestWriter.consumerId(consumerId);
         return this;
     }
 
 
     public CloseTaskSubscriptionCmdImpl subscriptionId(long subscriptionId)
     {
-        requestWriter.subscriptionId(subscriptionId);
         return this;
     }
 

@@ -3,13 +3,11 @@ package org.camunda.tngp.client.impl.cmd;
 import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.client.impl.cmd.wf.start.StartWorkflowInstanceRequestWriter;
-import org.camunda.tngp.util.buffer.PayloadRequestWriter;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class StartWorkflowInstanceCmdImpl extends AbstractSetPayloadCmd<WorkflowInstance, StartWorkflowInstanceCmd>
     implements StartWorkflowInstanceCmd
 {
-    protected StartWorkflowInstanceRequestWriter requestWriter = new StartWorkflowInstanceRequestWriter();
 
     public StartWorkflowInstanceCmdImpl(final ClientCmdExecutor clientCmdExecutor)
     {
@@ -19,14 +17,12 @@ public class StartWorkflowInstanceCmdImpl extends AbstractSetPayloadCmd<Workflow
     @Override
     public StartWorkflowInstanceCmd workflowDefinitionId(long workflowTypeId)
     {
-        requestWriter.wfDefinitionId(workflowTypeId);
         return this;
     }
 
     @Override
     public StartWorkflowInstanceCmd workflowDefinitionKey(byte[] key)
     {
-        requestWriter.wfDefinitionKey(key);
         return this;
     }
 
@@ -37,14 +33,15 @@ public class StartWorkflowInstanceCmdImpl extends AbstractSetPayloadCmd<Workflow
     }
 
     @Override
-    public PayloadRequestWriter getRequestWriter()
+    public RequestWriter getRequestWriter()
     {
-        return requestWriter;
+        return null;
     }
 
-    public void setRequestWriter(StartWorkflowInstanceRequestWriter requestWriter)
+    @Override
+    public StartWorkflowInstanceCmd payload(String payload)
     {
-        this.requestWriter = requestWriter;
+        return this;
     }
 
 }

@@ -7,7 +7,6 @@ import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.TaskDataFrameCollector.SubscribedTaskHandler;
-import org.camunda.tngp.protocol.taskqueue.SubscribedTaskReader;
 
 public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, SubscribedTaskHandler
 {
@@ -134,20 +133,20 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
     }
 
     @Override
-    public void onTask(SubscribedTaskReader taskReader)
+    public void onTask()
     {
-        final long subscriptionId = taskReader.subscriptionId();
-        final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);
-
-        if (subscription != null && subscription.isOpen())
-        {
-            final TaskImpl task = new TaskImpl(
-                    client,
-                    taskReader,
-                    subscription);
-
-            subscription.addTask(task);
-        }
+//        final long subscriptionId = taskReader.subscriptionId();
+//        final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);
+//
+//        if (subscription != null && subscription.isOpen())
+//        {
+//            final TaskImpl task = new TaskImpl(
+//                    client,
+//                    taskReader,
+//                    subscription);
+//
+//            subscription.addTask(task);
+//        }
     }
 
 }

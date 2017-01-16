@@ -13,6 +13,7 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+    <msgpack.version>0.8.11</msgpack.version>
   </properties>
 
   <dependencyManagement>
@@ -101,6 +102,18 @@
         <groupId>uk.co.real-logic</groupId>
         <artifactId>sbe-all</artifactId>
         <version>1.5.5</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.msgpack</groupId>
+        <artifactId>msgpack-core</artifactId>
+        <version>${msgpack.version}</version>
+      </dependency>
+  
+      <dependency>
+        <groupId>org.msgpack</groupId>
+        <artifactId>jackson-dataformat-msgpack</artifactId>
+        <version>${msgpack.version}</version>
       </dependency>
 
       <dependency>

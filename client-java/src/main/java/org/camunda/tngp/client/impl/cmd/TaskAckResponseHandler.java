@@ -1,38 +1,32 @@
 package org.camunda.tngp.client.impl.cmd;
 
-import org.camunda.tngp.protocol.taskqueue.MessageHeaderDecoder;
-import org.camunda.tngp.protocol.taskqueue.SingleTaskAckDecoder;
-
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 
 public class TaskAckResponseHandler implements ClientResponseHandler<Long>
 {
-    protected final SingleTaskAckDecoder ackDecoder = new SingleTaskAckDecoder();
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    protected final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
 
     @Override
     public int getResponseSchemaId()
     {
-        return SingleTaskAckDecoder.SCHEMA_ID;
+        return responseDecoder.sbeSchemaId();
     }
 
     @Override
     public int getResponseTemplateId()
     {
-        return SingleTaskAckDecoder.TEMPLATE_ID;
+        return responseDecoder.sbeTemplateId();
     }
 
     @Override
     public Long readResponse(DirectBuffer responseBuffer, int offset, int length)
     {
+        responseDecoder.wrap(responseBuffer, offset, length, responseDecoder.sbeSchemaVersion());
 
-        headerDecoder.wrap(responseBuffer, offset);
+        final long taskKey = responseDecoder.longKey();
 
-        offset += headerDecoder.encodedLength();
-
-        ackDecoder.wrap(responseBuffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-
-        return ackDecoder.taskId();
+        return taskKey;
     }
 
 }

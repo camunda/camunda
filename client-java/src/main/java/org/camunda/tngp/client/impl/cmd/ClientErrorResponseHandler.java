@@ -1,22 +1,24 @@
 package org.camunda.tngp.client.impl.cmd;
 
-import org.camunda.tngp.client.cmd.BrokerRequestException;
-import org.camunda.tngp.protocol.error.ErrorReader;
-
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.client.cmd.BrokerRequestException;
+import org.camunda.tngp.protocol.clientapi.ErrorResponseDecoder;
 
 public class ClientErrorResponseHandler
 {
-    protected ErrorReader errorReader = new ErrorReader();
+    protected ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
 
     public Throwable createException(final DirectBuffer responseBuffer, final int offset, final int length)
     {
-        errorReader.wrap(responseBuffer, offset, length);
+        errorResponseDecoder.wrap(responseBuffer, offset, length, errorResponseDecoder.sbeSchemaVersion());
 
-        return new BrokerRequestException(
-                errorReader.componentCode(),
-                errorReader.detailCode(),
-                errorReader.errorMessage());
+        final short errorCode = errorResponseDecoder.errorCode().value();
+        final String errorData = errorResponseDecoder.errorData();
+
+        // TODO deserialize request
+        final String failedRequest = errorResponseDecoder.failedRequest();
+
+        return new BrokerRequestException(errorCode, errorData, failedRequest);
     }
 
 }

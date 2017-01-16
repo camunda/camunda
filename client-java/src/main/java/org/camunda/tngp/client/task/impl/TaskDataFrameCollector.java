@@ -3,15 +3,12 @@ package org.camunda.tngp.client.task.impl;
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.protocol.taskqueue.SubscribedTaskReader;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 
 public class TaskDataFrameCollector
 {
     protected Subscription receiveBufferSubscription;
-
-    protected SubscribedTaskReader taskReader = new SubscribedTaskReader();
 
     protected SubscribedTaskHandler taskHandler;
     protected DataFrameHandler fragmentHandler = new DataFrameHandler();
@@ -42,8 +39,9 @@ public class TaskDataFrameCollector
             if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
             {
                 final int protocolHeaderLength = TransportHeaderDescriptor.headerLength();
-                taskReader.wrap(buffer, offset + protocolHeaderLength, length - protocolHeaderLength);
-                taskHandler.onTask(taskReader);
+                // TODO read task event from buffer
+                // taskReader.wrap(buffer, offset + protocolHeaderLength, length - protocolHeaderLength);
+                //taskHandler.onTask();
             }
 
             return FragmentHandler.CONSUME_FRAGMENT_RESULT;
@@ -53,7 +51,7 @@ public class TaskDataFrameCollector
 
     public interface SubscribedTaskHandler
     {
-        void onTask(SubscribedTaskReader taskReader);
+        void onTask();
     }
 
 

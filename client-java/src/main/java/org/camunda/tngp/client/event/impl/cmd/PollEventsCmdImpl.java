@@ -17,12 +17,10 @@ import org.camunda.tngp.client.event.cmd.PollEventsCmd;
 import org.camunda.tngp.client.event.impl.EventBatchHandler;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
-import org.camunda.tngp.protocol.event.PollEventsRequestWriter;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class PollEventsCmdImpl extends AbstractCmdImpl<EventsBatch> implements PollEventsCmd
 {
-    protected PollEventsRequestWriter requestWriter = new PollEventsRequestWriter();
 
     public PollEventsCmdImpl(ClientCmdExecutor cmdExecutor)
     {
@@ -32,33 +30,24 @@ public class PollEventsCmdImpl extends AbstractCmdImpl<EventsBatch> implements P
     @Override
     public PollEventsCmd startPosition(long position)
     {
-        requestWriter.startPosition(position);
         return this;
     }
 
     @Override
     public PollEventsCmd maxEvents(int maxEvents)
     {
-        requestWriter.maxEvents(maxEvents);
         return this;
     }
 
     @Override
     public PollEventsCmd topicId(int topicId)
     {
-        requestWriter.topicId(topicId);
         return this;
     }
 
     @Override
     public RequestWriter getRequestWriter()
     {
-        return requestWriter;
+        return null;
     }
-
-    public void setRequestWriter(PollEventsRequestWriter requestWriter)
-    {
-        this.requestWriter = requestWriter;
-    }
-
 }

@@ -13,62 +13,28 @@
 package org.camunda.tngp.client.event.impl;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
-import org.camunda.tngp.client.event.impl.builder.EventBuilder;
-import org.camunda.tngp.client.event.impl.builder.EventBuilders;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.protocol.event.EventBatchDecoder;
-import org.camunda.tngp.protocol.event.EventBatchReader;
-import org.camunda.tngp.protocol.log.MessageHeaderDecoder;
 
 public class EventBatchHandler implements ClientResponseHandler<EventsBatch>
 {
-    protected final EventBatchReader reader = new EventBatchReader();
-
-    protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
     @Override
     public int getResponseSchemaId()
     {
-        return EventBatchDecoder.SCHEMA_ID;
+        return -1;
     }
 
     @Override
     public int getResponseTemplateId()
     {
-        return EventBatchDecoder.TEMPLATE_ID;
+        return -1;
     }
 
     @Override
     public EventsBatch readResponse(DirectBuffer responseBuffer, int offset, int length)
     {
-        reader.wrap(responseBuffer, offset, length);
-
-        final EventsBatchImpl batch = new EventsBatchImpl();
-
-        for (int i = 0; i < reader.eventCount(); i++)
-        {
-            reader.nextEvent();
-
-            final long position = reader.currentPosition();
-            final DirectBuffer eventBuffer = reader.currentEvent();
-
-            final Event event = createEvent(position, eventBuffer);
-            batch.addEvent(event);
-        }
-
-        return batch;
-    }
-
-    protected Event createEvent(final long position, final DirectBuffer eventBuffer)
-    {
-        messageHeaderDecoder.wrap(eventBuffer, 0);
-
-        final int templateId = messageHeaderDecoder.templateId();
-        final EventBuilder eventBuilder = EventBuilders.getEventBuilder(templateId);
-
-        return eventBuilder.build(position, eventBuffer);
+        return null;
     }
 
 }

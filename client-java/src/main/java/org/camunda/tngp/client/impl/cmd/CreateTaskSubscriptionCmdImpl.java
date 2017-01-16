@@ -1,44 +1,38 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class CreateTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
 {
-
-    protected CreateTaskSubscriptionRequestWriter requestWriter = new CreateTaskSubscriptionRequestWriter();
-
     public CreateTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor)
     {
         super(cmdExecutor, new TaskSubscriptionResponseHandler());
     }
 
     @Override
-    public CreateTaskSubscriptionRequestWriter getRequestWriter()
+    public RequestWriter getRequestWriter()
     {
-        return requestWriter;
+        return null;
     }
 
     public CreateTaskSubscriptionCmdImpl consumerId(short consumerId)
     {
-        requestWriter.consumerId(consumerId);
         return this;
     }
 
     public CreateTaskSubscriptionCmdImpl initialCredits(int initialCredits)
     {
-        requestWriter.initialCredits(initialCredits);
         return this;
     }
 
     public CreateTaskSubscriptionCmdImpl lockDuration(long lockDuration)
     {
-        requestWriter.lockDuration(lockDuration);
         return this;
     }
 
     public CreateTaskSubscriptionCmdImpl taskType(String taskType)
     {
-        requestWriter.taskType(taskType);
         return this;
     }
 
