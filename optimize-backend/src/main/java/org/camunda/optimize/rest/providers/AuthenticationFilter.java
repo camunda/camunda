@@ -3,6 +3,7 @@ package org.camunda.optimize.rest.providers;
 import org.camunda.optimize.service.security.TokenService;
 
 import javax.annotation.Priority;
+import javax.inject.Inject;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -20,6 +21,9 @@ import java.io.IOException;
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
+
+  @Inject
+  private TokenService tokenService;
 
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -39,7 +43,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
     try {
 
       // Validate the token
-      TokenService.validateToken(token);
+      tokenService.validateToken(token);
 
     } catch (Exception e) {
       requestContext.abortWith(

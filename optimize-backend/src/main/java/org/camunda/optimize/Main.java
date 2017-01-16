@@ -1,7 +1,9 @@
 package org.camunda.optimize;
 
+import org.camunda.optimize.service.configuration.PropertiesProvider;
 import org.camunda.optimize.service.es.TransportClientFactory;
 import org.camunda.optimize.service.security.AuthenticationProvider;
+import org.camunda.optimize.service.security.TokenService;
 import org.camunda.optimize.service.security.impl.AuthenticationProviderImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -13,7 +15,9 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
 import javax.inject.Singleton;
+import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.Properties;
 
 /**
  * @author Askar Akhmerov
@@ -21,6 +25,8 @@ import java.net.URL;
 public class Main {
 
   public static void main(String[] args) throws Exception {
+
+    Properties properties = new PropertiesProvider().provide();
 
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
@@ -31,7 +37,9 @@ public class Main {
           protected void configure() {
             //TODO:dynamically iterate all factories and register them?
             bindFactory(TransportClientFactory.class).to(TransportClient.class);
+            bind(properties).to(Properties.class);
             bind(AuthenticationProviderImpl.class).to(AuthenticationProvider.class).in(Singleton.class);
+            bind(TokenService.class).to(TokenService.class).in(Singleton.class);
           }
         });
 
@@ -42,7 +50,11 @@ public class Main {
       context.setResourceBase(webappURL.toExternalForm());
     }
 
-    Server jettyServer = new Server(8080);
+    InetSocketAddress address = new InetSocketAddress(
+        properties.getProperty("camunda.optimize.container.host"),
+        Integer.parseInt(properties.getProperty("camunda.optimize.container.port")));
+    Server jettyServer = new Server(address);
+
     jettyServer.setHandler(context);
 
     ServletHolder jerseyServlet = new ServletHolder(new

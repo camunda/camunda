@@ -25,6 +25,9 @@ public class Authentication {
   @Inject
   private AuthenticationProvider authenticationProvider;
 
+  @Inject
+  private TokenService tokenService;
+
   @POST
   @Produces("application/json")
   @Consumes("application/json")
@@ -36,7 +39,7 @@ public class Authentication {
       authenticationProvider.authenticate(credentials.getUsername(), credentials.getPassword());
 
       // Issue a token for the user
-      String token = TokenService.issueToken(credentials.getUsername());
+      String token = tokenService.issueToken(credentials.getUsername());
 
       // Return the token on the response
       return Response.ok(token).build();
