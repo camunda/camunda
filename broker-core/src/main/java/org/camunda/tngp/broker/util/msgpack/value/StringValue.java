@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.util.msgpack.MsgPackReader;
-import org.camunda.tngp.broker.util.msgpack.MsgPackWriter;
+import org.camunda.tngp.msgpack.spec.MsgPackReader;
+import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
 public class StringValue extends BaseValue
 {

@@ -3,6 +3,8 @@ package org.camunda.tngp.broker.util.msgpack;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.value.ObjectValue;
+import org.camunda.tngp.msgpack.spec.MsgPackReader;
+import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 

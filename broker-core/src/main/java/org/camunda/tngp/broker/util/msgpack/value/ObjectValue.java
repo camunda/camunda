@@ -3,10 +3,10 @@ package org.camunda.tngp.broker.util.msgpack.value;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.tngp.broker.util.msgpack.MsgPackReader;
-import org.camunda.tngp.broker.util.msgpack.MsgPackWriter;
 import org.camunda.tngp.broker.util.msgpack.property.BaseProperty;
 import org.camunda.tngp.broker.util.msgpack.property.UndeclaredProperty;
+import org.camunda.tngp.msgpack.spec.MsgPackReader;
+import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
 public class ObjectValue extends BaseValue
 {
