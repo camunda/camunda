@@ -1,14 +1,25 @@
-import {jsx, updateOnlyWhenStateChanges} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, Match, Case} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {getHeatmap} from './diagram.service';
-import {getDiagramXml} from './diagramBackend.mock';
+import {loadHeatmap, loadDiagram, getHeatmap} from './diagram.service';
 
 export function Diagram() {
   return <div className="diagram">
     <div className="diagram__holder">
       <BpmnViewer />
+      <Match>
+        <Case predicate={isLoading}>
+          <div className="loading_indicator">
+            <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
+            <div className="text">loading</div>
+          </div>
+        </Case>
+      </Match>
     </div>
   </div>;
+
+  function isLoading({diagram}) {
+    return diagram.state !== 'LOADED' || diagram.heatmap.state !== 'LOADED';
+  }
 }
 
 function BpmnViewer() {
@@ -16,39 +27,41 @@ function BpmnViewer() {
     const viewer = new Viewer({
       container: node
     });
-    let lastDiagram;
     let heatmap;
-    let loaded = false;
+    let imported = false;
 
-    const update = ({diagram, filters}) => {
-      if (lastDiagram !== diagram) {
-        getDiagramXml(diagram).then(xml => {
-          viewer.importXML(xml, (err) => {
+    const update = ({diagram}) => {
+      if (diagram.state === 'INITIAL') {
+        loadDiagram(diagram);
+      } else if (diagram.state === 'LOADED') {
+        if (imported) {
+          updateHeatmap(diagram);
+        } else {
+          viewer.importXML(diagram.xml, (err) => {
             if (err) {
               node.innerHTML = `Could not load diagram, got error ${err}`;
             }
-
+            imported = true;
             resetZoom(viewer);
-            loaded = true;
-            updateHeatmap(diagram, filters);
+            updateHeatmap(diagram);
           });
-
-          lastDiagram = diagram;
-        });
-      } else if (loaded) {
-        updateHeatmap(diagram, filters);
+        }
       }
     };
 
     return updateOnlyWhenStateChanges(update);
 
-    function updateHeatmap(diagram, {startDate, endDate}) {
+    function updateHeatmap(diagram) {
       removeHeatmap();
 
-      getHeatmap(viewer, diagram).then(newHeatmap => {
-        viewer.get('canvas')._viewport.appendChild(newHeatmap);
-        heatmap = newHeatmap;
-      });
+      const state = diagram.heatmap.state;
+
+      if (state === 'INITIAL') {
+        loadHeatmap(diagram);
+      } else if (state == 'LOADED') {
+        heatmap = getHeatmap(viewer, diagram.heatmap.data);
+        viewer.get('canvas')._viewport.appendChild(heatmap);
+      }
     }
 
     function removeHeatmap() {

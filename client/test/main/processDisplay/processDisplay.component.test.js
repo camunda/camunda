@@ -23,10 +23,6 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('Diagram');
   });
 
-  it('should display <Filters> component', () => {
-    expect(node).to.contain.text('Filters');
-  });
-
   it('should display <Diagram> component', () => {
     expect(node).to.contain.text('Diagram');
   });
