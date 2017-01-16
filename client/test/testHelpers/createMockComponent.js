@@ -24,5 +24,7 @@ export function createMockComponent(text) {
     return template.calls[index][1];
   };
 
+  constructor.text = text;
+
   return constructor;
 }
