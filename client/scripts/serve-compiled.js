@@ -3,6 +3,7 @@ var path = require('path');
 var http = require('http');
 var serveStatic = require('serve-static');
 var fs = require('fs');
+var proxy = require('http-proxy-middleware');
 
 var webpack = path.resolve(__dirname, '..', 'node_modules', '.bin', 'webpack');
 var config = path.resolve(__dirname, '..', 'webpack-production.config.js');
@@ -40,6 +41,19 @@ function matchesExtension(url, extension) {
   return url.substr(url.length - extension.length) === extension;
 }
 
+var proxyInstance = proxy({
+  target: 'http://localhost:8080/',
+  changeOrigin: true
+});
+
+function proxyApi(req, res, next) {
+  if (req.url.substr(0, 4) === '/api') {
+    proxyInstance(req, res, next);
+  } else {
+    next();
+  }
+}
+
 function serveIndex(req, res) {
   var stat = fs.statSync(index);
   var indexStream = fs.createReadStream(index);
@@ -55,6 +69,7 @@ function serveIndex(req, res) {
 var server = http.createServer(applyMiddlewares([
   redirectGzips,
   serve,
+  proxyApi,
   serveIndex
 ]));
 
