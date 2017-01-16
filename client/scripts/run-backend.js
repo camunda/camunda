@@ -1,6 +1,7 @@
 var backendConfig = require('./be-config');
 var spawn = require('child_process').spawn;
 var path = require('path');
+var exec = require('child_process').exec;
 
 var runElastic = spawn(backendConfig.elastic);
 
@@ -18,7 +19,7 @@ runElastic.on('close', function(code) {
 
 var mvnCwd = path.resolve(__dirname, '..', '..');
 
-var mvnCleanPackage = spawn('mvn', ['clean', 'package'], {
+var mvnCleanPackage = exec('mvn clean package', {
   cwd: mvnCwd
 });
 
@@ -39,7 +40,7 @@ mvnCleanPackage.on('close', function(code) {
     'target',
     'optimize-backend-' + backendConfig.version + '-SNAPSHOT-jar-with-dependencies.jar'
   );
-  var backendServer = spawn('java', ['-jar', backendServerPath]);
+  var backendServer = exec('java -jar ' + backendServerPath);
 
   backendServer.stdout.on('data', function(data) {
     console.log('be: ', '\x1b[33m', data.toString(), '\x1b[0m');
