@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TokenService {
   private static final String SECRET = "obfuscate";
-  public static final int LIFETIME = 30;
+  public static final int LIFETIME = 15;
   private static ConcurrentHashMap<String, LocalDateTime> tokenExpiry = new ConcurrentHashMap<>();
 
   public static void validateToken(String token) throws InvalidTokenException {
@@ -27,7 +27,7 @@ public class TokenService {
     if (expiry == null || LocalDateTime.now().isAfter(expiry)) {
       throw new InvalidTokenException();
     } else {
-      expiry = expiry.plus(LIFETIME,ChronoUnit.SECONDS);
+      expiry = expiry.plus(LIFETIME,ChronoUnit.MINUTES);
       tokenExpiry.put(username, expiry);
     }
   }
@@ -35,7 +35,7 @@ public class TokenService {
   public static String issueToken(String username) {
     String token = null;
     try {
-      LocalDateTime expiryDate = LocalDateTime.now().plus(LIFETIME, ChronoUnit.SECONDS);
+      LocalDateTime expiryDate = LocalDateTime.now().plus(LIFETIME, ChronoUnit.MINUTES);
       token = JWT.create()
           .withSubject(username)
           .sign(Algorithm.HMAC256(SECRET));
