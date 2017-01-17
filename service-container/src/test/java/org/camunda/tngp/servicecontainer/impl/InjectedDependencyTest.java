@@ -1,10 +1,13 @@
 package org.camunda.tngp.servicecontainer.impl;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.Injector;
+import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
@@ -99,6 +102,27 @@ public class InjectedDependencyTest
         inOrder.verify(mockService1).start(any(ServiceStartContext.class));
     }
 
+    @Test
+    public void shouldInjectServiceTwice()
+    {
+        // given
+        serviceContainer.createService(service2Name, mockService2)
+            .install();
+
+        // when
+        final Injector<Object> injector = new Injector<>();
+        final Injector<Object> anotherInjector = new  Injector<>();
+        serviceContainer.createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .dependency(service2Name, anotherInjector)
+            .install();
+        serviceContainer.doWorkUntilDone();
+
+        // then
+        assertThat(injector.getValue()).isEqualTo(mockService2Value);
+        assertThat(anotherInjector.getValue()).isEqualTo(mockService2Value);
+    }
+
 
     @Test
     public void shouldUninject()
@@ -143,4 +167,29 @@ public class InjectedDependencyTest
         inOrder.verify(mockService1).stop(any(ServiceStopContext.class));
         inOrder.verify(injector).uninject();
     }
+
+    @Test
+    public void shouldUninjectServiceTwice()
+    {
+        // given
+        final Injector<Object> injector = new Injector<>();
+        final Injector<Object> anotherInjector = new  Injector<>();
+        serviceContainer.createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .dependency(service2Name, anotherInjector)
+            .install();
+        serviceContainer.createService(service2Name, mockService2)
+            .install();
+        serviceContainer.doWorkUntilDone();
+
+        // when
+        serviceContainer.removeService(service2Name);
+        serviceContainer.removeService(service1Name);
+        serviceContainer.doWorkUntilDone();
+
+        // then
+        assertThat(injector.getValue()).isNull();
+        assertThat(anotherInjector.getValue()).isNull();
+    }
+
 }

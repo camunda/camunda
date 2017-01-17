@@ -1,5 +1,7 @@
 package org.camunda.tngp.servicecontainer;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -17,7 +19,7 @@ public class ServiceBuilder<S>
     protected ServiceName<?> groupName;
 
     protected Set<ServiceName<?>> dependencies = new HashSet<>();
-    protected Map<ServiceName<?>, Injector<?>> injectedDependencies = new HashMap<>();
+    protected Map<ServiceName<?>, Collection<Injector<?>>> injectedDependencies = new HashMap<>();
     protected Map<ServiceName<?>, ServiceGroupReference<?>> injectedReferences = new HashMap<>();
 
     public ServiceBuilder(ServiceName<S> name, Service<S> service, ServiceContainerImpl serviceContainer)
@@ -41,7 +43,14 @@ public class ServiceBuilder<S>
 
     public <T> ServiceBuilder<S> dependency(ServiceName<T> serviceName, Injector<T> injector)
     {
-        injectedDependencies.put(serviceName, injector);
+        Collection<Injector<?>> injectors = injectedDependencies.get(serviceName);
+        if (injectors == null)
+        {
+            injectors = new ArrayList<>();
+        }
+        injectors.add(injector);
+
+        injectedDependencies.put(serviceName, injectors);
         return dependency(serviceName);
     }
 
@@ -76,7 +85,7 @@ public class ServiceBuilder<S>
         return dependencies;
     }
 
-    public Map<ServiceName<?>, Injector<?>> getInjectedDependencies()
+    public Map<ServiceName<?>, Collection<Injector<?>>> getInjectedDependencies()
     {
         return injectedDependencies;
     }

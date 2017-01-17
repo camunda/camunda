@@ -1,6 +1,7 @@
 package org.camunda.tngp.servicecontainer.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,7 @@ public class ServiceController
     protected final Service service;
     /** this service's dependencies */
     protected final Set<ServiceName<?>> dependencies;
-    protected final Map<ServiceName<?>, Injector<?>> injectors;
+    protected final Map<ServiceName<?>, Collection<Injector<?>>> injectors;
 
     /** this service's unresolved dependencies */
     protected final List<ServiceName<?>> unresolvedDependencies = new ArrayList<>();
@@ -218,13 +219,15 @@ public class ServiceController
         @SuppressWarnings("unchecked")
         public int doWork()
         {
-            for (Entry<ServiceName<?>, Injector<?>> injectedDep : injectors.entrySet())
+            for (Entry<ServiceName<?>, Collection<Injector<?>>> injectedDep : injectors.entrySet())
             {
                 final ServiceName<?> serviceName = injectedDep.getKey();
-                final Injector injector = injectedDep.getValue();
                 final Service injectedService = container.getService(serviceName);
 
-                injector.inject(injectedService.get());
+                for (Injector injector : injectedDep.getValue())
+                {
+                    injector.inject(injectedService.get());
+                }
             }
 
             for (ServiceGroupReferenceImpl reference : references)
@@ -414,10 +417,7 @@ public class ServiceController
                 startContext.invalidate();
             }
 
-            for (Injector<?> injector : injectors.values())
-            {
-                injector.uninject();
-            }
+            injectors.values().stream().flatMap(Collection::stream).forEach(injector -> injector.uninject());
 
             for (ServiceGroupReferenceImpl reference : references)
             {
