@@ -3,6 +3,8 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.HeatMapRequestTO;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.HeatMapService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -16,9 +18,11 @@ import java.util.Map;
  * @author Askar Akhmerov
  */
 @Path("/heatmap")
+@Component
 public class HeatMap {
 
-  private HeatMapService heatMapService = new HeatMapService();
+  @Autowired
+  private HeatMapService heatMapService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

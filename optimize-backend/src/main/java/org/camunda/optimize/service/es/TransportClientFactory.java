@@ -1,39 +1,38 @@
 package org.camunda.optimize.service.es;
 
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.glassfish.hk2.api.Factory;
+import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Properties;
 
 /**
  * @author Askar Akhmerov
  */
-public class TransportClientFactory implements Factory<TransportClient> {
-  private static TransportClient instance;
+@Component
+public class TransportClientFactory implements FactoryBean <TransportClient> {
+  private TransportClient instance;
 
-  private Properties applicationProperties;
+  @Autowired
+  private ConfigurationService configurationService;
 
-  @Inject
-  public TransportClientFactory(Properties applicationProperties) {
-    this.applicationProperties = applicationProperties;
-  }
 
   @Override
-  public TransportClient provide() {
+  public TransportClient getObject() throws Exception {
     if (instance == null) {
       try {
         instance = new PreBuiltTransportClient(Settings.EMPTY)
             //TODO: port and host should come from properties
             .addTransportAddress(new InetSocketTransportAddress(
-                InetAddress.getByName(applicationProperties.getProperty("camunda.optimize.es.host")),
-                Integer.parseInt(applicationProperties.getProperty("camunda.optimize.es.port")))
-            );
+                InetAddress.getByName(configurationService.getElasticSearchHost()),
+                configurationService.getElasticSearchPort()
+                ));
       } catch (UnknownHostException e) {
         e.printStackTrace();
       }
@@ -42,7 +41,12 @@ public class TransportClientFactory implements Factory<TransportClient> {
   }
 
   @Override
-  public void dispose(TransportClient transportClient) {
+  public Class<?> getObjectType() {
+    return TransportClient.class;
+  }
 
+  @Override
+  public boolean isSingleton() {
+    return true;
   }
 }

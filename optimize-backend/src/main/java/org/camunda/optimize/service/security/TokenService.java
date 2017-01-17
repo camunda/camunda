@@ -4,6 +4,10 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
+import org.camunda.optimize.service.util.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
@@ -17,11 +21,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Askar Akhmerov
  */
+@Component
 public class TokenService {
   private static ConcurrentHashMap<String, LocalDateTime> tokenExpiry = new ConcurrentHashMap<>();
 
-  @Inject
-  private Properties applicationProperties;
+  @Autowired
+  private ConfigurationService configurationService;
 
   public void validateToken(String token) throws InvalidTokenException {
     JWT decoded = JWT.decode(token);
@@ -30,22 +35,18 @@ public class TokenService {
     if (expiry == null || LocalDateTime.now().isAfter(expiry)) {
       throw new InvalidTokenException();
     } else {
-      expiry = expiry.plus(getLifetime(),ChronoUnit.MINUTES);
+      expiry = expiry.plus(configurationService.getLifetime(),ChronoUnit.MINUTES);
       tokenExpiry.put(username, expiry);
     }
-  }
-
-  private int getLifetime() {
-    return Integer.parseInt(applicationProperties.getProperty("camunda.optimize.auth.token.live.min"));
   }
 
   public String issueToken(String username) {
     String token = null;
     try {
-      LocalDateTime expiryDate = LocalDateTime.now().plus(getLifetime(), ChronoUnit.MINUTES);
+      LocalDateTime expiryDate = LocalDateTime.now().plus(configurationService.getLifetime(), ChronoUnit.MINUTES);
       token = JWT.create()
           .withSubject(username)
-          .sign(Algorithm.HMAC256(applicationProperties.getProperty("camunda.optimize.auth.token.secret")));
+          .sign(Algorithm.HMAC256(configurationService.getSecret()));
 
       tokenExpiry.put(username, expiryDate);
     } catch (JWTCreationException exception) {
@@ -54,5 +55,11 @@ public class TokenService {
       e.printStackTrace();
     }
     return token;
+  }
+
+  public void expireToken(String token) {
+    JWT decoded = JWT.decode(token);
+    String username = decoded.getSubject();
+    tokenExpiry.remove(username);
   }
 }

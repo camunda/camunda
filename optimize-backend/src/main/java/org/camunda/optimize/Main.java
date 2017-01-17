@@ -1,20 +1,16 @@
 package org.camunda.optimize;
 
-import org.camunda.optimize.service.configuration.PropertiesProvider;
-import org.camunda.optimize.service.es.TransportClientFactory;
-import org.camunda.optimize.service.security.AuthenticationProvider;
-import org.camunda.optimize.service.security.TokenService;
-import org.camunda.optimize.service.security.impl.AuthenticationProviderImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.elasticsearch.client.transport.TransportClient;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.springframework.web.context.ContextLoaderListener;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
-import javax.inject.Singleton;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Properties;
@@ -24,24 +20,17 @@ import java.util.Properties;
  */
 public class Main {
 
+  private static final String CONFIG_LOCATION = "org.camunda.optimize";
+  private static final String DEFAULT_PROFILE = "dev";
+
   public static void main(String[] args) throws Exception {
 
-    Properties properties = new PropertiesProvider().provide();
+    Properties properties = getProperties();
 
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
         .packages("org.camunda.optimize.rest")
-        .register(JacksonFeature.class)
-        .register(new AbstractBinder() {
-          @Override
-          protected void configure() {
-            //TODO:dynamically iterate all factories and register them?
-            bindFactory(TransportClientFactory.class).to(TransportClient.class);
-            bind(properties).to(Properties.class);
-            bind(AuthenticationProviderImpl.class).to(AuthenticationProvider.class).in(Singleton.class);
-            bind(TokenService.class).to(TokenService.class).in(Singleton.class);
-          }
-        });
+        .register(JacksonFeature.class);
 
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
     context.setContextPath("/");
@@ -63,6 +52,11 @@ public class Main {
 
     context.addServlet(jerseyServlet, "/api/*");
 
+    //add spring
+    context.addEventListener(new ContextLoaderListener());
+    context.setInitParameter("contextConfigLocation","classpath:applicationContext.xml");
+
+    //add static resources
     if (webappURL != null) {
       ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
       holderPwd.setInitParameter("dirAllowed","true");
@@ -75,5 +69,22 @@ public class Main {
     } finally {
       jettyServer.destroy();
     }
+  }
+
+  private static WebApplicationContext getContext() {
+    AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+    context.setConfigLocation(CONFIG_LOCATION);
+    context.getEnvironment().setDefaultProfiles(DEFAULT_PROFILE);
+    return context;
+  }
+
+  private static Properties getProperties() {
+    Properties result = new Properties();
+    try {
+      result.load(Main.class.getClassLoader().getResourceAsStream("service.properties"));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return result;
   }
 }

@@ -2,8 +2,11 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.CredentialsTO;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.security.TokenService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -11,6 +14,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
 
 /**
@@ -20,12 +24,13 @@ import javax.ws.rs.core.Response;
  * @author Askar Akhmerov
  */
 @Path("/authentication")
+@Component
 public class Authentication {
 
-  @Inject
+  @Autowired
   private AuthenticationProvider authenticationProvider;
 
-  @Inject
+  @Autowired
   private TokenService tokenService;
 
   @POST
@@ -53,6 +58,15 @@ public class Authentication {
   @GET
   @Path("test")
   public Response testAuthentication() {
+    return Response.status(200).entity("OK").build();
+  }
+
+  @Secured
+  @GET
+  @Path("logout")
+  public Response logout(ContainerRequestContext requestContext) {
+    String token = AuthenticationUtil.getToken(requestContext);
+    tokenService.expireToken(token);
     return Response.status(200).entity("OK").build();
   }
 }

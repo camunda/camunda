@@ -122,6 +122,13 @@
       </exclusions>
     </dependency>
 
+    <!--This adds transitive dependency on spring, to control version exclude and add explicit dependencies-->
+    <dependency>
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-spring3</artifactId>
+      <version>${jersy.version}</version>
+    </dependency>
+
     <!--testing-->
     <dependency>
       <groupId>junit</groupId>

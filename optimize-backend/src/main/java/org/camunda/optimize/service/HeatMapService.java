@@ -5,6 +5,8 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -14,8 +16,9 @@ import java.util.Map;
 /**
  * @author Askar Akhmerov
  */
+@Component
 public class HeatMapService {
-  //TODO: should be managed by some sort of pooling mechanic
+  @Autowired
   private TransportClient client;
   private HeatMapReader heatMapReader;
 

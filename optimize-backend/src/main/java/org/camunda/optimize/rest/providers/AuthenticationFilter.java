@@ -1,6 +1,9 @@
 package org.camunda.optimize.rest.providers;
 
+import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.TokenService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -20,25 +23,15 @@ import java.io.IOException;
 @Secured
 @Provider
 @Priority(Priorities.AUTHENTICATION)
+@Component
 public class AuthenticationFilter implements ContainerRequestFilter {
 
-  @Inject
+  @Autowired
   private TokenService tokenService;
 
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
-
-    // Get the HTTP Authorization header from the request
-    String authorizationHeader =
-        requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
-
-    // Check if the HTTP Authorization header is present and formatted correctly
-    if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-      throw new NotAuthorizedException("Authorization header must be provided");
-    }
-
-    // Extract the token from the HTTP Authorization header
-    String token = authorizationHeader.substring("Bearer".length()).trim();
+    String token = AuthenticationUtil.getToken(requestContext);
 
     try {
 
@@ -50,5 +43,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
           Response.status(Response.Status.UNAUTHORIZED).build());
     }
   }
+
+
 
 }
