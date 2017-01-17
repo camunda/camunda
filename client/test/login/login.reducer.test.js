@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {reducer, createLoginAction, createClearLoginAction} from 'login/login.reducer';
+import {reducer, createLoginAction, createClearLoginAction, createLoginCheckAction} from 'login/login.reducer';
 
 describe('login.reducer', () => {
   const user = 'user-1';
@@ -26,5 +26,13 @@ describe('login.reducer', () => {
     expect(
       reducer(originalState, createClearLoginAction())
     ).to.eql(null);
+  });
+
+  it('should set login to being checked', () => {
+    expect(
+      reducer(undefined, createLoginCheckAction())
+    ).to.eql({
+      check: true
+    });
   });
 });

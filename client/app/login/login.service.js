@@ -1,6 +1,6 @@
 import {$window, dispatchAction} from 'view-utils';
-import {createLoginAction, createClearLoginAction} from './login.reducer';
-import {authenticate, checkToken} from './loginBackend.mock';
+import {createLoginAction, createClearLoginAction, createLoginCheckAction} from './login.reducer';
+import {get, post} from 'http';
 
 const sessionStorage = $window.sessionStorage;
 const LOGIN_KEY = 'LOGIN_KEY';
@@ -30,8 +30,20 @@ function saveLogin(user, token) {
   );
 }
 
+function checkToken(token) {
+  const headers = !token ? {} : {
+    Authorization: `Bearer ${token}`
+  };
+
+  return get('/api/authentication/test', null, {
+    headers
+  });
+}
+
 export function refreshAuthentication() {
   const {user, token} = getLogin() || {};
+
+  dispatchAction(createLoginCheckAction());
 
   return checkToken(token)
     .then(() => {
@@ -45,11 +57,15 @@ export function refreshAuthentication() {
 }
 
 export function login(user, password) {
-  return authenticate(user, password)
-    .then(token => {
-      saveLogin(user, token);
-      dispatchAction(
-        createLoginAction(user, token)
-      );
-    });
+  return post('/api/authentication', {
+    username: user,
+    password
+  })
+  .then(response => response.text())
+  .then(token => {
+    saveLogin(user, token);
+    dispatchAction(
+      createLoginAction(user, token)
+    );
+  });
 }

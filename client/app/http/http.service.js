@@ -1,7 +1,12 @@
+import {getLogin} from 'login';
+
 const $fetch = fetch; //for mocking ;)
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json'
 };
+
+window.post = post;
+window.get = get;
 
 export function put(url, body, options = {}) {
   return request({
@@ -38,10 +43,32 @@ export function request({url, method, body, query, headers}) {
     body: processBody(body),
     headers: {
       ...DEFAULT_HEADERS,
+      ...createAuthorizationHeader(),
       ...headers
     },
     mode: 'cors'
+  })
+  .then(response => {
+    const {status} = response;
+
+    if (status >= 200 && status < 300) {
+      return response;
+    }
+
+    return Promise.reject(response);
   });
+}
+
+function createAuthorizationHeader() {
+  const login = getLogin();
+
+  if (login && login.token) {
+    return {
+      Authorization: `Bearer ${login.token}`
+    };
+  }
+
+  return {};
 }
 
 export function formatQuery(query) {

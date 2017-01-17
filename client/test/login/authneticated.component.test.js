@@ -50,7 +50,7 @@ describe('<Authenticated>', () => {
     expect(node.children[0].innerHTML).to.match(/^\s*$/);
   });
 
-  it('should redirect route when login is falsy', () => {
+  it('should redirect route when login is false', () => {
     getLogin.returns(false);
 
     update({});
@@ -103,8 +103,20 @@ describe('<Authenticated>', () => {
 
       update(state);
 
-      expect(Child.mocks.template.calls.length).to.eql(1, 'expected Child template to be called only once');
+      expect(Child.mocks.template.calledOnce).to.eql(true, 'expected Child template to be called only once');
       expect(Child.mocks.update.calledWith(state)).to.eql(true, 'expected Child to be updated with new state');
+    });
+
+    it('should do nothing when login is being checked', () => {
+      Child.mocks.template.calls = [];
+      getLogin.returns({
+        check: true
+      });
+
+      update(state);
+
+      expect(Child.mocks.template.called).to.eql(false, 'expected template not to be rendered');
+      expect(router.goTo.called).to.eql(false, 'expected route not to be redirected');
     });
   });
 });

@@ -9,8 +9,8 @@ describe('Login service', () => {
   let sessionStorage;
   let createClearLoginAction;
   let createLoginAction;
-  let authenticate;
-  let checkToken;
+  let post;
+  let get;
 
   setupPromiseMocking();
 
@@ -33,17 +33,19 @@ describe('Login service', () => {
     createLoginAction = sinon.stub().returns('login-action');
     __set__('createLoginAction', createLoginAction);
 
-    authenticate = sinon.stub();
-    __set__('authenticate', authenticate);
+    post = sinon.stub();
+    __set__('post', post);
 
-    checkToken = sinon.stub();
-    __set__('checkToken', checkToken);
+    get = sinon.stub();
+    __set__('get', get);
   });
 
   afterEach(() => {
     __ResetDependency__('LOGIN_KEY');
     __ResetDependency__('dispatchAction');
     __ResetDependency__('sessionStorage');
+    __ResetDependency__('post');
+    __ResetDependency__('get');
   });
 
   describe('clearLogin', () => {
@@ -68,7 +70,7 @@ describe('Login service', () => {
     const token = 'token-23';
 
     beforeEach(() => {
-      checkToken.returns(Promise.resolve(true));
+      get.returns(Promise.resolve(true));
       sessionStorage.getItem.returns(
         JSON.stringify({user, token})
       );
@@ -93,6 +95,16 @@ describe('Login service', () => {
 
       Promise.runAll();
     });
+
+    it('should add Authorization header with token', () => {
+      refreshAuthentication();
+
+      const [, , {headers}] = get.firstCall.args;
+
+      expect(headers).to.eql({
+        Authorization: `Bearer ${token}`
+      });
+    });
   });
 
   describe('login', () => {
@@ -102,13 +114,20 @@ describe('Login service', () => {
     let response;
 
     beforeEach(() => {
-      authenticate.returns(Promise.resolve(token));
+      post.returns(Promise.resolve({
+        text: sinon.stub().returns(
+          Promise.resolve(token)
+        )
+      }));
       response = login(user, password);
       Promise.runAll();
     });
 
-    it('should authenticate with user and password', () => {
-      expect(authenticate.calledWith(user, password)).to.eql(true);
+    it('should post with user and password', () => {
+      expect(post.calledWith('/api/authentication', {
+        username: user,
+        password
+      })).to.eql(true);
     });
 
     it('should add login item to session storage', () => {
@@ -137,7 +156,7 @@ describe('Login service', () => {
     });
 
     it('should not catch failed authentication promise', (done) => {
-      authenticate.returns(Promise.reject());
+      post.returns(Promise.reject());
 
       login(user, password)
         .catch(done);

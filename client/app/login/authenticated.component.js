@@ -17,13 +17,15 @@ export function Authenticated({routeName, children}) {
 
       if (!login) {
         router.goTo(routeName, {name, params: JSON.stringify(params)}, true);
-      } else if (!update) {
-        const template = <Children children={children} />;
+      } else if (!login.check) {
+        if (!update) {
+          const template = <Children children={children} />;
 
-        update = template(target, eventsBus);
-        runUpdate(update, state);
-      } else {
-        runUpdate(update, state);
+          update = template(target, eventsBus);
+          runUpdate(update, state);
+        } else {
+          runUpdate(update, state);
+        }
       }
     };
   };

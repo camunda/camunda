@@ -9,17 +9,29 @@ describe('http service', () => {
   describe('request', () => {
     const url = 'https://hanka.grzeska.nie.lubi.com';
     const method = 'GET';
+    const status = 200;
+    const token = 'token-23';
 
     let $fetch;
+    let getLogin;
 
     beforeEach(() => {
-      $fetch = sinon.stub();
-
+      $fetch = sinon
+        .stub()
+        .returns(
+          Promise.resolve({status})
+        );
       __set__('$fetch', $fetch);
+
+      getLogin = sinon
+        .stub()
+        .returns({token});
+      __set__('getLogin', getLogin);
     });
 
     afterEach(() => {
       __ResetDependency__('$fetch');
+      __ResetDependency__('getLogin');
     });
 
     it('should open http request with given method and url', () => {
@@ -91,6 +103,58 @@ describe('http service', () => {
       const {body: actualBody} = $fetch.firstCall.args[1];
 
       expect(actualBody).to.eql(JSON.stringify(body));
+    });
+
+    it('should return successful response when status is 200', (done) => {
+      request({
+        url,
+        method
+      }).then(() => {
+        done();
+      });
+
+      Promise.runAll();
+    });
+
+    it('should return rejected response when status is 401', (done) => {
+      $fetch.returns(
+        Promise.resolve({
+          status: 401
+        })
+      );
+
+      request({
+        url,
+        method
+      }).catch(() => {
+        done();
+      });
+
+      Promise.runAll();
+    });
+
+    it('should add Authorization header', () => {
+      request({
+        url,
+        method
+      });
+
+      const {headers: {Authorization}} = $fetch.firstCall.args[1];
+
+      expect(Authorization).to.eql(`Bearer ${token}`);
+    });
+
+    it('should not add Authorization header when token is empty', () => {
+      getLogin.returns(null);
+
+      request({
+        url,
+        method
+      });
+
+      const {headers} = $fetch.firstCall.args[1];
+
+      expect(headers).to.not.include.keys('Authorization');
     });
   });
 
