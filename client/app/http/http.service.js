@@ -5,9 +5,6 @@ const DEFAULT_HEADERS = {
   'Content-Type': 'application/json'
 };
 
-window.post = post;
-window.get = get;
-
 export function put(url, body, options = {}) {
   return request({
     url,
