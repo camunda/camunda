@@ -4,12 +4,12 @@ import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.util.buffer.PayloadRequestWriter;
 
-public class CompleteTaskCmdImpl extends AbstractSetPayloadCmd<Long, CompleteAsyncTaskCmd> implements CompleteAsyncTaskCmd
+public class CompleteTaskCmdImpl extends AbstractCmdImpl<Long> implements CompleteAsyncTaskCmd
 {
 
     public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor)
     {
-        super(clientCmdExecutor, new TaskAckResponseHandler());
+        super(clientCmdExecutor);
     }
 
     @Override
@@ -32,6 +32,12 @@ public class CompleteTaskCmdImpl extends AbstractSetPayloadCmd<Long, CompleteAsy
 
     @Override
     public CompleteAsyncTaskCmd payload(String payload)
+    {
+        return null;
+    }
+
+    @Override
+    public ClientResponseHandler<Long> getResponseHandler()
     {
         return null;
     }

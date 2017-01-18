@@ -15,7 +15,7 @@ public class ClientErrorResponseHandler
         final short errorCode = errorResponseDecoder.errorCode().value();
         final String errorData = errorResponseDecoder.errorData();
 
-        // TODO #95 - handle failed request
+        // TODO handle failed request
 
         return new BrokerRequestException(errorCode, errorData);
     }

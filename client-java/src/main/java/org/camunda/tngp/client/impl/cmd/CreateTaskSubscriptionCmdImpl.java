@@ -7,7 +7,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
 {
     public CreateTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor)
     {
-        super(cmdExecutor, new TaskSubscriptionResponseHandler());
+        super(cmdExecutor);
     }
 
     @Override
@@ -34,6 +34,12 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
     public CreateTaskSubscriptionCmdImpl taskType(String taskType)
     {
         return this;
+    }
+
+    @Override
+    public ClientResponseHandler<Long> getResponseHandler()
+    {
+        return new TaskSubscriptionResponseHandler();
     }
 
 }

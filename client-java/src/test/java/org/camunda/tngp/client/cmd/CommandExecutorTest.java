@@ -15,6 +15,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.impl.ClientChannelResolver;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
@@ -23,8 +25,8 @@ import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
-import org.camunda.tngp.util.buffer.RequestWriter;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.util.buffer.RequestWriter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,9 +35,6 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 /**
  * Test cases for aspects common to all commands
@@ -274,19 +273,26 @@ public class CommandExecutorTest
 
     public static class ExampleCmd extends AbstractCmdImpl<Object>
     {
-
         protected RequestWriter requestWriter;
+        protected ClientResponseHandler<Object> responseHandler;
 
         public ExampleCmd(final ClientCmdExecutor cmdExecutor, final RequestWriter requestWriter, final ClientResponseHandler<Object> responseHandler)
         {
-            super(cmdExecutor, responseHandler);
+            super(cmdExecutor);
             this.requestWriter = requestWriter;
+            this.responseHandler = responseHandler;
         }
 
         @Override
         public RequestWriter getRequestWriter()
         {
             return requestWriter;
+        }
+
+        @Override
+        public ClientResponseHandler<Object> getResponseHandler()
+        {
+            return responseHandler;
         }
     }
 

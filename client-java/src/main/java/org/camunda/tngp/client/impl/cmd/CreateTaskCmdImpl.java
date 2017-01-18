@@ -4,24 +4,18 @@ import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
-import org.camunda.tngp.util.buffer.RequestWriter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CreateTaskCmdImpl extends AbstractSetPayloadCmd<Long, CreateAsyncTaskCmd>
-    implements CreateAsyncTaskCmd, CommandRequestWriter
+public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CreateAsyncTaskCmd
 {
-    protected final ExecuteCommandRequestWriter requestWriter;
-
     protected final TaskEvent taskEvent = new TaskEvent();
 
     protected long taskQueueId = -1L;
 
     public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper)
     {
-        super(clientCmdExecutor, new TaskAckResponseHandler());
-
-        requestWriter = new ExecuteCommandRequestWriter(this, objectMapper);
+        super(clientCmdExecutor, objectMapper, TaskEvent.class);
     }
 
     @Override
@@ -47,13 +41,7 @@ public class CreateTaskCmdImpl extends AbstractSetPayloadCmd<Long, CreateAsyncTa
     }
 
     @Override
-    public RequestWriter getRequestWriter()
-    {
-        return requestWriter;
-    }
-
-    @Override
-    public long getTopicId()
+    protected long getTopicId()
     {
         return taskQueueId;
     }
@@ -65,7 +53,7 @@ public class CreateTaskCmdImpl extends AbstractSetPayloadCmd<Long, CreateAsyncTa
     }
 
     @Override
-    public Object writeCommand()
+    protected Object writeCommand()
     {
         taskEvent.setEvent(TaskEventType.CREATE);
 
@@ -73,11 +61,17 @@ public class CreateTaskCmdImpl extends AbstractSetPayloadCmd<Long, CreateAsyncTa
     }
 
     @Override
-    public void reset()
+    protected void reset()
     {
-        taskEvent.reset();
-
         taskQueueId = -1L;
+
+        taskEvent.reset();
+    }
+
+    @Override
+    protected Long getResponseValue(long key, TaskEvent event)
+    {
+        return key;
     }
 
 }

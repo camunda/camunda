@@ -17,6 +17,7 @@ import org.camunda.tngp.client.event.cmd.PollEventsCmd;
 import org.camunda.tngp.client.event.impl.EventBatchHandler;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
+import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class PollEventsCmdImpl extends AbstractCmdImpl<EventsBatch> implements PollEventsCmd
@@ -24,7 +25,7 @@ public class PollEventsCmdImpl extends AbstractCmdImpl<EventsBatch> implements P
 
     public PollEventsCmdImpl(ClientCmdExecutor cmdExecutor)
     {
-        super(cmdExecutor, new EventBatchHandler());
+        super(cmdExecutor);
     }
 
     @Override
@@ -49,5 +50,11 @@ public class PollEventsCmdImpl extends AbstractCmdImpl<EventsBatch> implements P
     public RequestWriter getRequestWriter()
     {
         return null;
+    }
+
+    @Override
+    public ClientResponseHandler<EventsBatch> getResponseHandler()
+    {
+        return new EventBatchHandler();
     }
 }

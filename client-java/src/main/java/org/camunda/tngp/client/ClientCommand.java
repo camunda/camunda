@@ -6,7 +6,6 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 public interface ClientCommand<R>
 {
-
     /**
      * Executes the command and blocks until the result is available.
      * Throws {@link RuntimeException} in case the command times out.

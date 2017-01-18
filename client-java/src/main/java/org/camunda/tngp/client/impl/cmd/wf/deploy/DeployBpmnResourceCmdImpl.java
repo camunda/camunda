@@ -12,6 +12,7 @@ import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
+import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinition> implements DeployBpmnResourceCmd
@@ -20,7 +21,7 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
 
     public DeployBpmnResourceCmdImpl(ClientCmdExecutor cmdExecutor)
     {
-        super(cmdExecutor, new DeployBpmnResourceAckResponseHandler());
+        super(cmdExecutor);
     }
 
     @Override
@@ -88,6 +89,12 @@ public class DeployBpmnResourceCmdImpl extends AbstractCmdImpl<WorkflowDefinitio
     public RequestWriter getRequestWriter()
     {
         return null;
+    }
+
+    @Override
+    public ClientResponseHandler<WorkflowDefinition> getResponseHandler()
+    {
+        return new DeployBpmnResourceAckResponseHandler();
     }
 
 }

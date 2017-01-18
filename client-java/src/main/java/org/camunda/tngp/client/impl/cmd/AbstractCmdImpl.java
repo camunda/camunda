@@ -14,12 +14,10 @@ public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
     protected static final Charset CHARSET = StandardCharsets.UTF_8;
 
     protected final ClientCmdExecutor cmdExecutor;
-    protected final ClientResponseHandler<R> responseHandler;
 
-    public AbstractCmdImpl(final ClientCmdExecutor cmdExecutor, ClientResponseHandler<R> responseHandler)
+    public AbstractCmdImpl(final ClientCmdExecutor cmdExecutor)
     {
         this.cmdExecutor = cmdExecutor;
-        this.responseHandler = responseHandler;
     }
 
     @Override
@@ -40,10 +38,7 @@ public abstract class AbstractCmdImpl<R> implements ClientCommand<R>
         return cmdExecutor.executeAsync(this, connection);
     }
 
-    public ClientResponseHandler<R> getResponseHandler()
-    {
-        return responseHandler;
-    }
+    public abstract ClientResponseHandler<R> getResponseHandler();
 
     public abstract RequestWriter getRequestWriter();
 

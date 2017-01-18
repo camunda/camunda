@@ -13,7 +13,7 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
 
     public PollAndLockTasksCmdImpl(ClientCmdExecutor cmdExecutor)
     {
-        super(cmdExecutor, new PollAndLockResponseHandler());
+        super(cmdExecutor);
     }
 
     @Override
@@ -50,6 +50,12 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     public RequestWriter getRequestWriter()
     {
         return null;
+    }
+
+    @Override
+    public ClientResponseHandler<LockedTasksBatch> getResponseHandler()
+    {
+        return new PollAndLockResponseHandler();
     }
 
 }

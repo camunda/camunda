@@ -121,6 +121,7 @@ public class CreateTaskCmdTest
         responseEncoder
             .topicId(1L)
             .longKey(2L)
+            .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when

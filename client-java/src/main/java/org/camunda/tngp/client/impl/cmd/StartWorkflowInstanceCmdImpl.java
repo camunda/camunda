@@ -5,13 +5,13 @@ import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
-public class StartWorkflowInstanceCmdImpl extends AbstractSetPayloadCmd<WorkflowInstance, StartWorkflowInstanceCmd>
+public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstance>
     implements StartWorkflowInstanceCmd
 {
 
     public StartWorkflowInstanceCmdImpl(final ClientCmdExecutor clientCmdExecutor)
     {
-        super(clientCmdExecutor, new StartWorkflowInstanceResponseHandler());
+        super(clientCmdExecutor);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class StartWorkflowInstanceCmdImpl extends AbstractSetPayloadCmd<Workflow
     @Override
     public StartWorkflowInstanceCmd workflowDefinitionKey(String key)
     {
-        return workflowDefinitionKey(key.getBytes(CHARSET));
+        return workflowDefinitionKey(key.getBytes(AbstractCmdImpl.CHARSET));
     }
 
     @Override
@@ -42,6 +42,12 @@ public class StartWorkflowInstanceCmdImpl extends AbstractSetPayloadCmd<Workflow
     public StartWorkflowInstanceCmd payload(String payload)
     {
         return this;
+    }
+
+    @Override
+    public ClientResponseHandler<WorkflowInstance> getResponseHandler()
+    {
+        return new StartWorkflowInstanceResponseHandler();
     }
 
 }

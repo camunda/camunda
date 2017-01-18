@@ -8,7 +8,7 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
 
     public CloseTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor)
     {
-        super(cmdExecutor, new TaskSubscriptionResponseHandler());
+        super(cmdExecutor);
     }
 
     @Override
@@ -26,6 +26,12 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractCmdImpl<Long>
     public CloseTaskSubscriptionCmdImpl subscriptionId(long subscriptionId)
     {
         return this;
+    }
+
+    @Override
+    public ClientResponseHandler<Long> getResponseHandler()
+    {
+        return null;
     }
 
 }
