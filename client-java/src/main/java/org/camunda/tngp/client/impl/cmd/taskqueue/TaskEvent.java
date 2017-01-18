@@ -20,7 +20,7 @@ public class TaskEvent
     private long lockTime;
     private String type;
     private Map<String, String> headers;
-    private String payload;
+    private byte[] payload;
 
     public TaskEventType getEvent()
     {
@@ -30,7 +30,7 @@ public class TaskEvent
     {
         this.event = event;
     }
-    public long getLockTime()
+    public Long getLockTime()
     {
         return lockTime;
     }
@@ -54,11 +54,11 @@ public class TaskEvent
     {
         this.headers = headers;
     }
-    public String getPayload()
+    public byte[] getPayload()
     {
         return payload;
     }
-    public void setPayload(String payload)
+    public void setPayload(byte[] payload)
     {
         this.payload = payload;
     }
@@ -66,7 +66,7 @@ public class TaskEvent
     public void reset()
     {
         event = null;
-        lockTime = -1;
+        lockTime = -1L;
         type = null;
         headers = null;
         payload = null;

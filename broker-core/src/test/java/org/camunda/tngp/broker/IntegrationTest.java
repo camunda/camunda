@@ -14,12 +14,12 @@ import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
-import org.camunda.tngp.logstreams.snapshot.SerializableWrapper;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
@@ -81,6 +81,8 @@ public class IntegrationTest
 
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(tempFolder.getRoot().getAbsolutePath()).build();
 
+        final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
+
         final CommandResponseWriter responseWriter = mock(CommandResponseWriter.class, new Answer<CommandResponseWriter>()
         {
 
@@ -93,9 +95,7 @@ public class IntegrationTest
 
         doReturn(true).when(responseWriter).tryWriteResponse();
 
-        // TODO use a stream processor resource
-        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(responseWriter))
-            .resource(new SerializableWrapper<>("foo"))
+        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(responseWriter, indexStore))
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)

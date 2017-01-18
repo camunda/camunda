@@ -1,46 +1,59 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_BYTE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
-import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
+    protected static final int INDEX_VALUE_LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
+
     protected final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
+    protected final CommandResponseWriter responseWriter;
+    protected final IndexStore indexStore;
+    protected final UnsafeBuffer indexValueBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
+
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
 
-    protected CommandResponseWriter responseWriter;
+    protected Long2BytesHashIndex taskIndex;
+    protected HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
 
-    // TODO inject index store
-    protected final IndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
-    protected Long2BytesHashIndex taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, 2 * SIZE_OF_BYTE);
-
-    protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
+    protected final TaskEvent taskEvent = new TaskEvent();
 
     protected int streamId;
 
     protected long eventPosition = 0;
     protected long eventKey = 0;
 
-    protected final TaskEvent taskEvent = new TaskEvent();
-
-    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter)
+    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, IndexStore indexStore)
     {
         this.responseWriter = responseWriter;
+        this.indexStore = indexStore;
+
+        taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, 2 * SIZE_OF_LONG);
+        indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
+    }
+
+    @Override
+    public SnapshotSupport getStateResource()
+    {
+        return indexSnapshotSupport;
     }
 
     public void onOpen(StreamProcessorContext context)
@@ -119,10 +132,17 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            // TODO update state
-            //taskIndex.put(eventKey, eventPosition);
+            updateIndex(eventKey, eventPosition, TaskEventType.CREATED);
         }
 
+    }
+
+    protected void updateIndex(long eventKey, long eventPosition, TaskEventType eventType)
+    {
+        indexValueBuffer.putLong(0, eventPosition);
+        indexValueBuffer.putInt(SIZE_OF_LONG, eventType.ordinal());
+
+        taskIndex.put(eventKey, indexValueBuffer.byteArray());
     }
 
 }

@@ -6,5 +6,7 @@ public class TaskQueueCfg
     public int id = -1;
     public String logName;
 
+    public String indexFile;
+    public boolean useTempIndexFile = false;
 }
 

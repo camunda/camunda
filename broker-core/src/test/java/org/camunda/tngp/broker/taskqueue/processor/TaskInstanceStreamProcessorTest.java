@@ -16,13 +16,13 @@ import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.util.msgpack.value.StringValue;
+import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
-import org.camunda.tngp.logstreams.snapshot.SerializableWrapper;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
@@ -71,9 +71,9 @@ public class TaskInstanceStreamProcessorTest
 
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(tempFolder.getRoot().getAbsolutePath()).build();
 
-        // TODO use a stream processor resource
-        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(mockResponseWriter))
-            .resource(new SerializableWrapper<>("foo"))
+        final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
+
+        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(mockResponseWriter, indexStore))
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)

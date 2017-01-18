@@ -97,7 +97,7 @@ public class CreateTaskCmdTest
 
         assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.CREATE);
         assertThat(taskEvent.getType()).isEqualTo("foo");
-        assertThat(taskEvent.getPayload()).isEqualTo("bar");
+        assertThat(taskEvent.getPayload()).isEqualTo("bar".getBytes());
     }
 
     @Test
@@ -114,7 +114,7 @@ public class CreateTaskCmdTest
         final TaskEvent taskEvent = new TaskEvent();
         taskEvent.setEvent(TaskEventType.CREATED);
         taskEvent.setType("foo");
-        taskEvent.setPayload("bar");
+        taskEvent.setPayload("bar".getBytes());
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 

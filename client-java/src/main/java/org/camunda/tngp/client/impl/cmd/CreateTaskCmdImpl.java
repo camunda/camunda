@@ -41,7 +41,8 @@ public class CreateTaskCmdImpl extends AbstractSetPayloadCmd<Long, CreateAsyncTa
     @Override
     public CreateAsyncTaskCmd payload(String payload)
     {
-        taskEvent.setPayload(payload);
+        // TODO #96 - pass payload as String or byte array?
+        taskEvent.setPayload(payload.getBytes());
         return this;
     }
 

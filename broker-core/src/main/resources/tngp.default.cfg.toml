@@ -31,6 +31,9 @@ name = "default-task-queue-log"
 id = 0
 useTempLogDirectory = true
 
+[snapshot]
+useTempSnapshotDirectory = true
+
 # Task Queues ------------------------------------------
 
 [task-queues]
@@ -41,3 +44,4 @@ perWorkerResponsePoolCapacity = 32
 name = "default"
 id = 0
 logName = "default-task-queue-log"
+useTempIndexFile = true

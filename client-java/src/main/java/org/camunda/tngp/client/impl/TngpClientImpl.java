@@ -44,7 +44,6 @@ import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
-import org.msgpack.jackson.dataformat.JsonArrayFormat;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -122,7 +121,6 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         //taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
-        objectMapper.setAnnotationIntrospector(new JsonArrayFormat());
 
         eventsClient = new TngpEventsClientImpl(cmdExecutor);
     }
