@@ -153,21 +153,26 @@ public class StreamUtil
 
     public static int read(final InputStream input, final byte[] dst) throws IOException
     {
-        final int length = dst.length;
-        int remaining = length;
+        return read(input, dst, 0);
+    }
+
+    public static int read(final InputStream input, final byte[] dst, final int offset) throws IOException
+    {
+        int remaining = dst.length - offset;
+        int location = offset;
 
         while (remaining > 0)
         {
-            final int location = length - remaining;
             final int count = input.read(dst, location, remaining);
             if (count == -1)
             {
                 break;
             }
             remaining -= count;
+            location += count;
         }
 
-        return length - remaining;
+        return location - offset;
     }
 
     public static byte[] read(final InputStream input) throws IOException
