@@ -19,7 +19,7 @@ runElastic.on('close', function(code) {
 
 var mvnCwd = path.resolve(__dirname, '..', '..');
 
-var mvnCleanPackage = exec('mvn clean package', {
+var mvnCleanPackage = exec('mvn clean package -DskipTests', {
   cwd: mvnCwd
 });
 
