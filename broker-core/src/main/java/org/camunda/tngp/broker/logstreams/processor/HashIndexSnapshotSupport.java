@@ -23,7 +23,13 @@ import org.camunda.tngp.util.StreamUtil;
 
 public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements SnapshotSupport
 {
-    protected static final int READ_BUFFER_SIZE = 4 * 1024;
+    protected static final int BUFFER_SIZE = 4 * 1024;
+
+    protected static final byte[] READ_BUFFER = new byte[BUFFER_SIZE];
+    protected static final ByteBuffer READ_BUFFER_VIEW = ByteBuffer.wrap(READ_BUFFER);
+
+    protected static final byte[] WRITE_BUFFER = new byte[BUFFER_SIZE];
+    protected static final ByteBuffer WRITE_BUFFER_VIEW = ByteBuffer.wrap(WRITE_BUFFER);
 
     protected final T hashIndex;
     protected final IndexStore indexStore;
@@ -44,16 +50,14 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     {
         int read = -1;
         int offset = 0;
-        byte[] buffer;
 
         do
         {
-            buffer = new byte[READ_BUFFER_SIZE];
-            read = indexStore.read(ByteBuffer.wrap(buffer), offset);
+            read = indexStore.read(READ_BUFFER_VIEW, offset);
 
             if (read > 0)
             {
-                outputStream.write(buffer, 0, read);
+                outputStream.write(READ_BUFFER, offset, read);
 
                 offset += read;
             }
@@ -64,9 +68,21 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     @Override
     public void recoverFromSnapshot(InputStream inputStream) throws Exception
     {
-        final byte[] buffer = StreamUtil.read(inputStream);
+        int read = -1;
+        int offset = 0;
 
-        indexStore.write(ByteBuffer.wrap(buffer), 0);
+        do
+        {
+            read = StreamUtil.read(inputStream, WRITE_BUFFER, offset);
+
+            if (read > 0)
+            {
+                indexStore.write(WRITE_BUFFER_VIEW, offset);
+
+                offset += read;
+            }
+        }
+        while (read > 0);
 
         hashIndex.reset();
     }
@@ -75,6 +91,9 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     public void reset()
     {
         hashIndex.clear();
+
+        READ_BUFFER_VIEW.clear();
+        WRITE_BUFFER_VIEW.clear();
     }
 
 }
