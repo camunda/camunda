@@ -5,6 +5,6 @@ export const ProcessDisplay = withSelector(Process);
 
 function Process() {
   return <div className="process-display">
-    <Diagram/>
+    <Diagram selector="diagram"/>
   </div>;
 }

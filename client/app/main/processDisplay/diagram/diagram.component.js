@@ -1,8 +1,11 @@
-import {jsx, updateOnlyWhenStateChanges, Match, Case} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, Match, Case, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {loadHeatmap, loadDiagram, getHeatmap} from './diagram.service';
+import {LOADED_STATE, INITIAL_STATE} from './diagram.reducer';
 
-export function Diagram() {
+export const Diagram = withSelector(DiagramComponent);
+
+function DiagramComponent() {
   return <div className="diagram">
     <div className="diagram__holder">
       <BpmnViewer />
@@ -17,8 +20,8 @@ export function Diagram() {
     </div>
   </div>;
 
-  function isLoading({diagram}) {
-    return diagram.state !== 'LOADED' || diagram.heatmap.state !== 'LOADED';
+  function isLoading({state, heatmap}) {
+    return state !== LOADED_STATE || heatmap.state !== LOADED_STATE;
   }
 }
 
@@ -30,10 +33,10 @@ function BpmnViewer() {
     let heatmap;
     let imported = false;
 
-    const update = ({diagram}) => {
-      if (diagram.state === 'INITIAL') {
+    const update = (diagram) => {
+      if (diagram.state === INITIAL_STATE) {
         loadDiagram(diagram);
-      } else if (diagram.state === 'LOADED') {
+      } else if (diagram.state === LOADED_STATE) {
         if (imported) {
           updateHeatmap(diagram);
         } else {
@@ -56,9 +59,9 @@ function BpmnViewer() {
 
       const state = diagram.heatmap.state;
 
-      if (state === 'INITIAL') {
+      if (state === INITIAL_STATE) {
         loadHeatmap(diagram);
-      } else if (state == 'LOADED') {
+      } else if (state == LOADED_STATE) {
         heatmap = getHeatmap(viewer, diagram.heatmap.data);
         viewer.get('canvas')._viewport.appendChild(heatmap);
       }

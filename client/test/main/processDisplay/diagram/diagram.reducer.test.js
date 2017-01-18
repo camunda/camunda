@@ -1,44 +1,50 @@
 import {expect} from 'chai';
-import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction} from 'main/processDisplay/diagram/diagram.reducer';
+import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction, INITIAL_STATE} from 'main/processDisplay/diagram/diagram.reducer';
 
 describe('diagram reducer', () => {
   const diagramData = 'bpmnXml';
   const heatmapData = {a: 1};
 
-  let state;
-
   describe('initial', () => {
+    let id,
+        state,
+        heatmap;
+
     beforeEach(() => {
-      state = reducer(undefined, {type: '@@INIT'});
+      ({id, state, heatmap} = reducer(undefined, {type: '@@INIT'}));
     });
 
     it('should set diagram id on state', () => {
-      expect(state.id).to.exist;
-      expect(typeof state.id).to.eql('string');
+      expect(id).to.exist;
+      expect(typeof id).to.eql('string');
     });
 
     it('should set diagram state on state', () => {
-      expect(state.state).to.exist;
-      expect(typeof state.state).to.eql('string');
+      expect(state).to.exist;
+      expect(state).to.eql(INITIAL_STATE);
     });
 
     it('should set heatmap on state', () => {
-      expect(state.heatmap).to.exist;
-      expect(typeof state.heatmap).to.eql('object');
+      expect(heatmap).to.exist;
+      expect(typeof heatmap).to.eql('object');
+      expect(heatmap.state).to.exist;
+      expect(heatmap.state).to.eql(INITIAL_STATE);
     });
   });
 
   describe('actions', () => {
     it('should set the diagram xml property on load diagram result action', () => {
-      state = reducer(undefined, createLoadingDiagramResultAction(diagramData));
+      const {xml} = reducer(undefined, createLoadingDiagramResultAction(diagramData));
 
-      expect(state.xml).to.exist;
+      expect(xml).to.exist;
+      expect(xml).to.eql(diagramData);
     });
 
     it('should set heatmap data property on load heatmap result action', () => {
-      state = reducer(undefined, createLoadingHeatmapResultAction(heatmapData));
+      const {heatmap: {data}} = reducer(undefined, createLoadingHeatmapResultAction(heatmapData));
 
-      expect(state.heatmap.data).to.exist;
+      expect(data).to.exist;
+      expect(data).to.eql(heatmapData);
     });
   });
 });

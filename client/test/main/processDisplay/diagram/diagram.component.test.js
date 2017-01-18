@@ -6,6 +6,7 @@ import {Diagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram
 
 describe('<Diagram>', () => {
   const diagramXml = 'diagram-xml';
+  const heatmapData = {a: 1};
   const heatmapNode = document.createElement('img');
   const initialState = {diagram: {
     state: 'INITIAL'
@@ -22,7 +23,7 @@ describe('<Diagram>', () => {
     xml: diagramXml,
     heatmap: {
       state: 'LOADED',
-      data: {a: 1}
+      data: heatmapData
     }
   }};
 
@@ -70,7 +71,7 @@ describe('<Diagram>', () => {
     };
     __set__('Viewer', Viewer);
 
-    ({update} = mountTemplate(<Diagram />));
+    ({update} = mountTemplate(<Diagram selector="diagram" />));
   });
 
   afterEach(() => {
@@ -124,7 +125,8 @@ describe('<Diagram>', () => {
     });
 
     it('should construct a heatmap', () => {
-      expect(getHeatmap.calledOnce).to.eql(true);
+      expect(getHeatmap.calledWith(viewer, heatmapData))
+        .to.eql(true, 'expected getHeatmap to be called with the viewer instance and heatmap data');
     });
 
     it('should add a heatmap', () => {

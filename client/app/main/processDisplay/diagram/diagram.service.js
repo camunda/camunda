@@ -18,14 +18,14 @@ export function getHeatmap(viewer, data) {
 }
 
 export function loadHeatmap(diagram) {
-  dispatchAction(createLoadingHeatmapAction(diagram));
+  dispatchAction(createLoadingHeatmapAction());
   getHeatmapData(diagram.id).then(result => {
     dispatchAction(createLoadingHeatmapResultAction(result));
   });
 }
 
 export function loadDiagram(diagram) {
-  dispatchAction(createLoadingDiagramAction(diagram));
+  dispatchAction(createLoadingDiagramAction());
   getDiagramXml(diagram.id).then(result => {
     dispatchAction(createLoadingDiagramResultAction(result));
   });

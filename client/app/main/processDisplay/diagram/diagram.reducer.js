@@ -3,18 +3,22 @@ export const LOAD_PROCESS_DIAGRAM_RESULT = 'LOAD_PROCESS_DIAGRAM_RESULT';
 export const LOAD_HEATMAP = 'LOAD_HEATMAP';
 export const LOAD_HEATMAP_RESULT = 'LOAD_HEATMAP_RESULT';
 
+export const INITIAL_STATE = 'INITIAL';
+export const LOADING_STATE = 'LOADING';
+export const LOADED_STATE = 'LOADED';
+
 export function reducer(state = {id: 'aProcessInstanceId', state: 'INITIAL', heatmap: {state: 'INITIAL'}}, action) {
   if (action.type === LOAD_PROCESS_DIAGRAM) {
     return {
       ...state,
-      state: 'LOADING'
+      state: LOADING_STATE
     };
   }
 
   if (action.type === LOAD_PROCESS_DIAGRAM_RESULT) {
     return {
       ...state,
-      state: 'LOADED',
+      state: LOADED_STATE,
       xml: action.result
     };
   }
@@ -23,7 +27,7 @@ export function reducer(state = {id: 'aProcessInstanceId', state: 'INITIAL', hea
     return {
       ...state,
       heatmap: {
-        state: 'LOADING'
+        state: LOADING_STATE
       }
     };
   }
@@ -32,7 +36,7 @@ export function reducer(state = {id: 'aProcessInstanceId', state: 'INITIAL', hea
     return {
       ...state,
       heatmap: {
-        state: 'LOADED',
+        state: LOADED_STATE,
         data: action.result
       }
     };
@@ -40,10 +44,9 @@ export function reducer(state = {id: 'aProcessInstanceId', state: 'INITIAL', hea
   return state;
 }
 
-export function createLoadingDiagramAction(diagram) {
+export function createLoadingDiagramAction() {
   return {
-    type: LOAD_PROCESS_DIAGRAM,
-    diagram
+    type: LOAD_PROCESS_DIAGRAM
   };
 }
 
@@ -54,10 +57,9 @@ export function createLoadingDiagramResultAction(result) {
   };
 }
 
-export function createLoadingHeatmapAction(diagram) {
+export function createLoadingHeatmapAction() {
   return {
-    type: LOAD_HEATMAP,
-    diagram
+    type: LOAD_HEATMAP
   };
 }
 
