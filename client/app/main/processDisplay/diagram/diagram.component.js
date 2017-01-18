@@ -61,7 +61,7 @@ function BpmnViewer() {
 
       if (state === INITIAL_STATE) {
         loadHeatmap(diagram);
-      } else if (state == LOADED_STATE) {
+      } else if (state === LOADED_STATE) {
         heatmap = getHeatmap(viewer, diagram.heatmap.data);
         viewer.get('canvas')._viewport.appendChild(heatmap);
       }

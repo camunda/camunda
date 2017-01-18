@@ -27,6 +27,7 @@
     "no-multiple-empty-lines": [2, {"max": 1}],
     "no-tabs": 2,
     "no-trailing-spaces": 2,
+    "eqeqeq": 2,
     "one-var-declaration-per-line": 2,
     "arrow-spacing": 2,
     "prefer-const": 2,
