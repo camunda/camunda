@@ -35,7 +35,7 @@ public class MsgPackReader
             switch (mapHeaderByte)
             {
                 case MAP16:
-                    mapSize = buffer.getShort(offset, BYTE_ORDER);
+                    mapSize = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
                     offset += SIZE_OF_SHORT;
                     break;
 
@@ -68,7 +68,7 @@ public class MsgPackReader
             switch (headerByte)
             {
                 case ARRAY16:
-                    mapSize = buffer.getShort(offset, BYTE_ORDER);
+                    mapSize = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
                     offset += SIZE_OF_SHORT;
                     break;
 
@@ -101,12 +101,12 @@ public class MsgPackReader
             switch (headerByte)
             {
                 case STR8:
-                    stringLength = buffer.getByte(offset);
+                    stringLength = buffer.getByte(offset) & 0xff;
                     ++offset;
                     break;
 
                 case STR16:
-                    stringLength = buffer.getShort(offset, BYTE_ORDER);
+                    stringLength = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
                     offset += SIZE_OF_SHORT;
                     break;
 
@@ -169,17 +169,17 @@ public class MsgPackReader
             switch (b)
             {
                 case UINT8:
-                    val = buffer.getByte(offset);
+                    val = buffer.getByte(offset) & 0xffL;
                     ++offset;
                     break;
 
                 case UINT16:
-                    val = buffer.getShort(offset, BYTE_ORDER);
+                    val = buffer.getShort(offset, BYTE_ORDER) & 0xffffL;
                     offset += 2;
                     break;
 
                 case UINT32:
-                    val = buffer.getInt(offset, BYTE_ORDER);
+                    val = buffer.getInt(offset, BYTE_ORDER) & 0xffff_ffffL;
                     offset += 4;
                     break;
 
@@ -389,11 +389,11 @@ public class MsgPackReader
                     break;
                 case BIN16:
                 case STR16:
-                    offset += 2 + buffer.getShort(offset);
+                    offset += 2 + buffer.getShort(offset, BYTE_ORDER);
                     break;
                 case BIN32:
                 case STR32:
-                    offset += 4 + buffer.getInt(offset);
+                    offset += 4 + buffer.getInt(offset, BYTE_ORDER);
                     break;
                 case FIXEXT1:
                     offset += 2;
@@ -414,25 +414,25 @@ public class MsgPackReader
                     offset += 1 + 1 + buffer.getByte(offset);
                     break;
                 case EXT16:
-                    offset += 1 + 2 + buffer.getShort(offset);
+                    offset += 1 + 2 + buffer.getShort(offset, BYTE_ORDER);
                     break;
                 case EXT32:
-                    offset += 1 + 4 + buffer.getInt(offset);
+                    offset += 1 + 4 + buffer.getInt(offset, BYTE_ORDER);
                     break;
                 case ARRAY16:
-                    count += buffer.getShort(offset);
+                    count += buffer.getShort(offset, BYTE_ORDER);
                     offset += 2;
                     break;
                 case ARRAY32:
-                    count += buffer.getInt(offset);
+                    count += buffer.getInt(offset, BYTE_ORDER);
                     offset += 4;
                     break;
                 case MAP16:
-                    count += buffer.getShort(offset) * 2;
+                    count += buffer.getShort(offset, BYTE_ORDER) * 2;
                     offset += 2;
                     break;
                 case MAP32:
-                    count += buffer.getInt(offset) * 2;
+                    count += buffer.getInt(offset, BYTE_ORDER) * 2;
                     offset += 4;
                     break;
                 case NEVER_USED:

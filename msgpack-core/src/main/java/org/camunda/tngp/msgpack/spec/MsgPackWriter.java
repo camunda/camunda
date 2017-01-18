@@ -1,14 +1,19 @@
 package org.camunda.tngp.msgpack.spec;
 
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
+import static org.agrona.BitUtil.SIZE_OF_FLOAT;
+import static org.agrona.BitUtil.SIZE_OF_DOUBLE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.ARRAY16;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.ARRAY32;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BIN16;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BIN32;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BIN8;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BYTE_ORDER;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FALSE;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FIXARRAY_PREFIX;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FIXMAP_PREFIX;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FIXSTR_PREFIX;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT16;
@@ -17,6 +22,7 @@ import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT64;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT8;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.MAP16;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.MAP32;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.NIL;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.STR16;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.STR32;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.STR8;
@@ -25,10 +31,16 @@ import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT16;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT32;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT64;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT8;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FLOAT32;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FLOAT64;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
+/**
+ * This class uses signed value semantics. That means, an integer 0xffff_ffff is treated
+ * as -1 instead of 2^33 - 1, etc.
+ */
 public class MsgPackWriter
 {
     private MutableDirectBuffer buffer;
@@ -41,6 +53,34 @@ public class MsgPackWriter
 
         return this;
     }
+
+    public MsgPackWriter writeArrayHeader(int size)
+    {
+        if (size < (1 << 4))
+        {
+            buffer.putByte(offset, (byte) (FIXARRAY_PREFIX | size));
+            ++offset;
+        }
+        else if (size < (1 << 16))
+        {
+            buffer.putByte(offset, ARRAY16);
+            ++offset;
+
+            buffer.putShort(offset, (short) size, BYTE_ORDER);
+            offset += SIZE_OF_SHORT;
+        }
+        else
+        {
+            buffer.putByte(offset, ARRAY32);
+            ++offset;
+
+            buffer.putInt(offset, size, BYTE_ORDER);
+            offset += SIZE_OF_INT;
+        }
+
+        return this;
+    }
+
 
     public MsgPackWriter writeMapHeader(int size)
     {
@@ -136,6 +176,7 @@ public class MsgPackWriter
         else if (v < (1 << 7))
         {
             buffer.putByte(0, (byte) v);
+            ++offset;
         }
         else
         {
@@ -197,7 +238,7 @@ public class MsgPackWriter
             buffer.putByte(offset, STR16);
             ++offset;
 
-            buffer.putShort(offset, (short) len);
+            buffer.putShort(offset, (short) len, BYTE_ORDER);
             offset += SIZE_OF_SHORT;
         }
         else
@@ -205,7 +246,7 @@ public class MsgPackWriter
             buffer.putByte(offset, STR32);
             ++offset;
 
-            buffer.putInt(offset, len);
+            buffer.putInt(offset, len, BYTE_ORDER);
             offset += SIZE_OF_INT;
         }
 
@@ -239,7 +280,7 @@ public class MsgPackWriter
             buffer.putByte(offset, BIN16);
             ++offset;
 
-            buffer.putShort(offset, (short) len);
+            buffer.putShort(offset, (short) len, BYTE_ORDER);
             offset += SIZE_OF_SHORT;
         }
         else
@@ -247,7 +288,7 @@ public class MsgPackWriter
             buffer.putByte(offset, BIN32);
             ++offset;
 
-            buffer.putInt(offset, len);
+            buffer.putInt(offset, len, BYTE_ORDER);
             offset += SIZE_OF_INT;
         }
 
@@ -261,6 +302,44 @@ public class MsgPackWriter
         ++offset;
 
         return this;
+    }
+
+    public MsgPackWriter writeNil()
+    {
+        buffer.putByte(offset, NIL);
+        ++offset;
+
+        return this;
+    }
+
+    public MsgPackWriter writeDouble(double value)
+    {
+
+        final float floatValue = (float) value;
+
+        if ((double) floatValue == value)
+        {
+            buffer.putByte(offset, FLOAT32);
+            ++offset;
+
+            buffer.putFloat(offset, floatValue, BYTE_ORDER);
+            offset += SIZE_OF_FLOAT;
+        }
+        else
+        {
+            buffer.putByte(offset, FLOAT64);
+            ++offset;
+
+            buffer.putDouble(offset, value, BYTE_ORDER);
+            offset += SIZE_OF_DOUBLE;
+        }
+
+        return this;
+    }
+
+    public int getOffset()
+    {
+        return offset;
     }
 
     public static int getEncodedMapHeaderLenght(int size)
