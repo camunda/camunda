@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto;
+package org.camunda.optimize.dto.optimize;
 
 import java.io.Serializable;
 

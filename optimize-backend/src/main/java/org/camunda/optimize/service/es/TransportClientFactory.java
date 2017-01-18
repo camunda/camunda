@@ -5,9 +5,10 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -15,13 +16,12 @@ import java.net.UnknownHostException;
 /**
  * @author Askar Akhmerov
  */
-@Component
 public class TransportClientFactory implements FactoryBean <TransportClient> {
+  private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
   private TransportClient instance;
 
   @Autowired
   private ConfigurationService configurationService;
-
 
   @Override
   public TransportClient getObject() throws Exception {
@@ -34,7 +34,7 @@ public class TransportClientFactory implements FactoryBean <TransportClient> {
                 configurationService.getElasticSearchPort()
                 ));
       } catch (UnknownHostException e) {
-        e.printStackTrace();
+        logger.error("cant connect to elasticsearch", e);
       }
     }
     return instance;

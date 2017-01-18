@@ -6,6 +6,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
@@ -20,6 +22,7 @@ import java.util.Properties;
  */
 public class Main {
 
+  private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final String CONFIG_LOCATION = "org.camunda.optimize";
   private static final String DEFAULT_PROFILE = "dev";
 
@@ -83,7 +86,7 @@ public class Main {
     try {
       result.load(Main.class.getClassLoader().getResourceAsStream("service.properties"));
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("cant read properties", e);
     }
     return result;
   }

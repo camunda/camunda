@@ -1,6 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.CredentialsTO;
+import org.camunda.optimize.dto.optimize.CredentialsTO;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthenticationProvider;
@@ -8,7 +8,6 @@ import org.camunda.optimize.service.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;

@@ -10,6 +10,8 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.scripted.InternalScriptedMetric;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -20,11 +22,13 @@ import java.util.Scanner;
 /**
  * @author Askar Akhmerov
  */
+@Component
 public class HeatMapReader {
   //TODO: move to properties
   private static final String INIT_SCRIPT = "correlation_init.painless";
   private static final String MAP_SCRIPT = "correlation_map.groovy";
   private static final String REDUCE_SCRIPT = "correlation_reduce.groovy";
+  @Autowired
   private TransportClient esclient;
 
   public TransportClient getEsclient() {
@@ -39,7 +43,7 @@ public class HeatMapReader {
     Map <String, Long> result = new HashMap<>();
 
     QueryBuilder query;
-    SearchRequestBuilder srb = esclient.prepareSearch();
+    SearchRequestBuilder srb = esclient.prepareSearch("optimize").setTypes("event");
     if (processDefinitionKey != null) {
       query = QueryBuilders.matchQuery("processDefinitionKey", processDefinitionKey);
       srb.setQuery(query);

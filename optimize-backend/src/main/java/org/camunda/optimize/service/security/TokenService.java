@@ -4,18 +4,16 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import org.camunda.optimize.service.exceptions.InvalidTokenException;
+import org.camunda.optimize.service.importing.ActivityImportService;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.io.UnsupportedEncodingException;
-import java.sql.Date;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -23,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 public class TokenService {
+  private final Logger logger = LoggerFactory.getLogger(TokenService.class);
   private static ConcurrentHashMap<String, LocalDateTime> tokenExpiry = new ConcurrentHashMap<>();
 
   @Autowired
@@ -52,7 +51,7 @@ public class TokenService {
     } catch (JWTCreationException exception) {
       //Invalid Signing configuration / Couldn't convert Claims.
     } catch (UnsupportedEncodingException e) {
-      e.printStackTrace();
+      logger.error("unsupported encoding for authentication token generation", e);
     }
     return token;
   }

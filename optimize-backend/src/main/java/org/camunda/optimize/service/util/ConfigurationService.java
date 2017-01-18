@@ -3,6 +3,8 @@ package org.camunda.optimize.service.util;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.core.Link;
+
 /**
  * @author Askar Akhmerov
  */
@@ -18,6 +20,9 @@ public class ConfigurationService {
   private String elasticSearchHost;
   @Value("${camunda.optimize.es.port}")
   private Integer elasticSearchPort;
+
+  @Value("${camunda.optimize.engine.rest}")
+  private String engineRestApiEndpoint;
 
   public String getSecret() {
     return secret;
@@ -35,4 +40,7 @@ public class ConfigurationService {
     return elasticSearchPort;
   }
 
+  public String getEngineRestApiEndpoint() {
+    return engineRestApiEndpoint;
+  }
 }

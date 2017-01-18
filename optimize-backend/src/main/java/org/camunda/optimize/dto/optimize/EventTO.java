@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto;
+package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,8 +43,8 @@ public class EventTO implements Serializable {
     this.payload = payload;
   }
 
-  public byte[] toJSON(ObjectMapper mapper) throws Exception {
-    return mapper.writeValueAsBytes(this);
+  public String toJSON(ObjectMapper mapper) throws Exception {
+    return mapper.writeValueAsString(this);
   }
 
   public String getActivityInstanceId() {
