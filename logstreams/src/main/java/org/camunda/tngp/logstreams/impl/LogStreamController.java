@@ -331,9 +331,6 @@ public class LogStreamController implements Agent
             finally
             {
                 context.take(TRANSITION_DEFAULT);
-
-                closeFuture.complete(null);
-                closeFuture = null;
             }
         }
 
@@ -346,6 +343,9 @@ public class LogStreamController implements Agent
         {
             if (isRunning.compareAndSet(true, false))
             {
+                closeFuture.complete(null);
+                closeFuture = null;
+
                 agentRunnerService.remove(LogStreamController.this);
             }
         }

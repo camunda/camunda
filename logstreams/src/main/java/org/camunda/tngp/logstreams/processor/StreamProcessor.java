@@ -1,12 +1,19 @@
 package org.camunda.tngp.logstreams.processor;
 
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 
 /**
  * Process events from a log stream.
  */
 public interface StreamProcessor
 {
+    /**
+     * Returns the resource which holds the state of the processor.
+     *
+     * @return the processor state resource
+     */
+    SnapshotSupport getStateResource();
 
     /**
      * Returns a specific processor to process the event which is read from the

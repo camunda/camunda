@@ -22,7 +22,6 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorBuilder
@@ -39,7 +38,6 @@ public class StreamProcessorBuilder
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
-    protected SnapshotSupport stateResource;
 
     private LogStreamReader sourceLogStreamReader;
     private LogStreamReader targetLogStreamReader;
@@ -82,16 +80,9 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder resource(SnapshotSupport stateResource)
-    {
-        this.stateResource = stateResource;
-        return this;
-    }
-
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
-        Objects.requireNonNull(stateResource, "No state resource provided.");
         Objects.requireNonNull(sourceStream, "No source stream provided.");
         Objects.requireNonNull(targetStream, "No target stream provided.");
         Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
@@ -130,7 +121,6 @@ public class StreamProcessorBuilder
 
         ctx.setSnapshotPolicy(snapshotPolicy);
         ctx.setSnapshotStorage(snapshotStorage);
-        ctx.setStateResource(stateResource);
 
         return new StreamProcessorController(ctx);
     }

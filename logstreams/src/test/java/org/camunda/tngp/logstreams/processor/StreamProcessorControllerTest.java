@@ -119,10 +119,10 @@ public class StreamProcessorControllerTest
         context.setLogStreamWriter(mockLogStreamWriter);
         context.setSnapshotPolicy(mockSnapshotPolicy);
         context.setSnapshotStorage(mockSnapshotStorage);
-        context.setStateResource(mockStateResource);
 
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
+        when(mockStreamProcessor.getStateResource()).thenReturn(mockStateResource);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
         when(mockSourceLogStream.getId()).thenReturn(SOURCE_LOG_STREAM_ID);

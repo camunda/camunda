@@ -5,7 +5,6 @@ import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorContext
@@ -24,7 +23,6 @@ public class StreamProcessorContext
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
-    protected SnapshotSupport stateResource;
 
     protected AgentRunnerService agentRunnerService;
 
@@ -126,16 +124,6 @@ public class StreamProcessorContext
     public void setSnapshotStorage(SnapshotStorage snapshotStorage)
     {
         this.snapshotStorage = snapshotStorage;
-    }
-
-    public SnapshotSupport getStateResource()
-    {
-        return stateResource;
-    }
-
-    public void setStateResource(SnapshotSupport stateResource)
-    {
-        this.stateResource = stateResource;
     }
 
     public LogStreamReader getTargetLogStreamReader()

@@ -38,6 +38,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.snapshot.SerializableWrapper;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
@@ -108,7 +109,6 @@ public class StreamProcessorIntegrationTest
     {
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
-            .resource(new SerializableWrapper<>(new Counter()))
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -129,39 +129,47 @@ public class StreamProcessorIntegrationTest
     @Test
     public void shouldWriteEventsToSourceStream() throws InterruptedException, ExecutionException
     {
-        final StreamProcessor streamProcessor = (LoggedEvent event) -> new EventProcessor()
+        final StreamProcessor streamProcessor = new StreamProcessor()
         {
             @Override
-            public void processEvent()
+            public EventProcessor onEvent(LoggedEvent event)
             {
-                final Counter counter = resourceCounter.getObject();
-                counter.increment();
+                return new EventProcessor()
+                {
+                    @Override
+                    public void processEvent()
+                    {
+                        final Counter counter = resourceCounter.getObject();
+                        counter.increment();
+                    }
+
+                    @Override
+                    public long writeEvent(LogStreamWriter writer)
+                    {
+                        final long nextKey = event.getLongKey() + 1;
+                        if (nextKey < WORK_COUNT)
+                        {
+                            return writer.key(nextKey).value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength()).tryWrite();
+                        }
+                        else
+                        {
+                            return 0;
+                        }
+                    }
+                };
             }
 
             @Override
-            public long writeEvent(LogStreamWriter writer)
+            public SnapshotSupport getStateResource()
             {
-                final long nextKey = event.getLongKey() + 1;
-                if (nextKey < WORK_COUNT)
-                {
-                    return writer
-                        .key(nextKey)
-                        .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
-                        .tryWrite();
-                }
-                else
-                {
-                    return 0;
-                }
+                return resourceCounter;
             }
-
         };
 
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
 
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("increment-processor", 1, streamProcessor)
-            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(sourceLogStream)
             .agentRunnerService(agentRunnerService)
@@ -209,7 +217,6 @@ public class StreamProcessorIntegrationTest
 
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
-            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -254,7 +261,6 @@ public class StreamProcessorIntegrationTest
 
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
-            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -296,7 +302,6 @@ public class StreamProcessorIntegrationTest
     {
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
-            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -338,7 +343,6 @@ public class StreamProcessorIntegrationTest
 
         final StreamProcessorController streamProcessorController1 = LogStreams
             .createStreamProcessor("processor-1", 1, new CopyStreamProcessor(resourceCounter))
-            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -348,7 +352,6 @@ public class StreamProcessorIntegrationTest
 
         final StreamProcessorController streamProcessorController2 = LogStreams
             .createStreamProcessor("processor-2", 2, new CopyStreamProcessor(resourceCounter2))
-            .resource(resourceCounter2)
             .sourceStream(sourceLogStream)
             .targetStream(targetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -412,7 +415,6 @@ public class StreamProcessorIntegrationTest
 
         final StreamProcessorController streamProcessorController = LogStreams
             .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
-            .resource(resourceCounter)
             .sourceStream(sourceLogStream)
             .targetStream(controllableTargetLogStream)
             .agentRunnerService(agentRunnerService)
@@ -487,6 +489,12 @@ public class StreamProcessorIntegrationTest
                 }
 
             };
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return resourceCounter;
         }
     }
 

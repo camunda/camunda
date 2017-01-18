@@ -349,7 +349,7 @@ public class StreamProcessorController implements Agent
             {
                 snapshotWriter = snapshotStorage.createSnapshot(streamProcessorContext.getName(), eventPosition);
 
-                snapshotWriter.writeSnapshot(streamProcessorContext.getStateResource());
+                snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
                 snapshotWriter.commit();
             }
             catch (Exception e)
@@ -369,7 +369,7 @@ public class StreamProcessorController implements Agent
         @Override
         public void work(Context context) throws Exception
         {
-            streamProcessorContext.getStateResource().reset();
+            streamProcessor.getStateResource().reset();
 
             long snapshotPosition = -1;
 
@@ -378,7 +378,7 @@ public class StreamProcessorController implements Agent
             if (lastSnapshot != null)
             {
                 // recover last snapshot
-                lastSnapshot.recoverFromSnapshot(streamProcessorContext.getStateResource());
+                lastSnapshot.recoverFromSnapshot(streamProcessor.getStateResource());
 
                 // read the last event from snapshot
                 snapshotPosition = lastSnapshot.getPosition();
