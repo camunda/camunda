@@ -1,11 +1,16 @@
 import {dispatchAction} from 'view-utils';
 import {getRouter, getLastRoute} from 'router';
 import {login} from 'login';
-import {createChangeLoginPasswordAction, createChangeLoginUserAction, createLoginErrorAction} from './loginForm.reducer';
+import {createChangeLoginPasswordAction, createChangeLoginUserAction,
+  createLoginErrorAction, createLoginInProgressAction} from './loginForm.reducer';
 
 const router = getRouter();
 
 export function performLogin(user, password) {
+  dispatchAction(
+    createLoginInProgressAction()
+  );
+
   return login(user, password)
     .then(() => {
       const {name, params: encodedParams} = getLastRoute().params;

@@ -1,5 +1,6 @@
 import {expect} from 'chai';
-import {reducer, createChangeLoginUserAction, createChangeLoginPasswordAction, createLoginErrorAction} from 'main/loginForm/loginForm.reducer';
+import {reducer, createChangeLoginUserAction, createChangeLoginPasswordAction,
+  createLoginErrorAction, createLoginInProgressAction} from 'main/loginForm/loginForm.reducer';
 
 describe('loginForm reducer', () => {
   let inputState;
@@ -9,7 +10,8 @@ describe('loginForm reducer', () => {
       extra: 'd',
       user: 'user1',
       password: 'password1',
-      error: false
+      error: false,
+      inProgress: false
     };
   });
 
@@ -26,7 +28,8 @@ describe('loginForm reducer', () => {
       extra: 'd',
       user: 'user1',
       password: 'password1',
-      error: false
+      error: false,
+      inProgress: false
     });
   });
 
@@ -58,13 +61,21 @@ describe('loginForm reducer', () => {
       ...inputState,
       user: '',
       password: '',
-      error: true
+      error: true,
+      inProgress: false
     }, 'expected error to be true');
     expect(out2).to.eql({
       ...inputState,
       user: '',
       password: '',
-      error: false
+      error: false,
+      inProgress: false
     }, 'expected error to be false');
+  });
+
+  it('should set inProgress property of state to true', () => {
+    const outputState = reducer(inputState, createLoginInProgressAction());
+
+    expect(outputState.inProgress).to.eql(true);
   });
 });

@@ -11,6 +11,9 @@ describe('<LoginForm>', () => {
   let performLogin;
   let changePassword;
   let changeUser;
+  let passwordInput;
+  let userInput;
+  let loginButton;
 
   beforeEach(() => {
     performLogin = sinon.spy();
@@ -23,6 +26,10 @@ describe('<LoginForm>', () => {
     __set__('changeUser', changeUser);
 
     ({node, update} = mountTemplate(<LoginForm selector={selector}/>));
+
+    passwordInput = getFieldByText('Password');
+    userInput = getFieldByText('User');
+    loginButton = node.querySelector('button[type="submit"]');
   });
 
   afterEach(() => {
@@ -36,30 +43,16 @@ describe('<LoginForm>', () => {
   });
 
   it('should render user field', () => {
-    const [section] = selectByText(
-      node.querySelectorAll('.form-group'),
-      'User'
-    );
-
-    expect(section).to.exist;
-    expect(section.querySelector('input[type="text"]')).to.exist;
+    expect(userInput).to.exist;
   });
 
   it('should render password field', () => {
-    const [section] = selectByText(
-      node.querySelectorAll('.form-group'),
-      'Password'
-    );
-
-    expect(section).to.exist;
-    expect(section.querySelector('input[type="password"]')).to.exist;
+    expect(passwordInput).to.exist;
   });
 
   it('should render submit button', () => {
-    const btn = node.querySelector('button[type="submit"]');
-
-    expect(btn).to.exist;
-    expect(btn.innerText).to.eql('Login');
+    expect(loginButton).to.exist;
+    expect(loginButton.innerText).to.eql('Login');
   });
 
   it('should set user field on update', () => {
@@ -71,13 +64,7 @@ describe('<LoginForm>', () => {
       }
     });
 
-    const [section] = selectByText(
-      node.querySelectorAll('.form-group'),
-      'User'
-    );
-    const field = section.querySelector('input');
-
-    expect(field.value).to.eql(user);
+    expect(userInput.value).to.eql(user);
   });
 
   it('should set password field on update', () => {
@@ -89,13 +76,7 @@ describe('<LoginForm>', () => {
       }
     });
 
-    const [section] = selectByText(
-      node.querySelectorAll('.form-group'),
-      'Password'
-    );
-    const field = section.querySelector('input');
-
-    expect(field.value).to.eql(password);
+    expect(passwordInput.value).to.eql(password);
   });
 
   it('should not display error message by default', () => {
@@ -161,4 +142,51 @@ describe('<LoginForm>', () => {
 
     expect(performLogin.calledWith(user, password)).to.eql(true);
   });
+
+  it('should disable login button and inputs when login is in Progress', () => {
+    expect(loginButton.getAttribute('disabled')).to.eql(null, 'expected login button to not be disabled');
+    expect(userInput.getAttribute('disabled')).to.eql(null, 'expected user input to not be disabled');
+    expect(passwordInput.getAttribute('disabled')).to.eql(null, 'expected password input to not be disabled');
+
+    update({
+      [selector]: {
+        inProgress: true
+      }
+    });
+
+    expect(loginButton.getAttribute('disabled')).to.eql('true', 'expected login button to be disabled');
+    expect(userInput.getAttribute('disabled')).to.eql('true', 'expected user input to be disabled');
+    expect(passwordInput.getAttribute('disabled')).to.eql('true', 'expected password input to be disabled');
+  });
+
+  it('should enable login button and inputs when login is no longer in Progress', () => {
+    update({
+      [selector]: {
+        inProgress: true
+      }
+    });
+
+    expect(loginButton.getAttribute('disabled')).to.eql('true', 'expected login button to be disabled');
+    expect(userInput.getAttribute('disabled')).to.eql('true', 'expected user input to be disabled');
+    expect(passwordInput.getAttribute('disabled')).to.eql('true', 'expected password input to be disabled');
+
+    update({
+      [selector]: {
+        inProgress: false
+      }
+    });
+
+    expect(loginButton.getAttribute('disabled')).to.eql(null, 'expected login button to not be disabled');
+    expect(userInput.getAttribute('disabled')).to.eql(null, 'expected user input to not be disabled');
+    expect(passwordInput.getAttribute('disabled')).to.eql(null, 'expected password input to not be disabled');
+  });
+
+  function getFieldByText(text) {
+    const [section] = selectByText(
+      node.querySelectorAll('.form-group'),
+      text
+    );
+
+    return section.querySelector('input');
+  }
 });

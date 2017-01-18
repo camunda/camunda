@@ -19,3 +19,4 @@ export {withChildren} from './withChildren';
 export {OnEvent} from './onEvent';
 export {insertAfter} from './insertAfter';
 export {withSelector} from './withSelector';
+export {Attribute, isTruthy} from './attribute';

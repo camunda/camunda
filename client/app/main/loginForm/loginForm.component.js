@@ -1,4 +1,4 @@
-import {jsx, SetInputFieldValue, OnEvent, Match, Case, withSelector} from 'view-utils';
+import {jsx, SetInputFieldValue, OnEvent, Match, Case, withSelector, Attribute, isTruthy} from 'view-utils';
 import {performLogin, changePassword, changeUser} from './loginForm.service';
 
 export const LoginForm = withSelector(Form);
@@ -11,6 +11,7 @@ function Form() {
       <label className="col-sm-2 control-label">User</label>
       <div className="col-sm-10">
         <input type="text" className="form-control" placeholder="Username">
+          <Attribute selector="inProgress" attribute="disabled" predicate={isTruthy} />
           <SetInputFieldValue getValue="user" />
           <OnEvent event={['keyup', 'change']} listener={onUserKeyup} />
         </input>
@@ -20,6 +21,7 @@ function Form() {
       <label className="col-sm-2 control-label">Password</label>
       <div className="col-sm-10">
         <input type="password" className="form-control" placeholder="Password">
+          <Attribute selector="inProgress" attribute="disabled" predicate={isTruthy} />
           <SetInputFieldValue getValue="password" />
           <OnEvent event={['keyup', 'change']} listener={onPasswordKeyup} />
         </input>
@@ -36,7 +38,10 @@ function Form() {
     </div>
     <div className="form-group">
       <div className="col-sm-offset-2 col-sm-10">
-        <button type="submit" className="btn btn-primary">Login</button>
+        <button type="submit" className="btn btn-primary">
+          <Attribute selector="inProgress" attribute="disabled" predicate={isTruthy} />
+          Login
+        </button>
       </div>
     </div>
   </form>;

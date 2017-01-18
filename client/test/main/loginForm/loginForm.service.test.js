@@ -7,6 +7,7 @@ describe('loginForm service', () => {
   const passChangeAction = 'password-change';
   const userChangeAction = 'user-change';
   const errorChangeAction = 'error-change';
+  const loginInProgressAction = 'login-in-progress';
   let dispatchAction;
   let router;
   let getLastRoute;
@@ -14,6 +15,7 @@ describe('loginForm service', () => {
   let createChangeLoginPasswordAction;
   let createChangeLoginUserAction;
   let createLoginErrorAction;
+  let createLoginInProgressAction;
 
   setupPromiseMocking();
 
@@ -40,6 +42,9 @@ describe('loginForm service', () => {
 
     createLoginErrorAction = sinon.stub().returns(errorChangeAction);
     __set__('createLoginErrorAction', createLoginErrorAction);
+
+    createLoginInProgressAction = sinon.stub().returns(loginInProgressAction);
+    __set__('createLoginInProgressAction', createLoginInProgressAction);
   });
 
   afterEach(() => {
@@ -50,6 +55,7 @@ describe('loginForm service', () => {
     __ResetDependency__('createChangeLoginPasswordAction');
     __ResetDependency__('createChangeLoginUserAction');
     __ResetDependency__('createLoginErrorAction');
+    __ResetDependency__('createLoginInProgressAction');
   });
 
   describe('performLogin', () => {
@@ -77,6 +83,15 @@ describe('loginForm service', () => {
 
       expect(login.calledWith(user, password))
         .to.eql(true, 'expected login function to be called with user and password');
+    });
+
+    it('should dispatch login in progress action', () => {
+      performLogin(user, password);
+
+      expect(createLoginInProgressAction.called)
+        .to.eql(true, 'expected login in progress action to be created');
+      expect(dispatchAction.calledWith(loginInProgressAction))
+        .to.eql(true, 'expected login in progress action to be dispatched');
     });
 
     describe('on successful login', () => {
