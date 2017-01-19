@@ -1,4 +1,4 @@
-import {jsx, SetInputFieldValue, OnEvent, Match, Case, withSelector, Attribute, isTruthy} from 'view-utils';
+import {jsx, SetInputFieldValue, OnEvent, Match, Case, Default, withSelector, Attribute, isTruthy} from 'view-utils';
 import {performLogin, changePassword, changeUser} from './loginForm.service';
 
 export const LoginForm = withSelector(Form);
@@ -31,7 +31,7 @@ function Form() {
       <Match>
         <Case predicate={isError}>
           <div className="col-sm-offset-2 col-sm-10 text-danger">
-            Login incorrect. Check username / password.
+            Could not login. Check username / password.
           </div>
         </Case>
       </Match>
@@ -40,11 +40,22 @@ function Form() {
       <div className="col-sm-offset-2 col-sm-10">
         <button type="submit" className="btn btn-primary">
           <Attribute selector="inProgress" attribute="disabled" predicate={isTruthy} />
-          Login
+          <Match>
+            <Case predicate={isLoading}>
+              <span className="glyphicon glyphicon-refresh spin"></span>
+            </Case>
+            <Default>
+              Login
+            </Default>
+          </Match>
         </button>
       </div>
     </div>
   </form>;
+
+  function isLoading({inProgress}) {
+    return inProgress;
+  }
 
   function isError({error}) {
     return error;

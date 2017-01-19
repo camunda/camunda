@@ -4,35 +4,8 @@
   padding: 1rem 3rem;
   width: 40vw;
   border: 1px solid lightgray;
-}
-
-.login__title {
-  text-align: center;
-}
-
-.login__section {
-  color: rgb(30, 30, 30);
-  font-size: 1.4rem;
-  display: flex;
-  margin: 0.5rem auto;
-
-  input {
-    flex: 1 1 auto;
-  }
 
   button {
-    flex: 0 0 7rem;
-    font-size: 1.4rem;
-    padding: 0.4rem;
+    min-width: 8rem;
   }
-}
-
-.login__text {
-  flex: 0 0 7rem;
-}
-
-.login__error {
-  color: red;
-  font-size: 2rem;
-  text-align: center;
 }

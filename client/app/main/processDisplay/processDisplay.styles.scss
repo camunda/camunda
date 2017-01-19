@@ -1,9 +1,27 @@
-@import 'filters/filters.styles';
 @import 'diagram/diagram.styles';
 
 .process-display {
-  width: 70vw;
-  margin: 3rem auto;
-  padding: 1rem;
-  border: 1px solid lightgray;
+  height: calc(100vh - #{$header-height + $footer-height});
+  display: flex;
+  flex-flow: column;
+
+  .controls {
+    flex: 0 1 auto;
+
+    form {
+      margin-top: 20px;
+    }
+    table {
+      float: left;
+
+      td {
+        padding-right: 10px;
+        vertical-align: top;
+      }
+
+      .list-group-item {
+        float:left;
+      }
+    }
+  }
 }

@@ -48,7 +48,7 @@ describe('<AppMenu>', () => {
 
     it('calls clearLogin when clicked on Logout button', () => {
       const [logoutBtn] = selectByText(
-        node.querySelectorAll('button'),
+        node.querySelectorAll('a'),
         'Logout'
       );
 

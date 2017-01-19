@@ -7,10 +7,10 @@ export function AppMenu() {
       <Match>
         <Case predicate={getLogin}>
           <li>
-            <button className="btn btn-link" style="line-height: 46px;">
+            <a href="#/login">
               Logout
               <OnEvent event={['click']} listener={clearLogin} />
-            </button>
+            </a>
           </li>
         </Case>
       </Match>

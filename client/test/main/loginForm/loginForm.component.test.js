@@ -52,7 +52,26 @@ describe('<LoginForm>', () => {
 
   it('should render submit button', () => {
     expect(loginButton).to.exist;
+  });
+
+  it('should render "Login" as Button label', () => {
+    update({
+      [selector]: {
+        inProgress: false
+      }
+    });
+
     expect(loginButton.innerText).to.eql('Login');
+  });
+
+  it('should render a loading indicator when login is in progress', () => {
+    update({
+      [selector]: {
+        inProgress: true
+      }
+    });
+
+    expect(loginButton.querySelector('.glyphicon')).to.exist;
   });
 
   it('should set user field on update', () => {
@@ -90,7 +109,7 @@ describe('<LoginForm>', () => {
       }
     });
 
-    expect(node).to.contain.text('Login incorrect. Check username / password.');
+    expect(node).to.contain.text('Could not login. Check username / password.');
   });
 
   it('should call changeUser when user field changes', () => {
