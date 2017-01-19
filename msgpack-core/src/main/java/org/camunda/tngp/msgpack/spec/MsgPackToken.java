@@ -73,7 +73,7 @@ public class MsgPackToken
 
     public void setMapHeader(int size)
     {
-        this.size = size * 2;
+        this.size = size;
     }
 
     public void setArrayHeader(int size)

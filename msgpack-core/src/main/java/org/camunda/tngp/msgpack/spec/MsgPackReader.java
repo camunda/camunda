@@ -153,7 +153,11 @@ public class MsgPackReader
         return length;
     }
 
-    public long readLong()
+    /**
+     * Integer is the term of the msgpack spec for all natural numbers
+     * @return the value
+     */
+    public long readInteger()
     {
         final byte b = buffer.getByte(offset);
         ++offset;
@@ -216,7 +220,11 @@ public class MsgPackReader
         return val;
     }
 
-    public strictfp double readDouble()
+    /**
+     * Float is the term in the msgpack spec for all values represented by Java types float and double
+     * @return the value
+     */
+    public strictfp double readFloat()
     {
         final byte b = buffer.getByte(offset);
         ++offset;
@@ -274,11 +282,11 @@ public class MsgPackReader
         {
             case INTEGER:
                 token.setType(MsgPackType.INTEGER);
-                token.setValue(readLong());
+                token.setValue(readInteger());
                 break;
             case FLOAT:
                 token.setType(MsgPackType.FLOAT);
-                token.setValue(readDouble());
+                token.setValue(readFloat());
                 break;
             case BOOLEAN:
                 token.setType(MsgPackType.BOOLEAN);

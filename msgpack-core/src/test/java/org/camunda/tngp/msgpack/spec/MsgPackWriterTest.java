@@ -33,7 +33,7 @@ public class MsgPackWriterTest
         return Arrays.asList(new Object[][] {
             {
                 "positive fixint",
-                actual((w) -> w.writeLong(LONG_POS_5_BIT)),
+                actual((w) -> w.writeInteger(LONG_POS_5_BIT)),
                 expect((b) -> b.add((byte) LONG_POS_5_BIT))
             },
             {
@@ -88,52 +88,52 @@ public class MsgPackWriterTest
             },
             {
                 "float 32",
-                actual((w) -> w.writeDouble(123.0d)),
+                actual((w) -> w.writeFloat(123.0d)),
                 expect((b) -> b.add(0xca).add(toByte(123.0f)))
             },
             {
                 "float 64",
-                actual((w) -> w.writeDouble(Double.MAX_VALUE)),
+                actual((w) -> w.writeFloat(Double.MAX_VALUE)),
                 expect((b) -> b.add(0xcb).add(toByte(Double.MAX_VALUE)))
             },
             {
                 "uint 8",
-                actual((w) -> w.writeLong((1 << 8) - 1)),
+                actual((w) -> w.writeInteger((1 << 8) - 1)),
                 expect((b) -> b.add(0xcc, 0xff))
             },
             {
                 "uint 16",
-                actual((w) -> w.writeLong((1 << 16) - 1)),
+                actual((w) -> w.writeInteger((1 << 16) - 1)),
                 expect((b) -> b.add(0xcd, 0xff, 0xff))
             },
             {
                 "uint 32",
-                actual((w) -> w.writeLong((1L << 32) - 1)),
+                actual((w) -> w.writeInteger((1L << 32) - 1)),
                 expect((b) -> b.add(0xce, 0xff, 0xff, 0xff, 0xff))
             },
             {
                 "uint 64",
-                actual((w) -> w.writeLong(Long.MAX_VALUE)),
+                actual((w) -> w.writeInteger(Long.MAX_VALUE)),
                 expect((b) -> b.add(0xcf, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff))
             },
             {
                 "int 8",
-                actual((w) -> w.writeLong(-(1 << 7))),
+                actual((w) -> w.writeInteger(-(1 << 7))),
                 expect((b) -> b.add(0xd0, 0x80))
             },
             {
                 "int 16",
-                actual((w) -> w.writeLong(-(1 << 15))),
+                actual((w) -> w.writeInteger(-(1 << 15))),
                 expect((b) -> b.add(0xd1, 0x80, 0x00))
             },
             {
                 "int 32",
-                actual((w) -> w.writeLong(-(1 << 31))),
+                actual((w) -> w.writeInteger(-(1 << 31))),
                 expect((b) -> b.add(0xd2, 0x80, 0x00, 0x00, 0x00))
             },
             {
                 "int 64",
-                actual((w) -> w.writeLong(-(1L << 63))),
+                actual((w) -> w.writeInteger(-(1L << 63))),
                 expect((b) -> b.add(0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
             },
             {
@@ -178,7 +178,7 @@ public class MsgPackWriterTest
             },
             {
                 "negative fixint",
-                actual((w) -> w.writeLong(LONG_NEG_5_BIT)),
+                actual((w) -> w.writeInteger(LONG_NEG_5_BIT)),
                 expect((b) -> b.add((byte) LONG_NEG_5_BIT))
             },
         });

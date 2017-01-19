@@ -26,74 +26,47 @@ public class MsgPackReadingTest
             {
                 "positive fixint",
                 given((b) -> b.add(0x7f)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(0x7fL);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(0x7fL))
             },
             {
                 "fixmap",
                 given((b) -> b.add(0x8f)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readMapHeader()).isEqualTo(15);
-                })
+                doAssert((r) -> assertThat(r.readMapHeader()).isEqualTo(15))
             },
             {
                 "fixarray",
                 given((b) -> b.add(0x9f)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readArrayHeader()).isEqualTo(15);
-                })
+                doAssert((r) -> assertThat(r.readArrayHeader()).isEqualTo(15))
             },
             {
                 "fixstr",
                 given((b) -> b.add(0xbf)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readStringLength()).isEqualTo(31);
-                })
+                doAssert((r) -> assertThat(r.readStringLength()).isEqualTo(31))
             },
             {
                 "false",
                 given((b) -> b.add(0xc2)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readBoolean()).isFalse();
-                })
+                doAssert((r) -> assertThat(r.readBoolean()).isFalse())
             },
             {
                 "true",
                 given((b) -> b.add(0xc3)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readBoolean()).isTrue();
-                })
+                doAssert((r) -> assertThat(r.readBoolean()).isTrue())
             },
             {
                 "bin 8",
                 given((b) -> b.add(0xc4, 0x7f)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readBinaryLength()).isEqualTo(Byte.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Byte.MAX_VALUE))
             },
             {
                 "bin 16",
                 given((b) -> b.add(0xc5, 0x7f, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readBinaryLength()).isEqualTo(Short.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Short.MAX_VALUE))
             },
             {
                 "bin 32",
                 given((b) -> b.add(0xc6, 0x7f, 0xff, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readBinaryLength()).isEqualTo(Integer.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readBinaryLength()).isEqualTo(Integer.MAX_VALUE))
             },
             {
                 /*
@@ -109,151 +82,95 @@ public class MsgPackReadingTest
                  */
                 "float 32",
                 given((b) -> b.add(0xca).add(toByte(123123.12f))),
-                doAssert((r) ->
-                {
-                    assertThat(r.readDouble()).isEqualTo((double) 123123.12f);
-                })
+                doAssert((r) -> assertThat(r.readFloat()).isEqualTo((double) 123123.12f))
             },
             {
                 "float 64",
                 given((b) -> b.add(0xcb).add(toByte(123123.123d))),
-                doAssert((r) ->
-                {
-                    assertThat(r.readDouble()).isEqualTo(123123.123d);
-                })
+                doAssert((r) -> assertThat(r.readFloat()).isEqualTo(123123.123d))
             },
             {
                 "uint 8",
                 given((b) -> b.add(0xcc, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo((1 << 8) - 1);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo((1 << 8) - 1))
             },
             {
                 "uint 16",
                 given((b) -> b.add(0xcd, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo((1 << 16) - 1);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo((1 << 16) - 1))
             },
             {
                 "uint 32",
                 given((b) -> b.add(0xce, 0xff, 0xff, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo((1L << 32) - 1);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo((1L << 32) - 1))
             },
             {
                 "uint 64",
                 given((b) -> b.add(0xcf, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(Long.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(Long.MAX_VALUE))
             },
             {
                 "int 8",
                 given((b) -> b.add(0xd0, 0x80)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(Byte.MIN_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(Byte.MIN_VALUE))
             },
             {
                 "int 16",
                 given((b) -> b.add(0xd1, 0x80, 0x00)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(Short.MIN_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(Short.MIN_VALUE))
             },
             {
                 "int 32",
                 given((b) -> b.add(0xd2, 0x80, 0x00, 0x00, 0x00)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(Integer.MIN_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(Integer.MIN_VALUE))
             },
             {
                 "int 64",
                 given((b) -> b.add(0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(Long.MIN_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(Long.MIN_VALUE))
             },
             {
                 "str 8",
                 given((b) -> b.add(0xd9, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readStringLength()).isEqualTo((1 << 8) - 1);
-                })
+                doAssert((r) -> assertThat(r.readStringLength()).isEqualTo((1 << 8) - 1))
             },
             {
                 "str 16",
                 given((b) -> b.add(0xda, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readStringLength()).isEqualTo((1 << 16) - 1);
-                })
+                doAssert((r) -> assertThat(r.readStringLength()).isEqualTo((1 << 16) - 1))
             },
             {
                 "str 32",
                 given((b) -> b.add(0xdb, 0x7f, 0xff, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readStringLength()).isEqualTo(Integer.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readStringLength()).isEqualTo(Integer.MAX_VALUE))
             },
             {
                 "array 16",
                 given((b) -> b.add(0xdc, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readArrayHeader()).isEqualTo((1 << 16) - 1);
-                })
+                doAssert((r) -> assertThat(r.readArrayHeader()).isEqualTo((1 << 16) - 1))
             },
             {
                 "array 32",
                 given((b) -> b.add(0xdd, 0x7f, 0xff, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readArrayHeader()).isEqualTo(Integer.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readArrayHeader()).isEqualTo(Integer.MAX_VALUE))
             },
             {
                 "map 16",
                 given((b) -> b.add(0xde, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readMapHeader()).isEqualTo((1 << 16) - 1);
-                })
+                doAssert((r) -> assertThat(r.readMapHeader()).isEqualTo(0xffff))
             },
             {
                 "map 32",
                 given((b) -> b.add(0xdf, 0x7f, 0xff, 0xff, 0xff)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readMapHeader()).isEqualTo(Integer.MAX_VALUE);
-                })
+                doAssert((r) -> assertThat(r.readMapHeader()).isEqualTo(Integer.MAX_VALUE))
             },
             {
                 "negative fixint",
                 given((b) -> b.add(0xe0)),
-                doAssert((r) ->
-                {
-                    assertThat(r.readLong()).isEqualTo(-32);
-                })
+                doAssert((r) -> assertThat(r.readInteger()).isEqualTo(-32))
             }
         });
     }
-
-    // TODO: test exceptions when I read the wrong type
 
     @Parameter(0)
     public String name;

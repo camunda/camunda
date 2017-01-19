@@ -134,7 +134,12 @@ public class MsgPackWriter
         return this;
     }
 
-    public MsgPackWriter writeLong(long v)
+    /**
+     * Integer is the term in the msgpack spec for all natural numbers
+     * @param v value to write
+     * @return this object
+     */
+    public MsgPackWriter writeInteger(long v)
     {
         if (v < -(1L << 5))
         {
@@ -312,7 +317,12 @@ public class MsgPackWriter
         return this;
     }
 
-    public MsgPackWriter writeDouble(double value)
+    /**
+     * Float is the term in the msgpack spec
+     * @param value to write
+     * @return this object
+     */
+    public MsgPackWriter writeFloat(double value)
     {
 
         final float floatValue = (float) value;
@@ -344,15 +354,19 @@ public class MsgPackWriter
 
     public static int getEncodedMapHeaderLenght(int size)
     {
-        int length = 1;
+        final int length;
 
-        if (size >= (1 << 4) && size < (1 << 16))
+        if (size < (1 << 4))
         {
-            length += SIZE_OF_SHORT;
+            length = SIZE_OF_BYTE;
+        }
+        else if (size < (1 << 16))
+        {
+            length = SIZE_OF_BYTE + SIZE_OF_SHORT;
         }
         else
         {
-            length += SIZE_OF_INT;
+            length = SIZE_OF_BYTE + SIZE_OF_INT;
         }
 
         return length;
@@ -360,19 +374,23 @@ public class MsgPackWriter
 
     public static int getEncodedStringHeaderLength(int len)
     {
-        int encodedLength = 1;
+        final int encodedLength;
 
-        if (len >= (1 << 5) && len < (1 << 8))
+        if (len < (1 << 5))
         {
-            encodedLength++;
+            encodedLength = SIZE_OF_BYTE;
+        }
+        else if (len < (1 << 8))
+        {
+            encodedLength = SIZE_OF_BYTE + SIZE_OF_BYTE;
         }
         else if (len < (1 << 16))
         {
-            encodedLength += SIZE_OF_SHORT;
+            encodedLength = SIZE_OF_BYTE + SIZE_OF_SHORT;
         }
         else
         {
-            encodedLength += SIZE_OF_INT;
+            encodedLength = SIZE_OF_BYTE + SIZE_OF_INT;
         }
 
         return encodedLength;
@@ -448,21 +466,21 @@ public class MsgPackWriter
 
     public static int getEncodedBinaryValueLength(int len)
     {
-        int encodedLength = 1;
+        final int headerLength;
 
         if (len < (1 << 8))
         {
-            ++encodedLength;
+            headerLength = SIZE_OF_BYTE + SIZE_OF_BYTE;
         }
         else if (len < (1 << 16))
         {
-            encodedLength += SIZE_OF_SHORT;
+            headerLength = SIZE_OF_BYTE + SIZE_OF_SHORT;
         }
         else
         {
-            encodedLength += SIZE_OF_INT;
+            headerLength = SIZE_OF_BYTE + SIZE_OF_INT;
         }
 
-        return encodedLength;
+        return headerLength + len;
     }
 }
