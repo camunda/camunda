@@ -32,13 +32,13 @@ public class LongValue extends BaseValue
     @Override
     public void write(MsgPackWriter writer)
     {
-        writer.writeLong(value);
+        writer.writeInteger(value);
     }
 
     @Override
     public void read(MsgPackReader reader)
     {
-        value = reader.readLong();
+        value = reader.readInteger();
     }
 
     @Override
