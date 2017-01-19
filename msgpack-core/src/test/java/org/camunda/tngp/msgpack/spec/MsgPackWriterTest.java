@@ -196,6 +196,7 @@ public class MsgPackWriterTest
 
 
     protected static final int BUFFER_CAPACITY = 1024;
+    protected static final int WRITE_OFFSET = 123;
 
     protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
@@ -210,7 +211,7 @@ public class MsgPackWriterTest
     {
         // given
         final MsgPackWriter writer = new MsgPackWriter();
-        writer.wrap(actualValueBuffer, 0);
+        writer.wrap(actualValueBuffer, WRITE_OFFSET);
 
         final ByteArrayBuilder builder = new ByteArrayBuilder();
         expectedValueWriter.accept(builder);
@@ -220,8 +221,8 @@ public class MsgPackWriterTest
         actualValueWriter.accept(writer);
 
         // then
-        assertThat(writer.getOffset()).isEqualTo(expectedValue.length);
-        assertThatBuffer(actualValueBuffer).hasBytes(expectedValue);
+        assertThat(writer.getOffset()).isEqualTo(WRITE_OFFSET + expectedValue.length);
+        assertThatBuffer(actualValueBuffer).hasBytes(expectedValue, WRITE_OFFSET);
     }
 
 

@@ -180,7 +180,7 @@ public class MsgPackWriter
         }
         else if (v < (1 << 7))
         {
-            buffer.putByte(0, (byte) v);
+            buffer.putByte(offset, (byte) v);
             ++offset;
         }
         else
