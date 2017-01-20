@@ -57,6 +57,7 @@ public class TaskInstanceStreamProcessorTest
         logStream = LogStreams.createFsLogStream("test-log", LOG_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
             .build();
 
         logStream.open();

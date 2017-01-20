@@ -83,6 +83,7 @@ public class ClientApiMessageHandlerTest
         logStream = LogStreams.createFsLogStream("test-log", LOG_STREAM_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
             .build();
 
         logStream.open();

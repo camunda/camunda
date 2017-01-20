@@ -2,11 +2,11 @@ package org.camunda.tngp.broker.services;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
-import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -19,7 +19,7 @@ public class DispatcherService implements Service<Dispatcher>
 
     protected DispatcherBuilder dispatcherBuilder;
     protected Dispatcher dispatcher;
-    protected DispatcherConductor dispatcherConductor;
+    protected Agent dispatcherConductor;
 
     public DispatcherService(int bufferSize)
     {
@@ -43,7 +43,7 @@ public class DispatcherService implements Service<Dispatcher>
                 .countersBuffer(counters.getCountersBuffer())
                 .build();
 
-        dispatcherConductor = dispatcherBuilder.getConductorAgent();
+        dispatcherConductor = dispatcher.getConductorAgent();
 
         agentRunnerInjector.getValue().conductorAgentRunnerSerive().run(dispatcherConductor);
     }

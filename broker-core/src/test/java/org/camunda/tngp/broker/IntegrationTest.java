@@ -71,6 +71,7 @@ public class IntegrationTest
         logStream = LogStreams.createFsLogStream("test-log", 0)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
             .build();
 
         logStream.open();
