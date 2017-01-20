@@ -1,3 +1,4 @@
+/*eslint-disable*/
 var backendConfig = require('./be-config');
 var spawn = require('child_process').spawn;
 var path = require('path');

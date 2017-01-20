@@ -1,3 +1,4 @@
+/*eslint-disable*/
 // Karma configuration
 // Generated on Fri Nov 25 2016 10:59:41 GMT+0100 (CET)
 
@@ -57,7 +58,8 @@ module.exports = function(config) {
     webpackMiddleware: {
       // webpack-dev-middleware configuration
       // i. e.
-      stats: 'errors-only'
+      stats: 'errors-only',
+      noInfo: true
     },
     junitReporter: {
       outputDir : 'target/surefire-reports/', // results will be saved as $outputDir/$browserName.xml

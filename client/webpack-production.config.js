@@ -1,3 +1,4 @@
+/*eslint-disable*/
 var config = require('./webpack.config');
 var webpack = require('webpack');
 var CompressionPlugin = require("compression-webpack-plugin");
