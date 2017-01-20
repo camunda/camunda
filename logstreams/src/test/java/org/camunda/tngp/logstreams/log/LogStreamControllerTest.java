@@ -67,11 +67,15 @@ public class LogStreamControllerTest
 
     @Mock
     private AgentRunnerService mockAgentRunnerService;
+    @Mock
+    private AgentRunnerService mockConductorAgentRunnerService;
 
     @Mock
     private Dispatcher mockWriteBuffer;
     @Mock
     private Subscription mockWriteBufferSubscription;
+    @Mock
+    private Agent mockWriteBufferConductorAgent;
 
     @Mock
     private LogBlockIndex mockBlockIndex;
@@ -101,6 +105,7 @@ public class LogStreamControllerTest
         final StreamContext streamContext = new StreamContext();
 
         streamContext.setAgentRunnerService(mockAgentRunnerService);
+        streamContext.setWriteBufferAgentRunnerService(mockConductorAgentRunnerService);
         streamContext.setWriteBuffer(mockWriteBuffer);
         streamContext.setLogStorage(mockLogStorage);
         streamContext.setSnapshotStorage(mockSnapshotStorage);
@@ -110,6 +115,7 @@ public class LogStreamControllerTest
         streamContext.setIndexBlockSize(INDEX_BLOCK_SIZE);
 
         when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
+        when(mockWriteBuffer.getConductorAgent()).thenReturn(mockWriteBufferConductorAgent);
 
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
@@ -139,6 +145,7 @@ public class LogStreamControllerTest
         assertThat(controller.isOpen()).isTrue();
 
         verify(mockAgentRunnerService).run(any(Agent.class));
+        verify(mockConductorAgentRunnerService).run(mockWriteBufferConductorAgent);
     }
 
     @Test
@@ -158,6 +165,7 @@ public class LogStreamControllerTest
         assertThat(controller.isOpen()).isTrue();
 
         verify(mockAgentRunnerService, times(1)).run(any(Agent.class));
+        verify(mockConductorAgentRunnerService, times(1)).run(mockWriteBufferConductorAgent);
     }
 
     @Test
@@ -179,6 +187,8 @@ public class LogStreamControllerTest
         assertThat(controller.isClosed()).isTrue();
 
         verify(mockAgentRunnerService).remove(any(Agent.class));
+        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
+
         verify(mockLogStorage).close();
     }
 

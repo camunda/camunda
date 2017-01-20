@@ -82,6 +82,7 @@ public class StreamProcessorIntegrationTest
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         targetLogStream = LogStreams.createFsLogStream("target", 1)
@@ -89,6 +90,7 @@ public class StreamProcessorIntegrationTest
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         sourceLogStream.open();
@@ -406,6 +408,7 @@ public class StreamProcessorIntegrationTest
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         final ControllableFsLogStorage controllableTargetLogStorage = (ControllableFsLogStorage) controllableTargetLogStream.getContext().getLogStorage();

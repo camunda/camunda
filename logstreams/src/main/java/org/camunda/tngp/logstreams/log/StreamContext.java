@@ -28,6 +28,8 @@ public class StreamContext
 
     protected AgentRunnerService agentRunnerService;
 
+    protected AgentRunnerService writeBufferAgentRunnerService;
+
     protected int maxAppendBlockSize;
 
     protected int indexBlockSize;
@@ -141,4 +143,15 @@ public class StreamContext
     {
         this.indexBlockSize = indexBlockSize;
     }
+
+    public AgentRunnerService getWriteBufferAgentRunnerService()
+    {
+        return writeBufferAgentRunnerService;
+    }
+
+    public void setWriteBufferAgentRunnerService(AgentRunnerService writeBufferAgentRunnerService)
+    {
+        this.writeBufferAgentRunnerService = writeBufferAgentRunnerService;
+    }
+
 }

@@ -44,6 +44,7 @@ public class DeleteOnCloseTest
         final LogStream log = LogStreams.createFsLogStream("foo", 0)
                 .logRootPath(logFolder.getAbsolutePath())
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -65,6 +66,7 @@ public class DeleteOnCloseTest
                 .logRootPath(logFolder.getAbsolutePath())
                 .deleteOnClose(true)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();

@@ -49,6 +49,7 @@ public class LogIntegrationTest
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         logStream.open();

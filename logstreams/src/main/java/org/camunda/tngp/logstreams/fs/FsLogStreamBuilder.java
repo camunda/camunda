@@ -36,6 +36,8 @@ public class FsLogStreamBuilder
     protected boolean deleteOnClose;
 
     protected AgentRunnerService agentRunnerService;
+    protected AgentRunnerService writeBufferAgentRunnerService;
+
     protected CountersManager countersManager;
     protected SnapshotPolicy snapshotPolicy;
 
@@ -94,6 +96,12 @@ public class FsLogStreamBuilder
         return this;
     }
 
+    public FsLogStreamBuilder writeBufferAgentRunnerService(AgentRunnerService writeBufferAgentRunnerService)
+    {
+        this.writeBufferAgentRunnerService = writeBufferAgentRunnerService;
+        return this;
+    }
+
     public FsLogStreamBuilder countersManager(CountersManager countersManager)
     {
         this.countersManager = countersManager;
@@ -139,8 +147,10 @@ public class FsLogStreamBuilder
     protected void initAgentRunnerService(StreamContext ctx)
     {
         Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
+        Objects.requireNonNull(agentRunnerService, "No agent runner service for write buffer provided.");
 
         ctx.setAgentRunnerService(agentRunnerService);
+        ctx.setWriteBufferAgentRunnerService(writeBufferAgentRunnerService);
     }
 
     protected void initController(StreamContext ctx)
@@ -177,10 +187,11 @@ public class FsLogStreamBuilder
                 partitionId = PositionUtil.partitionId(lastPosition);
             }
 
-            writeBuffer = Dispatchers.create("log-write-buffer")
+            writeBuffer = Dispatchers.create("log-write-buffer-" + name)
                     .bufferSize(writeBufferSize)
                     .subscriptions("log-appender")
                     .initialPartitionId(partitionId + 1)
+                    .conductorExternallyManaged()
                     .build();
         }
 

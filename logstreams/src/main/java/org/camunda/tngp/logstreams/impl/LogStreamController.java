@@ -160,6 +160,7 @@ public class LogStreamController implements Agent
 
                 final Dispatcher writeBuffer = streamContext.getWriteBuffer();
                 writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
+                streamContext.getWriteBufferAgentRunnerService().run(writeBuffer.getConductorAgent());
 
                 recoverBlockIndex();
 
@@ -324,6 +325,9 @@ public class LogStreamController implements Agent
         @Override
         public void work(Context context)
         {
+            final Agent conductorAgent = streamContext.getWriteBuffer().getConductorAgent();
+            streamContext.getWriteBufferAgentRunnerService().remove(conductorAgent);
+
             try
             {
                 logStorage.close();

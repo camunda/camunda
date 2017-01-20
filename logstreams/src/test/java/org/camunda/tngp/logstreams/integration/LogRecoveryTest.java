@@ -64,6 +64,7 @@ public class LogRecoveryTest
                 .indexBlockSize(INDEX_BLOCK_SIZE)
                 .snapshotPolicy(pos -> false)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -88,6 +89,7 @@ public class LogRecoveryTest
                 .indexBlockSize(INDEX_BLOCK_SIZE)
                 .snapshotPolicy(pos -> isLastLogEntry.getAndSet(false))
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -118,6 +120,7 @@ public class LogRecoveryTest
                 .indexBlockSize(INDEX_BLOCK_SIZE)
                 .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -149,6 +152,7 @@ public class LogRecoveryTest
                 .indexBlockSize(INDEX_BLOCK_SIZE)
                 .snapshotPolicy(pos -> (snapshotCount.incrementAndGet() % snapshotInterval) == 0)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -169,6 +173,7 @@ public class LogRecoveryTest
                 .deleteOnClose(false)
                 .snapshotPolicy(pos -> false)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -185,6 +190,7 @@ public class LogRecoveryTest
                 .deleteOnClose(false)
                 .snapshotPolicy(pos -> false)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         newLog.open();
@@ -207,6 +213,7 @@ public class LogRecoveryTest
                 .deleteOnClose(false)
                 .snapshotPolicy(pos -> false)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         log.open();
@@ -236,6 +243,7 @@ public class LogRecoveryTest
                 .deleteOnClose(true)
                 .logSegmentSize(LOG_SEGMENT_SIZE)
                 .agentRunnerService(agentRunnerService)
+                .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
         newLog.open();
