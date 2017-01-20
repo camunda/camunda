@@ -9,13 +9,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
-import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
@@ -98,9 +99,11 @@ public class TaskInstanceStreamProcessorTest
     public void shouldProcessCreateEvent() throws InterruptedException, ExecutionException
     {
         // given
+        final DirectBuffer typeBuffer = new UnsafeBuffer("test-task".getBytes(StandardCharsets.UTF_8));
+
         TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
-            .setType(new StringValue("test-task"))
+            .setType(typeBuffer, 0, typeBuffer.capacity())
             .setPayload(new UnsafeBuffer(PAYLOAD));
 
         logStreamWriter
@@ -112,7 +115,7 @@ public class TaskInstanceStreamProcessorTest
         taskEvent = getTaskEvent(2);
 
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
-        assertThat(taskEvent.getType().toString()).isEqualTo("test-task");
+        assertThatBuffer(taskEvent.getType()).hasBytes(typeBuffer.byteArray());
 
         assertThatBuffer(taskEvent.getPayload())
             .hasCapacity(PAYLOAD.length)

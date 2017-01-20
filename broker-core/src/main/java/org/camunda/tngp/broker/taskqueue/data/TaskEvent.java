@@ -7,7 +7,6 @@ import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
-import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 
 public class TaskEvent extends UnpackedObject
 {
@@ -48,14 +47,14 @@ public class TaskEvent extends UnpackedObject
         return this;
     }
 
-    public StringValue getType()
+    public DirectBuffer getType()
     {
         return typeProp.getValue();
     }
 
-    public TaskEvent setType(StringValue val)
+    public TaskEvent setType(DirectBuffer buf, int offset, int length)
     {
-        typeProp.setValue(val);
+        typeProp.setValue(buf, offset, length);
         return this;
     }
 

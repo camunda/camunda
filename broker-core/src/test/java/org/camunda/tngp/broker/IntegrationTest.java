@@ -1,18 +1,20 @@
 package org.camunda.tngp.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
-import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -118,9 +120,11 @@ public class IntegrationTest
     public void shoulProcessTaskEvent() throws InterruptedException, ExecutionException
     {
         // given
+        final DirectBuffer typeBuffer = new UnsafeBuffer("test-task".getBytes(StandardCharsets.UTF_8));
+
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
-            .setType(new StringValue("test-task"));
+            .setType(typeBuffer, 0, typeBuffer.capacity());
 
         final int writtenLength = writeCommandRequestToBuffer(buffer, taskEvent);
 
@@ -149,7 +153,7 @@ public class IntegrationTest
         loggedEvent.readValue(taskEvent);
 
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
-        assertThat(taskEvent.getType().toString()).isEqualTo("test-task");
+        assertThatBuffer(taskEvent.getType()).hasBytes("test-task".getBytes(StandardCharsets.UTF_8));
     }
 
     private int writeCommandRequestToBuffer(UnsafeBuffer buffer, TaskEvent taskEvent)

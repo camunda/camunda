@@ -23,7 +23,14 @@ public class UnpackedObject implements Recyclable, BufferReader, BufferWriter
     public void wrap(DirectBuffer buff, int offset, int length)
     {
         reader.wrap(buff, offset, length);
-        objectValue.read(reader);
+        try
+        {
+            objectValue.read(reader);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Could not deserialize object. Deserialization stuck at offset " + reader.getOffset(), e);
+        }
     }
 
     @Override
