@@ -10,10 +10,8 @@ import org.agrona.concurrent.CompositeAgent;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.DispatcherBuilder;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.dispatcher.impl.DispatcherConductor;
 import org.camunda.tngp.transport.impl.TransportContext;
 import org.camunda.tngp.transport.impl.agent.Receiver;
 import org.camunda.tngp.transport.impl.agent.Sender;
@@ -46,7 +44,7 @@ public class TransportBuilder
     protected boolean sendBufferExternallyManaged = false;
 
     protected TransportConductor transportConductor;
-    protected DispatcherConductor sendBufferConductor;
+    protected Agent sendBufferConductor;
     protected Receiver receiver;
     protected Sender sender;
 
@@ -130,15 +128,14 @@ public class TransportBuilder
     {
         if (!sendBufferExternallyManaged)
         {
-            final DispatcherBuilder dispatcherBuilder = Dispatchers.create(name + ".write-buffer");
-
-            this.sendBuffer = dispatcherBuilder.bufferSize(sendBufferSize)
+            this.sendBuffer = Dispatchers.create(name + ".write-buffer")
+                .bufferSize(sendBufferSize)
                 .subscriptions("sender")
                 .countersManager(countersManager)
                 .conductorExternallyManaged()
                 .build();
 
-            this.sendBufferConductor = dispatcherBuilder.getConductorAgent();
+            this.sendBufferConductor = sendBuffer.getConductorAgent();
             this.senderSubscription = sendBuffer.getSubscriptionByName("sender");
         }
 
