@@ -1,9 +1,11 @@
 import {expect} from 'chai';
-import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction, INITIAL_STATE} from 'main/processDisplay/diagram/diagram.reducer';
+import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction, INITIAL_STATE,
+        createHoverElementAction} from 'main/processDisplay/diagram/diagram.reducer';
 
 describe('diagram reducer', () => {
   const diagramData = 'bpmnXml';
   const heatmapData = {a: 1};
+  const diagramElement = {id: 'elementId'};
 
   describe('initial', () => {
     let id,
@@ -45,6 +47,13 @@ describe('diagram reducer', () => {
 
       expect(data).to.exist;
       expect(data).to.eql(heatmapData);
+    });
+
+    it('should set the hovered diagram element', () => {
+      const {hovered} = reducer(undefined, createHoverElementAction(diagramElement));
+
+      expect(hovered).to.exist;
+      expect(hovered).to.eql(diagramElement.id);
     });
   });
 });

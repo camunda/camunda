@@ -30,10 +30,13 @@ describe('<Diagram>', () => {
   let loadDiagram;
   let loadHeatmap;
   let getHeatmap;
+  let removeHeatmapOverlay;
+  let addHeatmapOverlay;
   let Viewer;
   let viewer;
   let diagramNode;
   let canvas;
+  let eventBus;
   let update;
 
   beforeEach(() => {
@@ -46,6 +49,12 @@ describe('<Diagram>', () => {
     getHeatmap = sinon.stub().returns(heatmapNode);
     __set__('getHeatmap', getHeatmap);
 
+    removeHeatmapOverlay = sinon.spy();
+    __set__('removeHeatmapOverlay', removeHeatmapOverlay);
+
+    addHeatmapOverlay = sinon.spy();
+    __set__('addHeatmapOverlay', addHeatmapOverlay);
+
     canvas = {
       resized: sinon.spy(),
       zoom: sinon.spy(),
@@ -55,9 +64,14 @@ describe('<Diagram>', () => {
       }
     };
 
+    eventBus = {
+      on: sinon.spy()
+    };
+
     Viewer = function({container}) {
       const modules = {
-        canvas
+        canvas,
+        eventBus
       };
 
       diagramNode = container;
@@ -78,6 +92,8 @@ describe('<Diagram>', () => {
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');
     __ResetDependency__('getHeatmap');
+    __ResetDependency__('removeHeatmapOverlay');
+    __ResetDependency__('addHeatmapOverlay');
     __ResetDependency__('Viewer');
   });
 
@@ -131,6 +147,31 @@ describe('<Diagram>', () => {
 
     it('should add a heatmap', () => {
       expect(canvas._viewport.appendChild.calledWith(heatmapNode)).to.eql(true, 'expected heatmap to be attached to viewport node');
+    });
+  });
+
+  describe('heatmap overlays', () => {
+    it('should not add heatmap overlays if the heatmap data is not loaded', () => {
+      update(loadedDiagramState);
+
+      expect(addHeatmapOverlay.called).to.eql(false);
+    });
+
+    it('should remove overlays', () => {
+      update(loadedHeatmapState);
+
+      expect(removeHeatmapOverlay.calledOnce).to.eql(true);
+    });
+
+    it('should add overlays with the loaded heatmap data and the hovered element', () => {
+      update({
+        diagram: {
+          ...loadedHeatmapState.diagram,
+          hovered: 'element'
+        }
+      });
+
+      expect(addHeatmapOverlay.calledWith(viewer, heatmapData, 'element')).to.eql(true);
     });
   });
 });

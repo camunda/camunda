@@ -2,12 +2,20 @@ export const LOAD_PROCESS_DIAGRAM = 'LOAD_PROCESS_DIAGRAM';
 export const LOAD_PROCESS_DIAGRAM_RESULT = 'LOAD_PROCESS_DIAGRAM_RESULT';
 export const LOAD_HEATMAP = 'LOAD_HEATMAP';
 export const LOAD_HEATMAP_RESULT = 'LOAD_HEATMAP_RESULT';
+export const HOVER_ELEMENT = 'HOVER_ELEMENT';
 
 export const INITIAL_STATE = 'INITIAL';
 export const LOADING_STATE = 'LOADING';
 export const LOADED_STATE = 'LOADED';
 
 export function reducer(state = {id: 'aProcessInstanceId', state: 'INITIAL', heatmap: {state: 'INITIAL'}}, action) {
+  if (action.type === HOVER_ELEMENT) {
+    return {
+      ...state,
+      hovered: action.element
+    };
+  }
+
   if (action.type === LOAD_PROCESS_DIAGRAM) {
     return {
       ...state,
@@ -67,5 +75,12 @@ export function createLoadingHeatmapResultAction(result) {
   return {
     type: LOAD_HEATMAP_RESULT,
     result
+  };
+}
+
+export function createHoverElementAction(element) {
+  return {
+    type: HOVER_ELEMENT,
+    element: element.id
   };
 }

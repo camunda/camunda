@@ -1,6 +1,7 @@
 import {jsx, updateOnlyWhenStateChanges, Match, Case, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {loadHeatmap, loadDiagram, getHeatmap} from './diagram.service';
+import {loadHeatmap, loadDiagram, getHeatmap, hoverElement,
+        removeHeatmapOverlay, addHeatmapOverlay} from './diagram.service';
 import {LOADED_STATE, INITIAL_STATE} from './diagram.reducer';
 
 export const Diagram = withSelector(DiagramComponent);
@@ -33,12 +34,17 @@ function BpmnViewer() {
     let heatmap;
     let imported = false;
 
+    viewer.get('eventBus').on('element.hover', ({element}) => {
+      hoverElement(element);
+    });
+
     const update = (diagram) => {
       if (diagram.state === INITIAL_STATE) {
         loadDiagram(diagram);
       } else if (diagram.state === LOADED_STATE) {
         if (imported) {
           updateHeatmap(diagram);
+          updateHover(diagram);
         } else {
           viewer.importXML(diagram.xml, (err) => {
             if (err) {
@@ -47,12 +53,21 @@ function BpmnViewer() {
             imported = true;
             resetZoom(viewer);
             updateHeatmap(diagram);
+            updateHover(diagram);
           });
         }
       }
     };
 
     return updateOnlyWhenStateChanges(update);
+
+    function updateHover(diagram) {
+      removeHeatmapOverlay(viewer);
+
+      if (diagram.heatmap.state === LOADED_STATE) {
+        addHeatmapOverlay(viewer, diagram.heatmap.data, diagram.hovered);
+      }
+    }
 
     function updateHeatmap(diagram) {
       removeHeatmap();

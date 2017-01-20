@@ -4,7 +4,7 @@ import {AppMenu} from './appMenu';
 
 const template = <header className="cam-brand-header">
   <div className="container-fluid">
-    <a className="navbar-brand" title="Camunda Corporate Styles">
+    <a className="navbar-brand" title="Camunda Optimize">
       <StaticLink name="default" params={{}}></StaticLink>
       <span className="brand-logo"></span>
       &nbsp;

@@ -1,7 +1,9 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {getHeatmap, loadHeatmap, loadDiagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/diagram.service';
+import {getHeatmap, loadHeatmap, loadDiagram,
+        hoverElement, removeHeatmapOverlay, addHeatmapOverlay,
+        __set__, __ResetDependency__} from 'main/processDisplay/diagram/diagram.service';
 
 describe('Diagram service', () => {
   const heatmap = {
@@ -17,7 +19,7 @@ describe('Diagram service', () => {
     act1: 1,
     act2: 2
   };
-  const viewer = {};
+  const diagramElement = {id: 'act1'};
   const diagramXml = 'diagram-xml';
   const diagram = {id: 'aDiagramId'};
 
@@ -25,11 +27,17 @@ describe('Diagram service', () => {
   const PROCESS_DIAGRAM_RESULT_ACTION = 'LOAD_PROCESS_DIAGRAM_RESULT';
   const HEATMAP_ACTION = 'LOAD_HEATMAP';
   const HEATMAP_RESULT_ACTION = 'LOAD_HEATMAP_RESULT';
+  const HOVER_ACTION = 'HOVER_ACTION';
 
   let generateHeatmap,
       getHeatmapData,
       getDiagramXml,
       dispatchAction,
+      viewer,
+      clearFunction,
+      addFunction,
+      diagramGraphics,
+      createHoverElementAction,
       createLoadingDiagramAction,
       createLoadingHeatmapAction,
       createLoadingDiagramResultAction,
@@ -50,6 +58,9 @@ describe('Diagram service', () => {
     dispatchAction = sinon.spy();
     __set__('dispatchAction', dispatchAction);
 
+    createHoverElementAction = sinon.stub().returns(HOVER_ACTION);
+    __set__('createHoverElementAction', createHoverElementAction);
+
     createLoadingDiagramAction = sinon.stub().returns(PROCESS_DIAGRAM_ACTION);
     __set__('createLoadingDiagramAction', createLoadingDiagramAction);
 
@@ -61,6 +72,21 @@ describe('Diagram service', () => {
 
     createLoadingHeatmapResultAction = sinon.stub().returns(HEATMAP_RESULT_ACTION);
     __set__('createLoadingHeatmapResultAction', createLoadingHeatmapResultAction);
+
+    clearFunction = sinon.spy();
+
+    addFunction = sinon.spy();
+
+    diagramGraphics = document.createElement('div');
+    diagramGraphics.innerHTML = '<div class="djs-hit" width="20"></div>';
+
+    viewer = {
+      get: sinon.stub().returns({
+        clear: clearFunction,
+        getGraphics: sinon.stub().returns(diagramGraphics),
+        add: addFunction
+      })
+    };
   });
 
   afterEach(() => {
@@ -68,6 +94,7 @@ describe('Diagram service', () => {
     __ResetDependency__('generateHeatmap');
     __ResetDependency__('getHeatmapData');
     __ResetDependency__('getDiagramXml');
+    __ResetDependency__('createHoverElementAction');
     __ResetDependency__('createLoadingDiagramAction');
     __ResetDependency__('createLoadingHeatmapAction');
     __ResetDependency__('createLoadingDiagramResultAction');
@@ -129,6 +156,40 @@ describe('Diagram service', () => {
       Promise.runAll();
       expect(dispatchAction.calledWith(HEATMAP_RESULT_ACTION)).to.eql(true);
       expect(createLoadingHeatmapResultAction.calledWith(heatmapData)).to.eql(true);
+    });
+  });
+
+  describe('hover overlays', () => {
+    it('should dispatch hover action', () => {
+      hoverElement(diagramElement);
+
+      expect(dispatchAction.calledWith(HOVER_ACTION)).to.eql(true);
+    });
+
+    it('should remove overlays', () => {
+      removeHeatmapOverlay(viewer);
+
+      expect(clearFunction.calledOnce).to.eql(true);
+    });
+
+    it('should add an overlay on the specified element', () => {
+      addHeatmapOverlay(viewer, heatmapData, diagramElement.id);
+
+      expect(addFunction.calledWith(diagramElement.id)).to.eql(true);
+    });
+
+    it('should add an overlay with the heat value as text content', () => {
+      addHeatmapOverlay(viewer, heatmapData, diagramElement.id);
+
+      const node = addFunction.getCall(0).args[1].html;
+
+      expect(node.textContent.trim()).to.eql(heatmapData[diagramElement.id].toString());
+    });
+
+    it('should not add an overlay if specified element has no heat data', () => {
+      addHeatmapOverlay(viewer, heatmapData, 'nonExistent');
+
+      expect(addFunction.called).to.eql(false);
     });
   });
 });
