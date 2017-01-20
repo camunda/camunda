@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.impl.DispatcherContext;
@@ -27,7 +28,7 @@ public class Dispatcher implements AutoCloseable
     public static final int MODE_PUB_SUB = 1;
     public static final int MODE_PIPELINE = 2;
 
-    final DispatcherContext context;
+    protected final DispatcherContext context;
 
     protected final LogBuffer logBuffer;
     protected final LogBufferAppender logAppender;
@@ -547,6 +548,11 @@ public class Dispatcher implements AutoCloseable
     public int getSubscriberCount()
     {
         return subscriptions.length;
+    }
+
+    public Agent getConductorAgent()
+    {
+        return context.getConductorAgent();
     }
 
     @Override

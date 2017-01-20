@@ -23,14 +23,12 @@ public class DispatcherConductor implements Agent, Consumer<DispatcherConductorC
 
     protected Dispatcher dispatcher;
 
-    protected final DispatcherContext context;
     protected String name;
 
     public DispatcherConductor(String dispatcherName, DispatcherContext dispatcherContext, Dispatcher dispatcher)
     {
         this.dispatcher = dispatcher;
         this.cmdQueue = dispatcherContext.getDispatcherCommandQueue();
-        this.context = dispatcherContext;
         this.name = String.format(NAME_TEMPLATE, dispatcherName);
     }
 

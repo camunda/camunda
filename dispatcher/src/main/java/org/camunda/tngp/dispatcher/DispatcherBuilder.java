@@ -61,8 +61,6 @@ public class DispatcherBuilder
 
     protected boolean agentExternallyManaged = false;
 
-    protected DispatcherConductor conductorAgent;
-
     protected IdleStrategy idleStrategy;
 
     protected String[] subscriptionNames;
@@ -247,11 +245,12 @@ public class DispatcherBuilder
             context,
             dispatcherName);
 
-        conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
+        final DispatcherConductor conductorAgent = new DispatcherConductor(dispatcherName, context, dispatcher);
+        context.setConductorAgent(conductorAgent);
 
         if (!agentExternallyManaged)
         {
-            final AgentRunner conductorRunner = initConductorRunner();
+            final AgentRunner conductorRunner = initConductorRunner(conductorAgent);
             context.setAgentRunner(conductorRunner);
         }
 
@@ -292,7 +291,7 @@ public class DispatcherBuilder
         return allocatedBuffer;
     }
 
-    protected AgentRunner initConductorRunner()
+    protected AgentRunner initConductorRunner(DispatcherConductor conductorAgent)
     {
         IdleStrategy idleStrategy = this.idleStrategy;
 
@@ -311,11 +310,6 @@ public class DispatcherBuilder
         AgentRunner.startOnThread(conductorRunner);
 
         return conductorRunner;
-    }
-
-    public DispatcherConductor getConductorAgent()
-    {
-        return conductorAgent;
     }
 
 }

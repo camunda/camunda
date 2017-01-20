@@ -1,12 +1,23 @@
 package org.camunda.tngp.dispatcher.impl;
 
+import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 public class DispatcherContext
 {
     protected ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> dispatcherCommandQueue = new ManyToOneConcurrentArrayQueue<>(100);
+
     protected AgentRunner agentRunner;
+    protected Agent conductorAgent;
+
+    public void close()
+    {
+        if (agentRunner != null)
+        {
+            agentRunner.close();
+        }
+    }
 
     public ManyToOneConcurrentArrayQueue<DispatcherConductorCommand> getDispatcherCommandQueue()
     {
@@ -18,11 +29,13 @@ public class DispatcherContext
         this.agentRunner = agentRunner;
     }
 
-    public void close()
+    public Agent getConductorAgent()
     {
-        if (agentRunner != null)
-        {
-            agentRunner.close();
-        }
+        return conductorAgent;
+    }
+
+    public void setConductorAgent(Agent conductorAgent)
+    {
+        this.conductorAgent = conductorAgent;
     }
 }
