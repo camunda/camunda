@@ -29,6 +29,17 @@ job('snapshot-unit') {
     }
   }
 
+  publishers {
+    archiveJunit('**/surefire-reports/*.xml') {
+      allowEmptyResults()
+      retainLongStdout()
+      healthScaleFactor(1.5)
+      testDataPublishers {
+        publishTestStabilityData()
+      }
+    }
+  }
+
   steps {
     shell '''#!/bin/bash
 cd client
