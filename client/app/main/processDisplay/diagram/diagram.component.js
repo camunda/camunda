@@ -32,8 +32,8 @@ function BpmnViewer() {
       container: node
     });
     let heatmap;
-    let importedDiagram = false;
-    let importedHeatmap = false;
+    let diagramRendered = false;
+    let heatmapRendered = false;
 
     viewer.get('eventBus').on('element.hover', ({element}) => {
       hoverElement(element);
@@ -43,46 +43,45 @@ function BpmnViewer() {
       if (diagram.state === INITIAL_STATE) {
         loadDiagram(diagram);
       } else if (diagram.state === LOADED_STATE) {
-        if (importedDiagram) {
-          if (!importedHeatmap) {
-            updateHeatmap(diagram);
-          }
-          updateHover(diagram);
-        } else {
-          viewer.importXML(diagram.xml, (err) => {
-            if (err) {
-              node.innerHTML = `Could not load diagram, got error ${err}`;
-            }
-            importedDiagram = true;
-            resetZoom(viewer);
-            updateHeatmap(diagram);
-            updateHover(diagram);
-          });
-        }
+        renderDiagram(diagram);
+      }
+
+      if (diagram.heatmap.state === INITIAL_STATE) {
+        loadHeatmap(diagram);
+      } else if (diagram.heatmap.state === LOADED_STATE) {
+        renderHeatmap(diagram);
       }
     };
 
-    return updateOnlyWhenStateChanges(update);
+    function renderDiagram(diagram) {
+      if (!diagramRendered) {
+        viewer.importXML(diagram.xml, (err) => {
+          if (err) {
+            node.innerHTML = `Could not load diagram, got error ${err}`;
+          }
+          diagramRendered = true;
+          resetZoom(viewer);
 
-    function updateHover(diagram) {
-      removeHeatmapOverlay(viewer);
-
-      if (diagram.heatmap.state === LOADED_STATE) {
-        addHeatmapOverlay(viewer, diagram.heatmap.data, diagram.hovered);
+          if (diagram.heatmap.state === LOADED_STATE) {
+            renderHeatmap(diagram);
+          }
+        });
       }
     }
 
-    function updateHeatmap(diagram) {
-      removeHeatmap();
+    function renderHeatmap({hovered, heatmap: {data}}) {
+      if (diagramRendered) {
+        // add heatmap
+        if (!heatmapRendered) {
+          removeHeatmap();
+          heatmap = getHeatmap(viewer, data);
+          viewer.get('canvas')._viewport.appendChild(heatmap);
+          heatmapRendered = true;
+        }
 
-      const state = diagram.heatmap.state;
-
-      if (state === INITIAL_STATE) {
-        loadHeatmap(diagram);
-      } else if (state === LOADED_STATE) {
-        heatmap = getHeatmap(viewer, diagram.heatmap.data);
-        viewer.get('canvas')._viewport.appendChild(heatmap);
-        importedHeatmap = true;
+        // add heatmap overlays
+        removeHeatmapOverlay(viewer);
+        addHeatmapOverlay(viewer, data, hovered);
       }
     }
 
@@ -91,6 +90,8 @@ function BpmnViewer() {
         viewer.get('canvas')._viewport.removeChild(heatmap);
       }
     }
+
+    return updateOnlyWhenStateChanges(update);
   };
 }
 

@@ -9,7 +9,10 @@ describe('<Diagram>', () => {
   const heatmapData = {a: 1};
   const heatmapNode = document.createElement('img');
   const initialState = {diagram: {
-    state: 'INITIAL'
+    state: 'INITIAL',
+    heatmap: {
+      state: 'INITIAL'
+    }
   }};
   const loadedDiagramState = {diagram: {
     state: 'LOADED',
@@ -160,7 +163,7 @@ describe('<Diagram>', () => {
     it('should remove overlays', () => {
       update(loadedHeatmapState);
 
-      expect(removeHeatmapOverlay.calledOnce).to.eql(true);
+      expect(removeHeatmapOverlay.called).to.eql(true);
     });
 
     it('should add overlays with the loaded heatmap data and the hovered element', () => {
