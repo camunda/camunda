@@ -47,4 +47,14 @@ public class EnsureUtil
 
     }
 
+    public static void ensureNotNullOrEmpty(String property, String testValue)
+    {
+        ensureNotNull(property, testValue);
+
+        if (testValue.isEmpty())
+        {
+            throw new RuntimeException(property + " must not be empty");
+        }
+    }
+
 }
