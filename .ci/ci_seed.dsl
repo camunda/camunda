@@ -4,16 +4,16 @@ def repository = 'camunda-optimize'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
-.ci/jobs/ci/**/*.dsl
+.ci/jobs/**/*.dsl
 .ci/views/common/**/*.dsl
-.ci/views/ci/**/*.dsl
+.ci/views/release/**/*.dsl
 '''
 
 def setBrokenPageAsDefault = '''\
 import jenkins.model.Jenkins
 
 def jenkins = Jenkins.instance
-def broken = jenkins.getView(&apos;Broken&apos;)
+def broken = jenkins.getView('Broken')
 if (broken) {
   jenkins.setPrimaryView(broken)
 }
