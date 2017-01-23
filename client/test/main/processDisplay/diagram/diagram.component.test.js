@@ -173,5 +173,22 @@ describe('<Diagram>', () => {
 
       expect(addHeatmapOverlay.calledWith(viewer, heatmapData, 'element')).to.eql(true);
     });
+
+    it('should only render heatmap once', () => {
+      update({
+        diagram: {
+          ...loadedHeatmapState.diagram,
+          hovered: 'element'
+        }
+      });
+      update({
+        diagram: {
+          ...loadedHeatmapState.diagram,
+          hovered: 'anotherElement'
+        }
+      });
+
+      expect(getHeatmap.calledOnce).to.eql(true);
+    });
   });
 });

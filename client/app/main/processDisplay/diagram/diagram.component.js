@@ -32,7 +32,8 @@ function BpmnViewer() {
       container: node
     });
     let heatmap;
-    let imported = false;
+    let importedDiagram = false;
+    let importedHeatmap = false;
 
     viewer.get('eventBus').on('element.hover', ({element}) => {
       hoverElement(element);
@@ -42,15 +43,17 @@ function BpmnViewer() {
       if (diagram.state === INITIAL_STATE) {
         loadDiagram(diagram);
       } else if (diagram.state === LOADED_STATE) {
-        if (imported) {
-          updateHeatmap(diagram);
+        if (importedDiagram) {
+          if (!importedHeatmap) {
+            updateHeatmap(diagram);
+          }
           updateHover(diagram);
         } else {
           viewer.importXML(diagram.xml, (err) => {
             if (err) {
               node.innerHTML = `Could not load diagram, got error ${err}`;
             }
-            imported = true;
+            importedDiagram = true;
             resetZoom(viewer);
             updateHeatmap(diagram);
             updateHover(diagram);
@@ -79,6 +82,7 @@ function BpmnViewer() {
       } else if (state === LOADED_STATE) {
         heatmap = getHeatmap(viewer, diagram.heatmap.data);
         viewer.get('canvas')._viewport.appendChild(heatmap);
+        importedHeatmap = true;
       }
     }
 
