@@ -1,4 +1,3 @@
-/*eslint-disable*/
 var shell = require('shelljs');
 var path = require('path');
 var http = require('http');

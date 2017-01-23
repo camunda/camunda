@@ -1,4 +1,3 @@
-/*eslint-disable*/
 // Karma configuration
 // Generated on Fri Nov 25 2016 10:59:41 GMT+0100 (CET)
 
