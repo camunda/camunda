@@ -147,7 +147,7 @@ public class FsLogStreamBuilder
     protected void initAgentRunnerService(StreamContext ctx)
     {
         Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
-        Objects.requireNonNull(agentRunnerService, "No agent runner service for write buffer provided.");
+        Objects.requireNonNull(writeBufferAgentRunnerService, "No agent runner service for write buffer provided.");
 
         ctx.setAgentRunnerService(agentRunnerService);
         ctx.setWriteBufferAgentRunnerService(writeBufferAgentRunnerService);
