@@ -6,9 +6,11 @@ const sessionStorage = $window.sessionStorage;
 const LOGIN_KEY = 'LOGIN_KEY';
 
 export function clearLogin() {
-  sessionStorage.removeItem(LOGIN_KEY);
+  return get('/api/authentication/logout').then(() => {
+    sessionStorage.removeItem(LOGIN_KEY);
 
-  dispatchAction(createClearLoginAction());
+    dispatchAction(createClearLoginAction());
+  });
 }
 
 function getLogin() {

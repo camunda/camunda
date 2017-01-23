@@ -50,14 +50,21 @@ describe('Login service', () => {
 
   describe('clearLogin', () => {
     beforeEach(() => {
+      get.returns(Promise.resolve(true));
       clearLogin();
     });
 
+    it('should call the backend to clear the authentication', () => {
+      expect(get.calledWith('/api/authentication/logout')).to.eql(true);
+    });
+
     it('should remove login from session storage', () => {
+      Promise.runAll();
       expect(sessionStorage.removeItem.calledWith(LOGIN_KEY)).to.eql(true);
     });
 
     it('should dispatch clear login action', () => {
+      Promise.runAll();
       expect(createClearLoginAction.calledOnce)
         .to.eql(true, 'expected clear login action to be created');
       expect(dispatchAction.calledWith('clear-login'))
