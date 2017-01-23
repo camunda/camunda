@@ -129,9 +129,14 @@ public class FileChannelIndexStore implements IndexStore, Closeable
 
     public static FileChannelIndexStore tempFileIndexStore()
     {
+        return tempFileIndexStore("index");
+    }
+
+    public static FileChannelIndexStore tempFileIndexStore(String name)
+    {
         try
         {
-            final File tmpFile = File.createTempFile("index-", ".idx");
+            final File tmpFile = File.createTempFile(name + "-", ".idx");
             tmpFile.deleteOnExit();
             final RandomAccessFile raf = new RandomAccessFile(tmpFile, "rw");
             final FileChannel channel = raf.getChannel();
