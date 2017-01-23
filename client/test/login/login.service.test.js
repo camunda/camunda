@@ -6,7 +6,7 @@ import {clearLogin, refreshAuthentication, login, __set__, __ResetDependency__} 
 describe('Login service', () => {
   const LOGIN_KEY = 'KEY-1';
   let dispatchAction;
-  let sessionStorage;
+  let localStorage;
   let createClearLoginAction;
   let createLoginAction;
   let post;
@@ -20,12 +20,12 @@ describe('Login service', () => {
     dispatchAction = sinon.spy();
     __set__('dispatchAction', dispatchAction);
 
-    sessionStorage = {
+    localStorage = {
       removeItem: sinon.spy(),
       setItem: sinon.spy(),
       getItem: sinon.stub()
     };
-    __set__('sessionStorage', sessionStorage);
+    __set__('localStorage', localStorage);
 
     createClearLoginAction = sinon.stub().returns('clear-login');
     __set__('createClearLoginAction', createClearLoginAction);
@@ -43,7 +43,7 @@ describe('Login service', () => {
   afterEach(() => {
     __ResetDependency__('LOGIN_KEY');
     __ResetDependency__('dispatchAction');
-    __ResetDependency__('sessionStorage');
+    __ResetDependency__('localStorage');
     __ResetDependency__('post');
     __ResetDependency__('get');
   });
@@ -60,7 +60,7 @@ describe('Login service', () => {
 
     it('should remove login from session storage', () => {
       Promise.runAll();
-      expect(sessionStorage.removeItem.calledWith(LOGIN_KEY)).to.eql(true);
+      expect(localStorage.removeItem.calledWith(LOGIN_KEY)).to.eql(true);
     });
 
     it('should dispatch clear login action', () => {
@@ -78,7 +78,7 @@ describe('Login service', () => {
 
     beforeEach(() => {
       get.returns(Promise.resolve(true));
-      sessionStorage.getItem.returns(
+      localStorage.getItem.returns(
         JSON.stringify({user, token})
       );
     });
@@ -86,7 +86,7 @@ describe('Login service', () => {
     it('should get login from session storage', () => {
       refreshAuthentication();
 
-      expect(sessionStorage.getItem.calledWith(LOGIN_KEY)).to.eql(true);
+      expect(localStorage.getItem.calledWith(LOGIN_KEY)).to.eql(true);
     });
 
     it('should dispatch login action on success', (done) => {
@@ -138,7 +138,7 @@ describe('Login service', () => {
     });
 
     it('should add login item to session storage', () => {
-      expect(sessionStorage.setItem.calledWith(
+      expect(localStorage.setItem.calledWith(
         LOGIN_KEY,
         JSON.stringify(
           {

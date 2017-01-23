@@ -2,11 +2,11 @@ import {$window, dispatchAction} from 'view-utils';
 import {createLoginAction, createClearLoginAction, createLoginCheckAction} from './login.reducer';
 import {get, post} from 'http';
 
-const sessionStorage = $window.sessionStorage;
+const localStorage = $window.localStorage;
 const LOGIN_KEY = 'LOGIN_KEY';
 
 function clearLoginFromSession() {
-  sessionStorage.removeItem(LOGIN_KEY);
+  localStorage.removeItem(LOGIN_KEY);
 
   dispatchAction(createClearLoginAction());
 }
@@ -16,7 +16,7 @@ export function clearLogin() {
 }
 
 function getLogin() {
-  const loginContent = sessionStorage.getItem(LOGIN_KEY);
+  const loginContent = localStorage.getItem(LOGIN_KEY);
 
   if (!loginContent) {
     return null;
@@ -26,7 +26,7 @@ function getLogin() {
 }
 
 function saveLogin(user, token) {
-  sessionStorage.setItem(LOGIN_KEY,
+  localStorage.setItem(LOGIN_KEY,
     JSON.stringify({
       user,
       token
