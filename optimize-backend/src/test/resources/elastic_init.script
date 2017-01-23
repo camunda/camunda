@@ -1,0 +1,2 @@
+PUT:optimize:{"mappings": {"event": {"properties": {"activityId": { "type": "text", "fielddata": true}}}}}
+POST:optimize/event/1:{ "activityId" : "testActivity", "processDefinitionKey" : "testDefinition"}

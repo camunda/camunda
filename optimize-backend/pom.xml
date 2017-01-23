@@ -204,9 +204,10 @@
         <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
         <version>5.3</version>
         <configuration>
-          <clusterName>test</clusterName>
+          <clusterName>elasticsearch</clusterName>
           <transportPort>9300</transportPort>
           <httpPort>9200</httpPort>
+          <pathInitScript>${project.build.testOutputDirectory}/elastic_init.script</pathInitScript>
         </configuration>
         <executions>
           <!--

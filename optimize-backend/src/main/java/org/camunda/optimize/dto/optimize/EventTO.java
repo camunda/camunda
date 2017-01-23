@@ -1,7 +1,5 @@
 package org.camunda.optimize.dto.optimize;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
@@ -41,10 +39,6 @@ public class EventTO implements Serializable {
 
   public void setPayload(Map<String, Object> payload) {
     this.payload = payload;
-  }
-
-  public String toJSON(ObjectMapper mapper) throws Exception {
-    return mapper.writeValueAsString(this);
   }
 
   public String getActivityInstanceId() {

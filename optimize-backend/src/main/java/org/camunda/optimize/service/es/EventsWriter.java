@@ -25,7 +25,7 @@ public class EventsWriter {
     for (EventTO e : events) {
       String index = e.getActivityInstanceId() + "_" + e.getState();
       bulkRequest.add(esclient.prepareIndex("optimize", "event", index)
-          .setSource(e.toJSON(objectMapper)));
+          .setSource(objectMapper.writeValueAsString(e)));
     }
 
     bulkRequest.execute().get();
