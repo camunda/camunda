@@ -1,19 +1,15 @@
 import {expect} from 'chai';
 import {setupPromiseMocking} from 'testHelpers';
 import sinon from 'sinon';
-import {performLogin, changeUser, changePassword, __set__, __ResetDependency__} from 'main/loginForm/loginForm.service';
+import {performLogin, __set__, __ResetDependency__} from 'main/loginForm/loginForm.service';
 
 describe('loginForm service', () => {
-  const passChangeAction = 'password-change';
-  const userChangeAction = 'user-change';
   const errorChangeAction = 'error-change';
   const loginInProgressAction = 'login-in-progress';
   let dispatchAction;
   let router;
   let getLastRoute;
   let login;
-  let createChangeLoginPasswordAction;
-  let createChangeLoginUserAction;
   let createLoginErrorAction;
   let createLoginInProgressAction;
 
@@ -34,12 +30,6 @@ describe('loginForm service', () => {
     login = sinon.stub();
     __set__('login', login);
 
-    createChangeLoginPasswordAction = sinon.stub().returns(passChangeAction);
-    __set__('createChangeLoginPasswordAction', createChangeLoginPasswordAction);
-
-    createChangeLoginUserAction = sinon.stub().returns(userChangeAction);
-    __set__('createChangeLoginUserAction', createChangeLoginUserAction);
-
     createLoginErrorAction = sinon.stub().returns(errorChangeAction);
     __set__('createLoginErrorAction', createLoginErrorAction);
 
@@ -52,8 +42,6 @@ describe('loginForm service', () => {
     __ResetDependency__('router');
     __ResetDependency__('getLastRoute');
     __ResetDependency__('login');
-    __ResetDependency__('createChangeLoginPasswordAction');
-    __ResetDependency__('createChangeLoginUserAction');
     __ResetDependency__('createLoginErrorAction');
     __ResetDependency__('createLoginInProgressAction');
   });
@@ -133,28 +121,6 @@ describe('loginForm service', () => {
         expect(createLoginErrorAction.calledWith(true))
           .to.eql(true, 'expected error action to be created with true error flag');
       });
-    });
-  });
-
-  describe('changeUser', () => {
-    it('expected action to be dispatched on change', () => {
-      const user = 'd1';
-
-      changeUser(user);
-
-      expect(dispatchAction.calledWith(userChangeAction)).to.eql(true);
-      expect(createChangeLoginUserAction.calledWith(user)).to.eql(true);
-    });
-  });
-
-  describe('changePassword', () => {
-    it('expected action to be dispatched on change', () => {
-      const password = 'p1';
-
-      changePassword(password);
-
-      expect(dispatchAction.calledWith(passChangeAction)).to.eql(true);
-      expect(createChangeLoginPasswordAction.calledWith(password)).to.eql(true);
     });
   });
 });

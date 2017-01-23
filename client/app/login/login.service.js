@@ -5,12 +5,14 @@ import {get, post} from 'http';
 const sessionStorage = $window.sessionStorage;
 const LOGIN_KEY = 'LOGIN_KEY';
 
-export function clearLogin() {
-  return get('/api/authentication/logout').then(() => {
-    sessionStorage.removeItem(LOGIN_KEY);
+function clearLoginFromSession() {
+  sessionStorage.removeItem(LOGIN_KEY);
 
-    dispatchAction(createClearLoginAction());
-  });
+  dispatchAction(createClearLoginAction());
+}
+
+export function clearLogin() {
+  return get('/api/authentication/logout').then(clearLoginFromSession);
 }
 
 function getLogin() {
@@ -54,7 +56,7 @@ export function refreshAuthentication() {
       );
     })
     .catch(() => {
-      clearLogin();
+      clearLoginFromSession();
     });
 }
 

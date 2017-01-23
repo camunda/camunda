@@ -1,29 +1,25 @@
-import {jsx, SetInputFieldValue, OnEvent, Match, Case, Default, withSelector, Attribute, isTruthy} from 'view-utils';
-import {performLogin, changePassword, changeUser} from './loginForm.service';
+import {jsx, OnEvent, Match, Case, Default, withSelector, Attribute, isTruthy} from 'view-utils';
+import {performLogin} from './loginForm.service';
 
 export const LoginForm = withSelector(Form);
 
 function Form() {
-  return <form className="form-horizontal form-signin">
+  const template = <form className="form-horizontal form-signin">
     <OnEvent event="submit" listener={submit} />
     <h2>Login</h2>
     <div className="form-group">
       <label className="col-sm-2 control-label">User</label>
       <div className="col-sm-10">
-        <input type="text" className="form-control" placeholder="Username">
+        <input type="text" className="form-control user" placeholder="Username">
           <Attribute selector="inProgress" attribute="disabled" predicate={isTruthy} />
-          <SetInputFieldValue getValue="user" />
-          <OnEvent event={['keyup', 'change']} listener={onUserKeyup} />
         </input>
       </div>
     </div>
     <div className="form-group">
       <label className="col-sm-2 control-label">Password</label>
       <div className="col-sm-10">
-        <input type="password" className="form-control" placeholder="Password">
+        <input type="password" className="form-control password" placeholder="Password">
           <Attribute selector="inProgress" attribute="disabled" predicate={isTruthy} />
-          <SetInputFieldValue getValue="password" />
-          <OnEvent event={['keyup', 'change']} listener={onPasswordKeyup} />
         </input>
       </div>
     </div>
@@ -53,6 +49,21 @@ function Form() {
     </div>
   </form>;
 
+  return (parentNode, eventsBus) => {
+    const update = template(parentNode, eventsBus);
+    const passwordField = parentNode.querySelector('.password');
+
+    return [
+      update,
+      ({error}) => {
+        if (error) {
+          passwordField.focus();
+          passwordField.select();
+        }
+      }
+    ];
+  };
+
   function isLoading({inProgress}) {
     return inProgress;
   }
@@ -61,17 +72,12 @@ function Form() {
     return error;
   }
 
-  function submit({state: {user, password}, event}) {
+  function submit({event}) {
     event.preventDefault();
 
+    const user = event.target.querySelector('.user').value;
+    const password = event.target.querySelector('.password').value;
+
     performLogin(user, password);
-  }
-
-  function onUserKeyup({node}) {
-    changeUser(node.value);
-  }
-
-  function onPasswordKeyup({node}) {
-    changePassword(node.value);
   }
 }
