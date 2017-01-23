@@ -41,7 +41,5 @@ numberOfWorkers = 1
 perWorkerResponsePoolCapacity = 32
 
 [[task-queue]]
-name = "default"
-id = 0
 logName = "default-task-queue-log"
 useTempIndexFile = true

@@ -21,6 +21,8 @@ import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
     protected static final int INDEX_VALUE_LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
+    protected static final int INDEX_POSITION_OFFSET = 0;
+    protected static final int INDEX_STATE_OFFSET = SIZE_OF_LONG;
 
     protected final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -46,7 +48,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         this.responseWriter = responseWriter;
         this.indexStore = indexStore;
 
-        taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, 2 * SIZE_OF_LONG);
+        taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, INDEX_VALUE_LENGTH);
         indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
     }
 
@@ -139,8 +141,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected void updateIndex(long eventKey, long eventPosition, TaskEventType eventType)
     {
-        indexValueBuffer.putLong(0, eventPosition);
-        indexValueBuffer.putInt(SIZE_OF_LONG, eventType.ordinal());
+        indexValueBuffer.putLong(INDEX_POSITION_OFFSET, eventPosition);
+        indexValueBuffer.putInt(INDEX_STATE_OFFSET, eventType.ordinal());
 
         taskIndex.put(eventKey, indexValueBuffer.byteArray());
     }

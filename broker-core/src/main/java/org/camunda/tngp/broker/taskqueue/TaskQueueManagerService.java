@@ -19,10 +19,7 @@ import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SER
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueStreamProcessorServiceName;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.util.List;
 
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
@@ -58,56 +55,36 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     @Override
     public void startTaskQueue(TaskQueueCfg taskQueueCfg)
     {
-        final String taskQueueName = taskQueueCfg.name;
-        if (taskQueueName == null || taskQueueName.isEmpty())
-        {
-
-            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Configuration property 'name' cannot be null.");
-        }
-
-        final int taskQueueId = taskQueueCfg.id;
-        if (taskQueueId < 0 || taskQueueId > Short.MAX_VALUE)
-        {
-            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Invalid value for task queue id " + taskQueueId +
-                    ". Value must be in range [0," + Short.MAX_VALUE + "]");
-        }
-
         final String logName = taskQueueCfg.logName;
         if (logName == null || logName.isEmpty())
         {
-            throw new RuntimeException("Cannot start task queue " + taskQueueName + ": Mandatory configuration property 'logName' is not set.");
+            throw new RuntimeException("Cannot start task queue: Mandatory configuration property 'logName' is not set.");
         }
 
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueStreamProcessorServiceName(taskQueueName);
+        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        String indexFile = taskQueueCfg.indexFile;
+        final IndexStore indexStore;
+
+        final String indexFile = taskQueueCfg.indexFile;
         if (taskQueueCfg.useTempIndexFile)
         {
-            try
-            {
-                final File tempDir = Files.createTempDirectory("tngp-index-").toFile();
-                final File tempFile = File.createTempFile(streamProcessorName + "-", ".idx", tempDir);
-                System.out.format("Created temp file for task stream processor at location %s.\n", tempFile);
-                indexFile = tempFile.getAbsolutePath();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException("Could not create temp file for task stream processor index", e);
-            }
+            indexStore = FileChannelIndexStore.tempFileIndexStore(streamProcessorName);
         }
-        else if (indexFile == null || indexFile.isEmpty())
+        else if (indexFile != null && !indexFile.isEmpty())
+        {
+            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
+            indexStore = new FileChannelIndexStore(indexFileChannel);
+        }
+        else
         {
             throw new RuntimeException(String.format("Cannot create task stream processor index, no index file name provided."));
         }
 
-        final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
-
-        final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-        final IndexStore indexStore = new FileChannelIndexStore(indexFileChannel);
-
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBufferInjector.getValue());
         final TaskInstanceStreamProcessor streamProcessor = new TaskInstanceStreamProcessor(responseWriter, indexStore);
+
+        final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 
         final StreamProcessorService streamProcessorService = new StreamProcessorService(streamProcessorName, TASK_QUEUE_STREAM_PROCESSOR_ID, streamProcessor);
         serviceContext.createService(streamProcessorServiceName, streamProcessorService)
