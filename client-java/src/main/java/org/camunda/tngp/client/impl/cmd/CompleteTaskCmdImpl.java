@@ -1,5 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import java.io.InputStream;
+
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.util.buffer.PayloadRequestWriter;
@@ -38,6 +40,12 @@ public class CompleteTaskCmdImpl extends AbstractCmdImpl<Long> implements Comple
 
     @Override
     public ClientResponseHandler<Long> getResponseHandler()
+    {
+        return null;
+    }
+
+    @Override
+    public CompleteAsyncTaskCmd payload(InputStream payload)
     {
         return null;
     }

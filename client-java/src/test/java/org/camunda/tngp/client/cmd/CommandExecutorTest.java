@@ -22,6 +22,7 @@ import org.camunda.tngp.client.impl.ClientChannelResolver;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -135,7 +136,7 @@ public class CommandExecutorTest
 
         final InOrder inOrder = Mockito.inOrder(request, responseHandler);
         inOrder.verify(request).awaitResponse(12345L, TimeUnit.MILLISECONDS);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, 0, 99);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
         inOrder.verify(request).close();
     }
 
@@ -159,7 +160,7 @@ public class CommandExecutorTest
 
         final InOrder inOrder = Mockito.inOrder(request, responseHandler);
         inOrder.verify(request).awaitResponse(1234, TimeUnit.MINUTES);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, 0, 99);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
         inOrder.verify(request).close();
     }
 
@@ -188,7 +189,7 @@ public class CommandExecutorTest
         inOrder.verify(request).commit();
 
         inOrder.verify(request).awaitResponse(12345L, TimeUnit.MILLISECONDS);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, 0, 99);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
         inOrder.verify(request).close();
     }
 
@@ -211,7 +212,7 @@ public class CommandExecutorTest
         assertThat(returnedResult).isSameAs(expectedResult);
 
         final InOrder inOrder = Mockito.inOrder(request, responseHandler);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, 0, 99);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
         inOrder.verify(request).close();
     }
 

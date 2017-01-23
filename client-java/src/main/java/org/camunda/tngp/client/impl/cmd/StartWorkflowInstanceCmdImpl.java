@@ -1,5 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import java.io.InputStream;
+
 import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
@@ -48,6 +50,12 @@ public class StartWorkflowInstanceCmdImpl extends AbstractCmdImpl<WorkflowInstan
     public ClientResponseHandler<WorkflowInstance> getResponseHandler()
     {
         return new StartWorkflowInstanceResponseHandler();
+    }
+
+    @Override
+    public StartWorkflowInstanceCmd payload(InputStream payload)
+    {
+        return null;
     }
 
 }

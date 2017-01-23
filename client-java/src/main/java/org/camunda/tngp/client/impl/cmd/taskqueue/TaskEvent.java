@@ -26,38 +26,47 @@ public class TaskEvent
     {
         return event;
     }
+
     public void setEvent(TaskEventType event)
     {
         this.event = event;
     }
+
     public Long getLockTime()
     {
         return lockTime;
     }
+
     public void setLockTime(long lockTime)
     {
         this.lockTime = lockTime;
     }
+
     public String getType()
     {
         return type;
     }
+
     public void setType(String type)
     {
         this.type = type;
     }
+
     public Map<String, String> getHeaders()
     {
         return headers;
     }
+
     public void setHeaders(Map<String, String> headers)
     {
         this.headers = headers;
     }
+
     public byte[] getPayload()
     {
         return payload;
     }
+
     public void setPayload(byte[] payload)
     {
         this.payload = payload;

@@ -41,6 +41,22 @@ public class TaskQueueTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
+    public void shouldCreateTask()
+    {
+        final TngpClient client = clientRule.getClient();
+
+        final Long taskKey = client.tasks().create()
+            .taskQueueId(0)
+            .taskType("foo")
+            .addHeader("k1", "a")
+            .addHeader("k2", "b")
+            .payload("{ \"payload\" : 123 }")
+            .execute();
+
+        assertThat(taskKey).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
     public void testCycle()
     {
         final TngpClient client = clientRule.getClient();

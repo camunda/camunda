@@ -46,7 +46,7 @@ public class TaskImpl implements Task
         tasksClient.complete()
             .taskId(id)
             .taskQueueId(taskQueueId)
-            .payload(payloadBuffer, 0, payloadBuffer.capacity())
+            //.payload(payloadBuffer, 0, payloadBuffer.capacity())
             .execute();
 
         state = STATE_COMPLETED;

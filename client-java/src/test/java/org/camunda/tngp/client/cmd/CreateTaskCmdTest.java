@@ -16,6 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
@@ -23,11 +25,14 @@ import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.client.impl.cmd.CreateTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
+import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -42,11 +47,15 @@ public class CreateTaskCmdTest
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ExecuteCommandRequestDecoder requestDecoder = new ExecuteCommandRequestDecoder();
     private final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
+    private final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    private UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
 
     private CreateTaskCmdImpl createTaskCommand;
     private ObjectMapper objectMapper;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void setup()
@@ -80,7 +89,8 @@ public class CreateTaskCmdTest
         createTaskCommand
             .taskQueueId(1)
             .taskType("foo")
-            .payload("bar");
+            .addHeader("k", "v")
+            .payload("{ \"bar\" : 4 }");
 
         // when
         createTaskCommand.getRequestWriter().write(writeBuffer, 0);
@@ -97,7 +107,8 @@ public class CreateTaskCmdTest
 
         assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.CREATE);
         assertThat(taskEvent.getType()).isEqualTo("foo");
-        assertThat(taskEvent.getPayload()).isEqualTo("bar".getBytes());
+        assertThat(taskEvent.getHeaders()).hasSize(1).containsEntry("k", "v");
+        assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));
     }
 
     @Test
@@ -111,10 +122,14 @@ public class CreateTaskCmdTest
         responseEncoder.wrap(writeBuffer, 0);
 
         // given
+        final Map<String, String> headers = new HashMap<>();
+        headers.put("k", "v");
+
         final TaskEvent taskEvent = new TaskEvent();
         taskEvent.setEvent(TaskEventType.CREATED);
         taskEvent.setType("foo");
-        taskEvent.setPayload("bar".getBytes());
+        taskEvent.setHeaders(headers);
+        taskEvent.setPayload(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -129,6 +144,64 @@ public class CreateTaskCmdTest
 
         // then
         assertThat(taskKey).isEqualTo(2L);
+    }
+
+    @Test
+    public void shouldBeNotValidIfTaskQueueIdIsNotSet()
+    {
+        createTaskCommand
+            .taskType("foo")
+            .addHeader("k", "v")
+            .payload("{ \"bar\" : 4 }");
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("task queue id must be greater than or equal to 0");
+
+        createTaskCommand.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfTaskQueueIdIsNegative()
+    {
+        createTaskCommand
+            .taskQueueId(-2)
+            .taskType("foo")
+            .addHeader("k", "v")
+            .payload("{ \"bar\" : 4 }");
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("task queue id must be greater than or equal to 0");
+
+        createTaskCommand.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfTaskTypeIsNotSet()
+    {
+        createTaskCommand
+            .taskQueueId(0)
+            .addHeader("k", "v")
+            .payload("{ \"bar\" : 4 }");
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("task type must not be null");
+
+        createTaskCommand.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfTaskTypeIsEmpty()
+    {
+        createTaskCommand
+            .taskQueueId(0)
+            .taskType("")
+            .addHeader("k", "v")
+            .payload("{ \"bar\" : 4 }");
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("task type must not be empty");
+
+        createTaskCommand.validate();
     }
 
 }
