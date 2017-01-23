@@ -68,13 +68,13 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor
 
         // build new context
         final MsgPackType currentValueType = currentValue.getType();
-        if (MsgPackType.ARRAY == currentValueType || MsgPackType.MAP == currentValue.getType())
+        if (MsgPackType.ARRAY == currentValueType || MsgPackType.MAP == currentValueType)
         {
             context.appendElement();
             context.currentElement(-1);
             context.numElements(currentValueType == MsgPackType.MAP ? currentValue.getSize() * 2 : currentValue.getSize());
             context.applyingFilter(-1);
-            context.setIsMap(MsgPackType.MAP == currentValue.getType());
+            context.setIsMap(MsgPackType.MAP == currentValueType);
         }
 
         // post-process filter match
