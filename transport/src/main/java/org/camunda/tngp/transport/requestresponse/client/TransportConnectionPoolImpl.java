@@ -3,10 +3,9 @@ package org.camunda.tngp.transport.requestresponse.client;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportChannel;
-
-import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 
 /**
  * Manages a number of pooled connections to be reused by different threads
@@ -14,7 +13,7 @@ import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 public class TransportConnectionPoolImpl implements TransportConnectionPool
 {
     protected final ManyToManyConcurrentArrayQueue<TransportConnectionImpl> connectionPool;
-    protected final AtomicLong connectionIdSequence = new AtomicLong();
+    protected final AtomicLong connectionIdSequence = new AtomicLong(1);
     protected final TransportConnectionImpl[] connections;
     protected final TransportRequestPool requestPool;
 

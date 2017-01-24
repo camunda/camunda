@@ -32,7 +32,7 @@ public class SenderBlockPeek extends BlockPeek
                 if (currentChannel == null)
                 {
                     markFailed();
-                    System.err.println("Cannel with id " + channelId + " not open.");
+                    System.err.println("Channel with id " + channelId + " not open.");
                 }
                 else
                 {
