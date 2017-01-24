@@ -30,7 +30,7 @@ job('snapshot-unit') {
   }
 
   publishers {
-    archiveJunit('**/surefire-reports/*.xml') {
+    archiveJunit('**/surefire-reports/**/*.xml') {
       allowEmptyResults()
       retainLongStdout()
       healthScaleFactor(1.5)
