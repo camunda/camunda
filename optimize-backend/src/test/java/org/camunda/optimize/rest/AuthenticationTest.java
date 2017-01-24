@@ -84,9 +84,11 @@ public class AuthenticationTest extends AbstractJerseyTest {
 
   @Test
   public void logoutSecure() throws Exception {
+
     //when
     Response logoutResponse = target("authentication/logout")
         .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + "randomToken")
         .get();
 
     //then
