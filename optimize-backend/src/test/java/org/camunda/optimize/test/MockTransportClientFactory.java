@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es;
+package org.camunda.optimize.test;
 
 import org.elasticsearch.client.transport.TransportClient;
 import org.mockito.Mockito;

@@ -42,7 +42,8 @@ public class TokenService {
   public String issueToken(String username) {
     String token = null;
     try {
-      LocalDateTime expiryDate = LocalDateTime.now().plus(configurationService.getLifetime(), ChronoUnit.MINUTES);
+      LocalDateTime expiryDate = LocalDateTime.now()
+          .plus(configurationService.getLifetime(), ChronoUnit.MINUTES);
       token = JWT.create()
           .withSubject(username)
           .sign(Algorithm.HMAC256(configurationService.getSecret()));
