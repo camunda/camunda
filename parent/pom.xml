@@ -14,6 +14,7 @@
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <msgpack.version>0.8.11</msgpack.version>
+    <jmh.version>1.11.2</jmh.version>
   </properties>
 
   <dependencyManagement>

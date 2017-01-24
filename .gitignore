@@ -5,6 +5,7 @@ target
 .project
 .checkstyle
 .settings
+.factorypath
 build.properties
 bin
 .metadata
