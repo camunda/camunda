@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.EventTO;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ public class EventsWriter {
 
   @Autowired
   private TransportClient esclient;
+  @Autowired
+  private ConfigurationService configurationService;
   private ObjectMapper objectMapper = new ObjectMapper();
 
   public void importEvents(List<EventTO> events) throws Exception {
@@ -24,7 +27,8 @@ public class EventsWriter {
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (EventTO e : events) {
       String index = e.getActivityInstanceId() + "_" + e.getState();
-      bulkRequest.add(esclient.prepareIndex("optimize", "event", index)
+      bulkRequest.add(esclient
+          .prepareIndex(configurationService.getOptimizeIndex(),"event", index)
           .setSource(objectMapper.writeValueAsString(e)));
     }
 

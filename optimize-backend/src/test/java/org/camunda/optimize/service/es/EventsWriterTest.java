@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.EventTO;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -29,6 +30,9 @@ public class EventsWriterTest {
 
   @Autowired
   private TransportClient transportClient;
+
+  @Autowired
+  private ConfigurationService configurationService;
 
   @Test
   public void importEvents() throws Exception {
@@ -65,7 +69,7 @@ public class EventsWriterTest {
     IndexRequestBuilder indexMock = Mockito.mock(IndexRequestBuilder.class);
     Mockito.when(indexMock.setSource(Mockito.anyString())).thenReturn(indexMock);
     Mockito.when(transportClient.prepareIndex(
-        Mockito.eq("optimize"),
+        Mockito.eq(configurationService.getOptimizeIndex()),
         Mockito.eq("event"),
         Mockito.eq("null_null"))
     )

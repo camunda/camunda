@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.CredentialsTO;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -25,6 +26,8 @@ import static org.junit.Assert.*;
 public class AuthenticationTest extends AbstractJerseyTest {
   @Autowired
   private TransportClient esClientMock;
+  @Autowired
+  private ConfigurationService configurationService;
 
   @Test
   public void authenticateUser() throws Exception {
@@ -58,7 +61,7 @@ public class AuthenticationTest extends AbstractJerseyTest {
     Mockito.when(mockHist.totalHits()).thenReturn(1L);
     Mockito.when(mockSearchResponse.getHits()).thenReturn(mockHist);
     Mockito.when(mockSearch.get()).thenReturn(mockSearchResponse);
-    Mockito.when(esClientMock.prepareSearch("optimize")).thenReturn(mockSearch);
+    Mockito.when(esClientMock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(mockSearch);
   }
 
   @Test

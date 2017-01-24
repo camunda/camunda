@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es;
 
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -24,12 +25,10 @@ import java.util.Scanner;
  */
 @Component
 public class HeatMapReader {
-  //TODO: move to properties
-  private static final String INIT_SCRIPT = "correlation_init.painless";
-  private static final String MAP_SCRIPT = "correlation_map.groovy";
-  private static final String REDUCE_SCRIPT = "correlation_reduce.groovy";
   @Autowired
   private TransportClient esclient;
+  @Autowired
+  private ConfigurationService configurationService;
 
   public TransportClient getEsclient() {
     return esclient;
@@ -43,7 +42,9 @@ public class HeatMapReader {
     Map <String, Long> result = new HashMap<>();
 
     QueryBuilder query;
-    SearchRequestBuilder srb = esclient.prepareSearch("optimize").setTypes("event");
+    SearchRequestBuilder srb = esclient
+        .prepareSearch(configurationService.getOptimizeIndex())
+        .setTypes("event");
     if (processDefinitionKey != null) {
       query = QueryBuilders.matchQuery("processDefinitionKey", processDefinitionKey);
       srb.setQuery(query);
@@ -100,8 +101,8 @@ public class HeatMapReader {
     return new Script(
         ScriptType.INLINE,
         "groovy",
-        getContent(REDUCE_SCRIPT),
-        new HashMap<String,Object>()
+        getContent(configurationService.getCorrelationReduceScriptPath()),
+        new HashMap<>()
     );
   }
 
@@ -109,8 +110,8 @@ public class HeatMapReader {
     return new Script(
         ScriptType.INLINE,
         "groovy",
-        getContent(MAP_SCRIPT),
-        new HashMap<String,Object>()
+        getContent(configurationService.getCorrelationMapScriptPath()),
+        new HashMap<>()
     );
   }
 
@@ -118,8 +119,8 @@ public class HeatMapReader {
     return new Script(
         ScriptType.INLINE,
         "painless",
-        getContent(INIT_SCRIPT),
-        new HashMap<String,Object>()
+        getContent(configurationService.getCorrelationInitScriptPath()),
+        new HashMap<>()
         );
   }
 

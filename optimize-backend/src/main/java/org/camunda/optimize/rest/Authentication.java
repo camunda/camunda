@@ -5,6 +5,8 @@ import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.security.TokenService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +27,7 @@ import javax.ws.rs.core.Response;
 @Path("/authentication")
 @Component
 public class Authentication {
+  private final Logger logger = LoggerFactory.getLogger(Authentication.class);
 
   @Autowired
   private AuthenticationProvider authenticationProvider;
@@ -49,6 +52,7 @@ public class Authentication {
       return Response.ok(token).build();
 
     } catch (Exception e) {
+      logger.error("Error during user authentication", e);
       return Response.status(Response.Status.UNAUTHORIZED).build();
     }
   }

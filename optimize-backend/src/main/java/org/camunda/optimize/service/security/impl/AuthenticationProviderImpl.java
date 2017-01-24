@@ -2,6 +2,7 @@ package org.camunda.optimize.service.security.impl;
 
 import org.camunda.optimize.service.exceptions.UnauthorizedUserException;
 import org.camunda.optimize.service.security.AuthenticationProvider;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -17,8 +18,11 @@ public class AuthenticationProviderImpl implements AuthenticationProvider {
   @Autowired
   private TransportClient client;
 
+  @Autowired
+  private ConfigurationService configurationService;
+
   public void authenticate(String username, String password) throws UnauthorizedUserException {
-    SearchResponse response = client.prepareSearch("optimize")
+    SearchResponse response = client.prepareSearch(configurationService.getOptimizeIndex())
         .setTypes("users")
         .setQuery(QueryBuilders.boolQuery()
             .must(QueryBuilders.termQuery("username" , username))

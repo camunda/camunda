@@ -2,6 +2,8 @@ package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.TokenService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,7 @@ import java.io.IOException;
 @Priority(Priorities.AUTHENTICATION)
 @Component
 public class AuthenticationFilter implements ContainerRequestFilter {
+  private final Logger logger = LoggerFactory.getLogger(AuthenticationFilter.class);
 
   @Autowired
   private TokenService tokenService;
@@ -36,6 +39,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       tokenService.validateToken(token);
 
     } catch (Exception e) {
+      logger.error("Error while validating authentication token", e);
       requestContext.abortWith(
           Response.status(Response.Status.UNAUTHORIZED).build());
     }

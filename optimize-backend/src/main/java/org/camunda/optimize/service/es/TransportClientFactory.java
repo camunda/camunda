@@ -28,7 +28,6 @@ public class TransportClientFactory implements FactoryBean <TransportClient> {
     if (instance == null) {
       try {
         instance = new PreBuiltTransportClient(Settings.EMPTY)
-            //TODO: port and host should come from properties
             .addTransportAddress(new InetSocketTransportAddress(
                 InetAddress.getByName(configurationService.getElasticSearchHost()),
                 configurationService.getElasticSearchPort()
