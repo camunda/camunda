@@ -1,10 +1,8 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceDto;
-import org.camunda.optimize.dto.optimize.EventTO;
+import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.EventsWriter;
-import org.camunda.optimize.service.es.TransportClientFactory;
-import org.elasticsearch.client.transport.TransportClient;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,7 +81,7 @@ public class ActivityImportServiceTest {
 
         if (t instanceof List) {
           List cast = (List) t;
-          result = cast.size() == 1 && TEST_ACTIVITY_ID.equals(((EventTO)cast.get(0)).getActivityId());
+          result = cast.size() == 1 && TEST_ACTIVITY_ID.equals(((EventDto)cast.get(0)).getActivityId());
 
         }
         return result;

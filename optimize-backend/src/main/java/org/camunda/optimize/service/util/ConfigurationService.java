@@ -27,9 +27,14 @@ public class ConfigurationService {
   private String correlationReduceScriptPath;
   @Value("${camunda.optimize.es.index}")
   private String optimizeIndex;
+  @Value("${camunda.optimize.es.event.type}")
+  private String eventType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
+  @Value("${camunda.optimize.engine.hai.endpoint}")
+  private String historicActivityInstanceEndpoint;
+
 
 
   public String getSecret() {
@@ -66,5 +71,13 @@ public class ConfigurationService {
 
   public String getOptimizeIndex() {
     return optimizeIndex;
+  }
+
+  public String getHistoricActivityInstanceEndpoint() {
+    return historicActivityInstanceEndpoint;
+  }
+
+  public String getEventType() {
+    return eventType;
   }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * @author Askar Akhmerov
  */
-public class HeatMapRequestTO implements Serializable {
+public class HeatMapRequestDto implements Serializable {
   protected String key;
   private List<String> correlationActivities;
 

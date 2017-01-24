@@ -44,7 +44,7 @@ public class HeatMapReader {
     QueryBuilder query;
     SearchRequestBuilder srb = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes("event");
+        .setTypes(configurationService.getEventType());
     if (processDefinitionKey != null) {
       query = QueryBuilders.matchQuery("processDefinitionKey", processDefinitionKey);
       srb.setQuery(query);

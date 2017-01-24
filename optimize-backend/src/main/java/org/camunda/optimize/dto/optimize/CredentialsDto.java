@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * @author Askar Akhmerov
  */
-public class CredentialsTO implements Serializable {
+public class CredentialsDto implements Serializable {
 
   private String username;
   private String password;

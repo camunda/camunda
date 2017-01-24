@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceDto;
-import org.camunda.optimize.dto.optimize.EventTO;
+import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.mapper.EventMappingHelper;
 import org.camunda.optimize.service.es.EventsWriter;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -36,11 +36,11 @@ public class ActivityImportService {
 
     List<HistoricActivityInstanceDto> entries = client
         .target(configurationService.getEngineRestApiEndpoint())
-        .path("/history/activity-instance")
+        .path(configurationService.getHistoricActivityInstanceEndpoint())
         .request(MediaType.APPLICATION_JSON)
         .get(new GenericType<List<HistoricActivityInstanceDto>>() {});
 
-    List <EventTO> events = new ArrayList<>();
+    List <EventDto> events = new ArrayList<>();
     for (HistoricActivityInstanceDto dto: entries) {
       EventMappingHelper.map(dto,events);
     }

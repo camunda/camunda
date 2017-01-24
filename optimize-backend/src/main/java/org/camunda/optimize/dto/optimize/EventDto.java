@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * @author Askar Akhmerov
  */
-public class EventTO implements Serializable {
+public class EventDto implements Serializable {
   private String activityId;
   private String state;
   private Map<String, Object> payload;

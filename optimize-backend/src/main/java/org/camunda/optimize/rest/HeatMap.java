@@ -1,6 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.HeatMapRequestTO;
+import org.camunda.optimize.dto.optimize.HeatMapRequestDto;
 import org.camunda.optimize.service.HeatMapService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class HeatMap {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Map<String, Long> getHeatMap(HeatMapRequestTO to) {
+  public Map<String, Long> getHeatMap(HeatMapRequestDto to) {
     return heatMapService.getHeatMap(to.getKey());
   }
 
@@ -34,7 +34,7 @@ public class HeatMap {
   @Path("/correlation")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Long getCorrelation(HeatMapRequestTO to) {
+  public Long getCorrelation(HeatMapRequestDto to) {
     return heatMapService.activityCorrelation(to.getKey(), to.getCorrelationActivities());
   }
 

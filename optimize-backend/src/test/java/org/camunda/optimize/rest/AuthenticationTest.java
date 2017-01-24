@@ -1,6 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.CredentialsTO;
+import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -41,7 +41,7 @@ public class AuthenticationTest extends AbstractJerseyTest {
   }
 
   private Response authenticateAdmin() {
-    CredentialsTO entity = new CredentialsTO();
+    CredentialsDto entity = new CredentialsDto();
     entity.setUsername("admin");
     entity.setPassword("admin");
 
