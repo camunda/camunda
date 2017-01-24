@@ -38,7 +38,7 @@ public class TaskQueueTest
         .around(clientRule);
 
     @Rule
-    public ExpectedException exception = ExpectedException.none();
+    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void shouldCreateTask()
@@ -54,6 +54,23 @@ public class TaskQueueTest
             .execute();
 
         assertThat(taskKey).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    public void shouldFailCreateTaskIfTopicIdIsNotValid()
+    {
+        final TngpClient client = clientRule.getClient();
+
+        thrown.expect(BrokerRequestException.class);
+        thrown.expectMessage("Cannot execute command. Topic with id '999' not found");
+
+        client.tasks().create()
+            .taskQueueId(999)
+            .taskType("foo")
+            .addHeader("k1", "a")
+            .addHeader("k2", "b")
+            .payload("{ \"payload\" : 123 }")
+            .execute();
     }
 
     @Test
@@ -109,8 +126,8 @@ public class TaskQueueTest
 
         assertThat(taskId).isGreaterThanOrEqualTo(0);
 
-        exception.expect(BrokerRequestException.class);
-        exception.expectMessage("Task does not exist or is not locked");
+        thrown.expect(BrokerRequestException.class);
+        thrown.expectMessage("Task does not exist or is not locked");
 
         taskService.complete()
             .taskQueueId(0)

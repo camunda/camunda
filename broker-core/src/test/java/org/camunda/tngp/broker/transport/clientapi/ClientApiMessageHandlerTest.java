@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -19,7 +21,6 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
-import org.camunda.tngp.protocol.clientapi.ErrorResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.transport.TransportChannel;
@@ -68,6 +69,9 @@ public class ClientApiMessageHandlerTest
     @Mock
     private Dispatcher mockControlMessageDispatcher;
 
+    //@Mock
+    private ErrorResponseWriter mockErrorResponseWriter;
+
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -75,6 +79,8 @@ public class ClientApiMessageHandlerTest
     public void setup()
     {
         MockitoAnnotations.initMocks(this);
+
+        mockErrorResponseWriter = mock(ErrorResponseWriter.class, new FluentAnswer());
 
         when(mockTransportChannel.getId()).thenReturn(TRANSPORT_CHANNEL_ID);
 
@@ -88,7 +94,7 @@ public class ClientApiMessageHandlerTest
 
         logStream.open();
 
-        messageHandler = new ClientApiMessageHandler(mockSendBuffer, mockControlMessageDispatcher);
+        messageHandler = new ClientApiMessageHandler(mockSendBuffer, mockControlMessageDispatcher, mockErrorResponseWriter);
 
         messageHandler.addStream(logStream);
     }
@@ -160,28 +166,16 @@ public class ClientApiMessageHandlerTest
         when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
 
         // when
+        when(mockErrorResponseWriter.tryWriteResponse()).thenReturn(true);
+
         final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
 
         // then
         assertThat(isHandled).isTrue();
 
-        final ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
-
-        errorResponseDecoder.wrap(sendBuffer, fragmentOffset, errorResponseDecoder.sbeBlockLength(), errorResponseDecoder.sbeSchemaVersion());
-
-        assertThat(errorResponseDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
-        assertThat(errorResponseDecoder.errorData()).isEqualTo("Cannot execute command. Topic with id '9' id not found");
-
-        final int failedRequestLength = errorResponseDecoder.failedRequestLength();
-        assertThat(failedRequestLength).isEqualTo(commandRequestEncoder.encodedLength());
-
-        final byte[] failureRequestBuffer = new byte[failedRequestLength];
-        errorResponseDecoder.getFailedRequest(failureRequestBuffer, 0, failedRequestLength);
-
-        final byte[] requestBuffer = new byte[failedRequestLength];
-        buffer.getBytes(commandRequestEncoder.offset(), requestBuffer, 0, failedRequestLength);
-
-        assertThat(failureRequestBuffer).isEqualTo(requestBuffer);
+        verify(mockErrorResponseWriter).errorCode(ErrorCode.TOPIC_NOT_FOUND);
+        verify(mockErrorResponseWriter).errorMessage("Cannot execute command. Topic with id '%d' not found", 9L);
+        verify(mockErrorResponseWriter).tryWriteResponse();
     }
 
     @Test
@@ -208,10 +202,16 @@ public class ClientApiMessageHandlerTest
                 headerEncoder.encodedLength();
 
         // when
+        when(mockErrorResponseWriter.tryWriteResponse()).thenReturn(true);
+
         final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
 
         // then
-        assertThat(isHandled).isFalse();
+        assertThat(isHandled).isTrue();
+
+        verify(mockErrorResponseWriter).errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED);
+        verify(mockErrorResponseWriter).errorMessage("Cannot handle message. Template id '%d' is not supported.", 999);
+        verify(mockErrorResponseWriter).tryWriteResponse();
     }
 
     private int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId)

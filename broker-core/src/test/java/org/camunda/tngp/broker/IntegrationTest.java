@@ -15,6 +15,7 @@ import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -59,6 +60,9 @@ public class IntegrationTest
     @Mock
     private Dispatcher mockControlMessageDispatcher;
 
+    @Mock
+    private ErrorResponseWriter mockErrorResponseWriter;
+
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -78,7 +82,7 @@ public class IntegrationTest
 
         logStream.open();
 
-        messageHandler = new ClientApiMessageHandler(mockSendBuffer, mockControlMessageDispatcher);
+        messageHandler = new ClientApiMessageHandler(mockSendBuffer, mockControlMessageDispatcher, mockErrorResponseWriter);
 
         messageHandler.addStream(logStream);
 

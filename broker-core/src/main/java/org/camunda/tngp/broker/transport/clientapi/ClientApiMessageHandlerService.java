@@ -24,8 +24,9 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
     {
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
+        final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter(sendBuffer);
 
-        service = new ClientApiMessageHandler(sendBuffer, controlMessageBuffer);
+        service = new ClientApiMessageHandler(sendBuffer, controlMessageBuffer, errorResponseWriter);
     }
 
     @Override

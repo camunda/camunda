@@ -10,12 +10,10 @@ public class ClientErrorResponseHandler
 
     public Throwable createException(final DirectBuffer responseBuffer, final int offset, final int length)
     {
-        errorResponseDecoder.wrap(responseBuffer, offset, length, errorResponseDecoder.sbeSchemaVersion());
+        errorResponseDecoder.wrap(responseBuffer, offset, errorResponseDecoder.sbeBlockLength(), errorResponseDecoder.sbeSchemaVersion());
 
         final short errorCode = errorResponseDecoder.errorCode().value();
         final String errorData = errorResponseDecoder.errorData();
-
-        // TODO handle failed request
 
         return new BrokerRequestException(errorCode, errorData);
     }

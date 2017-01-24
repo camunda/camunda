@@ -23,39 +23,38 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
+import org.camunda.tngp.protocol.clientapi.ErrorCode;
+import org.camunda.tngp.protocol.clientapi.ErrorResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
-import org.camunda.tngp.util.buffer.DirectBufferWriter;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public class CommandResponseWriterTest
+public class ErrorResponseWriterTest
 {
-    private static final int TOPIC_ID = 1;
-    private static final long KEY = 2L;
-    private static final byte[] EVENT = "event".getBytes();
+    private static final byte[] REQUEST = "request".getBytes();
+    private static final DirectBuffer REQUEST_BUFFER = new UnsafeBuffer(REQUEST);
 
     private final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 
+    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final ErrorResponseDecoder responseDecoder = new ErrorResponseDecoder();
     private final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     private final RequestResponseProtocolHeaderDescriptor protocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
+
+    private final BrokerEventMetadata metadata = new BrokerEventMetadata();
 
     private Dispatcher mockSendBuffer;
-    private CommandResponseWriter responseWriter;
-
-    private BrokerEventMetadata metadata;
-    private DirectBufferWriter eventWriter;
+    private ErrorResponseWriter responseWriter;
 
     private ClaimedFragment claimedFragment;
 
@@ -64,10 +63,12 @@ public class CommandResponseWriterTest
     {
         mockSendBuffer = mock(Dispatcher.class);
 
-        responseWriter = new CommandResponseWriter(mockSendBuffer);
+        responseWriter = new ErrorResponseWriter(mockSendBuffer);
 
-        metadata = new BrokerEventMetadata();
-        eventWriter = new DirectBufferWriter();
+        metadata
+            .reqChannelId(1)
+            .reqRequestId(2)
+            .reqConnectionId(3);
     }
 
     @Test
@@ -76,18 +77,11 @@ public class CommandResponseWriterTest
         // when
         when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
 
-        metadata
-            .reqChannelId(1)
-            .reqConnectionId(2L)
-            .reqRequestId(3L);
-
-        eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
-
         responseWriter
-            .topicId(TOPIC_ID)
-            .longKey(KEY)
-            .brokerEventMetadata(metadata)
-            .eventWriter(eventWriter)
+            .metadata(metadata)
+            .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+            .errorMessage("error message")
+            .failedRequest(REQUEST_BUFFER, 0, REQUEST_BUFFER.capacity())
             .tryWriteResponse();
 
         // then
@@ -101,30 +95,28 @@ public class CommandResponseWriterTest
         offset += TransportHeaderDescriptor.HEADER_LENGTH;
 
         protocolHeaderDescriptor.wrap(sendBuffer, offset);
-        assertThat(protocolHeaderDescriptor.connectionId()).isEqualTo(2L);
-        assertThat(protocolHeaderDescriptor.requestId()).isEqualTo(3L);
+        assertThat(protocolHeaderDescriptor.requestId()).isEqualTo(2L);
+        assertThat(protocolHeaderDescriptor.connectionId()).isEqualTo(3L);
 
         offset += RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
 
         messageHeaderDecoder.wrap(sendBuffer, offset);
-        assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
-        assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
         assertThat(messageHeaderDecoder.schemaId()).isEqualTo(responseDecoder.sbeSchemaId());
         assertThat(messageHeaderDecoder.version()).isEqualTo(responseDecoder.sbeSchemaVersion());
+        assertThat(messageHeaderDecoder.templateId()).isEqualTo(responseDecoder.sbeTemplateId());
+        assertThat(messageHeaderDecoder.blockLength()).isEqualTo(responseDecoder.sbeBlockLength());
 
         offset += messageHeaderDecoder.encodedLength();
 
         responseDecoder.wrap(sendBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
-        assertThat(responseDecoder.topicId()).isEqualTo(1);
-        assertThat(responseDecoder.longKey()).isEqualTo(2L);
-        assertThat(responseDecoder.bytesKeyLength()).isEqualTo(0);
-        assertThat(responseDecoder.bytesKey()).isEmpty();
+        assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
+        assertThat(responseDecoder.errorData()).isEqualTo("error message");
 
-        assertThat(responseDecoder.eventLength()).isEqualTo(EVENT.length);
+        final int failedRequestLength = responseDecoder.failedRequestLength();
+        final byte[] failureRequestBuffer = new byte[failedRequestLength];
+        responseDecoder.getFailedRequest(failureRequestBuffer, 0, failedRequestLength);
 
-        final byte[] event = new byte[responseDecoder.eventLength()];
-        responseDecoder.getEvent(event, 0, responseDecoder.eventLength());
-        assertThat(event).isEqualTo(EVENT);
+        assertThat(failureRequestBuffer).isEqualTo(REQUEST);
     }
 
     @Test
@@ -150,18 +142,12 @@ public class CommandResponseWriterTest
             }
         });
 
-        metadata
-            .reqConnectionId(1L)
-            .reqRequestId(2L);
-
-        eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
-
         final boolean isSent = responseWriter
-            .topicId(TOPIC_ID)
-            .longKey(KEY)
-            .brokerEventMetadata(metadata)
-            .eventWriter(eventWriter)
-            .tryWriteResponse();
+                .metadata(metadata)
+                .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+                .errorMessage("error message")
+                .failedRequest(REQUEST_BUFFER, 0, REQUEST_BUFFER.capacity())
+                .tryWriteResponse();
 
         // then
         assertThat(isSent).isTrue();
@@ -175,18 +161,12 @@ public class CommandResponseWriterTest
         // when
         when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenReturn(-1L);
 
-        metadata
-            .reqConnectionId(1L)
-            .reqRequestId(2L);
-
-        eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
-
         final boolean isSent = responseWriter
-            .topicId(TOPIC_ID)
-            .longKey(KEY)
-            .brokerEventMetadata(metadata)
-            .eventWriter(eventWriter)
-            .tryWriteResponse();
+                .metadata(metadata)
+                .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+                .errorMessage("error message")
+                .failedRequest(REQUEST_BUFFER, 0, REQUEST_BUFFER.capacity())
+                .tryWriteResponse();
 
         // then
         assertThat(isSent).isFalse();

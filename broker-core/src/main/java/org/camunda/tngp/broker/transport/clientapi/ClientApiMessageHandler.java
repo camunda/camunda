@@ -3,21 +3,17 @@ package org.camunda.tngp.broker.transport.clientapi;
 import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
 import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
 
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
-import org.camunda.tngp.protocol.clientapi.ErrorResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
@@ -33,22 +29,24 @@ public class ClientApiMessageHandler
     protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     protected final RequestResponseProtocolHeaderDescriptor requestResponseProtocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
     protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
-    protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
-    protected final ClaimedFragment errorMessageBuffer = new ClaimedFragment();
 
-    protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
-
-    protected final Long2ObjectHashMap<LogStream> logStreamsById = new Long2ObjectHashMap<>();
-    protected final LogStreamWriter logStreamWriter = new LogStreamWriter();
-    protected final Dispatcher sendBuffer;
-    protected final Dispatcher controlMessageDispatcher;
     protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
 
-    public ClientApiMessageHandler(Dispatcher sendBuffer, Dispatcher controlMessageDispatcher)
+
+    protected final Long2ObjectHashMap<LogStream> logStreamsById = new Long2ObjectHashMap<>();
+    protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+    protected final LogStreamWriter logStreamWriter = new LogStreamWriter();
+
+    protected final Dispatcher sendBuffer;
+    protected final Dispatcher controlMessageDispatcher;
+    protected final ErrorResponseWriter errorResponseWriter;
+
+    public ClientApiMessageHandler(Dispatcher sendBuffer, Dispatcher controlMessageDispatcher, ErrorResponseWriter errorResponseWriter)
     {
         this.sendBuffer = sendBuffer;
         this.controlMessageDispatcher = controlMessageDispatcher;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     public boolean handleMessage(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
@@ -92,100 +90,110 @@ public class ClientApiMessageHandler
         {
             case ExecuteCommandRequestDecoder.TEMPLATE_ID:
 
-                executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
-
-                final long topicId = executeCommandRequestDecoder.topicId();
-
-                final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
-                final int eventLength = executeCommandRequestDecoder.commandLength();
-
-                final LogStream logStream = logStreamsById.get(topicId);
-
-                if (logStream != null)
-                {
-                    // TODO: eventMetadata.raftTermId(logStream.getCurrentTermId());
-
-                    logStreamWriter.wrap(logStream);
-
-                    final long eventPosition = logStreamWriter
-                        .positionAsKey()
-                        .metadataWriter(eventMetadata)
-                        .value(buffer, eventOffset, eventLength)
-                        .tryWrite();
-
-                    isHandled = eventPosition >= 0;
-                }
-                else
-                {
-                    final String errorMessage = String.format("Cannot execute command. Topic with id '%s' id not found", topicId);
-                    isHandled = sendErrorMessage(ErrorCode.TOPIC_NOT_FOUND, errorMessage, buffer, messageOffset, messageLength);
-                }
-
+                isHandled = handleExecuteCommandRequest(eventMetadata, buffer, messageOffset, messageLength);
                 break;
 
             case ControlMessageRequestDecoder.TEMPLATE_ID:
 
-                long publishPosition = -1;
-
-                do
-                {
-                    publishPosition = controlMessageDispatcher.offer(buffer, messageOffset, messageLength, transportChannel.getId());
-                }
-                while (publishPosition == -2);
-
-                isHandled = publishPosition >= 0;
-
+                isHandled = handleControlMessageRequest(transportChannel.getId(), buffer, messageOffset, messageLength);
                 break;
 
             default:
-
+                isHandled = writeErrorResponse(errorResponseWriter
+                        .metadata(eventMetadata)
+                        .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
+                        .errorMessage("Cannot handle message. Template id '%d' is not supported.", templateId)
+                        .failedRequest(buffer, messageOffset, messageLength));
                 break;
         }
 
         return isHandled;
     }
 
-    protected boolean sendErrorMessage(
-            ErrorCode errorCode,
-            String errorMessage,
-            DirectBuffer failedRequestBuffer,
-            int failedRequestOffset,
-            int failedRequestLength)
+    protected boolean handleExecuteCommandRequest(BrokerEventMetadata eventMetadata, DirectBuffer buffer, int messageOffset, int messageLength)
     {
-        final byte[] errorBytes = errorMessage.getBytes(StandardCharsets.UTF_8);
+        boolean isHandled = false;
 
-        final int encodedLength = messageHeaderEncoder.encodedLength() +
-                errorResponseEncoder.sbeBlockLength() +
-                ErrorResponseEncoder.errorDataHeaderLength() +
-                errorBytes.length +
-                ErrorResponseEncoder.failedRequestHeaderLength() +
-                failedRequestLength;
+        executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
-        boolean isPublished = false;
+        final long topicId = executeCommandRequestDecoder.topicId();
 
-        if (sendBuffer.claim(errorMessageBuffer, encodedLength) >= 0)
+        final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
+        final int eventLength = executeCommandRequestDecoder.commandLength();
+
+        final LogStream logStream = logStreamsById.get(topicId);
+
+        if (logStream != null)
         {
-            errorResponseEncoder.wrap(errorMessageBuffer.getBuffer(), errorMessageBuffer.getOffset());
+            // TODO: eventMetadata.raftTermId(logStream.getCurrentTermId());
 
-            try
+            logStreamWriter.wrap(logStream);
+
+            final long eventPosition = logStreamWriter
+                .positionAsKey()
+                .metadataWriter(eventMetadata)
+                .value(buffer, eventOffset, eventLength)
+                .tryWrite();
+
+            isHandled = eventPosition >= 0;
+
+            if (!isHandled)
             {
-                errorResponseEncoder
-                    .errorCode(errorCode)
-                    .putErrorData(errorBytes, 0, errorBytes.length)
-                    .putFailedRequest(failedRequestBuffer, failedRequestOffset, failedRequestLength);
-
-                errorMessageBuffer.commit();
-
-                isPublished = true;
-            }
-            catch (Throwable e)
-            {
-                errorMessageBuffer.abort();
-                LangUtil.rethrowUnchecked(e);
+                isHandled = writeErrorResponse(errorResponseWriter
+                        .metadata(eventMetadata)
+                        .errorCode(ErrorCode.REQUEST_WRITE_FAILURE)
+                        .errorMessage("Failed to write execute command request.")
+                        .failedRequest(buffer, messageOffset, messageLength));
             }
         }
+        else
+        {
+            isHandled = writeErrorResponse(errorResponseWriter
+                    .metadata(eventMetadata)
+                    .errorCode(ErrorCode.TOPIC_NOT_FOUND)
+                    .errorMessage("Cannot execute command. Topic with id '%d' not found", topicId)
+                    .failedRequest(buffer, messageOffset, messageLength));
+        }
+        return isHandled;
+    }
 
-        return isPublished;
+    protected boolean handleControlMessageRequest(int transportChannelId, DirectBuffer buffer, int messageOffset, int messageLength)
+    {
+        boolean isHandled = false;
+        long publishPosition = -1;
+
+        do
+        {
+            publishPosition = controlMessageDispatcher.offer(buffer, messageOffset, messageLength, transportChannelId);
+        }
+        while (publishPosition == -2);
+
+        isHandled = publishPosition >= 0;
+
+        if (!isHandled)
+        {
+            isHandled = writeErrorResponse(errorResponseWriter
+                .metadata(eventMetadata)
+                .errorCode(ErrorCode.REQUEST_WRITE_FAILURE)
+                .errorMessage("Failed to write control message request.")
+                .failedRequest(buffer, messageOffset, messageLength));
+        }
+        return isHandled;
+    }
+
+    protected boolean writeErrorResponse(final ErrorResponseWriter writer)
+    {
+        final boolean isWritten = writer.tryWriteResponse();
+
+        if (!isWritten)
+        {
+            final  String errorMessage = String.format("Failed to write error response. Error code: '%s', error message: '%s'",
+                    writer.getErrorCode().name(),
+                    writer.getErrorMessage());
+
+            System.err.println(errorMessage);
+        }
+        return isWritten;
     }
 
     public void addStream(LogStream logStream)

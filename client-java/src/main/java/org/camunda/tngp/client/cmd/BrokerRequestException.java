@@ -6,25 +6,24 @@ public class BrokerRequestException extends RuntimeException
 
     public static final String ERROR_MESSAGE_FORMAT = "Request exception (%d): %s\n";
 
-    protected final int detailCode;
-    protected final String message;
+    protected final int errorCodeCode;
+    protected final String errorMessage;
 
-    public BrokerRequestException(int detailCode, String message)
+    public BrokerRequestException(int errorCode, String errorMessage)
     {
-        super(String.format(ERROR_MESSAGE_FORMAT, detailCode, message));
+        super(String.format(ERROR_MESSAGE_FORMAT, errorCode, errorMessage));
 
-        this.detailCode = detailCode;
-        this.message = message;
+        this.errorCodeCode = errorCode;
+        this.errorMessage = errorMessage;
     }
 
     public int getDetailCode()
     {
-        return detailCode;
+        return errorCodeCode;
     }
 
-    @Override
-    public String getMessage()
+    public String getErrorMessage()
     {
-        return message;
+        return errorMessage;
     }
 }
