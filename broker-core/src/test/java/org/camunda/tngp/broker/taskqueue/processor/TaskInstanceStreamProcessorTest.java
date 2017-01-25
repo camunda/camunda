@@ -1,150 +1,182 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
-import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
-import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.processor.StreamProcessorController;
-import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.agent.SharedAgentRunnerService;
-import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
-import org.junit.After;
+import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class TaskInstanceStreamProcessorTest
 {
-    private static final int LOG_ID = 1;
+    private TaskInstanceStreamProcessor streamProcessor;
+    private TaskEvent taskEvent;
 
-    private static final byte[] PAYLOAD = "payload".getBytes();
+    @Mock
+    private LoggedEvent mockLoggedEvent;
 
-    private LogStream logStream;
-    private StreamProcessorController streamProcessorController;
-
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @Mock
+    private IndexStore mockIndexStore;
 
     private CommandResponseWriter mockResponseWriter;
-
-    private LogStreamWriter logStreamWriter;
+    private LogStreamWriter mockLogStreamWriter;
 
     @Before
     public void setup() throws InterruptedException, ExecutionException
     {
-        final AgentRunnerService agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
+        MockitoAnnotations.initMocks(this);
 
-        logStream = LogStreams.createFsLogStream("test-log", LOG_ID)
-            .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
-            .build();
+        mockResponseWriter = mock(CommandResponseWriter.class, new FluentAnswer());
 
-        logStream.open();
+        mockLogStreamWriter = mock(LogStreamWriter.class, new FluentAnswer());
+        when(mockLogStreamWriter.tryWrite()).thenReturn(1L);
 
-        mockResponseWriter = mock(CommandResponseWriter.class);
-
-        when(mockResponseWriter.brokerEventMetadata(any())).thenReturn(mockResponseWriter);
-        when(mockResponseWriter.longKey(anyLong())).thenReturn(mockResponseWriter);
-        when(mockResponseWriter.topicId(anyInt())).thenReturn(mockResponseWriter);
-        when(mockResponseWriter.eventWriter(any())).thenReturn(mockResponseWriter);
-        when(mockResponseWriter.tryWriteResponse()).thenReturn(true);
-
-        final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(tempFolder.getRoot().getAbsolutePath()).build();
-
-        final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
-
-        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(mockResponseWriter, indexStore))
-            .sourceStream(logStream)
-            .targetStream(logStream)
-            .snapshotStorage(snapshotStorage)
-            .agentRunnerService(agentRunnerService)
-            .build();
-
-        streamProcessorController.openAsync().get();
-
-        logStreamWriter = new LogStreamWriter(logStream);
-    }
-
-    @After
-    public void cleanUp() throws InterruptedException, ExecutionException
-    {
-        streamProcessorController.closeAsync().get();
-
-        logStream.close();
+        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockIndexStore);
     }
 
     @Test
-    public void shouldProcessCreateEvent() throws InterruptedException, ExecutionException
+    public void shouldCreateTask()
     {
-        // given
-        final DirectBuffer typeBuffer = new UnsafeBuffer("test-task".getBytes(StandardCharsets.UTF_8));
-
-        TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE)
-            .setType(typeBuffer, 0, typeBuffer.capacity())
-            .setPayload(new UnsafeBuffer(PAYLOAD));
-
-        logStreamWriter
-            .key(2L)
-            .valueWriter(taskEvent)
-            .tryWrite();
+        // when
+        processTaskEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
 
         // then
-        taskEvent = getTaskEvent(2);
-
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
-        assertThatBuffer(taskEvent.getType()).hasBytes(typeBuffer.byteArray());
 
-        assertThatBuffer(taskEvent.getPayload())
-            .hasCapacity(PAYLOAD.length)
-            .hasBytes(PAYLOAD);
-
-        verify(mockResponseWriter).topicId(LOG_ID);
         verify(mockResponseWriter).longKey(2L);
         verify(mockResponseWriter).tryWriteResponse();
     }
 
-    private TaskEvent getTaskEvent(int eventNumber)
+    @Test
+    public void shouldLockTask() throws InterruptedException, ExecutionException
     {
-        final TaskEvent taskEvent = new TaskEvent();
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+        // given
+        processTaskEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
 
-        LoggedEvent loggedEvent = null;
-        int eventCount = 0;
+        // when
+        processTaskEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123));
 
-        do
-        {
-            if (logStreamReader.hasNext())
-            {
-                loggedEvent = logStreamReader.next();
-                eventCount += 1;
-            }
-        } while (eventCount < eventNumber);
+        // then
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
 
-        loggedEvent.readValue(taskEvent);
-
-        return taskEvent;
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
+
+    @Test
+    public void shouldFailToLockTaskIfLockTimeIsNegative()
+    {
+        // given
+        processTaskEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        // when
+        processTaskEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(-1));
+
+        // then
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldFailToLockTaskIfLockTimeIsNull()
+    {
+        // given
+        processTaskEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        // when
+        processTaskEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(0));
+
+        // then
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldFailToLockTaskIfNotExist()
+    {
+        // given
+        processTaskEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        // when
+        processTaskEvent(4L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123));
+
+        // then
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldFailToLockTaskIfAlreadyLocked()
+    {
+        // given
+        processTaskEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        processTaskEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123));
+
+        // when
+        processTaskEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123));
+
+        // then
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    protected void processTaskEvent(long key, Consumer<TaskEvent> taskBuilder)
+    {
+        when(mockLoggedEvent.getLongKey()).thenReturn(key);
+
+        doAnswer(invocation ->
+        {
+            taskEvent = (TaskEvent) invocation.getArguments()[0];
+            taskEvent.reset();
+
+            taskBuilder.accept(taskEvent);
+            return null;
+        }).when(mockLoggedEvent).readValue(any());
+
+        final EventProcessor eventProcessor = streamProcessor.onEvent(mockLoggedEvent);
+        eventProcessor.processEvent();
+        eventProcessor.executeSideEffects();
+        eventProcessor.writeEvent(mockLogStreamWriter);
+        eventProcessor.updateState();
+    }
+
 }
