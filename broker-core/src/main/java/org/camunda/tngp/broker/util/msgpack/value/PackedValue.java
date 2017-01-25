@@ -10,6 +10,16 @@ public class PackedValue extends BaseValue
     private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
     private int length;
 
+    public PackedValue()
+    {
+
+    }
+
+    public PackedValue(DirectBuffer defaultValue, int offset, int length)
+    {
+        wrap(defaultValue, offset, length);
+    }
+
     public void wrap(DirectBuffer buff, int offset, int length)
     {
         this.buffer.wrap(buff, offset, length);

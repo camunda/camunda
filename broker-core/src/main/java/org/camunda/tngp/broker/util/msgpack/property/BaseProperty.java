@@ -5,53 +5,40 @@ import java.util.Objects;
 import org.camunda.tngp.broker.util.msgpack.Recyclable;
 import org.camunda.tngp.broker.util.msgpack.value.BaseValue;
 import org.camunda.tngp.broker.util.msgpack.value.StringValue;
-import org.camunda.tngp.broker.util.msgpack.value.ObjectValue;
+import org.camunda.tngp.msgpack.spec.MsgPackReader;
+import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
 public abstract class BaseProperty<T extends BaseValue> implements Recyclable
 {
-    private StringValue key;
-    private T value;
-
-    private boolean isSet;
-    protected ObjectValue objectValue;
+    protected StringValue key;
+    protected T value;
+    protected T defaultValue;
+    protected boolean isSet;
 
     public BaseProperty(T value)
     {
         this(StringValue.EMPTY_STRING, value);
     }
 
+
     public BaseProperty(String keyString, T value)
+    {
+        this(keyString, value, null);
+    }
+
+    public BaseProperty(String keyString, T value, T defaultValue)
     {
         Objects.requireNonNull(keyString);
         Objects.requireNonNull(value);
 
         this.key = new StringValue(keyString);
         this.value = value;
-    }
-
-    public void init(ObjectValue objectValue)
-    {
-        this.objectValue = objectValue;
+        this.defaultValue = defaultValue;
     }
 
     public void set()
     {
-        this.objectValue.addProperty(this);
         this.isSet = true;
-    }
-
-    public void ensureSet()
-    {
-        if (!isSet)
-        {
-            set();
-        }
-    }
-
-    public void unset()
-    {
-        this.objectValue.removePoperty(this);
-        this.isSet = false;
     }
 
     @Override
@@ -61,9 +48,9 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable
         this.value.reset();
     }
 
-    public boolean isSet()
+    public boolean isWriteable()
     {
-        return isSet;
+        return isSet || defaultValue != null;
     }
 
     public StringValue getKey()
@@ -71,9 +58,62 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable
         return key;
     }
 
-    public T getPropertyValue()
+    protected T resolveValue()
     {
-        return value;
+        if (isSet)
+        {
+            return value;
+        }
+        else if (defaultValue != null)
+        {
+            return defaultValue;
+        }
+        else
+        {
+            throw new RuntimeException("Property has no valid value");
+        }
+    }
+
+    public int getEncodedLength()
+    {
+        return key.getEncodedLength() + resolveValue().getEncodedLength();
+    }
+
+    public void read(MsgPackReader reader)
+    {
+        value.read(reader);
+        set();
+    }
+
+    public void write(MsgPackWriter writer)
+    {
+        T valueToWrite = value;
+        if (!isSet)
+        {
+            valueToWrite = defaultValue;
+        }
+
+        if (valueToWrite == null)
+        {
+            throw new RuntimeException("Cannot write property; neither value, nor default value specified");
+        }
+
+        key.write(writer);
+        valueToWrite.write(writer);
+    }
+
+    public void writeJSON(StringBuilder sb)
+    {
+        key.writeJSON(sb);
+        sb.append(":");
+        if (isWriteable())
+        {
+            resolveValue().writeJSON(sb);
+        }
+        else
+        {
+            sb.append("\"NO VALID WRITEABLE VALUE\"");
+        }
     }
 
     @Override

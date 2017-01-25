@@ -12,7 +12,7 @@ public class EnumValue<E extends Enum<E>> extends BaseValue
 
     private E value;
 
-    public EnumValue(Class<E> e)
+    public EnumValue(Class<E> e, E defaultValue)
     {
         enumConstants = e.getEnumConstants();
         binaryEnumValues = new StringValue[enumConstants.length];
@@ -22,6 +22,13 @@ public class EnumValue<E extends Enum<E>> extends BaseValue
             final E constant = enumConstants[i];
             binaryEnumValues[i] = new StringValue(constant.toString());
         }
+
+        this.value = defaultValue;
+    }
+
+    public EnumValue(Class<E> e)
+    {
+        this(e, null);
     }
 
     public E getValue()

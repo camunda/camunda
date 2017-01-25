@@ -58,7 +58,14 @@ public class StringValue extends BaseValue
 
     public void wrap(DirectBuffer buff, int offset, int length)
     {
-        this.bytes.wrap(buff, offset, length);
+        if (length == 0)
+        {
+            this.bytes.wrap(0, 0);
+        }
+        else
+        {
+            this.bytes.wrap(buff, offset, length);
+        }
         this.length = length;
         this.hashCode = 0;
     }

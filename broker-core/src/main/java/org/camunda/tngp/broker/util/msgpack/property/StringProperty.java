@@ -7,25 +7,31 @@ import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 
 public class StringProperty extends BaseProperty<StringValue>
 {
+
     public StringProperty(String key)
     {
         super(key, new StringValue());
     }
 
+    public StringProperty(String key, String defaultValue)
+    {
+        super(key, new StringValue(), new StringValue(defaultValue));
+    }
+
     public DirectBuffer getValue()
     {
-        return getPropertyValue().getValue();
+        return resolveValue().getValue();
     }
 
     public void setValue(String value)
     {
-        getPropertyValue().wrap(value.getBytes(StandardCharsets.UTF_8));
-        ensureSet();
+        this.value.wrap(value.getBytes(StandardCharsets.UTF_8));
+        this.isSet = true;
     }
 
     public void setValue(DirectBuffer buffer, int offset, int length)
     {
-        getPropertyValue().wrap(buffer, offset, length);
-        ensureSet();
+        this.value.wrap(buffer, offset, length);
+        this.isSet = true;
     }
 }

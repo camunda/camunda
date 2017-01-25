@@ -83,7 +83,7 @@ public class TaskQueueTest
 
         final Long taskId = taskService.create()
             .taskQueueId(0)
-            .payload("foo")
+            .payload("{}")
             .taskType("bar")
             .execute();
 

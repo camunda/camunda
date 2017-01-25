@@ -129,7 +129,8 @@ public class TaskStreamProcessorInterationTest
     {
         // given
         TaskEvent taskEvent = new TaskEvent()
-            .setEventType(TaskEventType.CREATE);
+            .setEventType(TaskEventType.CREATE)
+            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity());
 
         logStreamWriter
             .key(2L)

@@ -10,20 +10,24 @@ public class BinaryProperty extends BaseProperty<BinaryValue>
         super(keyString, new BinaryValue());
     }
 
+    public BinaryProperty(String keyString, DirectBuffer defaultValue)
+    {
+        super(keyString, new BinaryValue(), new BinaryValue(defaultValue, 0, defaultValue.capacity()));
+    }
+
     public DirectBuffer getValue()
     {
-        return getPropertyValue().getValue();
+        return resolveValue().getValue();
     }
 
     public void setValue(DirectBuffer data)
     {
-        getPropertyValue().wrap(data);
-        ensureSet();
+        setValue(data, 0, data.capacity());
     }
 
     public void setValue(DirectBuffer data, int offset, int length)
     {
-        getPropertyValue().wrap(data, offset, length);
-        ensureSet();
+        this.value.wrap(data, offset, length);
+        this.isSet = true;
     }
 }

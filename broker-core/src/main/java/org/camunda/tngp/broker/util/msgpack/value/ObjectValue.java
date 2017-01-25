@@ -11,7 +11,7 @@ import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 public class ObjectValue extends BaseValue
 {
     private final List<BaseProperty<? extends BaseValue>> declaredProperties = new ArrayList<>();
-    private final List<BaseProperty<? extends BaseValue>> properties = new ArrayList<>();
+    private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>();
     private final List<UndeclaredProperty> recycledProperties = new ArrayList<>();
 
     private final StringValue decodedKey = new StringValue();
@@ -19,27 +19,23 @@ public class ObjectValue extends BaseValue
     public ObjectValue declareProperty(BaseProperty<? extends BaseValue> prop)
     {
         declaredProperties.add(prop);
-        prop.init(this);
         return this;
     }
 
     @Override
     public void reset()
     {
-        for (int i = properties.size() - 1; i >= 0; --i)
+        for (int i = 0; i < declaredProperties.size(); ++i)
         {
-            final BaseProperty<? extends BaseValue> prop = properties.get(i);
+            final BaseProperty<? extends BaseValue> prop = declaredProperties.get(i);
             prop.reset();
-            tryRecycle(prop);
-            properties.remove(i);
         }
-    }
 
-    private void tryRecycle(BaseProperty<? extends BaseValue> prop)
-    {
-        if (prop instanceof UndeclaredProperty)
+        for (int i = undeclaredProperties.size() - 1; i >= 0; --i)
         {
-            recycledProperties.add((UndeclaredProperty) prop);
+            final UndeclaredProperty undeclaredProperty = undeclaredProperties.remove(i);
+            undeclaredProperty.reset();
+            recycledProperties.add(undeclaredProperty);
         }
     }
 
@@ -56,7 +52,6 @@ public class ObjectValue extends BaseValue
         else
         {
             prop = new UndeclaredProperty();
-            prop.init(this);
         }
 
         return prop;
@@ -67,6 +62,15 @@ public class ObjectValue extends BaseValue
     {
         builder.append("{");
 
+        writeJson(builder, declaredProperties);
+        writeJson(builder, undeclaredProperties);
+
+        builder.append("}");
+    }
+
+
+    protected <T extends BaseProperty<?>> void writeJson(StringBuilder builder, List<T> properties)
+    {
         for (int i = 0; i < properties.size(); i++)
         {
             if (i > 0)
@@ -76,15 +80,11 @@ public class ObjectValue extends BaseValue
 
             final BaseProperty<? extends BaseValue> prop = properties.get(i);
 
-            if (prop.isSet())
+            if (prop.isWriteable())
             {
-                prop.getKey().writeJSON(builder);
-                builder.append(":");
-                prop.getPropertyValue().writeJSON(builder);
+                prop.writeJSON(builder);
             }
         }
-
-        builder.append("}");
     }
 
     @Override
@@ -116,68 +116,57 @@ public class ObjectValue extends BaseValue
                 prop.getKey().wrap(decodedKey);
             }
 
-            final BaseValue value = prop.getPropertyValue();
-            value.read(reader);
-            prop.set();
+            prop.read(reader);
         }
     }
 
+    /**
+     * Caution: In case not all properties are writeable (i.e. value not set and no default),
+     * this method may write some of the values and only then throw an exception.
+     * The same exception is raised by {@link #getEncodedLength()}. If you call that first and it succeeds,
+     * you are safe to write all the values.
+     */
     @Override
     public void write(MsgPackWriter writer)
     {
-        final int size = properties.size();
+        final int size = declaredProperties.size() + undeclaredProperties.size();
 
         writer.writeMapHeader(size);
+        write(writer, declaredProperties);
+        write(writer, undeclaredProperties);
+    }
 
-        for (int i = 0; i < size; ++i)
+    protected <T extends BaseProperty<?>> void write(MsgPackWriter writer, List<T> properties)
+    {
+        for (int i = 0; i < properties.size(); ++i)
         {
             final BaseProperty<? extends BaseValue> prop = properties.get(i);
-            final StringValue key = prop.getKey();
-            final BaseValue value = prop.getPropertyValue();
-
-            key.write(writer);
-            value.write(writer);
+            prop.write(writer);
         }
     }
+
 
     @Override
     public int getEncodedLength()
     {
-        final int size = properties.size();
+        final int size = declaredProperties.size() + undeclaredProperties.size();
 
         int length = MsgPackWriter.getEncodedMapHeaderLenght(size);
-
-        for (int i = 0; i < size; ++i)
-        {
-            final BaseProperty<? extends BaseValue> prop = properties.get(i);
-            final StringValue key = prop.getKey();
-            final BaseValue value = prop.getPropertyValue();
-
-            length += key.getEncodedLength();
-            length += value.getEncodedLength();
-        }
+        length += getEncodedLength(declaredProperties);
+        length += getEncodedLength(undeclaredProperties);
 
         return length;
     }
 
-    public List<BaseProperty<? extends BaseValue>> getProperties()
+    protected <T extends BaseProperty<?>> int getEncodedLength(List<T> properties)
     {
-        return properties;
-    }
-
-    public List<BaseProperty<? extends BaseValue>> getDeclaredProperties()
-    {
-        return declaredProperties;
-    }
-
-    public void addProperty(BaseProperty<? extends BaseValue> objectProperty)
-    {
-        properties.add(objectProperty);
-    }
-
-    public void removePoperty(BaseProperty<? extends BaseValue> objectProperty)
-    {
-        properties.remove(objectProperty);
+        int length = 0;
+        for (int i = 0; i < properties.size(); ++i)
+        {
+            final T prop = properties.get(i);
+            length += prop.getEncodedLength();
+        }
+        return length;
     }
 
 }

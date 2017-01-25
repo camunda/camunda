@@ -9,15 +9,20 @@ public class LongProperty extends BaseProperty<LongValue>
         super(key, new LongValue());
     }
 
+    public LongProperty(String key, long defaultValue)
+    {
+        super(key, new LongValue(), new LongValue(defaultValue));
+    }
+
     public long getValue()
     {
-        return getPropertyValue().getValue();
+        return resolveValue().getValue();
     }
 
     public void setValue(long value)
     {
-        getPropertyValue().setValue(value);
-        ensureSet();
+        this.value.setValue(value);
+        this.isSet = true;
     }
 
 }

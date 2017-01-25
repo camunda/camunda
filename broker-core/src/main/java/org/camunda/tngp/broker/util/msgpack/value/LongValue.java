@@ -5,16 +5,26 @@ import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
 public class LongValue extends BaseValue
 {
-    private long value;
+    protected long value;
 
-    public long getValue()
+    public LongValue()
     {
-        return value;
+        this(0L);
+    }
+
+    public LongValue(long initialValue)
+    {
+        this.value = initialValue;
     }
 
     public void setValue(long val)
     {
         this.value = val;
+    }
+
+    public long getValue()
+    {
+        return value;
     }
 
     @Override

@@ -1,17 +1,18 @@
 package org.camunda.tngp.broker.util.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.utf8;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer;
+import java.util.Map;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.POJO.POJOEnum;
-import org.camunda.tngp.msgpack.spec.MsgPackReader;
-import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -53,27 +54,17 @@ public class ObjectMappingTest
         pojo.write(resultBuffer, 0);
 
         // then
-        final MsgPackReader reader = new MsgPackReader();
-        reader.wrap(resultBuffer, 0, resultBuffer.capacity());
-        assertThat(reader.readMapHeader()).isEqualTo(5);
+        final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer, 0, resultBuffer.capacity());
+        assertThat(msgPackMap).hasSize(5);
+        assertThat(msgPackMap).contains(
+                entry("enumProp", POJOEnum.BAR.toString()),
+                entry("longProp", 456456L),
+                entry("stringProp", "foo"),
+                entry("binaryProp", BUF2.byteArray())
+        );
 
-        // this is stricter as necessary: a hard order of properties is not required
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(utf8("enumProp"));
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(utf8(POJOEnum.BAR.toString()));
-
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(utf8("longProp"));
-        assertThat(reader.readToken().getIntegerValue()).isEqualTo(456456L);
-
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(utf8("stringProp"));
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(BUF1.byteArray());
-
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(utf8("binaryProp"));
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(BUF2.byteArray());
-
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(utf8("packedProp"));
-        assertThat(reader.readMapHeader()).isEqualTo(1);
-        assertThatBuffer(reader.readToken().getValueBuffer()).hasBytes(BUF1.byteArray());
-        assertThat(reader.readToken().getIntegerValue()).isEqualTo(123123L);
+        final Map<String, Object> packedProp = (Map<String, Object>) msgPackMap.get("packedProp");
+        assertThat(packedProp).containsExactly(entry("foo", 123123L));
     }
 
     @Test
@@ -179,21 +170,108 @@ public class ObjectMappingTest
         pojo.wrap(buffer);
     }
 
-
-
-    protected static DirectBuffer utf8(String value)
+    @Test
+    public void shouldFailDeserializationWithMissingRequiredValues()
     {
-        return new UnsafeBuffer(value.getBytes(StandardCharsets.UTF_8));
+        // given
+        final POJO pojo = new POJO();
+
+        final DirectBuffer buf1 = encodeMsgPack((w) -> w.writeMapHeader(0));
+        pojo.wrap(buf1);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Property has no valid value");
+
+        // when
+        pojo.getLong();
     }
 
-    protected static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg)
+    @Test
+    public void shouldFailSerializationWithMissingRequiredValues()
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
-        final MsgPackWriter writer = new MsgPackWriter();
-        writer.wrap(buffer, 0);
-        arg.accept(writer);
-        buffer.wrap(buffer, 0, writer.getOffset());
-        return buffer;
+        // given
+        final POJO pojo = new POJO();
+
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[1024]);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Cannot write property; neither value, nor default value specified");
+
+        // when
+        pojo.write(buf, 0);
     }
 
+    @Test
+    public void shouldFailLengthEstimationWithMissingRequiredValues()
+    {
+        // given
+        final POJO pojo = new POJO();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Property has no valid value");
+
+        // when
+        pojo.getLength();
+    }
+
+    public void shouldDeserializeWithReusedPOJO()
+    {
+        // given
+        final POJO pojo = new POJO();
+
+        final DirectBuffer buf1 = encodeMsgPack((w) ->
+        {
+            w.writeMapHeader(5);
+
+            w.writeString(utf8("enumProp"));
+            w.writeString(utf8(POJOEnum.BAR.toString()));
+
+            w.writeString(utf8("binaryProp"));
+            w.writeBinary(BUF1);
+
+            w.writeString(utf8("stringProp"));
+            w.writeString(BUF2);
+
+            w.writeString(utf8("packedProp"));
+            w.writeRaw(MSGPACK_BUF);
+
+            w.writeString(utf8("longProp"));
+            w.writeInteger(88888L);
+        });
+        pojo.wrap(buf1);
+
+        final DirectBuffer buf2 = encodeMsgPack((w) ->
+        {
+            w.writeMapHeader(5);
+
+            w.writeString(utf8("enumProp"));
+            w.writeString(utf8(POJOEnum.FOO.toString()));
+
+            w.writeString(utf8("binaryProp"));
+            w.writeBinary(BUF2);
+
+            w.writeString(utf8("stringProp"));
+            w.writeString(BUF1);
+
+            w.writeString(utf8("packedProp"));
+            w.writeRaw(MSGPACK_BUF);
+
+            w.writeString(utf8("longProp"));
+            w.writeInteger(7777L);
+        });
+
+        // when
+        pojo.reset();
+        pojo.wrap(buf2);
+
+        // then
+        assertThat(pojo.getEnum()).isEqualByComparingTo(POJOEnum.FOO);
+        assertThat(pojo.getLong()).isEqualTo(7777L);
+        assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF);
+        assertThatBuffer(pojo.getBinary()).hasBytes(BUF2);
+        assertThatBuffer(pojo.getString()).hasBytes(BUF1);
+    }
 }

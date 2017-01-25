@@ -14,6 +14,15 @@ public class BinaryValue extends BaseValue
     protected final MutableDirectBuffer data = new UnsafeBuffer(0, 0);
     protected int length = 0;
 
+    public BinaryValue()
+    {
+    }
+
+    public BinaryValue(DirectBuffer initialValue, int offset, int length)
+    {
+        wrap(initialValue, offset, length);
+    }
+
     @Override
     public void reset()
     {
@@ -28,18 +37,20 @@ public class BinaryValue extends BaseValue
 
     public void wrap(DirectBuffer buff, int offset, int length)
     {
-        this.data.wrap(buff, offset, length);
+        if (length == 0)
+        {
+            this.data.wrap(0, 0);
+        }
+        else
+        {
+            this.data.wrap(buff, offset, length);
+        }
         this.length = length;
     }
 
     public void wrap(StringValue decodedKey)
     {
         this.wrap(decodedKey.getValue());
-    }
-
-    public int getLength()
-    {
-        return length;
     }
 
     public DirectBuffer getValue()
