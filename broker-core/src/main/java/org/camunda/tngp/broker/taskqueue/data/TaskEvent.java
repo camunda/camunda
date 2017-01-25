@@ -57,6 +57,11 @@ public class TaskEvent extends UnpackedObject
         return typeProp.getValue();
     }
 
+    public TaskEvent setType(DirectBuffer buf)
+    {
+        return setType(buf, 0, buf.capacity());
+    }
+
     public TaskEvent setType(DirectBuffer buf, int offset, int length)
     {
         typeProp.setValue(buf, offset, length);
@@ -77,6 +82,12 @@ public class TaskEvent extends UnpackedObject
     public TaskEvent setPayload(DirectBuffer payload, int offset, int length)
     {
         payloadProp.setValue(payload, offset, length);
+        return this;
+    }
+
+    public TaskEvent setHeaders(DirectBuffer encodedHeaders)
+    {
+        headersProp.setValue(encodedHeaders, 0, encodedHeaders.capacity());
         return this;
     }
 
