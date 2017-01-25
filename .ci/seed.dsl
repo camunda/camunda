@@ -1,12 +1,10 @@
 
 def githubOrga = 'camunda'
-def repository = 'camunda-optimize'
+def gitRepository = 'camunda-optimize'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
-.ci/jobs/**/*.dsl
-.ci/views/common/**/*.dsl
-.ci/views/release/**/*.dsl
+.ci/views/*.dsl
 '''
 
 def setBrokenPageAsDefault = '''\
@@ -19,12 +17,15 @@ if (broken) {
 }
 '''
 
-job('seed-job-ci') {
+job('seed-job-optimize') {
+
+  displayName 'Seed Job Optimize'
+  description 'JobDSL Seed Job for Camunda Optimize'
 
   scm {
     git {
       remote {
-        github "${githubOrga}/${repository}", 'ssh'
+        github "${githubOrga}/${gitRepository}", 'ssh'
         credentials 'camunda-jenkins-github-ssh'
       }
       branch gitBranch
@@ -39,7 +40,7 @@ job('seed-job-ci') {
   }
 
   triggers {
-    scm 'H/5 * * * *'
+    githubPush()
   }
 
   label 'master'
@@ -78,4 +79,27 @@ job('seed-job-ci') {
 
   logRotator(-1, 5, -1, 1)
 
+}
+
+
+
+multibranchPipelineJob('camunda-optimize') {
+
+  displayName 'Camunda Optimize'
+  description 'MultiBranchJob for Camunda Optimize'
+
+  branchSources {
+    github {
+      repoOwner githubOrga
+      repository gitRepository
+      scanCredentialsId 'camunda-jenkins-github'
+      excludes 'noci-.*'
+    }
+  }
+
+  orphanedItemStrategy {
+    discardOldItems {
+      daysToKeep 0
+    }
+  }
 }
