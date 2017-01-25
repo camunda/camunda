@@ -14,6 +14,7 @@ package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
@@ -47,6 +48,18 @@ public class ProcessDefinitionWriter {
     }
 
     bulkRequest.execute().get();
+  }
+
+  public void importProcessDefinitionXmls(ProcessDefinitionXmlDto xml) throws Exception {
+
+    String id = xml.getId();
+    esclient.prepareIndex(
+      configurationService.getOptimizeIndex(),
+      configurationService.getProcessDefinitionXmlType(),
+      id
+    )
+      .setSource(objectMapper.writeValueAsString(xml))
+      .get();
   }
 
 

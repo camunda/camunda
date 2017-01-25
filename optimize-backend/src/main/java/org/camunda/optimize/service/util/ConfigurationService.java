@@ -31,6 +31,8 @@ public class ConfigurationService {
   private String eventType;
   @Value("${camunda.optimize.es.procdef.type}")
   private String processDefinitionType;
+  @Value("${camunda.optimize.es.procdef.xml.type}")
+  private String processDefinitionXmlType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
@@ -38,7 +40,8 @@ public class ConfigurationService {
   private String historicActivityInstanceEndpoint;
   @Value("${camunda.optimize.engine.procdef.endpoint}")
   private String processDefinitionEndpoint;
-
+  @Value("${camunda.optimize.engine.procdef.xml.endpoint}")
+  private String processDefinitionXmlEndpoint;
 
 
   public String getSecret() {
@@ -91,5 +94,15 @@ public class ConfigurationService {
 
   public String getProcessDefinitionEndpoint() {
     return processDefinitionEndpoint;
+  }
+
+  public String getProcessDefinitionXmlType() {
+    return processDefinitionXmlType;
+  }
+
+  public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
+    String processDefinitionXmlEndpoint =
+      processDefinitionEndpoint + "/" + processDefinitionId + this.processDefinitionXmlEndpoint;
+    return processDefinitionXmlEndpoint;
   }
 }

@@ -14,6 +14,7 @@ package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -65,6 +66,35 @@ public class ProcessDefinitionReader {
       list.add(processDefinition);
     }
     return list;
+  }
+
+  public String getProcessDefinitionXmls(String processDefinitionId) {
+    QueryBuilder query;
+    query = QueryBuilders
+      .idsQuery(configurationService.getProcessDefinitionXmlType())
+      .addIds(processDefinitionId);
+
+    SearchResponse sr = esclient
+      .prepareSearch(configurationService.getOptimizeIndex())
+      .setTypes(configurationService.getProcessDefinitionXmlType())
+      .setQuery(query)
+      .get();
+
+    String xml = "";
+    try {
+      SearchHit hit = sr.getHits().getAt(0);
+      String content = hit.getSourceAsString();
+      ProcessDefinitionXmlDto processDefinitionXml = objectMapper.readValue(content, ProcessDefinitionXmlDto.class);
+      xml = processDefinitionXml.getBpmn20Xml();
+    } catch (RuntimeException e) {
+      logger.error("Error while reading process definition xml from elastic search! " +
+        "No process definition with id " + processDefinitionId + "found!", e);
+    } catch (Exception e) {
+      logger.error(
+        "Error while reading process definition xml from elastic search! " +
+          "Could not parse process definition xml with id " + processDefinitionId, e);
+    }
+    return xml;
   }
 
 

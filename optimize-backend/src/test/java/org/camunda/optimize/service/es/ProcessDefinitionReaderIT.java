@@ -29,4 +29,11 @@ public class ProcessDefinitionReaderIT {
     assertThat(testDefinition.get(0).getKey(), is("testDefinition"));
   }
 
+  @Test
+  public void getProcessDefinitionXml() throws Exception {
+
+    String testXml = procDefReader.getProcessDefinitionXmls("123");
+    assertThat(testXml, is("testBpmnXml"));
+  }
+
 }

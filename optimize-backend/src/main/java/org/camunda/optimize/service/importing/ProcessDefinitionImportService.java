@@ -13,6 +13,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.service.es.ProcessDefinitionWriter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public class ProcessDefinitionImportService {
   @Autowired
   private Client client;
 
-  public void executeImport() {
+  public void executeProcessDefinitionImport() {
 
     List<ProcessDefinitionDto> entries = client
       .target(configurationService.getEngineRestApiEndpoint())
@@ -50,6 +51,22 @@ public class ProcessDefinitionImportService {
 
     try {
       procDefWriter.importProcessDefinitions(entries);
+    } catch (Exception e) {
+      logger.error("error while writing process definitions to elasticsearch", e);
+    }
+  }
+
+  public void executeProcessDefinitionXmlImport(String processDefinitionId) {
+
+    ProcessDefinitionXmlDto entry = client
+      .target(configurationService.getEngineRestApiEndpoint())
+      .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
+      .request(MediaType.APPLICATION_JSON)
+      .get(new GenericType<ProcessDefinitionXmlDto>() {
+      });
+
+    try {
+      procDefWriter.importProcessDefinitionXmls(entry);
     } catch (Exception e) {
       logger.error("error while writing process definitions to elasticsearch", e);
     }

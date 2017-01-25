@@ -1,3 +1,4 @@
 PUT:/optimize:{"mappings": {"event": {"properties": {"activityId": { "type": "text", "fielddata": true}}}}}
 POST:/optimize/event/1:{ "activityId" : "testActivity", "processDefinitionKey" : "testDefinition"}
 POST:/optimize/process-definition/123:{ "id" : "123", "key" : "testDefinition"}
+POST:/optimize/process-definition-xml/123:{ "id" : "123", "bpmn20Xml" : "testBpmnXml"}

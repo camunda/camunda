@@ -45,7 +45,7 @@ public class ProcessDefinitionImportServiceTest {
     setupClient(resultList);
 
     //when
-    underTest.executeImport();
+    underTest.executeProcessDefinitionImport();
 
     //then
     //verify invocations

@@ -34,4 +34,10 @@ public class ProcessDefinition {
     return processDefinitionReader.getProcessDefinitions();
   }
 
+  @GET
+  @Path("/{id}/xml")
+  public String getProcessDefinitionXml(@PathParam("id") String processDefinitionId){
+    return processDefinitionReader.getProcessDefinitionXmls(processDefinitionId);
+  }
+
 }

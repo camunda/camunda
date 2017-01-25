@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -37,7 +38,7 @@ public class ProcessDefinitionWriterTest {
   @Test
   public void importProcessDefinitions() throws Exception {
     //given
-    IndexRequestBuilder indexMock = setupIndexRequestBuilder();
+    IndexRequestBuilder indexMock = setupIndexRequestBuilder(configurationService.getProcessDefinitionType());
     ListenableActionFuture<BulkResponse> getMock = Mockito.mock(ListenableActionFuture.class);
     BulkRequestBuilder bulkRequest = setupBulkRequestBuilder(indexMock, getMock);
 
@@ -56,6 +57,24 @@ public class ProcessDefinitionWriterTest {
     Mockito.verify(getMock, Mockito.times(1)).get();
   }
 
+  @Test
+  public void importProcessDefinitionXml() throws Exception {
+    //given
+    IndexRequestBuilder indexMock = setupIndexRequestBuilder(configurationService.getProcessDefinitionXmlType());
+
+    ProcessDefinitionXmlDto procDefXml = new ProcessDefinitionXmlDto();
+    procDefXml.setId("123");
+    procDefXml.setBpmn20Xml("TestBpmnXml");
+
+    //when
+    underTest.importProcessDefinitionXmls(procDefXml);
+
+    //then
+    Mockito.verify(indexMock, Mockito.times(1))
+      .setSource(objectMapper.writeValueAsString(procDefXml));
+    Mockito.verify(indexMock, Mockito.times(1)).get();
+  }
+
   private BulkRequestBuilder setupBulkRequestBuilder(IndexRequestBuilder indexMock, ListenableActionFuture<BulkResponse> getMock) {
     BulkRequestBuilder bulkRequest = Mockito.mock(BulkRequestBuilder.class);
     Mockito.when(transportClient.prepareBulk()).thenReturn(bulkRequest);
@@ -64,12 +83,12 @@ public class ProcessDefinitionWriterTest {
     return bulkRequest;
   }
 
-  private IndexRequestBuilder setupIndexRequestBuilder() {
+  private IndexRequestBuilder setupIndexRequestBuilder(String type) {
     IndexRequestBuilder indexMock = Mockito.mock(IndexRequestBuilder.class);
     Mockito.when(indexMock.setSource(Mockito.anyString())).thenReturn(indexMock);
     Mockito.when(transportClient.prepareIndex(
       Mockito.eq(configurationService.getOptimizeIndex()),
-      Mockito.eq(configurationService.getProcessDefinitionType()),
+      Mockito.eq(type),
       Mockito.eq("123"))
     )
       .thenReturn(indexMock);
