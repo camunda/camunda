@@ -29,11 +29,15 @@ public class ConfigurationService {
   private String optimizeIndex;
   @Value("${camunda.optimize.es.event.type}")
   private String eventType;
+  @Value("${camunda.optimize.es.procdef.type}")
+  private String processDefinitionType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
   @Value("${camunda.optimize.engine.hai.endpoint}")
   private String historicActivityInstanceEndpoint;
+  @Value("${camunda.optimize.engine.procdef.endpoint}")
+  private String processDefinitionEndpoint;
 
 
 
@@ -79,5 +83,13 @@ public class ConfigurationService {
 
   public String getEventType() {
     return eventType;
+  }
+
+  public String getProcessDefinitionType() {
+    return processDefinitionType;
+  }
+
+  public String getProcessDefinitionEndpoint() {
+    return processDefinitionEndpoint;
   }
 }
