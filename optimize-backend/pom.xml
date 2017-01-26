@@ -10,9 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.camunda</groupId>
   <artifactId>optimize-backend</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
 
   <properties>
     <jetty.version>9.2.3.v20140905</jetty.version>
@@ -172,6 +170,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
+        <version>3.0.0</version>
         <configuration>
           <archive>
             <manifest>
@@ -240,6 +239,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.19.1</version>
         <executions>
           <execution>
             <goals>
@@ -273,6 +273,7 @@
           <plugin>
             <groupId>com.webcohesion.enunciate</groupId>
             <artifactId>enunciate-maven-plugin</artifactId>
+            <version>2.8.0</version>
             <executions>
               <execution>
                 <goals>
