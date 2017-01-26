@@ -2,9 +2,6 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-overallTimeoutInMinutes = 60
-stageTimeoutInMinutes = 15
-
 def commitId() {
   if (!env.COMMIT_ID) {
     script {
@@ -29,50 +26,48 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr:'10'))
     // "wrapper" steps that should wrap the entire build execution
     timestamps()
-    timeout(time: overallTimeoutInMinutes, unit: 'MINUTES')
+    timeout(time: 10, unit: 'MINUTES')
   }
 
   stages {
+    stage('Prepare') {
+      steps {
+        configFileProvider([
+          configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
+        ]) {}
+      }
+    }
     stage('Unit') {
       steps {
-        timeout(time: stageTimeoutInMinutes, unit: 'MINUTES') {
-          configFileProvider([
-              configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
-          ]) {
-            sh '''\
+        sh '''\
             cd client
             yarn
-            mvn -s ${WORKSPACE}/settings.xml package
             '''
-          }
-        }
+        sh 'mvn -s settings.xml clean package'
       }
       post {
         always {
-          junit testResults: '**/surefire-reports/*.xml', allowEmptyResults: true, healthScaleFactor: 1.5, keepLongStdio: true
+          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
         }
       }
     }
     stage('IT') {
       steps {
-        timeout(time: stageTimeoutInMinutes, unit: 'MINUTES') {
-          configFileProvider([
-              configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
-          ]) {
-            sh 'mvn -s settings.xml -f optimize-backend/pom.xml clean verify'
-          }
+        sh 'mvn -s settings.xml -f optimize-backend/pom.xml clean verify'
+      }
+      post {
+        always {
+          junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
+        }
+        failure {
+          archiveArtifacts artifacts: 'optimize-backend/target/elasticsearch*/logs/*.log', onlyIfSuccessful: true
         }
       }
+
     }
     stage('Docs') {
       steps {
-        timeout(time: stageTimeoutInMinutes, unit: 'MINUTES') {
-          configFileProvider([
-              configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
-          ]) {
-            sh 'mvn -s settings.xml -f optimize-backend/pom.xml -DskipTests -Pdocs clean package'
-          }
-        }
+        sh 'mvn -s settings.xml -f optimize-backend/pom.xml -DskipTests -Pdocs clean package'
       }
       post {
         success {
