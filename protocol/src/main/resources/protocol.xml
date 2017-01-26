@@ -22,6 +22,7 @@
       <validValue name="MESSAGE_NOT_SUPPORTED">0</validValue>
       <validValue name="TOPIC_NOT_FOUND">1</validValue>
       <validValue name="REQUEST_WRITE_FAILURE">2</validValue>
+      <validValue name="INVALID_CLIENT_VERSION">3</validValue>
     </enum>
 
   </types>

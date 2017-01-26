@@ -214,7 +214,32 @@ public class ClientApiMessageHandlerTest
         verify(mockErrorResponseWriter).tryWriteResponse();
     }
 
+    @Test
+    public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
+    {
+        // given
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID, Short.MAX_VALUE);
+
+        when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
+        when(mockErrorResponseWriter.tryWriteResponse()).thenReturn(true);
+
+        // when
+        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+
+        // then
+        assertThat(isHandled).isTrue();
+
+        verify(mockErrorResponseWriter).errorCode(ErrorCode.INVALID_CLIENT_VERSION);
+        verify(mockErrorResponseWriter).errorMessage("Client has newer version than broker (%d > %d)", (int) Short.MAX_VALUE, ExecuteCommandRequestEncoder.SCHEMA_VERSION);
+        verify(mockErrorResponseWriter).tryWriteResponse();
+    }
+
     private int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId)
+    {
+        return writeCommandRequestToBuffer(buffer, topicId, null);
+    }
+
+    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId, Short protocolVersion)
     {
         int offset = 0;
 
@@ -230,11 +255,13 @@ public class ClientApiMessageHandlerTest
 
         offset += RequestResponseProtocolHeaderDescriptor.headerLength();
 
+        final int protocolVersionToWrite = protocolVersion != null ? protocolVersion : commandRequestEncoder.sbeSchemaVersion();
+
         headerEncoder.wrap(buffer, offset)
             .blockLength(commandRequestEncoder.sbeBlockLength())
             .schemaId(commandRequestEncoder.sbeSchemaId())
             .templateId(commandRequestEncoder.sbeTemplateId())
-            .version(commandRequestEncoder.sbeSchemaVersion());
+            .version(protocolVersionToWrite);
 
         offset += headerEncoder.encodedLength();
 

@@ -24,6 +24,8 @@ import org.camunda.tngp.transport.singlemessage.SingleMessageHeaderDescriptor;
 
 public class ClientApiMessageHandler
 {
+    protected static final int CURRENT_PROTOCOL_VERSION = ExecuteCommandRequestDecoder.SCHEMA_VERSION;
+
     protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
@@ -85,6 +87,17 @@ public class ClientApiMessageHandler
 
         messageOffset += messageHeaderDecoder.encodedLength();
         messageLength -= messageHeaderDecoder.encodedLength();
+
+        final int clientVersion = messageHeaderDecoder.version();
+
+        if (clientVersion > CURRENT_PROTOCOL_VERSION)
+        {
+            return writeErrorResponse(errorResponseWriter
+                        .metadata(eventMetadata)
+                        .errorCode(ErrorCode.INVALID_CLIENT_VERSION)
+                        .errorMessage("Client has newer version than broker (%d > %d)", clientVersion, CURRENT_PROTOCOL_VERSION)
+                        .failedRequest(buffer, messageOffset, messageLength));
+        }
 
         switch (templateId)
         {
