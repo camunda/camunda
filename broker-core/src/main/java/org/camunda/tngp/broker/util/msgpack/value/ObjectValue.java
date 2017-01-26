@@ -39,11 +39,11 @@ public class ObjectValue extends BaseValue
         }
     }
 
-    private BaseProperty<PackedValue> getRecycledProperty()
+    private UndeclaredProperty newUndeclaredProperty(StringValue key)
     {
         final int recycledSize = recycledProperties.size();
 
-        BaseProperty<PackedValue> prop = null;
+        UndeclaredProperty prop = null;
 
         if (recycledSize > 0)
         {
@@ -53,6 +53,9 @@ public class ObjectValue extends BaseValue
         {
             prop = new UndeclaredProperty();
         }
+
+        prop.getKey().wrap(key);
+        undeclaredProperties.add(prop);
 
         return prop;
     }
@@ -112,8 +115,7 @@ public class ObjectValue extends BaseValue
 
             if (prop == null)
             {
-                prop = getRecycledProperty();
-                prop.getKey().wrap(decodedKey);
+                prop = newUndeclaredProperty(decodedKey);
             }
 
             prop.read(reader);
