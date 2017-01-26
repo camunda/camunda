@@ -13,17 +13,52 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.Throughput)
-@Warmup(iterations = 5, time = 200, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 200, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 20, time = 200, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 20, time = 200, timeUnit = TimeUnit.MILLISECONDS)
 public class POJOMappingBenchmark
 {
 
     @Benchmark
     @Threads(1)
-    public void performMappingCycle(POJOMappingContext ctx) throws Exception
+    public void performReadingOptimalOrder(POJOMappingContext ctx)
     {
         final TaskEvent taskEvent = ctx.getTaskEvent();
-        final DirectBuffer encodedTaskEvent = ctx.getEncodedTaskEvent();
+        final DirectBuffer encodedTaskEvent = ctx.getOptimalOrderEncodedTaskEvent();
+
+        taskEvent.reset();
+        taskEvent.wrap(encodedTaskEvent, 0, encodedTaskEvent.capacity());
+    }
+
+    @Benchmark
+    @Threads(1)
+    public void performReadingReverseOrder(POJOMappingContext ctx)
+    {
+        final TaskEvent taskEvent = ctx.getTaskEvent();
+        final DirectBuffer encodedTaskEvent = ctx.getReverseOrderEncodedTaskEvent();
+
+        taskEvent.reset();
+        taskEvent.wrap(encodedTaskEvent, 0, encodedTaskEvent.capacity());
+    }
+
+    @Benchmark
+    @Threads(1)
+    public void performMappingCycleOptimalEncodedOrder(POJOMappingContext ctx) throws Exception
+    {
+        final TaskEvent taskEvent = ctx.getTaskEvent();
+        final DirectBuffer encodedTaskEvent = ctx.getOptimalOrderEncodedTaskEvent();
+        final MutableDirectBuffer writeBuffer = ctx.getWriteBuffer();
+
+        taskEvent.reset();
+        taskEvent.wrap(encodedTaskEvent, 0, encodedTaskEvent.capacity());
+        taskEvent.write(writeBuffer, 0);
+    }
+
+    @Benchmark
+    @Threads(1)
+    public void performMappingCycleReverseEncodedOrder(POJOMappingContext ctx) throws Exception
+    {
+        final TaskEvent taskEvent = ctx.getTaskEvent();
+        final DirectBuffer encodedTaskEvent = ctx.getReverseOrderEncodedTaskEvent();
         final MutableDirectBuffer writeBuffer = ctx.getWriteBuffer();
 
         taskEvent.reset();

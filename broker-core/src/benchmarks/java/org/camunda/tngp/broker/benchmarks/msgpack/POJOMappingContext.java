@@ -7,6 +7,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.msgpack.spec.MsgPackReader;
 import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 import org.camunda.tngp.util.buffer.BufferUtil;
 import org.openjdk.jmh.annotations.Scope;
@@ -18,8 +19,15 @@ public class POJOMappingContext
 {
 
     protected TaskEvent taskEvent = new TaskEvent();
-    protected MutableDirectBuffer encodedMsgPack;
+
+    /*
+     * values encoded in the way TaskEvent declares them
+     */
+    protected MutableDirectBuffer optimalOrderMsgPack;
+    protected DirectBuffer reverseOrderMsgPack;
+
     protected MutableDirectBuffer writeBuffer;
+
 
     @Setup
     public void setUp()
@@ -52,12 +60,12 @@ public class POJOMappingContext
         });
         taskEvent.setHeaders(headers);
 
-        encodedMsgPack = new UnsafeBuffer(new byte[taskEvent.getLength()]);
-        taskEvent.write(encodedMsgPack, 0);
+        optimalOrderMsgPack = new UnsafeBuffer(new byte[taskEvent.getLength()]);
+        taskEvent.write(optimalOrderMsgPack, 0);
 
-        this.writeBuffer = new UnsafeBuffer(new byte[encodedMsgPack.capacity()]);
+        this.reverseOrderMsgPack = revertMapProperties(optimalOrderMsgPack);
 
-        System.out.println("One benchmark operations involves reading and writing " + encodedMsgPack.capacity() + " byte each");
+        this.writeBuffer = new UnsafeBuffer(new byte[optimalOrderMsgPack.capacity()]);
     }
 
     protected DirectBuffer write(Consumer<MsgPackWriter> arg)
@@ -70,9 +78,14 @@ public class POJOMappingContext
         return buffer;
     }
 
-    public DirectBuffer getEncodedTaskEvent()
+    public DirectBuffer getOptimalOrderEncodedTaskEvent()
     {
-        return encodedMsgPack;
+        return optimalOrderMsgPack;
+    }
+
+    public DirectBuffer getReverseOrderEncodedTaskEvent()
+    {
+        return reverseOrderMsgPack;
     }
 
     public MutableDirectBuffer getWriteBuffer()
@@ -83,5 +96,35 @@ public class POJOMappingContext
     public TaskEvent getTaskEvent()
     {
         return taskEvent;
+    }
+
+    protected DirectBuffer revertMapProperties(DirectBuffer msgPack)
+    {
+        MsgPackReader reader = new MsgPackReader();
+        reader.wrap(msgPack, 0, msgPack.capacity());
+        int size = reader.readMapHeader();
+
+        UnsafeBuffer buf = new UnsafeBuffer(new byte[msgPack.capacity()]);
+
+        MsgPackWriter writer = new MsgPackWriter();
+        writer.wrap(buf, 0);
+        writer.writeMapHeader(size);
+
+        int targetOffset = msgPack.capacity();
+
+        for (int i = 0; i < size; i++)
+        {
+            int keySourceOffset = reader.getOffset();
+            reader.skipValue();
+            int valueSourceOffset = reader.getOffset();
+            int keyLength = valueSourceOffset - keySourceOffset;
+            reader.skipValue();
+            int valueLength = reader.getOffset() - valueSourceOffset;
+
+            targetOffset -= keyLength + valueLength;
+            buf.putBytes(targetOffset, msgPack, keySourceOffset, keyLength + valueLength);
+        }
+
+        return buf;
     }
 }
