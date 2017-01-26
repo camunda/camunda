@@ -1,6 +1,6 @@
-# Continuous Integration for Camunda Optimize
+# CI/CD overview for Camunda Optimize
 
-Camunda Optimize uses Jenkins for Continuous Integration.
+Camunda Optimize uses [Jenkins](https://jenkins.io/) for CI/CD.
 
 ## Pipeline and JobDSL
 Jobs are created using the Jenkins Pipeline plugin and also the JobDSL Plugin. Both use a type of Groovy DSL but differ in terms of capability.
@@ -14,9 +14,17 @@ The JobDSL jobs and views are stored inside the `.ci` folder of the `camunda-opt
 The repository is monitored by the Jenkins and if there is a change, Jenkins will execute the so-called `seed-job`.
 The `seed-job` will then create/update/delete jobs accordingly to the dsl.
 
+# Docker images
+
+The [Camunda Optimize Jenkins](https://hq2.camunda.com/jenkins/optimize/) uses the docker image
+```
+registry.camunda.com/camunda-ci-optimize-build:latest
+```
+for running the jobs. It can be found [here](https://github.com/camunda-ci/camunda-docker-ci-optimize-build).
+
 # Useful resources for writing pipelines / jobs
 
-[Job DSL Api Viewer inside Jenkins](https://hq2.camunda.com/jenkins/optimize/plugin/job-dsl/api-viewer/index.html)
-[Jenkinsfile](https://github.com/camunda/camunda-optimize/blob/master/Jenkinsfile)
-[Pipeline syntax](https://hq2.camunda.com/jenkins/optimize/view/All/job/camunda-optimize/pipeline-syntax/)
-[Declarative pipeline syntax](https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started)
+[Job DSL Api Viewer inside Jenkins](https://hq2.camunda.com/jenkins/optimize/plugin/job-dsl/api-viewer/index.html)  
+[Jenkinsfile](https://github.com/camunda/camunda-optimize/blob/master/Jenkinsfile)  
+[Pipeline syntax](https://hq2.camunda.com/jenkins/optimize/view/All/job/camunda-optimize/pipeline-syntax/)  
+[Declarative pipeline syntax](https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started)  
