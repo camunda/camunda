@@ -75,6 +75,14 @@ pipeline {
         }
       }
     }
+    stage('Deploy to Nexus') {
+      when {
+        branch 'master'
+      }
+      steps {
+        sh 'mvn -s settings.xml -DskipTests clean deploy'
+      }
+    }
   }
 
   post {

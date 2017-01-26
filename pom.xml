@@ -24,4 +24,15 @@
     <jackson.version>2.8.5</jackson.version>
   </properties>
 
+  <distributionManagement>
+    <snapshotRepository>
+      <id>camunda-nexus</id>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize-snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>camunda-nexus</id>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-optimize</url>
+    </repository>
+  </distributionManagement>
+
 </project>
