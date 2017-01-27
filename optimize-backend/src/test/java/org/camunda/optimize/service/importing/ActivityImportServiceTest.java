@@ -30,6 +30,8 @@ import java.util.List;
 public class ActivityImportServiceTest {
 
   public static final String TEST_ACTIVITY_ID = "testActivityId";
+  public static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
+
   @InjectMocks
   @Autowired
   private ActivityImportService underTest;
@@ -97,7 +99,7 @@ public class ActivityImportServiceTest {
     Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<HistoricActivityInstanceDto>>() {})))
         .thenReturn(resultList);
     Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    Mockito.when(clientMock.target(Mockito.anyString())).thenReturn(mockTarget);
+    Mockito.when(clientMock.target(ENGINE_TARGET)).thenReturn(mockTarget);
   }
 
 }

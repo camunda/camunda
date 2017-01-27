@@ -22,6 +22,8 @@ import java.util.List;
 public class ProcessDefinitionImportServiceTest {
 
   public static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
+  private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
+
   @InjectMocks
   @Autowired
   private ProcessDefinitionImportService underTest;
@@ -90,7 +92,7 @@ public class ProcessDefinitionImportServiceTest {
     })))
       .thenReturn(resultList);
     Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    Mockito.when(clientMock.target(Mockito.anyString())).thenReturn(mockTarget);
+    Mockito.when(clientMock.target(Mockito.eq(ENGINE_TARGET))).thenReturn(mockTarget);
   }
 
 }
