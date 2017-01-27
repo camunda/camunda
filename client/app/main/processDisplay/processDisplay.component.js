@@ -18,7 +18,7 @@ function Process() {
                 <td><label>View</label></td>
               </tr>
             <tr>
-              <ProcessDefinition />
+              <ProcessDefinition selector="processDefinition" />
               <FilterList />
               <FilterCreation />
               <Result />
@@ -29,6 +29,6 @@ function Process() {
         </form>
       </div>
     </div>
-    <Diagram selector="diagram"/>
+    <Diagram selector="display"/>
   </div>;
 }

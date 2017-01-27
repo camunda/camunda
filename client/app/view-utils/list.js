@@ -12,7 +12,7 @@ export function List({onlyChild = false, key, children}) {
 
     parent.appendChild(startMarker);
 
-    return (values) => {
+    return (values = []) => {
       const valuesWithKey = values.map(
         wrapWithKey.bind(null, key)
       );

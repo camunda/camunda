@@ -8,22 +8,28 @@ describe('<Diagram>', () => {
   const diagramXml = 'diagram-xml';
   const heatmapData = {a: 1};
   const heatmapNode = document.createElement('img');
-  const initialState = {diagram: {
-    state: 'INITIAL',
+  const initialState = {display: {
+    diagram: {
+      state: 'INITIAL'
+    },
     heatmap: {
       state: 'INITIAL'
     }
   }};
-  const loadedDiagramState = {diagram: {
-    state: 'LOADED',
-    xml: diagramXml,
+  const loadedDiagramState = {display: {
+    diagram: {
+      state: 'LOADED',
+      data: diagramXml
+    },
     heatmap: {
       state: 'INITIAL'
     }
   }};
-  const loadedHeatmapState = {diagram: {
-    state: 'LOADED',
-    xml: diagramXml,
+  const loadedHeatmapState = {display: {
+    diagram: {
+      state: 'LOADED',
+      data: diagramXml
+    },
     heatmap: {
       state: 'LOADED',
       data: heatmapData
@@ -88,7 +94,7 @@ describe('<Diagram>', () => {
     };
     __set__('Viewer', Viewer);
 
-    ({update} = mountTemplate(<Diagram selector="diagram" />));
+    ({update} = mountTemplate(<Diagram selector="display" />));
   });
 
   afterEach(() => {
@@ -168,8 +174,8 @@ describe('<Diagram>', () => {
 
     it('should add overlays with the loaded heatmap data and the hovered element', () => {
       update({
-        diagram: {
-          ...loadedHeatmapState.diagram,
+        display: {
+          ...loadedHeatmapState.display,
           hovered: 'element'
         }
       });
@@ -179,14 +185,14 @@ describe('<Diagram>', () => {
 
     it('should only render heatmap once', () => {
       update({
-        diagram: {
-          ...loadedHeatmapState.diagram,
+        display: {
+          ...loadedHeatmapState.display,
           hovered: 'element'
         }
       });
       update({
-        diagram: {
-          ...loadedHeatmapState.diagram,
+        display: {
+          ...loadedHeatmapState.display,
           hovered: 'anotherElement'
         }
       });

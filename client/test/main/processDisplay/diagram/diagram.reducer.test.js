@@ -1,6 +1,7 @@
 import {expect} from 'chai';
-import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction, INITIAL_STATE,
+import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction,
         createHoverElementAction} from 'main/processDisplay/diagram/diagram.reducer';
+import {INITIAL_STATE} from 'utils/loading';
 
 describe('diagram reducer', () => {
   const diagramData = 'bpmnXml';
@@ -8,22 +9,18 @@ describe('diagram reducer', () => {
   const diagramElement = {id: 'elementId'};
 
   describe('initial', () => {
-    let id,
-        state,
+    let diagram,
         heatmap;
 
     beforeEach(() => {
-      ({id, state, heatmap} = reducer(undefined, {type: '@@INIT'}));
-    });
-
-    it('should set diagram id on state', () => {
-      expect(id).to.exist;
-      expect(typeof id).to.eql('string');
+      ({diagram, heatmap} = reducer(undefined, {type: '@@INIT'}));
     });
 
     it('should set diagram state on state', () => {
-      expect(state).to.exist;
-      expect(state).to.eql(INITIAL_STATE);
+      expect(diagram).to.exist;
+      expect(typeof diagram).to.eql('object');
+      expect(diagram.state).to.exist;
+      expect(diagram.state).to.eql(INITIAL_STATE);
     });
 
     it('should set heatmap on state', () => {
@@ -35,11 +32,11 @@ describe('diagram reducer', () => {
   });
 
   describe('actions', () => {
-    it('should set the diagram xml property on load diagram result action', () => {
-      const {xml} = reducer(undefined, createLoadingDiagramResultAction(diagramData));
+    it('should set the diagram data property on load diagram result action', () => {
+      const {diagram: {data}} = reducer(undefined, createLoadingDiagramResultAction(diagramData));
 
-      expect(xml).to.exist;
-      expect(xml).to.eql(diagramData);
+      expect(data).to.exist;
+      expect(data).to.eql(diagramData);
     });
 
     it('should set heatmap data property on load heatmap result action', () => {
