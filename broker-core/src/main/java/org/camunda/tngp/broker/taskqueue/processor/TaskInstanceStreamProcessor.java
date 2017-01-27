@@ -5,6 +5,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
@@ -14,17 +15,15 @@ import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 
-public class TaskInstanceStreamProcessor implements StreamProcessor
+public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
 {
     protected static final int INDEX_VALUE_LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
     protected static final int INDEX_POSITION_OFFSET = 0;
     protected static final int INDEX_STATE_OFFSET = SIZE_OF_LONG;
 
-    protected final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final CommandResponseWriter responseWriter;
@@ -67,7 +66,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     }
 
     @Override
-    public EventProcessor onEvent(LoggedEvent event)
+    public EventProcessor onCheckedEvent(LoggedEvent event)
     {
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();

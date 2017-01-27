@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.logstreams;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.protocol.clientapi.BrokerEventMetadataDecoder;
 import org.camunda.tngp.protocol.clientapi.BrokerEventMetadataEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
@@ -25,6 +26,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected long reqRequestId;
     protected int raftTermId;
     protected long subscriptionId;
+    protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -68,7 +70,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
             .reqConnectionId(reqConnectionId)
             .reqRequestId(reqRequestId)
             .raftTermId(raftTermId)
-            .subscriptionId(subscriptionId);
+            .subscriptionId(subscriptionId)
+            .protocolVersion(protocolVersion);
     }
 
     public int getReqChannelId()
@@ -126,6 +129,17 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return this;
     }
 
+    public BrokerEventMetadata protocolVersion(int protocolVersion)
+    {
+        this.protocolVersion = protocolVersion;
+        return this;
+    }
+
+    public int getProtocolVersion()
+    {
+        return protocolVersion;
+    }
+
     public BrokerEventMetadata reset()
     {
         reqChannelId = (int) BrokerEventMetadataEncoder.reqChannelIdNullValue();
@@ -133,6 +147,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         reqRequestId = BrokerEventMetadataDecoder.reqRequestIdNullValue();
         raftTermId = (int) BrokerEventMetadataDecoder.raftTermIdNullValue();
         subscriptionId = BrokerEventMetadataDecoder.subscriptionIdNullValue();
+        protocolVersion = BrokerEventMetadataDecoder.protocolVersionNullValue();
         return this;
     }
 

@@ -16,20 +16,20 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 
-public class LockTaskStreamProcessor implements StreamProcessor
+public class LockTaskStreamProcessor extends BrokerStreamProcessor
 {
     protected final LockTaskEventProcessor lockTaskEventProcessor = new LockTaskEventProcessor();
 
@@ -114,7 +114,7 @@ public class LockTaskStreamProcessor implements StreamProcessor
     }
 
     @Override
-    public EventProcessor onEvent(LoggedEvent event)
+    public EventProcessor onCheckedEvent(LoggedEvent event)
     {
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();
