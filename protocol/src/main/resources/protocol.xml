@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3" package="org.camunda.tngp.protocol.clientapi"
-  id="0" version="1" semanticVersion="0.1.0" description="Tngp Protocol" byteOrder="littleEndian">
+  id="0" version="${protocol.version}" semanticVersion="${project.version}" description="Tngp Protocol" byteOrder="littleEndian">
 
   <types>
     <composite name="messageHeader" description="Message identifiers and length of message root">
