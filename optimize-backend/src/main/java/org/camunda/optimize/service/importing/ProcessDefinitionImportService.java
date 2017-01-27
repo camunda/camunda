@@ -43,7 +43,7 @@ public class ProcessDefinitionImportService {
   public void executeProcessDefinitionImport() {
 
     List<ProcessDefinitionDto> entries = client
-      .target(configurationService.getEngineRestApiEndpoint())
+      .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
       .path(configurationService.getProcessDefinitionEndpoint())
       .request(MediaType.APPLICATION_JSON)
       .get(new GenericType<List<ProcessDefinitionDto>>() {
@@ -59,7 +59,7 @@ public class ProcessDefinitionImportService {
   public void executeProcessDefinitionXmlImport(String processDefinitionId) {
 
     ProcessDefinitionXmlDto entry = client
-      .target(configurationService.getEngineRestApiEndpoint())
+      .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
       .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
       .request(MediaType.APPLICATION_JSON)
       .get(new GenericType<ProcessDefinitionXmlDto>() {
