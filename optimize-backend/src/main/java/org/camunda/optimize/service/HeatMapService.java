@@ -15,8 +15,8 @@ public class HeatMapService {
   @Autowired
   private HeatMapReader heatMapReader;
 
-  public Map<String, Long> getHeatMap(String key) {
-    return heatMapReader.getHeatMap(key);
+  public Map<String, Long> getHeatMap(String processDefinitionId) {
+    return heatMapReader.getHeatMap(processDefinitionId);
   }
 
   public Long activityCorrelation (String process, List<String> activities) {

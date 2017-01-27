@@ -38,15 +38,15 @@ public class HeatMapReader {
     this.esclient = esclient;
   }
 
-  public Map <String, Long> getHeatMap(String processDefinitionKey) {
+  public Map <String, Long> getHeatMap(String processDefinitionId) {
     Map <String, Long> result = new HashMap<>();
 
     QueryBuilder query;
     SearchRequestBuilder srb = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
         .setTypes(configurationService.getEventType());
-    if (processDefinitionKey != null) {
-      query = QueryBuilders.matchQuery("processDefinitionKey", processDefinitionKey);
+    if (processDefinitionId != null) {
+      query = QueryBuilders.matchQuery("processDefinitionId", processDefinitionId);
       srb.setQuery(query);
     }
 
@@ -64,13 +64,13 @@ public class HeatMapReader {
     return result;
   }
 
-  public Long activityCorrelation(String processDefinitionKey, List<String> activities) {
+  public Long activityCorrelation(String processDefinitionId, List<String> activities) {
     Long result = null;
 
     QueryBuilder query;
     SearchRequestBuilder srb = esclient.prepareSearch();
-    if (processDefinitionKey != null) {
-      query = QueryBuilders.matchQuery("processDefinitionKey", processDefinitionKey);
+    if (processDefinitionId != null) {
+      query = QueryBuilders.matchQuery("processDefinitionId", processDefinitionId);
       srb.setQuery(query);
     }
 

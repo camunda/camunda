@@ -34,6 +34,7 @@ public class EventMappingHelper {
     createEvent.setActivityInstanceId(dto.getParentActivityInstanceId());
     createEvent.setTimestamp(dto.getStartTime());
     createEvent.setProcessDefinitionKey(dto.getProcessDefinitionKey());
+    createEvent.setProcessDefinitionId(dto.getProcessDefinitionId());
     createEvent.setProcessInstanceId(dto.getProcessInstanceId());
   }
 }

@@ -214,7 +214,6 @@
           <clusterName>elasticsearch</clusterName>
           <transportPort>9300</transportPort>
           <httpPort>9200</httpPort>
-          <pathInitScript>${project.build.testOutputDirectory}/elastic_init.script</pathInitScript>
           <skip>${skipTests}</skip>
         </configuration>
         <executions>

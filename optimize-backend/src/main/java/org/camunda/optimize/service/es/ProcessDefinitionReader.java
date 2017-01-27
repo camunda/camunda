@@ -87,8 +87,8 @@ public class ProcessDefinitionReader {
       ProcessDefinitionXmlDto processDefinitionXml = objectMapper.readValue(content, ProcessDefinitionXmlDto.class);
       xml = processDefinitionXml.getBpmn20Xml();
     } catch (RuntimeException e) {
-      logger.error("Error while reading process definition xml from elastic search! " +
-        "No process definition with id " + processDefinitionId + "found!", e);
+      logger.error("Error while reading process definition xml from elasticsearch! " +
+        "No process definition with id " + processDefinitionId + " found!", e);
     } catch (Exception e) {
       logger.error(
         "Error while reading process definition xml from elastic search! " +
