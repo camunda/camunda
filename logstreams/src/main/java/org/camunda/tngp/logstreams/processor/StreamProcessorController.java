@@ -242,9 +242,9 @@ public class StreamProcessorController implements Agent
 
             workCount += streamProcessorCmdQueue.drain(streamProcessorCmdConsumer);
 
-            if (sourceLogStreamReader.hasNext())
+            if (!streamProcessor.isSuspended() && sourceLogStreamReader.hasNext())
             {
-                workCount = 1;
+                workCount += 1;
 
                 final LoggedEvent event = sourceLogStreamReader.next();
                 context.setEvent(event);

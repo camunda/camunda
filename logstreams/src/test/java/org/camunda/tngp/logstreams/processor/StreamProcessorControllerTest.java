@@ -329,7 +329,6 @@ public class StreamProcessorControllerTest
         verify(mockStreamProcessorCmdQueue).drain(any());
     }
 
-
     @Test
     public void shouldProcessPolledEvent()
     {
@@ -362,7 +361,22 @@ public class StreamProcessorControllerTest
     }
 
     @Test
-    public void shouldSkipPolledEventIfNoProcessorIsAvailable()
+    public void shouldNotPollEventsIfSuspended()
+    {
+        when(mockStreamProcessor.isSuspended()).thenReturn(true);
+
+        open();
+
+        // -> open
+        controller.doWork();
+
+        verify(mockStreamProcessorCmdQueue).drain(any());
+
+        verify(mockSourceLogStreamReader, never()).hasNext();
+    }
+
+    @Test
+    public void shouldSkipProcessingEventIfNoProcessorIsAvailable()
     {
         when(mockSourceLogStreamReader.hasNext()).thenReturn(true);
         when(mockSourceLogStreamReader.next()).thenReturn(mockSourceEvent);
