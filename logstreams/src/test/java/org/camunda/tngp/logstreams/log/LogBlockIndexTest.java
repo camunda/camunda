@@ -187,6 +187,62 @@ public class LogBlockIndexTest
     }
 
     @Test
+    public void shouldNotReturnFirstBlockPosition()
+    {
+        // given
+        blockIndex.addBlock(10, 1000);
+
+        // then
+        for (int i = 0; i < 10; i++)
+        {
+            assertThat(blockIndex.lookupBlockPosition(i)).isEqualTo(-1);
+        }
+    }
+
+    @Test
+    public void shouldReturnFirstBlockPosition()
+    {
+        // given
+        blockIndex.addBlock(10, 1000);
+
+        // then
+        for (int i = 10; i < 100; i++)
+        {
+            assertThat(blockIndex.lookupBlockPosition(i)).isEqualTo(10);
+        }
+    }
+
+    @Test
+    public void shouldLookupBlockPositions()
+    {
+        final int capacity = blockIndex.capacity();
+
+        // given
+
+        for (int i = 0; i < capacity; i++)
+        {
+            final int pos = (i + 1) * 10;
+            final int addr = (i + 1) * 100;
+
+            blockIndex.addBlock(pos, addr);
+        }
+
+        // then
+
+        for (int i = 0; i < capacity; i++)
+        {
+            final int expectedPos = (i + 1) * 10;
+
+            for (int j = 0; j < 10; j++)
+            {
+                final int pos = ((i + 1) * 10) + j;
+
+                assertThat(blockIndex.lookupBlockPosition(pos)).isEqualTo(expectedPos);
+            }
+        }
+    }
+
+    @Test
     public void shouldRecoverIndexFromSnapshot() throws Exception
     {
         final int capacity = blockIndex.capacity();

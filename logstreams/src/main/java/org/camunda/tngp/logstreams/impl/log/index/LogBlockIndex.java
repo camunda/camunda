@@ -55,12 +55,40 @@ public class LogBlockIndex implements SnapshotSupport
      */
     public long lookupBlockAddress(long position)
     {
+        final int offset = lookupOffset(position);
+        return offset >= 0 ? indexBuffer.getLong(entryAddressOffset(offset)) : offset;
+    }
+
+    /**
+     * Returns the position of the first log entry of the the block in which the log entry identified
+     * by the provided position resides.
+     *
+     * @param position a virtual log position
+     * @return the position of the block containing the log entry identified by the provided
+     * virtual position
+     */
+    public long lookupBlockPosition(long position)
+    {
+        final int offset = lookupOffset(position);
+        return offset >= 0 ? indexBuffer.getLong(entryLogPositionOffset(offset)) : offset;
+    }
+
+    /**
+     * Returns the offset of the block in which the log entry identified by the provided position
+     * resides.
+     *
+     * @param position a virtual log position
+     * @return the offset of the block containing the log entry identified by the provided
+     * virtual position
+     */
+    protected int lookupOffset(long position)
+    {
         final int lastEntryIdx = size() - 1;
 
         int low = 0;
         int high = lastEntryIdx;
 
-        long pos = -1;
+        int pos = -1;
 
         if (low == high)
         {
@@ -69,7 +97,7 @@ public class LogBlockIndex implements SnapshotSupport
 
             if (entryValue <= position)
             {
-                pos = indexBuffer.getLong(entryAddressOffset(entryOffset));
+                pos = entryOffset;
             }
 
             high = -1;
@@ -82,7 +110,7 @@ public class LogBlockIndex implements SnapshotSupport
 
             if (mid == lastEntryIdx)
             {
-                pos = indexBuffer.getLong(entryAddressOffset(entryOffset));
+                pos = entryOffset;
                 break;
             }
             else
@@ -92,7 +120,7 @@ public class LogBlockIndex implements SnapshotSupport
 
                 if (entryValue <= position && position < nextEntryValue)
                 {
-                    pos = indexBuffer.getLong(entryAddressOffset(entryOffset));
+                    pos = entryOffset;
                     break;
                 }
                 else if (entryValue < position)
