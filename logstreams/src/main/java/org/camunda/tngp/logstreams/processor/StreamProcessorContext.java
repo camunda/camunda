@@ -1,5 +1,6 @@
 package org.camunda.tngp.logstreams.processor;
 
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
@@ -25,6 +26,8 @@ public class StreamProcessorContext
     protected SnapshotStorage snapshotStorage;
 
     protected AgentRunnerService agentRunnerService;
+
+    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
 
     public LogStream getSourceStream()
     {
@@ -134,6 +137,16 @@ public class StreamProcessorContext
     public void setTargetLogStreamReader(LogStreamReader targetLogStreamReader)
     {
         this.targetLogStreamReader = targetLogStreamReader;
+    }
+
+    public ManyToOneConcurrentArrayQueue<StreamProcessorCommand> getStreamProcessorCmdQueue()
+    {
+        return streamProcessorCmdQueue;
+    }
+
+    public void setStreamProcessorCmdQueue(ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue)
+    {
+        this.streamProcessorCmdQueue = streamProcessorCmdQueue;
     }
 
 }

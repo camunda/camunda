@@ -15,6 +15,7 @@ package org.camunda.tngp.logstreams.processor;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -39,9 +40,11 @@ public class StreamProcessorBuilder
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
 
-    private LogStreamReader sourceLogStreamReader;
-    private LogStreamReader targetLogStreamReader;
-    private LogStreamWriter logStreamWriter;
+    protected LogStreamReader sourceLogStreamReader;
+    protected LogStreamReader targetLogStreamReader;
+    protected LogStreamWriter logStreamWriter;
+
+    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
 
     public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
     {
@@ -80,6 +83,12 @@ public class StreamProcessorBuilder
         return this;
     }
 
+    public StreamProcessorBuilder streamProcessorCmdQueue(ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue)
+    {
+        this.streamProcessorCmdQueue = streamProcessorCmdQueue;
+        return this;
+    }
+
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
@@ -87,6 +96,11 @@ public class StreamProcessorBuilder
         Objects.requireNonNull(targetStream, "No target stream provided.");
         Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
         Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
+
+        if (streamProcessorCmdQueue == null)
+        {
+            streamProcessorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
+        }
 
         if (snapshotPolicy == null)
         {
@@ -109,6 +123,7 @@ public class StreamProcessorBuilder
         ctx.setName(name);
 
         ctx.setStreamProcessor(streamProcessor);
+        ctx.setStreamProcessorCmdQueue(streamProcessorCmdQueue);
 
         ctx.setSourceStream(sourceStream);
         ctx.setTargetStream(targetStream);

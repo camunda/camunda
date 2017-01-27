@@ -17,8 +17,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -85,6 +87,9 @@ public class StreamProcessorController implements Agent
     protected final StreamProcessor streamProcessor;
     protected final StreamProcessorContext streamProcessorContext;
 
+    protected final ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
+    protected final Consumer<StreamProcessorCommand> streamProcessorCmdConsumer = cmd -> cmd.execute();
+
     protected final LogStreamReader sourceLogStreamReader;
     protected final LogStreamReader targetLogStreamReader;
     protected final LogStreamWriter logStreamWriter;
@@ -107,6 +112,7 @@ public class StreamProcessorController implements Agent
         this.logStreamWriter = context.getLogStreamWriter();
         this.snapshotPolicy = context.getSnapshotPolicy();
         this.snapshotStorage = context.getSnapshotStorage();
+        this.streamProcessorCmdQueue = context.getStreamProcessorCmdQueue();
     }
 
     @Override
@@ -233,6 +239,8 @@ public class StreamProcessorController implements Agent
         public int doWork(Context context)
         {
             int workCount = 0;
+
+            workCount += streamProcessorCmdQueue.drain(streamProcessorCmdConsumer);
 
             if (sourceLogStreamReader.hasNext())
             {

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -57,6 +58,9 @@ public class StreamProcessorControllerTest
 
     @Mock
     private StreamProcessor mockStreamProcessor;
+
+    @Mock
+    private ManyToOneConcurrentArrayQueue<StreamProcessorCommand> mockStreamProcessorCmdQueue;
 
     @Mock
     private EventProcessor mockEventProcessor;
@@ -119,6 +123,7 @@ public class StreamProcessorControllerTest
         context.setLogStreamWriter(mockLogStreamWriter);
         context.setSnapshotPolicy(mockSnapshotPolicy);
         context.setSnapshotStorage(mockSnapshotStorage);
+        context.setStreamProcessorCmdQueue(mockStreamProcessorCmdQueue);
 
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
@@ -312,6 +317,18 @@ public class StreamProcessorControllerTest
         verify(mockSourceLogStreamReader, times(2)).hasNext();
         verify(mockSourceLogStreamReader, times(1)).next();
     }
+
+    @Test
+    public void shouldDrainStreamProcessorCmdQueueWhenOpen()
+    {
+        open();
+
+        // -> open
+        controller.doWork();
+
+        verify(mockStreamProcessorCmdQueue).drain(any());
+    }
+
 
     @Test
     public void shouldProcessPolledEvent()
