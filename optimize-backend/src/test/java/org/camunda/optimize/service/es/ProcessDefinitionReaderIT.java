@@ -53,6 +53,36 @@ public class ProcessDefinitionReaderIT {
   }
 
   @Test
+  public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() {
+
+    // given
+    ProcessDefinitionDto procDef = new ProcessDefinitionDto();
+    procDef.setId("123");
+    procDef.setKey("testDefinition");
+    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
+
+    EventDto event1 = new EventDto();
+    event1.setActivityId("testActivity");
+    event1.setActivityInstanceId("1");
+    event1.setProcessDefinitionId("123");
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", event1);
+
+    EventDto event2 = new EventDto();
+    event2.setActivityId("testActivity");
+    event2.setActivityInstanceId("2");
+    event2.setProcessDefinitionId("123");
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"2", event2);
+
+    // when
+    List<ProcessDefinitionDto> testDefinition = procDefReader.getProcessDefinitions();
+
+    // then
+    assertThat(testDefinition.size(), is(1));
+    assertThat(testDefinition.get(0).getId(), is("123"));
+    assertThat(testDefinition.get(0).getKey(), is("testDefinition"));
+  }
+
+  @Test
   public void getProcessDefinitionXml() throws Exception {
 
     // given
