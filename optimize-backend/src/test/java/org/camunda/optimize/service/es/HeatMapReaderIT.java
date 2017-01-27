@@ -50,4 +50,48 @@ public class HeatMapReaderIT {
     assertThat(testDefinition.get("testActivity"),is(1L));
   };
 
+  @Test
+  public void getHeatMapMultipleEvents() throws Exception {
+
+    // given
+    EventDto event = new EventDto();
+    event.setActivityId("testActivity");
+    event.setProcessDefinitionId("testDefinitionId");
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"6", event);
+
+    // when
+    Map<String, Long> testDefinition = heatMapService.getHeatMap("testDefinitionId");
+
+    // then
+    assertThat(testDefinition.size(),is(1));
+    assertThat(testDefinition.get("testActivity"),is(2L));
+  };
+
+  @Test
+  public void getHeatMapMultipleEventsWithMultipleProcesses() throws Exception {
+
+    // given
+    EventDto event = new EventDto();
+    event.setActivityId("testActivity");
+    event.setProcessDefinitionId("testDefinitionId1");
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"6", event);
+
+    event = new EventDto();
+    event.setActivityId("testActivity");
+    event.setProcessDefinitionId("testDefinitionId2");
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"7", event);
+
+    // when
+    Map<String, Long> testDefinition1 = heatMapService.getHeatMap("testDefinitionId1");
+    Map<String, Long> testDefinition2 = heatMapService.getHeatMap("testDefinitionId2");
+
+    // then
+    assertThat(testDefinition1.size(),is(1));
+    assertThat(testDefinition1.get("testActivity"),is(2L));
+    assertThat(testDefinition2.size(),is(1));
+    assertThat(testDefinition2.get("testActivity"),is(1L));
+  };
+
 }
