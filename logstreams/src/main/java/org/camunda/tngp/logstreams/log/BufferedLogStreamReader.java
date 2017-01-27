@@ -1,24 +1,8 @@
 package org.camunda.tngp.logstreams.log;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGHT;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.headerLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
-import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.logstreams.spi.LogStorage.*;
 
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
@@ -126,20 +110,26 @@ public class BufferedLogStreamReader implements LogStreamReader
     {
         clear();
 
-        final int indexSize = blockIndex.size();
-        if (indexSize > 0)
-        {
-            nextReadAddr = blockIndex.lookupBlockAddress(seekPosition);
-        }
-        else
-        {
-            // fallback: seek without index
-            nextReadAddr = logStorage.getFirstBlockAddress();
+        nextReadAddr = blockIndex.lookupBlockAddress(seekPosition);
 
-            if (nextReadAddr == -1)
+        if (nextReadAddr < 0)
+        {
+            final int size = blockIndex.size();
+
+            if (size > 0)
             {
-                this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
-                return false;
+                nextReadAddr = blockIndex.getAddress(0);
+            }
+            else
+            {
+                // fallback: seek without index
+                nextReadAddr = logStorage.getFirstBlockAddress();
+
+                if (nextReadAddr == -1)
+                {
+                    this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+                    return false;
+                }
             }
         }
 

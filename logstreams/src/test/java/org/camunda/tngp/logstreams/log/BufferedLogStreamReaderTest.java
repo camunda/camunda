@@ -12,14 +12,10 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntries;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.NoSuchElementException;
 
@@ -342,6 +338,7 @@ public class BufferedLogStreamReaderTest
     public void shouldSeekToFirstEventIfIndexNotExist()
     {
         when(mockBlockIndex.size()).thenReturn(0);
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(-1L);
 
         mockLogStorage
             .firstBlockAddress(10)
@@ -365,6 +362,7 @@ public class BufferedLogStreamReaderTest
     public void shouldSeekToLastEventIfIndexNotExist()
     {
         when(mockBlockIndex.size()).thenReturn(0);
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(-1L);
 
         mockLogStorage
             .firstBlockAddress(10)
@@ -388,6 +386,7 @@ public class BufferedLogStreamReaderTest
     public void shouldSeekToPositionIfIndexNotExist()
     {
         when(mockBlockIndex.size()).thenReturn(0);
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(-1L);
 
         mockLogStorage
             .firstBlockAddress(10)
@@ -461,6 +460,7 @@ public class BufferedLogStreamReaderTest
     @Test
     public void shouldNotHasEventIfLogIsEmpty()
     {
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(-1L);
         mockLogStorage.firstBlockAddress(-1);
 
         reader.wrap(mockLogStream);
@@ -473,6 +473,7 @@ public class BufferedLogStreamReaderTest
     @Test
     public void shouldNotReadEventIfLogIsEmpty()
     {
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(-1L);
         mockLogStorage.firstBlockAddress(-1);
 
         reader.wrap(mockLogStream);
@@ -495,6 +496,7 @@ public class BufferedLogStreamReaderTest
     @Test
     public void shouldNotGetPositionIfLogIsEmpty()
     {
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(-1L);
         mockLogStorage.firstBlockAddress(-1);
 
         reader.wrap(mockLogStream);
@@ -502,6 +504,36 @@ public class BufferedLogStreamReaderTest
         thrown.expect(NoSuchElementException.class);
 
         reader.getPosition();
+    }
+
+    @Test
+    public void shouldReadFirstEventWhenPositionIsNotContainedInBlockIndex()
+    {
+        when(mockBlockIndex.size()).thenReturn(1);
+        when(mockBlockIndex.getAddress(0)).thenReturn(100L);
+        when(mockBlockIndex.lookupBlockAddress(5L)).thenReturn(-1L);
+
+        mockLogStorage
+            .firstBlockAddress(100)
+            .add(newLogEntry()
+                .address(100)
+                .position(10)
+                .key(2)
+                .sourceEventLogStreamId(3)
+                .sourceEventPosition(4L)
+                .producerId(5)
+                .value("event".getBytes()));
+
+        reader.wrap(mockLogStream);
+
+        reader.seek(5L);
+
+        assertThat(reader.hasNext()).isTrue();
+
+        final LoggedEvent event = reader.next();
+
+        assertThat(event).isNotNull();
+        assertThat(event.getPosition()).isEqualTo(10L);
     }
 
 }

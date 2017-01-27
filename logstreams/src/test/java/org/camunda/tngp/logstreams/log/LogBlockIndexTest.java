@@ -1,9 +1,8 @@
 package org.camunda.tngp.logstreams.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntries;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -129,6 +128,32 @@ public class LogBlockIndexTest
     {
         assertThat(blockIndex.lookupBlockAddress(-1)).isEqualTo(-1);
         assertThat(blockIndex.lookupBlockAddress(1)).isEqualTo(-1);
+    }
+
+    @Test
+    public void shouldNotReturnFirstBlockIndex()
+    {
+        // given
+        blockIndex.addBlock(10, 1000);
+
+        // then
+        for (int i = 0; i < 10; i++)
+        {
+            assertThat(blockIndex.lookupBlockAddress(i)).isEqualTo(-1);
+        }
+    }
+
+    @Test
+    public void shouldReturnFirstBlockIndex()
+    {
+        // given
+        blockIndex.addBlock(10, 1000);
+
+        // then
+        for (int i = 10; i < 100; i++)
+        {
+            assertThat(blockIndex.lookupBlockAddress(i)).isEqualTo(1000);
+        }
     }
 
     @Test

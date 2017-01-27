@@ -1,12 +1,7 @@
 package org.camunda.tngp.logstreams.impl.log.index;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.dataOffset;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryAddressOffset;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLength;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLogPositionOffset;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.entryOffset;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.indexSizeOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -66,6 +61,19 @@ public class LogBlockIndex implements SnapshotSupport
         int high = lastEntryIdx;
 
         long pos = -1;
+
+        if (low == high)
+        {
+            final int entryOffset = entryOffset(low);
+            final long entryValue = indexBuffer.getLong(entryLogPositionOffset(entryOffset));
+
+            if (entryValue <= position)
+            {
+                pos = indexBuffer.getLong(entryAddressOffset(entryOffset));
+            }
+
+            high = -1;
+        }
 
         while (low <= high)
         {
