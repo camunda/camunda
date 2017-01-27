@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthenticationProvider;
+import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ public class Authentication {
   private final Logger logger = LoggerFactory.getLogger(Authentication.class);
 
   @Autowired
-  private AuthenticationProvider authenticationProvider;
+  private AuthenticationService authenticationService;
 
   @Autowired
   private TokenService tokenService;
@@ -39,14 +40,8 @@ public class Authentication {
   @Produces("application/json")
   @Consumes("application/json")
   public Response authenticateUser(CredentialsDto credentials) {
-
     try {
-
-      // Authenticate the user using the credentials provided
-      authenticationProvider.authenticate(credentials.getUsername(), credentials.getPassword());
-
-      // Issue a token for the user
-      String token = tokenService.issueToken(credentials.getUsername());
+      String token = authenticationService.authenticateUser(credentials);
 
       // Return the token on the response
       return Response.ok(token).build();

@@ -16,10 +16,7 @@
 
   <context:property-placeholder location="classpath:service.properties" />
 
-  <bean id="engineClient"
-        class="javax.ws.rs.client.ClientBuilder"
-        factory-method="newClient"/>
-
+  <bean id="engineClient" class="org.camunda.optimize.test.MockEngineClientFactory"/>
 
   <bean id="transportClient"  class="org.camunda.optimize.test.MockTransportClientFactory"/>
 

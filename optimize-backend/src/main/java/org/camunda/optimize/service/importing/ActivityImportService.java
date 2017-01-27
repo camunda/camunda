@@ -35,7 +35,7 @@ public class ActivityImportService {
   public void executeImport () {
 
     List<HistoricActivityInstanceDto> entries = client
-        .target(configurationService.getEngineRestApiEndpoint())
+        .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
         .path(configurationService.getHistoricActivityInstanceEndpoint())
         .request(MediaType.APPLICATION_JSON)
         .get(new GenericType<List<HistoricActivityInstanceDto>>() {});

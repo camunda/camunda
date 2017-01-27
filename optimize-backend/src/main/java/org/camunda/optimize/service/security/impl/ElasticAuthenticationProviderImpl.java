@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.security.impl;
 
-import org.camunda.optimize.service.exceptions.UnauthorizedUserException;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
@@ -12,8 +11,8 @@ import org.springframework.stereotype.Component;
 /**
  * @author Askar Akhmerov
  */
-@Component
-public class AuthenticationProviderImpl implements AuthenticationProvider {
+@Component ("elasticAuthenticationProvider")
+public class ElasticAuthenticationProviderImpl implements AuthenticationProvider {
 
   @Autowired
   private TransportClient client;
@@ -21,7 +20,8 @@ public class AuthenticationProviderImpl implements AuthenticationProvider {
   @Autowired
   private ConfigurationService configurationService;
 
-  public void authenticate(String username, String password) throws UnauthorizedUserException {
+  public boolean authenticate(String username, String password) {
+    boolean authenticated = true;
     SearchResponse response = client.prepareSearch(configurationService.getOptimizeIndex())
         .setTypes("users")
         .setQuery(QueryBuilders.boolQuery()
@@ -29,7 +29,11 @@ public class AuthenticationProviderImpl implements AuthenticationProvider {
             .must(QueryBuilders.termQuery("password" , password))
         )
         .get();
-    if (response.getHits().totalHits() <= 0) throw new UnauthorizedUserException();
+    if (response.getHits().totalHits() <= 0) {
+      authenticated = false;
+    }
+
+    return authenticated;
   }
 
   public TransportClient getClient() {

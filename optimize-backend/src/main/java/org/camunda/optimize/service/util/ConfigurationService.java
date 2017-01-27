@@ -42,6 +42,10 @@ public class ConfigurationService {
   private String processDefinitionEndpoint;
   @Value("${camunda.optimize.engine.procdef.xml.endpoint}")
   private String processDefinitionXmlEndpoint;
+  @Value("${camunda.optimize.engine.user.validation.endpoint}")
+  private String userValidationEndpoint;
+  @Value("${camunda.optimize.engine.name}")
+  private String engineName;
 
 
   public String getSecret() {
@@ -86,6 +90,14 @@ public class ConfigurationService {
 
   public String getEventType() {
     return eventType;
+  }
+
+  public String getUserValidationEndpoint() {
+    return userValidationEndpoint;
+  }
+
+  public String getEngineName() {
+    return engineName;
   }
 
   public String getProcessDefinitionType() {
