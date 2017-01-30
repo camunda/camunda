@@ -28,9 +28,7 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -138,22 +136,14 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private void loadProperties() {
     properties = new Properties();
-    InputStream input = null;
-
     try {
-      input = new FileInputStream("./src/test/resources/service.properties");
-      // load a properties file
-      properties.load(input);
+      properties.load(
+        ElasticSearchIntegrationTestRule.class
+          .getClassLoader()
+          .getResourceAsStream("service.properties")
+      );
     } catch (IOException ex) {
       logger.error("Unable to load test properties!", ex);
-    } finally {
-      if (input != null) {
-        try {
-          input.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
     }
   }
 
