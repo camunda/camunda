@@ -27,6 +27,12 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -39,16 +45,8 @@
             <goals>
               <goal>resources</goal>
             </goals>
-            <configuration>
-              <resources>
-                <resource>
-                  <directory>src/main/resources</directory>
-                  <filtering>true</filtering>
-                </resource>
-              </resources>
-            </configuration>
           </execution>
-        </executions>   
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
