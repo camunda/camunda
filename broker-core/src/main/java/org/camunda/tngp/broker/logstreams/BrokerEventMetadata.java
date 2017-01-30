@@ -24,6 +24,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected long reqConnectionId;
     protected long reqRequestId;
     protected int raftTermId;
+    protected long subscriptionId;
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -40,6 +41,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         reqConnectionId = decoder.reqConnectionId();
         reqRequestId = decoder.reqRequestId();
         raftTermId = (int) decoder.raftTermId();
+        subscriptionId = decoder.subscriptionId();
     }
 
     @Override
@@ -65,7 +67,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         encoder.reqChannelId(reqChannelId)
             .reqConnectionId(reqConnectionId)
             .reqRequestId(reqRequestId)
-            .raftTermId(raftTermId);
+            .raftTermId(raftTermId)
+            .subscriptionId(subscriptionId);
     }
 
     public int getReqChannelId()
@@ -112,12 +115,24 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return this;
     }
 
+    public long getSubscriptionId()
+    {
+        return subscriptionId;
+    }
+
+    public BrokerEventMetadata subscriptionId(long subscriptionId)
+    {
+        this.subscriptionId = subscriptionId;
+        return this;
+    }
+
     public BrokerEventMetadata reset()
     {
         reqChannelId = (int) BrokerEventMetadataEncoder.reqChannelIdNullValue();
         reqConnectionId = BrokerEventMetadataEncoder.reqConnectionIdNullValue();
         reqRequestId = BrokerEventMetadataDecoder.reqRequestIdNullValue();
         raftTermId = (int) BrokerEventMetadataDecoder.raftTermIdNullValue();
+        subscriptionId = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         return this;
     }
 

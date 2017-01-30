@@ -2,16 +2,20 @@ package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
@@ -44,7 +48,11 @@ public class TaskStreamProcessorInterationTest
     private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE);
 
     private LogStream logStream;
-    private StreamProcessorController streamProcessorController;
+
+    private LockTaskStreamProcessor lockTaskStreamProcessor;
+
+    private StreamProcessorController taskInstanceStreamProcessorController;
+    private StreamProcessorController taskSubscriptionStreamProcessorController;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -53,13 +61,17 @@ public class TaskStreamProcessorInterationTest
     private LogStreamWriter logStreamWriter;
     private AgentRunnerService agentRunnerService;
 
+    private BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
+
     @Before
     public void setup() throws InterruptedException, ExecutionException
     {
         agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
 
+        final String rootPath = tempFolder.getRoot().getAbsolutePath();
+
         logStream = LogStreams.createFsLogStream("test-log", LOG_ID)
-            .logRootPath(tempFolder.getRoot().getAbsolutePath())
+            .logRootPath(rootPath)
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService)
             .build();
@@ -69,18 +81,39 @@ public class TaskStreamProcessorInterationTest
         mockResponseWriter = mock(CommandResponseWriter.class, new FluentAnswer());
         when(mockResponseWriter.tryWriteResponse()).thenReturn(true);
 
-        final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(tempFolder.getRoot().getAbsolutePath()).build();
+        doAnswer(invocation ->
+        {
+            final BrokerEventMetadata metadata =  (BrokerEventMetadata) invocation.getArguments()[0];
+
+            final UnsafeBuffer metadataBuffer = new UnsafeBuffer(new byte[metadata.getLength()]);
+            metadata.write(metadataBuffer, 0);
+
+            lastBrokerEventMetadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
+
+            return invocation.getMock();
+        }).when(mockResponseWriter).brokerEventMetadata(any(BrokerEventMetadata.class));
+
+        final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
         final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
 
-        final StreamProcessor streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, indexStore);
-        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, streamProcessor)
+        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, indexStore);
+        taskInstanceStreamProcessorController = LogStreams.createStreamProcessor("task-instance", 0, taskInstanceStreamProcessor)
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)
             .agentRunnerService(agentRunnerService)
             .build();
 
-        streamProcessorController.openAsync().get();
+        lockTaskStreamProcessor = new LockTaskStreamProcessor();
+        taskSubscriptionStreamProcessorController = LogStreams.createStreamProcessor("task-lock", 1, lockTaskStreamProcessor)
+            .sourceStream(logStream)
+            .targetStream(logStream)
+            .snapshotStorage(snapshotStorage)
+            .agentRunnerService(agentRunnerService)
+            .build();
+
+        taskInstanceStreamProcessorController.openAsync().get();
+        taskSubscriptionStreamProcessorController.openAsync().get();
 
         logStreamWriter = new LogStreamWriter(logStream);
     }
@@ -88,7 +121,8 @@ public class TaskStreamProcessorInterationTest
     @After
     public void cleanUp() throws Exception
     {
-        streamProcessorController.closeAsync().get();
+        taskInstanceStreamProcessorController.closeAsync().get();
+        taskSubscriptionStreamProcessorController.closeAsync().get();
 
         logStream.close();
 
@@ -99,18 +133,19 @@ public class TaskStreamProcessorInterationTest
     public void shouldCreateTask() throws InterruptedException, ExecutionException
     {
         // given
-        TaskEvent taskEvent = new TaskEvent()
+        final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(PAYLOAD));
 
+        // when
         final long position = logStreamWriter
             .key(2L)
             .valueWriter(taskEvent)
             .tryWrite();
 
         // then
-        taskEvent = getResultTaskEventOf(position);
+        getResultEventOf(position).readValue(taskEvent);
 
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
         assertThatBuffer(taskEvent.getType()).hasBytes(TASK_TYPE_BUFFER.byteArray());
@@ -128,36 +163,48 @@ public class TaskStreamProcessorInterationTest
     public void shouldLockTask() throws InterruptedException, ExecutionException
     {
         // given
-        TaskEvent taskEvent = new TaskEvent()
+        final TaskSubscription subscription = new TaskSubscription()
+                .setId(1L)
+                .setChannelId(11)
+                .setTaskType(TASK_TYPE_BUFFER)
+                .setLockDuration(Duration.ofMinutes(5).toMillis())
+                .setCredits(10);
+
+        lockTaskStreamProcessor.addSubscription(subscription);
+
+        final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity());
 
-        logStreamWriter
+        // when
+        final long position = logStreamWriter
             .key(2L)
             .valueWriter(taskEvent)
             .tryWrite();
 
-        taskEvent
-            .setEventType(TaskEventType.LOCK)
-            .setLockTime(123);
-
-        final long position = logStreamWriter
-                .key(2L)
-                .valueWriter(taskEvent)
-                .tryWrite();
-
         // then
-        taskEvent = getResultTaskEventOf(position);
+        LoggedEvent event = getResultEventOf(position);
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
 
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getLockTime()).isGreaterThan(0);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
-        assertThat(taskEvent.getLockTime()).isEqualTo(123L);
+        assertThat(taskEvent.getLockTime()).isGreaterThan(0);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
+
+        assertThat(lastBrokerEventMetadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(lastBrokerEventMetadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
     }
 
-    private TaskEvent getResultTaskEventOf(long position)
+    private LoggedEvent getResultEventOf(long position)
     {
-        final TaskEvent taskEvent = new TaskEvent();
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
 
         LoggedEvent loggedEvent = null;
@@ -174,8 +221,6 @@ public class TaskStreamProcessorInterationTest
 
         assertThat(sourceEventPosition).isEqualTo(position);
 
-        loggedEvent.readValue(taskEvent);
-
-        return taskEvent;
+        return loggedEvent;
     }
 }

@@ -35,8 +35,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
     protected final LockTaskProcessor lockTaskProcessor = new LockTaskProcessor();
 
-    protected Long2BytesHashIndex taskIndex;
-    protected HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
+    protected final Long2BytesHashIndex taskIndex;
+    protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
 
     protected final TaskEvent taskEvent = new TaskEvent();
 

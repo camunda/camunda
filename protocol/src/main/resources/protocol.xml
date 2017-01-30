@@ -88,6 +88,7 @@
     <field name="reqConnectionId" id="2" type="uint64" />
     <field name="reqRequestId" id="3" type="uint64" />
     <field name="raftTermId" id="4" type="uint32" />
+    <field name="subscriptionId" id="5" type="uint64" />
   </sbe:message>
 
 </sbe:messageSchema>
