@@ -1,14 +1,12 @@
 package org.camunda.tngp.transport.requestresponse.server;
 
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.connectionIdOffset;
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.headerLength;
-import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.requestIdOffset;
+import static org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor.*;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.MessageHandler;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.MessageHandler;
 
 /**
  * {@link MessageHandler} implementation for data fragments which constitute requests.
@@ -51,7 +49,7 @@ public class RequestFragmentHandler implements FragmentHandler
 
     protected int handleDataFrame(DirectBuffer buffer, int offset, int length, int channelId)
     {
-        asyncRequestHandler.onDataFrame(buffer, offset, length);
+        asyncRequestHandler.onDataFrame(buffer, offset, length, channelId);
         return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
 

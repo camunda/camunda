@@ -14,6 +14,7 @@ public interface AsyncRequestHandler
     long onDataFrame(
             DirectBuffer buffer,
             int offset,
-            int length);
+            int length,
+            int channelId);
 
 }
