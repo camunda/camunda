@@ -48,7 +48,7 @@ public class HeatMapReaderIT {
     // then
     assertThat(testDefinition.size(),is(1));
     assertThat(testDefinition.get("testActivity"),is(1L));
-  };
+  }
 
   @Test
   public void getHeatMapMultipleEvents() throws Exception {
@@ -66,7 +66,7 @@ public class HeatMapReaderIT {
     // then
     assertThat(testDefinition.size(),is(1));
     assertThat(testDefinition.get("testActivity"),is(2L));
-  };
+  }
 
   @Test
   public void getHeatMapMultipleEventsWithMultipleProcesses() throws Exception {
@@ -92,6 +92,6 @@ public class HeatMapReaderIT {
     assertThat(testDefinition1.get("testActivity"),is(2L));
     assertThat(testDefinition2.size(),is(1));
     assertThat(testDefinition2.get("testActivity"),is(1L));
-  };
+  }
 
 }

@@ -25,11 +25,20 @@ public abstract class AbstractJerseyTest extends JerseyTest {
     application.register(SpringLifecycleListener.class);
     application.register(RequestContextFilter.class);
 
-    application.property("contextConfigLocation", "classpath:applicationContext.xml");
+    application.property("contextConfigLocation", getContextLocation());
 
     //this is a bit dirty, unit test will be executed in container, which will allow spring autowiring
     //of beans declared in spring context of container
     application.register(this);
     return application;
+  }
+
+  /**
+   * This is a convenience method to allow location overrides between different tests.
+   *
+   * @return
+   */
+  protected String getContextLocation() {
+    return "classpath:applicationContext.xml";
   }
 }

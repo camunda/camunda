@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>backend</artifactId>
+
+  <properties>
+    <jetty.version>9.2.3.v20140905</jetty.version>
+    <jersy.version>2.25</jersy.version>
+  </properties>
+
+  <dependencies>
+
+    <!-- jetty -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
+
+    <!-- JAX-RS -->
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-server</artifactId>
+      <version>${jersy.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.containers</groupId>
+      <artifactId>jersey-container-servlet-core</artifactId>
+      <version>${jersy.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.containers</groupId>
+      <artifactId>jersey-container-jetty-http</artifactId>
+      <version>${jersy.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jetty-server</artifactId>
+          <groupId>org.eclipse.jetty</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <version>${jersy.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jackson-jaxrs-json-provider</artifactId>
+          <groupId>com.fasterxml.jackson.jaxrs</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jackson-databind</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jackson-annotations</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- Jaxon -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.jaxrs</groupId>
+      <artifactId>jackson-jaxrs-json-provider</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <!--ES-->
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>transport</artifactId>
+      <version>5.1.1</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jackson-core</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+      <version>2.7</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.1.7</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>java-jwt</artifactId>
+      <version>3.1.0</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jackson-databind</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!--This adds transitive dependency on spring, to control version exclude and add explicit dependencies-->
+    <dependency>
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-spring3</artifactId>
+      <version>${jersy.version}</version>
+    </dependency>
+
+    <!--testing-->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>1.3</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>3.2.3.RELEASE</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>2.2.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+      <artifactId>jersey-test-framework-provider-jetty</artifactId>
+      <version>2.25.1</version>
+      <scope>test</scope>
+    </dependency>
+
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>false</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
+              <excludeArtifactIds>camunda-tomcat-assembly</excludeArtifactIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+              <mainClass>org.camunda.optimize.Main</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+    </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/java</directory>
+        <includes>
+          <include>**/*.java</include>
+          <include>**/*.xml</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>docs</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.webcohesion.enunciate</groupId>
+            <artifactId>enunciate-maven-plugin</artifactId>
+            <version>2.8.0</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>docs</goal>
+                </goals>
+                <configuration>
+                  <!-- the directory where to put the docs -->
+                  <docsDir>${project.build.directory}/docs</docsDir>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>production</id>
+      <build>
+        <resources>
+          <resource>
+            <directory>${project.build.outputDirectory}/../../../client/dist</directory>
+            <targetPath>webapp</targetPath>
+          </resource>
+          <resource>
+            <directory>src/main/java</directory>
+            <includes>
+              <include>**/*.xml</include>
+            </includes>
+          </resource>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+
+    <profile>
+      <id>it</id>
+
+      <properties>
+        <engine.runtime>${project.build.directory}/camunda-tomcat</engine.runtime>
+        <tomcat.runtime>${engine.runtime}/server/apache-tomcat-${version.tomcat}</tomcat.runtime>
+        <http.port>${tomcat.connector.http.port}</http.port>
+        <version.tomcat>8.0.24</version.tomcat>
+
+        <tomcat.connector.http.port>48080</tomcat.connector.http.port>
+        <tomcat.connector.http.redirectPort>48443</tomcat.connector.http.redirectPort>
+        <tomcat.connector.ajp.port>48009</tomcat.connector.ajp.port>
+        <tomcat.connector.ajp.redirectPort>48443</tomcat.connector.ajp.redirectPort>
+        <tomcat.server.port>48005</tomcat.server.port>
+
+        <cargo.timeout>120000</cargo.timeout>
+        <cargo.deploy.timeout>60000</cargo.deploy.timeout>
+      </properties>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.camunda.bpm.tomcat</groupId>
+          <artifactId>camunda-tomcat-assembly</artifactId>
+          <version>${camunda.engine.version}</version>
+          <type>tar.gz</type>
+        </dependency>
+
+        <dependency>
+          <groupId>org.camunda.bpm.webapp</groupId>
+          <artifactId>camunda-webapp-tomcat</artifactId>
+          <version>${camunda.engine.version}</version>
+          <type>war</type>
+          <scope>test</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.camunda.bpm</groupId>
+          <artifactId>camunda-engine-rest</artifactId>
+          <scope>test</scope>
+          <type>war</type>
+          <classifier>tomcat</classifier>
+          <version>${camunda.engine.version}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.camunda.bpm.example</groupId>
+          <artifactId>camunda-example-invoice</artifactId>
+          <scope>test</scope>
+          <type>war</type>
+          <version>${camunda.engine.version}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>engine-purge</artifactId>
+          <scope>test</scope>
+          <type>war</type>
+          <version>${project.version}</version>
+        </dependency>
+
+      </dependencies>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.alexcojocaru</groupId>
+            <artifactId>elasticsearch-maven-plugin</artifactId>
+            <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
+            <version>5.3</version>
+            <configuration>
+              <clusterName>elasticsearch</clusterName>
+              <transportPort>9300</transportPort>
+              <httpPort>9200</httpPort>
+              <skip>${skipTests}</skip>
+            </configuration>
+            <executions>
+              <!--
+                  The elasticsearch maven plugin goals are by default bound to the
+                  pre-integration-test and post-integration-test phases
+              -->
+              <execution>
+                <id>start-elasticsearch</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>runforked</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-elasticsearch</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>2.19.1</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.bpm.tomcat</groupId>
+                      <artifactId>camunda-tomcat-assembly</artifactId>
+                      <version>${camunda.engine.version}</version>
+                      <type>tar.gz</type>
+                      <outputDirectory>${engine.runtime}</outputDirectory>
+                      <overWrite>true</overWrite>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.cargo</groupId>
+            <artifactId>cargo-maven2-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>start-container</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-container</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <!-- Container configuration -->
+              <container>
+                <type>installed</type>
+                <containerId>tomcat8x</containerId>
+                <append>false</append>
+                <home>${tomcat.runtime}</home>
+                <timeout>${cargo.timeout}</timeout>
+              </container>
+              <configuration>
+                <type>standalone</type>
+                <home>${project.build.directory}/cargo-config-tomcat</home>
+                <properties>
+                  <cargo.servlet.port>${tomcat.connector.http.port}</cargo.servlet.port>
+                  <cargo.tomcat.ajp.port>${tomcat.connector.ajp.port}</cargo.tomcat.ajp.port>
+                </properties>
+              </configuration>
+              <deployables>
+                <deployable>
+                  <groupId>org.camunda.bpm</groupId>
+                  <artifactId>camunda-engine-rest</artifactId>
+                  <type>war</type>
+                  <classifier>tomcat</classifier>
+                  <pingURL>http://localhost:${tomcat.connector.http.port}/engine-rest/engine/default/process-definition</pingURL>
+                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
+                  <properties>
+                    <context>engine-rest</context>
+                  </properties>
+                </deployable>
+                <deployable>
+                  <groupId>org.camunda.bpm.webapp</groupId>
+                  <artifactId>camunda-webapp-tomcat</artifactId>
+                  <type>war</type>
+                  <pingURL>http://localhost:${tomcat.connector.http.port}/camunda</pingURL>
+                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
+                  <properties>
+                    <context>camunda</context>
+                  </properties>
+                </deployable>
+                <deployable>
+                  <groupId>org.camunda.bpm.example</groupId>
+                  <artifactId>camunda-example-invoice</artifactId>
+                  <type>war</type>
+                  <properties>
+                    <context>invoice</context>
+                  </properties>
+                </deployable>
+                <deployable>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>engine-purge</artifactId>
+                  <type>war</type>
+                  <properties>
+                    <context>purge</context>
+                  </properties>
+                </deployable>
+              </deployables>
+              <wait>false</wait>
+            </configuration>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
+
+  </profiles>
+</project>
