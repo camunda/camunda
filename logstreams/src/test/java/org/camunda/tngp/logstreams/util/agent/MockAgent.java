@@ -37,9 +37,13 @@ public class MockAgent implements Agent
     @Override
     public int doWork() throws Exception
     {
-        invocations.incrementAndGet();
+        // prevent concurrency test failures
+        if (!isClosed)
+        {
+            invocations.incrementAndGet();
 
-        countDownLatch.countDown();
+            countDownLatch.countDown();
+        }
         return 0;
     }
 
