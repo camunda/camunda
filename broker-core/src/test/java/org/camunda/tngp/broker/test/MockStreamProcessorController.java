@@ -17,10 +17,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
@@ -30,6 +33,7 @@ import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
+import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.rules.ExternalResource;
 
@@ -42,8 +46,25 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
     protected StreamProcessor streamProcessor;
 
-    protected T event;
-    protected BrokerEventMetadata eventMetadata;
+    protected Class<T> eventClass;
+    protected Consumer<T> defaultEventSetter;
+    protected List<T> writtenEvents;
+    protected List<BrokerEventMetadata> writtenMetadata;
+
+    public MockStreamProcessorController(Class<T> eventClass, Consumer<T> defaultEventSetter)
+    {
+        this.eventClass = eventClass;
+        this.writtenEvents = new ArrayList<>();
+        this.writtenMetadata = new ArrayList<>();
+        this.defaultEventSetter = defaultEventSetter;
+    }
+
+
+    public MockStreamProcessorController(Class<T> eventClass)
+    {
+        this(eventClass, (t) ->
+        { });
+    }
 
     @Override
     protected void before() throws Throwable
@@ -55,19 +76,38 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
         doAnswer(invocation ->
         {
-            eventMetadata = (BrokerEventMetadata) invocation.getArguments()[0];
-
+            final BrokerEventMetadata metadata = new BrokerEventMetadata();
+            final BufferWriter writer = (BufferWriter) invocation.getArguments()[0];
+            populate(writer, metadata);
+            writtenMetadata.add(metadata);
             return invocation.getMock();
         }).when(mockLogStreamWriter).metadataWriter(any(BufferWriter.class));
 
+        doAnswer(invocation ->
+        {
+            final BufferWriter writer = (BufferWriter) invocation.getArguments()[0];
+            final T event = newEventInstance();
+            populate(writer, event);
+            writtenEvents.add(event);
+            return invocation.getMock();
+        }).when(mockLogStreamWriter).valueWriter(any(BufferWriter.class));
+
         cmdQueue = new ManyToOneConcurrentArrayQueue<>(10);
+    }
+
+    protected void populate(BufferWriter writer, BufferReader reader)
+    {
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[writer.getLength()]);
+
+        writer.write(buf, 0);
+        reader.wrap(buf, 0, buf.capacity());
     }
 
     @Override
     protected void after()
     {
-        event = null;
-        eventMetadata = null;
+        writtenEvents.clear();
+        writtenMetadata.clear();
     }
 
     public void initStreamProcessor(StreamProcessor streamProcessor)
@@ -84,29 +124,51 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         streamProcessor.onOpen(context);
     }
 
-    public T getEvent()
+    public List<T> getWrittenEvents()
     {
-        return event;
+        return writtenEvents;
     }
 
-    public BrokerEventMetadata getEventMetadata()
+    public T getLastWrittenEvent()
     {
-        return eventMetadata;
+        if (writtenEvents.size() > 0)
+        {
+            return writtenEvents.get(writtenEvents.size() - 1);
+        }
+        else
+        {
+            throw new RuntimeException("There are no written events");
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    public void processEvent(long key, Consumer<T> eventValueBuilder)
+    public BrokerEventMetadata getLastWrittenMetadata()
+    {
+        if (writtenMetadata.size() > 0)
+        {
+            return writtenMetadata.get(writtenMetadata.size() - 1);
+        }
+        else
+        {
+            throw new RuntimeException("There is no written metadata");
+        }
+    }
+
+    public void processEvent(long key, Consumer<T> eventSetter)
     {
         Objects.requireNonNull(streamProcessor, "No stream processor set. Call 'initStreamProcessor()' in setup method.");
 
         when(mockLoggedEvent.getLongKey()).thenReturn(key);
 
+        final T event = newEventInstance();
+        defaultEventSetter.accept(event);
+        eventSetter.accept(event);
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[event.getLength()]);
+        event.write(buf, 0);
+
         doAnswer(invocation ->
         {
-            event = (T) invocation.getArguments()[0];
-            event.reset();
-
-            eventValueBuilder.accept(event);
+            final BufferReader arg = (BufferReader) invocation.getArguments()[0];
+            arg.wrap(buf, 0, buf.capacity());
             return null;
         }).when(mockLoggedEvent).readValue(any());
 
@@ -119,6 +181,18 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
             eventProcessor.executeSideEffects();
             eventProcessor.writeEvent(mockLogStreamWriter);
             eventProcessor.updateState();
+        }
+    }
+
+    protected T newEventInstance()
+    {
+        try
+        {
+            return eventClass.newInstance();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
     }
 

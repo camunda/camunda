@@ -8,11 +8,13 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.ExecutionException;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.util.msgpack.MsgPackUtil;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
@@ -24,6 +26,8 @@ import org.mockito.MockitoAnnotations;
 
 public class TaskInstanceStreamProcessorTest
 {
+    public static final DirectBuffer TASK_TYPE = MsgPackUtil.utf8("foo");
+
     private TaskInstanceStreamProcessor streamProcessor;
 
     @Mock
@@ -35,7 +39,9 @@ public class TaskInstanceStreamProcessorTest
     private CommandResponseWriter mockResponseWriter;
 
     @Rule
-    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>();
+    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
+        TaskEvent.class,
+        (t) -> t.setType(TASK_TYPE).setEventType(TaskEventType.CREATED));
 
     @Before
     public void setup() throws InterruptedException, ExecutionException
@@ -62,7 +68,7 @@ public class TaskInstanceStreamProcessorTest
             event.setEventType(TaskEventType.CREATE));
 
         // then
-        assertThat(mockController.getEvent().getEventType()).isEqualTo(TaskEventType.CREATED);
+        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.CREATED);
 
         verify(mockResponseWriter).longKey(2L);
         verify(mockResponseWriter).tryWriteResponse();
@@ -81,7 +87,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(123));
 
         // then
-        assertThat(mockController.getEvent().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCKED);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
@@ -91,7 +97,8 @@ public class TaskInstanceStreamProcessorTest
     {
         // given
         mockController.processEvent(2L, event ->
-            event.setEventType(TaskEventType.CREATE));
+            event.setEventType(TaskEventType.CREATE)
+                .setType(TASK_TYPE));
 
         // when
         mockController.processEvent(2L, event -> event
@@ -99,7 +106,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(-1));
 
         // then
-        assertThat(mockController.getEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
@@ -117,7 +124,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(0));
 
         // then
-        assertThat(mockController.getEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
@@ -135,7 +142,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(123));
 
         // then
-        assertThat(mockController.getEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
@@ -157,7 +164,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(123));
 
         // then
-        assertThat(mockController.getEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
