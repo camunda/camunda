@@ -1,20 +1,7 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -26,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,7 +48,7 @@ public class ProcessDefinitionReader {
       ProcessDefinitionDto processDefinition = null;
       try {
         processDefinition = objectMapper.readValue(content, ProcessDefinitionDto.class);
-      } catch (Exception e) {
+      } catch (IOException e) {
         logger.error("Error while reading process definition from elastic search!", e);
       }
       list.add(processDefinition);
@@ -80,19 +68,10 @@ public class ProcessDefinitionReader {
       .setQuery(query)
       .get();
 
-    String xml = "";
-    try {
+    String xml = null;
+    if(sr.getHits().getTotalHits() > 0L) {
       SearchHit hit = sr.getHits().getAt(0);
-      String content = hit.getSourceAsString();
-      ProcessDefinitionXmlDto processDefinitionXml = objectMapper.readValue(content, ProcessDefinitionXmlDto.class);
-      xml = processDefinitionXml.getBpmn20Xml();
-    } catch (RuntimeException e) {
-      logger.error("Error while reading process definition xml from elasticsearch! " +
-        "No process definition with id " + processDefinitionId + " found!", e);
-    } catch (Exception e) {
-      logger.error(
-        "Error while reading process definition xml from elastic search! " +
-          "Could not parse process definition xml with id " + processDefinitionId, e);
+      xml = hit.getSource().get("bpmn20Xml").toString();
     }
     return xml;
   }
