@@ -83,12 +83,26 @@ public class LogBlockIndex implements SnapshotSupport
      */
     protected int lookupOffset(long position)
     {
+        final int idx = lookupIndex(position);
+        return idx >= 0 ? entryOffset(idx) : idx;
+    }
+
+    /**
+     * Returns the index of the block in which the log entry identified by the provided position
+     * resides.
+     *
+     * @param position a virtual log position
+     * @return the index of the block containing the log entry identified by the provided
+     * virtual position
+     */
+    protected int lookupIndex(long position)
+    {
         final int lastEntryIdx = size() - 1;
 
         int low = 0;
         int high = lastEntryIdx;
 
-        int pos = -1;
+        int idx = -1;
 
         if (low == high)
         {
@@ -97,7 +111,7 @@ public class LogBlockIndex implements SnapshotSupport
 
             if (entryValue <= position)
             {
-                pos = entryOffset;
+                idx = low;
             }
 
             high = -1;
@@ -110,7 +124,7 @@ public class LogBlockIndex implements SnapshotSupport
 
             if (mid == lastEntryIdx)
             {
-                pos = entryOffset;
+                idx = mid;
                 break;
             }
             else
@@ -120,7 +134,7 @@ public class LogBlockIndex implements SnapshotSupport
 
                 if (entryValue <= position && position < nextEntryValue)
                 {
-                    pos = entryOffset;
+                    idx = mid;
                     break;
                 }
                 else if (entryValue < position)
@@ -134,7 +148,7 @@ public class LogBlockIndex implements SnapshotSupport
             }
         }
 
-        return pos;
+        return idx;
     }
 
     /**
@@ -172,6 +186,55 @@ public class LogBlockIndex implements SnapshotSupport
         indexBuffer.putIntOrdered(indexSizeOffset(), newIndexSize);
 
         return newIndexSize;
+    }
+
+    /**
+     * Truncates the block index up to the given position.
+     *
+     * If the following indices are given:
+     * <ul>
+     * <li>position: 10 / address: 100</li>
+     * <li>position: 20 / address: 200</li>
+     * <li>position: 30 / address: 300</li>
+     * </ul>
+     *
+     * Then
+     * <ul>
+     * <li><code>truncate(5)</code> and <code>truncate(10)</code> would truncate all existing indices</li>
+     * <li><code>truncate(20)</code> would truncate existing block indices beginning from block index with position 20</li>
+     * <li><code>truncate(25)</code> would truncate existing block indices beginning from next block index with position 30</li>
+     * <li><code>truncate(30)</code> would truncate last existing block index</li>
+     * <li><code>truncate(35)</code> would not do anything</li>
+     * </ul>
+     *
+     * @param position The position at which to truncate the block index.
+     */
+    public void truncate(long position)
+    {
+        final int size = size();
+
+        if (size > 0)
+        {
+            int index = Math.max(lookupIndex(position), 0);
+            int entryOffset = entryOffset(index);
+
+            final long entryValue = indexBuffer.getLong(entryLogPositionOffset(entryOffset));
+            if (entryValue < position)
+            {
+                index++;
+                entryOffset += entryLength();
+            }
+
+            final int lastEntryIndex = size - 1;
+            if (lastEntryIndex >= index)
+            {
+                final int capacity = indexBuffer.capacity();
+                final int length = capacity - entryOffset;
+
+                indexBuffer.putIntVolatile(indexSizeOffset(), index);
+                indexBuffer.setMemory(entryOffset, length, (byte) 0);
+            }
+        }
     }
 
     /**
