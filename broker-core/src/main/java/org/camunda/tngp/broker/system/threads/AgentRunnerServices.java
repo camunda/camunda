@@ -13,6 +13,6 @@ public interface AgentRunnerServices
 
     AgentRunnerService logStreamProcessorAgentRunnerService();
 
-    AgentRunnerService conductorAgentRunnerSerive();
+    AgentRunnerService conductorAgentRunnerService();
 
 }

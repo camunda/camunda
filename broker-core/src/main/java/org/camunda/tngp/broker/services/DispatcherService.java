@@ -45,7 +45,7 @@ public class DispatcherService implements Service<Dispatcher>
 
         dispatcherConductor = dispatcher.getConductorAgent();
 
-        agentRunnerInjector.getValue().conductorAgentRunnerSerive().run(dispatcherConductor);
+        agentRunnerInjector.getValue().conductorAgentRunnerService().run(dispatcherConductor);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class DispatcherService implements Service<Dispatcher>
     {
         final CompletableFuture<Void> closeFuture = dispatcher.closeAsync().thenAccept((v) ->
         {
-            agentRunnerInjector.getValue().conductorAgentRunnerSerive().remove(dispatcherConductor);
+            agentRunnerInjector.getValue().conductorAgentRunnerService().remove(dispatcherConductor);
         });
 
         ctx.async(closeFuture);

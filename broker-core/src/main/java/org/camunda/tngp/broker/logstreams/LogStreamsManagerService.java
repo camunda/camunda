@@ -92,7 +92,7 @@ public class LogStreamsManagerService implements Service<LogStreamsManagerServic
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
             .agentRunnerService(agentRunnerInjector.getValue().logAppenderAgentRunnerService())
-            .writeBufferAgentRunnerService(agentRunnerInjector.getValue().conductorAgentRunnerSerive())
+            .writeBufferAgentRunnerService(agentRunnerInjector.getValue().conductorAgentRunnerService())
             .logSegmentSize(logSegmentSize)
             .build();
 

@@ -40,7 +40,7 @@ public class TransportService implements Service<Transport>
         final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
         agentRunnerServices.networkReceiverAgentRunnerService().run(receiver);
         agentRunnerServices.networkSenderAgentRunnerService().run(sender);
-        agentRunnerServices.conductorAgentRunnerSerive().run(transportConductor);
+        agentRunnerServices.conductorAgentRunnerService().run(transportConductor);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class TransportService implements Service<Transport>
         final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
         agentRunnerServices.networkReceiverAgentRunnerService().remove(receiver);
         agentRunnerServices.networkSenderAgentRunnerService().remove(sender);
-        agentRunnerServices.conductorAgentRunnerSerive().remove(transportConductor);
+        agentRunnerServices.conductorAgentRunnerService().remove(transportConductor);
     }
 
     @Override

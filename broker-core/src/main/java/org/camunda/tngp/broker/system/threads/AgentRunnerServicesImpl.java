@@ -212,7 +212,7 @@ public class AgentRunnerServicesImpl implements AgentRunnerServices, Service<Age
     }
 
     @Override
-    public AgentRunnerService conductorAgentRunnerSerive()
+    public AgentRunnerService conductorAgentRunnerService()
     {
         return conductorAgentRunnerService;
     }
