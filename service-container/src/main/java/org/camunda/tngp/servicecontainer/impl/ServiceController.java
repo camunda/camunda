@@ -230,11 +230,6 @@ public class ServiceController
                 }
             }
 
-            for (ServiceGroupReferenceImpl reference : references)
-            {
-                reference.injectInitialValues();
-            }
-
             state = invokeStartState;
 
             return 1;
@@ -289,6 +284,11 @@ public class ServiceController
         @Override
         public int doWork()
         {
+            for (ServiceGroupReferenceImpl reference : references)
+            {
+                reference.injectInitialValues();
+            }
+
             if (groupName != null)
             {
                 ServiceGroup serviceGroup = container.groups.get(groupName);

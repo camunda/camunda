@@ -2,6 +2,7 @@ package org.camunda.tngp.servicecontainer.impl;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.servicecontainer.ServiceGroupReference.*;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
@@ -189,8 +190,8 @@ public class ServiceGroupReferenceTest
 
         // then
         final InOrder inOrder = inOrder(mockService1, injectedServices);
-        inOrder.verify(injectedServices).add(mockService2Value);
         inOrder.verify(mockService1).start(any(ServiceStartContext.class));
+        inOrder.verify(injectedServices).add(mockService2Value);
     }
 
     @Test
