@@ -24,5 +24,5 @@ require.ensure(['./styles.scss'], () => {
 });
 
 function isPolyfillNeeded() {
-  return !Symbol || !Array.prototype.find;
+  return !window.Symbol || !Array.prototype.find;
 }

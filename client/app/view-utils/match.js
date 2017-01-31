@@ -16,7 +16,7 @@ export function Match({didStateChange, children}) {
     let childNodes = [];
     const startMarker = $document.createComment('START MATCH');
 
-    node.append(startMarker);
+    node.appendChild(startMarker);
 
     return updateOnlyWhenStateChanges(
       (state) => {
