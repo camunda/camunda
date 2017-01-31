@@ -17,15 +17,6 @@
     <jersy.version>2.25</jersy.version>
   </properties>
 
-  <repositories>
-    <repository>
-      <id>test</id>
-      <url>http://repository</url>
-      <releases><enabled>false</enabled></releases>
-      <snapshots><enabled>true</enabled></snapshots>
-    </repository>
-  </repositories>
-
   <dependencies>
 
     <!-- jetty -->
@@ -277,6 +268,16 @@
     <profile>
       <id>it</id>
 
+      <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
+      <repositories>
+        <repository>
+          <id>test</id>
+          <url>http://repository</url>
+          <releases><enabled>false</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+      </repositories>
+      
       <properties>
         <engine.runtime>${project.build.directory}/camunda-tomcat</engine.runtime>
         <tomcat.runtime>${engine.runtime}/server/apache-tomcat-${version.tomcat}</tomcat.runtime>
