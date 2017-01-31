@@ -1,9 +1,10 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.mapper.EventMappingHelper;
 import org.camunda.optimize.service.es.EventsWriter;
+import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,7 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 @Component
-public class ActivityImportService {
+public class ActivityImportService implements ImportService {
   private final Logger logger = LoggerFactory.getLogger(ActivityImportService.class);
 
   @Autowired

@@ -1,8 +1,8 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.service.es.ProcessDefinitionWriter;
+import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionImportService {
+public class ProcessDefinitionImportService implements ImportService {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionImportService.class);
 
@@ -28,7 +28,12 @@ public class ProcessDefinitionImportService {
   @Autowired
   private Client client;
 
-  public void executeProcessDefinitionImport() {
+  @Override
+  public void executeImport() {
+    executeProcessDefinitionImport();
+  }
+
+  private void executeProcessDefinitionImport() {
 
     List<ProcessDefinitionDto> entries = client
       .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
@@ -42,29 +47,5 @@ public class ProcessDefinitionImportService {
     } catch (Exception e) {
       logger.error("error while writing process definitions to elasticsearch", e);
     }
-  }
-
-  public void executeProcessDefinitionXmlImport(String processDefinitionId) {
-
-    ProcessDefinitionXmlDto entry = client
-      .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
-      .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
-      .request(MediaType.APPLICATION_JSON)
-      .get(new GenericType<ProcessDefinitionXmlDto>() {
-      });
-
-    try {
-      procDefWriter.importProcessDefinitionXmls(entry);
-    } catch (Exception e) {
-      logger.error("error while writing process definitions to elasticsearch", e);
-    }
-  }
-
-  public Client getClient() {
-    return client;
-  }
-
-  public void setClient(Client client) {
-    this.client = client;
   }
 }

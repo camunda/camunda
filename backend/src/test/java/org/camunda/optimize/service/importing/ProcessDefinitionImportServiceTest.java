@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
 import org.camunda.optimize.service.es.ProcessDefinitionWriter;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,7 +48,7 @@ public class ProcessDefinitionImportServiceTest {
     setupClient(resultList);
 
     //when
-    underTest.executeProcessDefinitionImport();
+    underTest.executeImport();
 
     //then
     //verify invocations
