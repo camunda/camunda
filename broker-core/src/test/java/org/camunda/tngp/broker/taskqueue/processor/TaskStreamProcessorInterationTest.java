@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,7 +17,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
-import org.camunda.tngp.broker.test.util.FluentAnswer;
+import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -37,6 +36,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.MockitoAnnotations;
 
 public class TaskStreamProcessorInterationTest
 {
@@ -57,7 +57,9 @@ public class TaskStreamProcessorInterationTest
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
+    @FluentMock
     private CommandResponseWriter mockResponseWriter;
+
     private LogStreamWriter logStreamWriter;
     private AgentRunnerService agentRunnerService;
 
@@ -66,19 +68,8 @@ public class TaskStreamProcessorInterationTest
     @Before
     public void setup() throws InterruptedException, ExecutionException
     {
-        agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
+        MockitoAnnotations.initMocks(this);
 
-        final String rootPath = tempFolder.getRoot().getAbsolutePath();
-
-        logStream = LogStreams.createFsLogStream("test-log", LOG_ID)
-            .logRootPath(rootPath)
-            .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
-            .build();
-
-        logStream.open();
-
-        mockResponseWriter = mock(CommandResponseWriter.class, new FluentAnswer());
         when(mockResponseWriter.tryWriteResponse()).thenReturn(true);
 
         doAnswer(invocation ->
@@ -92,6 +83,18 @@ public class TaskStreamProcessorInterationTest
 
             return invocation.getMock();
         }).when(mockResponseWriter).brokerEventMetadata(any(BrokerEventMetadata.class));
+
+        agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
+
+        final String rootPath = tempFolder.getRoot().getAbsolutePath();
+
+        logStream = LogStreams.createFsLogStream("test-log", LOG_ID)
+            .logRootPath(rootPath)
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
+
+        logStream.open();
 
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
         final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();

@@ -29,8 +29,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected final CommandResponseWriter responseWriter;
     protected final IndexStore indexStore;
-    protected final UnsafeBuffer indexValueWriteBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
-    protected final UnsafeBuffer indexValueReadBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
 
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
     protected final LockTaskProcessor lockTaskProcessor = new LockTaskProcessor();
@@ -38,11 +36,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final Long2BytesHashIndex taskIndex;
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
 
+    protected final IndexAccessor indexAccessor = new IndexAccessor();
+    protected final IndexWriter indexWriter = new IndexWriter();
+
     protected final TaskEvent taskEvent = new TaskEvent();
 
     protected int streamId;
 
-    protected LoggedEvent event;
     protected long eventPosition = 0;
     protected long eventKey = 0;
 
@@ -69,8 +69,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
-        this.event = event;
-
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();
 
@@ -141,7 +139,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            updateIndex(eventKey, eventPosition, TaskEventType.CREATED);
+            indexWriter.write(eventKey, eventPosition, TaskEventType.CREATED);
         }
     }
 
@@ -154,18 +152,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             isLocked = false;
 
-            final byte[] eventData = taskIndex.get(eventKey);
+            indexAccessor.wrapIndexKey(eventKey);
+            final int typeId = indexAccessor.getTypeId();
 
-            if (eventData != null && taskEvent.getLockTime() > 0)
+            if (typeId == TaskEventType.CREATED.id() && taskEvent.getLockTime() > 0)
             {
-                indexValueReadBuffer.wrap(eventData);
-                final int stateId = indexValueReadBuffer.getInt(INDEX_STATE_OFFSET);
-
-                if (stateId == TaskEventType.CREATED.id())
-                {
-                    taskEvent.setEventType(TaskEventType.LOCKED);
-                    isLocked = true;
-                }
+                taskEvent.setEventType(TaskEventType.LOCKED);
+                isLocked = true;
             }
 
             if (!isLocked)
@@ -207,17 +200,67 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isLocked)
             {
-                updateIndex(eventKey, eventPosition, TaskEventType.LOCKED);
+                indexWriter.write(eventKey, eventPosition, TaskEventType.LOCKED);
             }
         }
     }
 
-    protected void updateIndex(long eventKey, long eventPosition, TaskEventType eventType)
+    class IndexAccessor
     {
-        indexValueWriteBuffer.putLong(INDEX_POSITION_OFFSET, eventPosition);
-        indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id());
+        static final int MISSING_VALUE_TYPE_ID = -1;
+        static final long MISSING_VALUE_POSITION_ID = -1L;
 
-        taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
+        protected final UnsafeBuffer indexValueReadBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
+
+        protected boolean isRead = false;
+
+        void wrapIndexKey(long key)
+        {
+            isRead = false;
+
+            final byte[] indexValue = taskIndex.get(key);
+            if (indexValue != null)
+            {
+                indexValueReadBuffer.wrap(indexValue);
+
+                isRead = true;
+            }
+        }
+
+        public long getPosition()
+        {
+            long position = MISSING_VALUE_POSITION_ID;
+
+            if (isRead)
+            {
+                position = indexValueReadBuffer.getLong(INDEX_POSITION_OFFSET);
+            }
+            return position;
+        }
+
+        public int getTypeId()
+        {
+            int typeId = MISSING_VALUE_TYPE_ID;
+
+            if (isRead)
+            {
+                typeId = indexValueReadBuffer.getInt(INDEX_STATE_OFFSET);
+            }
+            return typeId;
+        }
+    }
+
+    class IndexWriter
+    {
+        protected final UnsafeBuffer indexValueWriteBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
+
+        protected void write(long eventKey, long eventPosition, TaskEventType eventType)
+        {
+            indexValueWriteBuffer.putLong(INDEX_POSITION_OFFSET, eventPosition);
+            indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id());
+
+            taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
+        }
     }
 
 }

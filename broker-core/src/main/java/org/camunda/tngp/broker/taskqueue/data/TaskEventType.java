@@ -21,7 +21,7 @@ public enum TaskEventType
     ABORTED(12),
     ABORT_FAILED(13);
 
-    // don't change the ids because the implementation based on it
+    // don't change the ids because the task stream processor use them for the index
     private final int id;
 
     TaskEventType(int id)

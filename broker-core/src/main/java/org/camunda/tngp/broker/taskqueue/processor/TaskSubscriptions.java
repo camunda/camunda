@@ -139,7 +139,7 @@ public class TaskSubscriptions
                     final long subscriptId = subscriptionIds.get(index);
                     final TaskSubscription subscription = subscriptionsById.get(subscriptId);
 
-                    if (subscription.getCredits() > 0 && BufferUtil.contentsEqual(subscription.getLockTaskType(), typeBuffer))
+                    if (subscription.getCredits() > 0 && BufferUtil.equals(subscription.getLockTaskType(), typeBuffer))
                     {
                         nextSubscription = subscription;
                     }

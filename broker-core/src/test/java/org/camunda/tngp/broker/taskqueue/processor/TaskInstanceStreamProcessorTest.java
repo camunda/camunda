@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,7 +11,7 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
-import org.camunda.tngp.broker.test.util.FluentAnswer;
+import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.util.msgpack.MsgPackUtil;
 import org.camunda.tngp.hashindex.store.IndexStore;
@@ -36,6 +35,7 @@ public class TaskInstanceStreamProcessorTest
     @Mock
     private LogStream mockLogStream;
 
+    @FluentMock
     private CommandResponseWriter mockResponseWriter;
 
     @Rule
@@ -47,8 +47,6 @@ public class TaskInstanceStreamProcessorTest
     public void setup() throws InterruptedException, ExecutionException
     {
         MockitoAnnotations.initMocks(this);
-
-        mockResponseWriter = mock(CommandResponseWriter.class, new FluentAnswer());
 
         when(mockLogStream.getId()).thenReturn(1);
 
