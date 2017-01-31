@@ -510,7 +510,6 @@ public class BufferedLogStreamReaderTest
     public void shouldReadFirstEventWhenPositionIsNotContainedInBlockIndex()
     {
         when(mockBlockIndex.size()).thenReturn(1);
-        when(mockBlockIndex.getAddress(0)).thenReturn(100L);
         when(mockBlockIndex.lookupBlockAddress(5L)).thenReturn(-1L);
 
         mockLogStorage

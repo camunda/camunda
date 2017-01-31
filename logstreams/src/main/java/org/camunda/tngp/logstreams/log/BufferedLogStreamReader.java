@@ -114,22 +114,13 @@ public class BufferedLogStreamReader implements LogStreamReader
 
         if (nextReadAddr < 0)
         {
-            final int size = blockIndex.size();
+            // fallback: seek without index
+            nextReadAddr = logStorage.getFirstBlockAddress();
 
-            if (size > 0)
+            if (nextReadAddr == -1)
             {
-                nextReadAddr = blockIndex.getAddress(0);
-            }
-            else
-            {
-                // fallback: seek without index
-                nextReadAddr = logStorage.getFirstBlockAddress();
-
-                if (nextReadAddr == -1)
-                {
-                    this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
-                    return false;
-                }
+                this.iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+                return false;
             }
         }
 
