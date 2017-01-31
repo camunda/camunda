@@ -7,15 +7,15 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 public class HeatMapRequestDto implements Serializable {
-  protected String key;
+  protected String processDefinitionId;
   private List<String> correlationActivities;
 
-  public String getKey() {
-    return key;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
-  public void setKey(String key) {
-    this.key = key;
+  public void setProcessDefinitionId(String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
   }
 
   public List<String> getCorrelationActivities() {

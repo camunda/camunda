@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.service.HeatMapService;
 import org.camunda.optimize.service.es.util.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Rule;
@@ -24,7 +23,7 @@ import static org.junit.Assert.*;
 public class HeatMapReaderIT {
 
   @Autowired
-  private HeatMapService heatMapService;
+  private HeatMapReader heatMapReader;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -43,7 +42,7 @@ public class HeatMapReaderIT {
     rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
 
     // when
-    Map<String, Long> testDefinition = heatMapService.getHeatMap("testDefinitionId");
+    Map<String, Long> testDefinition = heatMapReader.getHeatMap("testDefinitionId");
 
     // then
     assertThat(testDefinition.size(),is(1));
@@ -61,7 +60,7 @@ public class HeatMapReaderIT {
     rule.addEntryToElasticsearch(configurationService.getEventType(),"6", event);
 
     // when
-    Map<String, Long> testDefinition = heatMapService.getHeatMap("testDefinitionId");
+    Map<String, Long> testDefinition = heatMapReader.getHeatMap("testDefinitionId");
 
     // then
     assertThat(testDefinition.size(),is(1));
@@ -84,8 +83,8 @@ public class HeatMapReaderIT {
     rule.addEntryToElasticsearch(configurationService.getEventType(),"7", event);
 
     // when
-    Map<String, Long> testDefinition1 = heatMapService.getHeatMap("testDefinitionId1");
-    Map<String, Long> testDefinition2 = heatMapService.getHeatMap("testDefinitionId2");
+    Map<String, Long> testDefinition1 = heatMapReader.getHeatMap("testDefinitionId1");
+    Map<String, Long> testDefinition2 = heatMapReader.getHeatMap("testDefinitionId2");
 
     // then
     assertThat(testDefinition1.size(),is(1));
