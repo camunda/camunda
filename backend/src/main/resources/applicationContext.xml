@@ -28,5 +28,5 @@
         factory-method="createDefaultMapper"
         factory-bean="objectMapperFactory"
   />
-  
+
 </beans>
