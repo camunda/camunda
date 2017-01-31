@@ -15,6 +15,7 @@ package org.camunda.tngp.util.buffer;
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BufferUtil
@@ -36,6 +37,25 @@ public final class BufferUtil
     {
         final byte[] bytes = argument.getBytes(StandardCharsets.UTF_8);
         buffer.wrap(bytes);
+    }
+
+    /**
+     * Compare the given buffers.
+     */
+    public static boolean equals(DirectBuffer buffer1, DirectBuffer buffer2)
+    {
+        if (buffer1 instanceof UnsafeBuffer && buffer2 instanceof UnsafeBuffer)
+        {
+            return buffer1.equals(buffer2);
+        }
+        else if (buffer1 instanceof ExpandableArrayBuffer && buffer2 instanceof ExpandableArrayBuffer)
+        {
+            return buffer1.equals(buffer2);
+        }
+        else
+        {
+            return contentsEqual(buffer1, buffer2);
+        }
     }
 
     /**
