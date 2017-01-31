@@ -11,7 +11,7 @@
 
   <modules>
     <module>backend</module>
-    <module>engine-purge</module>
+    <module>qa</module>
     <module>client</module>
   </modules>
 

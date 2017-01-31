@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThat;
 public class ProcessDefinitionReaderIT {
 
   @Rule
-  public ElasticSearchIntegrationTestRule rule = ElasticSearchIntegrationTestRule.getInstance();
+  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule ();
 
   @Autowired
   private ProcessDefinitionReader procDefReader;

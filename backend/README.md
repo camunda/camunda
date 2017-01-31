@@ -187,6 +187,7 @@ in order to debug your test locally you have to perform following steps:
 
 * run tomcat with proper modules deployed 
 ```
+mvn -Pit clean verify
 mvn -Pit -f backend/pom.xml cargo:run
 ```
 * run elastic search instance with proper configuration

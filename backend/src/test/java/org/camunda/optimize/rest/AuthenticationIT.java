@@ -27,7 +27,7 @@ public class AuthenticationIT extends AbstractJerseyTest {
   private static final String USERNAME_PASSWORD = "demo";
 
   @Rule
-  public EngineIntegrationRule rule = EngineIntegrationRule.getInstance();
+  public EngineIntegrationRule rule = new EngineIntegrationRule ();
 
   @Autowired
   private ConfigurationService configurationService;

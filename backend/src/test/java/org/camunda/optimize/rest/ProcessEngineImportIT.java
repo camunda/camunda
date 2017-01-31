@@ -1,0 +1,62 @@
+package org.camunda.optimize.rest;
+
+import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.test.AbstractJerseyTest;
+import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EngineIntegrationRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
+/**
+ * @author Askar Akhmerov
+ */
+public class ProcessEngineImportIT extends AbstractJerseyTest {
+  @Rule
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule ();
+
+  @Rule
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule ();
+
+  @Test
+  public void importDataFromEngine() throws Exception {
+    //given
+    engineRule.deployServiceTaskProcess();
+
+    //when
+    Response response = target("import")
+        .request()
+        .get();
+
+    //then
+    assertThat(response.getStatus(),is(200));
+
+    //given
+    Thread.sleep(1000);
+    //when
+    response = target("process-definition")
+        .request().get();
+
+    //then
+    assertThat(response.getStatus(),is(200));
+    List<ProcessDefinitionDto> definitions =
+        response.readEntity(new GenericType<List<ProcessDefinitionDto>>(){});
+
+    assertThat(definitions,is(notNullValue()));
+    assertThat(definitions.size(), is(1));
+    assertThat(definitions.get(0).getId(),is(notNullValue()));
+  }
+
+  @Override
+  protected String getContextLocation() {
+    return "classpath:it-applicationContext.xml";
+  }
+
+}

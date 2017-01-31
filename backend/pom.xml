@@ -335,6 +335,13 @@
           <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>engine-deploy</artifactId>
+          <scope>test</scope>
+          <type>war</type>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
 
       <build>
@@ -481,6 +488,14 @@
                   <type>war</type>
                   <properties>
                     <context>purge</context>
+                  </properties>
+                </deployable>
+                <deployable>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>engine-deploy</artifactId>
+                  <type>war</type>
+                  <properties>
+                    <context>deploy</context>
                   </properties>
                 </deployable>
               </deployables>

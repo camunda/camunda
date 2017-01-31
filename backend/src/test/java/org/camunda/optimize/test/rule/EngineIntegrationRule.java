@@ -28,12 +28,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private Properties properties;
 
-  private static final EngineIntegrationRule rule = new EngineIntegrationRule();
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
-
-  public static EngineIntegrationRule getInstance() {
-    return rule;
-  }
 
   public EngineIntegrationRule() {
     properties = PropertyUtil.loadProperties("service-it.properties");
@@ -59,5 +54,20 @@ public class EngineIntegrationRule extends TestWatcher {
       logger.error("Error during purge request", e);
     }
 
+  }
+
+  public void deployServiceTaskProcess() {
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.deploy").toString());
+    try {
+      CloseableHttpResponse response = client.execute(getRequest);
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new RuntimeException("Something really bad happened during deployment, " +
+            "please check tomcat logs of engine-deploy servlet");
+      }
+      client.close();
+    } catch (IOException e) {
+      logger.error("Error during deploy request", e);
+    }
   }
 }

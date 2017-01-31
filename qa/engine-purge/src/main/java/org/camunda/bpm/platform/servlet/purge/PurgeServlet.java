@@ -14,11 +14,11 @@ import java.io.IOException;
 
 /**
  *
- * Servlet that actually purges the database on GET request to root endpoint
+ * Servlet that deployes
  * 
  * @author Askar Akhmerov
  */
-@WebServlet(name="PurgeServlet", urlPatterns={"/*"})
+@WebServlet(name="DeployBasicProcessServlet", urlPatterns={"/*"})
 public class PurgeServlet extends HttpServlet {
   private ManagementServiceImpl managementService;
   private ObjectMapper objectMapper;

@@ -29,8 +29,7 @@ public class HeatMapReaderIT {
   private ConfigurationService configurationService;
 
   @Rule
-  public ElasticSearchIntegrationTestRule rule = ElasticSearchIntegrationTestRule.getInstance();
-
+  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule ();
 
   @Test
   public void getHeatMap() throws Exception {

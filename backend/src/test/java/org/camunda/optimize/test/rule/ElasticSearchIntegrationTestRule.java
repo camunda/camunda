@@ -1,15 +1,21 @@
 package org.camunda.optimize.test.rule;
 
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
@@ -27,12 +33,9 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
-  private static ElasticSearchIntegrationTestRule rule;
   private TransportClient esclient;
   private Properties properties;
   private ObjectMapper objectMapper = new ObjectMapper();
@@ -43,18 +46,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private final String CUSTOM_ANALYZER_NAME = "case_sensitive";
 
-
-  public static ElasticSearchIntegrationTestRule getInstance() {
-    if (rule == null) {
-      rule = new ElasticSearchIntegrationTestRule();
-    }
-    return rule;
-  }
-
-  private ElasticSearchIntegrationTestRule() {
+  public ElasticSearchIntegrationTestRule() {
     properties = PropertyUtil.loadProperties("service-it.properties");
 
     startEsclient();
+    cleanAndVerify();
     createOptimizeIndex();
     createMappings();
   }
@@ -179,32 +175,43 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   @Override
   protected void finished(Description description) {
+    cleanAndVerify();
+  }
+
+  private void cleanAndVerify() {
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
   }
 
   private void cleanUpElasticSearch() {
-    for(Map.Entry<String, List<String>> entry: documentEntriesTracker.entrySet()) {
-      String type = entry.getKey();
-      List<String> ids = entry.getValue();
-      for(String id: ids) {
-        esclient.prepareDelete(getOptimizeIndex(), type, id)
-          .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-          .get();
+    ImmutableOpenMap<String, IndexMetaData> indices = esclient.admin().cluster()
+        .prepareState().execute()
+        .actionGet().getState()
+        .getMetaData().indices();
+
+    for (ObjectCursor<IndexMetaData> indexMeta : indices.values()) {
+
+      DeleteIndexResponse delete = esclient
+          .admin().indices()
+          .delete(new DeleteIndexRequest(indexMeta.value.getIndex().getName()))
+          .actionGet();
+      if (!delete.isAcknowledged()) {
+        logger.error("Index wasn't deleted");
       }
     }
-
   }
 
   private void assureElasticsearchIsClean() {
     String[] types = {};
     types = documentEntriesTracker.keySet().toArray(types);
-    SearchResponse response = esclient.prepareSearch(getOptimizeIndex())
-      .setTypes(types)
-      .setQuery(QueryBuilders.matchAllQuery())
-      .get();
-
-    Long hits = response.getHits().getTotalHits();
-    assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
+    try {
+      SearchResponse response = esclient.prepareSearch(getOptimizeIndex())
+          .setTypes(types)
+          .setQuery(QueryBuilders.matchAllQuery())
+          .get();
+    } catch (IndexNotFoundException e) {
+      //expected
+      logger.info("Optimize index is not found, as expected");
+    }
   }
 }
