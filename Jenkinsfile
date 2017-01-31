@@ -11,7 +11,7 @@ def commitId() {
   }
 }
 
-
+def backendModuleName = "backend"
 
 pipeline {
   agent { label 'optimize-build' }
@@ -53,25 +53,25 @@ pipeline {
     }
     stage('IT') {
       steps {
-        sh 'mvn -s settings.xml -f optimize-backend/pom.xml clean verify'
+        sh 'mvn -s settings.xml -f ' + backendModuleName + '/pom.xml clean verify'
       }
       post {
         always {
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
         }
         failure {
-          archiveArtifacts artifacts: 'optimize-backend/target/elasticsearch*/logs/*.log', onlyIfSuccessful: true
+          archiveArtifacts artifacts:  backendModuleName + '/target/elasticsearch*/logs/*.log', onlyIfSuccessful: true
         }
       }
 
     }
     stage('Docs') {
       steps {
-        sh 'mvn -s settings.xml -f optimize-backend/pom.xml -DskipTests -Pdocs clean package'
+        sh 'mvn -s settings.xml -f ' + backendModuleName + '/pom.xml -DskipTests -Pdocs clean package'
       }
       post {
         success {
-          archiveArtifacts artifacts: 'optimize-backend/target/docs/**/*.*', onlyIfSuccessful: true
+          archiveArtifacts artifacts: backendModuleName + '/target/docs/**/*.*', onlyIfSuccessful: true
         }
       }
     }

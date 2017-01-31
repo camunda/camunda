@@ -20,6 +20,7 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
     </properties>
 
+    <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
     <repositories>
         <repository>
             <id>test</id>
