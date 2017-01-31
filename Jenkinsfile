@@ -53,7 +53,7 @@ pipeline {
     }
     stage('IT') {
       steps {
-        sh 'mvn -s settings.xml -f ' + backendModuleName + '/pom.xml clean verify'
+        sh 'mvn -s settings.xml -f -Pit ' + backendModuleName + '/pom.xml clean verify'
       }
       post {
         always {

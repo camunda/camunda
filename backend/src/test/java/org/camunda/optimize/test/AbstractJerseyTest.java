@@ -12,6 +12,8 @@ import javax.ws.rs.core.Application;
  * Abstract class that configures Jersey Application to use spring
  * configuration in order to make it available in test environment.
  *
+ * Used for both unit and integration tests
+ *
  * @author Askar Akhmerov
  */
 public abstract class AbstractJerseyTest extends JerseyTest {

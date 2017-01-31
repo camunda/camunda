@@ -5,6 +5,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 
 /**
+ * Transport client factory used in unit tests in order to allow mocking
+ * requests towards elasticsearch
+ *
  * @author Askar Akhmerov
  */
 public class MockTransportClientFactory implements FactoryBean<TransportClient> {

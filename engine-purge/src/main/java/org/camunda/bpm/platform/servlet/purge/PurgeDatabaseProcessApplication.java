@@ -19,7 +19,7 @@ import javax.servlet.ServletContext;
 public class PurgeDatabaseProcessApplication extends ServletProcessApplication {
 
   /**
-   * Publish managment service to servlet context.
+   * Publish management service to servlet context.
    */
   @PostDeploy
   public void purgeDatabase(ProcessEngine processEngine) {
