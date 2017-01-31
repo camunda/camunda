@@ -23,7 +23,7 @@
     <repositories>
         <repository>
             <id>test</id>
-            <url></url>
+            <url>http://repository</url>
             <releases><enabled>false</enabled></releases>
             <snapshots><enabled>true</enabled></snapshots>
         </repository>
