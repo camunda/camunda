@@ -1,8 +1,8 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.bpm.engine.rest.dto.identity.UserCredentialsDto;
-import org.camunda.bpm.engine.rest.dto.identity.UserDto;
-import org.camunda.bpm.engine.rest.dto.identity.UserProfileDto;
+import org.camunda.optimize.rest.engine.dto.UserDto;
+import org.camunda.optimize.rest.engine.dto.UserProfileDto;
+import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
