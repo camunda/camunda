@@ -1,7 +1,8 @@
-package org.camunda.optimize.test.util;
+package org.camunda.optimize.test.rule;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -51,7 +52,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private ElasticSearchIntegrationTestRule() {
-    loadProperties();
+    properties = PropertyUtil.loadProperties("service-it.properties");
+
     startEsclient();
     createOptimizeIndex();
     createMappings();
@@ -124,19 +126,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
           .endObject()
         .endObject()
       .endObject().string()).build();
-  }
-
-  private void loadProperties() {
-    properties = new Properties();
-    try {
-      properties.load(
-        ElasticSearchIntegrationTestRule.class
-          .getClassLoader()
-          .getResourceAsStream("service.properties")
-      );
-    } catch (IOException ex) {
-      logger.error("Unable to load test properties!", ex);
-    }
   }
 
   private String getOptimizeIndex() {

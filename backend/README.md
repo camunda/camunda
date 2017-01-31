@@ -172,3 +172,43 @@ Example response:
 ```
 1396
 ```
+
+## Integration testing 
+
+This project has integration tests implemented that rely on following facts: 
+
+* tomcat is with engine, engine-rest and engine-purge modules is started and is listening to port 48080 
+for HTTP requests 
+* elasticsearch is started and is listening to port 9300 for TCP connections, as well as as port 9200 
+for HTTP connections
+* build is performed with ```it``` profile
+
+in order to debug your test locally you have to perform following steps: 
+
+* run tomcat with proper modules deployed 
+```
+mvn -Pit -f backend/pom.xml cargo:run
+```
+* run elastic search instance with proper configuration
+```
+mvn -Pit -f backend/pom.xml elasticsearch:runforked
+backend/target/elasticsearch0/bin/elasticsearch 
+```
+now you should be able to run your tests
+
+### Cleaning up data after test run
+
+please note that your test is expected to be responsible for populating 
+data into engine\elasticsearch as well as clean up. In order to ease 
+clean up process, there are rule classes implemented, you can use them
+as follows: 
+
+```java
+  @Rule
+  public ElasticSearchIntegrationTestRule rule = ElasticSearchIntegrationTestRule.getInstance(); 
+```
+
+```java
+  @Rule
+  public EngineIntegrationRule rule = EngineIntegrationRule.getInstance();
+```

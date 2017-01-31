@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.test.util.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

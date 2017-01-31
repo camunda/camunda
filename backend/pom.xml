@@ -277,7 +277,7 @@
           <snapshots><enabled>true</enabled></snapshots>
         </repository>
       </repositories>
-      
+
       <properties>
         <engine.runtime>${project.build.directory}/camunda-tomcat</engine.runtime>
         <tomcat.runtime>${engine.runtime}/server/apache-tomcat-${version.tomcat}</tomcat.runtime>
@@ -290,7 +290,7 @@
         <tomcat.connector.ajp.redirectPort>48443</tomcat.connector.ajp.redirectPort>
         <tomcat.server.port>48005</tomcat.server.port>
 
-        <cargo.timeout>120000</cargo.timeout>
+        <cargo.timeout>180000</cargo.timeout>
         <cargo.deploy.timeout>60000</cargo.deploy.timeout>
       </properties>
 

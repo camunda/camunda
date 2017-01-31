@@ -16,9 +16,9 @@
 
   <context:property-placeholder location="classpath:service.properties" />
 
-  <bean id="engineClient" class="org.camunda.optimize.test.MockEngineClientFactory"/>
+  <bean id="engineClient" class="org.camunda.optimize.test.factory.MockEngineClientFactory"/>
 
-  <bean id="transportClient"  class="org.camunda.optimize.test.MockTransportClientFactory"/>
+  <bean id="transportClient"  class="org.camunda.optimize.test.factory.MockTransportClientFactory"/>
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"

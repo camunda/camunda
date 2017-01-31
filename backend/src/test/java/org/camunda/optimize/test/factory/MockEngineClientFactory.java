@@ -1,4 +1,4 @@
-package org.camunda.optimize.test;
+package org.camunda.optimize.test.factory;
 
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
