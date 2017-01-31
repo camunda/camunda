@@ -22,8 +22,9 @@ import static org.junit.Assert.assertThat;
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
 public class ProcessDefinitionReaderIT {
 
+  @Autowired
   @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule ();
+  public ElasticSearchIntegrationTestRule rule;
 
   @Autowired
   private ProcessDefinitionReader procDefReader;

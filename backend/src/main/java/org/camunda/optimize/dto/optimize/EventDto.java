@@ -10,7 +10,6 @@ import java.util.Map;
 public class EventDto implements Serializable {
   private String activityId;
   private String state;
-  private Map<String, Object> payload;
   private String activityInstanceId;
   private Date timestamp;
   private String processDefinitionKey;
@@ -32,14 +31,6 @@ public class EventDto implements Serializable {
 
   public void setState(String state) {
     this.state = state;
-  }
-
-  public Map<String, Object> getPayload() {
-    return payload;
-  }
-
-  public void setPayload(Map<String, Object> payload) {
-    this.payload = payload;
   }
 
   public String getActivityInstanceId() {

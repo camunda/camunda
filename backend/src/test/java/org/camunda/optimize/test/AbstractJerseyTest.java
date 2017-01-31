@@ -37,8 +37,6 @@ public abstract class AbstractJerseyTest extends JerseyTest {
 
   /**
    * This is a convenience method to allow location overrides between different tests.
-   *
-   * @return
    */
   protected String getContextLocation() {
     return "classpath:applicationContext.xml";

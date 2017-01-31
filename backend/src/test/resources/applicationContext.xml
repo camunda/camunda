@@ -20,6 +20,8 @@
 
   <bean id="transportClient"  class="org.camunda.optimize.test.factory.MockTransportClientFactory"/>
 
+  <bean id="schemaInitializer"  class="org.camunda.optimize.test.factory.MockSchemaInitializerFactory"/>
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"

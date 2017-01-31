@@ -26,8 +26,9 @@ import static org.junit.Assert.assertThat;
 public class AuthenticationIT extends AbstractJerseyTest {
   private static final String USERNAME_PASSWORD = "demo";
 
+  @Autowired
   @Rule
-  public EngineIntegrationRule rule = new EngineIntegrationRule ();
+  public EngineIntegrationRule rule;
 
   @Autowired
   private ConfigurationService configurationService;

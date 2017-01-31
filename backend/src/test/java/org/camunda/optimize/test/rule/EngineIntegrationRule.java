@@ -6,12 +6,16 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -24,13 +28,18 @@ import java.util.Properties;
  *
  * @author Askar Akhmerov
  */
+@Component
 public class EngineIntegrationRule extends TestWatcher {
 
   private Properties properties;
 
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
 
-  public EngineIntegrationRule() {
+  @Autowired
+  ConfigurationService configurationService;
+
+  @PostConstruct
+  public void init() {
     properties = PropertyUtil.loadProperties("service-it.properties");
     cleanEngine();
   }

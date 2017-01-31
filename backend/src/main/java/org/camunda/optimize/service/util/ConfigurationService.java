@@ -48,6 +48,14 @@ public class ConfigurationService {
   private String engineName;
 
 
+  @Value("${camunda.optimize.es.analyzer.name}")
+  private String analyzerName;
+  @Value("${camunda.optimize.es.analyzer.tokenizer}")
+  private String tokenizer;
+  @Value("${camunda.optimize.es.analyzer.tokenfilter}")
+  private String tokenFilter;
+
+
   public String getSecret() {
     return secret;
   }
@@ -116,5 +124,17 @@ public class ConfigurationService {
     String processDefinitionXmlEndpoint =
       processDefinitionEndpoint + "/" + processDefinitionId + this.processDefinitionXmlEndpoint;
     return processDefinitionXmlEndpoint;
+  }
+
+  public String getAnalyzerName() {
+    return analyzerName;
+  }
+
+  public String getTokenizer() {
+    return tokenizer;
+  }
+
+  public String getTokenFilter() {
+    return tokenFilter;
   }
 }

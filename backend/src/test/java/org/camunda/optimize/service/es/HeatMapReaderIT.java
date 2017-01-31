@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Askar Akhmerov
@@ -28,8 +28,9 @@ public class HeatMapReaderIT {
   @Autowired
   private ConfigurationService configurationService;
 
+  @Autowired
   @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule ();
+  public ElasticSearchIntegrationTestRule rule;
 
   @Test
   public void getHeatMap() throws Exception {

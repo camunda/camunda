@@ -10,8 +10,11 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
@@ -27,7 +30,10 @@ import static org.junit.Assert.*;
 /**
  * @author Askar Akhmerov
  */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = { "/applicationContext.xml" })
 public class AuthenticationTest extends AbstractJerseyTest {
+
   @Autowired
   private TransportClient esClientMock;
 

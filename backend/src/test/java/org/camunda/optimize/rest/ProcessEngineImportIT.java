@@ -6,6 +6,10 @@ import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
@@ -18,12 +22,17 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Askar Akhmerov
  */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = { "/it-applicationContext.xml" })
 public class ProcessEngineImportIT extends AbstractJerseyTest {
-  @Rule
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule ();
 
+  @Autowired
   @Rule
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule ();
+  public EngineIntegrationRule engineRule;
+
+  @Autowired
+  @Rule
+  public ElasticSearchIntegrationTestRule elasticSearchRule;
 
   @Test
   public void importDataFromEngine() throws Exception {

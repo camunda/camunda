@@ -3,5 +3,5 @@ package org.camunda.optimize.service.exceptions;
 /**
  * @author Askar Akhmerov
  */
-public class InvalidTokenException extends Exception {
+public class InvalidTokenException extends OptimizeException {
 }
