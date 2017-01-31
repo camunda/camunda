@@ -20,6 +20,14 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>test</id>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
