@@ -53,7 +53,7 @@ public class ProcessDefinitionDelegationTest extends AbstractJerseyTest{
       response.readEntity(new GenericType<List<ProcessDefinitionDto>>(){});
     assertThat(definitions,is(notNullValue()));
 
-    verify(mockedTransportClient, times(1)).prepareSearch(configurationService.getOptimizeIndex());
+    verify(mockedTransportClient, times(2)).prepareSearch(configurationService.getOptimizeIndex());
     verify(searchRequestBuilder, times(1)).setTypes(configurationService.getProcessDefinitionType());
   }
 

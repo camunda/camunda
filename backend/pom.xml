@@ -161,45 +161,46 @@
       <scope>test</scope>
     </dependency>
 
-
   </dependencies>
 
   <build>
+    <finalName>optimize-backend-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.3</version>
         <executions>
           <execution>
-            <id>copy-dependencies</id>
-            <phase>prepare-package</phase>
+            <phase>package</phase>
             <goals>
-              <goal>copy-dependencies</goal>
+              <goal>shade</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>false</overWriteSnapshots>
-              <overWriteIfNewer>true</overWriteIfNewer>
-              <excludeArtifactIds>camunda-tomcat-assembly</excludeArtifactIds>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>**/*INDEX.LIST*</exclude>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>org.camunda.optimize.Main</Main-Class>
+                    <Class-Path>environment/</Class-Path>
+                  </manifestEntries>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+              </transformers>
             </configuration>
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>org.camunda.optimize.Main</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-
     </plugins>
     <resources>
       <resource>
@@ -271,8 +272,12 @@
         <repository>
           <id>test</id>
           <url>http://repository</url>
-          <releases><enabled>false</enabled></releases>
-          <snapshots><enabled>true</enabled></snapshots>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
         </repository>
       </repositories>
 
@@ -298,6 +303,7 @@
           <artifactId>camunda-tomcat-assembly</artifactId>
           <version>${camunda.engine.version}</version>
           <type>tar.gz</type>
+          <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -457,7 +463,9 @@
                   <artifactId>camunda-engine-rest</artifactId>
                   <type>war</type>
                   <classifier>tomcat</classifier>
-                  <pingURL>http://localhost:${tomcat.connector.http.port}/engine-rest/engine/default/process-definition</pingURL>
+                  <pingURL>
+                    http://localhost:${tomcat.connector.http.port}/engine-rest/engine/default/process-definition
+                  </pingURL>
                   <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
                   <properties>
                     <context>engine-rest</context>

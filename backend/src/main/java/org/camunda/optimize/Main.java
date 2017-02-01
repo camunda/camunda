@@ -13,6 +13,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Properties;
@@ -81,10 +82,19 @@ public class Main {
     return context;
   }
 
+  /**
+   * Since spring context is not loaded yet, just hook up properties manually.
+   * @return
+   */
   private static Properties getProperties() {
     Properties result = new Properties();
     try {
       result.load(Main.class.getClassLoader().getResourceAsStream("service.properties"));
+      InputStream environmentProperties = Main.class.getClassLoader().getResourceAsStream("environment.properties");
+      if (environmentProperties != null) {
+        //overwrites previously loaded properties
+        result.load(environmentProperties);
+      }
     } catch (IOException e) {
       logger.error("cant read properties", e);
     }

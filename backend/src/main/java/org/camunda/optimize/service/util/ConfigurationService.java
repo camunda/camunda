@@ -33,6 +33,8 @@ public class ConfigurationService {
   private String processDefinitionType;
   @Value("${camunda.optimize.es.procdef.xml.type}")
   private String processDefinitionXmlType;
+  @Value("${camunda.optimize.es.users.type}")
+  private String elasticSearchUsersType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
@@ -124,6 +126,10 @@ public class ConfigurationService {
     String processDefinitionXmlEndpoint =
       processDefinitionEndpoint + "/" + processDefinitionId + this.processDefinitionXmlEndpoint;
     return processDefinitionXmlEndpoint;
+  }
+
+  public String getElasticSearchUsersType() {
+    return elasticSearchUsersType;
   }
 
   public String getAnalyzerName() {

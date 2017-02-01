@@ -1,0 +1,3 @@
+grant {
+   permission org.elasticsearch.script.ClassPermission "*";
+};

@@ -8,9 +8,11 @@
   <packaging>pom</packaging>
 
   <modules>
+    <!-- client should be built before distro -->
+    <module>client</module>
     <module>backend</module>
     <module>qa</module>
-    <module>client</module>
+    <module>distro</module>
   </modules>
 
   <properties>
@@ -22,6 +24,7 @@
 
     <jackson.version>2.8.5</jackson.version>
     <camunda.engine.version>7.7.0-SNAPSHOT</camunda.engine.version>
+    <elasticsearch.version>5.2.0</elasticsearch.version>
   </properties>
 
   <profiles>
