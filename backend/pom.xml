@@ -450,6 +450,7 @@
                 <properties>
                   <cargo.servlet.port>${tomcat.connector.http.port}</cargo.servlet.port>
                   <cargo.tomcat.ajp.port>${tomcat.connector.ajp.port}</cargo.tomcat.ajp.port>
+                  <cargo.start.jvmargs>-Djava.security.egd=file:/dev/./urandom</cargo.start.jvmargs>
                 </properties>
               </configuration>
               <deployables>
