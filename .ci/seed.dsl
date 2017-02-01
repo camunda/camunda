@@ -93,7 +93,7 @@ multibranchPipelineJob('camunda-optimize') {
       repoOwner githubOrga
       repository gitRepository
       scanCredentialsId 'camunda-jenkins-github'
-      excludes 'noci-.*'
+      excludes 'noci-*'
     }
   }
 
