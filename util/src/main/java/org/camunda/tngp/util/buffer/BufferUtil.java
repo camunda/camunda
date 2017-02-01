@@ -33,10 +33,9 @@ public final class BufferUtil
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
-    public static void wrapString(String argument, UnsafeBuffer buffer)
+    public static DirectBuffer wrapString(String argument)
     {
-        final byte[] bytes = argument.getBytes(StandardCharsets.UTF_8);
-        buffer.wrap(bytes);
+        return new UnsafeBuffer(argument.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
