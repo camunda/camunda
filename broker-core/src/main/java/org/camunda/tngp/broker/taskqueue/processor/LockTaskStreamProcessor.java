@@ -15,7 +15,7 @@ package org.camunda.tngp.broker.taskqueue.processor;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
@@ -36,7 +36,6 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
 
     protected final TaskEvent taskEvent = new TaskEvent();
-    protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final TaskSubscriptions subscriptions = new TaskSubscriptions();
 
@@ -171,7 +170,8 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
 
                 targetEventMetadata
                     .reqChannelId(lockSubscription.getChannelId())
-                    .subscriptionId(lockSubscription.getId());
+                    .subscriptionId(lockSubscription.getId())
+                    .protocolVersion(Constants.PROTOCOL_VERSION);
                 // TODO: targetEventMetadata.raftTermId(raftTermId);
 
                 position = writer.key(eventKey)

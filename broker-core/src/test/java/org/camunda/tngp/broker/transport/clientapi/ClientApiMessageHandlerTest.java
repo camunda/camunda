@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.test.util.FluentAnswer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
@@ -138,6 +139,33 @@ public class ClientApiMessageHandlerTest
         assertThat(eventMetadata.getReqChannelId()).isEqualTo(TRANSPORT_CHANNEL_ID);
         assertThat(eventMetadata.getReqConnectionId()).isEqualTo(CONNECTION_ID);
         assertThat(eventMetadata.getReqRequestId()).isEqualTo(REQUEST_ID);
+    }
+
+    @Test
+    public void shouldWriteCommandRequestProtocolVersion() throws InterruptedException, ExecutionException
+    {
+        // given
+        final short clientProtocolVersion = Constants.PROTOCOL_VERSION - 1;
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID, clientProtocolVersion);
+
+        // when
+        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+
+        // then
+        assertThat(isHandled).isTrue();
+
+        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+
+        while (!logStreamReader.hasNext())
+        {
+            // wait for event
+        }
+
+        final LoggedEvent loggedEvent = logStreamReader.next();
+        final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+        loggedEvent.readMetadata(eventMetadata);
+
+        assertThat(eventMetadata.getProtocolVersion()).isEqualTo(clientProtocolVersion);
     }
 
     @Test

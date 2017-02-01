@@ -144,6 +144,7 @@ public class TaskStreamProcessorInterationTest
         // when
         final long position = logStreamWriter
             .key(2L)
+            .metadataWriter(new BrokerEventMetadata())
             .valueWriter(taskEvent)
             .tryWrite();
 
@@ -182,6 +183,7 @@ public class TaskStreamProcessorInterationTest
         // when
         final long position = logStreamWriter
             .key(2L)
+            .metadataWriter(new BrokerEventMetadata())
             .valueWriter(taskEvent)
             .tryWrite();
 

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
@@ -67,6 +68,7 @@ public class TaskInstanceStreamProcessorTest
 
         // then
         assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.CREATED);
+        assertThat(mockController.getLastWrittenMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter).longKey(2L);
         verify(mockResponseWriter).tryWriteResponse();
@@ -86,6 +88,7 @@ public class TaskInstanceStreamProcessorTest
 
         // then
         assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }

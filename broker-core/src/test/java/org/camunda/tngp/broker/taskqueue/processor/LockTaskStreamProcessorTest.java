@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
@@ -96,6 +97,7 @@ public class LockTaskStreamProcessorTest
 
         assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
         assertThat(mockController.getLastWrittenMetadata().getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(mockController.getLastWrittenMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
     }
 
     @Test

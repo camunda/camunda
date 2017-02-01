@@ -26,7 +26,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected long reqRequestId;
     protected int raftTermId;
     protected long subscriptionId;
-    protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version
+    protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version by default
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -44,6 +44,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         reqRequestId = decoder.reqRequestId();
         raftTermId = (int) decoder.raftTermId();
         subscriptionId = decoder.subscriptionId();
+        protocolVersion = decoder.protocolVersion();
     }
 
     @Override
@@ -147,7 +148,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         reqRequestId = BrokerEventMetadataDecoder.reqRequestIdNullValue();
         raftTermId = (int) BrokerEventMetadataDecoder.raftTermIdNullValue();
         subscriptionId = BrokerEventMetadataDecoder.subscriptionIdNullValue();
-        protocolVersion = BrokerEventMetadataDecoder.protocolVersionNullValue();
+        protocolVersion = Constants.PROTOCOL_VERSION;
         return this;
     }
 

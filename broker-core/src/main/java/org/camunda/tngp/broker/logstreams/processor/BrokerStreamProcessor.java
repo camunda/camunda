@@ -15,15 +15,18 @@ public abstract class BrokerStreamProcessor implements StreamProcessor
 {
 
     protected BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
+    protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
         event.readMetadata(sourceEventMetadata);
 
-        if (sourceEventMetadata.getProtocolVersion() > Constants.PROTOCOL_VERSION)
+        final int protocolVersion = sourceEventMetadata.getProtocolVersion();
+        if (protocolVersion > Constants.PROTOCOL_VERSION)
         {
-            // TODO: throw exception defined in log
+            throw new RuntimeException(String.format("Cannot handle event with version newer " +
+                    "than what is implemented by broker (%d > %d)", protocolVersion, Constants.PROTOCOL_VERSION));
         }
 
         return onCheckedEvent(event);

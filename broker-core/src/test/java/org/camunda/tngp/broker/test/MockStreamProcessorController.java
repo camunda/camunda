@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -39,7 +40,6 @@ import org.junit.rules.ExternalResource;
 
 public class MockStreamProcessorController<T extends UnpackedObject> extends ExternalResource
 {
-    protected LoggedEvent mockLoggedEvent;
     protected LogStreamWriter mockLogStreamWriter;
 
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
@@ -48,6 +48,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
     protected Class<T> eventClass;
     protected Consumer<T> defaultEventSetter;
+    protected Consumer<BrokerEventMetadata> defaultMetadataSetter;
     protected List<T> writtenEvents;
     protected List<BrokerEventMetadata> writtenMetadata;
 
@@ -57,6 +58,15 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         this.writtenEvents = new ArrayList<>();
         this.writtenMetadata = new ArrayList<>();
         this.defaultEventSetter = defaultEventSetter;
+        this.defaultMetadataSetter = (m) ->
+        {
+            m.subscriptionId(0L);
+            m.protocolVersion(0);
+            m.raftTermId(0);
+            m.reqChannelId(0);
+            m.reqConnectionId(0);
+            m.reqRequestId(0);
+        };
     }
 
 
@@ -69,8 +79,6 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     @Override
     protected void before() throws Throwable
     {
-        mockLoggedEvent = mock(LoggedEvent.class);
-
         mockLogStreamWriter = mock(LogStreamWriter.class, new FluentAnswer());
         when(mockLogStreamWriter.tryWrite()).thenReturn(1L);
 
@@ -155,22 +163,14 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
     public void processEvent(long key, Consumer<T> eventSetter)
     {
+        processEvent(key, eventSetter, defaultMetadataSetter);
+    }
+
+    public void processEvent(long key, Consumer<T> eventSetter, Consumer<BrokerEventMetadata> metadataSetter)
+    {
         Objects.requireNonNull(streamProcessor, "No stream processor set. Call 'initStreamProcessor()' in setup method.");
 
-        when(mockLoggedEvent.getLongKey()).thenReturn(key);
-
-        final T event = newEventInstance();
-        defaultEventSetter.accept(event);
-        eventSetter.accept(event);
-        final UnsafeBuffer buf = new UnsafeBuffer(new byte[event.getLength()]);
-        event.write(buf, 0);
-
-        doAnswer(invocation ->
-        {
-            final BufferReader arg = (BufferReader) invocation.getArguments()[0];
-            arg.wrap(buf, 0, buf.capacity());
-            return null;
-        }).when(mockLoggedEvent).readValue(any());
+        final LoggedEvent mockLoggedEvent = buildLoggedEvent(key, eventSetter, metadataSetter);
 
         // simulate stream processor controller behavior
         cmdQueue.drain(cmd -> cmd.execute());
@@ -183,6 +183,45 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
             eventProcessor.updateState();
         }
     }
+
+    public LoggedEvent buildLoggedEvent(long key, Consumer<T> eventSetter, Consumer<BrokerEventMetadata> metadataSetter)
+    {
+
+        final LoggedEvent mockLoggedEvent = mock(LoggedEvent.class);
+
+        when(mockLoggedEvent.getLongKey()).thenReturn(key);
+
+        final T event = newEventInstance();
+        defaultEventSetter.accept(event);
+        final DirectBuffer buf = populateAndWrite(event, eventSetter);
+
+        doAnswer(invocation ->
+        {
+            final BufferReader arg = (BufferReader) invocation.getArguments()[0];
+            arg.wrap(buf, 0, buf.capacity());
+            return null;
+        }).when(mockLoggedEvent).readValue(any());
+
+        final BrokerEventMetadata metaData = new BrokerEventMetadata();
+        final DirectBuffer metaDataBuf = populateAndWrite(metaData, metadataSetter);
+        doAnswer(invocation ->
+        {
+            final BufferReader arg = (BufferReader) invocation.getArguments()[0];
+            arg.wrap(metaDataBuf, 0, metaDataBuf.capacity());
+            return null;
+        }).when(mockLoggedEvent).readMetadata(any());
+
+        return mockLoggedEvent;
+    }
+
+    protected <S extends BufferWriter> DirectBuffer populateAndWrite(S writer, Consumer<S> setter)
+    {
+        setter.accept(writer);
+        final UnsafeBuffer buf = new UnsafeBuffer(new byte[writer.getLength()]);
+        writer.write(buf, 0);
+        return buf;
+    }
+
 
     protected T newEventInstance()
     {

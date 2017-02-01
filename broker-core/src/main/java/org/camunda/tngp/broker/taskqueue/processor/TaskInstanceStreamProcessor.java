@@ -4,7 +4,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
@@ -23,8 +23,6 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
     protected static final int INDEX_VALUE_LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
     protected static final int INDEX_POSITION_OFFSET = 0;
     protected static final int INDEX_STATE_OFFSET = SIZE_OF_LONG;
-
-    protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final CommandResponseWriter responseWriter;
     protected final IndexStore indexStore;
@@ -127,6 +125,7 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             targetEventMetadata.reset();
+            targetEventMetadata.protocolVersion(Constants.PROTOCOL_VERSION);
             // TODO: targetEventMetadata.raftTermId(raftTermId);
 
             return writer.key(eventKey)
@@ -186,6 +185,7 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             targetEventMetadata.reset();
+            targetEventMetadata.protocolVersion(Constants.PROTOCOL_VERSION);
             // TODO: targetEventMetadata.raftTermId(raftTermId);
 
             return writer.key(eventKey)
