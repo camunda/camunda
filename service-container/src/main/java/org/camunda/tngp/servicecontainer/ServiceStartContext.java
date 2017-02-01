@@ -1,5 +1,7 @@
 package org.camunda.tngp.servicecontainer;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface ServiceStartContext extends AsyncContext
 {
     String getName();
@@ -9,4 +11,6 @@ public interface ServiceStartContext extends AsyncContext
     <S> S getService(String name, Class<S> type);
 
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
+
+    <S> CompletableFuture<Void> removeService(ServiceName<S> name);
 }

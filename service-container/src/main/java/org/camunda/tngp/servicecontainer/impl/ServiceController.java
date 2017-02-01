@@ -571,6 +571,27 @@ public class ServiceController
         }
 
         @Override
+        public <S> CompletableFuture<Void> removeService(ServiceName<S> name)
+        {
+            validCheck();
+
+            final ServiceController serviceController = container.getServiceController(name);
+            if (serviceController == null)
+            {
+                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. Service not found.", name, ServiceController.this.name);
+                throw new IllegalArgumentException(errorMessage);
+            }
+
+            if (!serviceController.hasDependency(ServiceController.this.name))
+            {
+                final String errorMessage = String.format("Cannot remove service '%s' from context '%s'. The context is not a dependency of the service.", name, ServiceController.this.name);
+                throw new IllegalArgumentException(errorMessage);
+            }
+
+            return container.removeService(name);
+        }
+
+        @Override
         public CompletableFuture<Void> async()
         {
             validCheck();
@@ -649,6 +670,7 @@ public class ServiceController
                 }
             }
         }
+
     }
 
     class StopContextImpl implements ServiceStopContext, BiConsumer<Object, Throwable>
@@ -879,6 +901,11 @@ public class ServiceController
     public boolean isStarted()
     {
         return state == startedState;
+    }
+
+    public boolean hasDependency(ServiceName<?> name)
+    {
+        return dependencies.contains(name);
     }
 
     @Override
