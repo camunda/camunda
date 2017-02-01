@@ -1,9 +1,9 @@
-
 def githubOrga = 'camunda'
 def gitRepository = 'camunda-optimize'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
+.ci/jobs/*.dsl
 .ci/views/*.dsl
 '''
 
