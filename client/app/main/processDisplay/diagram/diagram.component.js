@@ -1,8 +1,8 @@
 import {jsx, updateOnlyWhenStateChanges, Match, Case, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {loadHeatmap, loadDiagram, getHeatmap, hoverElement,
+import {getHeatmap, hoverElement,
         removeHeatmapOverlay, addHeatmapOverlay} from './diagram.service';
-import {LOADED_STATE, INITIAL_STATE} from 'utils/loading';
+import {LOADING_STATE, LOADED_STATE, INITIAL_STATE} from 'utils/loading';
 
 export const Diagram = withSelector(DiagramComponent);
 
@@ -12,17 +12,29 @@ function DiagramComponent() {
       <BpmnViewer />
       <Match>
         <Case predicate={isLoading}>
-          <div className="loading_indicator">
+          <div className="loading_indicator overlay">
             <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
             <div className="text">loading</div>
+          </div>
+        </Case>
+        <Case predicate={isInitial}>
+          <div className="help_screen overlay">
+            <div className="process_definition">
+              <span className="indicator glyphicon glyphicon-chevron-up"></span>
+              <div>Select Process Defintion</div>
+            </div>
           </div>
         </Case>
       </Match>
     </div>
   </div>;
 
+  function isInitial({diagram, heatmap}) {
+    return diagram.state === INITIAL_STATE || heatmap.state === INITIAL_STATE;
+  }
+
   function isLoading({diagram, heatmap}) {
-    return diagram.state !== LOADED_STATE || heatmap.state !== LOADED_STATE;
+    return diagram.state === LOADING_STATE || heatmap.state === LOADING_STATE;
   }
 }
 
@@ -40,15 +52,11 @@ function BpmnViewer() {
     });
 
     const update = (display) => {
-      if (display.diagram.state === INITIAL_STATE) {
-        loadDiagram(display);
-      } else if (display.diagram.state === LOADED_STATE) {
+      if (display.diagram.state === LOADED_STATE) {
         renderDiagram(display);
       }
 
-      if (display.heatmap.state === INITIAL_STATE) {
-        loadHeatmap(display);
-      } else if (display.heatmap.state === LOADED_STATE) {
+      if (display.heatmap.state === LOADED_STATE) {
         renderHeatmap(display);
       }
     };

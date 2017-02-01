@@ -1,9 +1,6 @@
 import {dispatchAction} from 'view-utils';
 import generateHeatmap from './heatmap';
-import {getHeatmapData, getDiagramXml} from './diagramBackend.mock';
-import {createLoadingDiagramAction, createLoadingDiagramResultAction,
-        createLoadingHeatmapAction, createLoadingHeatmapResultAction,
-        createHoverElementAction} from './diagram.reducer';
+import {createHoverElementAction} from './diagram.reducer';
 
 export function hoverElement(element) {
   dispatchAction(createHoverElementAction(element));
@@ -69,18 +66,4 @@ export function getHeatmap(viewer, data) {
   node.setAttributeNS(null, 'style', 'opacity: 0.8; pointer-events: none;');
 
   return node;
-}
-
-export function loadHeatmap(diagram) {
-  dispatchAction(createLoadingHeatmapAction());
-  getHeatmapData(diagram.id).then(result => {
-    dispatchAction(createLoadingHeatmapResultAction(result));
-  });
-}
-
-export function loadDiagram(diagram) {
-  dispatchAction(createLoadingDiagramAction());
-  getDiagramXml(diagram.id).then(result => {
-    dispatchAction(createLoadingDiagramResultAction(result));
-  });
 }

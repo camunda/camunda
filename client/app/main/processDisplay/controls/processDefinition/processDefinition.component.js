@@ -8,7 +8,7 @@ export function ProcessDefinitionComponent() {
   const template = <td>
     <select className="form-control">
       <OnEvent event="change" listener={select} />
-      <option disabled="" selected="">Select Process</option>
+      <option disabled="" value="">Select Process</option>
       <Select selector={getAvailableDefinitions}>
         <List>
           <option>
@@ -31,7 +31,9 @@ export function ProcessDefinitionComponent() {
   function update(parentNode, eventsBus) {
     const templateUpdate = template(parentNode, eventsBus);
 
-    return [templateUpdate, ({availableProcessDefinitions}) => {
+    return [templateUpdate, ({availableProcessDefinitions, selected}) => {
+      parentNode.querySelector('select').value = selected || '';
+
       if (availableProcessDefinitions.state === INITIAL_STATE) {
         loadProcessDefinitions();
       }

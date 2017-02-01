@@ -48,6 +48,7 @@ describe('ProcessDefinition service', () => {
     __ResetDependency__('createLoadProcessDefinitionsAction');
     __ResetDependency__('createSelectProcessDefinitionAction');
     __ResetDependency__('createLoadProcessDefinitionsResultAction');
+    __ResetDependency__('get');
   });
 
   describe('select process definition', () => {
