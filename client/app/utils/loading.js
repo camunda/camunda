@@ -10,22 +10,24 @@ export function addLoading(next, ...properties) {
     const loadIdx = loadTypes.indexOf(action.type);
     const loadedIdx = loadedTypes.indexOf(action.type);
 
+    const newState = {...state};
+
     properties.forEach(prop => {
-      if (!state[prop]) {
-        state[prop] = {state: INITIAL_STATE};
+      if (!newState[prop]) {
+        newState[prop] = {state: INITIAL_STATE};
       }
     });
 
     if (loadIdx !== -1) {
       return {
-        ...state,
+        ...newState,
         [properties[loadIdx]]: {
           state: LOADING_STATE
         }
       };
     } else if (loadedIdx !== -1) {
       return {
-        ...state,
+        ...newState,
         [properties[loadedIdx]]: {
           state: LOADED_STATE,
           data: action.result
@@ -33,7 +35,7 @@ export function addLoading(next, ...properties) {
       };
     }
 
-    return next(state, action);
+    return next(newState, action);
   };
 }
 
@@ -44,15 +46,19 @@ function getLoadedTypes(properties) {
   return properties.map(prop => 'LOADED_' + prop.toUpperCase());
 }
 
-export function createLoadingAction(name) {
-  return {
-    type: 'LOAD_' + name.toUpperCase()
+export function createLoadingActionFunction(name) {
+  return () => {
+    return {
+      type: 'LOAD_' + name.toUpperCase()
+    };
   };
 }
 
-export function createResultAction(name, result) {
-  return {
-    type: 'LOADED_' + name.toUpperCase(),
-    result
+export function createResultActionFunction(name) {
+  return result => {
+    return {
+      type: 'LOADED_' + name.toUpperCase(),
+      result
+    };
   };
 }

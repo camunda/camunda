@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {addLoading, createLoadingAction, createResultAction,
+import {addLoading, createLoadingActionFunction, createResultActionFunction,
         INITIAL_STATE, LOADING_STATE, LOADED_STATE} from 'utils/loading';
 import sinon from 'sinon';
 
@@ -22,27 +22,29 @@ describe('loading', () => {
     expect(state[LOADING_PROPERTY].state).to.eql(INITIAL_STATE);
   });
 
-  it('creates a loading action', () => {
-    const action = createLoadingAction(LOADING_PROPERTY);
+  it('creates function to create a loading action', () => {
+    const fct = createLoadingActionFunction(LOADING_PROPERTY);
+    const action = fct();
 
     expect(action.type).to.be.defined;
   });
 
-  it('creates a result action', () => {
-    const action = createResultAction(LOADING_PROPERTY, DATA);
+  it('creates a function to create a result action', () => {
+    const fct = createResultActionFunction(LOADING_PROPERTY);
+    const action = fct(DATA);
 
     expect(action.type).to.be.defined;
     expect(action.result).to.eql(DATA);
   });
 
   it('updates the state when processing a loading action', () => {
-    const state = reducer(undefined, createLoadingAction(LOADING_PROPERTY));
+    const state = reducer(undefined, createLoadingActionFunction(LOADING_PROPERTY)());
 
     expect(state[LOADING_PROPERTY].state).to.eql(LOADING_STATE);
   });
 
   it('updates the state when processing a loaded action', () => {
-    const state = reducer(undefined, createResultAction(LOADING_PROPERTY, DATA));
+    const state = reducer(undefined, createResultActionFunction(LOADING_PROPERTY)(DATA));
 
     expect(state[LOADING_PROPERTY].state).to.eql(LOADED_STATE);
     expect(state[LOADING_PROPERTY].data).to.eql(DATA);
@@ -54,6 +56,6 @@ describe('loading', () => {
 
     reducer(state, action);
 
-    expect(originalReducer.calledWith(state, action)).to.eql(true);
+    expect(originalReducer.getCall(0).args[1]).to.eql(action);
   });
 });

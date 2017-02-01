@@ -1,4 +1,4 @@
-import {addLoading, createLoadingAction, createResultAction} from 'utils/loading';
+import {addLoading, createLoadingActionFunction, createResultActionFunction} from 'utils/loading';
 
 export const SELECT_PROCESS_DEFINITION = 'SELECT_PROCESS_DEFINITION';
 
@@ -15,13 +15,8 @@ export function defaultReducer(state = {}, action) {
 
 export const reducer = addLoading(defaultReducer, 'availableProcessDefinitions');
 
-export function createLoadProcessDefinitionsAction() {
-  return createLoadingAction('availableProcessDefinitions');
-}
-
-export function createLoadProcessDefinitionsResultAction(result) {
-  return createResultAction('availableProcessDefinitions', result);
-}
+export const createLoadProcessDefinitionsAction = createLoadingActionFunction('availableProcessDefinitions');
+export const createLoadProcessDefinitionsResultAction = createResultActionFunction('availableProcessDefinitions');
 
 export function createSelectProcessDefinitionAction(procDefId) {
   return {

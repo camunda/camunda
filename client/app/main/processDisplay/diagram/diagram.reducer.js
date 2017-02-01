@@ -1,4 +1,4 @@
-import {addLoading, createLoadingAction, createResultAction} from 'utils/loading';
+import {addLoading, createLoadingActionFunction, createResultActionFunction} from 'utils/loading';
 
 export const HOVER_ELEMENT = 'HOVER_ELEMENT';
 
@@ -14,21 +14,10 @@ function hoverReducer(state = {}, action) {
 
 export const reducer = addLoading(hoverReducer, 'diagram', 'heatmap');
 
-export function createLoadingDiagramAction() {
-  return createLoadingAction('diagram');
-}
-
-export function createLoadingDiagramResultAction(result) {
-  return createResultAction('diagram', result);
-}
-
-export function createLoadingHeatmapAction() {
-  return createLoadingAction('heatmap');
-}
-
-export function createLoadingHeatmapResultAction(result) {
-  return createResultAction('heatmap', result);
-}
+export const createLoadingDiagramAction = createLoadingActionFunction('diagram');
+export const createLoadingDiagramResultAction = createResultActionFunction('diagram');
+export const createLoadingHeatmapAction = createLoadingActionFunction('heatmap');
+export const createLoadingHeatmapResultAction = createResultActionFunction('heatmap');
 
 export function createHoverElementAction(element) {
   return {
