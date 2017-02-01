@@ -992,8 +992,15 @@ public class StreamProcessorControllerTest
         verify(mockSnapshotWriter).abort();
     }
 
+    /**
+     * <p>This behavior is actually important for certain error cases in the broker
+     * where a stream processor can throw an exception and stream processing should
+     * not continue or be recoverable unless the controller is restarted (cf https://github.com/camunda-tngp/camunda-tngp/issues/109).
+     *
+     * <p>If you extend/change the behavior, please make sure the current behavior is maintained
+     */
     @Test
-    public void shouldFailToProcessEvent() throws Exception
+    public void shouldFailToProcessEvent()
     {
         mockSourceLogStreamReader.addEvent(mockSourceEvent);
 
