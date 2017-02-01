@@ -21,9 +21,9 @@ public class AuthenticationService {
   private TokenService tokenService;
 
   public String authenticateUser(CredentialsDto credentials) throws UnauthorizedUserException {
-    if (!engineAuthenticationProvider.authenticate(credentials.getUsername(), credentials.getPassword())) {
+    if (!engineAuthenticationProvider.authenticate(credentials)) {
       // Authenticate the user using the credentials provided
-      if (!elasticAuthenticationProvider.authenticate(credentials.getUsername(), credentials.getPassword())) {
+      if (!elasticAuthenticationProvider.authenticate(credentials)) {
         throw new UnauthorizedUserException();
       }
     }

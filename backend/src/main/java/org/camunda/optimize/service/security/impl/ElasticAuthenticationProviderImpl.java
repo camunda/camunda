@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.security.impl;
 
+import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
@@ -20,13 +21,13 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   @Autowired
   private ConfigurationService configurationService;
 
-  public boolean authenticate(String username, String password) {
+  public boolean authenticate(CredentialsDto credentialsDto) {
     boolean authenticated = true;
     SearchResponse response = client.prepareSearch(configurationService.getOptimizeIndex())
         .setTypes("users")
         .setQuery(QueryBuilders.boolQuery()
-            .must(QueryBuilders.termQuery("username" , username))
-            .must(QueryBuilders.termQuery("password" , password))
+            .must(QueryBuilders.termQuery("username" , credentialsDto.getUsername()))
+            .must(QueryBuilders.termQuery("password" , credentialsDto.getPassword()))
         )
         .get();
     if (response.getHits().totalHits() <= 0) {

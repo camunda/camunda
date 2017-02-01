@@ -1,9 +1,11 @@
 package org.camunda.optimize.service.security;
 
+import org.camunda.optimize.dto.optimize.CredentialsDto;
+
 /**
  * @author Askar Akhmerov
  */
 public interface AuthenticationProvider {
 
-  boolean authenticate(String username, String password);
+  boolean authenticate(CredentialsDto credentialsDto);
 }
