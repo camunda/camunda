@@ -14,11 +14,11 @@ describe('ProcessDefinition service', () => {
     {id: 'id2', name: 'name2'}
   ];
 
-  let dispatchAction,
-      createLoadProcessDefinitionsAction,
-      createSelectProcessDefinitionAction,
-      createLoadProcessDefinitionsResultAction,
-      get;
+  let dispatchAction;
+  let createLoadProcessDefinitionsAction;
+  let createSelectProcessDefinitionAction;
+  let createLoadProcessDefinitionsResultAction;
+  let get;
 
   setupPromiseMocking();
 

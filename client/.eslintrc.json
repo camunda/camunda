@@ -33,7 +33,8 @@
     "prefer-const": 2,
     "padded-blocks": [2, "never"],
     "comma-style": [2, "last"],
-    "comma-spacing": [2, { "before": false, "after": true }]
+    "comma-spacing": [2, { "before": false, "after": true }],
+    "one-var": [2, "never"]
   },
   "settings": {
     "react": {

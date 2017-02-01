@@ -9,8 +9,8 @@ describe('ProcessDefinition reducer', () => {
     {id: 'id2', name: 'name2'}
   ];
 
-  let availableProcessDefinitions,
-      selected;
+  let availableProcessDefinitions;
+  let selected;
 
   it('should set selected property on select process definition action', () => {
     ({selected} = reducer(undefined, createSelectProcessDefinitionAction('someId')));

@@ -32,8 +32,8 @@ describe('Heatmap', () => {
     act2: 3
   };
 
-  let dimensions,
-      img;
+  let dimensions;
+  let img;
 
   beforeEach(() => {
     ({dimensions, img} = generateHeatmap(viewer, heatmapData));

@@ -31,10 +31,10 @@ describe('<ProcessDefinition>', () => {
     }
   };
 
-  let node,
-      update,
-      selectProcessDefinition,
-      loadProcessDefinitions;
+  let node;
+  let update;
+  let selectProcessDefinition;
+  let loadProcessDefinitions;
 
   beforeEach(() => {
     loadProcessDefinitions = sinon.spy();

@@ -4,8 +4,8 @@ import {addLoading, createLoadingAction, createResultAction,
 import sinon from 'sinon';
 
 describe('loading', () => {
-  let reducer,
-      originalReducer;
+  let reducer;
+  let originalReducer;
 
   const LOADING_PROPERTY = 'testLoading';
   const DATA = 'someData';

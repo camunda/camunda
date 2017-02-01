@@ -9,8 +9,8 @@ describe('diagram reducer', () => {
   const diagramElement = {id: 'elementId'};
 
   describe('initial', () => {
-    let diagram,
-        heatmap;
+    let diagram;
+    let heatmap;
 
     beforeEach(() => {
       ({diagram, heatmap} = reducer(undefined, {type: '@@INIT'}));

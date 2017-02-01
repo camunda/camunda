@@ -29,19 +29,19 @@ describe('Diagram service', () => {
   const HEATMAP_RESULT_ACTION = 'LOAD_HEATMAP_RESULT';
   const HOVER_ACTION = 'HOVER_ACTION';
 
-  let generateHeatmap,
-      getHeatmapData,
-      getDiagramXml,
-      dispatchAction,
-      viewer,
-      clearFunction,
-      addFunction,
-      diagramGraphics,
-      createHoverElementAction,
-      createLoadingDiagramAction,
-      createLoadingHeatmapAction,
-      createLoadingDiagramResultAction,
-      createLoadingHeatmapResultAction;
+  let generateHeatmap;
+  let getHeatmapData;
+  let getDiagramXml;
+  let dispatchAction;
+  let viewer;
+  let clearFunction;
+  let addFunction;
+  let diagramGraphics;
+  let createHoverElementAction;
+  let createLoadingDiagramAction;
+  let createLoadingHeatmapAction;
+  let createLoadingDiagramResultAction;
+  let createLoadingHeatmapResultAction;
 
   setupPromiseMocking();
 

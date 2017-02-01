@@ -1,14 +1,14 @@
 import HeatmapJS from 'heatmap.js';
 
-const SEQUENCEFLOW_RADIUS = 30,
-      SEQUENCEFLOW_STEPWIDTH = 10,
-      SEQUENCEFLOW_VALUE_MODIFIER = 0.2,
-      ACTIVITY_DENSITY = 20,
-      ACTIVITY_RADIUS = 60,
-      ACTIVITY_VALUE_MODIFIER = 0.125,
-      COOLNESS = 0.4,
-      EDGE_BUFFER = 75,
-      RESOLUTION = 4;
+const SEQUENCEFLOW_RADIUS = 30;
+const SEQUENCEFLOW_STEPWIDTH = 10;
+const SEQUENCEFLOW_VALUE_MODIFIER = 0.2;
+const ACTIVITY_DENSITY = 20;
+const ACTIVITY_RADIUS = 60;
+const ACTIVITY_VALUE_MODIFIER = 0.125;
+const COOLNESS = 0.4;
+const EDGE_BUFFER = 75;
+const RESOLUTION = 4;
 
 export default function generateHeatmap(viewer, data) {
   const dimensions = getDimensions(viewer);
