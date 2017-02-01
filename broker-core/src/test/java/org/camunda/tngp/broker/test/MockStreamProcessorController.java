@@ -12,10 +12,9 @@
  */
 package org.camunda.tngp.broker.test;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +33,7 @@ import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.rules.ExternalResource;
@@ -52,7 +52,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     protected List<T> writtenEvents;
     protected List<BrokerEventMetadata> writtenMetadata;
 
-    public MockStreamProcessorController(Class<T> eventClass, Consumer<T> defaultEventSetter)
+    public MockStreamProcessorController(Class<T> eventClass, Consumer<T> defaultEventSetter, EventType defaultEventType)
     {
         this.eventClass = eventClass;
         this.writtenEvents = new ArrayList<>();
@@ -66,14 +66,20 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
             m.reqChannelId(0);
             m.reqConnectionId(0);
             m.reqRequestId(0);
+            m.eventType(defaultEventType);
         };
     }
 
 
-    public MockStreamProcessorController(Class<T> eventClass)
+    public MockStreamProcessorController(Class<T> eventClass, EventType eventType)
     {
         this(eventClass, (t) ->
-        { });
+        { }, eventType);
+    }
+
+    public MockStreamProcessorController(Class<T> eventClass)
+    {
+        this(eventClass, NULL_VAL);
     }
 
     @Override

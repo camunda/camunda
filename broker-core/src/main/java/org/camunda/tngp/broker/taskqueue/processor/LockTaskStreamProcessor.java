@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.broker.taskqueue.processor;
 
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -45,6 +47,11 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     protected long eventKey = 0;
 
     protected boolean isSuspended = false;
+
+    public LockTaskStreamProcessor()
+    {
+        super(TASK_EVENT);
+    }
 
     @Override
     public SnapshotSupport getStateResource()
@@ -171,7 +178,8 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
                 targetEventMetadata
                     .reqChannelId(lockSubscription.getChannelId())
                     .subscriptionId(lockSubscription.getId())
-                    .protocolVersion(Constants.PROTOCOL_VERSION);
+                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .eventType(TASK_EVENT);
                 // TODO: targetEventMetadata.raftTermId(raftTermId);
 
                 position = writer.key(eventKey)

@@ -5,6 +5,7 @@ import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
+import org.camunda.tngp.protocol.clientapi.EventType;
 
 /**
  * Wraps another {@link StreamProcessor} and implements guarding behavior on top of it
@@ -13,9 +14,15 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
  */
 public abstract class BrokerStreamProcessor implements StreamProcessor
 {
-
     protected BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
+
+    protected final EventType processableEventType;
+
+    public BrokerStreamProcessor(final EventType processableEventType)
+    {
+        this.processableEventType = processableEventType;
+    }
 
     @Override
     public EventProcessor onEvent(LoggedEvent event)
@@ -29,10 +36,21 @@ public abstract class BrokerStreamProcessor implements StreamProcessor
                     "than what is implemented by broker (%d > %d)", protocolVersion, Constants.PROTOCOL_VERSION));
         }
 
-        return onCheckedEvent(event);
+        EventProcessor eventProcessor = null;
+
+        if (canProcessEventType(sourceEventMetadata.getEventType()))
+        {
+            eventProcessor = onCheckedEvent(event);
+        }
+
+        return eventProcessor;
+    }
+
+    protected boolean canProcessEventType(EventType eventType)
+    {
+        return processableEventType == eventType;
     }
 
     protected abstract EventProcessor onCheckedEvent(LoggedEvent event);
-
 
 }

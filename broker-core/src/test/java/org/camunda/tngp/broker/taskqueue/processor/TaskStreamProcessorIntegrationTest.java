@@ -1,12 +1,10 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.broker.test.util.BufferAssert.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -38,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
 
-public class TaskStreamProcessorInterationTest
+public class TaskStreamProcessorIntegrationTest
 {
     private static final int LOG_ID = 1;
 
@@ -63,6 +61,7 @@ public class TaskStreamProcessorInterationTest
     private LogStreamWriter logStreamWriter;
     private AgentRunnerService agentRunnerService;
 
+    private final BrokerEventMetadata defaultBrokerEventMetadata = new BrokerEventMetadata();
     private BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
 
     @Before
@@ -119,6 +118,7 @@ public class TaskStreamProcessorInterationTest
         taskSubscriptionStreamProcessorController.openAsync().get();
 
         logStreamWriter = new LogStreamWriter(logStream);
+        defaultBrokerEventMetadata.eventType(TASK_EVENT);
     }
 
     @After
@@ -144,7 +144,7 @@ public class TaskStreamProcessorInterationTest
         // when
         final long position = logStreamWriter
             .key(2L)
-            .metadataWriter(new BrokerEventMetadata())
+            .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
 
@@ -183,7 +183,7 @@ public class TaskStreamProcessorInterationTest
         // when
         final long position = logStreamWriter
             .key(2L)
-            .metadataWriter(new BrokerEventMetadata())
+            .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
 
@@ -206,6 +206,7 @@ public class TaskStreamProcessorInterationTest
 
         assertThat(lastBrokerEventMetadata.getSubscriptionId()).isEqualTo(subscription.getId());
         assertThat(lastBrokerEventMetadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(lastBrokerEventMetadata.getEventType()).isEqualTo(TASK_EVENT);
     }
 
     private LoggedEvent getResultEventOf(long position)

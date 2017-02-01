@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
@@ -45,6 +45,8 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
 
     public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, IndexStore indexStore)
     {
+        super(TASK_EVENT);
+
         this.responseWriter = responseWriter;
         this.indexStore = indexStore;
 
@@ -125,7 +127,10 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             targetEventMetadata.reset();
-            targetEventMetadata.protocolVersion(Constants.PROTOCOL_VERSION);
+            targetEventMetadata
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .eventType(TASK_EVENT);
+
             // TODO: targetEventMetadata.raftTermId(raftTermId);
 
             return writer.key(eventKey)
@@ -185,7 +190,10 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
         public long writeEvent(LogStreamWriter writer)
         {
             targetEventMetadata.reset();
-            targetEventMetadata.protocolVersion(Constants.PROTOCOL_VERSION);
+            targetEventMetadata
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .eventType(TASK_EVENT);
+
             // TODO: targetEventMetadata.raftTermId(raftTermId);
 
             return writer.key(eventKey)

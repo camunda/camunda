@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
-import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
+import static org.camunda.tngp.transport.protocol.Protocols.*;
 
 import java.util.function.Consumer;
 
@@ -15,6 +14,7 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
@@ -133,6 +133,9 @@ public class ClientApiMessageHandler
 
         final long topicId = executeCommandRequestDecoder.topicId();
         final long longKey = executeCommandRequestDecoder.longKey();
+
+        final EventType eventType = executeCommandRequestDecoder.eventType();
+        eventMetadata.eventType(eventType);
 
         final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
         final int eventLength = executeCommandRequestDecoder.commandLength();

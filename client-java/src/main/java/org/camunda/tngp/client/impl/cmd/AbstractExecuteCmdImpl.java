@@ -12,11 +12,14 @@
  */
 package org.camunda.tngp.client.impl.cmd;
 
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+
 import java.io.IOException;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
@@ -36,15 +39,17 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
     protected final ObjectMapper objectMapper;
     protected final Class<E> eventType;
+    protected final EventType commandEventType;
 
     protected byte[] serializedCommand;
 
-    public AbstractExecuteCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, Class<E> eventType)
+    public AbstractExecuteCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, Class<E> eventType, EventType commandEventType)
     {
         super(cmdExecutor);
 
         this.objectMapper = objectMapper;
         this.eventType = eventType;
+        this.commandEventType = commandEventType;
     }
 
     @Override
@@ -82,6 +87,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         commandRequestEncoder
             .topicId(getTopicId())
+            .eventType(commandEventType != null ? commandEventType : NULL_VAL)
             .putCommand(serializedCommand, 0, serializedCommand.length);
 
         serializedCommand = null;

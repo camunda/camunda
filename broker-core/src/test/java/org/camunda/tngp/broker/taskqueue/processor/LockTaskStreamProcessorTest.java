@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -45,7 +46,7 @@ public class LockTaskStreamProcessorTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(TaskEvent.class);
+    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(TaskEvent.class, TASK_EVENT);
 
     @Before
     public void setup() throws InterruptedException, ExecutionException
@@ -98,6 +99,7 @@ public class LockTaskStreamProcessorTest
         assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
         assertThat(mockController.getLastWrittenMetadata().getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(mockController.getLastWrittenMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+        assertThat(mockController.getLastWrittenMetadata().getEventType()).isEqualTo(TASK_EVENT);
     }
 
     @Test
@@ -117,6 +119,7 @@ public class LockTaskStreamProcessorTest
 
         assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
         assertThat(mockController.getLastWrittenMetadata().getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(mockController.getLastWrittenMetadata().getEventType()).isEqualTo(TASK_EVENT);
     }
 
     @Test
@@ -150,6 +153,7 @@ public class LockTaskStreamProcessorTest
 
             assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK);
             assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
+            assertThat(mockController.getLastWrittenMetadata().getEventType()).isEqualTo(TASK_EVENT);
         });
 
         // when process events with type 'y' then they should be locked by subscription 'y'
@@ -161,6 +165,7 @@ public class LockTaskStreamProcessorTest
 
             assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK);
             assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(anotherSubscription.getId());
+            assertThat(mockController.getLastWrittenMetadata().getEventType()).isEqualTo(TASK_EVENT);
         });
     }
 
@@ -180,6 +185,7 @@ public class LockTaskStreamProcessorTest
 
         assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK);
         assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(mockController.getLastWrittenMetadata().getEventType()).isEqualTo(TASK_EVENT);
 
         // when process the next event then it should be locked by the next subscription
         mockController.processEvent(3L, event -> event
@@ -188,6 +194,7 @@ public class LockTaskStreamProcessorTest
 
         assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK);
         assertThat(mockController.getLastWrittenMetadata().getSubscriptionId()).isEqualTo(2L);
+        assertThat(mockController.getLastWrittenMetadata().getEventType()).isEqualTo(TASK_EVENT);
     }
 
     @Test

@@ -1,9 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.ExecutionException;
 
@@ -42,7 +41,8 @@ public class TaskInstanceStreamProcessorTest
     @Rule
     public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
         TaskEvent.class,
-        (t) -> t.setType(TASK_TYPE).setEventType(TaskEventType.CREATED));
+        (t) -> t.setType(TASK_TYPE).setEventType(TaskEventType.CREATED),
+        TASK_EVENT);
 
     @Before
     public void setup() throws InterruptedException, ExecutionException

@@ -12,8 +12,9 @@
  */
 package org.camunda.tngp.client.cmd;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -80,6 +81,17 @@ public class CreateTaskCmdTest
         assertThat(headerDecoder.version()).isEqualTo(requestDecoder.sbeSchemaVersion());
         assertThat(headerDecoder.templateId()).isEqualTo(requestDecoder.sbeTemplateId());
         assertThat(headerDecoder.blockLength()).isEqualTo(requestDecoder.sbeBlockLength());
+    }
+
+    @Test
+    public void shouldWriteEventType()
+    {
+        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
+
+        headerDecoder.wrap(writeBuffer, 0);
+        requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
+
+        assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
     }
 
     @Test

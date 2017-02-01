@@ -1,12 +1,10 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.ExecutionException;
 
@@ -22,6 +20,7 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.transport.TransportChannel;
@@ -169,6 +168,32 @@ public class ClientApiMessageHandlerTest
     }
 
     @Test
+    public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
+    {
+        // given
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID, null, TASK_EVENT);
+
+        // when
+        final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
+
+        // then
+        assertThat(isHandled).isTrue();
+
+        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+
+        while (!logStreamReader.hasNext())
+        {
+            // wait for event
+        }
+
+        final LoggedEvent loggedEvent = logStreamReader.next();
+        final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
+        loggedEvent.readMetadata(eventMetadata);
+
+        assertThat(eventMetadata.getEventType()).isEqualTo(TASK_EVENT);
+    }
+
+    @Test
     public void shouldHandleControlRequest() throws InterruptedException, ExecutionException
     {
         // given
@@ -269,6 +294,11 @@ public class ClientApiMessageHandlerTest
 
     protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId, Short protocolVersion)
     {
+        return writeCommandRequestToBuffer(buffer, topicId, protocolVersion, null);
+    }
+
+    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId, Short protocolVersion, EventType eventType)
+    {
         int offset = 0;
 
         final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
@@ -284,6 +314,7 @@ public class ClientApiMessageHandlerTest
         offset += RequestResponseProtocolHeaderDescriptor.headerLength();
 
         final int protocolVersionToWrite = protocolVersion != null ? protocolVersion : commandRequestEncoder.sbeSchemaVersion();
+        final EventType eventTypeToWrite = eventType != null ? eventType : EventType.NULL_VAL;
 
         headerEncoder.wrap(buffer, offset)
             .blockLength(commandRequestEncoder.sbeBlockLength())
@@ -297,6 +328,7 @@ public class ClientApiMessageHandlerTest
 
         commandRequestEncoder
             .topicId(topicId)
+            .eventType(eventTypeToWrite)
             .putCommand(COMMAND, 0, COMMAND.length);
 
         return TransportHeaderDescriptor.headerLength() +

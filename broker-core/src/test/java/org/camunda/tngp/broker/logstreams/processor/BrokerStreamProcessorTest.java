@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.logstreams.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
 
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
@@ -31,7 +32,11 @@ public class BrokerStreamProcessorTest
             0,
             e ->
             { },
-            m -> m.protocolVersion(Constants.PROTOCOL_VERSION + 1));
+            m ->
+            {
+                m.protocolVersion(Constants.PROTOCOL_VERSION + 1);
+                m.eventType(TASK_EVENT);
+            });
 
         // then
         exception.expect(RuntimeException.class);
@@ -49,13 +54,83 @@ public class BrokerStreamProcessorTest
             0,
             e ->
             { },
-            m -> m.protocolVersion(Constants.PROTOCOL_VERSION));
+            m ->
+            {
+                m.protocolVersion(Constants.PROTOCOL_VERSION);
+                m.eventType(TASK_EVENT);
+            });
 
         // when
         streamProcessor.onEvent(event);
 
         // then
         assertThat(streamProcessor.invoked).isTrue();
+    }
+
+    @Test
+    public void shouldPassEventWithEventTypeTaskEvent()
+    {
+        // given
+        final NoopStreamProcessor streamProcessor = new NoopStreamProcessor();
+        final LoggedEvent event = mockController.buildLoggedEvent(
+            0,
+            e ->
+            { },
+            m ->
+            {
+                m.protocolVersion(Constants.PROTOCOL_VERSION);
+                m.eventType(TASK_EVENT);
+            });
+
+        // when
+        streamProcessor.onEvent(event);
+
+        // then
+        assertThat(streamProcessor.invoked).isTrue();
+    }
+
+    @Test
+    public void shouldNotPassEventWithEventTypeRaftEvent()
+    {
+        // given
+        final NoopStreamProcessor streamProcessor = new NoopStreamProcessor();
+        final LoggedEvent event = mockController.buildLoggedEvent(
+            0,
+            e ->
+            { },
+            m ->
+            {
+                m.protocolVersion(Constants.PROTOCOL_VERSION);
+                m.eventType(RAFT_EVENT);
+            });
+
+        // when
+        streamProcessor.onEvent(event);
+
+        // then
+        assertThat(streamProcessor.invoked).isFalse();
+    }
+
+    @Test
+    public void shouldNotPassEventWithEventTypeNullValue()
+    {
+        // given
+        final NoopStreamProcessor streamProcessor = new NoopStreamProcessor();
+        final LoggedEvent event = mockController.buildLoggedEvent(
+            0,
+            e ->
+            { },
+            m ->
+            {
+                m.protocolVersion(Constants.PROTOCOL_VERSION);
+                m.eventType(NULL_VAL);
+            });
+
+        // when
+        streamProcessor.onEvent(event);
+
+        // then
+        assertThat(streamProcessor.invoked).isFalse();
     }
 
     public static class TestEvent extends UnpackedObject
@@ -65,6 +140,11 @@ public class BrokerStreamProcessorTest
     protected static class NoopStreamProcessor extends BrokerStreamProcessor
     {
         protected boolean invoked = false;
+
+        public NoopStreamProcessor()
+        {
+            super(TASK_EVENT);
+        }
 
         @Override
         public SnapshotSupport getStateResource()

@@ -1,10 +1,13 @@
 package org.camunda.tngp.broker.logstreams;
 
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.protocol.clientapi.BrokerEventMetadataDecoder;
 import org.camunda.tngp.protocol.clientapi.BrokerEventMetadataEncoder;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -27,6 +30,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected int raftTermId;
     protected long subscriptionId;
     protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version by default
+    protected EventType eventType = NULL_VAL;
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -45,6 +49,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         raftTermId = (int) decoder.raftTermId();
         subscriptionId = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
+        eventType = decoder.eventType();
     }
 
     @Override
@@ -72,7 +77,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
             .reqRequestId(reqRequestId)
             .raftTermId(raftTermId)
             .subscriptionId(subscriptionId)
-            .protocolVersion(protocolVersion);
+            .protocolVersion(protocolVersion)
+            .eventType(eventType);
     }
 
     public int getReqChannelId()
@@ -141,6 +147,17 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return protocolVersion;
     }
 
+    public EventType getEventType()
+    {
+        return eventType;
+    }
+
+    public BrokerEventMetadata eventType(EventType eventType)
+    {
+        this.eventType = eventType;
+        return this;
+    }
+
     public BrokerEventMetadata reset()
     {
         reqChannelId = (int) BrokerEventMetadataEncoder.reqChannelIdNullValue();
@@ -149,6 +166,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         raftTermId = (int) BrokerEventMetadataDecoder.raftTermIdNullValue();
         subscriptionId = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         protocolVersion = Constants.PROTOCOL_VERSION;
+        eventType = NULL_VAL;
         return this;
     }
 

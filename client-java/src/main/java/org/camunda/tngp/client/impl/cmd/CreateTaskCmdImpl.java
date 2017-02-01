@@ -1,5 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +27,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
 
     public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper)
     {
-        super(clientCmdExecutor, objectMapper, TaskEvent.class);
+        super(clientCmdExecutor, objectMapper, TaskEvent.class, TASK_EVENT);
     }
 
     @Override
