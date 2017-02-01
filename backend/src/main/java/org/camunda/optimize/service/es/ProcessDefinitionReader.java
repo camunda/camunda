@@ -41,7 +41,7 @@ public class ProcessDefinitionReader {
       .setQuery(query)
       .get();
 
-    int numberOfProcessDefinitions = (int) (int) sr.getHits().totalHits();
+    int numberOfProcessDefinitions = (int) sr.getHits().totalHits();
     List<ProcessDefinitionDto> list = new ArrayList<>(numberOfProcessDefinitions);
     for (SearchHit hit : sr.getHits().getHits()) {
       String content = hit.getSourceAsString();
