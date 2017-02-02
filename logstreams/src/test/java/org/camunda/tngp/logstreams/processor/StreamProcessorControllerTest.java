@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -59,9 +60,6 @@ public class StreamProcessorControllerTest
 
     @Mock
     private StreamProcessor mockStreamProcessor;
-
-    @Mock
-    private ManyToOneConcurrentArrayQueue<StreamProcessorCommand> mockStreamProcessorCmdQueue;
 
     @Mock
     private EventProcessor mockEventProcessor;
@@ -106,6 +104,8 @@ public class StreamProcessorControllerTest
 
     private LogStreamFailureListener targetLogStreamFailureListener;
 
+    private final ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
+
     @Before
     public void init() throws Exception
     {
@@ -125,7 +125,7 @@ public class StreamProcessorControllerTest
         context.setLogStreamWriter(mockLogStreamWriter);
         context.setSnapshotPolicy(mockSnapshotPolicy);
         context.setSnapshotStorage(mockSnapshotStorage);
-        context.setStreamProcessorCmdQueue(mockStreamProcessorCmdQueue);
+        context.setStreamProcessorCmdQueue(streamProcessorCmdQueue);
 
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
@@ -326,12 +326,15 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldDrainStreamProcessorCmdQueueWhenOpen()
     {
+        final AtomicBoolean isExecuted = new AtomicBoolean(false);
+        streamProcessorCmdQueue.add(() -> isExecuted.set(true));
+
         open();
 
         // -> open
         controller.doWork();
 
-        verify(mockStreamProcessorCmdQueue).drain(any());
+        assertThat(isExecuted.get()).isTrue();
     }
 
     @Test
@@ -367,6 +370,9 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldNotPollEventsIfSuspended()
     {
+        final AtomicBoolean isExecuted = new AtomicBoolean(false);
+        streamProcessorCmdQueue.add(() -> isExecuted.set(true));
+
         when(mockStreamProcessor.isSuspended()).thenReturn(true);
 
         open();
@@ -374,7 +380,7 @@ public class StreamProcessorControllerTest
         // -> open
         controller.doWork();
 
-        verify(mockStreamProcessorCmdQueue).drain(any());
+        assertThat(isExecuted.get()).isTrue();
         assertThat(mockSourceLogStreamReader.getHasNextInvocations()).isEqualTo(0);
     }
 
