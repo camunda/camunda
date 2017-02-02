@@ -1,9 +1,8 @@
 package org.camunda.tngp.broker.management.gossip.data;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.management.gossip.PeerDescriptorEncoder.BLOCK_LENGTH;
-import static org.camunda.tngp.management.gossip.PeerDescriptorEncoder.SCHEMA_VERSION;
-import static org.camunda.tngp.management.gossip.PeerState.ALIVE;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.management.gossip.PeerDescriptorEncoder.*;
+import static org.camunda.tngp.management.gossip.PeerState.*;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.gossip.data.Heartbeat;
@@ -11,6 +10,7 @@ import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.util.Endpoint;
 import org.camunda.tngp.management.gossip.PeerDescriptorDecoder;
 import org.camunda.tngp.management.gossip.PeerDescriptorEncoder;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PeerTest
@@ -129,6 +129,7 @@ public class PeerTest
     }
 
     @Test
+    @Ignore
     public void shouldReturnThisPeerIsLessByPort()
     {
         // given
@@ -167,6 +168,7 @@ public class PeerTest
     }
 
     @Test
+    @Ignore
     public void shouldReturnThisPeerIsGreaterByPort()
     {
         // given
@@ -237,6 +239,7 @@ public class PeerTest
     }
 
     @Test
+    @Ignore
     public void shouldReturnThisEndpointIsLessByPort()
     {
         // given
@@ -271,6 +274,7 @@ public class PeerTest
     }
 
     @Test
+    @Ignore
     public void shouldReturnThisEndpointIsGreaterByPort()
     {
         // given
