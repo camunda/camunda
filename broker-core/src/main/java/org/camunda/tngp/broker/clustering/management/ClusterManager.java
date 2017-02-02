@@ -51,7 +51,8 @@ public class ClusterManager
         {
             final Peer copy = new Peer();
             copy.wrap(p);
-            peerCmdQueue.add(() -> {
+            peerCmdQueue.add(() ->
+            {
                 return copy;
             });
         });
@@ -90,7 +91,8 @@ public class ClusterManager
 
     public void addStream(LogStream logStream)
     {
-        logCmdQueue.add(() -> {
+        logCmdQueue.add(() ->
+        {
             createRaft(logStream);
             logStreamsById.put(logStream.getId(), logStream);
         });
@@ -98,7 +100,8 @@ public class ClusterManager
 
     public void removeStream(LogStream logStream)
     {
-        logCmdQueue.add(() -> {
+        logCmdQueue.add(() ->
+        {
             logStreamsById.remove(logStream.getId());
         });
     }

@@ -36,7 +36,8 @@ public class ClusterManagerTask implements WorkerTask<ManagementWorkerContext>
         // TODO: IMPROVE THIS!!!
         clusterManager.logCmdQueue.drain(logCmdConsumer);
 
-        workcount += clusterManager.peerCmdQueue.drain((s) -> {
+        workcount += clusterManager.peerCmdQueue.drain((s) ->
+        {
 
             if (rafts != null)
             {

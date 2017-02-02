@@ -26,9 +26,7 @@ public class ClusterManagerService implements Service<ClusterManager>
     protected final Injector<DataFramePool> dataFramePoolInjector = new Injector<>();
 
     protected ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-            .onAdd((name, stream) -> {
-                clusterManager.addStream(stream);
-            })
+            .onAdd((name, stream) -> clusterManager.addStream(stream))
             .onRemove((name, stream) -> clusterManager.removeStream(stream))
             .build();
 
