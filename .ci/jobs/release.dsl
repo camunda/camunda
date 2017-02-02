@@ -2,8 +2,6 @@ def githubOrga = 'camunda'
 def gitRepository = 'camunda-optimize'
 def gitBranch = 'master'
 
-def mavenSettings = 'camunda-maven-settings'
-
 freeStyleJob('camunda-optimize-release') {
 
   displayName 'Release Camunda Optimize'
@@ -28,19 +26,19 @@ freeStyleJob('camunda-optimize-release') {
     }
   }
 
-  label 'camunda-optimize-build'
+  label 'optimize-build'
   jdk 'jdk-8-latest'
 
   steps {
-    sh ("""\
+    shell ('''\
       cd client
       yarn
-    """)
-    sh ("""\
+    '''.stripIndent())
+    shell ("""\
       mvn -DskipTests -Prelease,production release:prepare release:perform \
-      -Dtag=${RELEASE_VERSION} -DreleaseVersion=${RELEASE_VERSION} -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
-      --settings=${MAVEN_NEXUS_SETTINGS} '-Darguments=--settings=${MAVEN_NEXUS_SETTINGS} -DskipTests' -B
-    """)
+      -Dtag=\${RELEASE_VERSION} -DreleaseVersion=\${RELEASE_VERSION} -DdevelopmentVersion=\${DEVELOPMENT_VERSION} \
+      --settings=\${MAVEN_NEXUS_SETTINGS} '-Darguments=--settings=\${MAVEN_NEXUS_SETTINGS} -DskipTests' -B
+    """.stripIndent())
   }
 
   wrappers {
@@ -53,7 +51,7 @@ freeStyleJob('camunda-optimize-release') {
     sshAgent 'camunda-jenkins-github-ssh'
 
     configFiles {
-      mavenSettings(camundaMavenSettings) {
+      mavenSettings('camunda-maven-settings') {
         variable('MAVEN_NEXUS_SETTINGS')
       }
     }
