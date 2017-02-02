@@ -13,27 +13,11 @@ import java.util.List;
 @Component
 public class ImportServiceHandler {
 
-  private List<ImportService> services;
-
   @Autowired
-  private ActivityImportService activityImportService;
-
-  @Autowired
-  private ProcessDefinitionImportService processDefinitionImportService;
-
-  @Autowired
-  private ProcessDefinitionXmlImportService processDefinitionXmlImportService;
-
-  @PostConstruct
-  public void init() {
-    services = new ArrayList<>();
-    services.add(activityImportService);
-    services.add(processDefinitionImportService);
-    services.add(processDefinitionXmlImportService);
-  }
+  private ImportServiceProvider importServiceProvider;
 
   public void executeProcessEngineImport() {
-    for (ImportService service : services) {
+    for (ImportService service : importServiceProvider.getServices()) {
       service.executeImport();
     }
   }
