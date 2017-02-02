@@ -12,10 +12,11 @@
  */
 package org.camunda.tngp.client.cmd;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.mockito.Mockito.mock;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,9 +100,10 @@ public class CreateTaskCmdTest
     {
         // given
         createTaskCommand
-            .taskQueueId(1)
+            .topicId(1)
             .taskType("foo")
-            .addHeader("k", "v")
+            .addHeader("a", "b")
+            .addHeader("c", "d")
             .payload("{ \"bar\" : 4 }");
 
         // when
@@ -119,8 +121,39 @@ public class CreateTaskCmdTest
 
         assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.CREATE);
         assertThat(taskEvent.getType()).isEqualTo("foo");
-        assertThat(taskEvent.getHeaders()).hasSize(1).containsEntry("k", "v");
+        assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
         assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));
+    }
+
+    @Test
+    public void shouldWriteRequestWithPayloadAsStream() throws JsonParseException, JsonMappingException, IOException
+    {
+        // given
+        final byte[] payload = "{ \"bar\" : 4 }".getBytes();
+
+        final Map<String, String> headers = new HashMap<>();
+        headers.put("a", "b");
+        headers.put("c", "d");
+
+        createTaskCommand
+            .topicId(1)
+            .taskType("foo")
+            .addHeaders(headers)
+            .payload(new ByteArrayInputStream(payload));
+
+        // when
+        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
+
+        // then
+        requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
+
+        final byte[] command = new byte[requestDecoder.commandLength()];
+        requestDecoder.getCommand(command, 0, command.length);
+
+        final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
+
+        assertThat(taskEvent.getHeaders()).hasSize(2).containsAllEntriesOf(headers);
+        assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack(new ByteArrayInputStream(payload)));
     }
 
     @Test
@@ -159,7 +192,7 @@ public class CreateTaskCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTaskQueueIdIsNotSet()
+    public void shouldBeNotValidIfTopicIdIsNotSet()
     {
         createTaskCommand
             .taskType("foo")
@@ -167,22 +200,22 @@ public class CreateTaskCmdTest
             .payload("{ \"bar\" : 4 }");
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("task queue id must be greater than or equal to 0");
+        thrown.expectMessage("topic id must be greater than or equal to 0");
 
         createTaskCommand.validate();
     }
 
     @Test
-    public void shouldBeNotValidIfTaskQueueIdIsNegative()
+    public void shouldBeNotValidIfTopicIdIsNegative()
     {
         createTaskCommand
-            .taskQueueId(-2)
+            .topicId(-2)
             .taskType("foo")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
 
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("task queue id must be greater than or equal to 0");
+        thrown.expectMessage("topic id must be greater than or equal to 0");
 
         createTaskCommand.validate();
     }
@@ -191,7 +224,7 @@ public class CreateTaskCmdTest
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
         createTaskCommand
-            .taskQueueId(0)
+            .topicId(0)
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
 
@@ -205,7 +238,7 @@ public class CreateTaskCmdTest
     public void shouldBeNotValidIfTaskTypeIsEmpty()
     {
         createTaskCommand
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");

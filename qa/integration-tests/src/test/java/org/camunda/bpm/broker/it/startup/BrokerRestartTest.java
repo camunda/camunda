@@ -180,7 +180,7 @@ public class BrokerRestartTest
         // given
         final Long taskId = client.tasks()
             .create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .execute();
 
@@ -189,7 +189,7 @@ public class BrokerRestartTest
         // when
         final Long task2Id = client.tasks()
             .create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .execute();
 

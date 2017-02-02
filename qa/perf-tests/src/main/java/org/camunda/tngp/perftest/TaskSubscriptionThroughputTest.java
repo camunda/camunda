@@ -118,7 +118,7 @@ public class TaskSubscriptionThroughputTest
         try (TransportConnection connection = client.getConnectionPool().openConnection())
         {
             final Supplier<Future> request = () -> client.tasks().create()
-                    .taskQueueId(0)
+                    .topicId(0)
                     .taskType(TASK_TYPE)
                     .executeAsync(connection);
 

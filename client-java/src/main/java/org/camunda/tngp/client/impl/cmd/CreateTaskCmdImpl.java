@@ -1,6 +1,6 @@
 package org.camunda.tngp.client.impl.cmd;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -20,7 +20,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    protected long taskQueueId = -1L;
+    protected long topicId = -1L;
     protected String taskType;
     protected byte[] payload;
     protected Map<String, String> headers = new HashMap<>();
@@ -31,9 +31,9 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    public CreateTaskCmdImpl taskQueueId(final long taskQueueId)
+    public CreateTaskCmdImpl topicId(final long topicId)
     {
-        this.taskQueueId = taskQueueId;
+        this.topicId = topicId;
         return this;
     }
 
@@ -66,22 +66,22 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    public CreateAsyncTaskCmd addHeaders(Map<String, String> headers)
+    public CreateAsyncTaskCmd addHeaders(Map<String, String> headersToAdd)
     {
-        headers.putAll(headers);
+        headers.putAll(headersToAdd);
         return this;
     }
 
     @Override
     protected long getTopicId()
     {
-        return taskQueueId;
+        return topicId;
     }
 
     @Override
     public void validate()
     {
-        EnsureUtil.ensureGreaterThanOrEqual("task queue id", taskQueueId, 0);
+        EnsureUtil.ensureGreaterThanOrEqual("topic id", topicId, 0);
         EnsureUtil.ensureNotNullOrEmpty("task type", taskType);
     }
 
@@ -99,7 +99,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     @Override
     protected void reset()
     {
-        taskQueueId = -1L;
+        topicId = -1L;
         taskType = null;
         payload = null;
         headers.clear();

@@ -105,7 +105,7 @@ public class ParallelRequestsTest
         final AsyncTasksClient tasksClient = client.tasks();
 
         final Long task1Id = tasksClient.create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .execute();
 
@@ -117,7 +117,7 @@ public class ParallelRequestsTest
             .execute();
 
         final Long task2Id = tasksClient.create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("bar")
             .execute();
 

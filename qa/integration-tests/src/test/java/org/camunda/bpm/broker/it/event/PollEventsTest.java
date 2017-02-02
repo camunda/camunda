@@ -70,7 +70,7 @@ public class PollEventsTest
         final TngpClient client = clientRule.getClient();
 
         client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("test")
             .payload("foo")
             .execute();
@@ -96,13 +96,13 @@ public class PollEventsTest
         final TngpClient client = clientRule.getClient();
 
         final Long taskId1 = client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("test")
             .payload("foo")
             .execute();
 
         final Long taskId2 = client.tasks().create()
-                .taskQueueId(0)
+                .topicId(0)
                 .taskType("test")
                 .payload("bar")
                 .execute();
@@ -132,13 +132,13 @@ public class PollEventsTest
         final TngpClient client = clientRule.getClient();
 
         client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("test")
             .payload("foo")
             .execute();
 
         final Long taskId2 = client.tasks().create()
-                .taskQueueId(0)
+                .topicId(0)
                 .taskType("test")
                 .payload("bar")
                 .execute();
@@ -172,13 +172,13 @@ public class PollEventsTest
         final TngpClient client = clientRule.getClient();
 
         client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("test")
             .payload("foo")
             .execute();
 
         client.tasks().create()
-                .taskQueueId(0)
+                .topicId(0)
                 .taskType("test")
                 .payload("bar")
                 .execute();
@@ -198,13 +198,13 @@ public class PollEventsTest
         final TngpClient client = clientRule.getClient();
 
         client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("test")
             .payload("foo")
             .execute();
 
         final Long taskId2 = client.tasks().create()
-                .taskQueueId(0)
+                .topicId(0)
                 .taskType("test")
                 .payload("bar")
                 .execute();
@@ -228,7 +228,7 @@ public class PollEventsTest
         final TngpClient client = clientRule.getClient();
 
         final Long taskId = client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("test")
             .execute();
 

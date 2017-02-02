@@ -15,7 +15,7 @@ public class Client
         System.out.println("start " +  System.currentTimeMillis());
         for (int i = 0; i < 100000; i++)
         {
-            client.tasks().create().taskQueueId(0).taskType("foo" + i).execute();
+            client.tasks().create().topicId(0).taskType("foo" + i).execute();
         }
         System.out.println("finished " +  System.currentTimeMillis());
 

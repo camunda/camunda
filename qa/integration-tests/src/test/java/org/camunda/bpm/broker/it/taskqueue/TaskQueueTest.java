@@ -46,7 +46,7 @@ public class TaskQueueTest
         final TngpClient client = clientRule.getClient();
 
         final Long taskKey = client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
@@ -65,7 +65,7 @@ public class TaskQueueTest
         thrown.expectMessage("Cannot execute command. Topic with id '999' not found");
 
         client.tasks().create()
-            .taskQueueId(999)
+            .topicId(999)
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
@@ -82,7 +82,7 @@ public class TaskQueueTest
         System.out.println("Creating task");
 
         final Long taskId = taskService.create()
-            .taskQueueId(0)
+            .topicId(0)
             .payload("{}")
             .taskType("bar")
             .execute();
@@ -119,7 +119,7 @@ public class TaskQueueTest
         final AsyncTasksClient taskService = client.tasks();
 
         final Long taskId = taskService.create()
-            .taskQueueId(0)
+            .topicId(0)
             .payload("foo")
             .taskType("bar")
             .execute();
@@ -143,7 +143,7 @@ public class TaskQueueTest
         final AsyncTasksClient taskClient = client.tasks();
 
         final Long taskId = taskClient.create()
-            .taskQueueId(0)
+            .topicId(0)
             .payload("foo")
             .taskType("bar")
             .execute();
@@ -207,7 +207,7 @@ public class TaskQueueTest
         System.out.println("Creating task");
 
         final Long taskId = taskService.create()
-            .taskQueueId(0)
+            .topicId(0)
             .payload("foo")
             .taskType("bar")
             .execute();

@@ -51,7 +51,7 @@ public class TaskSubscriptionTest
         final AsyncTasksClient taskService = client.tasks();
 
         final Long taskId = taskService.create()
-            .taskQueueId(0)
+            .topicId(0)
             .payload("foo")
             .taskType("bar")
             .execute();
@@ -201,7 +201,7 @@ public class TaskSubscriptionTest
             .open();
 
         final Long taskId = taskService.create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .execute();
 
@@ -222,7 +222,7 @@ public class TaskSubscriptionTest
         final TngpClient client = clientRule.getClient();
 
         client.tasks().create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .execute();
 
@@ -256,7 +256,7 @@ public class TaskSubscriptionTest
         for (int i = 0; i < numTasks; i++)
         {
             client.tasks().create()
-                .taskQueueId(0)
+                .topicId(0)
                 .taskType("foo")
                 .execute();
         }
@@ -306,7 +306,7 @@ public class TaskSubscriptionTest
         client
             .tasks()
             .create()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .execute();
 
