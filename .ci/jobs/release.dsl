@@ -32,8 +32,12 @@ freestyleJob('camunda-optimize-release') {
   jdk 'jdk-8-latest'
 
   steps {
+    sh '''\
+      cd client
+      yarn
+    '''
     sh """\
-      mvn -DskipTests -Prelease release:prepare release:perform \
+      mvn -DskipTests -Prelease,production release:prepare release:perform \
       -Dtag=${RELEASE_VERSION} -DreleaseVersion=${RELEASE_VERSION} -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
       --settings=${MAVEN_NEXUS_SETTINGS} '-Darguments=--settings=${MAVEN_NEXUS_SETTINGS} -DskipTests' -B
     """

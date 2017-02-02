@@ -25,7 +25,6 @@
   </properties>
 
   <profiles>
-    <!-- activate this profile to release to maven central -->
     <profile>
       <id>release</id>
       <build>
@@ -102,7 +101,7 @@
         </plugins>
       </build>
     </profile>
-</profiles>
+  </profiles>
 
   <distributionManagement>
     <snapshotRepository>
