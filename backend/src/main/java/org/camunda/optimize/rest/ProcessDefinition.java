@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 import java.util.Map;
 
+@XmlRootElement
 @Path("/process-definition")
 @Component
 public class ProcessDefinition {
