@@ -22,6 +22,13 @@
 
   <bean id="schemaInitializer"  class="org.camunda.optimize.test.factory.MockSchemaInitializerFactory"/>
 
+  <!-- import service handler test-->
+  <bean id="activityImportService"  class="org.camunda.optimize.test.factory.service.MockActivityImportServiceFactory"/>
+  <bean id="processDefinitionImportService"  class="org.camunda.optimize.test.factory.service.MockProcessDefinitionImportServiceFactory"/>
+  <bean id="processDefinitionXmlImportService"  class="org.camunda.optimize.test.factory.service.MockProcessDefinitionXmlImportServiceFactory"/>
+
+
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"
