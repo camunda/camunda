@@ -17,7 +17,7 @@ import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStream
 import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueStreamProcessorServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.nio.channels.FileChannel;
 import java.util.List;
@@ -61,7 +61,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             throw new RuntimeException("Cannot start task queue: Mandatory configuration property 'logName' is not set.");
         }
 
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueStreamProcessorServiceName(logName);
+        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueInstanceStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
         final IndexStore indexStore;

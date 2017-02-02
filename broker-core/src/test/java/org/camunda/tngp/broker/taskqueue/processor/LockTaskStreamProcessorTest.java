@@ -265,7 +265,7 @@ public class LockTaskStreamProcessorTest
 
         assertThat(mockController.getWrittenEvents()).hasSize(0);
 
-        assertThat(future).isCompletedWithValue(false);
+        assertThat(future).isCompletedWithValue(true);
         assertThat(streamProcessor.isSuspended()).isFalse();
 
         // when remove the last subscription
@@ -278,7 +278,7 @@ public class LockTaskStreamProcessorTest
         assertThat(mockController.getWrittenEvents()).hasSize(0);
 
         // then the stream processor should be suspend
-        assertThat(future).isCompletedWithValue(true);
+        assertThat(future).isCompletedWithValue(false);
         assertThat(streamProcessor.isSuspended()).isTrue();
     }
 
@@ -387,6 +387,22 @@ public class LockTaskStreamProcessorTest
         thrown.expectMessage("subscription credits must be greater than 0");
 
         streamProcessor.updateSubscriptionCredits(subscription.getId(), 0);
+    }
+
+    @Test
+    public void shouldFailToUpdateSubscriptionCreditsIfNotExist()
+    {
+        // when
+        final CompletableFuture<Void> future = streamProcessor.updateSubscriptionCredits(123L, 5);
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATED)
+                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+
+        // then
+        assertThat(future).hasFailedWithThrowableThat()
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("Cannot update the subscription credits. Subscription with id '123' not found.");
     }
 
     protected long lockTimeOf(TaskSubscription subscription)

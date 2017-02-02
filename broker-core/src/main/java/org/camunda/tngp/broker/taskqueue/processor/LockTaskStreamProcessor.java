@@ -72,17 +72,23 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
         return isSuspended;
     }
 
-    public void addSubscription(TaskSubscription subscription)
+    public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
     {
         EnsureUtil.ensureNotNull("subscription", subscription);
         EnsureUtil.ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
+
+        final CompletableFuture<Void> future = new CompletableFuture<>();
 
         cmdQueue.add(() ->
         {
             subscriptions.addSubscription(subscription);
 
             isSuspended = false;
+
+            future.complete(null);
         });
+
+        return future;
     }
 
     public CompletableFuture<Boolean> removeSubscription(long subscriptionId)
@@ -93,21 +99,23 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
         {
             subscriptions.removeSubscription(subscriptionId);
 
-            final boolean hasNoSubscriptions = subscriptions.isEmpty();
-            if (hasNoSubscriptions)
+            final boolean hasSubscriptions = !subscriptions.isEmpty();
+            if (!hasSubscriptions)
             {
                 isSuspended = true;
             }
 
-            future.complete(hasNoSubscriptions);
+            future.complete(hasSubscriptions);
         });
 
         return future;
     }
 
-    public void updateSubscriptionCredits(long subscriptionId, int credits)
+    public CompletableFuture<Void> updateSubscriptionCredits(long subscriptionId, int credits)
     {
         EnsureUtil.ensureGreaterThan("subscription credits", credits, 0);
+
+        final CompletableFuture<Void> future = new CompletableFuture<>();
 
         cmdQueue.add(() ->
         {
@@ -115,8 +123,16 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
             if (updated)
             {
                 isSuspended = false;
+                future.complete(null);
+            }
+            else
+            {
+                final String errorMessage = String.format("Cannot update the subscription credits. Subscription with id '%s' not found.", subscriptionId);
+                future.completeExceptionally(new RuntimeException(errorMessage));
             }
         });
+
+        return future;
     }
 
     @Override

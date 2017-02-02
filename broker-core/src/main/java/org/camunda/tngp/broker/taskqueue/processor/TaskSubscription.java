@@ -19,6 +19,8 @@ public class TaskSubscription
     protected long id;
     protected int channelId;
 
+    protected long topicId;
+
     protected DirectBuffer taskType;
     protected long lockDuration;
 
@@ -33,6 +35,12 @@ public class TaskSubscription
     public TaskSubscription setChannelId(int channelId)
     {
         this.channelId = channelId;
+        return this;
+    }
+
+    public TaskSubscription setTopicId(long topicId)
+    {
+        this.topicId = topicId;
         return this;
     }
 
@@ -79,6 +87,11 @@ public class TaskSubscription
         return channelId;
     }
 
+    public long getTopicId()
+    {
+        return topicId;
+    }
+
     @Override
     public String toString()
     {
@@ -87,6 +100,8 @@ public class TaskSubscription
         builder.append(id);
         builder.append(", channelId=");
         builder.append(channelId);
+        builder.append(", topicId=");
+        builder.append(topicId);
         builder.append(", taskType=");
         builder.append(taskType);
         builder.append(", lockDuration=");

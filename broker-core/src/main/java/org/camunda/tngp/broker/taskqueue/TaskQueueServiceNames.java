@@ -18,10 +18,17 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 public class TaskQueueServiceNames
 {
     public static final ServiceName<TaskQueueManager> TASK_QUEUE_MANAGER = ServiceName.newServiceName("taskqueue.manager", TaskQueueManager.class);
-    public static final ServiceName<StreamProcessorController> TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME = ServiceName.newServiceName("taskqueue.processor", StreamProcessorController.class);
+    public static final ServiceName<TaskSubscriptionManager> TASK_QUEUE_SUBSCRIPTION_MANAGER = ServiceName.newServiceName("taskqueue.subscription.manager", TaskSubscriptionManager.class);
 
-    public static ServiceName<StreamProcessorController> taskQueueStreamProcessorServiceName(String taskQueueName)
+    public static final ServiceName<StreamProcessorController> TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME = ServiceName.newServiceName("taskqueue.processor.instance", StreamProcessorController.class);
+
+    public static ServiceName<StreamProcessorController> taskQueueInstanceStreamProcessorServiceName(String taskQueueName)
     {
-        return ServiceName.newServiceName(String.format("taskqueue.%s.processor", taskQueueName), StreamProcessorController.class);
+        return ServiceName.newServiceName(String.format("taskqueue.%s.processor.instance", taskQueueName), StreamProcessorController.class);
+    }
+
+    public static ServiceName<StreamProcessorController> taskQueueLockStreamProcessorServiceName(String taskQueueName)
+    {
+        return ServiceName.newServiceName(String.format("taskqueue.%s.processor.lock", taskQueueName), StreamProcessorController.class);
     }
 }
