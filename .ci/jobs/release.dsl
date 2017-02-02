@@ -4,7 +4,7 @@ def gitBranch = 'master'
 
 def mavenSettings = 'camunda-maven-settings'
 
-freestyleJob('camunda-optimize-release') {
+freeStyleJob('camunda-optimize-release') {
 
   displayName 'Release Camunda Optimize'
   description 'Release Camunda Optimize to Camunda Nexus and tag GitHub repository.'
