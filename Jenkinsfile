@@ -80,7 +80,7 @@ pipeline {
         branch 'master'
       }
       steps {
-        sh 'mvn -s settings.xml -DskipTests clean deploy'
+        sh 'mvn -Pproduction -s settings.xml -DskipTests clean deploy'
       }
     }
   }
