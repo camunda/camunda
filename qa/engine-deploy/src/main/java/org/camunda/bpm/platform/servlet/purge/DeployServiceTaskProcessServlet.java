@@ -44,8 +44,8 @@ public class DeployServiceTaskProcessServlet extends HttpServlet {
 
     BpmnModelInstance model = Bpmn.createExecutableProcess(key)
         .startEvent()
-          .scriptTask()
-            .scriptText("${true}")
+          .serviceTask()
+            .camundaExpression("${true}")
         .endEvent()
         .done();
 
