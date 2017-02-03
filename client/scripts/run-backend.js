@@ -36,9 +36,9 @@ mvnCleanPackage.on('close', function(code) {
 
   var backendServerPath = path.resolve(
     mvnCwd,
-    'optimize-backend',
+    'backend',
     'target',
-    'optimize-backend-' + backendConfig.version + '-SNAPSHOT-jar-with-dependencies.jar'
+    'optimize-backend-' + backendConfig.version + '-SNAPSHOT.jar'
   );
   var backendServer = exec('java -jar ' + backendServerPath);
 
