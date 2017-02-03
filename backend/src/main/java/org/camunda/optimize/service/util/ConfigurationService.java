@@ -13,6 +13,13 @@ public class ConfigurationService {
   private Integer lifetime;
   @Value("${camunda.optimize.auth.token.secret}")
   private String secret;
+  @Value("${camunda.optimize.auth.default.user}")
+  private String defaultUser;
+  @Value("${camunda.optimize.auth.default.password}")
+  private String defaultPassword;
+  @Value("${camunda.optimize.engine.auth.enabled}")
+  private boolean engineAuthenticationEnabled;
+
 
   @Value("${camunda.optimize.es.host}")
   private String elasticSearchHost;
@@ -142,5 +149,17 @@ public class ConfigurationService {
 
   public String getTokenFilter() {
     return tokenFilter;
+  }
+
+  public boolean isEngineAuthenticationEnabled() {
+    return engineAuthenticationEnabled;
+  }
+
+  public String getDefaultUser() {
+    return defaultUser;
+  }
+
+  public String getDefaultPassword() {
+    return defaultPassword;
   }
 }

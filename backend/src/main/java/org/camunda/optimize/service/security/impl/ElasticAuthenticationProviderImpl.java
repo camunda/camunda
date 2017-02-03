@@ -56,8 +56,8 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
   private void addDefaultUser() {
     BulkRequestBuilder bulkRequest = client.prepareBulk();
     CredentialsDto user = new CredentialsDto();
-    user.setUsername("admin");
-    user.setPassword("admin");
+    user.setUsername(configurationService.getDefaultUser());
+    user.setPassword(configurationService.getDefaultPassword());
 
 
     try {
