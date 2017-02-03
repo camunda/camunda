@@ -25,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>org.camunda.optimize</groupId>
-            <artifactId>backend</artifactId>
+            <artifactId>optimize-backend</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
