@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>backend</artifactId>
+  <artifactId>optimize-backend</artifactId>
 
   <properties>
     <jetty.version>9.2.3.v20140905</jetty.version>

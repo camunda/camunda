@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>org.camunda.optimize</groupId>
-    <artifactId>distro</artifactId>
+    <artifactId>camunda-optimize</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -31,7 +31,7 @@
     </dependencies>
 
     <build>
-        <finalName>optimize-${project.version}</finalName>
+        <finalName>camunda-optimize-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -49,7 +49,7 @@
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
                             <attach>true</attach>
-                            <finalName>optimize-${project.version}</finalName>
+                            <finalName>camunda-optimize-${project.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <outputDirectory>target/</outputDirectory>
                             <workDirectory>target/assembly/work</workDirectory>
