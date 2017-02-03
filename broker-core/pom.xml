@@ -118,7 +118,7 @@
             </goals>
             <configuration>
               <sources>
-                <source>${project.build.directory}/generated-sources</source>
+                <source>${project.build.directory}/generated-sources/sbe</source>
               </sources>
             </configuration>
           </execution>
@@ -145,7 +145,7 @@
           <systemProperties>
             <systemProperty>
               <key>sbe.output.dir</key>
-              <value>${project.build.directory}/generated-sources</value>
+              <value>${project.build.directory}/generated-sources/sbe</value>
             </systemProperty>
             <systemProperty>
               <key>sbe.java.generate.interfaces</key>
