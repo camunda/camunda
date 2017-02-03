@@ -50,11 +50,11 @@ describe('<Main>', () => {
   });
 
   it('should have container element', () => {
-    expect(node.querySelector('.container-fluid')).to.exist;
+    expect(node.querySelector('.site-wrap')).to.exist;
   });
 
   it('should have content element', () => {
-    expect(node.querySelector('.content__views')).to.exist;
+    expect(node.querySelector('.page-wrap')).to.exist;
   });
 
   it('should display dynamic loader view when last route and user is logged in', () => {

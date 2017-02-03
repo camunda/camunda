@@ -10,8 +10,8 @@ export function Main() {
   return <Router selector="router">
     <LoginRoot>
       <Header/>
-      <div className="page-body container-fluid">
-        <div className="content__views">
+      <div className="site-wrap">
+        <div className="page-wrap">
           <Match>
             <RouteView name="login">
               <LoginForm selector="loginForm" />

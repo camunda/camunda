@@ -1,7 +1,7 @@
 // these have to be the same as in
 // https://github.com/camunda/camunda-commons-ui/blob/master/resources/less/shared/_variables.less
 // until we have a way to compile the corporate design ourselves
-$header-height: 65px;
+$header-height: 45px;
 $footer-height: 24px;
 
 @import 'camunda.styles';
@@ -18,4 +18,22 @@ $footer-height: 24px;
   100% {
     transform: rotate(359deg);
   }
+}
+
+.site-wrap {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+}
+
+.page-wrap {
+  position: absolute;
+  top: 45px;
+  bottom: 24px;
+  right: 0;
+  left: 0;
+  z-index: 1;
 }

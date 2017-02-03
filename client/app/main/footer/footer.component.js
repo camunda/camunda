@@ -1,11 +1,11 @@
 import {jsx, Text} from 'view-utils';
 
-const template = <footer className="cam-brand-footer">
+const template = <footer cam-widget-footer="">
   <div className="container-fluid">
-    <div className="col-xs-8">
-    </div>
-    <div className="text-right col-xs-4">
-      &copy; Camunda services GmbH 2017, All Rights Reserved / <span className="version"><Text property="version" /></span>
+    <div className="row">
+      <div className="col-xs-12">
+        &copy; Camunda services GmbH 2017, All Rights Reserved / <span className="version"><Text property="version" /></span>
+      </div>
     </div>
   </div>
 </footer>;

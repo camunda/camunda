@@ -8,6 +8,7 @@ export function AppMenu() {
         <Case predicate={getLogin}>
           <li>
             <a href="#/login">
+              <span className="glyphicon glyphicon-off"></span>&nbsp;
               Logout
               <OnEvent event={['click']} listener={clearLogin} />
             </a>

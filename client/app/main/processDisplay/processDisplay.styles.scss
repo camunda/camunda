@@ -5,11 +5,15 @@
   display: flex;
   flex-flow: column;
 
+  padding-top: 15px;
+  padding-left: 15px;
+  padding-right: 15px;
+
   .controls {
     flex: 0 1 auto;
 
     form {
-      margin-top: 20px;
+      margin-top: 0px;
     }
     table {
       float: left;

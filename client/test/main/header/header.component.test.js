@@ -14,7 +14,7 @@ describe('<Header>', () => {
     expect(node).to.contain.text('Camunda Optimize');
   });
 
-  it('should have header class', () => {
-    expect(node.querySelector('header')).to.have.class('cam-brand-header');
+  it('should have header attribute', () => {
+    expect(node.querySelector('div')).to.have.attribute('cam-widget-header');
   });
 });
