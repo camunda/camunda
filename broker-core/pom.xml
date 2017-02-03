@@ -117,7 +117,7 @@
               <goal>add-source</goal>
             </goals>
             <configuration>
-              <sources>
+              <sources combine.children="append"><!-- merging with parent config for benchmarks -->
                 <source>${project.build.directory}/generated-sources/sbe</source>
               </sources>
             </configuration>
