@@ -1,8 +1,10 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.concurrent.ExecutionException;
 
@@ -67,8 +69,8 @@ public class TaskInstanceStreamProcessorTest
             event.setEventType(TaskEventType.CREATE));
 
         // then
-        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.CREATED);
-        assertThat(mockController.getLastWrittenMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CREATED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter).longKey(2L);
         verify(mockResponseWriter).tryWriteResponse();
@@ -87,8 +89,8 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(123));
 
         // then
-        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCKED);
-        assertThat(mockController.getLastWrittenMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
@@ -107,7 +109,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(-1));
 
         // then
-        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
@@ -125,7 +127,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(0));
 
         // then
-        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
@@ -143,7 +145,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(123));
 
         // then
-        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
@@ -165,7 +167,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(123));
 
         // then
-        assertThat(mockController.getLastWrittenEvent().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }

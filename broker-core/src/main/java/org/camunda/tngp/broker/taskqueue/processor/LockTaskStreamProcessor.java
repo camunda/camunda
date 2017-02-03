@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -46,7 +46,8 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     protected long eventPosition = 0;
     protected long eventKey = 0;
 
-    protected boolean isSuspended = false;
+    // activate the processor while adding the first subscription
+    protected boolean isSuspended = true;
 
     public LockTaskStreamProcessor()
     {

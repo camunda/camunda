@@ -124,6 +124,12 @@ public class TaskSubscriptions
         public void remove(long id)
         {
             subscriptionIds.remove(id);
+
+            final int subscriptionSize = subscriptionIds.size();
+            if (subscriptionSize > 0)
+            {
+                nextElement = Math.min(nextElement, subscriptionSize - 1);
+            }
         }
 
         public TaskSubscription getNextAvailableSubscription(final DirectBuffer typeBuffer)
