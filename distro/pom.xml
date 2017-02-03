@@ -49,6 +49,7 @@
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
                             <attach>true</attach>
+                            <finalName>optimize-${project.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <outputDirectory>target/</outputDirectory>
                             <workDirectory>target/assembly/work</workDirectory>
