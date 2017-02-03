@@ -9,7 +9,8 @@ import java.util.function.BiConsumer;
 public class ServiceGroupReference<S>
 {
     @SuppressWarnings("rawtypes")
-    private final static BiConsumer NOOP_CONSUMER = (n, v) -> {
+    private final static BiConsumer NOOP_CONSUMER = (n, v) ->
+    {
         // ignore
     };
 
