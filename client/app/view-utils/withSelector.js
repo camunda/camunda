@@ -1,10 +1,10 @@
-import {Select} from './select';
+import {Scope} from './scope';
 import {jsx} from './jsx';
 
 export function withSelector(Component) {
   return ({selector, ...rest}) => {
-    return <Select selector={selector}>
+    return <Scope selector={selector}>
       <Component {...rest} />
-    </Select>;
+    </Scope>;
   };
 }

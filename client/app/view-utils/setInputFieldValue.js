@@ -1,4 +1,4 @@
-import {Select} from './select';
+import {Scope} from './scope';
 import {jsx} from './jsx';
 import {updateOnlyWhenStateChanges} from './updateOnlyWhenStateChanges';
 
@@ -20,7 +20,7 @@ function InputSetter() {
 }
 
 export function SetInputFieldValue({getValue}) {
-  return <Select selector={getValue}>
+  return <Scope selector={getValue}>
     <InputSetter/>
-  </Select>;
+  </Scope>;
 }

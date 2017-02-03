@@ -1,9 +1,9 @@
 import {expect} from 'chai';
-import {jsx, Select} from 'view-utils';
+import {jsx, Scope} from 'view-utils';
 import sinon from 'sinon';
 import {mountTemplate, createMockComponent, mockFunction, DESTROY_EVENT} from 'testHelpers';
 
-describe('<Select>', () => {
+describe('<Scope>', () => {
   let Child;
   let state;
   let selector;
@@ -25,9 +25,9 @@ describe('<Select>', () => {
         return prop;
       });
 
-      ({node, update, eventsBus} = mountTemplate(<Select selector={selector}>
+      ({node, update, eventsBus} = mountTemplate(<Scope selector={selector}>
         <Child />
-      </Select>));
+      </Scope>));
 
       update(state);
     });
@@ -58,9 +58,9 @@ describe('<Select>', () => {
 
   describe('with text selector', () => {
     beforeEach(() => {
-      ({node, update, eventsBus} = mountTemplate(<Select selector="prop">
+      ({node, update, eventsBus} = mountTemplate(<Scope selector="prop">
         <Child />
-      </Select>));
+      </Scope>));
 
       update(state);
     });

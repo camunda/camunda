@@ -1,5 +1,5 @@
 export {pipe} from './pipe';
-export {Select} from './select';
+export {Scope} from './scope';
 export {get} from './get';
 export {List} from './list';
 export {hasClass, addClass, removeClass} from './classFunctions';

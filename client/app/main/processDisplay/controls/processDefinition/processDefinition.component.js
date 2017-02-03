@@ -1,4 +1,4 @@
-import {jsx, withSelector, Select, List, Text, Attribute, OnEvent} from 'view-utils';
+import {jsx, withSelector, Scope, List, Text, Attribute, OnEvent} from 'view-utils';
 import {loadProcessDefinitions, selectProcessDefinition} from './processDefinition.service';
 import {INITIAL_STATE} from 'utils/loading';
 
@@ -9,14 +9,14 @@ export function ProcessDefinitionComponent() {
     <select className="form-control">
       <OnEvent event="change" listener={select} />
       <option disabled="" value="">Select Process</option>
-      <Select selector={getAvailableDefinitions}>
+      <Scope selector={getAvailableDefinitions}>
         <List>
           <option>
             <Attribute selector="id" attribute="value" />
             <Text property="name" />
           </option>
         </List>
-      </Select>
+      </Scope>
     </select>
   </td>;
 
