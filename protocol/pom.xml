@@ -24,6 +24,17 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-all</artifactId>
     </dependency>
+    
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -92,6 +103,10 @@
             </systemProperty>
             <systemProperty>
               <key>sbe.java.generate.interfaces</key>
+              <value>true</value>
+            </systemProperty>
+            <systemProperty>
+              <key>sbe.decode.unknown.enum.values</key>
               <value>true</value>
             </systemProperty>
           </systemProperties>
