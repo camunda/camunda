@@ -4,6 +4,7 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.schema.type.EventType;
 import org.camunda.optimize.service.util.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.util.schema.type.ProcessDefinitionXmlType;
+import org.camunda.optimize.service.util.schema.type.UsersType;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -39,6 +40,9 @@ public class ElasticSearchSchemaManager {
   @Autowired
   ProcessDefinitionXmlType processDefinitionXmlType;
 
+  @Autowired
+  UsersType usersType;
+
   List<TypeMappingCreator> mappings = new LinkedList<>();
 
   @PostConstruct
@@ -46,6 +50,7 @@ public class ElasticSearchSchemaManager {
     mappings.add(eventType);
     mappings.add(processDefinitionType);
     mappings.add(processDefinitionXmlType);
+    mappings.add(usersType);
   }
 
   public boolean schemaAlreadyExists() {
