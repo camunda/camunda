@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.agrona.DirectBuffer;
@@ -58,7 +59,7 @@ public class LockTaskStreamProcessorTest
         // fix the current time to calculate lock time
         ClockUtil.setCurrentTime(Instant.now());
 
-        streamProcessor = new LockTaskStreamProcessor();
+        streamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
 
         subscription = new TaskSubscription()
                 .setId(1L)
@@ -70,7 +71,7 @@ public class LockTaskStreamProcessorTest
         anotherSubscription = new TaskSubscription()
                 .setId(2L)
                 .setChannelId(12)
-                .setTaskType(ANOTHER_TASK_TYPE_BUFFER)
+                .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(10).toMillis())
                 .setCredits(2);
 
@@ -148,63 +149,39 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
-    public void shouldLockTasksWithMultipleSubscriptionsAndDifferentTypes()
+    public void shouldLockTasksFairToAllSubscriptions()
     {
+        final AtomicInteger lockedTasksSubscription1 = new AtomicInteger(0);
+        final AtomicInteger lockedTasksSubscritpion2 = new AtomicInteger(0);
+
         // given
         streamProcessor.addSubscription(subscription);
         streamProcessor.addSubscription(anotherSubscription);
 
-        // when process events with type 'x' then they should be locked by subscription 'x'
-        Stream.of(1L, 2L).forEach(key ->
+        // when process 4 task events
+        Stream.of(1, 2, 3, 4).forEach(key ->
         {
             mockController.processEvent(key, event -> event
                     .setEventType(TaskEventType.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
-            assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
-            assertThat(mockController.getLastWrittenEventMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
-            assertThat(mockController.getLastWrittenEventMetadata().getEventType()).isEqualTo(TASK_EVENT);
+            final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
+            assertThat(lastWrittenEvent.getValue().getEventType()).isEqualTo(TaskEventType.LOCK);
+
+            final long subscriptionId = lastWrittenEvent.getMetadata().getSubscriptionId();
+            if (subscriptionId == subscription.getId())
+            {
+                lockedTasksSubscription1.incrementAndGet();
+            }
+            else
+            {
+                lockedTasksSubscritpion2.incrementAndGet();
+            }
         });
 
-        // when process events with type 'y' then they should be locked by subscription 'y'
-        Stream.of(3L, 4L).forEach(key ->
-        {
-            mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
-                    .setType(ANOTHER_TASK_TYPE_BUFFER, 0, ANOTHER_TASK_TYPE_BUFFER.capacity()));
-
-            assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
-            assertThat(mockController.getLastWrittenEventMetadata().getSubscriptionId()).isEqualTo(anotherSubscription.getId());
-            assertThat(mockController.getLastWrittenEventMetadata().getEventType()).isEqualTo(TASK_EVENT);
-        });
-    }
-
-    @Test
-    public void shouldLockTasksWithMultipleSubscriptionsAndSameType()
-    {
-        // given
-        final TaskSubscription subscriptionWithSameType = anotherSubscription.setTaskType(TASK_TYPE_BUFFER);
-
-        streamProcessor.addSubscription(subscription);
-        streamProcessor.addSubscription(subscriptionWithSameType);
-
-        // when process the first event then it should be locked by the first subscription
-        mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
-                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
-
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
-        assertThat(mockController.getLastWrittenEventMetadata().getSubscriptionId()).isEqualTo(subscription.getId());
-        assertThat(mockController.getLastWrittenEventMetadata().getEventType()).isEqualTo(TASK_EVENT);
-
-        // when process the next event then it should be locked by the next subscription
-        mockController.processEvent(3L, event -> event
-                .setEventType(TaskEventType.CREATED)
-                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
-
-        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
-        assertThat(mockController.getLastWrittenEventMetadata().getSubscriptionId()).isEqualTo(2L);
-        assertThat(mockController.getLastWrittenEventMetadata().getEventType()).isEqualTo(TASK_EVENT);
+        // then each subscription lock two task events (round-robin-like)
+        assertThat(lockedTasksSubscription1.get()).isEqualTo(2);
+        assertThat(lockedTasksSubscritpion2.get()).isEqualTo(2);
     }
 
     @Test
@@ -267,15 +244,15 @@ public class LockTaskStreamProcessorTest
         streamProcessor.addSubscription(subscription);
         streamProcessor.addSubscription(anotherSubscription);
 
-        // when remove a subscription of a type
+        // when remove the first subscription
         CompletableFuture<Boolean> future = streamProcessor.removeSubscription(subscription.getId());
 
-        // then an event with this type should not be locked
+        // then an event is locked by the other subscription
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.CREATED)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
-        assertThat(mockController.getWrittenEvents()).hasSize(0);
+        assertThat(mockController.getWrittenEvents()).hasSize(1);
 
         assertThat(future).isCompletedWithValue(true);
         assertThat(streamProcessor.isSuspended()).isFalse();
@@ -285,40 +262,12 @@ public class LockTaskStreamProcessorTest
 
         mockController.processEvent(3L, event -> event
                 .setEventType(TaskEventType.CREATED)
-                .setType(ANOTHER_TASK_TYPE_BUFFER, 0, ANOTHER_TASK_TYPE_BUFFER.capacity()));
+                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
-        assertThat(mockController.getWrittenEvents()).hasSize(0);
+        assertThat(mockController.getWrittenEvents()).hasSize(1);
 
-        // then the stream processor should be suspend
+        // then the stream processor is suspended
         assertThat(future).isCompletedWithValue(false);
-        assertThat(streamProcessor.isSuspended()).isTrue();
-    }
-
-    @Test
-    public void shouldSuspendIfAllSubscriptionsHasNoCredits()
-    {
-        // given
-        streamProcessor.addSubscription(subscription);
-        streamProcessor.addSubscription(anotherSubscription);
-
-        // when process as much events as available credits
-        Stream.of(1, 2, 3).forEach(key ->
-        {
-            mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
-                    .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
-        });
-
-        assertThat(streamProcessor.isSuspended()).isFalse();
-
-        Stream.of(1, 2, 3).forEach(key ->
-        {
-            mockController.processEvent(key, event -> event
-                    .setEventType(TaskEventType.CREATED)
-                    .setType(ANOTHER_TASK_TYPE_BUFFER, 0, ANOTHER_TASK_TYPE_BUFFER.capacity()));
-        });
-
-        // then the stream processor should be suspended
         assertThat(streamProcessor.isSuspended()).isTrue();
     }
 
@@ -393,6 +342,17 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
+    public void shouldFailToAddSubscriptionIfWrongType()
+    {
+        final TaskSubscription subscription = anotherSubscription.setTaskType(ANOTHER_TASK_TYPE_BUFFER);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Subscription task type is not equal to 'test-task'.");
+
+        streamProcessor.addSubscription(subscription);
+    }
+
+    @Test
     public void shouldFailToUpdateSubscriptionCreditsIfZero()
     {
         // given
@@ -418,7 +378,7 @@ public class LockTaskStreamProcessorTest
         // then
         assertThat(future).hasFailedWithThrowableThat()
             .isInstanceOf(RuntimeException.class)
-            .hasMessage("Cannot update the subscription credits. Subscription with id '123' not found.");
+            .hasMessage("Subscription with id '123' not found.");
     }
 
     protected long lockTimeOf(TaskSubscription subscription)

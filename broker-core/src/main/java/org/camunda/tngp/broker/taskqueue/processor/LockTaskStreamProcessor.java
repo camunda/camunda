@@ -13,9 +13,15 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
@@ -28,7 +34,7 @@ import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.util.EnsureUtil;
+import org.camunda.tngp.util.buffer.BufferUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 
 public class LockTaskStreamProcessor extends BrokerStreamProcessor
@@ -36,22 +42,28 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     protected final LockTaskEventProcessor lockTaskEventProcessor = new LockTaskEventProcessor();
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
-
-    protected final TaskEvent taskEvent = new TaskEvent();
-
-    protected final TaskSubscriptions subscriptions = new TaskSubscriptions();
-
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
 
+    protected final Long2ObjectHashMap<TaskSubscription> subscriptionsById = new Long2ObjectHashMap<>();
+    protected Iterator<TaskSubscription> subscriptionIterator;
+
+    protected final DirectBuffer subscriptedTaskType;
+
+    protected int availableSubscriptionCredits = 0;
+
+    protected final TaskEvent taskEvent = new TaskEvent();
     protected long eventPosition = 0;
     protected long eventKey = 0;
 
     // activate the processor while adding the first subscription
     protected boolean isSuspended = true;
 
-    public LockTaskStreamProcessor()
+    public LockTaskStreamProcessor(DirectBuffer subscriptedTaskType)
     {
         super(TASK_EVENT);
+
+        this.subscriptedTaskType = subscriptedTaskType;
+        this.subscriptionIterator = subscriptionsById.values().iterator();
     }
 
     @Override
@@ -62,45 +74,64 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     }
 
     @Override
-    public void onOpen(StreamProcessorContext context)
-    {
-        cmdQueue = context.getStreamProcessorCmdQueue();
-    }
-
-    @Override
     public boolean isSuspended()
     {
         return isSuspended;
     }
 
-    public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
+    public DirectBuffer getSubscriptedTaskType()
     {
-        EnsureUtil.ensureNotNull("subscription", subscription);
-        EnsureUtil.ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
+        return subscriptedTaskType;
+    }
 
-        final CompletableFuture<Void> future = new CompletableFuture<>();
+    @Override
+    public void onOpen(StreamProcessorContext context)
+    {
+        cmdQueue = context.getStreamProcessorCmdQueue();
+    }
 
-        cmdQueue.add(() ->
-        {
-            subscriptions.addSubscription(subscription);
+    protected <T> CompletableFuture<T> addCommand(Consumer<CompletableFuture<T>> action)
+    {
+        final CompletableFuture<T> future = new CompletableFuture<>();
 
-            isSuspended = false;
-
-            future.complete(null);
-        });
+        cmdQueue.add(() -> action.accept(future));
 
         return future;
     }
 
+    public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
+    {
+        ensureNotNull("subscription", subscription);
+        ensureNotNull("lock task type", subscription.getLockTaskType());
+        ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
+
+        if (!BufferUtil.equals(subscription.getLockTaskType(), subscriptedTaskType))
+        {
+            final String errorMessage = String.format("Subscription task type is not equal to '%s'.", BufferUtil.bufferAsString(subscriptedTaskType));
+            throw new RuntimeException(errorMessage);
+        }
+
+        return addCommand(future ->
+        {
+            subscriptionsById.put(subscription.getId(), subscription);
+
+            availableSubscriptionCredits += subscription.getCredits();
+
+            isSuspended = false;
+        });
+    }
+
     public CompletableFuture<Boolean> removeSubscription(long subscriptionId)
     {
-        final CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-        cmdQueue.add(() ->
+        return addCommand(future ->
         {
-            subscriptions.removeSubscription(subscriptionId);
+            final TaskSubscription subscription = subscriptionsById.remove(subscriptionId);
+            if (subscription != null)
+            {
+                availableSubscriptionCredits -= subscription.getCredits();
+            }
 
-            final boolean hasSubscriptions = !subscriptions.isEmpty();
+            final boolean hasSubscriptions = subscriptionsById.size() > 0;
             if (!hasSubscriptions)
             {
                 isSuspended = true;
@@ -108,32 +139,59 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
 
             future.complete(hasSubscriptions);
         });
-
-        return future;
     }
 
     public CompletableFuture<Void> updateSubscriptionCredits(long subscriptionId, int credits)
     {
-        EnsureUtil.ensureGreaterThan("subscription credits", credits, 0);
+        ensureGreaterThan("subscription credits", credits, 0);
 
-        final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        cmdQueue.add(() ->
+        return addCommand(future ->
         {
-            final boolean updated = subscriptions.updateSubscriptionCredits(subscriptionId, credits);
-            if (updated)
+            final TaskSubscription subscription = subscriptionsById.get(subscriptionId);
+            if (subscription != null)
             {
+                availableSubscriptionCredits += credits - subscription.getCredits();
+                subscription.setCredits(credits);
+
                 isSuspended = false;
+
                 future.complete(null);
             }
             else
             {
-                final String errorMessage = String.format("Cannot update the subscription credits. Subscription with id '%s' not found.", subscriptionId);
+                final String errorMessage = String.format("Subscription with id '%s' not found.", subscriptionId);
                 future.completeExceptionally(new RuntimeException(errorMessage));
             }
         });
+    }
 
-        return future;
+    protected TaskSubscription getNextAvailableSubscription()
+    {
+        TaskSubscription nextSubscription = null;
+
+        if (availableSubscriptionCredits > 0)
+        {
+            final int subscriptionSize = subscriptionsById.size();
+            int seenSubscriptions = 0;
+
+            while (seenSubscriptions < subscriptionSize && nextSubscription == null)
+            {
+                if (!subscriptionIterator.hasNext())
+                {
+                    // assuming that it just reset the existing iterator internally
+                    subscriptionIterator = subscriptionsById.values().iterator();
+                }
+
+                final TaskSubscription subscription = subscriptionIterator.next();
+                if (subscription.getCredits() > 0)
+                {
+                    nextSubscription = subscription;
+                }
+
+                seenSubscriptions += 1;
+            }
+        }
+        return nextSubscription;
     }
 
     @Override
@@ -147,15 +205,18 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
 
         EventProcessor eventProcessor = null;
 
-        switch (taskEvent.getEventType())
+        if (BufferUtil.equals(taskEvent.getType(), subscriptedTaskType))
         {
-            case CREATED:
-            case LOCK_EXPIRED:
-                eventProcessor = lockTaskEventProcessor;
-                break;
+            switch (taskEvent.getEventType())
+            {
+                case CREATED:
+                case LOCK_EXPIRED:
+                    eventProcessor = lockTaskEventProcessor;
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
         return eventProcessor;
     }
@@ -170,7 +231,7 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
         {
             hasLockedTask = false;
 
-            lockSubscription = subscriptions.getNextAvailableSubscription(taskEvent.getType());
+            lockSubscription = getNextAvailableSubscription();
             if (lockSubscription != null)
             {
                 final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockTime();
@@ -213,9 +274,11 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
             if (hasLockedTask)
             {
                 final int credits = lockSubscription.getCredits();
-                subscriptions.updateSubscriptionCredits(lockSubscription.getId(), credits - 1);
+                lockSubscription.setCredits(credits - 1);
 
-                if (!subscriptions.hasSubscriptionsWithCredits())
+                availableSubscriptionCredits -= 1;
+
+                if (availableSubscriptionCredits <= 0)
                 {
                     isSuspended = true;
                 }

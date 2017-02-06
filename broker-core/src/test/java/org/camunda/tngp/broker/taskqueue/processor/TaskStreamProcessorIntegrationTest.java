@@ -1,10 +1,13 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.broker.test.util.BufferAssert.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -106,7 +109,7 @@ public class TaskStreamProcessorIntegrationTest
             .agentRunnerService(agentRunnerService)
             .build();
 
-        lockTaskStreamProcessor = new LockTaskStreamProcessor();
+        lockTaskStreamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
         taskSubscriptionStreamProcessorController = LogStreams.createStreamProcessor("task-lock", 1, lockTaskStreamProcessor)
             .sourceStream(logStream)
             .targetStream(logStream)
