@@ -173,6 +173,16 @@ Example response:
 1396
 ```
 
+### Trigger data import from engine to elasticsearch
+
+To trigger the data import from the engine to elasticsearch you need to send the following request:
+
+```bash
+curl -XGET http://localhost:8080/api/import -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.S8EUdXzC3pL5UHz11aBwx36OBlYEL02FS5GH81XFneE"
+```
+
+The response tells you, if the import was successfully triggered.
+
 ## Integration testing 
 
 This project has integration tests implemented that rely on following facts: 
