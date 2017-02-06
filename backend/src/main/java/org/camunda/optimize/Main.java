@@ -2,6 +2,7 @@ package org.camunda.optimize;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.jackson.JacksonFeature;
@@ -38,10 +39,6 @@ public class Main {
 
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
     context.setContextPath("/");
-    URL webappURL = Main.class.getClassLoader().getResource("webapp");
-    if (webappURL != null) {
-      context.setResourceBase(webappURL.toExternalForm());
-    }
 
     InetSocketAddress address = new InetSocketAddress(
         properties.getProperty("camunda.optimize.container.host"),
@@ -61,10 +58,16 @@ public class Main {
     context.setInitParameter("contextConfigLocation","classpath:applicationContext.xml");
 
     //add static resources
+    URL webappURL = Main.class.getClassLoader().getResource("webapp");
     if (webappURL != null) {
       ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
+      context.setResourceBase(webappURL.toExternalForm());
       holderPwd.setInitParameter("dirAllowed","true");
       context.addServlet(holderPwd,"/");
+
+      ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
+      errorMapper.addErrorPage(404,"/"); // map all 404's to root (aka /index.html)
+      context.setErrorHandler(errorMapper);
     }
 
     try {
