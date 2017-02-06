@@ -1,41 +1,13 @@
-import {jsx, updateOnlyWhenStateChanges, Match, Case, withSelector} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {getHeatmap, hoverElement,
         removeHeatmapOverlay, addHeatmapOverlay} from './diagram.service';
-import {LOADING_STATE, LOADED_STATE, INITIAL_STATE} from 'utils/loading';
+import {LOADED_STATE} from 'utils/loading';
 
 export const Diagram = withSelector(DiagramComponent);
 
 function DiagramComponent() {
-  return <div className="diagram">
-    <div className="diagram__holder">
-      <BpmnViewer />
-      <Match>
-        <Case predicate={isLoading}>
-          <div className="loading_indicator overlay">
-            <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
-            <div className="text">loading</div>
-          </div>
-        </Case>
-        <Case predicate={isInitial}>
-          <div className="help_screen overlay">
-            <div className="process_definition">
-              <span className="indicator glyphicon glyphicon-chevron-up"></span>
-              <div>Select Process Defintion</div>
-            </div>
-          </div>
-        </Case>
-      </Match>
-    </div>
-  </div>;
-
-  function isInitial({diagram, heatmap}) {
-    return diagram.state === INITIAL_STATE || heatmap.state === INITIAL_STATE;
-  }
-
-  function isLoading({diagram, heatmap}) {
-    return diagram.state === LOADING_STATE || heatmap.state === LOADING_STATE;
-  }
+  return <BpmnViewer />;
 }
 
 function BpmnViewer() {
