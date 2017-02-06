@@ -80,6 +80,11 @@ pipeline {
         branch 'master'
       }
       steps {
+        sh '''\
+          cd client
+          yarn
+          yarn run compile
+        '''
         sh 'mvn -Pproduction -s settings.xml -DskipTests clean deploy'
       }
     }
