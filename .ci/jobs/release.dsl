@@ -33,6 +33,7 @@ freeStyleJob('camunda-optimize-release') {
     shell ('''\
       cd client
       yarn
+      yarn run compile
     '''.stripIndent())
     shell ("""\
       mvn -DskipTests -Prelease,production release:prepare release:perform \
