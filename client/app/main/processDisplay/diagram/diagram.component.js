@@ -2,7 +2,7 @@ import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {getHeatmap, hoverElement,
         removeHeatmapOverlay, addHeatmapOverlay} from './diagram.service';
-import {LOADED_STATE} from 'utils/loading';
+import {isLoaded} from 'utils/loading';
 
 export const Diagram = withSelector(DiagramComponent);
 
@@ -24,11 +24,11 @@ function BpmnViewer() {
     });
 
     const update = (display) => {
-      if (display.diagram.state === LOADED_STATE) {
+      if (isLoaded(display.diagram)) {
         renderDiagram(display);
       }
 
-      if (display.heatmap.state === LOADED_STATE) {
+      if (isLoaded(display.heatmap)) {
         renderHeatmap(display);
       }
     };
@@ -42,7 +42,7 @@ function BpmnViewer() {
           diagramRendered = true;
           resetZoom(viewer);
 
-          if (display.heatmap.state === LOADED_STATE) {
+          if (isLoaded(display.heatmap)) {
             renderHeatmap(display);
           }
         });

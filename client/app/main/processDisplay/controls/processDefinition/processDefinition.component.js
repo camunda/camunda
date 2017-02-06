@@ -1,6 +1,6 @@
 import {jsx, withSelector, Scope, List, Text, Attribute, OnEvent} from 'view-utils';
 import {loadProcessDefinitions, selectProcessDefinition} from './processDefinition.service';
-import {INITIAL_STATE} from 'utils/loading';
+import {isInitial} from 'utils/loading';
 
 export const ProcessDefinition = withSelector(ProcessDefinitionComponent);
 
@@ -28,17 +28,17 @@ export function ProcessDefinitionComponent() {
     return availableProcessDefinitions.data;
   }
 
-  function update(parentNode, eventsBus) {
+  return (parentNode, eventsBus) => {
     const templateUpdate = template(parentNode, eventsBus);
 
-    return [templateUpdate, ({availableProcessDefinitions, selected}) => {
-      parentNode.querySelector('select').value = selected || '';
+    const selectField = parentNode.querySelector('select');
 
-      if (availableProcessDefinitions.state === INITIAL_STATE) {
+    return [templateUpdate, ({availableProcessDefinitions, selected}) => {
+      selectField.value = selected || '';
+
+      if (isInitial(availableProcessDefinitions)) {
         loadProcessDefinitions();
       }
     }];
-  }
-
-  return update;
+  };
 }

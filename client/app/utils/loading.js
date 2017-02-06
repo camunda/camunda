@@ -62,3 +62,15 @@ export function createResultActionFunction(name) {
     };
   };
 }
+
+export function isInitial({state}) {
+  return state === INITIAL_STATE;
+}
+
+export function isLoading({state}) {
+  return state === LOADING_STATE;
+}
+
+export function isLoaded({state}) {
+  return state === LOADED_STATE;
+}

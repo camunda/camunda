@@ -1,7 +1,7 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {Diagram} from './diagram';
 import {ProcessDefinition, FilterList, FilterCreation, Result, View} from './controls';
-import {INITIAL_STATE, LOADING_STATE} from 'utils/loading';
+import {isInitial, isLoading} from 'utils/loading';
 import {loadDiagram, loadHeatmap} from './processDisplay.service';
 
 export const ProcessDisplay = withSelector(Process);
@@ -34,7 +34,7 @@ function Process() {
     <div className="diagram">
       <div className="diagram__holder">
         <Match>
-          <Case predicate={isLoading}>
+          <Case predicate={isLoadingSomething}>
             <div className="loading_indicator overlay">
               <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
               <div className="text">loading</div>
@@ -59,10 +59,8 @@ function Process() {
     </div>
   </div>;
 
-  function isLoading({display: {diagram, heatmap}, processDefinition: {availableProcessDefinitions}}) {
-    return diagram.state === LOADING_STATE ||
-           heatmap.state === LOADING_STATE ||
-           availableProcessDefinitions. state === LOADING_STATE;
+  function isLoadingSomething({display: {diagram, heatmap}, processDefinition: {availableProcessDefinitions}}) {
+    return isLoading(diagram) || isLoading(heatmap) || isLoading(availableProcessDefinitions);
   }
 
   function noProcessDefinitions({processDefinition}) {
@@ -85,26 +83,20 @@ function Process() {
     };
   }
 
-  function isInInitialState({state}) {
-    return state === INITIAL_STATE;
-  }
-
-  function update(parentNode, eventsBus) {
+  return (parentNode, eventsBus) => {
     const templateUpdate = template(parentNode, eventsBus);
 
     return [templateUpdate, (state) => {
       const filter = getFilter(state);
 
       if (filterValid(filter)) {
-        if (isInInitialState(state.display.diagram)) {
+        if (isInitial(state.display.diagram)) {
           loadDiagram(filter);
         }
-        if (isInInitialState(state.display.heatmap)) {
+        if (isInitial(state.display.heatmap)) {
           loadHeatmap(filter);
         }
       }
     }];
-  }
-
-  return update;
+  };
 }
