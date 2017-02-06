@@ -10,7 +10,6 @@ describe('<Diagram>', () => {
   const heatmapNode = document.createElement('img');
 
   let initialState;
-  let loadingDiagramState;
   let loadedDiagramState;
   let loadedHeatmapState;
   let getHeatmap;
@@ -27,15 +26,6 @@ describe('<Diagram>', () => {
     initialState = {display: {
       diagram: {
         state: 'INITIAL'
-      },
-      heatmap: {
-        state: 'INITIAL'
-      }
-    }};
-
-    loadingDiagramState = {display: {
-      diagram: {
-        state: 'LOADING'
       },
       heatmap: {
         state: 'INITIAL'
@@ -119,20 +109,6 @@ describe('<Diagram>', () => {
 
     it('should pass diagram__holder node to Viewer constructor', () => {
       expect(diagramNode).to.have.class('diagram__holder');
-    });
-
-    it('should display a select process definition hint', () => {
-      expect(diagramNode.querySelector('.help_screen')).to.not.be.null;
-    });
-  });
-
-  describe('loading state', () => {
-    beforeEach(() => {
-      update(loadingDiagramState);
-    });
-
-    it('should display a loading indicator', () => {
-      expect(diagramNode.querySelector('.loading_indicator')).to.not.be.null;
     });
   });
 

@@ -1,38 +1,5 @@
-.diagram {
-  flex: 1 1 auto;
-  position: relative;
-}
-
 .diagram__holder {
   position: absolute;
   height: 100%;
   width: 100%;
-
-  .overlay {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255,255,255,0.8);
-  }
-
-  .help_screen {
-    .process_definition {
-      font-size: 3rem;
-      padding-left: 5rem;
-    }
-  }
-
-  .loading_indicator {
-    text-align: center;
-    padding-top: 10rem;
-
-    .spinner {
-      font-size: 7rem;
-    }
-
-    .text {
-      font-size: 4rem;
-    }
-  }
 }

@@ -9,13 +9,8 @@ export function loadHeatmap({id}) {
   get('/api/process-definition/' + id + '/heatmap')
     .then(response => response.json())
     .then(result => {
-      dispatchAction(createLoadingHeatmapResultAction(result));
-    })
-    .catch(err => {
-      //TODO: Add error handling with notifications
-
       //TODO: Remove once we have demo workflow data seed
-      // dispatchAction(createLoadingHeatmapResultAction({
+      // result = {
       //   StartEvent_1: 2,
       //   Task_04xnoiz: 4,
       //   Task_1wjnddq: 3,
@@ -23,7 +18,12 @@ export function loadHeatmap({id}) {
       //   ExclusiveGateway_07mu6ot: 4,
       //   ExclusiveGateway_1qeh21h: 4,
       //   EndEvent_0145qhl: 4
-      // }));
+      // };
+
+      dispatchAction(createLoadingHeatmapResultAction(result));
+    })
+    .catch(err => {
+      //TODO: Add error handling with notifications
     });
 }
 

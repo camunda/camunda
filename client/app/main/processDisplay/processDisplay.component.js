@@ -15,16 +15,16 @@ function Process() {
             <tbody>
               <tr>
                 <td><label>Process Definition</label></td>
+                <td><label>View</label></td>
                 <td colspan="2"><label>Filter</label></td>
                 <td><label>Result</label></td>
-                <td><label>View</label></td>
               </tr>
             <tr>
               <ProcessDefinition selector="processDefinition" />
+              <View />
               <FilterList />
               <FilterCreation />
               <Result />
-              <View />
             </tr>
           </tbody>
           </table>
@@ -32,30 +32,34 @@ function Process() {
       </div>
     </div>
     <div className="diagram">
-      <div className="diagram__holder">
-        <Match>
-          <Case predicate={isLoadingSomething}>
-            <div className="loading_indicator overlay">
-              <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
-              <div className="text">loading</div>
+      <Match>
+        <Case predicate={isLoadingSomething}>
+          <div className="loading_indicator overlay">
+            <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
+            <div className="text">loading</div>
+          </div>
+        </Case>
+        <Case predicate={noProcessDefinitions}>
+          <div className="help_screen overlay">
+            <div className="no_definitions">
+              <span className="indicator glyphicon glyphicon-info-sign"></span>
+              <div className="title">No Process Definitions</div>
+              <div className="text"><a href="https://www.google.com/#q=how+to+import+data+in+optimize">Find out how to import your data</a></div>
             </div>
-          </Case>
-          <Case predicate={noProcessDefinitions}>
-            no process definitions
-          </Case>
-          <Case predicate={noDefinitionSelected}>
-            <div className="help_screen overlay">
-              <div className="process_definition">
-                <span className="indicator glyphicon glyphicon-chevron-up"></span>
-                <div>Select Process Defintion</div>
-              </div>
+          </div>
+        </Case>
+        <Case predicate={noDefinitionSelected}>
+          <div className="help_screen overlay">
+            <div className="process_definition">
+              <span className="indicator glyphicon glyphicon-chevron-up"></span>
+              <div>Select Process Defintion</div>
             </div>
-          </Case>
-          <Default>
-            <Diagram selector="display"/>
-          </Default>
-        </Match>
-      </div>
+          </div>
+        </Case>
+        <Default>
+          <Diagram selector="display"/>
+        </Default>
+      </Match>
     </div>
   </div>;
 

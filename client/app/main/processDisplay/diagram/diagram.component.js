@@ -7,7 +7,9 @@ import {isLoaded} from 'utils/loading';
 export const Diagram = withSelector(DiagramComponent);
 
 function DiagramComponent() {
-  return <BpmnViewer />;
+  return <div className="diagram__holder">
+    <BpmnViewer />;
+  </div>;
 }
 
 function BpmnViewer() {

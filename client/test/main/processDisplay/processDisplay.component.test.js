@@ -3,7 +3,7 @@ import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {ProcessDisplay, __set__, __ResetDependency__} from 'main/processDisplay/processDisplay.component';
-import {INITIAL_STATE, LOADED_STATE} from 'utils/loading';
+import {INITIAL_STATE, LOADED_STATE, LOADING_STATE} from 'utils/loading';
 
 describe('<ProcessDisplay>', () => {
   let ProcessDefinition;
@@ -36,12 +36,17 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('loadHeatmap');
   });
 
-  it('should display <Diagram> component', () => {
-    expect(node).to.contain.text('Diagram');
+  it('should contain diagram section', () => {
+    expect(node.querySelector('.diagram')).to.exist;
   });
 
   it('should not do anything when no process definition is set', () => {
-    update({processDisplay: {processDefinition: {}}});
+    update({processDisplay: {processDefinition: {
+      availableProcessDefinitions: {state: LOADED_STATE}
+    }, display: {
+      diagram: {state: INITIAL_STATE},
+      heatmap: {state: INITIAL_STATE}
+    }}});
 
     expect(loadDiagram.called).to.eql(false);
     expect(loadHeatmap.called).to.eql(false);
@@ -50,7 +55,8 @@ describe('<ProcessDisplay>', () => {
   it('should load the diagram when the process definition is set', () => {
     update({processDisplay: {
       processDefinition: {
-        selected: 'definition'
+        selected: 'definition',
+        availableProcessDefinitions: {state: LOADED_STATE}
       },
       display: {
         diagram: {state: INITIAL_STATE},
@@ -64,7 +70,8 @@ describe('<ProcessDisplay>', () => {
   it('should not load the diagram when it is already loaded', () => {
     update({processDisplay: {
       processDefinition: {
-        selected: 'definition'
+        selected: 'definition',
+        availableProcessDefinitions: {state: LOADED_STATE}
       },
       display: {
         diagram: {state: LOADED_STATE},
@@ -78,7 +85,8 @@ describe('<ProcessDisplay>', () => {
   it('should load the heatmap when the process definition is set', () => {
     update({processDisplay: {
       processDefinition: {
-        selected: 'definition'
+        selected: 'definition',
+        availableProcessDefinitions: {state: LOADED_STATE}
       },
       display: {
         diagram: {state: INITIAL_STATE},
@@ -92,7 +100,8 @@ describe('<ProcessDisplay>', () => {
   it('should not load the heatmap when it is already loaded', () => {
     update({processDisplay: {
       processDefinition: {
-        selected: 'definition'
+        selected: 'definition',
+        availableProcessDefinitions: {state: LOADED_STATE}
       },
       display: {
         diagram: {state: LOADED_STATE},
@@ -101,5 +110,52 @@ describe('<ProcessDisplay>', () => {
     }});
 
     expect(loadHeatmap.called).to.eql(false);
+  });
+
+  it('should display a no process definitions hint', () => {
+    update({processDisplay: {
+      processDefinition: {
+        availableProcessDefinitions: {
+          state: LOADED_STATE,
+          data: []
+        }
+      },
+      display: {
+        diagram: {state: INITIAL_STATE},
+        heatmap: {state: INITIAL_STATE}
+      }
+    }});
+    expect(node.querySelector('.help_screen .no_definitions')).to.not.be.null;
+  });
+
+  it('should display a select process definition hint', () => {
+    update({processDisplay: {
+      processDefinition: {
+        availableProcessDefinitions: {
+          state: LOADED_STATE,
+          data: ['procDef1', 'procDef2']
+        }
+      },
+      display: {
+        diagram: {state: INITIAL_STATE},
+        heatmap: {state: INITIAL_STATE}
+      }
+    }});
+    expect(node.querySelector('.help_screen .process_definition')).to.not.be.null;
+  });
+
+  it('should display a loading indicator while loading', () => {
+    update({processDisplay: {
+      processDefinition: {
+        selected: 'definition',
+        availableProcessDefinitions: {state: LOADED_STATE}
+      },
+      display: {
+        diagram: {state: LOADING_STATE},
+        heatmap: {state: LOADING_STATE}
+      }
+    }});
+
+    expect(node.querySelector('.loading_indicator')).to.not.be.null;
   });
 });
