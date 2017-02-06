@@ -1,0 +1,238 @@
+@import "~bootstrap/less/variables.less"; // from bootstrap
+
+// Colors ------------------------------------------------------------
+
+// this is the "main" color (like in the header)
+@main-color:                      #b5152b;
+@brand-primary:                   @main-color;
+@text-color:                      @gray;
+
+// slightly darker variant
+// @main-darker:                     #9c3930;
+@main-darker:                     darken(@main-color, 25%);
+
+@important-color:                 #b94a48;
+@important-darker:                darken(@important-color, 45%);
+
+@warning-color:                   #f89406;
+// @warning-darker:                  #c67605;
+@warning-darker:                  darken(@warning-color, 45%);
+
+// process state colors
+@running-color:                   desaturate(lighten(#08c, 25%), 40%);
+@running-darker:                  darken(@running-color, 45%);
+
+@completed-color:                 #bbb;
+@completed-darker:                darken(@completed-color, 45%);
+
+@canceled-color:                  desaturate(lighten(@warning-color, 20%), 25%);
+@canceled-darker:                 darken(@canceled-color, 45%);
+
+@line-style:                      dotted;
+@line-color:                      @gray-light;
+
+@link-color:                      #155cb5;
+@link-hover-color:                #0b2d5f;
+@link-hover-decoration:           none;
+
+@highlight-bg:                    #FFFDAB;
+
+@bpmn-highlight-border-color:     @link-color;
+@bpmn-highlight-bg:               desaturate(lighten(@bpmn-highlight-border-color, 45%), 25%);//#dff0d8;
+
+
+@border-radius-base:             0;
+@border-radius-large:            0;
+@border-radius-small:            0;
+
+@btn-border-radius-base:             2px;
+@btn-border-radius-large:            4px;
+@btn-border-radius-small:            2px;
+
+//** Point at which the navbar becomes uncollapsed.
+@grid-float-breakpoint:     (@screen-sm-min + 75px);
+//** Point at which the navbar begins collapsing.
+// @grid-float-breakpoint-max: (@grid-float-breakpoint - 1);
+
+//== Forms
+//
+//##
+
+//** `<input>` background color
+// @input-bg:                       @custom-gray-lighter;
+@input-bg:                       @body-bg;
+// //** `<input disabled>` background color
+// @input-bg-disabled:              transparent;
+
+//** Text color for `<input>`s
+@input-color:                    @text-color;
+//** `<input>` border color
+@input-border:                   lighten(@input-color, 33);
+
+// // TODO: Rename `@input-border-radius` to `@input-border-radius-base` in v4
+// //** Default `.form-control` border radius
+// // This has no effect on `<select>`s in some browsers, due to the limited stylability of `<select>`s in CSS.
+// @input-border-radius:            @border-radius-base;
+// //** Large `.form-control` border radius
+// @input-border-radius-large:      @border-radius-large;
+// //** Small `.form-control` border radius
+// @input-border-radius-small:      @border-radius-small;
+
+//** Border color for inputs on focus
+@input-border-focus:             @link-hover-color;
+
+//** Placeholder text color
+@input-color-placeholder:        @input-border;
+
+// //** Default `.form-control` height
+// @input-height-base:              (@line-height-computed + (@padding-base-vertical * 0) + 2);
+// //** Large `.form-control` height
+// @input-height-large:             (ceil(@font-size-large * @line-height-large) + (@padding-large-vertical * 0) + 2);
+// //** Small `.form-control` height
+// @input-height-small:             (floor(@font-size-small * @line-height-small) + (@padding-small-vertical * 0) + 2);
+
+// //** Default `.form-control` height
+// @input-height-base:              (@line-height-computed + (@padding-base-vertical * 0) + 2);
+// //** Large `.form-control` height
+// @input-height-large:             (ceil(@font-size-large * @line-height-large) + (@padding-large-vertical * 0) + 2);
+// //** Small `.form-control` height
+// @input-height-small:             (floor(@font-size-small * @line-height-small) + (@padding-small-vertical * 0) + 2);
+
+// //** `.form-group` margin
+// @form-group-margin-bottom:       30px;
+
+// @legend-color:                   @gray-dark;
+// @legend-border-color:            #e5e5e5;
+
+// //** Background color for textual input addons
+// @input-group-addon-bg:           @gray-lighter;
+// //** Border color for textual input addons
+// @input-group-addon-border-color: @input-border;
+
+// //** Disabled cursor for form controls and buttons.
+// @cursor-disabled:                not-allowed;
+
+@input-box-shadow: none;
+@input-box-shadow-focus: none;
+
+@input-border-radius:            @btn-border-radius-base;
+@input-border-radius-large:      @btn-border-radius-large;
+@input-border-radius-small:      @btn-border-radius-small;
+
+
+@dropdown-link-active-color:      @gray-dark;
+@dropdown-link-active-bg:         @gray-lighter;
+
+// custom colors
+@custom-gray-light:               #e5e5e5;
+@custom-gray-lighter:             #fafafa;
+@highlihgt-shadow-color:          fade(@link-hover-color, 50%);
+
+
+// pagination
+@pagination-active-bg:            @gray-light;
+@pagination-active-border:        @gray-light;
+
+// navigation
+@navbar-height:                   45px;
+@header-brand-logo-font-size:     false;
+@navbar-font-size:                @font-size-base;
+
+@navbar-default-color:             @gray-light;
+@navbar-default-bg:                @body-bg;
+@navbar-default-border:            @navbar-default-color;
+
+// Navbar links
+@navbar-default-link-color:                #545454;
+@navbar-default-link-hover-color:          @gray-darker;
+@navbar-default-link-hover-bg:             transparent;
+@navbar-default-link-active-color:         @gray-base;
+@navbar-default-link-active-bg:            @gray-lighter;
+@navbar-default-link-disabled-color:       #ccc;
+@navbar-default-link-disabled-bg:          transparent;
+
+// Navbar brand label
+@navbar-default-brand-color:               @navbar-default-link-color;
+@navbar-default-brand-hover-color:         darken(@navbar-default-brand-color, 10%);
+@navbar-default-brand-hover-bg:            transparent;
+
+// Navbar toggle
+@navbar-default-toggle-hover-bg:           #ddd;
+@navbar-default-toggle-icon-bar-bg:        #888;
+@navbar-default-toggle-border-color:       #ddd;
+
+
+
+
+@header-height:                   @navbar-height;
+@header-border-bottom-width:      3px;
+@header-computed-height:          @header-height - @header-border-bottom-width;
+@header-border-bottom-color:      @brand-primary;
+
+@header-site-name-size:           @header-computed-height / 2;
+
+@breadcrumb-height:               35px;
+
+@footer-height:                   24px;
+
+@dropdown-link-hover-bg:         transparent;
+@dropdown-link-active-bg:        transparent;
+
+@bpmn-font-path: '../../fonts/';
+@font-path:      '../../fonts/';
+@brand-logo:     '../assets/images/app-logo-alt.png';
+
+
+
+@font-size-base:          14px;
+
+@shadow-color: @gray;
+
+@box-shadow:        0 2px 10px -4px @shadow-color;
+@box-shadow-low:    0 2px 8px -4px @shadow-color;
+@box-shadow-lower:  0 2px 6px -4px @shadow-color;
+
+
+@color-shift:                       12%;
+@column-left-bg:                    darken(@body-bg, @color-shift * 6.18);
+@column-center-bg:                  darken(@body-bg, @color-shift * (6.18 * 0.618));
+@column-right-bg:                   darken(@body-bg, @color-shift * 0);
+@column-top-height:                 22px;
+@border-thick-width:                5px;
+@border-thin-width:                 1px;
+
+
+@hover-color-bg:                    mix(@column-center-bg, @column-right-bg, 50%);
+
+
+@layout-transition-timing: ease-in-out;
+@layout-transition-duration: 0.536s;
+
+//== Code
+//
+//##
+
+@code-color:                  currentColor;
+@code-bg:                     transparent;
+
+@kbd-color:                   #fff;
+@kbd-bg:                      #333;
+
+@pre-bg:                      #f5f5f5;
+@pre-color:                   @gray-dark;
+@pre-border-color:            #ccc;
+@pre-scrollable-max-height:   340px;
+
+@menu-font-size: 14px;
+@menu-line-height: 18px;
+
+
+@nav-tabs-active-link-hover-color:        @link-color;
+@nav-tabs-active-link-hover-border-color: @navbar-default-link-active-bg;
+@nav-tabs-active-link-border-color:       @navbar-default-link-active-bg;
+
+
+@well-bg: @body-bg;
+@well-border: mix(@gray-light, @gray-lighter);
+
+@table-bg-hover: lighten(desaturate(@link-color, 30), 55);

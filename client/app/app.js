@@ -19,8 +19,8 @@ require.ensure(['lodash.isequal', 'redux', './init'], () => {
   }
 });
 
-require.ensure(['./styles.scss'], () => {
-  require('./styles.scss');
+require.ensure(['./styles.less'], () => {
+  require('./styles.less');
 });
 
 function isPolyfillNeeded() {

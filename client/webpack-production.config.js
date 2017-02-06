@@ -44,7 +44,7 @@ function correctLoadersForProduction(loaders) {
           'file-loader?name=[name].css',
           'extract-loader',
           'css-loader',
-          'sass-loader'
+          'less-loader'
         ]
       });
     }

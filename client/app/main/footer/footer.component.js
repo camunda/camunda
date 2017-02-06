@@ -1,6 +1,6 @@
 import {jsx, Text} from 'view-utils';
 
-const template = <footer cam-widget-footer="">
+const template = <footer>
   <div className="container-fluid">
     <div className="row">
       <div className="col-xs-12">

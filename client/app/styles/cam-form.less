@@ -1,0 +1,111 @@
+@import (reference) "./mixins";
+
+.form-control {
+  &::-moz-placeholder { font-style: italic; } // Firefox
+  &:-ms-input-placeholder { font-style: italic; } // Internet Explorer 10+
+  &::-webkit-input-placeholder  { font-style: italic; } // Safari and Chrome
+
+  border: 1px solid @input-border;
+  color: @input-color;
+
+  &,
+  &:hover {
+    box-shadow: @input-box-shadow;
+  }
+
+  &:hover {
+    color: @input-border-focus;
+  }
+
+  &:focus {
+    box-shadow: @input-box-shadow-focus;
+  }
+
+
+  .has-success &,
+  &.ng-dirty.ng-invalid,
+  .has-error &,
+  .has-warning & {
+    &,
+    &:hover {
+      box-shadow: @input-box-shadow;
+    }
+    &:focus {
+      box-shadow: @input-box-shadow-focus;
+    }
+  }
+
+  .has-success & {
+    color: @state-success-text;
+  }
+  &.ng-dirty.ng-invalid,
+  .has-error & {
+    color: @state-danger-text;
+  }
+  .has-warning & {
+    color: @state-warning-text;
+  }
+
+  &[disabled],
+  &[readonly],
+  .disabled-form &,
+  fieldset[disabled] & {
+    color: @gray-light;
+    background-color: @gray-lighter;
+    &:focus {
+      background-color: @gray-lighter;
+      box-shadow: @input-box-shadow-focus;
+    }
+  }
+
+
+  &[type="checkbox"],
+  &[type="radio"] {
+    width: auto;
+    height: auto;
+  }
+
+
+  &[type=file] {
+    border: none !important;
+    &:focus {
+      outline: none;
+    }
+    &.ng-invalid {
+      color: @state-danger-text;
+      background-color: mix(@input-bg, @state-danger-bg);
+    }
+  }
+}
+
+a.form-control-static {
+  display: block;
+}
+
+.help-block {
+  font-size: 90%;
+  &.error {
+    color: @brand-danger;
+  }
+}
+
+.form-group + .help-block {
+  margin-top: (0 - @padding-base-vertical);
+}
+
+.disabled-form {
+  position: relative;
+
+  &:before {
+    display: block;
+    content: ' ';
+    background-color: fade(@gray-lighter, 33%);
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    bottom: -3px;
+    right: -3px;
+    cursor: not-allowed;
+    z-index: 1000;
+  }
+}

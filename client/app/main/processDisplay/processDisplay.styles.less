@@ -1,7 +1,9 @@
-@import 'diagram/diagram.styles';
+@import 'diagram/diagram.styles.less';
 
 .process-display {
-  height: calc(100vh - #{$header-height + $footer-height});
+  // height: calc(100vh - (@header-height + @footer-height));
+  height: ~"calc(100vh - @{header-height} - @{footer-height})";
+
   display: flex;
   flex-flow: column;
 

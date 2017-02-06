@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {StaticLink} from 'router';
 import {AppMenu} from './appMenu';
 
-const template = <div cam-widget-header="">
+const template = <header>
   <div className="navbar-header">
     <a className="navbar-brand" title="Camunda Optimize">
       <StaticLink name="default" params={{}}></StaticLink>
@@ -12,7 +12,7 @@ const template = <div cam-widget-header="">
     </a>
   </div>
   <AppMenu/>
-</div>;
+</header>;
 
 export function Header() {
   return template;

@@ -1,0 +1,106 @@
+@import "./mixins";
+@import "./font-bpmn";
+
+.monospaced {
+  font-family: @font-family-monospace;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 400;
+}
+
+h1 {
+  .glyphicon {
+    font-size: 0.83em;
+  }
+}
+
+
+th,
+dt,
+label,
+legend,
+strong {
+  font-weight: 700;
+}
+
+[ng\:cloak],
+[ng-cloak],
+[data-ng-cloak],
+[x-ng-cloak],
+.ng-cloak,
+.x-ng-cloak {
+  display: none !important;
+}
+
+
+[ng-click],
+[onclick] {
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- */
+
+.text-padded {
+  padding-top: @padding-base-vertical + 1;
+  padding-bottom: @padding-base-vertical + 1;
+}
+/*
+.text-xs {
+  font-size: @font-size-small;
+  &.text-padded {
+    padding-top: @padding-xs-vertical + 1;
+    padding-bottom: @padding-xs-vertical + 1;
+  }
+}
+*/
+.text-sm {
+  font-size: @font-size-small;
+  &.text-padded {
+    padding-top: @padding-small-vertical + 1;
+    padding-bottom: @padding-small-vertical + 1;
+  }
+}
+
+.text-lg {
+  font-size: @font-size-large;
+  &.text-padded {
+    padding-top: @padding-large-vertical + 1;
+    padding-bottom: @padding-large-vertical + 1;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+
+
+.well {
+  min-height: 20px;
+  padding: ((@grid-gutter-width * 0.5) - 2px);
+  margin-bottom: (@grid-gutter-width * 0.5);
+  color: @well-border;
+  background-color: @well-bg;
+  border: 2px solid @well-border;
+  border-radius: @border-radius-base;
+  .box-shadow(none);
+  blockquote {
+    border-color: #ddd;
+    border-color: rgba(0,0,0,.15);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+
+.tooltip {
+  overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------- */
+
+
+@import "./cam-form";
+@import "./cam-table";

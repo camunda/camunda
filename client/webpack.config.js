@@ -44,11 +44,11 @@ module.exports = {
         loader: 'json-loader'
       },
       {
-        test: /\.scss$/,
+        test: /\.less$/,
         loaders: [
           'style-loader',
           'css-loader?sourceMap',
-          'sass-loader?sourceMap'
+          'less-loader?sourceMap'
         ],
         include: [
           path.resolve(__dirname, 'app'),

@@ -15,10 +15,6 @@ describe('<Footer>', () => {
     expect(node).to.contain.text('Camunda services GmbH');
   });
 
-  it('should have footer attribute', () => {
-    expect(node.querySelector('footer')).to.have.attribute('cam-widget-footer');
-  });
-
   it('should display current version', () => {
     const version = 'awesome-test-version';
 
