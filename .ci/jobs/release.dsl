@@ -30,11 +30,6 @@ freeStyleJob('camunda-optimize-release') {
   jdk 'jdk-8-latest'
 
   steps {
-    shell ('''\
-      cd client
-      yarn
-      yarn run compile
-    '''.stripIndent())
     shell ("""\
       mvn -DskipTests -Prelease,production release:prepare release:perform \
       -Dtag=\${RELEASE_VERSION} -DreleaseVersion=\${RELEASE_VERSION} -DdevelopmentVersion=\${DEVELOPMENT_VERSION} \

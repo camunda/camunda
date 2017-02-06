@@ -39,10 +39,6 @@ pipeline {
     }
     stage('Unit') {
       steps {
-        sh '''\
-            cd client
-            yarn
-            '''
         sh 'mvn -s settings.xml clean install'
       }
       post {
@@ -80,11 +76,6 @@ pipeline {
         branch 'master'
       }
       steps {
-        sh '''\
-          cd client
-          yarn
-          yarn run compile
-        '''
         sh 'mvn -Pproduction -s settings.xml -DskipTests clean deploy'
       }
     }
