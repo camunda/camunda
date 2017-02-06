@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -57,21 +58,17 @@ public class ProcessDefinitionReader {
   }
 
   public String getProcessDefinitionXmls(String processDefinitionId) {
-    QueryBuilder query;
-    query = QueryBuilders
-      .idsQuery(configurationService.getProcessDefinitionXmlType())
-      .addIds(processDefinitionId);
-
-    SearchResponse sr = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getProcessDefinitionXmlType())
-      .setQuery(query)
+    GetResponse response = esclient.prepareGet(
+      configurationService.getOptimizeIndex(),
+      configurationService.getProcessDefinitionXmlType(),
+      processDefinitionId)
       .get();
 
     String xml = null;
-    if(sr.getHits().getTotalHits() > 0L) {
-      SearchHit hit = sr.getHits().getAt(0);
-      xml = hit.getSource().get("bpmn20Xml").toString();
+    if(response.isExists()) {
+      xml = response.getSource().get("bpmn20Xml").toString();
+    }else {
+      logger.warn("Could not find process definition xml with id " + processDefinitionId);
     }
     return xml;
   }
