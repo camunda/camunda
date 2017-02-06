@@ -3,8 +3,10 @@ package org.camunda.optimize;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.GzipFilter;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
@@ -13,10 +15,12 @@ import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
+import javax.servlet.DispatcherType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.EnumSet;
 import java.util.Properties;
 
 /**
@@ -27,6 +31,12 @@ public class Main {
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final String CONFIG_LOCATION = "org.camunda.optimize";
   private static final String DEFAULT_PROFILE = "dev";
+  public static final String COMPRESSED_MIME_TYPES = "application/json," +
+      "application/javascript," +
+      "text/html," +
+      "text/css," +
+      "application/x-font-ttf," +
+      "image/svg+xml";
 
   public static void main(String[] args) throws Exception {
 
@@ -68,6 +78,13 @@ public class Main {
       ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
       errorMapper.addErrorPage(404,"/"); // map all 404's to root (aka /index.html)
       context.setErrorHandler(errorMapper);
+
+      FilterHolder holder = new FilterHolder(GzipFilter.class);
+      holder.setInitParameter("deflateCompressionLevel", "9");
+      holder.setInitParameter("minGzipSize", "0");
+      holder.setInitParameter("mimeTypes", COMPRESSED_MIME_TYPES);
+
+      context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     try {
