@@ -20,3 +20,4 @@ export {OnEvent} from './onEvent';
 export {insertAfter} from './insertAfter';
 export {withSelector} from './withSelector';
 export {Attribute, isTruthy} from './attribute';
+export {createReferenceComponent} from './createReferenceComponent';
