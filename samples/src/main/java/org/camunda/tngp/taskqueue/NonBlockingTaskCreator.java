@@ -46,7 +46,7 @@ public class NonBlockingTaskCreator
             final TransportConnectionPool connectionPool = client.getConnectionPool();
             final AsyncTasksClient asyncTaskService = client.tasks();
 
-            final byte[] payload = new byte[payloadSize];
+            final String payload = "{}";
 
             try (final TransportConnection connection = connectionPool.openConnection())
             {
