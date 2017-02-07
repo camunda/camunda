@@ -15,7 +15,7 @@ function getData() {
       var processDefinitions = createProcessDefinitions(bpmnEntries);
 
       return {
-        event: createEvents(90, bpmnEntries, processDefinitions),
+        event: createEvents(10, bpmnEntries, processDefinitions),
         'process-definition': processDefinitions,
         'process-definition-xml': createXmlEntries(bpmnEntries, processDefinitions),
         users: [
@@ -69,6 +69,7 @@ function getEventsForProcess(factor, bpmnEntries, definitions) {
   var entry = bpmnEntries[entryIndex];
   var definition = definitions[entryIndex];
   var events = [];
+
   for (i = 0; i < factor; i++) {
     events.push.apply(
       events,
@@ -80,7 +81,8 @@ function getEventsForProcess(factor, bpmnEntries, definitions) {
 }
 
 function getEventsForActivity(processInstanceId, entry, definition) {
-  var activityIndex = Math.floor(Math.random() * entry.activities.length);
+  var seed = Math.random() + (Math.random()/2);
+  var activityIndex = Math.floor(seed * entry.activities.length);
   var activityId = entry.activities[activityIndex];
   var activityInstanceId = uuid();
 

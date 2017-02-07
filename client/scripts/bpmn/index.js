@@ -1,5 +1,6 @@
 var xml2js = require('xml2js');
 var fs = require('fs');
+var ignoredActivities = ['$', 'bpmn:sequenceFlow'];
 
 module.exports = {
   getBpmnEntries: getBpmnEntries
@@ -26,7 +27,7 @@ function describeBpmn(text) {
       var activities = Object
         .keys(process)
         .filter(function(key) {
-          return key !== '$';
+          return ignoredActivities.indexOf(key) === -1;
         })
         .reduce(function(activities, key) {
           var tasks = process[key];
