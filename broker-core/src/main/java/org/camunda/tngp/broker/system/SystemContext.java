@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.agrona.LangUtil;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.impl.ServiceContainerImpl;
 
@@ -72,13 +73,14 @@ public class SystemContext implements AutoCloseable
         try
         {
             final CompletableFuture<?>[] startActions = requiredStartActions.toArray(new CompletableFuture[requiredStartActions.size()]);
-            CompletableFuture.allOf(startActions).get();
+            CompletableFuture.allOf(startActions).get(10, TimeUnit.SECONDS);
         }
         catch (Exception e)
         {
             System.err.format("Could not start broker: %s\n", e.getMessage());
-            e.printStackTrace();
+//            e.printStackTrace();
             close();
+            LangUtil.rethrowUnchecked(e);
         }
 
     }
