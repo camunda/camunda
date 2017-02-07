@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -47,7 +48,8 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
 
     private static final ErrorHandler DEFAULT_ERROR_HANDLER = (t) ->
     {
-        t.printStackTrace();
+        LangUtil.rethrowUnchecked(t);
+//        t.printStackTrace();
     };
 
     protected ContainerState state = ContainerState.NEW;

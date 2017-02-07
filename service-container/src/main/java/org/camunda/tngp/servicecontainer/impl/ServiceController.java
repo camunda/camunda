@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.agrona.LangUtil;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -142,6 +143,8 @@ public class ServiceController
         {
             this.installException = t;
         }
+
+        LangUtil.rethrowUnchecked(t);
     }
 
 
