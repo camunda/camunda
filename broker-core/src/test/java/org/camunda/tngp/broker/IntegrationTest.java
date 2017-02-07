@@ -145,7 +145,7 @@ public class IntegrationTest
         LoggedEvent loggedEvent = null;
         int eventCount = 0;
 
-        for (int i = 0; i < 1000 && eventCount < 2; i++)
+        for (int i = 0; i < 100_000 && eventCount < 2; i++)
         {
             if (logStreamReader.hasNext())
             {
