@@ -44,7 +44,7 @@ function Process() {
             <div className="no_definitions">
               <span className="indicator glyphicon glyphicon-info-sign"></span>
               <div className="title">No Process Definitions</div>
-              <div className="text"><a href="https://www.google.com/#q=how+to+import+data+in+optimize">Find out how to import your data</a></div>
+              <div className="text"><a href="https://github.com/camunda/camunda-optimize/wiki/Installation-guide">Find out how to import your data</a></div>
             </div>
           </div>
         </Case>
