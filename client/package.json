@@ -28,8 +28,10 @@
     "babel-types": "^6.21.0",
     "chai": "^3.5.0",
     "chai-dom": "^1.4.3",
+    "chalk": "^1.1.3",
     "compression-webpack-plugin": "^0.3.2",
     "css-loader": "^0.26.0",
+    "elasticsearch": "^12.1.3",
     "eslint": "^3.12.2",
     "eslint-loader": "^1.6.1",
     "eslint-plugin-react": "^6.8.0",
@@ -54,9 +56,11 @@
     "sinon": "2.0.0-pre.4",
     "style-loader": "^0.13.1",
     "url-loader": "^0.5.7",
+    "uuid": "^3.0.1",
     "webpack": "^1.13.3",
     "webpack-dev-server": "^1.16.2",
-    "whatwg-fetch": "^2.0.1"
+    "whatwg-fetch": "^2.0.1",
+    "xml2js": "^0.4.17"
   },
   "dependencies": {
     "babel-polyfill": "^6.20.0",
