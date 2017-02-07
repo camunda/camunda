@@ -47,6 +47,11 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     {
         super(cmdExecutor);
 
+        if (commandEventType == null || commandEventType == NULL_VAL)
+        {
+            throw new IllegalArgumentException("commandEventType cannot be null");
+        }
+
         this.objectMapper = objectMapper;
         this.eventType = eventType;
         this.commandEventType = commandEventType;
@@ -87,7 +92,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         commandRequestEncoder
             .topicId(getTopicId())
-            .eventType(commandEventType != null ? commandEventType : NULL_VAL)
+            .eventType(commandEventType)
             .putCommand(serializedCommand, 0, serializedCommand.length);
 
         serializedCommand = null;
