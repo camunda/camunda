@@ -25,11 +25,13 @@ import org.camunda.tngp.client.event.Event;
 import org.camunda.tngp.client.event.EventsBatch;
 import org.camunda.tngp.client.event.TaskInstanceEvent;
 import org.camunda.tngp.client.event.WorkflowDefinitionEvent;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
+@Ignore
 public class PollEventsTest
 {
     private static final int TASK_QUEUE_TOPIC_ID = 0;

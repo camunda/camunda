@@ -16,11 +16,13 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
+@Ignore
 public class DeployBpmnResourceTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();

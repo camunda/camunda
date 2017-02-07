@@ -24,11 +24,13 @@ import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
+@Ignore
 public class TaskSubscriptionTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();

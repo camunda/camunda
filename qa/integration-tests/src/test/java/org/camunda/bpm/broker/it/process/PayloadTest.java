@@ -14,10 +14,12 @@ import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+@Ignore
 public class PayloadTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();

@@ -19,12 +19,14 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
+@Ignore
 public class BrokerRestartTest
 {
     public TemporaryFolder tempFolder = new TemporaryFolder();
