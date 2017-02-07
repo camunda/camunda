@@ -7,8 +7,8 @@ Install yarn
 npm install -g yarn
 ```
 
-Go to ``scripts/`` and copy ``be-config.default.js`` as ``be-config.js``. 
-Edit ``elastic-config.js`` so that ``elastic`` property points to your elastic search executable 
+Go to ``scripts/`` and copy ``be-config.default.js`` as ``be-config.js``.
+Edit ``elastic-config.js`` so that ``elastic`` property points to your elastic search executable
 and ``version`` is current version number of optimize (needed for finding jar file with backend api).
 
 Example:
@@ -56,6 +56,14 @@ Watch:
 ```bash
 yarn run test-watch
 ```
+
+## Contributing
+
+Please refer to the [.eslintrc file](https://github.com/camunda/camunda-optimize/blob/master/client/.eslintrc.json) for coding style guidelines.
+
+### Naming Conventions
+
+When creating files, do not repeat the directory name in the filename. E.g. use `client/app/component.js` instead of `client/app/app.component.js`
 
 ## Documentation
 

@@ -1,4 +1,4 @@
-import {getRouter} from './router.service';
+import {getRouter} from './service';
 
 const router = getRouter();
 

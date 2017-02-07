@@ -1,2 +1,2 @@
-export {LoginForm} from './loginForm.component';
-export {reducer} from './loginForm.reducer';
+export {LoginForm} from './component';
+export {reducer} from './reducer';

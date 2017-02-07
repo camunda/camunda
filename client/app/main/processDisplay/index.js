@@ -1,2 +1,2 @@
-export {reducer} from './processDisplay.reducer';
-export {ProcessDisplay} from './processDisplay.component';
+export {reducer} from './reducer';
+export {ProcessDisplay} from './component';

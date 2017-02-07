@@ -1,2 +1,2 @@
-export {reducer} from './diagram.reducer';
-export {Diagram} from './diagram.component';
+export {reducer} from './reducer';
+export {Diagram} from './component';
