@@ -47,6 +47,7 @@ public class ClientApiMessageHandlerTest
 
     protected static final int LOG_STREAM_ID = 1;
     protected static final byte[] COMMAND = "test-command".getBytes();
+    protected static final int BUSY_WAIT_ITERATIONS = 1000;
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -118,11 +119,7 @@ public class ClientApiMessageHandlerTest
         assertThat(isHandled).isTrue();
 
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
-
-        while (!logStreamReader.hasNext())
-        {
-            // wait for event
-        }
+        waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
 
@@ -154,11 +151,7 @@ public class ClientApiMessageHandlerTest
         assertThat(isHandled).isTrue();
 
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
-
-        while (!logStreamReader.hasNext())
-        {
-            // wait for event
-        }
+        waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
         final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
@@ -180,11 +173,7 @@ public class ClientApiMessageHandlerTest
         assertThat(isHandled).isTrue();
 
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
-
-        while (!logStreamReader.hasNext())
-        {
-            // wait for event
-        }
+        waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
         final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
@@ -381,5 +370,19 @@ public class ClientApiMessageHandlerTest
             return claimedPosition;
         };
     }
+
+    protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader)
+    {
+        for (int i = 0; i < BUSY_WAIT_ITERATIONS && !logStreamReader.hasNext(); i++)
+        {
+            // wait for event
+        }
+        if (!logStreamReader.hasNext())
+        {
+            throw new RuntimeException("No next event available");
+        }
+
+    }
+
 
 }

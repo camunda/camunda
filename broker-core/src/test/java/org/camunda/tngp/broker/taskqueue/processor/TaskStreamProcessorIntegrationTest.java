@@ -219,14 +219,14 @@ public class TaskStreamProcessorIntegrationTest
         LoggedEvent loggedEvent = null;
         long sourceEventPosition = -1;
 
-        do
+        for (int i = 0; i < 100_000 && sourceEventPosition < position; i++)
         {
             if (logStreamReader.hasNext())
             {
                 loggedEvent = logStreamReader.next();
                 sourceEventPosition = loggedEvent.getSourceEventPosition();
             }
-        } while (sourceEventPosition < position);
+        }
 
         assertThat(sourceEventPosition).isEqualTo(position);
 

@@ -145,14 +145,14 @@ public class IntegrationTest
         LoggedEvent loggedEvent = null;
         int eventCount = 0;
 
-        do
+        for (int i = 0; i < 1000 && eventCount < 2; i++)
         {
             if (logStreamReader.hasNext())
             {
                 loggedEvent = logStreamReader.next();
                 eventCount += 1;
             }
-        } while (eventCount < 2);
+        }
 
         loggedEvent.readValue(taskEvent);
 
