@@ -43,9 +43,9 @@ public class ClientApiSocketBindingService implements Service<ServerSocketBindin
     }
 
     @Override
-    public void stop(ServiceStopContext arg0)
+    public void stop(ServiceStopContext context)
     {
-        // nothing to do
+        context.async(serverSocketBinding.closeAsync());
     }
 
     @Override

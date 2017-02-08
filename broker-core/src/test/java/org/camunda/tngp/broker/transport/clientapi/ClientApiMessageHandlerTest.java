@@ -5,7 +5,6 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLe
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.test.util.FluentAnswer;
+import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -39,6 +38,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
@@ -51,7 +51,6 @@ public class ClientApiMessageHandlerTest
 
     protected static final int LOG_STREAM_ID = 1;
     protected static final byte[] COMMAND = "test-command".getBytes();
-    protected static final int BUSY_WAIT_ITERATIONS = 1000;
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -75,18 +74,19 @@ public class ClientApiMessageHandlerTest
     @Mock
     private Dispatcher mockControlMessageDispatcher;
 
-    //@Mock
+    @FluentMock
     private ErrorResponseWriter mockErrorResponseWriter;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
+    @Rule
+    public Timeout testTimeout = Timeout.seconds(5);
+
     @Before
     public void setup()
     {
         MockitoAnnotations.initMocks(this);
-
-        mockErrorResponseWriter = mock(ErrorResponseWriter.class, new FluentAnswer());
 
         when(mockTransportChannel.getId()).thenReturn(TRANSPORT_CHANNEL_ID);
 
@@ -395,16 +395,10 @@ public class ClientApiMessageHandlerTest
 
     protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader)
     {
-        for (int i = 0; i < BUSY_WAIT_ITERATIONS && !logStreamReader.hasNext(); i++)
+        while (!logStreamReader.hasNext())
         {
             // wait for event
         }
-        if (!logStreamReader.hasNext())
-        {
-            throw new RuntimeException("No next event available");
-        }
-
     }
-
 
 }

@@ -21,6 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 /**
  * Tests the entire cycle of task creation, polling and completion as a smoke test for when something gets broken
@@ -40,6 +41,9 @@ public class TaskQueueTest
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @Rule
+    public Timeout testTimeout = Timeout.seconds(10);
 
     @Test
     public void shouldCreateTask()
