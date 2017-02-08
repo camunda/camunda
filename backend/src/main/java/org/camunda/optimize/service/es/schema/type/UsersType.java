@@ -10,10 +10,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.optimize.service.util.schema.type;
+package org.camunda.optimize.service.es.schema.type;
 
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.service.util.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

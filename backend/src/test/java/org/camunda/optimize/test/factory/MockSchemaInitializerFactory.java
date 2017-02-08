@@ -1,7 +1,6 @@
 package org.camunda.optimize.test.factory;
 
-import org.camunda.optimize.service.util.ElasticSearchSchemaInitializer;
-import org.elasticsearch.client.transport.TransportClient;
+import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 

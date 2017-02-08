@@ -15,6 +15,8 @@ public class EventDto implements Serializable {
   private String processDefinitionKey;
   private String processDefinitionId;
   private String processInstanceId;
+  private Date startDate;
+  private Date endDate;
 
 
   public String getActivityId() {
@@ -72,5 +74,21 @@ public class EventDto implements Serializable {
 
   public void setProcessDefinitionId(String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
+  }
+
+  public Date getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(Date startDate) {
+    this.startDate = startDate;
+  }
+
+  public Date getEndDate() {
+    return endDate;
+  }
+
+  public void setEndDate(Date endDate) {
+    this.endDate = endDate;
   }
 }

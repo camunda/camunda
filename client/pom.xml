@@ -1,38 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-<modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-<parent>
-  <groupId>org.camunda.optimize</groupId>
-  <artifactId>parent</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
-</parent>
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-<artifactId>client</artifactId>
-<packaging>pom</packaging>
+  <artifactId>client</artifactId>
+  <packaging>pom</packaging>
 
 
-<build>
-  <plugins>
-    <plugin>
-      <groupId>com.kelveden</groupId>
-      <artifactId>maven-karma-plugin</artifactId>
-      <version>1.6</version>
-      <executions>
-        <execution>
-          <goals>
-            <goal>start</goal>
-          </goals>
-        </execution>
-      </executions>
-      <configuration>
-        <browsers>Chrome</browsers>
-        <karmaExecutable>${basedir}/node_modules/.bin/karma</karmaExecutable>
-        <configFile>${basedir}/karma.conf.js</configFile>
-      </configuration>
-    </plugin>
-  </plugins>
-</build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.kelveden</groupId>
+        <artifactId>maven-karma-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <browsers>Chrome</browsers>
+          <karmaExecutable>${basedir}/node_modules/.bin/karma</karmaExecutable>
+          <configFile>${basedir}/karma.conf.js</configFile>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>
@@ -53,8 +54,8 @@
                 <configuration>
                   <tasks>
                     <exec executable="/bin/sh" failonerror="true">
-                      <arg value="build_client.sh" />
-                      <arg value="${project.basedir}" />
+                      <arg value="build_client.sh"/>
+                      <arg value="${project.basedir}"/>
                     </exec>
                   </tasks>
                 </configuration>

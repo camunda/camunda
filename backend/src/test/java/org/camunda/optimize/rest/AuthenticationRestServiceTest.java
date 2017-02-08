@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
+import org.camunda.optimize.test.mock.AuthenticationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -32,7 +33,7 @@ import static org.junit.Assert.*;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "/applicationContext.xml" })
-public class AuthenticationTest extends AbstractJerseyTest {
+public class AuthenticationRestServiceTest extends AbstractJerseyTest {
 
   @Autowired
   private TransportClient esClientMock;
@@ -79,23 +80,11 @@ public class AuthenticationTest extends AbstractJerseyTest {
     entity.setUsername("admin");
     entity.setPassword("admin");
 
-    setupPositiveUserQuery();
+    AuthenticationHelper.setupPositiveUserQuery(esClientMock,configurationService);
 
     return target("authentication")
         .request()
         .post(Entity.json(entity));
-  }
-
-  private void setupPositiveUserQuery() {
-    SearchRequestBuilder mockSearch = Mockito.mock(SearchRequestBuilder.class);
-    Mockito.when(mockSearch.setTypes(Mockito.anyString())).thenReturn(mockSearch);
-    Mockito.when(mockSearch.setQuery(Mockito.any(QueryBuilder.class))).thenReturn(mockSearch);
-    SearchResponse mockSearchResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHist = Mockito.mock(SearchHits.class);
-    Mockito.when(mockHist.totalHits()).thenReturn(1L);
-    Mockito.when(mockSearchResponse.getHits()).thenReturn(mockHist);
-    Mockito.when(mockSearch.get()).thenReturn(mockSearchResponse);
-    Mockito.when(esClientMock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(mockSearch);
   }
 
   @Test

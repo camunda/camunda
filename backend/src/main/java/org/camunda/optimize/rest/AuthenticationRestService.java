@@ -3,7 +3,6 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.TokenService;
 import org.slf4j.Logger;
@@ -17,6 +16,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 /**
@@ -27,8 +27,8 @@ import javax.ws.rs.core.Response;
  */
 @Path("/authentication")
 @Component
-public class Authentication {
-  private final Logger logger = LoggerFactory.getLogger(Authentication.class);
+public class AuthenticationRestService {
+  private final Logger logger = LoggerFactory.getLogger(AuthenticationRestService.class);
 
   @Autowired
   private AuthenticationService authenticationService;
@@ -62,7 +62,7 @@ public class Authentication {
   @Secured
   @GET
   @Path("logout")
-  public Response logout(ContainerRequestContext requestContext) {
+  public Response logout(@Context  ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
     tokenService.expireToken(token);
     return Response.status(200).entity("OK").build();

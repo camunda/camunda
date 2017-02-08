@@ -11,6 +11,7 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
@@ -28,6 +29,11 @@ import java.util.Properties;
  */
 public class Main {
 
+  static {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
+  }
+
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final String CONFIG_LOCATION = "org.camunda.optimize";
   private static final String DEFAULT_PROFILE = "dev";
@@ -39,7 +45,6 @@ public class Main {
       "image/svg+xml";
 
   public static void main(String[] args) throws Exception {
-
     Properties properties = getProperties();
 
     // Create JAX-RS application.

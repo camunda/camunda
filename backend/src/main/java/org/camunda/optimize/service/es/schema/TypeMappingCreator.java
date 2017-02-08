@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.util.schema;
+package org.camunda.optimize.service.es.schema;
 
 public interface TypeMappingCreator {
 

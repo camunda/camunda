@@ -20,6 +20,8 @@ public class ConfigurationService {
   @Value("${camunda.optimize.engine.auth.enabled}")
   private boolean engineAuthenticationEnabled;
 
+  @Value("${camunda.optimize.serialization.date.format}")
+  private String dateFormat;
 
   @Value("${camunda.optimize.es.host}")
   private String elasticSearchHost;
@@ -161,5 +163,9 @@ public class ConfigurationService {
 
   public String getDefaultPassword() {
     return defaultPassword;
+  }
+
+  public String getDateFormat() {
+    return dateFormat;
   }
 }

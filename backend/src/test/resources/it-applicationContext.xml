@@ -22,7 +22,7 @@
   <!--not declared as annotated component to be able to mock-->
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
-  <bean id="schemaInitializer"  class="org.camunda.optimize.service.util.ElasticSearchSchemaInitializer"/>
+  <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"

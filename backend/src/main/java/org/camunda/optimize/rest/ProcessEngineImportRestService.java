@@ -10,7 +10,7 @@ import javax.ws.rs.core.Response;
 
 @Path("/import")
 @Component
-public class ProcessEngineImport {
+public class ProcessEngineImportRestService {
 
   @Autowired
   private ImportServiceHandler importServiceHandler;

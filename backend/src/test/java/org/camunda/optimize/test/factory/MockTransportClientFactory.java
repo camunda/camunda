@@ -49,6 +49,7 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
     SearchResponse responseWithOneHit = Mockito.mock(SearchResponse.class);
     SearchHits searchHitsMock = Mockito.mock(SearchHits.class);
     Mockito.when(searchHitsMock.getTotalHits()).thenReturn(1L);
+    Mockito.when(searchHitsMock.totalHits()).thenReturn(1L);
     Mockito.when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
     return responseWithOneHit;
   }

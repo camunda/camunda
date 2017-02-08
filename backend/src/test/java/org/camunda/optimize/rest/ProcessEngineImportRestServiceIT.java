@@ -24,7 +24,7 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "/it-applicationContext.xml" })
-public class ProcessEngineImportIT extends AbstractJerseyTest {
+public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
 
   @Autowired
   @Rule

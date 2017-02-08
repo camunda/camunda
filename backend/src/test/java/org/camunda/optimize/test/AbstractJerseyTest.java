@@ -5,6 +5,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spring.SpringLifecycleListener;
 import org.glassfish.jersey.server.spring.scope.RequestContextFilter;
 import org.glassfish.jersey.test.JerseyTest;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import javax.ws.rs.core.Application;
 
@@ -20,6 +21,8 @@ public abstract class AbstractJerseyTest extends JerseyTest {
 
   @Override
   protected Application configure() {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
     final ResourceConfig application = new ResourceConfig()
         .packages("org.camunda.optimize.rest")
         .register(JacksonFeature.class);

@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -22,7 +23,7 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
+@ContextConfiguration(locations = {"/applicationContext.xml"})
 public class EventsWriterTest {
 
   @Autowired

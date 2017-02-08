@@ -2,7 +2,7 @@ package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
-import org.camunda.optimize.service.es.ProcessDefinitionWriter;
+import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;

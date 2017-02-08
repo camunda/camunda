@@ -1,7 +1,7 @@
-package org.camunda.optimize.service.util.schema.type;
+package org.camunda.optimize.service.es.schema.type;
 
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.service.util.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +15,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 @Component
 public class EventType implements TypeMappingCreator{
 
+  public static final String START_DATE = "startDate";
+  public static final String END_DATE = "endDate";
   private Logger logger = LoggerFactory.getLogger(EventType.class);
 
   @Autowired
@@ -52,6 +54,14 @@ public class EventType implements TypeMappingCreator{
             .endObject()
             .startObject("processInstanceId")
               .field("type", "keyword")
+            .endObject()
+            .startObject(START_DATE)
+              .field("type", "date")
+              .field("format",configurationService.getDateFormat())
+            .endObject()
+            .startObject(END_DATE)
+              .field("type", "date")
+              .field("format",configurationService.getDateFormat())
             .endObject()
           .endObject()
         .endObject();

@@ -1,6 +1,6 @@
-package org.camunda.optimize.service.util;
+package org.camunda.optimize.service.es;
 
-import org.camunda.optimize.service.util.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;

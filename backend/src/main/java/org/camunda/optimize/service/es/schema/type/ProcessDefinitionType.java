@@ -1,7 +1,7 @@
-package org.camunda.optimize.service.util.schema.type;
+package org.camunda.optimize.service.es.schema.type;
 
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.service.util.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +13,16 @@ import java.io.IOException;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component
-public class ProcessDefinitionXmlType implements TypeMappingCreator {
+public class ProcessDefinitionType implements TypeMappingCreator {
 
-  private Logger logger =  LoggerFactory.getLogger(ProcessDefinitionXmlType.class);
+  private Logger logger = LoggerFactory.getLogger(ProcessDefinitionType.class);
 
   @Autowired
   ConfigurationService configurationService;
 
   @Override
   public String getType() {
-    return configurationService.getProcessDefinitionXmlType();
+    return configurationService.getProcessDefinitionType();
   }
 
   @Override
@@ -31,14 +31,17 @@ public class ProcessDefinitionXmlType implements TypeMappingCreator {
     try {
       XContentBuilder content = jsonBuilder()
         .startObject()
-        .startObject("properties")
-          .startObject("id")
+          .startObject("properties")
+            .startObject("id")
+              .field("type", "keyword")
+            .endObject()
+            .startObject("key")
+              .field("type", "keyword")
+            .endObject()
+            .startObject("name")
             .field("type", "keyword")
+            .endObject()
           .endObject()
-          .startObject("bpmn20Xml")
-            .field("type", "keyword")
-          .endObject()
-        .endObject()
         .endObject();
       source = content.string();
     } catch (IOException e) {

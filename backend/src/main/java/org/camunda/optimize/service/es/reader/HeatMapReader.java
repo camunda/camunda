@@ -1,9 +1,12 @@
-package org.camunda.optimize.service.es;
+package org.camunda.optimize.service.es.reader;
 
+import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
@@ -30,6 +33,9 @@ public class HeatMapReader {
   @Autowired
   private ConfigurationService configurationService;
 
+  @Autowired
+  private DateFilterHelper dateFilterHelper;
+
   public TransportClient getEsclient() {
     return esclient;
   }
@@ -38,30 +44,28 @@ public class HeatMapReader {
     this.esclient = esclient;
   }
 
-  public Map <String, Long> getHeatMap(String processDefinitionId) {
-    Map <String, Long> result = new HashMap<>();
+  public Map<String, Long> getHeatMap(String processDefinitionId) {
+    Map<String, Long> result = new HashMap<>();
 
-    QueryBuilder query;
     SearchRequestBuilder srb = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
         .setTypes(configurationService.getEventType());
-    if (processDefinitionId != null) {
-      query = QueryBuilders.matchQuery("processDefinitionId", processDefinitionId);
-      srb.setQuery(query);
-    }
 
-    SearchResponse sr = srb
-        .addAggregation(AggregationBuilders
-            .terms("activities")
-            .field("activityId")
-        )
-        .execute().actionGet();
+    BoolQueryBuilder query = setupBaseQuery(processDefinitionId);
 
-    Terms activities = sr.getAggregations().get("activities");
+    srb = srb.setQuery(query);
+    Terms activities = getTermsWithAggregation(srb);
     for (Terms.Bucket b : activities.getBuckets()) {
       result.put(b.getKeyAsString(), b.getDocCount());
     }
     return result;
+  }
+
+  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
+    BoolQueryBuilder query;
+    query = QueryBuilders.boolQuery()
+        .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId));
+    return query;
   }
 
   public Long activityCorrelation(String processDefinitionId, List<String> activities) {
@@ -74,7 +78,7 @@ public class HeatMapReader {
       srb.setQuery(query);
     }
 
-    Map<String,Object> parameters = new HashMap<String,Object>();
+    Map<String, Object> parameters = new HashMap<String, Object>();
     parameters.put("_targetActivities", activities);
     parameters.put("_agg", new HashMap<>());
 
@@ -121,7 +125,7 @@ public class HeatMapReader {
         "painless",
         getContent(configurationService.getCorrelationInitScriptPath()),
         new HashMap<>()
-        );
+    );
   }
 
   private String getContent(String script) {
@@ -129,4 +133,35 @@ public class HeatMapReader {
     Scanner s = new Scanner(inputStream).useDelimiter("\\A");
     return s.hasNext() ? s.next() : "";
   }
+
+  public Map<String, Long> getHeatMap(HeatMapQueryDto dto) {
+    Map<String, Long> result = new HashMap<>();
+
+    SearchRequestBuilder srb = esclient
+        .prepareSearch(configurationService.getOptimizeIndex())
+        .setTypes(configurationService.getEventType());
+
+    BoolQueryBuilder query = setupBaseQuery(dto.getProcessDefinitionId());
+
+    query = dateFilterHelper.addFilters(query, dto);
+
+    srb = srb.setQuery(query);
+    Terms activities = getTermsWithAggregation(srb);
+    for (Terms.Bucket b : activities.getBuckets()) {
+      result.put(b.getKeyAsString(), b.getDocCount());
+    }
+    return result;
+  }
+
+  private Terms getTermsWithAggregation(SearchRequestBuilder srb) {
+    SearchResponse sr = srb
+        .addAggregation(AggregationBuilders
+            .terms("activities")
+            .field("activityId")
+        )
+        .execute().actionGet();
+
+    return sr.getAggregations().get("activities");
+  }
+
 }

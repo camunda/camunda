@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 
-public class AuthenticationIT extends AbstractJerseyTest {
+public class AuthenticationRestServiceIT extends AbstractJerseyTest {
   private static final String USERNAME_PASSWORD = "demo";
 
   @Autowired

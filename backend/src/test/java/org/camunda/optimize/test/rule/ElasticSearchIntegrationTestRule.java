@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.service.util.ElasticSearchSchemaInitializer;
+import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
@@ -48,6 +48,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   @Override
   protected void starting(Description description) {
     logger.info("Initializing elastic search schema...");
+    this.cleanAndVerify();
     schemaInitializer.initializeSchema();
     logger.info("Schema has been successfully initialized!");
   }
@@ -97,7 +98,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     cleanAndVerify();
   }
 
-  private void cleanAndVerify() {
+  public void cleanAndVerify() {
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
   }

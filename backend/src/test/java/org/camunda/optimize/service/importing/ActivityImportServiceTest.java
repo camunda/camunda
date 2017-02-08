@@ -2,7 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceDto;
 import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.service.es.EventsWriter;
+import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.junit.Before;
 import org.junit.Test;

@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es;
 
-import org.camunda.optimize.service.util.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Rule;
 import org.junit.Test;

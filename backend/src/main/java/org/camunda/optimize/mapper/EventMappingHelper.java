@@ -36,5 +36,7 @@ public class EventMappingHelper {
     createEvent.setProcessDefinitionKey(dto.getProcessDefinitionKey());
     createEvent.setProcessDefinitionId(dto.getProcessDefinitionId());
     createEvent.setProcessInstanceId(dto.getProcessInstanceId());
+    createEvent.setStartDate(dto.getStartTime());
+    createEvent.setEndDate(dto.getEndTime());
   }
 }
