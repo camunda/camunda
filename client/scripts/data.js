@@ -3,6 +3,8 @@ var bpmn = require('./bpmn');
 
 // Possible states that activity can be in
 var states = ['COMPLETED', 'CREATED'];
+var eventsFactor = 10;
+var processInstanceFactor = 4;
 
 module.exports = {
   getData: getData
@@ -15,7 +17,7 @@ function getData() {
       var processDefinitions = createProcessDefinitions(bpmnEntries);
 
       return {
-        event: createEvents(10, bpmnEntries, processDefinitions),
+        event: createEvents(eventsFactor, bpmnEntries, processDefinitions),
         'process-definition': processDefinitions,
         'process-definition-xml': createXmlEntries(bpmnEntries, processDefinitions),
         users: [
@@ -53,7 +55,7 @@ function createEvents(factor, bpmnEntries, definitions) {
   var events = [];
   var  i;
 
-  for(i = 0; i < factor * 4; i++) {
+  for(i = 0; i < factor * processInstanceFactor; i++) {
     events.push.apply(
       events,
       getEventsForProcess(factor, bpmnEntries, definitions)
@@ -81,7 +83,7 @@ function getEventsForProcess(factor, bpmnEntries, definitions) {
 }
 
 function getEventsForActivity(processInstanceId, entry, definition) {
-  var seed = Math.random() + (Math.random()/2);
+  var seed = (Math.random() + Math.random()/2)/1.5;
   var activityIndex = Math.floor(seed * entry.activities.length);
   var activityId = entry.activities[activityIndex];
   var activityInstanceId = uuid();
