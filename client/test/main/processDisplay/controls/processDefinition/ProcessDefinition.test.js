@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {ProcessDefinition, __set__, __ResetDependency__} from 'main/processDisplay/controls/processDefinition/component';
+import {ProcessDefinition, __set__, __ResetDependency__} from 'main/processDisplay/controls/processDefinition/ProcessDefinition';
 
 describe('<ProcessDefinition>', () => {
   const initialState = {

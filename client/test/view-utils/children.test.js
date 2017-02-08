@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {mountTemplate, createMockComponent} from 'testHelpers';
-import {Children} from 'view-utils/children';
+import {Children} from 'view-utils';
 
 describe('<Children>', () => {
   let Child;

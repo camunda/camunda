@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
-import {Footer} from 'main/footer/component';
+import {Footer} from 'main/footer';
 
 describe('<Footer>', () => {
   let node;

@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {Diagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/component';
+import {Diagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/Diagram';
 
 describe('<Diagram>', () => {
   const diagramXml = 'diagram-xml';

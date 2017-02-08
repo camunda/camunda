@@ -1,5 +1,5 @@
 import {jsx} from './jsx';
-import {Children} from './children';
+import {Children} from './Children';
 
 /**
  * Higher order component, for components that don't touch DOM, but want to have children.

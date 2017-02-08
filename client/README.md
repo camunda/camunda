@@ -63,7 +63,7 @@ Please refer to the [.eslintrc file](https://github.com/camunda/camunda-optimize
 
 ### Naming Conventions
 
-When creating files, do not repeat the directory name in the filename. E.g. use `client/app/component.js` instead of `client/app/app.component.js`
+Please use a capital letter for component files and lower case letters for reducer, service and other files. E.g. use `client/app/App.js` for the App component and `client/app/reducer.js` for the app reducer.
 
 ## Documentation
 

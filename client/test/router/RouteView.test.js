@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
-import {RouteView, __set__, __ResetDependency__} from 'router/routeView.component';
+import {RouteView, __set__, __ResetDependency__} from 'router/RouteView';
 
 describe('<RouteView>', () => {
   let template;

@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {createMockComponent, mountTemplate} from 'testHelpers';
 import {jsx} from 'view-utils';
-import {Authenticated, __set__, __ResetDependency__} from 'login/authenticated.component';
+import {Authenticated, __set__, __ResetDependency__} from 'login/Authenticated';
 
 describe('<Authenticated>', () => {
   const redirectRoute = 'redirect-route';

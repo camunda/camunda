@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {createMockComponent, mountTemplate} from 'testHelpers';
 import {jsx} from 'view-utils';
-import {LoginRoot, getLogin} from 'login/loginRoot.component';
+import {LoginRoot, getLogin} from 'login/LoginRoot';
 
 describe('<LoginRoot>', () => {
   let Child;

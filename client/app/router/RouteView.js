@@ -1,4 +1,4 @@
-import {getLastRoute} from './component';
+import {getLastRoute} from './Router';
 import {Children, jsx} from 'view-utils';
 
 export function RouteView({name, children}) {

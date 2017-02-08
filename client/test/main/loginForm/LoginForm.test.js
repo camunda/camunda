@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {mountTemplate, selectByText, triggerEvent} from 'testHelpers';
-import {LoginForm, __set__, __ResetDependency__} from  'main/loginForm/component';
+import {LoginForm, __set__, __ResetDependency__} from  'main/loginForm/LoginForm';
 
 describe('<LoginForm>', () => {
   const selector = 'loginForm';

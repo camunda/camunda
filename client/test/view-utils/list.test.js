@@ -1,7 +1,6 @@
 import {expect} from 'chai';
-import {List} from 'view-utils/list';
 import sinon from 'sinon';
-import {jsx, Text, Match, Case, Default, DESTROY_EVENT} from 'view-utils';
+import {jsx, List, Text, Match, Case, Default, DESTROY_EVENT} from 'view-utils';
 import {createMockComponent, mountTemplate} from 'testHelpers';
 
 describe('<List>', () => {

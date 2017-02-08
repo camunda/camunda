@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
-import {Header} from 'main/header/component';
+import {Header} from 'main/header';
 
 describe('<Header>', () => {
   let node;

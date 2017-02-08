@@ -1,4 +1,4 @@
 import './dynamicLoader.config';
 
-export {Main} from './component';
+export {Main} from './Main';
 export {reducer} from './reducer';

@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {jsx} from 'view-utils';
 import {setupPromiseMocking, mountTemplate, createMockComponent} from 'testHelpers';
-import {DynamicLoader, __set__, __ResetDependency__} from 'dynamicLoader/component';
+import {DynamicLoader, __set__, __ResetDependency__} from 'dynamicLoader/DynamicLoader';
 
 describe('<DynamicLoader>', () => {
   const module = 'module';

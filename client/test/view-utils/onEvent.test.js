@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
-import {OnEvent} from 'view-utils/onEvent';
+import {OnEvent} from 'view-utils';
 
 describe('<OnEvent>', () => {
   let listener;

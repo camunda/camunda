@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {jsx, Text, DESTROY_EVENT} from 'view-utils';
-import {Match, Case} from 'view-utils/match';
+import {Match, Case} from 'view-utils';
 
 describe('<Match>', () => {
   const key = 'key';

@@ -1,4 +1,4 @@
-import {Scope} from './scope';
+import {Scope} from './Scope';
 import {jsx} from './jsx';
 
 export function withSelector(Component) {

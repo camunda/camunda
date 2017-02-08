@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {jsx} from 'view-utils';
 import {getRouter} from 'router';
-import {Main, __set__, __ResetDependency__} from 'main/component';
+import {Main, __set__, __ResetDependency__} from 'main/Main';
 
 describe('<Main>', () => {
   let node;

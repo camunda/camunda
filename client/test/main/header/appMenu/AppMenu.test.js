@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {mountTemplate, selectByText, triggerEvent} from 'testHelpers';
 import sinon from 'sinon';
 import {jsx} from 'view-utils';
-import {AppMenu, __set__, __ResetDependency__} from 'main/header/appMenu/component';
+import {AppMenu, __set__, __ResetDependency__} from 'main/header/appMenu/AppMenu';
 
 describe('<AppMenu>', () => {
   describe('default state', () => {

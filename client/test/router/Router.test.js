@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {mountTemplate} from 'testHelpers/mountTemplate';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
-import {Router, getLastRoute} from 'router/component';
+import {Router, getLastRoute} from 'router';
 
 describe('<Router>', () => {
   let update;

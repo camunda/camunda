@@ -1,6 +1,6 @@
 import {getRouter, getLastRoute} from 'router';
 import {Children, runUpdate, jsx} from 'view-utils';
-import {getLogin} from './loginRoot.component';
+import {getLogin} from './LoginRoot';
 
 const router = getRouter();
 
