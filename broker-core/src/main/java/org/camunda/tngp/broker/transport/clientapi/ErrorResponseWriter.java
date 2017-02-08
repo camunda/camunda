@@ -158,6 +158,21 @@ public class ErrorResponseWriter
             .putFailedRequest(failedRequestBuffer, 0, failedRequestBuffer.capacity());
     }
 
+    public boolean tryWriteResponseOrLogFailure()
+    {
+        final boolean isWritten = tryWriteResponse();
+
+        if (!isWritten)
+        {
+            final  String failureMessage = String.format("Failed to write error response. Error code: '%s', error message: '%s'",
+                    errorCode.name(),
+                    errorMessage);
+
+            System.err.println(failureMessage);
+        }
+        return isWritten;
+    }
+
     protected void reset()
     {
         metadata = null;

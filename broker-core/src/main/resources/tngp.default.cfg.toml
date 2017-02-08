@@ -9,6 +9,7 @@ sendBufferSize = 128
 [network.clientApi]
 port = 51015
 receiveBufferSize = 16
+controlMessageRequestTimeoutInMillis = 30000
 
 [network.management]
 host = "localhost"

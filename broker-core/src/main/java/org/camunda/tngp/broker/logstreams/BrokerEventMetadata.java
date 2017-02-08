@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.logstreams;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -43,10 +43,10 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
         decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        reqChannelId = (int) decoder.reqChannelId();
+        reqChannelId = decoder.reqChannelId();
         reqConnectionId = decoder.reqConnectionId();
         reqRequestId = decoder.reqRequestId();
-        raftTermId = (int) decoder.raftTermId();
+        raftTermId = decoder.raftTermId();
         subscriptionId = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
         eventType = decoder.eventType();
@@ -160,10 +160,10 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
 
     public BrokerEventMetadata reset()
     {
-        reqChannelId = (int) BrokerEventMetadataEncoder.reqChannelIdNullValue();
+        reqChannelId = BrokerEventMetadataEncoder.reqChannelIdNullValue();
         reqConnectionId = BrokerEventMetadataEncoder.reqConnectionIdNullValue();
         reqRequestId = BrokerEventMetadataDecoder.reqRequestIdNullValue();
-        raftTermId = (int) BrokerEventMetadataDecoder.raftTermIdNullValue();
+        raftTermId = BrokerEventMetadataDecoder.raftTermIdNullValue();
         subscriptionId = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         protocolVersion = Constants.PROTOCOL_VERSION;
         eventType = NULL_VAL;

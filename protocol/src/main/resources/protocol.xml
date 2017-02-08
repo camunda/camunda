@@ -22,11 +22,16 @@
       <validValue name="TOPIC_NOT_FOUND">1</validValue>
       <validValue name="REQUEST_WRITE_FAILURE">2</validValue>
       <validValue name="INVALID_CLIENT_VERSION">3</validValue>
+      <validValue name="REQUEST_TIMEOUT">4</validValue>
     </enum>
 
     <enum name="EventType" encodingType="uint8" description="The type of an event">
         <validValue name="TASK_EVENT">0</validValue>
         <validValue name="RAFT_EVENT">200</validValue>
+    </enum>
+    
+    <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
+        <validValue name="TASK_SUBSCRIPTION">0</validValue>
     </enum>
 
   </types>
@@ -40,7 +45,11 @@
   </sbe:message>
 
   <sbe:message name="ControlMessageRequest" id="10">
-    <data name="data" id="1" type="varDataEncoding" />
+    <field name="messageType" id="1" type="ControlMessageType" />
+    <field name="reqChannelId" id="2" type="int32" />
+    <field name="reqConnectionId" id="3" type="uint64" />
+    <field name="reqRequestId" id="4" type="uint64" />
+    <data name="data" id="5" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ControlMessageResponse" id="11">
@@ -62,37 +71,13 @@
     <data name="event" id="4" type="varDataEncoding" />
   </sbe:message>
 
-  <!-- L2 Control Messages 100 - 199 -->
-
-  <sbe:message name="CreateTaskSubscription" id="100">
-    <field name="consumerId" id="1" type="uint16" />
-    <field name="lockDuration" id="2" type="uint64" />
-    <field name="initialCredits" id="3" type="uint32" />
-    <data name="taskType" id="4" type="varDataEncoding" />
-  </sbe:message>
-
-  <sbe:message name="CloseTaskSubscription" id="101">
-    <field name="consumerId" id="1" type="uint16" />
-    <field name="subscriptionId" id="2" type="uint64" />
-  </sbe:message>
-
-  <sbe:message name="TaskSubscriptionAck" id="102">
-    <field name="id" id="1" type="uint64" />
-  </sbe:message>
-
-  <sbe:message name="ProvideSubscriptionCredits" id="103">
-    <field name="consumerId" id="1" type="uint16" />
-    <field name="subscriptionId" id="2" type="uint64" />
-    <field name="credits" id="2" type="uint32" />
-  </sbe:message>
-
   <!-- L2 Common Messages 200 - 399 -->
 
   <sbe:message name="BrokerEventMetadata" id="200" description="Descriptor for Event Metadata">
-    <field name="reqChannelId" id="1" type="uint32" />
+    <field name="reqChannelId" id="1" type="int32" />
     <field name="reqConnectionId" id="2" type="uint64" />
     <field name="reqRequestId" id="3" type="uint64" />
-    <field name="raftTermId" id="4" type="uint32" />
+    <field name="raftTermId" id="4" type="int32" />
     <field name="subscriptionId" id="5" type="uint64" />
     <field name="protocolVersion" id="6" type="uint16" />
     <field name="eventType" id="7" type="EventType" />
