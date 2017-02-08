@@ -10,6 +10,10 @@
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
+  
+  <properties>
+    <checkstyle.config.location>../.checkstyle.xml</checkstyle.config.location>
+  </properties>
 
   <dependencies>
     <dependency>

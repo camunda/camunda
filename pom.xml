@@ -28,6 +28,7 @@
     <agrona.version>0.5.3</agrona.version>
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
+    <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
   </properties>
 
   <dependencyManagement>
@@ -84,7 +85,7 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>2.17</version>
         <configuration>
-          <configLocation>.checkstyle.xml</configLocation>
+          <configLocation>${checkstyle.config.location}</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <encoding>UTF-8</encoding>
           <failOnViolation>true</failOnViolation>
@@ -96,7 +97,6 @@
             <goals>
               <goal>check</goal>
             </goals>
-            <inherited>false</inherited>
             <configuration>
             </configuration>
           </execution>
