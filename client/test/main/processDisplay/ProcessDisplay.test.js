@@ -18,7 +18,7 @@ describe('<ProcessDisplay>', () => {
     __set__('ProcessDefinition', ProcessDefinition);
 
     Diagram = createMockComponent('Diagram');
-    __set__('Diagram', Diagram);
+    __set__('HeatmapDiagram', Diagram);
 
     loadDiagram = sinon.spy();
     __set__('loadDiagram', loadDiagram);
@@ -31,7 +31,7 @@ describe('<ProcessDisplay>', () => {
 
   afterEach(() => {
     __ResetDependency__('ProcessDefinition');
-    __ResetDependency__('Diagram');
+    __ResetDependency__('HeatmapDiagram');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');
   });

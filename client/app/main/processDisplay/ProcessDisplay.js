@@ -1,5 +1,5 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
-import {Diagram} from './diagram';
+import {HeatmapDiagram} from './diagram';
 import {ProcessDefinition, FilterList, FilterCreation, Result, View} from './controls';
 import {isInitial, isLoading} from 'utils/loading';
 import {loadDiagram, loadHeatmap} from './service';
@@ -57,7 +57,7 @@ function Process() {
           </div>
         </Case>
         <Default>
-          <Diagram selector="display"/>
+          <HeatmapDiagram selector="display"/>
         </Default>
       </Match>
     </div>

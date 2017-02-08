@@ -1,38 +1,27 @@
 import {jsx} from 'view-utils';
-import {mountTemplate} from 'testHelpers';
+import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {Diagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/Diagram';
+import {HeatmapDiagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/HeatmapDiagram';
 
-describe('<Diagram>', () => {
+describe('<HeatmapDiagram>', () => {
   const diagramXml = 'diagram-xml';
   const heatmapData = {a: 1};
   const heatmapNode = document.createElement('img');
 
-  let initialState;
   let loadedDiagramState;
   let loadedHeatmapState;
   let getHeatmap;
   let removeHeatmapOverlay;
   let addHeatmapOverlay;
-  let Viewer;
   let viewer;
-  let diagramNode;
   let canvas;
   let eventBus;
   let update;
+  let Diagram;
 
   beforeEach(() => {
-    initialState = {display: {
-      diagram: {
-        state: 'INITIAL'
-      },
-      heatmap: {
-        state: 'INITIAL'
-      }
-    }};
-
-    loadedDiagramState = {display: {
+    loadedDiagramState = {
       diagram: {
         state: 'LOADED',
         data: diagramXml
@@ -40,9 +29,9 @@ describe('<Diagram>', () => {
       heatmap: {
         state: 'INITIAL'
       }
-    }};
+    };
 
-    loadedHeatmapState = {display: {
+    loadedHeatmapState = {
       diagram: {
         state: 'LOADED',
         data: diagramXml
@@ -51,7 +40,7 @@ describe('<Diagram>', () => {
         state: 'LOADED',
         data: heatmapData
       }
-    }};
+    };
 
     getHeatmap = sinon.stub().returns(heatmapNode);
     __set__('getHeatmap', getHeatmap);
@@ -75,62 +64,38 @@ describe('<Diagram>', () => {
       on: sinon.spy()
     };
 
-    Viewer = function({container}) {
-      const modules = {
-        canvas,
-        eventBus
-      };
-
-      diagramNode = container;
-      viewer = this;
-
-      this.get = function(name) {
-        return modules[name];
-      };
-
-      this.importXML = sinon.stub().callsArg(1);
+    const modules = {
+      canvas,
+      eventBus
     };
-    __set__('Viewer', Viewer);
 
-    ({update} = mountTemplate(<Diagram selector="display" />));
+    viewer = {
+      get: (name) => {
+        return modules[name];
+      }
+    };
+
+    Diagram = createMockComponent('Diagram');
+    __set__('Diagram', Diagram);
+
+    mountTemplate(<HeatmapDiagram selector="display" />);
+
+    update = Diagram.calls[0][0].createOverlaysRenderer({viewer});
   });
 
   afterEach(() => {
     __ResetDependency__('getHeatmap');
     __ResetDependency__('removeHeatmapOverlay');
     __ResetDependency__('addHeatmapOverlay');
-    __ResetDependency__('Viewer');
-  });
-
-  describe('initial state', () => {
-    beforeEach(() => {
-      update(initialState);
-    });
-
-    it('should pass diagram__holder node to Viewer constructor', () => {
-      expect(diagramNode).to.have.class('diagram__holder');
-    });
-  });
-
-  describe('loaded state', () => {
-    beforeEach(() => {
-      update(loadedDiagramState);
-    });
-
-    it('should import xml on update', () => {
-      expect(viewer.importXML.calledWith(diagramXml)).to.eql(true);
-    });
-
-    it('should reset zoom after importing xml', () => {
-      expect(canvas.resized.calledOnce).to.eql(true, 'expected canvas.resized to be called');
-      expect(canvas.zoom.calledWith('fit-viewport', 'auto'))
-        .to.eql(true, 'expected canvas.zoom to be called with "fit-viewport", "auto"');
-    });
+    __ResetDependency__('Diagram');
   });
 
   describe('heatmap processing', () => {
     beforeEach(() => {
-      update(loadedHeatmapState);
+      update({
+        state: loadedHeatmapState,
+        diagramRendered: true
+      });
     });
 
     it('should construct a heatmap', () => {
@@ -141,27 +106,45 @@ describe('<Diagram>', () => {
     it('should add a heatmap', () => {
       expect(canvas._viewport.appendChild.calledWith(heatmapNode)).to.eql(true, 'expected heatmap to be attached to viewport node');
     });
+
+    it('should do nothing when diagram is not rendered', () => {
+      getHeatmap.reset();
+
+      update({
+        state: loadedHeatmapState,
+        diagramRendered: false
+      });
+
+      expect(getHeatmap.called).to.eql(false);
+    });
   });
 
   describe('heatmap overlays', () => {
     it('should not add heatmap overlays if the heatmap data is not loaded', () => {
-      update(loadedDiagramState);
+      update({
+        state: loadedDiagramState,
+        diagramRendered: true
+      });
 
       expect(addHeatmapOverlay.called).to.eql(false);
     });
 
     it('should remove overlays', () => {
-      update(loadedHeatmapState);
+      update({
+        state: loadedHeatmapState,
+        diagramRendered: true
+      });
 
       expect(removeHeatmapOverlay.called).to.eql(true);
     });
 
     it('should add overlays with the loaded heatmap data and the hovered element', () => {
       update({
-        display: {
-          ...loadedHeatmapState.display,
+        state: {
+          ...loadedHeatmapState,
           hovered: 'element'
-        }
+        },
+        diagramRendered: true
       });
 
       expect(addHeatmapOverlay.calledWith(viewer, heatmapData, 'element')).to.eql(true);
@@ -169,16 +152,18 @@ describe('<Diagram>', () => {
 
     it('should only render heatmap once', () => {
       update({
-        display: {
-          ...loadedHeatmapState.display,
+        state: {
+          ...loadedHeatmapState,
           hovered: 'element'
-        }
+        },
+        diagramRendered: true
       });
       update({
-        display: {
-          ...loadedHeatmapState.display,
+        state: {
+          ...loadedHeatmapState,
           hovered: 'anotherElement'
-        }
+        },
+        diagramRendered: true
       });
 
       expect(getHeatmap.calledOnce).to.eql(true);
