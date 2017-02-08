@@ -7,6 +7,7 @@ import {INITIAL_STATE, LOADED_STATE, LOADING_STATE} from 'utils/loading';
 
 describe('<ProcessDisplay>', () => {
   let ProcessDefinition;
+  let FilterCreation;
   let Diagram;
   let loadDiagram;
   let loadHeatmap;
@@ -16,6 +17,9 @@ describe('<ProcessDisplay>', () => {
   beforeEach(() => {
     ProcessDefinition = createMockComponent('ProcessDefinition');
     __set__('ProcessDefinition', ProcessDefinition);
+
+    FilterCreation = createMockComponent('FilterCreation');
+    __set__('FilterCreation', FilterCreation);
 
     Diagram = createMockComponent('Diagram');
     __set__('HeatmapDiagram', Diagram);
@@ -31,6 +35,7 @@ describe('<ProcessDisplay>', () => {
 
   afterEach(() => {
     __ResetDependency__('ProcessDefinition');
+    __ResetDependency__('FilterCreation');
     __ResetDependency__('HeatmapDiagram');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');

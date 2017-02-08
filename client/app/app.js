@@ -23,6 +23,10 @@ require.ensure(['./styles.less'], () => {
   require('./styles.less');
 });
 
+require.ensure(['./bootstrap'], () => {
+  require('./bootstrap');
+});
+
 function isPolyfillNeeded() {
   return !window.Symbol || !Array.prototype.find;
 }

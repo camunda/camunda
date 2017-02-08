@@ -1,11 +1,13 @@
 import {reducer as diagramReducer} from './diagram';
 import {reducer as processDefinitionReducer, SELECT_PROCESS_DEFINITION} from './controls/processDefinition/reducer';
+import {reducer as createFilterReducer} from './controls/filterCreation/reducer';
 import {addLoading, createLoadingActionFunction, createResultActionFunction, INITIAL_STATE} from 'utils/loading';
 import {combineReducers} from 'redux';
 
 export const reducer = combineReducers({
   display: handleFilterChange(addLoading(diagramReducer, 'diagram', 'heatmap')),
-  processDefinition: processDefinitionReducer
+  processDefinition: processDefinitionReducer,
+  createFilter: createFilterReducer
 });
 
 function handleFilterChange(next) {

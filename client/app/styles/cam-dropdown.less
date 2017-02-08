@@ -1,0 +1,29 @@
+.dropdown-menu {
+  > li {
+    padding: 0;
+    margin: 2px 0;
+
+    > a {
+      padding: 2px 9px;
+    }
+  }
+
+  > .active,
+  > li:hover {
+    > a {
+      padding-left: 4px;
+      border-width: 0 0 0 3px;
+      margin-left: 2px;
+      border-style: solid;
+      color: @gray-base;
+      border-color: @brand-primary;
+    }
+  }
+
+  > li:hover {
+    > a {
+      color: @gray-base;
+      border-color: @link-color;
+    }
+  }
+}
