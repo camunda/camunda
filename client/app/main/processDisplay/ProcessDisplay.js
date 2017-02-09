@@ -1,36 +1,14 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {HeatmapDiagram} from './diagram';
-import {ProcessDefinition, Filter, CreateFilter, Result, View} from './controls';
-import {isInitial, isLoading} from 'utils/loading';
-import {loadDiagram, loadHeatmap} from './service';
+import {Controls, areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
+import {isLoading} from 'utils';
+import {loadData} from './service';
 
 export const ProcessDisplay = withSelector(Process);
 
 function Process() {
   const template = <div className="process-display">
-    <div className="controls row">
-      <div className="col-xs-12">
-        <form>
-          <table>
-            <tbody>
-              <tr>
-                <td><label>Process Definition</label></td>
-                <td><label>View</label></td>
-                <td colspan="2"><label>Filter</label></td>
-                <td><label>Result</label></td>
-              </tr>
-            <tr>
-              <ProcessDefinition selector="processDefinition" />
-              <View />
-              <Filter />
-              <CreateFilter />
-              <Result />
-            </tr>
-          </tbody>
-          </table>
-        </form>
-      </div>
-    </div>
+    <Controls selector="controls" onFilterChanged={loadData} />
     <div className="diagram">
       <Match>
         <Case predicate={isLoadingSomething}>
@@ -39,7 +17,7 @@ function Process() {
             <div className="text">loading</div>
           </div>
         </Case>
-        <Case predicate={noProcessDefinitions}>
+        <Case predicate={areControlsDataEmpty}>
           <div className="help_screen overlay">
             <div className="no_definitions">
               <span className="indicator glyphicon glyphicon-info-sign"></span>
@@ -63,67 +41,17 @@ function Process() {
     </div>
   </div>;
 
-  function isLoadingSomething({display: {diagram, heatmap}, processDefinition: {availableProcessDefinitions}}) {
-    return isLoading(diagram) || isLoading(heatmap) || isLoading(availableProcessDefinitions);
+  function isLoadingSomething({display: {diagram, heatmap}, controls}) {
+    return isLoading(diagram) || isLoading(heatmap) || areControlsLoadingSomething(controls);
   }
 
-  function noProcessDefinitions({processDefinition}) {
-    const data = processDefinition.availableProcessDefinitions.data;
-
-    return data && data.length === 0;
+  function areControlsDataEmpty({controls}) {
+    return isDataEmpty(controls);
   }
 
-  function noDefinitionSelected({processDefinition}) {
-    return !processDefinition.selected;
+  function noDefinitionSelected({controls}) {
+    return !getDefinitionId(controls);
   }
 
-  function filterValid({processDefinitionId}) {
-    return !!processDefinitionId;
-  }
-
-  function getFilter({processDefinition, filter}) {
-    const dateFilterArray = [];
-
-    filter.query.forEach(entry => {
-      dateFilterArray.push({
-        type: 'start_date',
-        operator: '>=',
-        value : entry.data.start,
-        lowerBoundary : true,
-        upperBoundary : true
-      });
-
-      dateFilterArray.push({
-        type: 'start_date',
-        operator: '<=',
-        value : entry.data.end,
-        lowerBoundary : true,
-        upperBoundary : true
-      });
-    });
-
-    return {
-      processDefinitionId: processDefinition.selected,
-      filter: {
-        dates: dateFilterArray
-      }
-    };
-  }
-
-  return (parentNode, eventsBus) => {
-    const templateUpdate = template(parentNode, eventsBus);
-
-    return [templateUpdate, (state) => {
-      const filter = getFilter(state);
-
-      if (filterValid(filter)) {
-        if (isInitial(state.display.diagram)) {
-          loadDiagram(filter);
-        }
-        if (isInitial(state.display.heatmap)) {
-          loadHeatmap(filter);
-        }
-      }
-    }];
-  };
+  return template;
 }

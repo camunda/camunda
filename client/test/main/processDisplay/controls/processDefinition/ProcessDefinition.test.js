@@ -35,6 +35,7 @@ describe('<ProcessDefinition>', () => {
   let update;
   let selectProcessDefinition;
   let loadProcessDefinitions;
+  let onProcessDefinitionSelected;
 
   beforeEach(() => {
     loadProcessDefinitions = sinon.spy();
@@ -43,7 +44,11 @@ describe('<ProcessDefinition>', () => {
     selectProcessDefinition = sinon.spy();
     __set__('selectProcessDefinition', selectProcessDefinition);
 
-    ({node, update} = mountTemplate(<ProcessDefinition selector="processDefinition" />));
+    onProcessDefinitionSelected = sinon.spy();
+
+    ({node, update} = mountTemplate(<ProcessDefinition
+      selector="processDefinition"
+      onProcessDefinitionSelected={onProcessDefinitionSelected}/>));
   });
 
   afterEach(() => {
@@ -71,15 +76,35 @@ describe('<ProcessDefinition>', () => {
       expect(node.textContent).to.include('name2');
     });
 
-    it('should select process definition', () => {
-      node.querySelector('select').value = 'id1';
-      triggerEvent({
-        node,
-        selector: 'select',
-        eventName: 'change'
+    describe('on selection', () => {
+      let $window;
+
+      beforeEach(() => {
+        $window = {
+          setTimeout: sinon.stub().callsArg(0)
+        };
+        __set__('$window', $window);
+
+        node.querySelector('select').value = 'id1';
+        triggerEvent({
+          node,
+          selector: 'select',
+          eventName: 'change'
+        });
       });
 
-      expect(selectProcessDefinition.calledWith('id1')).to.eql(true);
+      afterEach(() => {
+        __ResetDependency__('$window');
+      });
+
+      it('should select process definition', () => {
+        expect(selectProcessDefinition.calledWith('id1')).to.eql(true);
+      });
+
+      it('should run onProcessDefinitionSelected in timeout', () => {
+        expect($window.setTimeout.calledWith(onProcessDefinitionSelected));
+        expect(onProcessDefinitionSelected.calledOnce).to.eql(true);
+      });
     });
   });
 });

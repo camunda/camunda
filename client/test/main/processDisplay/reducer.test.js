@@ -1,7 +1,6 @@
 import {expect} from 'chai';
 import {reducer, createLoadingHeatmapResultAction, createLoadingDiagramResultAction} from 'main/processDisplay/reducer';
-import {createSelectProcessDefinitionAction} from 'main/processDisplay/controls/processDefinition/reducer';
-import {INITIAL_STATE, LOADED_STATE} from 'utils/loading';
+import {INITIAL_STATE} from 'utils/loading';
 
 describe('processDisplay reducer', () => {
   const diagramData = 'bpmnXml';
@@ -49,23 +48,6 @@ describe('processDisplay reducer', () => {
 
       expect(data).to.exist;
       expect(data).to.eql(heatmapData);
-    });
-
-    it('should reset the diagram and heatmap to initial state when process definition changes', () => {
-      const prevState = {
-        display: {
-          diagram: {
-            state: LOADED_STATE
-          },
-          heatmap: {
-            state: LOADED_STATE
-          }
-        }
-      };
-      const {display: {heatmap, diagram}} = reducer(prevState, createSelectProcessDefinitionAction('aProcess'));
-
-      expect(heatmap.state).to.eql(INITIAL_STATE);
-      expect(diagram.state).to.eql(INITIAL_STATE);
     });
   });
 });

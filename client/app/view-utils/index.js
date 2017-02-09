@@ -22,3 +22,4 @@ export {withSelector} from './withSelector';
 export {Attribute, isTruthy} from './Attribute';
 export {createReferenceComponent} from './createReferenceComponent';
 export {withSockets, Socket} from './withSockets';
+export {createStateInjector} from './createStateInjector';

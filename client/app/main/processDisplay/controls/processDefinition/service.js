@@ -1,7 +1,9 @@
 import {dispatchAction} from 'view-utils';
-import {createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
-        createSelectProcessDefinitionAction} from './reducer';
 import {get} from 'http';
+import {
+  createLoadProcessDefinitionsAction, createLoadProcessDefinitionsResultAction,
+  createSelectProcessDefinitionAction
+} from './reducer';
 
 export function loadProcessDefinitions() {
   dispatchAction(createLoadProcessDefinitionsAction());
@@ -12,6 +14,6 @@ export function loadProcessDefinitions() {
     });
 }
 
-export function selectProcessDefinition(procDefId) {
-  dispatchAction(createSelectProcessDefinitionAction(procDefId));
+export function selectProcessDefinition(id) {
+  return dispatchAction(createSelectProcessDefinitionAction(id));
 }

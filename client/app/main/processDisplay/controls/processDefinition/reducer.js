@@ -1,8 +1,8 @@
-import {addLoading, createLoadingActionFunction, createResultActionFunction} from 'utils/loading';
+import {addLoading, createLoadingActionFunction, createResultActionFunction} from 'utils';
 
 export const SELECT_PROCESS_DEFINITION = 'SELECT_PROCESS_DEFINITION';
 
-export function defaultReducer(state = {}, action) {
+function defaultReducer(state = {}, action) {
   if (action.type === SELECT_PROCESS_DEFINITION) {
     return {
       ...state,

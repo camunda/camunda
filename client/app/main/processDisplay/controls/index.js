@@ -1,4 +1,3 @@
-export {Filter, CreateFilter} from './filter';
-export {ProcessDefinition} from './processDefinition';
-export {Result} from './result';
-export {View} from './view';
+export {Controls} from './Controls';
+export {reducer, CHANGE_FILTER} from './reducer';
+export {areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './selectors';

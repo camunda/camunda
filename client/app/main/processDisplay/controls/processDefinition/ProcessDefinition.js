@@ -1,10 +1,10 @@
-import {jsx, withSelector, Scope, List, Text, Attribute, OnEvent} from 'view-utils';
+import {jsx, withSelector, Scope, List, Text, Attribute, OnEvent, $window} from 'view-utils';
 import {loadProcessDefinitions, selectProcessDefinition} from './service';
-import {isInitial} from 'utils/loading';
+import {isInitial} from 'utils';
 
 export const ProcessDefinition = withSelector(ProcessDefinitionComponent);
 
-export function ProcessDefinitionComponent() {
+function ProcessDefinitionComponent({onProcessDefinitionSelected}) {
   const template = <td>
     <select className="form-control">
       <OnEvent event="change" listener={select} />
@@ -22,6 +22,11 @@ export function ProcessDefinitionComponent() {
 
   function select({node}) {
     selectProcessDefinition(node.value);
+    // Timeout is added so that onProcessDefinitionSelected is called after
+    // new state is already calculated.
+    // There is also possibility to compute filter on fly, so that there is no need for timeout.
+    // Although this option is better, because this code is not doing reducers job
+    $window.setTimeout(onProcessDefinitionSelected);
   }
 
   function getAvailableDefinitions({availableProcessDefinitions}) {

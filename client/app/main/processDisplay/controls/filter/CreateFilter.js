@@ -1,8 +1,8 @@
-import {jsx, OnEvent, Socket, createReferenceComponent} from 'view-utils';
+import {jsx, OnEvent, Socket, createReferenceComponent, $window} from 'view-utils';
 import {openModal, closeModal, createStartDateFilter} from './service';
 import {Dropdown, DropdownItem, Modal} from 'widgets';
 
-export function CreateFilter() {
+export function CreateFilter({onFilterAdded}) {
   const nodes = {};
   const Reference = createReferenceComponent(nodes);
 
@@ -80,6 +80,8 @@ export function CreateFilter() {
     );
 
     closeModal();
+
+    $window.setTimeout(onFilterAdded);
   }
 
   function isModalOpen({filter: {createModal}}) {

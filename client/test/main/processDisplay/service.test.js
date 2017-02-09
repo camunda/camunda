@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {loadHeatmap, loadDiagram,
+import {loadHeatmap, loadDiagram, loadData,
         __set__, __ResetDependency__} from 'main/processDisplay/service';
 
 describe('ProcessDisplay service', () => {
@@ -33,7 +33,7 @@ describe('ProcessDisplay service', () => {
     };
 
     filter = {
-      processDefinitionId: processId
+      processDefinitionId: processId,
     };
 
     dispatchAction = sinon.spy();
@@ -58,6 +58,85 @@ describe('ProcessDisplay service', () => {
     __ResetDependency__('createLoadingDiagramResultAction');
     __ResetDependency__('createLoadingHeatmapAction');
     __ResetDependency__('createLoadingHeatmapResultAction');
+  });
+
+  describe('loadData', () => {
+    let loadHeatmap;
+    let loadDiagram;
+
+    beforeEach(() => {
+      loadHeatmap = sinon.spy();
+      loadDiagram = sinon.spy();
+
+      __set__('loadHeatmap', loadHeatmap);
+      __set__('loadDiagram', loadDiagram);
+    });
+
+    afterEach(() => {
+      __ResetDependency__('loadHeatmap');
+      __ResetDependency__('loadDiagram');
+    });
+
+    it('should load heatmap and diagram if filter is valid', () => {
+      loadData({
+        definition: 'some-id',
+        query: []
+      });
+
+      expect(loadHeatmap.calledOnce).to.eql(true, 'expected heatmap to be loaded');
+      expect(loadDiagram.calledOnce).to.eql(true, 'expected diagram to be loaded');
+    });
+
+    it('should not load heatmap and diagram if filter is not valid', () => {
+      loadData({
+        query: []
+      });
+
+      expect(loadHeatmap.called).to.eql(false, 'expected heatmap not to be loaded');
+      expect(loadDiagram.called).to.eql(false, 'expected diagram not to be loaded');
+    });
+
+    it('should load heatmap and diagram with correct process definition and filter', () => {
+      const start = 'start-date';
+      const end = 'end-date';
+      const definition = 'some-def-id';
+      const expectedQuery = {
+        processDefinitionId: definition,
+        filter: {
+          dates: [
+            {
+              type: 'start_date',
+              operator: '>=',
+              value : start,
+              lowerBoundary : true,
+              upperBoundary : true
+            },
+            {
+              type: 'start_date',
+              operator: '<=',
+              value : end,
+              lowerBoundary : true,
+              upperBoundary : true
+            }
+          ]
+        }
+      };
+
+      loadData({
+        definition,
+        query: [
+          {
+            data: {
+              start,
+              end
+            }
+          }
+        ]
+      });
+
+      expect(loadHeatmap.calledWith(expectedQuery)).to.eql(true, 'expected heatmap to be loaded with correct query');
+      expect(loadDiagram.calledWith(expectedQuery)).to.eql(true, 'expected diagram to be loaded with correct query');
+    });
   });
 
   describe('load heatmap', () => {

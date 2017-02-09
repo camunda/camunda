@@ -24,6 +24,12 @@ export function createMockComponent(text) {
     return template.calls[index][1];
   };
 
+  constructor.getAttribute = (attribute, index) => {
+    index = index === undefined ?  0 : index;
+
+    return constructor.calls[index][0][attribute];
+  };
+
   constructor.text = text;
 
   return constructor;
