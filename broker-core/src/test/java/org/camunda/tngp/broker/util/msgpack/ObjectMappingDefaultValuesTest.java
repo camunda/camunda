@@ -3,7 +3,8 @@ package org.camunda.tngp.broker.util.msgpack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.*;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.utf8;
 
 import java.util.Map;
 
@@ -134,6 +135,7 @@ public class ObjectMappingDefaultValuesTest
         final AllTypesDefaultValuesPOJO pojo = new AllTypesDefaultValuesPOJO(
                 POJOEnum.FOO,
                 654L,
+                123,
                 "defaultString",
                 packedMsgPackBuffer,
                 utf8("defaultBinary")
@@ -145,6 +147,7 @@ public class ObjectMappingDefaultValuesTest
         // then
         assertThat(pojo.getEnum()).isEqualTo(POJOEnum.FOO);
         assertThat(pojo.getLong()).isEqualTo(654L);
+        assertThat(pojo.getInt()).isEqualTo(123);
         assertThatBuffer(pojo.getString()).hasBytes(utf8("defaultString"));
         assertThatBuffer(pojo.getPacked()).hasBytes(packedMsgPackBuffer);
         assertThatBuffer(pojo.getBinary()).hasBytes(utf8("defaultBinary"));

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
@@ -48,9 +49,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-public class ControlMessageChannelManagerTest
+public class ControlMessageHandlerManagerTest
 {
-    private static final ControlMessageType CONTROL_MESSAGE_TYPE = ControlMessageType.TASK_SUBSCRIPTION;
+    private static final ControlMessageType CONTROL_MESSAGE_TYPE = ControlMessageType.ADD_TASK_SUBSCRIPTION;
     private static final byte[] CONTROL_MESSAGE_DATA = "foo".getBytes(StandardCharsets.UTF_8);
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
@@ -93,7 +94,7 @@ public class ControlMessageChannelManagerTest
                 mockErrorResponseWriter,
                 TIMEOUT.toMillis(),
                 mockAgentRunnerService,
-                mockControlMessageHandler);
+                Collections.singletonList(mockControlMessageHandler));
 
         // fix the current time to calculate the timeout
         ClockUtil.setCurrentTime(Instant.now());

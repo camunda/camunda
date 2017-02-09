@@ -15,6 +15,7 @@ package org.camunda.tngp.broker.transport.controlmessage;
 import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -91,7 +92,7 @@ public class ControlMessageHandlerManager implements Agent
             ErrorResponseWriter errorResponseWriter,
             long requestTimeoutInMillis,
             AgentRunnerService agentRunnerService,
-            ControlMessageHandler... handlers)
+            List<ControlMessageHandler> handlers)
     {
         this.agentRunnerService = agentRunnerService;
         this.controlMessageDispatcher = controlMessageDispatcher;

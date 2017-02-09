@@ -31,7 +31,7 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
     protected AgentRunnerService agentRunnerService;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-        .onAdd((name, stream) -> service.addStream(stream))
+        .onAdd((name, stream) -> service.addStream(stream, name))
         .onRemove((name, stream) -> service.removeStream(stream))
         .build();
 

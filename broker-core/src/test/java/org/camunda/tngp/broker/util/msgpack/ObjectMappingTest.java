@@ -43,6 +43,7 @@ public class ObjectMappingTest
         final POJO pojo = new POJO();
         pojo.setEnum(POJOEnum.BAR);
         pojo.setLong(456456L);
+        pojo.setInt(123);
         pojo.setString(BUF1);
         pojo.setBinary(BUF2);
         pojo.setPacked(MSGPACK_BUF);
@@ -55,14 +56,16 @@ public class ObjectMappingTest
 
         // then
         final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer, 0, resultBuffer.capacity());
-        assertThat(msgPackMap).hasSize(5);
+        assertThat(msgPackMap).hasSize(6);
         assertThat(msgPackMap).contains(
                 entry("enumProp", POJOEnum.BAR.toString()),
                 entry("longProp", 456456L),
+                entry("intProp", 123L),
                 entry("stringProp", "foo"),
                 entry("binaryProp", BUF2.byteArray())
         );
 
+        @SuppressWarnings("unchecked")
         final Map<String, Object> packedProp = (Map<String, Object>) msgPackMap.get("packedProp");
         assertThat(packedProp).containsExactly(entry("foo", 123123L));
     }
@@ -75,7 +78,7 @@ public class ObjectMappingTest
 
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
-            w.writeMapHeader(5);
+            w.writeMapHeader(6);
 
             w.writeString(utf8("enumProp"));
             w.writeString(utf8(POJOEnum.BAR.toString()));
@@ -91,6 +94,9 @@ public class ObjectMappingTest
 
             w.writeString(utf8("longProp"));
             w.writeInteger(88888L);
+
+            w.writeString(utf8("intProp"));
+            w.writeInteger(123L);
         });
 
         // when
@@ -99,6 +105,7 @@ public class ObjectMappingTest
         // then
         assertThat(pojo.getEnum()).isEqualByComparingTo(POJOEnum.BAR);
         assertThat(pojo.getLong()).isEqualTo(88888L);
+        assertThat(pojo.getInt()).isEqualTo(123);
         assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF);
         assertThatBuffer(pojo.getBinary()).hasBytes(BUF1);
         assertThatBuffer(pojo.getString()).hasBytes(BUF2);
@@ -188,6 +195,80 @@ public class ObjectMappingTest
     }
 
     @Test
+    public void shouldFailDeserializationWithOversizedIntegerValue()
+    {
+        // given
+        final POJO pojo = new POJO();
+
+        final DirectBuffer buffer = encodeMsgPack((w) ->
+        {
+            w.writeMapHeader(6);
+
+            w.writeString(utf8("enumProp"));
+            w.writeString(utf8(POJOEnum.BAR.toString()));
+
+            w.writeString(utf8("binaryProp"));
+            w.writeBinary(BUF1);
+
+            w.writeString(utf8("stringProp"));
+            w.writeString(BUF2);
+
+            w.writeString(utf8("packedProp"));
+            w.writeRaw(MSGPACK_BUF);
+
+            w.writeString(utf8("longProp"));
+            w.writeInteger(88888L);
+
+            w.writeString(utf8("intProp"));
+            w.writeInteger(Integer.MAX_VALUE + 1L);
+        });
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Could not deserialize object.");
+
+        // when
+        pojo.wrap(buffer);
+    }
+
+    @Test
+    public void shouldFailDeserializationWithUndersizedIntegerValue()
+    {
+        // given
+        final POJO pojo = new POJO();
+
+        final DirectBuffer buffer = encodeMsgPack((w) ->
+        {
+            w.writeMapHeader(6);
+
+            w.writeString(utf8("enumProp"));
+            w.writeString(utf8(POJOEnum.BAR.toString()));
+
+            w.writeString(utf8("binaryProp"));
+            w.writeBinary(BUF1);
+
+            w.writeString(utf8("stringProp"));
+            w.writeString(BUF2);
+
+            w.writeString(utf8("packedProp"));
+            w.writeRaw(MSGPACK_BUF);
+
+            w.writeString(utf8("longProp"));
+            w.writeInteger(88888L);
+
+            w.writeString(utf8("intProp"));
+            w.writeInteger(Integer.MIN_VALUE - 1L);
+        });
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Could not deserialize object.");
+
+        // when
+        pojo.wrap(buffer);
+    }
+
+    @Test
     public void shouldFailSerializationWithMissingRequiredValues()
     {
         // given
@@ -240,6 +321,9 @@ public class ObjectMappingTest
 
             w.writeString(utf8("longProp"));
             w.writeInteger(88888L);
+
+            w.writeString(utf8("intProp"));
+            w.writeInteger(123);
         });
         pojo.wrap(buf1);
 
@@ -261,6 +345,9 @@ public class ObjectMappingTest
 
             w.writeString(utf8("longProp"));
             w.writeInteger(7777L);
+
+            w.writeString(utf8("intProp"));
+            w.writeInteger(456);
         });
 
         // when
@@ -270,6 +357,7 @@ public class ObjectMappingTest
         // then
         assertThat(pojo.getEnum()).isEqualByComparingTo(POJOEnum.FOO);
         assertThat(pojo.getLong()).isEqualTo(7777L);
+        assertThat(pojo.getInt()).isEqualTo(456);
         assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF);
         assertThatBuffer(pojo.getBinary()).hasBytes(BUF2);
         assertThatBuffer(pojo.getString()).hasBytes(BUF1);

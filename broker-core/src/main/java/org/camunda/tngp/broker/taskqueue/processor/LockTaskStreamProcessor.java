@@ -94,7 +94,17 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     {
         final CompletableFuture<T> future = new CompletableFuture<>();
 
-        cmdQueue.add(() -> action.accept(future));
+        cmdQueue.add(() ->
+        {
+            try
+            {
+                action.accept(future);
+            }
+            catch (Exception e)
+            {
+                future.completeExceptionally(e);
+            }
+        });
 
         return future;
     }
