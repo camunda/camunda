@@ -17,7 +17,7 @@ function handleComponent(component, attributes, children) {
 }
 
 function handleHtml(element, attributes, children) {
-  return (node, eventsBus) => {
+  const template = (node, eventsBus) => {
     const elementNode = $document.createElement(element);
 
     node.appendChild(elementNode);
@@ -28,6 +28,15 @@ function handleHtml(element, attributes, children) {
 
     return addChildren(elementNode, eventsBus, children);
   };
+
+  //For debuging only, so disabled in production
+  if (process.env.NODE_ENV !== 'production') {
+    template.element = element;
+    template.attributes = attributes;
+    template.children = children;
+  }
+
+  return template;
 }
 
 function setAttributes(elementNode, attributes) {
