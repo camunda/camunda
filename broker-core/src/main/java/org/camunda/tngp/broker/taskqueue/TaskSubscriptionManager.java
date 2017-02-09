@@ -33,8 +33,6 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
-import org.camunda.tngp.log.idgenerator.IdGenerator;
-import org.camunda.tngp.log.idgenerator.impl.PrivateIdGenerator;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceName;
@@ -46,7 +44,7 @@ public class TaskSubscriptionManager implements Agent
     protected static final String NAME = "taskqueue.subscription.manager";
 
     protected final ServiceStartContext serviceContext;
-    protected final IdGenerator subscriptionIdGenerator;
+    protected final IdGenerator subscriptionIdGenerator = new IdGenerator(-1L);
     protected final Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorSupplier;
 
     protected final Long2ObjectHashMap<LogStream> logStreamsById = new Long2ObjectHashMap<>();
@@ -57,16 +55,14 @@ public class TaskSubscriptionManager implements Agent
 
     public TaskSubscriptionManager(ServiceStartContext serviceContext)
     {
-        this(serviceContext, new PrivateIdGenerator(0L), taskType -> new LockTaskStreamProcessor(taskType));
+        this(serviceContext, taskType -> new LockTaskStreamProcessor(taskType));
     }
 
     public TaskSubscriptionManager(
             ServiceStartContext serviceContext,
-            IdGenerator subscriptionIdGenerator,
             Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorBuilder)
     {
         this.serviceContext = serviceContext;
-        this.subscriptionIdGenerator = subscriptionIdGenerator;
         this.streamProcessorSupplier = streamProcessorBuilder;
     }
 

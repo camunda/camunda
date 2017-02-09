@@ -34,7 +34,6 @@ import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
 import org.camunda.tngp.broker.test.util.FluentMock;
-import org.camunda.tngp.log.idgenerator.IdGenerator;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.StreamContext;
 import org.camunda.tngp.servicecontainer.ServiceBuilder;
@@ -67,9 +66,6 @@ public class TaskSubscriptionManagerTest
     private ServiceBuilder<Object> mockServiceBuilder;
 
     @Mock
-    private IdGenerator mockSubscriptionIdGenerator;
-
-    @Mock
     private Function<DirectBuffer, LockTaskStreamProcessor> mockStreamProcessorBuilder;
 
     private LogStream mockLogStream;
@@ -92,11 +88,9 @@ public class TaskSubscriptionManagerTest
         when(mockServiceContext.createService(any(), any())).thenReturn(mockServiceBuilder);
         when(mockServiceContext.removeService(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        when(mockSubscriptionIdGenerator.nextId()).thenReturn(0L, 1L, 2L);
-
         mockStreamProcessor = createMockStreamProcessor(TASK_TYPE_BUFFER);
 
-        manager = new TaskSubscriptionManager(mockServiceContext, mockSubscriptionIdGenerator, mockStreamProcessorBuilder);
+        manager = new TaskSubscriptionManager(mockServiceContext, mockStreamProcessorBuilder);
 
         subscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
     }
