@@ -32,7 +32,7 @@ public interface ControlMessageHandler
      * Handle the given control message asynchronously.
      *
      * @param buffer
-     *            the buffer which contains the control message
+     *            the buffer which contains the control message as MsgPack-JSON
      * @param metadata
      *            the metadata (channel id, connection id, request id) of the
      *            request
