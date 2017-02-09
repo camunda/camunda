@@ -12,7 +12,11 @@
  */
 package org.camunda.tngp.broker.transport.controlmessage;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -26,6 +30,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
     protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
+    protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
 
     protected final long controlMessageRequestTimeoutInMillis;
 
@@ -42,12 +47,20 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
+        final ControlMessageResponseWriter controlMessageResponseWriter = new ControlMessageResponseWriter(sendBuffer);
         final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter(sendBuffer);
 
         final AgentRunnerService agentRunnerService = agentRunnerServicesInjector.getValue().conductorAgentRunnerService();
 
-        // TODO add message handlers
-        service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, agentRunnerService);
+        final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
+
+        final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
+            new AddTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
+            new UpdateTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
+            new RemoveTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter)
+        );
+
+        service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, agentRunnerService, controlMessageHandlers);
 
         context.async(service.openAsync());
     }
@@ -77,6 +90,11 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     public Injector<AgentRunnerServices> getAgentRunnerServicesInjector()
     {
         return agentRunnerServicesInjector;
+    }
+
+    public Injector<TaskSubscriptionManager> getTaskSubscriptionManagerInjector()
+    {
+        return taskSubscriptionManagerInjector;
     }
 
 }

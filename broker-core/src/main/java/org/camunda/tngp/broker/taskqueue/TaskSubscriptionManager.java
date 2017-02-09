@@ -100,7 +100,7 @@ public class TaskSubscriptionManager implements Agent
         return future;
     }
 
-    public CompletableFuture<Long> addSubscription(TaskSubscription subscription)
+    public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
     {
         return runAsync(future ->
         {
@@ -126,7 +126,7 @@ public class TaskSubscriptionManager implements Agent
             {
                 streamProcessor
                     .addSubscription(subscription)
-                    .handle((r, t) -> t == null ? future.complete(subscriptionId) : future.completeExceptionally(t));
+                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
             else
             {
@@ -137,7 +137,7 @@ public class TaskSubscriptionManager implements Agent
 
                         return processor.addSubscription(subscription);
                     })
-                    .handle((r, t) -> t == null ? future.complete(subscriptionId) : future.completeExceptionally(t));
+                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
         });
     }

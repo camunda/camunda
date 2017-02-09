@@ -183,14 +183,4 @@ public class ErrorResponseWriter
         failedRequestBuffer.wrap(0, 0);
     }
 
-    public ErrorCode getErrorCode()
-    {
-        return errorCode;
-    }
-
-    public String getErrorMessage()
-    {
-        return errorMessage;
-    }
-
 }

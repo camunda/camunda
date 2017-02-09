@@ -18,10 +18,25 @@ import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
+/**
+ * Handle a specific type of control messages.
+ */
 public interface ControlMessageHandler
 {
+    /**
+     * Returns the type of control message which can be handled.
+     */
     ControlMessageType getMessageType();
 
-    // TODO may return something recyclable
-    CompletableFuture<Void> handle(DirectBuffer dataBuffer, BrokerEventMetadata eventMetada);
+    /**
+     * Handle the given control message asynchronously.
+     *
+     * @param buffer
+     *            the buffer which contains the control message
+     * @param metadata
+     *            the metadata (channel id, connection id, request id) of the
+     *            request
+     * @return a future which indicates when the control message is handled completely
+     */
+    CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata metadata);
 }

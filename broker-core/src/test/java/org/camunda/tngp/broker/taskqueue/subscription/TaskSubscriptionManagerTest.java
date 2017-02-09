@@ -135,11 +135,12 @@ public class TaskSubscriptionManagerTest
         manager.addStream(mockLogStream);
 
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(subscription);
+        final CompletableFuture<Void> future = manager.addSubscription(subscription);
         manager.doWork();
 
         // then
-        assertThat(future).isCompletedWithValue(0L);
+        assertThat(future).isCompleted();
+        assertThat(subscription.getId()).isEqualTo(0L);
 
         verify(mockStreamProcessorBuilder).apply(TASK_TYPE_BUFFER);
         verify(mockStreamProcessor).addSubscription(subscription);
@@ -158,11 +159,12 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(anotherSubscription);
+        final CompletableFuture<Void> future = manager.addSubscription(anotherSubscription);
         manager.doWork();
 
         // then
-        assertThat(future).isCompletedWithValue(1L);
+        assertThat(future).isCompleted();
+        assertThat(anotherSubscription.getId()).isEqualTo(1L);
 
         verify(mockStreamProcessorBuilder, times(1)).apply(TASK_TYPE_BUFFER);
 
@@ -186,11 +188,12 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(anotherSubscription);
+        final CompletableFuture<Void> future = manager.addSubscription(anotherSubscription);
         manager.doWork();
 
         // then
-        assertThat(future).isCompletedWithValue(1L);
+        assertThat(future).isCompleted();
+        assertThat(anotherSubscription.getId()).isEqualTo(1L);
 
         verify(mockStreamProcessorBuilder, times(2)).apply(TASK_TYPE_BUFFER);
 
@@ -214,11 +217,12 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(anotherSubscription);
+        final CompletableFuture<Void> future = manager.addSubscription(anotherSubscription);
         manager.doWork();
 
         // then
-        assertThat(future).isCompletedWithValue(1L);
+        assertThat(future).isCompleted();
+        assertThat(anotherSubscription.getId()).isEqualTo(1L);
 
         verify(mockStreamProcessorBuilder, times(1)).apply(TASK_TYPE_BUFFER);
         verify(mockStreamProcessorBuilder, times(1)).apply(ANOTHER_TASK_TYPE_BUFFER);
@@ -333,7 +337,7 @@ public class TaskSubscriptionManagerTest
     public void shouldFailToAddSubscriptionIfLogStreamNotExist() throws Exception
     {
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(subscription);
+        final CompletableFuture<Void> future = manager.addSubscription(subscription);
         manager.doWork();
 
         // then
@@ -356,7 +360,7 @@ public class TaskSubscriptionManagerTest
         manager.addStream(mockLogStream);
 
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(subscription);
+        final CompletableFuture<Void> future = manager.addSubscription(subscription);
         manager.doWork();
 
         // then
@@ -377,7 +381,7 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Long> future = manager.addSubscription(anotherSubscription);
+        final CompletableFuture<Void> future = manager.addSubscription(anotherSubscription);
         manager.doWork();
 
         // then

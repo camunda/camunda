@@ -13,103 +13,97 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
+import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
+import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
-public class TaskSubscription
+public class TaskSubscription extends UnpackedObject
 {
-    protected long id;
-    protected int channelId;
+    protected LongProperty idProp = new LongProperty("id", -1);
 
-    protected long topicId;
+    protected LongProperty topicIdProp = new LongProperty("topicId");
+    protected StringProperty taskTypeProp = new StringProperty("taskType");
 
-    protected DirectBuffer taskType;
-    protected long lockDuration;
+    protected IntegerProperty channelIdProp = new IntegerProperty("channelId", -1);
+    protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
+    protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
 
-    protected int credits;
+    public TaskSubscription()
+    {
+        objectValue
+            .declareProperty(idProp)
+            .declareProperty(topicIdProp)
+            .declareProperty(taskTypeProp)
+            .declareProperty(channelIdProp)
+            .declareProperty(lockDurationProp)
+            .declareProperty(creditsProp);
+    }
 
     public TaskSubscription setId(long id)
     {
-        this.id = id;
+        this.idProp.setValue(id);
         return this;
     }
 
     public TaskSubscription setChannelId(int channelId)
     {
-        this.channelId = channelId;
+        this.channelIdProp.setValue(channelId);
         return this;
     }
 
     public TaskSubscription setTopicId(long topicId)
     {
-        this.topicId = topicId;
+        this.topicIdProp.setValue(topicId);
         return this;
     }
 
     public TaskSubscription setTaskType(DirectBuffer taskType)
     {
-        this.taskType = taskType;
+        this.taskTypeProp.setValue(taskType, 0, taskType.capacity());
         return this;
     }
 
     public TaskSubscription setLockDuration(long lockDuration)
     {
-        this.lockDuration = lockDuration;
+        this.lockDurationProp.setValue(lockDuration);
         return this;
     }
 
     public TaskSubscription setCredits(int credits)
     {
-        this.credits = credits;
+        this.creditsProp.setValue(credits);
         return this;
     }
 
     public long getId()
     {
-        return id;
+        return idProp.getValue();
     }
 
     public DirectBuffer getLockTaskType()
     {
-        return taskType;
+        return taskTypeProp.getValue();
     }
 
     public long getLockTime()
     {
-        return lockDuration;
+        return lockDurationProp.getValue();
     }
 
     public int getCredits()
     {
-        return credits;
+        return creditsProp.getValue();
     }
 
     public int getChannelId()
     {
-        return channelId;
+        return channelIdProp.getValue();
     }
 
     public long getTopicId()
     {
-        return topicId;
-    }
-
-    @Override
-    public String toString()
-    {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("TaskSubscription [id=");
-        builder.append(id);
-        builder.append(", channelId=");
-        builder.append(channelId);
-        builder.append(", topicId=");
-        builder.append(topicId);
-        builder.append(", taskType=");
-        builder.append(taskType);
-        builder.append(", lockDuration=");
-        builder.append(lockDuration);
-        builder.append(", credits=");
-        builder.append(credits);
-        builder.append("]");
-        return builder.toString();
+        return topicIdProp.getValue();
     }
 
 }

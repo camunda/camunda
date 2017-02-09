@@ -23,6 +23,7 @@
       <validValue name="REQUEST_WRITE_FAILURE">2</validValue>
       <validValue name="INVALID_CLIENT_VERSION">3</validValue>
       <validValue name="REQUEST_TIMEOUT">4</validValue>
+      <validValue name="REQUEST_PROCESSING_FAILURE">5</validValue>
     </enum>
 
     <enum name="EventType" encodingType="uint8" description="The type of an event">
@@ -31,7 +32,9 @@
     </enum>
     
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
-        <validValue name="TASK_SUBSCRIPTION">0</validValue>
+        <validValue name="ADD_TASK_SUBSCRIPTION">0</validValue>
+        <validValue name="REMOVE_TASK_SUBSCRIPTION">1</validValue>
+        <validValue name="UPDATE_TASK_SUBSCRIPTION">2</validValue>
     </enum>
 
   </types>
