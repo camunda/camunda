@@ -31,7 +31,7 @@
 
     <dependency>
       <groupId>org.agrona</groupId>
-      <artifactId>Agrona</artifactId>
+      <artifactId>agrona</artifactId>
       <scope>provided</scope>
     </dependency>
 

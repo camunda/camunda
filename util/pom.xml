@@ -15,7 +15,6 @@
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- TODO: Move to common parent -->
-    <agrona.version>0.5.3</agrona.version>
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <checkstyle.config.location>../.checkstyle.xml</checkstyle.config.location>
@@ -24,7 +23,7 @@
   <dependencies>
     <dependency>
       <groupId>org.agrona</groupId>
-      <artifactId>Agrona</artifactId>
+      <artifactId>agrona</artifactId>
       <scope>provided</scope>
     </dependency>
 
