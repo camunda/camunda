@@ -13,7 +13,7 @@
   <dependencies>
     <dependency>
       <groupId>org.agrona</groupId>
-      <artifactId>Agrona</artifactId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>
