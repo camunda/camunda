@@ -50,7 +50,7 @@ public class ProtocolRequestResponseTest
                     ++completedRequests;
                 }
             }
-            while (completedRequests < 1000000);
+            while (completedRequests < 100_000);
 
             q.closeAll();
         }
