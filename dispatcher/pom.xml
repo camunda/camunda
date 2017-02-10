@@ -12,16 +12,17 @@
   </parent>
 
   <dependencies>
-    <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>Agrona</artifactId>
-      <version>0.5.3</version>
-    </dependency>
-
+    
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>util</artifactId>
       <version>1.0.0-alpha1</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <version>0.9.2</version>
     </dependency>
 
     <dependency>
