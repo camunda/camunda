@@ -1,7 +1,10 @@
 package org.camunda.tngp.broker.clustering.raft.entry;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
-import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.*;
+import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostLengthOffset;
+import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostOffset;
+import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.sbeHeaderSize;
 
 import java.util.Iterator;
 import java.util.List;
@@ -83,7 +86,7 @@ public class ConfigurationEntry implements BufferReader, BufferWriter
             final Endpoint endpoint = member.endpoint();
 
             encoder.next()
-                .type(MemberTypeResolver.getMemberType(member.type()))
+                .memberType(MemberTypeResolver.getMemberType(member.type()))
                 .port(endpoint.port())
                 .putHost(endpoint.getBuffer(), hostOffset(0), endpoint.hostLength());
         }
@@ -104,7 +107,7 @@ public class ConfigurationEntry implements BufferReader, BufferWriter
         {
             final MembersDecoder decoder = iterator.next();
 
-            final MemberType memberType = decoder.type();
+            final MemberType memberType = decoder.memberType();
 
             final Endpoint endpoint = new Endpoint();
             final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) endpoint.getBuffer();

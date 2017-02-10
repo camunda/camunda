@@ -51,7 +51,12 @@
 
     <dependency>
       <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-all</artifactId>
+      <artifactId>sbe-tool</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>

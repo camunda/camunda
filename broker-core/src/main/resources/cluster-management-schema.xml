@@ -26,7 +26,7 @@
             <validValue name="FALSE">0</validValue>
             <validValue name="TRUE">1</validValue>
         </enum>
-         <enum name="Type" encodingType="uint8">     
+         <enum name="MemberType" encodingType="uint8">     
             <validValue name="INACTIVE">0</validValue>
             <validValue name="RESERVE">1</validValue>
             <validValue name="PASSIVE">2</validValue>
@@ -41,7 +41,7 @@
     <sbe:message name="InvitationRequest" id="0">
         <field name="log" id="1" type="uint16" />
         <group name="cluster" id="2" dimensionType="groupSizeEncoding">
-            <field name="type" id="3" type="Type"/>
+            <field name="memberType" id="3" type="MemberType"/>
             <field name="port" id="4" type="uint16"/>
             <data name="host" id="5" type="varDataEncoding"/>
         </group>

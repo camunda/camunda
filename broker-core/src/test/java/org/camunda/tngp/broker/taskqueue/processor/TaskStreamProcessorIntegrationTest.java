@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.mockito.MockitoAnnotations;
 
 public class TaskStreamProcessorIntegrationTest
@@ -57,6 +58,9 @@ public class TaskStreamProcessorIntegrationTest
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Rule
+    public Timeout testTimeout = Timeout.seconds(5);
 
     @FluentMock
     private CommandResponseWriter mockResponseWriter;
@@ -219,7 +223,7 @@ public class TaskStreamProcessorIntegrationTest
         LoggedEvent loggedEvent = null;
         long sourceEventPosition = -1;
 
-        for (int i = 0; i < 100_000 && sourceEventPosition < position; i++)
+        while (sourceEventPosition < position)
         {
             if (logStreamReader.hasNext())
             {

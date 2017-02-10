@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
+import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostLengthOffset;
+import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostOffset;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -95,7 +96,7 @@ public class JoinRequest implements BufferReader, BufferWriter
             .term(-1);
 
         bodyEncoder
-            .type(MemberTypeResolver.getMemberType(member.type()))
+            .memberType(MemberTypeResolver.getMemberType(member.type()))
             .port(endpoint.port());
 
         bodyEncoder.putHost(endpoint.getBuffer(), hostOffset(0), endpoint.hostLength());
@@ -123,7 +124,7 @@ public class JoinRequest implements BufferReader, BufferWriter
             endpointBuffer.putInt(hostLengthOffset(0), hostLength);
             bodyDecoder.getHost(endpointBuffer, hostOffset(0), hostLength);
 
-            member.type(MemberTypeResolver.getType(bodyDecoder.type()));
+            member.type(MemberTypeResolver.getType(bodyDecoder.memberType()));
             isMemberAvailable = true;
         }
     }
