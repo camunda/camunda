@@ -22,7 +22,7 @@ public class ValidationHelper {
 
   private static void ensureNotEmpty(String fieldName, Object target) {
     if (target == null || target.toString().isEmpty()) {
-      throw new OptimizeValidationException(fieldName + "is not allowed to be empty or null");
+      throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }
 }
