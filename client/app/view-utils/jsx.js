@@ -31,12 +31,23 @@ function handleHtml(element, attributes, children) {
 
   //For debuging only, so disabled in production
   if (process.env.NODE_ENV !== 'production') {
-    template.element = element;
-    template.attributes = attributes;
-    template.children = children;
+    addErrorProperty(template, 'element', element);
+    addErrorProperty(template, 'attributes', attributes);
+    addErrorProperty(template, 'children', children);
   }
 
   return template;
+}
+
+function addErrorProperty(object, name, value) {
+  Object.defineProperty(object, name, {
+    get: () => {
+      // eslint-disable-next-line
+      console.error(`"${name}" propety of template is available only in development settings. Please remove any usage of it.`);
+
+      return value;
+    }
+  });
 }
 
 function setAttributes(elementNode, attributes) {
