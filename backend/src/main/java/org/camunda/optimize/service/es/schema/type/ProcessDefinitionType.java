@@ -48,7 +48,7 @@ public class ProcessDefinitionType implements TypeMappingCreator {
       String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex() +
         "' , type '" + getType() + "'!";
       logger.error(message, e);
-    };
+    }
     return source;
   }
 }

@@ -3,9 +3,9 @@ package org.camunda.optimize.test.rule;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
@@ -98,7 +98,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     cleanAndVerify();
   }
 
-  public void cleanAndVerify() {
+  private void cleanAndVerify() {
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
   }
@@ -129,7 +129,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .prepareExists(configurationService.getOptimizeIndex())
       .get();
     if(response.isExists()){
-      logger.error("Elasticsearch indices should be clean!", new OptimizeException());
+      throw new OptimizeIntegrationTestException("Elasticsearch indices should be clean!");
     } else {
       logger.info("Optimize index is not found, as expected. Elasticsearch is clean and ready for next test!");
     }

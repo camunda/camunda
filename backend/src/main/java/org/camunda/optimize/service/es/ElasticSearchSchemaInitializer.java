@@ -8,7 +8,7 @@ import javax.annotation.PostConstruct;
 public class ElasticSearchSchemaInitializer {
 
   @Autowired
-  ElasticSearchSchemaManager schemaManager;
+  private ElasticSearchSchemaManager schemaManager;
 
   @PostConstruct
   public void initializeSchema() {
