@@ -1,7 +1,7 @@
 import {jsx, DESTROY_EVENT, Children, createReferenceComponent, withSockets, $document} from 'view-utils';
 import $ from 'jquery';
 
-export const Modal = withSockets(({open, onClose, sockets: {head, body, foot}}) => {
+export const Modal = withSockets(({isOpen, onClose, sockets: {head, body, foot}}) => {
   const nodes = {};
   const Reference = createReferenceComponent(nodes);
 
@@ -36,7 +36,7 @@ export const Modal = withSockets(({open, onClose, sockets: {head, body, foot}}) 
     modalNode.on('hide.bs.modal', onClose);
 
     return [templateUpdate, (state) => {
-      modalNode.modal(open(state) ? 'show' : 'hide');
+      modalNode.modal(isOpen(state) ? 'show' : 'hide');
     }];
   };
 });

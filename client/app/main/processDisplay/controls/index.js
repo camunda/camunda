@@ -1,5 +1,5 @@
 export {FilterList} from './filterList';
-export {FilterCreation} from './filterCreation';
+export {CreateFilter} from './createFilter';
 export {ProcessDefinition} from './processDefinition';
 export {Result} from './result';
 export {View} from './view';

@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {openModal, closeModal,
-        __set__, __ResetDependency__} from 'main/processDisplay/controls/filterCreation/service';
+        __set__, __ResetDependency__} from 'main/processDisplay/controls/createFilter/service';
 
 describe('FilterCreation service', () => {
   const OPEN_ACTION = 'OPEN_MODAL';

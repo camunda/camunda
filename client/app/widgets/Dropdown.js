@@ -1,7 +1,7 @@
-import {jsx, Children, createReferenceComponent, withSockets} from 'view-utils';
+import {jsx, Children, OnEvent, createReferenceComponent, withSockets} from 'view-utils';
 import $ from 'jquery';
 
-export const Dropdown = withSockets(({children, sockets: {label, list}}) => {
+export const Dropdown = withSockets(({sockets: {label, list}}) => {
   const nodes = {};
   const Reference = createReferenceComponent(nodes);
 
@@ -24,9 +24,10 @@ export const Dropdown = withSockets(({children, sockets: {label, list}}) => {
   };
 });
 
-export function DropdownItem({children}) {
+export function DropdownItem({children, listener}) {
   return <li>
     <a href="#">
+      <OnEvent event={['click']} listener={listener} />
       <Children children={children} />
     </a>
   </li>;

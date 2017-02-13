@@ -30,7 +30,7 @@ describe('<Modal>', () => {
       closeFct = sinon.spy();
 
       ({update} = mountTemplate(
-        <Modal open={openFct} onClose={closeFct}>
+        <Modal isOpen={openFct} onClose={closeFct}>
           <Socket name="head"><span className="head">Header</span></Socket>
           <Socket name="body"><span className="body">Bodyer</span></Socket>
           <Socket name="foot"><span className="foot">Footer</span></Socket>
@@ -72,7 +72,7 @@ describe('<Modal>', () => {
       closeFct = sinon.spy();
 
       ({update} = mountTemplate(
-        <Modal open={openFct} onClose={closeFct}>
+        <Modal isOpen={openFct} onClose={closeFct}>
           <Socket name="head"><span className="head">Header</span></Socket>
           <Socket name="body"><span className="body">Bodyer</span></Socket>
           <Socket name="foot"><span className="foot">Footer</span></Socket>

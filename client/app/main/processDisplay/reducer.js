@@ -1,6 +1,6 @@
 import {reducer as diagramReducer} from './diagram';
 import {reducer as processDefinitionReducer, SELECT_PROCESS_DEFINITION} from './controls/processDefinition/reducer';
-import {reducer as createFilterReducer} from './controls/filterCreation/reducer';
+import {reducer as createFilterReducer} from './controls/createFilter/reducer';
 import {addLoading, createLoadingActionFunction, createResultActionFunction, INITIAL_STATE} from 'utils/loading';
 import {combineReducers} from 'redux';
 

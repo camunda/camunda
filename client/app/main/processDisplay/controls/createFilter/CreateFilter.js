@@ -2,23 +2,22 @@ import {jsx, OnEvent, Socket} from 'view-utils';
 import {openModal, closeModal} from './service';
 import {Dropdown, DropdownItem, Modal} from 'widgets';
 
-export function FilterCreation() {
+export function CreateFilter() {
   return <td>
     <Dropdown>
       <Socket name="label">
         + <span className="caret"></span>
       </Socket>
       <Socket name="list">
-        <DropdownItem>
-          <OnEvent event={['click']} listener={openModal} />
+        <DropdownItem listener={openModal}>
           Start Date
         </DropdownItem>
       </Socket>
     </Dropdown>
-    <Modal open={isModalOpen} onClose={closeModal}>
+    <Modal isOpen={isModalOpen} onClose={closeModal}>
       <Socket name="head">
         <button type="button" className="close">
-          <OnEvent event={['click']} listener={closeModal} />
+          <OnEvent event='click' listener={closeModal} />
           <span aria-hidden="true">×</span>
         </button>
         <h4 className="modal-title" id="exampleModalLabel">New Filter</h4>
@@ -56,8 +55,8 @@ export function FilterCreation() {
       </Socket>
       <Socket name="foot">
         <button type="button" className="btn btn-default">
-          <OnEvent event={['click']} listener={closeModal} />
-          Abort
+          <OnEvent event='click' listener={closeModal} />
+            Abort
           </button>
         <button type="button" className="btn btn-primary" id="create-filter-button">Create Filter</button>
       </Socket>

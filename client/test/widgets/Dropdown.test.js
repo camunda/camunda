@@ -1,5 +1,5 @@
 import {jsx, Socket} from 'view-utils';
-import {mountTemplate} from 'testHelpers';
+import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {Dropdown, DropdownItem, __set__, __ResetDependency__} from 'widgets/Dropdown';
@@ -53,10 +53,13 @@ describe('<Dropdown>', () => {
 describe('<DropdownItem>', () => {
   let update;
   let node;
+  let clickSpy;
 
   beforeEach(() => {
+    clickSpy = sinon.spy();
+
     ({update, node} = mountTemplate(
-      <DropdownItem>
+      <DropdownItem listener={clickSpy}>
         <span className="item">Item</span>
       </DropdownItem>
     ));
@@ -69,5 +72,15 @@ describe('<DropdownItem>', () => {
     expect(item).to.exist;
     expect(item.parentNode.tagName).to.eql('A');
     expect(item.parentNode.parentNode.tagName).to.eql('LI');
+  });
+
+  it('should call the provided function on click', () => {
+    triggerEvent({
+      node,
+      selector: 'a',
+      eventName: 'click'
+    });
+
+    expect(clickSpy.calledOnce).to.eql(true);
   });
 });

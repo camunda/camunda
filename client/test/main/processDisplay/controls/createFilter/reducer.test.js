@@ -1,7 +1,6 @@
 import {expect} from 'chai';
 import {reducer, createOpenDateFilterModalAction,
-        createCloseDateFilterModalAction} from 'main/processDisplay/controls/filterCreation/reducer';
-import {INITIAL_STATE, LOADING_STATE, LOADED_STATE} from 'utils/loading';
+        createCloseDateFilterModalAction} from 'main/processDisplay/controls/createFilter/reducer';
 
 describe('ProcessDefinition reducer', () => {
   let open;

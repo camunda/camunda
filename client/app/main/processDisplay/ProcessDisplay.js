@@ -1,6 +1,6 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {HeatmapDiagram} from './diagram';
-import {ProcessDefinition, FilterList, FilterCreation, Result, View} from './controls';
+import {ProcessDefinition, FilterList, CreateFilter, Result, View} from './controls';
 import {isInitial, isLoading} from 'utils/loading';
 import {loadDiagram, loadHeatmap} from './service';
 
@@ -23,7 +23,7 @@ function Process() {
               <ProcessDefinition selector="processDefinition" />
               <View />
               <FilterList />
-              <FilterCreation />
+              <CreateFilter />
               <Result />
             </tr>
           </tbody>
