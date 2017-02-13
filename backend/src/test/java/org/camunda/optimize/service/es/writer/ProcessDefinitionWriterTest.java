@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es;
+package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;

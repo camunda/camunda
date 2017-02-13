@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -205,7 +206,7 @@
                     <Class-Path>environment/</Class-Path>
                   </manifestEntries>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
             </configuration>
           </execution>
@@ -364,11 +365,12 @@
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
             <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>5.3</version>
+            <version>5.4-SNAPSHOT</version>
             <configuration>
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>
               <httpPort>9200</httpPort>
+              <pathScripts>${project.basedir}/src/main/resources/org/camunda/es/scripts</pathScripts>
               <skip>${skipTests}</skip>
             </configuration>
             <executions>

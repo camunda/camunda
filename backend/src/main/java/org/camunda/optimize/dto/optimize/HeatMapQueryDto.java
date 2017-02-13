@@ -7,11 +7,8 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 public class HeatMapQueryDto implements Serializable {
-  public static String START_DATE = "start_date";
-  public static String END_DATE = "end_date";
 
   protected String processDefinitionId;
-  protected List<String> flowNodes;
   protected FilterDto filter;
 
   public FilterDto getFilter() {
@@ -28,13 +25,5 @@ public class HeatMapQueryDto implements Serializable {
 
   public void setProcessDefinitionId(String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
-  }
-
-  public List<String> getFlowNodes() {
-    return flowNodes;
-  }
-
-  public void setFlowNodes(List<String> flowNodes) {
-    this.flowNodes = flowNodes;
   }
 }

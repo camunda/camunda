@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es;
+package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.DateDto;
 import org.camunda.optimize.dto.optimize.EventDto;

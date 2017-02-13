@@ -8,21 +8,14 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.scripted.InternalScriptedMetric;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 /**
  * @author Askar Akhmerov
@@ -67,72 +60,6 @@ public class HeatMapReader {
     query = QueryBuilders.boolQuery()
         .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId));
     return query;
-  }
-
-  public Long activityCorrelation(String processDefinitionId, List<String> activities) {
-    Long result = null;
-
-    QueryBuilder query;
-    SearchRequestBuilder srb = esclient.prepareSearch();
-    if (processDefinitionId != null) {
-      query = QueryBuilders.matchQuery("processDefinitionId", processDefinitionId);
-      srb.setQuery(query);
-    }
-
-    Map<String, Object> parameters = new HashMap<String, Object>();
-    parameters.put("_targetActivities", activities);
-    parameters.put("_agg", new HashMap<>());
-
-
-    SearchResponse sr = srb
-        .addAggregation(AggregationBuilders
-            .scriptedMetric("processesWithActivities")
-            .initScript(getInitScript())
-            .mapScript(getMapScript())
-            .reduceScript(getReduceScript())
-            .params(parameters)
-        )
-        .execute().actionGet();
-
-    InternalScriptedMetric processesWithActivities = sr.getAggregations().get("processesWithActivities");
-    if (processesWithActivities.aggregation() != null) {
-      result = Long.valueOf(processesWithActivities.aggregation().toString());
-    }
-
-    return result;
-  }
-
-  private Script getReduceScript() {
-    return new Script(
-        ScriptType.INLINE,
-        "groovy",
-        getContent(configurationService.getCorrelationReduceScriptPath()),
-        new HashMap<>()
-    );
-  }
-
-  private Script getMapScript() {
-    return new Script(
-        ScriptType.INLINE,
-        "groovy",
-        getContent(configurationService.getCorrelationMapScriptPath()),
-        new HashMap<>()
-    );
-  }
-
-  private Script getInitScript() {
-    return new Script(
-        ScriptType.INLINE,
-        "painless",
-        getContent(configurationService.getCorrelationInitScriptPath()),
-        new HashMap<>()
-    );
-  }
-
-  private String getContent(String script) {
-    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(script);
-    Scanner s = new Scanner(inputStream).useDelimiter("\\A");
-    return s.hasNext() ? s.next() : "";
   }
 
   public Map<String, Long> getHeatMap(HeatMapQueryDto dto) {

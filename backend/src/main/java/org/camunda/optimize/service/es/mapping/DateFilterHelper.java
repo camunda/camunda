@@ -62,10 +62,10 @@ public class DateFilterHelper {
 
   private String mapTimeColumn(DateDto dateDto) {
     String result = null;
-    if (HeatMapQueryDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
+    if (DateDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
       result = EventType.START_DATE;
     }
-    if (HeatMapQueryDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
+    if (DateDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
       result = EventType.END_DATE;
     }
     if (result == null) {

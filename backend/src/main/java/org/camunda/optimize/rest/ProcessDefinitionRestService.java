@@ -1,7 +1,10 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.service.es.reader.CorrelationReader;
 import org.camunda.optimize.service.es.reader.HeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,9 @@ public class ProcessDefinitionRestService {
 
   @Autowired
   private HeatMapReader heatMapReader;
+
+  @Autowired
+  private CorrelationReader correlationReader;
 
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
@@ -58,8 +64,8 @@ public class ProcessDefinitionRestService {
   @Path("/correlation")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Long getCorrelation(HeatMapQueryDto to) {
-    return heatMapReader.activityCorrelation(to.getProcessDefinitionId(), to.getFlowNodes());
+  public GatewaySplitDto getCorrelation(CorrelationQueryDto to) {
+    return correlationReader.activityCorrelation(to);
   }
 
 

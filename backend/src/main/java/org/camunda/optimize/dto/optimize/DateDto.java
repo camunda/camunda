@@ -10,6 +10,9 @@ import java.util.Set;
  */
 public class DateDto {
 
+  public static String START_DATE = "start_date";
+  public static String END_DATE = "end_date";
+
   public static String GRATER_OR_EQUAL = ">=";
   public static String LESS_OR_EQUAL = "<=";
   public static String LESS = "<";
