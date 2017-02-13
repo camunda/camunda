@@ -4,8 +4,11 @@ import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREA
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 
+import org.camunda.tngp.broker.event.TopicSubscriptionNames;
+import org.camunda.tngp.broker.event.processor.TopicSubscriptionManagerService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.SystemContext;
+import org.camunda.tngp.broker.transport.TransportServiceNames;
 
 public class LogStreamsComponent implements Component
 {
@@ -20,6 +23,14 @@ public class LogStreamsComponent implements Component
 
         final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(context.getConfigurationManager());
         context.getServiceContainer().createService(SNAPSHOT_STORAGE_SERVICE, snapshotStorageService)
+            .install();
+
+        final TopicSubscriptionManagerService topicSubscriptionService = new TopicSubscriptionManagerService();
+        context.getServiceContainer()
+            .createService(TopicSubscriptionNames.TOPIC_SUBSCRIPTION_MANAGER, topicSubscriptionService)
+            .dependency(TransportServiceNames.TRANSPORT_SEND_BUFFER, topicSubscriptionService.getSendBufferInjector())
+            .dependency(AGENT_RUNNER_SERVICE, topicSubscriptionService.getAgentRunnerServicesInjector())
+            .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, topicSubscriptionService.getLogStreamsGroupReference())
             .install();
     }
 

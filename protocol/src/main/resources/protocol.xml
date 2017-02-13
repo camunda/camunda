@@ -35,6 +35,8 @@
         <validValue name="ADD_TASK_SUBSCRIPTION">0</validValue>
         <validValue name="REMOVE_TASK_SUBSCRIPTION">1</validValue>
         <validValue name="UPDATE_TASK_SUBSCRIPTION">2</validValue>
+        <validValue name="ADD_TOPIC_SUBSCRIPTION">3</validValue>
+        <validValue name="REMOVE_TOPIC_SUBSCRIPTION">4</validValue>
     </enum>
 
   </types>
@@ -72,6 +74,14 @@
     <field name="longKey" id="2" type="uint64" />
     <data name="bytesKey" id="3" type="varDataEncoding" />
     <data name="event" id="4" type="varDataEncoding" />
+  </sbe:message>
+  
+  <sbe:message name="SubscribedEvent" id="30">
+    <field name="topicId" id="1" type="int32" />
+    <field name="position" id="2" type="uint64" />
+    <field name="longKey" id="3" type="uint64" />
+    <field name="eventType" id="4" type="EventType" />
+    <data name="event" id="5" type="varDataEncoding" />
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->

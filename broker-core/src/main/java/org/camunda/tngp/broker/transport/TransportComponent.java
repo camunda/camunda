@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.transport;
 
+import static org.camunda.tngp.broker.event.TopicSubscriptionNames.TOPIC_SUBSCRIPTION_MANAGER;
 import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.COUNTERS_MANAGER_SERVICE;
@@ -109,6 +110,7 @@ public class TransportComponent implements Component
             .dependency(TRANSPORT_SEND_BUFFER, controlMessageHandlerManagerService.getSendBufferInjector())
             .dependency(AGENT_RUNNER_SERVICE, controlMessageHandlerManagerService.getAgentRunnerServicesInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
+            .dependency(TOPIC_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTopicSubscriptionManagerInjector())
             .install();
     }
 

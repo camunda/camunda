@@ -84,4 +84,9 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return targetStreamInjector;
     }
 
+    public StreamProcessor getStreamProcessor()
+    {
+        return streamProcessor;
+    }
+
 }
