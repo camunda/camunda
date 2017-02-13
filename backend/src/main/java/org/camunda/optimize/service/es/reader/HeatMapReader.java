@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -135,6 +136,7 @@ public class HeatMapReader {
   }
 
   public Map<String, Long> getHeatMap(HeatMapQueryDto dto) {
+    ValidationHelper.validate(dto);
     Map<String, Long> result = new HashMap<>();
 
     SearchRequestBuilder srb = esclient
@@ -152,6 +154,8 @@ public class HeatMapReader {
     }
     return result;
   }
+
+
 
   private Terms getTermsWithAggregation(SearchRequestBuilder srb) {
     SearchResponse sr = srb
