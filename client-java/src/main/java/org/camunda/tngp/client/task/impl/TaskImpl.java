@@ -31,7 +31,7 @@ public class TaskImpl implements Task
         this.workflowInstanceId = -1L;
         this.type = subscription.getTaskType();
         this.lockExpirationTime = Instant.ofEpochMilli(0);
-        this.taskQueueId = subscription.getTaskQueueId();
+        this.taskQueueId = subscription.getTopicId();
         this.state = STATE_LOCKED;
 
         // final DirectBuffer payloadBuffer = taskReader.payload();

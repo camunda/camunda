@@ -206,7 +206,7 @@ public class BrokerRestartTest
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
         client.tasks().newSubscription()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(10L))
             .handler(taskHandler)
@@ -225,7 +225,7 @@ public class BrokerRestartTest
         taskHandler.clear();
 
         client.tasks().newSubscription()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(10L))
             .handler(taskHandler)

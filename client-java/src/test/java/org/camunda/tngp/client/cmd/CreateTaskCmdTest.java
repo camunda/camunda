@@ -72,30 +72,6 @@ public class CreateTaskCmdTest
     }
 
     @Test
-    public void shouldWriteHeader()
-    {
-        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
-
-        headerDecoder.wrap(writeBuffer, 0);
-
-        assertThat(headerDecoder.schemaId()).isEqualTo(requestDecoder.sbeSchemaId());
-        assertThat(headerDecoder.version()).isEqualTo(requestDecoder.sbeSchemaVersion());
-        assertThat(headerDecoder.templateId()).isEqualTo(requestDecoder.sbeTemplateId());
-        assertThat(headerDecoder.blockLength()).isEqualTo(requestDecoder.sbeBlockLength());
-    }
-
-    @Test
-    public void shouldWriteEventType()
-    {
-        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
-
-        headerDecoder.wrap(writeBuffer, 0);
-        requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
-
-        assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
-    }
-
-    @Test
     public void shouldWriteRequest() throws JsonParseException, JsonMappingException, IOException
     {
         // given
@@ -110,8 +86,16 @@ public class CreateTaskCmdTest
         createTaskCommand.getRequestWriter().write(writeBuffer, 0);
 
         // then
+        headerDecoder.wrap(writeBuffer, 0);
+
+        assertThat(headerDecoder.schemaId()).isEqualTo(requestDecoder.sbeSchemaId());
+        assertThat(headerDecoder.version()).isEqualTo(requestDecoder.sbeSchemaVersion());
+        assertThat(headerDecoder.templateId()).isEqualTo(requestDecoder.sbeTemplateId());
+        assertThat(headerDecoder.blockLength()).isEqualTo(requestDecoder.sbeBlockLength());
+
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
+        assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
         assertThat(requestDecoder.topicId()).isEqualTo(1L);
 
         final byte[] command = new byte[requestDecoder.commandLength()];

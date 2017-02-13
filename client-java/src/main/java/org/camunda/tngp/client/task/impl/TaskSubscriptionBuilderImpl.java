@@ -14,9 +14,10 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
-    protected int taskQueueId = 0;
+    protected int lockOwner = -1;
+    protected int topicId = 0;
     protected TaskHandler taskHandler;
-    protected int taskPrefetchSize = DEFAULT_TASK_PREFETCH_SIZE;
+    protected int taskFetchSize = DEFAULT_TASK_PREFETCH_SIZE;
 
     protected final TaskAcquisition taskAcquisition;
     protected final boolean autoCompleteTasks;
@@ -48,9 +49,9 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     }
 
     @Override
-    public TaskSubscriptionBuilder taskQueueId(int taskQueueId)
+    public TaskSubscriptionBuilder topicId(int taskQueueId)
     {
-        this.taskQueueId = taskQueueId;
+        this.topicId = taskQueueId;
         return this;
     }
 
@@ -60,9 +61,17 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         this.taskHandler = handler;
         return this;
     }
-    public TaskSubscriptionBuilderImpl taskPrefetchSize(int numTasks)
+
+    public TaskSubscriptionBuilder taskFetchSize(int numTasks)
     {
-        this.taskPrefetchSize = numTasks;
+        this.taskFetchSize = numTasks;
+        return this;
+    }
+
+    @Override
+    public TaskSubscriptionBuilder lockOwner(int lockOwner)
+    {
+        this.lockOwner = lockOwner;
         return this;
     }
 
@@ -72,12 +81,13 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         EnsureUtil.ensureNotNull("taskHandler", taskHandler);
         EnsureUtil.ensureNotNull("taskType", taskType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
+        EnsureUtil.ensureGreaterThanOrEqual("lockOwner", lockOwner, 0);
+        EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskHandler, taskType, taskQueueId, lockTime, taskPrefetchSize, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(taskHandler, taskType, topicId, lockTime, lockOwner, taskFetchSize, taskAcquisition, autoCompleteTasks);
         subscription.open();
         return subscription;
     }
-
 
 }

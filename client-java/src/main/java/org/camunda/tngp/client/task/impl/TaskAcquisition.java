@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.task.impl.TaskDataFrameCollector.SubscribedTaskHandler;
 
 public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, SubscribedTaskHandler
@@ -84,8 +85,9 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
     public void closeSubscription(TaskSubscriptionImpl subscription)
     {
         client.closeBrokerTaskSubscription()
-            .consumerId((short) 0)
             .subscriptionId(subscription.getId())
+            .topicId(subscription.getTopicId())
+            .taskType(subscription.getTaskType())
             .execute();
 
         subscription.doClose();
@@ -95,10 +97,12 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
     public void openSubscription(TaskSubscriptionImpl subscription)
     {
         final CreateTaskSubscriptionCmdImpl cmd = client.brokerTaskSubscription();
-        cmd.consumerId((short) 0)
-            .initialCredits(subscription.capacity())
+        cmd
+            .topicId(subscription.getTopicId())
+            .taskType(subscription.getTaskType())
             .lockDuration(subscription.getLockTime())
-            .taskType(subscription.getTaskType());
+            .lockOwner(subscription.getLockOwner())
+            .initialCredits(subscription.capacity());
 
         final long subscriptionId = cmd.execute();
         subscription.setId(subscriptionId);
@@ -115,13 +119,14 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
         subscription.doOpen();
     }
 
-    public void addCredits(TaskSubscriptionImpl subscription, int credits)
+    public void updateCredits(TaskSubscriptionImpl subscription, int credits)
     {
         if (subscription.isOpen())
         {
-            client.provideSubscriptionCredits()
-                .consumerId((short) 0)
+            client.updateSubscriptionCredits()
                 .subscriptionId(subscription.getId())
+                .topicId(subscription.getTopicId())
+                .taskType(subscription.getTaskType())
                 .credits(credits)
                 .execute();
         }
@@ -133,7 +138,7 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
     }
 
     @Override
-    public void onTask()
+    public void onTask(TaskEvent task)
     {
 //        final long subscriptionId = taskReader.subscriptionId();
 //        final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);

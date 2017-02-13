@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import java.util.Iterator;
@@ -113,6 +114,8 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     {
         ensureNotNull("subscription", subscription);
         ensureNotNull("lock task type", subscription.getLockTaskType());
+        ensureGreaterThan("lock duration", subscription.getLockDuration(), 0);
+        ensureGreaterThanOrEqual("lock owner", subscription.getLockOwner(), 0);
         ensureGreaterThan("subscription credits", subscription.getCredits(), 0);
 
         if (!BufferUtil.equals(subscription.getLockTaskType(), subscriptedTaskType))
@@ -128,6 +131,8 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
             availableSubscriptionCredits += subscription.getCredits();
 
             isSuspended = false;
+
+            future.complete(null);
         });
     }
 
@@ -244,11 +249,12 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
             lockSubscription = getNextAvailableSubscription();
             if (lockSubscription != null)
             {
-                final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockTime();
+                final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockDuration();
 
                 taskEvent
                     .setEventType(TaskEventType.LOCK)
-                    .setLockTime(lockTimeout);
+                    .setLockTime(lockTimeout)
+                    .setLockOwner(lockSubscription.getLockOwner());
 
                 hasLockedTask = true;
             }

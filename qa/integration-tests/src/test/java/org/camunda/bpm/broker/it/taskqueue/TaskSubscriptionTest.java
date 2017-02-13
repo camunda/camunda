@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.bpm.broker.it.ClientRule;
@@ -24,13 +25,14 @@ import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
+import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
-@Ignore
 public class TaskSubscriptionTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -45,8 +47,12 @@ public class TaskSubscriptionTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    @Rule
+    public Timeout timeout = Timeout.seconds(10);
+
+    @Ignore
     @Test
-    public void testHandler() throws InterruptedException
+    public void shouldOpenSubscription() throws InterruptedException
     {
         // given
         final TngpClient client = clientRule.getClient();
@@ -54,8 +60,8 @@ public class TaskSubscriptionTest
 
         final Long taskId = taskService.create()
             .topicId(0)
-            .payload("foo")
             .taskType("bar")
+            .payload("{ \"foo\" : 9 }")
             .execute();
 
         // when
@@ -63,7 +69,10 @@ public class TaskSubscriptionTest
 
         taskService.newSubscription()
             .handler(taskHandler)
+            .topicId(0)
             .taskType("bar")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(1)
             .open();
 
         // then
@@ -74,6 +83,7 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks.get(0).getId()).isEqualTo(taskId);
     }
 
+    @Ignore
     @Test
     public void testCompletionInHandler() throws InterruptedException
     {
@@ -114,31 +124,30 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void testCloseSubscription() throws InterruptedException
+    public void shouldCloseSubscription() throws InterruptedException
     {
         // given
         final TngpClient client = clientRule.getClient();
         final AsyncTasksClient taskService = client.tasks();
-        final WorkflowsClient workflowsClient = client.workflows();
-
-        final WorkflowDefinition workflowDefinition = workflowsClient.deploy()
-            .bpmnModelInstance(ProcessModels.ONE_TASK_PROCESS)
-            .execute();
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
         final TaskSubscription subscription = taskService.newSubscription()
-            .handler(taskHandler)
-            .taskType("foo")
-            .open();
+                .handler(taskHandler)
+                .topicId(0)
+                .taskType("bar")
+                .lockTime(Duration.ofMinutes(5))
+                .lockOwner(1)
+                .open();
 
         // when
         subscription.close();
 
         // then
-        workflowsClient
-            .start()
-            .workflowDefinitionId(workflowDefinition.getId())
+        taskService.create()
+            .topicId(0)
+            .taskType("bar")
+            .payload("{ \"foo\" : 9 }")
             .execute();
 
         Thread.sleep(1000L);
@@ -146,6 +155,53 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks).isEmpty();
     }
 
+    @Ignore
+    @Test
+    public void shouldUpdateSubscriptionCredits() throws InterruptedException
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final AsyncTasksClient taskService = client.tasks();
+
+        Stream.of(1, 2).forEach(i ->
+        {
+            taskService.create()
+                .topicId(0)
+                .taskType("bar")
+                .payload("{ \"foo\" : 8 }")
+                .execute();
+        });
+
+        final Long taskId = taskService.create()
+            .topicId(0)
+            .taskType("bar")
+            .payload("{ \"foo\" : 9 }")
+            .execute();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        final TaskSubscription subscription = taskService.newSubscription()
+                .handler(taskHandler)
+                .topicId(0)
+                .taskType("bar")
+                .lockTime(Duration.ofMinutes(5))
+                .lockOwner(1)
+                .taskFetchSize(2)
+                .open();
+
+        // when
+        // workaround to force the update directly
+        ((TaskSubscriptionImpl) subscription).submitCredits(5);
+
+        // then
+        TestUtil.doRepeatedly(() -> null)
+            .until((o) -> !taskHandler.handledTasks.isEmpty());
+
+        assertThat(taskHandler.handledTasks).hasSize(3);
+        assertThat(taskHandler.handledTasks.get(2).getId()).isEqualTo(taskId);
+    }
+
+    @Ignore
     @Test
     @SuppressWarnings("unchecked")
     public void testHandlerThrowingExceptionShouldNotBreakSubscription()
@@ -189,6 +245,7 @@ public class TaskSubscriptionTest
         TestUtil.waitUntil(() -> taskHandler.getNumTasksHandled() == 2);
     }
 
+    @Ignore
     @Test
     public void testPollableSubscription()
     {
@@ -217,6 +274,7 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks.get(0).getId()).isEqualTo(taskId);
     }
 
+    @Ignore
     @Test
     public void shouldOpenSubscriptionAfterClientReconnect()
     {
@@ -236,7 +294,7 @@ public class TaskSubscriptionTest
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
         client.tasks().newSubscription()
-                .taskQueueId(0)
+                .topicId(0)
                 .taskType("foo")
                 .lockTime(100L)
                 .handler(taskHandler)
@@ -248,6 +306,7 @@ public class TaskSubscriptionTest
 
     }
 
+    @Ignore
     @Test
     public void shouldHandleMoreTasksThanPrefetchConfigured()
     {
@@ -266,14 +325,14 @@ public class TaskSubscriptionTest
         final RecordingTaskHandler handler = new RecordingTaskHandler();
 
         final TaskSubscriptionBuilder builder = client.tasks().newSubscription()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("foo")
             .lockTime(10000L)
             .handler(handler);
 
         // when
         ((TaskSubscriptionBuilderImpl) builder)
-            .taskPrefetchSize(2)
+            .taskFetchSize(2)
             .open();
 
         TestUtil.waitUntil(() -> handler.handledTasks.size() == numTasks);
@@ -282,6 +341,7 @@ public class TaskSubscriptionTest
         assertThat(handler.handledTasks).hasSize(numTasks);
     }
 
+    @Ignore
     @Test
     public void shouldGiveTaskToSingleSubscription()
     {
@@ -291,14 +351,14 @@ public class TaskSubscriptionTest
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
         client.tasks().newSubscription()
-            .taskQueueId(0)
+            .topicId(0)
             .lockTime(Duration.ofHours(1L))
             .taskType("foo")
             .handler(taskHandler)
             .open();
 
         client.tasks().newSubscription()
-            .taskQueueId(0)
+            .topicId(0)
             .lockTime(Duration.ofHours(1L))
             .taskType("foo")
             .handler(taskHandler)

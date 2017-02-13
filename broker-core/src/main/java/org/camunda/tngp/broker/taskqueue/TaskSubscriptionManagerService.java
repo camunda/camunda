@@ -63,4 +63,9 @@ public class TaskSubscriptionManagerService implements Service<TaskSubscriptionM
         return agentRunnerServicesInjector;
     }
 
+    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    {
+        return logStreamsGroupReference;
+    }
+
 }

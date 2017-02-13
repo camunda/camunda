@@ -1,7 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
@@ -177,7 +178,9 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
 
             if (isLocked)
             {
-                success = responseWriter.brokerEventMetadata(sourceEventMetadata)
+                // TODO send response with full duplex protocol
+                success = responseWriter
+                    .brokerEventMetadata(sourceEventMetadata)
                     .topicId(streamId)
                     .longKey(eventKey)
                     .eventWriter(taskEvent)

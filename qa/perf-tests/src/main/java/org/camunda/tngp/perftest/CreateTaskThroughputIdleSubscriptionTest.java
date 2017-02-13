@@ -22,7 +22,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
     protected void executeSetup(Properties properties, TngpClient client)
     {
         client.tasks().newSubscription()
-            .taskQueueId(0)
+            .topicId(0)
             .taskType("another" + TASK_TYPE)
             .handler((t) ->
             { })

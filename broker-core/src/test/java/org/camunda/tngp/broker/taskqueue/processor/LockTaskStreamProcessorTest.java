@@ -66,6 +66,7 @@ public class LockTaskStreamProcessorTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
+                .setLockOwner(1)
                 .setCredits(3);
 
         anotherSubscription = new TaskSubscription()
@@ -73,6 +74,7 @@ public class LockTaskStreamProcessorTest
                 .setChannelId(12)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(10).toMillis())
+                .setLockOwner(2)
                 .setCredits(2);
 
         mockController.initStreamProcessor(streamProcessor);
@@ -101,6 +103,7 @@ public class LockTaskStreamProcessorTest
         final TaskEvent taskEvent = lastWrittenEvent.getValue();
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
+        assertThat(taskEvent.getLockOwner()).isEqualTo(1);
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
         assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
@@ -353,6 +356,28 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
+    public void shouldFailToAddSubscriptionIfZeroLockDuration()
+    {
+        final TaskSubscription subscription = anotherSubscription.setLockDuration(0);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("lock duration must be greater than 0");
+
+        streamProcessor.addSubscription(subscription);
+    }
+
+    @Test
+    public void shouldFailToAddSubscriptionIfNotValidLockOwner()
+    {
+        final TaskSubscription subscription = anotherSubscription.setLockOwner(-1);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("lock owner must be greater than or equal to 0");
+
+        streamProcessor.addSubscription(subscription);
+    }
+
+    @Test
     public void shouldFailToUpdateSubscriptionCreditsIfZero()
     {
         // given
@@ -383,7 +408,7 @@ public class LockTaskStreamProcessorTest
 
     protected long lockTimeOf(TaskSubscription subscription)
     {
-        return ClockUtil.getCurrentTime().plusMillis(subscription.getLockTime()).toEpochMilli();
+        return ClockUtil.getCurrentTime().plusMillis(subscription.getLockDuration()).toEpochMilli();
     }
 
 }

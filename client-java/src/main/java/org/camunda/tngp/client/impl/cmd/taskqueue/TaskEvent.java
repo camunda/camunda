@@ -18,6 +18,7 @@ public class TaskEvent
 {
     private TaskEventType event;
     private long lockTime;
+    private int lockOwner;
     private String type;
     private Map<String, String> headers;
     private byte[] payload;
@@ -72,10 +73,21 @@ public class TaskEvent
         this.payload = payload;
     }
 
+    public int getLockOwner()
+    {
+        return lockOwner;
+    }
+
+    public void setLockOwner(int lockOwner)
+    {
+        this.lockOwner = lockOwner;
+    }
+
     public void reset()
     {
         event = null;
         lockTime = -1L;
+        lockOwner = -1;
         type = null;
         headers = null;
         payload = null;

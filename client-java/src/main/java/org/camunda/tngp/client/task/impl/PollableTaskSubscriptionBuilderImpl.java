@@ -13,6 +13,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected int taskPrefetchSize = TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE;
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
+    protected int lockOwner = -1;
     protected int taskQueueId = 0;
 
     protected final TaskAcquisition taskAcquisition;
@@ -44,6 +45,12 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         return lockTime(lockDuration.toMillis());
     }
 
+    public PollableTaskSubscriptionBuilder lockOwner(int lockOwner)
+    {
+        this.lockOwner = lockOwner;
+        return this;
+    }
+
     @Override
     public PollableTaskSubscriptionBuilder taskQueueId(int taskQueueId)
     {
@@ -64,7 +71,7 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskType, taskQueueId, lockTime, taskPrefetchSize, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(taskType, taskQueueId, lockTime, lockOwner, taskPrefetchSize, taskAcquisition, autoCompleteTasks);
         subscription.open();
         return subscription;
     }

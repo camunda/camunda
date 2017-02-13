@@ -1,6 +1,7 @@
 package org.camunda.tngp.client.task.impl;
 
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.transport.protocol.Protocols;
@@ -39,8 +40,7 @@ public class TaskDataFrameCollector
             if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
             {
                 final int protocolHeaderLength = TransportHeaderDescriptor.headerLength();
-                // TODO read task event from buffer
-                // taskReader.wrap(buffer, offset + protocolHeaderLength, length - protocolHeaderLength);
+                // TODO handle event - ensure that this is a task event
                 //taskHandler.onTask();
             }
 
@@ -51,7 +51,7 @@ public class TaskDataFrameCollector
 
     public interface SubscribedTaskHandler
     {
-        void onTask();
+        void onTask(TaskEvent task);
     }
 
 

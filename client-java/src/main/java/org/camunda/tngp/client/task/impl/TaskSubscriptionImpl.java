@@ -18,8 +18,9 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
     protected final ManyToManyConcurrentArrayQueue<TaskImpl> acquiredTasks;
 
     protected final String taskType;
-    protected final int taskQueueId;
+    protected final int topicId;
     protected final long lockTime;
+    protected final int lockOwner;
     protected final int capacity;
 
     protected final AtomicInteger state;
@@ -43,11 +44,12 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
             String taskType,
             int taskQueueId,
             long lockTime,
+            int lockOwner,
             int lowerBoundCapacity,
             TaskAcquisition acquisition,
             boolean autoComplete)
     {
-        this(null, taskType, taskQueueId, lockTime, lowerBoundCapacity, acquisition, autoComplete);
+        this(null, taskType, taskQueueId, lockTime, lockOwner, lowerBoundCapacity, acquisition, autoComplete);
     }
 
     public TaskSubscriptionImpl(
@@ -55,14 +57,16 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
             String taskType,
             int taskQueueId,
             long lockTime,
+            int lockOwner,
             int lowerBoundCapacity,
             TaskAcquisition acquisition,
             boolean autoComplete)
     {
         this.taskHandler = taskHandler;
         this.taskType = taskType;
-        this.taskQueueId = taskQueueId;
+        this.topicId = taskQueueId;
         this.lockTime = lockTime;
+        this.lockOwner = lockOwner;
         this.acquisition = acquisition;
         this.autoComplete = autoComplete;
 
@@ -86,14 +90,19 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
         return taskType;
     }
 
-    public int getTaskQueueId()
+    public int getTopicId()
     {
-        return taskQueueId;
+        return topicId;
     }
 
     public long getLockTime()
     {
         return lockTime;
+    }
+
+    public int getLockOwner()
+    {
+        return lockOwner;
     }
 
     @Override
@@ -254,7 +263,7 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
 
     public void submitCredits(int credits)
     {
-        acquisition.scheduleCommand((a) -> a.addCredits(this, credits));
+        acquisition.scheduleCommand((a) -> a.updateCredits(this, credits));
     }
 
     public int size()

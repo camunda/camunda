@@ -1,6 +1,12 @@
 package org.camunda.tngp.client.impl;
 
-import static org.camunda.tngp.client.ClientProperties.*;
+import static org.camunda.tngp.client.ClientProperties.BROKER_CONTACTPOINT;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
@@ -22,8 +28,8 @@ import org.camunda.tngp.client.impl.cmd.CreateTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
-import org.camunda.tngp.client.impl.cmd.ProvideSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceCmdImpl;
+import org.camunda.tngp.client.impl.cmd.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceCmdImpl;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
@@ -40,6 +46,7 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
@@ -112,9 +119,10 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
-        //taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
+        taskSubscriptionManager = new TaskSubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         eventsClient = new TngpEventsClientImpl(cmdExecutor);
     }
@@ -129,15 +137,15 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
         channelResolver.setChannelId(channel.getId());
 
-        // taskSubscriptionManager.start();
+        taskSubscriptionManager.start();
     }
 
     @Override
     public void disconnect()
     {
-        //taskSubscriptionManager.closeAllSubscriptions();
+        taskSubscriptionManager.closeAllSubscriptions();
 
-        //taskSubscriptionManager.stop();
+        taskSubscriptionManager.stop();
 
         channel.close();
         channel = null;
@@ -230,17 +238,17 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
     public CreateTaskSubscriptionCmdImpl brokerTaskSubscription()
     {
-        return new CreateTaskSubscriptionCmdImpl(cmdExecutor);
+        return new CreateTaskSubscriptionCmdImpl(cmdExecutor, objectMapper);
     }
 
     public CloseTaskSubscriptionCmdImpl closeBrokerTaskSubscription()
     {
-        return new CloseTaskSubscriptionCmdImpl(cmdExecutor);
+        return new CloseTaskSubscriptionCmdImpl(cmdExecutor, objectMapper);
     }
 
-    public ProvideSubscriptionCreditsCmdImpl provideSubscriptionCredits()
+    public UpdateSubscriptionCreditsCmdImpl updateSubscriptionCredits()
     {
-        return new ProvideSubscriptionCreditsCmdImpl(cmdExecutor);
+        return new UpdateSubscriptionCreditsCmdImpl(cmdExecutor, objectMapper);
     }
 
     @Override

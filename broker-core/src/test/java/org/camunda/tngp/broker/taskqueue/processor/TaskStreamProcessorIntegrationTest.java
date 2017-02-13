@@ -179,6 +179,7 @@ public class TaskStreamProcessorIntegrationTest
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
+                .setLockOwner(1)
                 .setCredits(10);
 
         lockTaskStreamProcessor.addSubscription(subscription);
@@ -203,11 +204,13 @@ public class TaskStreamProcessorIntegrationTest
         event.readValue(taskEvent);
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
         assertThat(taskEvent.getLockTime()).isGreaterThan(0);
+        assertThat(taskEvent.getLockOwner()).isEqualTo(1);
 
         event = getResultEventOf(event.getPosition());
         event.readValue(taskEvent);
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
         assertThat(taskEvent.getLockTime()).isGreaterThan(0);
+        assertThat(taskEvent.getLockOwner()).isEqualTo(1);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
 

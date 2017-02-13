@@ -39,7 +39,7 @@ defaultLogSegmentSize = 512
 [[log]]
 name = "default-task-queue-log"
 id = 0
-logDirectory = "/tmp/tngp-51015-task"
+useTempLogDirectory = true
 
 [snapshot]
 useTempSnapshotDirectory = true

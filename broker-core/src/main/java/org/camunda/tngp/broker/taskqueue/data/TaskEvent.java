@@ -5,6 +5,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
 import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
+import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
@@ -17,6 +18,7 @@ public class TaskEvent extends UnpackedObject
 
     private final EnumProperty<TaskEventType> eventProp = new EnumProperty<>("event", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", -1L);
+    private final IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
     private final StringProperty typeProp = new StringProperty("type");
     private final PackedProperty headersProp = new PackedProperty("headers", EMPTY_MAP);
     private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
@@ -25,6 +27,7 @@ public class TaskEvent extends UnpackedObject
     {
         objectValue.declareProperty(eventProp)
             .declareProperty(lockTimeProp)
+            .declareProperty(lockOwnerProp)
             .declareProperty(typeProp)
             .declareProperty(headersProp)
             .declareProperty(payloadProp);
@@ -49,6 +52,17 @@ public class TaskEvent extends UnpackedObject
     public TaskEvent setLockTime(long val)
     {
         lockTimeProp.setValue(val);
+        return this;
+    }
+
+    public int getLockOwner()
+    {
+        return lockOwnerProp.getValue();
+    }
+
+    public TaskEvent setLockOwner(int lockOwer)
+    {
+        lockOwnerProp.setValue(lockOwer);
         return this;
     }
 

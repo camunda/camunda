@@ -30,9 +30,23 @@ public interface TaskSubscriptionBuilder
     TaskSubscriptionBuilder lockTime(Duration lockDuration);
 
     /**
-     * Sets the task queue id to subscribe to.
+     * Sets the owner for which subscripted tasks will be exclusively locked.
+     *
+     * @param lockOwner owner of which tasks are being locked
      */
-    TaskSubscriptionBuilder taskQueueId(int taskQueueId);
+    TaskSubscriptionBuilder lockOwner(int lockOwner);
+
+    /**
+     * Sets the topic id to subscribe to.
+     */
+    TaskSubscriptionBuilder topicId(int topicId);
+
+    /**
+     * Sets the number of tasks which will be locked at the same time.
+     *
+     * @param numTasks number of locked tasks
+     */
+    TaskSubscriptionBuilder taskFetchSize(int numTasks);
 
     /**
      * Sets the {@link TaskHandler} that is going to receive
