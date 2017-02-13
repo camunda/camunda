@@ -2,11 +2,11 @@ import {jsx, updateOnlyWhenStateChanges} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
 
-export default ({createOverlaysRenderer}) => {
+export function Diagram({createOverlaysRenderer}) {
   return <div className="diagram__holder">
     <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />;
   </div>;
-};
+}
 
 function BpmnViewer({createOverlaysRenderer}) {
   return (node, eventsBus) => {

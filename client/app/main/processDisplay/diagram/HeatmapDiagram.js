@@ -2,7 +2,7 @@ import {getHeatmap, hoverElement,
         removeHeatmapOverlay, addHeatmapOverlay} from './service';
 import {withSelector, jsx} from 'view-utils';
 import {isLoaded} from 'utils/loading';
-import Diagram from 'widgets/Diagram';
+import {Diagram} from 'widgets/Diagram';
 
 export const HeatmapDiagram = withSelector(() =>
   <Diagram createOverlaysRenderer={createHeatmapRenderer} />

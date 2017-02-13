@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {default as Diagram, __set__, __ResetDependency__} from 'widgets/Diagram';
+import {Diagram, __set__, __ResetDependency__} from 'widgets/Diagram';
 
 describe('<Diagram>', () => {
   const diagramXml = 'diagram-xml';
