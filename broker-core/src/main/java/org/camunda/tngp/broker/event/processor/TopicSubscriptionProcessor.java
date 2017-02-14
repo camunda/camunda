@@ -1,15 +1,14 @@
 package org.camunda.tngp.broker.event.processor;
 
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
+import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.protocol.clientapi.EventType;
 
-public class TopicSubscriptionProcessor extends BrokerStreamProcessor implements EventProcessor
+public class TopicSubscriptionProcessor implements StreamProcessor, EventProcessor
 {
 
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
@@ -23,8 +22,6 @@ public class TopicSubscriptionProcessor extends BrokerStreamProcessor implements
 
     public TopicSubscriptionProcessor(int channelId, int logStreamId, SubscribedEventWriter channelWriter)
     {
-        // TODO: need dynamic filtering
-        super(EventType.NULL_VAL);
         this.channelWriter = channelWriter;
         this.channelId = channelId;
         this.logStreamId = logStreamId;
@@ -39,7 +36,7 @@ public class TopicSubscriptionProcessor extends BrokerStreamProcessor implements
     }
 
     @Override
-    public EventProcessor onCheckedEvent(LoggedEvent event)
+    public EventProcessor onEvent(LoggedEvent event)
     {
         this.event = event;
         return this;

@@ -86,7 +86,12 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(streamProcessorName, TASK_QUEUE_STREAM_PROCESSOR_ID, streamProcessor);
+        final StreamProcessorService streamProcessorService = new StreamProcessorService(
+                streamProcessorName,
+                TASK_QUEUE_STREAM_PROCESSOR_ID,
+                streamProcessor)
+             .eventFilter(TaskInstanceStreamProcessor.eventFilter());
+
         serviceContext.createService(streamProcessorServiceName, streamProcessorService)
               .group(TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME)
               .dependency(logStreamServiceName, streamProcessorService.getSourceStreamInjector())

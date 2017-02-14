@@ -6,6 +6,7 @@ import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SER
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.collections.Int2ObjectHashMap;
+import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
@@ -34,11 +35,27 @@ public class StreamProcessorManager
             int processorId,
             T streamProcessor)
     {
+        return createStreamProcessorService(logStreamName, processorName, processorId, streamProcessor, null);
+    }
+
+    public <T extends StreamProcessor> CompletableFuture<StreamProcessorService> createStreamProcessorService(
+            ServiceName<LogStream> logStreamName,
+            ServiceName<StreamProcessorController> processorName,
+            int processorId,
+            T streamProcessor,
+            MetadataFilter eventFilter)
+    {
         final CompletableFuture<StreamProcessorService> future = new CompletableFuture<>();
 
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(processorName.getName(),
+        final StreamProcessorService streamProcessorService = new StreamProcessorService(
+                processorName.getName(),
                 processorId,
                 streamProcessor);
+
+        if (eventFilter != null)
+        {
+            streamProcessorService.eventFilter(eventFilter);
+        }
 
         serviceContext.createService(processorName, streamProcessorService)
             .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())

@@ -1,8 +1,12 @@
 package org.camunda.tngp.broker.logstreams.processor;
 
+import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
@@ -23,6 +27,18 @@ public class StreamProcessorService implements Service<StreamProcessorController
     private final int id;
     private final StreamProcessor streamProcessor;
 
+    protected MetadataFilter customFilter;
+    protected MetadataFilter versionFilter = (m) ->
+    {
+        if (m.getProtocolVersion() > Constants.PROTOCOL_VERSION)
+        {
+            throw new RuntimeException(String.format("Cannot handle event with version newer " +
+                    "than what is implemented by broker (%d > %d)", m.getProtocolVersion(), Constants.PROTOCOL_VERSION));
+        }
+
+        return true;
+    };
+
     private StreamProcessorController streamProcessorController;
 
     public StreamProcessorService(String name, int id, StreamProcessor streamProcessor)
@@ -30,6 +46,12 @@ public class StreamProcessorService implements Service<StreamProcessorController
         this.name = name;
         this.id = id;
         this.streamProcessor = streamProcessor;
+    }
+
+    public StreamProcessorService eventFilter(MetadataFilter eventFilter)
+    {
+        this.customFilter = eventFilter;
+        return this;
     }
 
     @Override
@@ -42,11 +64,18 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
         final AgentRunnerService agentRunnerService = agentRunnerServiceInjector.getValue().logStreamProcessorAgentRunnerService();
 
+        MetadataFilter eventFilter = versionFilter;
+        if (customFilter != null)
+        {
+            eventFilter = eventFilter.and(customFilter);
+        }
+
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
             .sourceStream(sourceStream)
             .targetStream(targetStream)
             .snapshotStorage(snapshotStorage)
             .agentRunnerService(agentRunnerService)
+            .eventFilter(new MetadataEventFilter(eventFilter))
             .build();
 
         ctx.async(streamProcessorController.openAsync());
@@ -84,9 +113,29 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return targetStreamInjector;
     }
 
-    public StreamProcessor getStreamProcessor()
+    public StreamProcessorController getStreamProcessorController()
     {
-        return streamProcessor;
+        return streamProcessorController;
+    }
+
+    protected static class MetadataEventFilter implements EventFilter
+    {
+
+        protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+        protected final MetadataFilter metadataFilter;
+
+        public MetadataEventFilter(MetadataFilter metadataFilter)
+        {
+            this.metadataFilter = metadataFilter;
+        }
+
+        @Override
+        public boolean applies(LoggedEvent event)
+        {
+            event.readMetadata(metadata);
+            return metadataFilter.applies(metadata);
+        }
+
     }
 
 }

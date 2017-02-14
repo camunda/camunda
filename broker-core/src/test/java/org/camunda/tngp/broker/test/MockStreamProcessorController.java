@@ -49,6 +49,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
 
     protected StreamProcessor streamProcessor;
+    protected long position;
 
     protected Class<T> eventClass;
     protected Consumer<T> defaultEventSetter;
@@ -59,7 +60,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     protected T lastEventValue;
     protected BrokerEventMetadata lastEventMetadata;
 
-    public MockStreamProcessorController(Class<T> eventClass, Consumer<T> defaultEventSetter, EventType defaultEventType)
+    public MockStreamProcessorController(Class<T> eventClass, Consumer<T> defaultEventSetter, EventType defaultEventType, long initialPosition)
     {
         this.eventClass = eventClass;
         this.writtenEvents = new ArrayList<>();
@@ -74,13 +75,20 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
             m.reqRequestId(0);
             m.eventType(defaultEventType);
         };
+        this.position = initialPosition;
     }
 
 
     public MockStreamProcessorController(Class<T> eventClass, EventType eventType)
     {
         this(eventClass, (t) ->
-        { }, eventType);
+        { }, eventType, 0);
+    }
+
+    public MockStreamProcessorController(Class<T> eventClass, EventType eventType, long initialPosition)
+    {
+        this(eventClass, (t) ->
+        { }, eventType, initialPosition);
     }
 
     public MockStreamProcessorController(Class<T> eventClass)
@@ -217,6 +225,11 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         simulateStreamProcessorController(mockLoggedEvent);
     }
 
+    public void processEvent(LoggedEvent event)
+    {
+        simulateStreamProcessorController(event);
+    }
+
 
     protected void simulateStreamProcessorController(final LoggedEvent loggedEvent)
     {
@@ -235,12 +248,19 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         }
     }
 
+    public LoggedEvent buildLoggedEvent(long key, Consumer<T> eventSetter)
+    {
+        return buildLoggedEvent(key, eventSetter, defaultMetadataSetter);
+    }
+
     public LoggedEvent buildLoggedEvent(long key, Consumer<T> eventSetter, Consumer<BrokerEventMetadata> metadataSetter)
     {
 
         final LoggedEvent mockLoggedEvent = mock(LoggedEvent.class);
 
         when(mockLoggedEvent.getLongKey()).thenReturn(key);
+        when(mockLoggedEvent.getPosition()).thenReturn(position);
+        position++;
 
         final T event = newEventInstance();
         defaultEventSetter.accept(event);

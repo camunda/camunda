@@ -44,7 +44,8 @@ public class TaskInstanceStreamProcessorTest
     public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
         TaskEvent.class,
         (t) -> t.setType(TASK_TYPE).setEventType(TaskEventType.CREATED),
-        TASK_EVENT);
+        TASK_EVENT,
+        0);
 
     @Before
     public void setup() throws InterruptedException, ExecutionException

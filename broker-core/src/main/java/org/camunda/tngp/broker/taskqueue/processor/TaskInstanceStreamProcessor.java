@@ -5,8 +5,9 @@ import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
-import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
+import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
+import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
@@ -15,14 +16,19 @@ import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
+import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.protocol.clientapi.EventType;
 
-public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
+public class TaskInstanceStreamProcessor implements StreamProcessor
 {
     protected static final int INDEX_VALUE_LENGTH = SIZE_OF_INT + SIZE_OF_INT;
     protected static final int INDEX_STATE_OFFSET = 0;
     protected static final int INDEX_LOCK_OWNER_OFFSET = SIZE_OF_INT;
+
+    protected BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
+    protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final CommandResponseWriter responseWriter;
     protected final IndexStore indexStore;
@@ -46,8 +52,6 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
 
     public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, IndexStore indexStore)
     {
-        super(TASK_EVENT);
-
         this.responseWriter = responseWriter;
         this.indexStore = indexStore;
 
@@ -67,7 +71,7 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
     }
 
     @Override
-    public EventProcessor onCheckedEvent(LoggedEvent event)
+    public EventProcessor onEvent(LoggedEvent event)
     {
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();
@@ -338,6 +342,11 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
 
             taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
         }
+    }
+
+    public static MetadataFilter eventFilter()
+    {
+        return (m) -> m.getEventType() == EventType.TASK_EVENT;
     }
 
 }

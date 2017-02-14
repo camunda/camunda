@@ -25,21 +25,26 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.Constants;
-import org.camunda.tngp.broker.logstreams.processor.BrokerStreamProcessor;
+import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
+import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.buffer.BufferUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 
-public class LockTaskStreamProcessor extends BrokerStreamProcessor
+public class LockTaskStreamProcessor implements StreamProcessor
 {
+    protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
+
     protected final LockTaskEventProcessor lockTaskEventProcessor = new LockTaskEventProcessor();
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
@@ -61,8 +66,6 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
 
     public LockTaskStreamProcessor(DirectBuffer subscriptedTaskType)
     {
-        super(TASK_EVENT);
-
         this.subscriptedTaskType = subscriptedTaskType;
         this.subscriptionIterator = subscriptionsById.values().iterator();
     }
@@ -210,7 +213,7 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
     }
 
     @Override
-    public EventProcessor onCheckedEvent(LoggedEvent event)
+    public EventProcessor onEvent(LoggedEvent event)
     {
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();
@@ -234,6 +237,11 @@ public class LockTaskStreamProcessor extends BrokerStreamProcessor
             }
         }
         return eventProcessor;
+    }
+
+    public static MetadataFilter eventFilter()
+    {
+        return (m) -> m.getEventType() == EventType.TASK_EVENT;
     }
 
     class LockTaskEventProcessor implements EventProcessor

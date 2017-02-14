@@ -147,7 +147,11 @@ public class TaskSubscriptionManager implements Agent
         final String streamProcessorName = streamProcessorServiceName.getName();
 
         final LockTaskStreamProcessor streamProcessor = streamProcessorSupplier.apply(taskType);
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(streamProcessorName, TASK_LOCK_STREAM_PROCESSOR_ID, streamProcessor);
+        final StreamProcessorService streamProcessorService = new StreamProcessorService(
+                streamProcessorName,
+                TASK_LOCK_STREAM_PROCESSOR_ID,
+                streamProcessor)
+            .eventFilter(LockTaskStreamProcessor.eventFilter());
 
         serviceContext.createService(streamProcessorServiceName, streamProcessorService)
             .dependency(logStreamServiceName, streamProcessorService.getSourceStreamInjector())
