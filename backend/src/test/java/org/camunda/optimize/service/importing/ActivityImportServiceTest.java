@@ -1,8 +1,9 @@
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.dto.engine.HistoricActivityInstanceDto;
+import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
+import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,11 +32,16 @@ import java.util.List;
 public class ActivityImportServiceTest {
 
   public static final String TEST_ACTIVITY_ID = "testActivityId";
+  public static final String TEST_ID = "testId";
   public static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
   @Autowired
   private ActivityImportService underTest;
+
+  @InjectMocks
+  @Autowired
+  private MissingActivityFinder missingActivityFinder;
 
   @Mock
   private Client clientMock;
@@ -51,9 +57,9 @@ public class ActivityImportServiceTest {
   @Test
   public void executeImport() throws Exception {
     //given
-    List<HistoricActivityInstanceDto> resultList = setupInputData();
+    List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
 
-    setupClient(resultList);
+    setupEngineClient(resultList);
 
     //when
     underTest.executeImport();
@@ -67,9 +73,10 @@ public class ActivityImportServiceTest {
         .importEvents(Mockito.argThat(matchesEvent()));
   }
 
-  private List<HistoricActivityInstanceDto> setupInputData() {
-    List<HistoricActivityInstanceDto> resultList = new ArrayList<>();
-    HistoricActivityInstanceDto instance = new HistoricActivityInstanceDto();
+  private List<HistoricActivityInstanceEngineDto> setupInputData() {
+    List<HistoricActivityInstanceEngineDto> resultList = new ArrayList<>();
+    HistoricActivityInstanceEngineDto instance = new HistoricActivityInstanceEngineDto();
+    instance.setId(TEST_ID);
     instance.setActivityId(TEST_ACTIVITY_ID);
     instance.setProcessDefinitionId("testProcessDefinition");
     resultList.add(instance);
@@ -93,11 +100,11 @@ public class ActivityImportServiceTest {
   }
 
 
-  private void setupClient(List<HistoricActivityInstanceDto> resultList) {
+  private void setupEngineClient(List<HistoricActivityInstanceEngineDto> resultList) {
     WebTarget mockTarget = Mockito.mock(WebTarget.class);
     Mockito.when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
     Invocation.Builder builderMock = Mockito.mock(Invocation.Builder.class);
-    Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<HistoricActivityInstanceDto>>() {})))
+    Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<HistoricActivityInstanceEngineDto>>() {})))
         .thenReturn(resultList);
     Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
     Mockito.when(clientMock.target(ENGINE_TARGET)).thenReturn(mockTarget);

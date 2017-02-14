@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
@@ -21,10 +21,10 @@ public class ProcessDefinitionWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public void importProcessDefinitions(List<ProcessDefinitionDto> procDefs) throws Exception {
+  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) throws Exception {
 
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
-    for (ProcessDefinitionDto procDef : procDefs) {
+    for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       String id = procDef.getId();
       bulkRequest.add(esclient
         .prepareIndex(
@@ -38,24 +38,21 @@ public class ProcessDefinitionWriter {
     bulkRequest.execute().get();
   }
 
-  public void importProcessDefinitionXmls(ProcessDefinitionXmlDto xml) throws Exception {
+  public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) throws Exception {
 
-    String id = xml.getId();
-    esclient.prepareIndex(
-      configurationService.getOptimizeIndex(),
-      configurationService.getProcessDefinitionXmlType(),
-      id
-    )
-      .setSource(objectMapper.writeValueAsString(xml))
-      .get();
+    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    for (ProcessDefinitionXmlOptimizeDto xml : xmls) {
+      String id = xml.getId();
+      bulkRequest.add(esclient
+        .prepareIndex(
+          configurationService.getOptimizeIndex(),
+          configurationService.getProcessDefinitionXmlType(),
+          id
+        )
+        .setSource(objectMapper.writeValueAsString(xml)));
+    }
+
+    bulkRequest.execute().get();
   }
 
-
-  public TransportClient getEsclient() {
-    return esclient;
-  }
-
-  public void setEsclient(TransportClient esclient) {
-    this.esclient = esclient;
-  }
 }

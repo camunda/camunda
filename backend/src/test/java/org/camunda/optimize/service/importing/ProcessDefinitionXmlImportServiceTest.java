@@ -1,10 +1,14 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
+import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
+import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,18 +26,18 @@ import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/applicationContext.xml"})
-public class ProcessDefinitionImportServiceTest {
+public class ProcessDefinitionXmlImportServiceTest {
 
-  public static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
+  private static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
   private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
   @Autowired
-  private ProcessDefinitionImportService underTest;
+  private ProcessDefinitionXmlImportService underTest;
 
   @InjectMocks
   @Autowired
-  private MissingProcessDefinitionFinder missingProcessDefinitionFinder;
+  private MissingProcessDefinitionXmlFinder missingProcessDefinitionXmlFinder;
 
   @Mock
   private Client clientMock;
@@ -49,29 +53,26 @@ public class ProcessDefinitionImportServiceTest {
   @Test
   public void executeImport() throws Exception {
     //given
-    List<ProcessDefinitionEngineDto> resultList = setupInputData();
+    ProcessDefinitionXmlEngineDto xml = setupInputData();
 
-    setupClient(resultList);
+    setupClient(xml);
 
     //when
     underTest.executeImport();
 
     //then
     //verify invocations
-    Mockito.verify(clientMock, Mockito.times(1))
+    Mockito.verify(clientMock, Mockito.times(2))
       .target(Mockito.anyString());
 
     Mockito.verify(processDefinitionWriter, Mockito.times(1))
-      .importProcessDefinitions(Mockito.argThat(matchesEvent()));
+      .importProcessDefinitionXmls(Mockito.argThat(matchesEvent()));
   }
 
-  private List<ProcessDefinitionEngineDto> setupInputData() {
-    List<ProcessDefinitionEngineDto> resultList = new ArrayList<>();
-    ProcessDefinitionEngineDto instance = new ProcessDefinitionEngineDto();
+  private ProcessDefinitionXmlEngineDto setupInputData() {
+    ProcessDefinitionXmlEngineDto instance = new ProcessDefinitionXmlEngineDto();
     instance.setId(TEST_PROCESS_DEFINITION_ID);
-    instance.setKey("testProcessDefinition");
-    resultList.add(instance);
-    return resultList;
+    return instance;
   }
 
   private <Object> ArgumentMatcher<Object> matchesEvent() {
@@ -82,7 +83,7 @@ public class ProcessDefinitionImportServiceTest {
 
         if (t instanceof List) {
           List cast = (List) t;
-          result = cast.size() == 1 && TEST_PROCESS_DEFINITION_ID.equals(((ProcessDefinitionOptimizeDto) cast.get(0)).getId());
+          result = cast.size() == 1 && TEST_PROCESS_DEFINITION_ID.equals(((ProcessDefinitionXmlOptimizeDto) cast.get(0)).getId());
 
         }
         return result;
@@ -91,15 +92,27 @@ public class ProcessDefinitionImportServiceTest {
   }
 
 
-  private void setupClient(List<ProcessDefinitionEngineDto> resultList) {
+  private void setupClient(ProcessDefinitionXmlEngineDto xml) {
+    List<ProcessDefinitionEngineDto> procDefList = setupProcessDefinitionInputData();
     WebTarget mockTarget = Mockito.mock(WebTarget.class);
     Mockito.when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
     Invocation.Builder builderMock = Mockito.mock(Invocation.Builder.class);
     Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
     })))
-      .thenReturn(resultList);
+      .thenReturn(procDefList);
+    Mockito.when(builderMock.get(Mockito.eq(new GenericType<ProcessDefinitionXmlEngineDto>() {
+    })))
+      .thenReturn(xml);
     Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
     Mockito.when(clientMock.target(Mockito.eq(ENGINE_TARGET))).thenReturn(mockTarget);
+  }
+
+  private List<ProcessDefinitionEngineDto> setupProcessDefinitionInputData() {
+    List<ProcessDefinitionEngineDto> resultList = new ArrayList<>();
+    ProcessDefinitionEngineDto instance = new ProcessDefinitionEngineDto();
+    instance.setId(TEST_PROCESS_DEFINITION_ID);
+    resultList.add(instance);
+    return resultList;
   }
 
 }

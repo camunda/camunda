@@ -1,21 +1,16 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.CorrelationReader;
 import org.camunda.optimize.service.es.reader.HeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +30,7 @@ public class ProcessDefinitionRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ProcessDefinitionDto> getProcessDefinitions() {
+  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions() {
     return processDefinitionReader.getProcessDefinitions();
   }
 

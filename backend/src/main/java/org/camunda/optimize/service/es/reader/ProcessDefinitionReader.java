@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -32,7 +32,7 @@ public class ProcessDefinitionReader {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public List<ProcessDefinitionDto> getProcessDefinitions() {
+  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions() {
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
 
@@ -43,12 +43,12 @@ public class ProcessDefinitionReader {
       .get();
 
     int numberOfProcessDefinitions = (int) sr.getHits().totalHits();
-    List<ProcessDefinitionDto> list = new ArrayList<>(numberOfProcessDefinitions);
+    List<ProcessDefinitionOptimizeDto> list = new ArrayList<>(numberOfProcessDefinitions);
     for (SearchHit hit : sr.getHits().getHits()) {
       String content = hit.getSourceAsString();
-      ProcessDefinitionDto processDefinition = null;
+      ProcessDefinitionOptimizeDto processDefinition = null;
       try {
-        processDefinition = objectMapper.readValue(content, ProcessDefinitionDto.class);
+        processDefinition = objectMapper.readValue(content, ProcessDefinitionOptimizeDto.class);
       } catch (IOException e) {
         logger.error("Error while reading process definition from elastic search!", e);
       }

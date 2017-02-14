@@ -4,11 +4,18 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.mockito.AdditionalMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 /**
  * Transport client factory used in unit tests in order to allow mocking
@@ -25,32 +32,53 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
 
   @Override
   public TransportClient getObject() throws Exception {
-    TransportClient mock = Mockito.mock(TransportClient.class);
+    TransportClient transportClientMock = Mockito.mock(TransportClient.class);
+    SearchRequestBuilder optimizeSearchRequestBuilder = Mockito.mock(SearchRequestBuilder.class);
+    when(transportClientMock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(optimizeSearchRequestBuilder);
 
-    SearchRequestBuilder positiveAuthenticationSearch = setUpSearchRequestBuilder(mock);
-    SearchResponse responseWithOneHit = setUpSearchResponse();
-    Mockito.when(positiveAuthenticationSearch.get()).thenReturn(responseWithOneHit);
+    setUpSearchRequestBuilderForAuthenticationTest(optimizeSearchRequestBuilder);
+    setUpSearchRequestBuilderForImportTests(optimizeSearchRequestBuilder);
 
-    return mock;
+    return transportClientMock;
   }
 
-  private SearchRequestBuilder setUpSearchRequestBuilder(TransportClient mock) {
-    SearchRequestBuilder positiveAuthenticationSearch = Mockito.mock(SearchRequestBuilder.class);
-    Mockito.when(mock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(positiveAuthenticationSearch);
-    Mockito.when(
-        positiveAuthenticationSearch.setTypes(Mockito.eq(configurationService.getElasticSearchUsersType()))
+  private void setUpSearchRequestBuilderForAuthenticationTest(SearchRequestBuilder positiveAuthenticationSearch) {
+    when(
+        positiveAuthenticationSearch.setTypes(eq(configurationService.getElasticSearchUsersType()))
     ).thenReturn(positiveAuthenticationSearch);
-    Mockito.when(positiveAuthenticationSearch.setSource(Mockito.any(SearchSourceBuilder.class)))
+    when(positiveAuthenticationSearch.setSource(any(SearchSourceBuilder.class)))
         .thenReturn(positiveAuthenticationSearch);
-    return positiveAuthenticationSearch;
+    SearchResponse responseWithOneHit = setUpSearchResponse();
+    when(positiveAuthenticationSearch.get()).thenReturn(responseWithOneHit);
   }
 
   private SearchResponse setUpSearchResponse() {
     SearchResponse responseWithOneHit = Mockito.mock(SearchResponse.class);
     SearchHits searchHitsMock = Mockito.mock(SearchHits.class);
-    Mockito.when(searchHitsMock.getTotalHits()).thenReturn(1L);
-    Mockito.when(searchHitsMock.totalHits()).thenReturn(1L);
-    Mockito.when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
+    when(searchHitsMock.getTotalHits()).thenReturn(1L);
+    when(searchHitsMock.totalHits()).thenReturn(1L);
+    when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
+    return responseWithOneHit;
+  }
+
+  private void setUpSearchRequestBuilderForImportTests(SearchRequestBuilder builder) {
+    SearchRequestBuilder newBuilder = Mockito.mock(SearchRequestBuilder.class);
+    when(
+      builder.setTypes(AdditionalMatchers.not(eq(configurationService.getElasticSearchUsersType())))
+    ).thenReturn(newBuilder);
+    when(newBuilder.setQuery(any())).thenReturn(newBuilder);
+    when(newBuilder.setSize(anyInt())).thenReturn(newBuilder);
+    SearchResponse response = createImportTestSearchResponse();
+    when(newBuilder.get()).thenReturn(response);
+  }
+
+  private SearchResponse createImportTestSearchResponse() {
+    SearchResponse responseWithOneHit = Mockito.mock(SearchResponse.class);
+    SearchHits searchHitsMock = Mockito.mock(SearchHits.class);
+    SearchHit[] searchHits = {};
+    when(searchHitsMock.getTotalHits()).thenReturn(0L);
+    when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
+    when(searchHitsMock.getHits()).thenReturn(searchHits);
     return responseWithOneHit;
   }
 

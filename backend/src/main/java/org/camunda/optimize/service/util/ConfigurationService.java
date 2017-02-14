@@ -22,6 +22,8 @@ public class ConfigurationService {
 
   @Value("${camunda.optimize.serialization.date.format}")
   private String dateFormat;
+  @Value("${camunda.optimize.engine.import.page.size.max}")
+  private int engineImportMaxPageSize;
 
   @Value("${camunda.optimize.es.host}")
   private String elasticSearchHost;
@@ -167,5 +169,9 @@ public class ConfigurationService {
 
   public String getDateFormat() {
     return dateFormat;
+  }
+
+  public int getEngineImportMaxPageSize() {
+    return engineImportMaxPageSize;
   }
 }

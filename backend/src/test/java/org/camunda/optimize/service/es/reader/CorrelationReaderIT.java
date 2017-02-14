@@ -1,10 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
-import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
-import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
-import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.dto.optimize.*;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Before;
@@ -52,7 +48,7 @@ public class CorrelationReaderIT {
   @Before
   public void setUp() throws Exception {
     // given
-    ProcessDefinitionXmlDto processDefinitionXmlDto = new ProcessDefinitionXmlDto();
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram());
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);

@@ -1,18 +1,16 @@
 package org.camunda.optimize.service.importing.impl;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.ImportService;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -20,53 +18,41 @@ public class ProcessDefinitionXmlImportService implements ImportService {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportService.class);
 
   @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
   private ProcessDefinitionWriter procDefWriter;
 
   @Autowired
-  private Client client;
-
+  private MissingProcessDefinitionXmlFinder xmlFinder;
 
   @Override
   public void executeImport() {
-    executeProcessDefinitionXmlImport();
-  }
+    List<ProcessDefinitionXmlEngineDto> engineEntries = xmlFinder.retrieveMissingEntities();
 
-  private void executeProcessDefinitionXmlImport() {
-    List<ProcessDefinitionDto> entries = client
-      .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
-      .path(configurationService.getProcessDefinitionEndpoint())
-      .request(MediaType.APPLICATION_JSON)
-      .get(new GenericType<List<ProcessDefinitionDto>>() {
-      });
-    for (ProcessDefinitionDto entry : entries) {
-      executeProcessDefinitionXmlImport(entry.getId());
-    }
-  }
-
-  private void executeProcessDefinitionXmlImport(String processDefinitionId) {
-
-    ProcessDefinitionXmlDto entry = client
-      .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
-      .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
-      .request(MediaType.APPLICATION_JSON)
-      .get(new GenericType<ProcessDefinitionXmlDto>() {
-      });
+    List<ProcessDefinitionXmlOptimizeDto> optimizeDtos = mapToOptimizeDto(engineEntries);
 
     try {
-      procDefWriter.importProcessDefinitionXmls(entry);
+      procDefWriter.importProcessDefinitionXmls(optimizeDtos);
     } catch (Exception e) {
       logger.error("error while writing process definitions to elasticsearch", e);
     }
+
   }
 
-  public Client getClient() {
-    return client;
+  private List<ProcessDefinitionXmlOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionXmlEngineDto> entries) {
+    List<ProcessDefinitionXmlOptimizeDto> result = new ArrayList<>(entries.size());
+    for (ProcessDefinitionXmlEngineDto entry : entries) {
+      mapDefaults(entry);
+
+      result.add(mapDefaults(entry));
+    }
+
+    return result;
   }
 
-  public void setClient(Client client) {
-    this.client = client;
+  private ProcessDefinitionXmlOptimizeDto mapDefaults(ProcessDefinitionXmlEngineDto dto) {
+    ProcessDefinitionXmlOptimizeDto optimizeDto = new ProcessDefinitionXmlOptimizeDto();
+    optimizeDto.setBpmn20Xml(dto.getBpmn20Xml());
+    optimizeDto.setId(dto.getId());
+    return optimizeDto;
   }
+
 }

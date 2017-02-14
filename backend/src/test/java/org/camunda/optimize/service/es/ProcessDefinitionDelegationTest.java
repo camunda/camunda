@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -49,8 +49,8 @@ public class ProcessDefinitionDelegationTest extends AbstractJerseyTest{
 
     // then the staus code is okay and the mocks were invoked
     assertThat(response.getStatus(), is(200));
-    List<ProcessDefinitionDto> definitions =
-      response.readEntity(new GenericType<List<ProcessDefinitionDto>>(){});
+    List<ProcessDefinitionEngineDto> definitions =
+      response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>(){});
     assertThat(definitions,is(notNullValue()));
 
     verify(mockedTransportClient, times(2)).prepareSearch(configurationService.getOptimizeIndex());

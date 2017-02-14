@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.reader;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Rule;
@@ -32,20 +32,17 @@ public class ProcessDefinitionReaderIT {
   @Autowired
   private ConfigurationService configurationService;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
   @Test
   public void getProcessDefinitions() throws Exception {
 
     // given
-    ProcessDefinitionDto procDef = new ProcessDefinitionDto();
+    ProcessDefinitionEngineDto procDef = new ProcessDefinitionEngineDto();
     procDef.setId("123");
     procDef.setKey("testDefinition");
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
 
     // when
-    List<ProcessDefinitionDto> testDefinition = procDefReader.getProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
 
     // then
     assertThat(testDefinition.size(), is(1));
@@ -57,7 +54,7 @@ public class ProcessDefinitionReaderIT {
   public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() {
 
     // given
-    ProcessDefinitionDto procDef = new ProcessDefinitionDto();
+    ProcessDefinitionEngineDto procDef = new ProcessDefinitionEngineDto();
     procDef.setId("123");
     procDef.setKey("testDefinition");
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
@@ -75,7 +72,7 @@ public class ProcessDefinitionReaderIT {
     rule.addEntryToElasticsearch(configurationService.getEventType(),"2", event2);
 
     // when
-    List<ProcessDefinitionDto> testDefinition = procDefReader.getProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
 
     // then
     assertThat(testDefinition.size(), is(1));
@@ -87,7 +84,7 @@ public class ProcessDefinitionReaderIT {
   public void getProcessDefinitionXml() throws Exception {
 
     // given
-    ProcessDefinitionXmlDto xmlDto = new ProcessDefinitionXmlDto();
+    ProcessDefinitionXmlEngineDto xmlDto = new ProcessDefinitionXmlEngineDto();
     xmlDto.setId("123");
     xmlDto.setBpmn20Xml("testBpmnXml");
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(),"123", xmlDto);

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ProcessDefinitionDto implements Serializable {
+public class ProcessDefinitionEngineDto implements Serializable,EngineDto {
 
   protected String id;
   protected String key;

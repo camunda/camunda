@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.engine;
 
-public class ProcessDefinitionXmlDto {
+public class ProcessDefinitionXmlEngineDto implements EngineDto {
 
   private String id;
   private String bpmn20Xml;

@@ -53,6 +53,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     logger.info("Schema has been successfully initialized!");
   }
 
+  public void refreshOptimizeIndexInElasticsearch() {
+    esclient.admin().indices()
+        .prepareRefresh(configurationService.getOptimizeIndex())
+        .get();
+  }
+
   /**
    * parsed to json and then later
    * This class adds a document entry to elasticsearch (ES). Thereby, the

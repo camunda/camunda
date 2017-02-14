@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -43,8 +43,8 @@ public class ProcessDefinitionWriterTest {
     ListenableActionFuture<BulkResponse> getMock = Mockito.mock(ListenableActionFuture.class);
     BulkRequestBuilder bulkRequest = setupBulkRequestBuilder(indexMock, getMock);
 
-    List<ProcessDefinitionDto> procDefs = new ArrayList<>();
-    ProcessDefinitionDto procDef = new ProcessDefinitionDto();
+    List<ProcessDefinitionOptimizeDto> procDefs = new ArrayList<>();
+    ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
     procDef.setId("123");
     procDefs.add(procDef);
 
@@ -62,18 +62,23 @@ public class ProcessDefinitionWriterTest {
   public void importProcessDefinitionXml() throws Exception {
     //given
     IndexRequestBuilder indexMock = setupIndexRequestBuilder(configurationService.getProcessDefinitionXmlType());
+    ListenableActionFuture<BulkResponse> getMock = Mockito.mock(ListenableActionFuture.class);
+    BulkRequestBuilder bulkRequest = setupBulkRequestBuilder(indexMock, getMock);
 
-    ProcessDefinitionXmlDto procDefXml = new ProcessDefinitionXmlDto();
+    List<ProcessDefinitionXmlOptimizeDto> xmls = new ArrayList<>();
+    ProcessDefinitionXmlOptimizeDto procDefXml = new ProcessDefinitionXmlOptimizeDto();
     procDefXml.setId("123");
     procDefXml.setBpmn20Xml("TestBpmnXml");
+    xmls.add(procDefXml);
 
     //when
-    underTest.importProcessDefinitionXmls(procDefXml);
+    underTest.importProcessDefinitionXmls(xmls);
 
     //then
     Mockito.verify(indexMock, Mockito.times(1))
       .setSource(objectMapper.writeValueAsString(procDefXml));
-    Mockito.verify(indexMock, Mockito.times(1)).get();
+    Mockito.verify(bulkRequest, Mockito.times(1)).execute();
+    Mockito.verify(getMock, Mockito.times(1)).get();
   }
 
   private BulkRequestBuilder setupBulkRequestBuilder(IndexRequestBuilder indexMock, ListenableActionFuture<BulkResponse> getMock) {

@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.engine;
 
 import java.util.Date;
 
-public class HistoricActivityInstanceDto {
+public class HistoricActivityInstanceEngineDto implements EngineDto {
 
   private String id;
   private String parentActivityInstanceId;
