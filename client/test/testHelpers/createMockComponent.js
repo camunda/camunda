@@ -1,19 +1,19 @@
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
-import {mockFunction} from  './mockFunction';
+import {observeFunction} from  './observeFunction';
 
 export function createMockComponent(text) {
   const update = sinon.spy();
   const jsxTemplate = <div>{text}</div>;
 
-  const template = mockFunction((node, eventsBus) => {
+  const template = observeFunction((node, eventsBus) => {
     return [
       update,
       jsxTemplate(node, eventsBus)
     ];
   });
 
-  const constructor = mockFunction(() => {
+  const constructor = observeFunction(() => {
     return template;
   });
 

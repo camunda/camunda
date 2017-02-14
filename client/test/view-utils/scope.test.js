@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {jsx, Scope} from 'view-utils';
 import sinon from 'sinon';
-import {mountTemplate, createMockComponent, mockFunction, DESTROY_EVENT} from 'testHelpers';
+import {mountTemplate, createMockComponent, observeFunction, DESTROY_EVENT} from 'testHelpers';
 
 describe('<Scope>', () => {
   let Child;
@@ -21,7 +21,7 @@ describe('<Scope>', () => {
 
   describe('with function selector', () => {
     beforeEach(() => {
-      selector = mockFunction(({prop}) => {
+      selector = observeFunction(({prop}) => {
         return prop;
       });
 

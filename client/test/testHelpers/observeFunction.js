@@ -1,6 +1,6 @@
 import isEqual from 'lodash.isequal';
 
-export function mockFunction(original) {
+export function observeFunction(original) {
   const mocks = {};
 
   function wrapFunction(...args) {
