@@ -365,7 +365,7 @@
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
             <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>5.4-SNAPSHOT</version>
+            <version>5.3</version>
             <configuration>
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>
