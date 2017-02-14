@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlDto;
 import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Rule;
@@ -94,7 +93,7 @@ public class ProcessDefinitionReaderIT {
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(),"123", xmlDto);
 
     // when
-    String testXml = procDefReader.getProcessDefinitionXmls("123");
+    String testXml = procDefReader.getProcessDefinitionXml("123");
 
     // then
     assertThat(testXml, is("testBpmnXml"));

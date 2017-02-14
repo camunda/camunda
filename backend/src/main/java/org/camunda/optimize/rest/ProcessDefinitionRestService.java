@@ -42,7 +42,7 @@ public class ProcessDefinitionRestService {
   @GET
   @Path("/{id}/xml")
   public String getProcessDefinitionXml(@PathParam("id") String processDefinitionId) {
-    return processDefinitionReader.getProcessDefinitionXmls(processDefinitionId);
+    return processDefinitionReader.getProcessDefinitionXml(processDefinitionId);
   }
 
   @GET

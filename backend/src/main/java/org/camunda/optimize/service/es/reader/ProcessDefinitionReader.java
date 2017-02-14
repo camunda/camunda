@@ -57,7 +57,7 @@ public class ProcessDefinitionReader {
     return list;
   }
 
-  public String getProcessDefinitionXmls(String processDefinitionId) {
+  public String getProcessDefinitionXml(String processDefinitionId) {
     GetResponse response = esclient.prepareGet(
       configurationService.getOptimizeIndex(),
       configurationService.getProcessDefinitionXmlType(),

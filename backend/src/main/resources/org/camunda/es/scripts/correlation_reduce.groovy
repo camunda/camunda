@@ -30,7 +30,7 @@ for (e in _aggs.process_activities) {
 if (targetActivities != null && targetActivities.size() > 0) {
     for (pi in finalMap) {
         boolean allFound = true
-        if (targetActivities.contains(startActivity)) {
+        if (pi.value.contains(startActivity)) {
             all = all + 1
         }
         for (act in targetActivities) {

@@ -136,6 +136,12 @@
       <version>${jersy.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-bpmn-model</artifactId>
+      <version>${camunda.engine.version}</version>
+    </dependency>
+
     <!--testing-->
     <dependency>
       <groupId>junit</groupId>
@@ -365,7 +371,7 @@
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
             <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>5.3</version>
+            <version>5.4-SNAPSHOT</version>
             <configuration>
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>

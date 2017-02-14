@@ -7,24 +7,24 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 public class GatewaySplitDto {
-  private String gateway;
-  private String total;
+  private String endEvent;
+  private Long total;
 
   private List<CorrelationOutcomeDto> followingNodes = new ArrayList<>();
 
-  public String getGateway() {
-    return gateway;
+  public String getEndEvent() {
+    return endEvent;
   }
 
-  public void setGateway(String gateway) {
-    this.gateway = gateway;
+  public void setEndEvent(String endEvent) {
+    this.endEvent = endEvent;
   }
 
-  public String getTotal() {
+  public Long getTotal() {
     return total;
   }
 
-  public void setTotal(String total) {
+  public void setTotal(Long total) {
     this.total = total;
   }
 
