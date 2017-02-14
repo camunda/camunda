@@ -12,13 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.camunda.bpm.engine.impl.json.JsonTaskQueryConverter.PROCESS_INSTANCE_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Askar Akhmerov
@@ -29,6 +25,8 @@ public class CorrelationReaderIT {
   public static final String PROCESS_DEFINITION_ID = "testDefinitionId";
   public static final String END_ACTIVITY = "endActivity";
   public static final String GATEWAY_ACTIVITY = "testGatewayActivity";
+  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
+
   @Autowired
   @Rule
   public ElasticSearchIntegrationTestRule rule;
