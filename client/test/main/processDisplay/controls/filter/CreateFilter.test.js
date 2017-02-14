@@ -1,7 +1,7 @@
 import {jsx} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
-import {CreateFilter, __set__, __ResetDependency__} from 'main/processDisplay/controls/createFilter/CreateFilter';
+import {CreateFilter, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/CreateFilter';
 
 describe('<CreateFilter>', () => {
   let node;

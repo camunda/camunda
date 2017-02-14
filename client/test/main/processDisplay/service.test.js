@@ -4,7 +4,7 @@ import {setupPromiseMocking} from 'testHelpers';
 import {loadHeatmap, loadDiagram,
         __set__, __ResetDependency__} from 'main/processDisplay/service';
 
-describe('ProcessDefinition service', () => {
+describe('ProcessDisplay service', () => {
   const START_ACTION_DIAGRAM = 'START_LOADING_DIAGRAM';
   const STOP_ACTION_DIAGRAM = 'STOP_LOADING_DIAGRAM';
   const START_ACTION_HEATMAP = 'START_LOADING_HEATMAP';
@@ -22,6 +22,7 @@ describe('ProcessDefinition service', () => {
   let heatmapData;
   let filter;
   let get;
+  let post;
 
   setupPromiseMocking();
 
@@ -32,7 +33,7 @@ describe('ProcessDefinition service', () => {
     };
 
     filter = {
-      id: processId
+      processDefinitionId: processId
     };
 
     dispatchAction = sinon.spy();
@@ -61,26 +62,26 @@ describe('ProcessDefinition service', () => {
 
   describe('load heatmap', () => {
     beforeEach(() => {
-      get = sinon.stub().returns(Promise.resolve({
+      post = sinon.stub().returns(Promise.resolve({
         json: sinon.stub().returns(
           Promise.resolve(heatmapData)
         )
       }));
-      __set__('get', get);
+      __set__('post', post);
 
       loadHeatmap(filter);
     });
 
     afterEach(() => {
-      __ResetDependency__('get');
+      __ResetDependency__('post');
     });
 
     it('dispatches start loading action', () => {
       expect(dispatchAction.calledWith(START_ACTION_HEATMAP)).to.eql(true);
     });
 
-    it('calls backend', () => {
-      expect(get.calledWith('/api/process-definition/' + processId + '/heatmap')).to.eql(true);
+    it('calls backend with specified filter', () => {
+      expect(post.calledWith('/api/process-definition/heatmap', filter)).to.eql(true);
     });
 
     it('dispatches stop loading action', () => {

@@ -1,8 +1,11 @@
-import {jsx, OnEvent, Socket} from 'view-utils';
-import {openModal, closeModal} from './service';
+import {jsx, OnEvent, Socket, createReferenceComponent} from 'view-utils';
+import {openModal, closeModal, createStartDateFilter} from './service';
 import {Dropdown, DropdownItem, Modal} from 'widgets';
 
 export function CreateFilter() {
+  const nodes = {};
+  const Reference = createReferenceComponent(nodes);
+
   return <td>
     <Dropdown>
       <Socket name="label">
@@ -18,22 +21,26 @@ export function CreateFilter() {
       <Socket name="head">
         <button type="button" className="close">
           <OnEvent event='click' listener={closeModal} />
-          <span aria-hidden="true">×</span>
+          <span>×</span>
         </button>
-        <h4 className="modal-title" id="exampleModalLabel">New Filter</h4>
+        <h4 className="modal-title">New Filter</h4>
       </Socket>
       <Socket name="body">
-        <form lpformnum="2">
-          <label>Start Date Filter:</label>
-          <center>
-            <div className="input-group input-daterange" id="filter-datepicker" style="margin-bottom: 30px;">
-              <input type="text" className="form-control start" value="2016-12-06" />
-              <span className="input-group-addon">to</span>
-              <input type="text" className="form-control end" value="2016-12-06" />
-            </div>
-          </center>
-          <div className="form-group" id="filter-freqently-used-dates">
-            <label>Frequently Used:</label>
+        <form>
+          <span className="label">Start Date Filter:</span>
+            <center>
+              <div className="input-group input-daterange">
+                <input type="text" className="form-control start" value="2017-01-01">
+                  <Reference name="startDate" />
+                </input>
+                <span className="input-group-addon">to</span>
+                <input type="text" className="form-control end" value="2017-12-31">
+                  <Reference name="endDate" />
+                </input>
+              </div>
+            </center>
+          <div className="form-group">
+            <span className="label">Frequently Used:</span>
             <p>
               <button type="button" className="btn btn-default active" style="width:21%;">Today</button>
               <button type="button" className="btn btn-default" style="width:21%;">Yesterday</button>
@@ -56,14 +63,26 @@ export function CreateFilter() {
       <Socket name="foot">
         <button type="button" className="btn btn-default">
           <OnEvent event='click' listener={closeModal} />
-            Abort
-          </button>
-        <button type="button" className="btn btn-primary" id="create-filter-button">Create Filter</button>
+          Abort
+        </button>
+        <button type="button" className="btn btn-primary">
+          <OnEvent event='click' listener={createFilter} />
+          Create Filter
+        </button>
       </Socket>
     </Modal>
   </td>;
 
-  function isModalOpen({createFilter}) {
-    return createFilter.open;
+  function createFilter() {
+    createStartDateFilter(
+      nodes.startDate.value + 'T00:00:00',
+      nodes.endDate.value + 'T23:59:59'
+    );
+
+    closeModal();
+  }
+
+  function isModalOpen({filter: {createModal}}) {
+    return createModal.open;
   }
 }

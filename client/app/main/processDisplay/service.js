@@ -1,11 +1,11 @@
 import {dispatchAction} from 'view-utils';
-import {get} from 'http';
+import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
 
-export function loadHeatmap({id}) {
+export function loadHeatmap(filter) {
   dispatchAction(createLoadingHeatmapAction());
-  get('/api/process-definition/' + id + '/heatmap')
+  post('/api/process-definition/heatmap', filter)
     .then(response => response.json())
     .then(result => {
       dispatchAction(createLoadingHeatmapResultAction(result));
@@ -15,9 +15,9 @@ export function loadHeatmap({id}) {
     });
 }
 
-export function loadDiagram({id}) {
+export function loadDiagram({processDefinitionId}) {
   dispatchAction(createLoadingDiagramAction());
-  get('/api/process-definition/' + id + '/xml')
+  get('/api/process-definition/' + processDefinitionId + '/xml')
     .then(response => response.text())
     .then(result => {
       dispatchAction(createLoadingDiagramResultAction(result));

@@ -42,7 +42,7 @@ function matchesExtension(url, extension) {
 }
 
 var proxyInstance = proxy({
-  target: 'http://localhost:8080/',
+  target: 'http://localhost:8090/',
   changeOrigin: true
 });
 

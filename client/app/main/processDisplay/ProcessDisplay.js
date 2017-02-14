@@ -1,6 +1,6 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {HeatmapDiagram} from './diagram';
-import {ProcessDefinition, FilterList, CreateFilter, Result, View} from './controls';
+import {ProcessDefinition, Filter, CreateFilter, Result, View} from './controls';
 import {isInitial, isLoading} from 'utils/loading';
 import {loadDiagram, loadHeatmap} from './service';
 
@@ -22,7 +22,7 @@ function Process() {
             <tr>
               <ProcessDefinition selector="processDefinition" />
               <View />
-              <FilterList />
+              <Filter />
               <CreateFilter />
               <Result />
             </tr>
@@ -77,13 +77,36 @@ function Process() {
     return !processDefinition.selected;
   }
 
-  function filterValid({id}) {
-    return !!id;
+  function filterValid({processDefinitionId}) {
+    return !!processDefinitionId;
   }
 
-  function getFilter({processDefinition}) {
+  function getFilter({processDefinition, filter}) {
+    const dateFilterArray = [];
+
+    filter.query.forEach(entry => {
+      dateFilterArray.push({
+        type: 'start_date',
+        operator: '>=',
+        value : entry.data.start,
+        lowerBoundary : true,
+        upperBoundary : true
+      });
+
+      dateFilterArray.push({
+        type: 'start_date',
+        operator: '<=',
+        value : entry.data.end,
+        lowerBoundary : true,
+        upperBoundary : true
+      });
+    });
+
     return {
-      id: processDefinition.selected
+      processDefinitionId: processDefinition.selected,
+      filter: {
+        dates: dateFilterArray
+      }
     };
   }
 

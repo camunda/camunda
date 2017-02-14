@@ -96,7 +96,9 @@ function getEventsForActivity(processInstanceId, entry, definition) {
       processDefinitionId: definition.id,
       processDefinitionKey: definition.key,
       state: state,
-      timestamp: new Date().getTime() + Math.round(index * -5000 * Math.random())
+      timestamp: new Date().getTime() + Math.round(index * -5000 * Math.random()),
+      startDate: '2017-01-11T00:00:00',
+      endDate: '2017-02-11T00:00:00'
     };
   });
 }
