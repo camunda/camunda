@@ -2,8 +2,7 @@ package org.camunda.tngp.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
@@ -13,9 +12,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
+import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -40,8 +41,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 public class IntegrationTest
 {
@@ -62,6 +61,12 @@ public class IntegrationTest
 
     @Mock
     private ErrorResponseWriter mockErrorResponseWriter;
+
+    @FluentMock
+    private CommandResponseWriter mockCommandResponseWriter;
+
+    @FluentMock
+    private SubscribedEventWriter mockSubscribedEventWriter;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -90,19 +95,10 @@ public class IntegrationTest
 
         final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
 
-        final CommandResponseWriter responseWriter = mock(CommandResponseWriter.class, new Answer<CommandResponseWriter>()
-        {
+        when(mockCommandResponseWriter.tryWriteResponse()).thenReturn(true);
+        when(mockSubscribedEventWriter.tryWriteMessage()).thenReturn(true);
 
-            @Override
-            public CommandResponseWriter answer(InvocationOnMock invocation) throws Throwable
-            {
-                return (CommandResponseWriter) invocation.getMock();
-            }
-        });
-
-        doReturn(true).when(responseWriter).tryWriteResponse();
-
-        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(responseWriter, indexStore))
+        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(mockCommandResponseWriter, mockSubscribedEventWriter, indexStore))
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)

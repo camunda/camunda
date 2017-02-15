@@ -1,6 +1,7 @@
 package org.camunda.bpm.broker.it;
 
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.TngpClient;
@@ -15,12 +16,12 @@ public class ClientRule extends ExternalResource
 
     public ClientRule()
     {
-        this(new Properties());
+        this(() -> new Properties());
     }
 
-    public ClientRule(Properties properties)
+    public ClientRule(Supplier<Properties> propertiesProvider)
     {
-        this.properties = properties;
+        this.properties = propertiesProvider.get();
 
     }
 

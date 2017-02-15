@@ -11,6 +11,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -43,7 +44,9 @@ public class SubscribedEventWriterTest
             .eventType(EventType.RAFT_EVENT)
             .longKey(123L)
             .position(546L)
-            .topicId(876);
+            .topicId(876)
+            .subscriptionId(4L)
+            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[eventWriter.getLength() + 2]);
 
@@ -58,6 +61,7 @@ public class SubscribedEventWriterTest
         assertThat(bodyDecoder.longKey()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
         assertThat(bodyDecoder.topicId()).isEqualTo(876);
+        assertThat(bodyDecoder.subscriptionId()).isEqualTo(4L);
 
         final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.eventLength()]);
         bodyDecoder.getEvent(eventBuffer, 0, eventBuffer.capacity());
@@ -70,7 +74,8 @@ public class SubscribedEventWriterTest
     {
         // given
         final SubscribedEventWriter eventWriter = new SubscribedEventWriter(singleMessageWriter);
-        eventWriter.channelId(123);
+        eventWriter.channelId(123)
+            .event(BUFFER, 1, BUFFER.capacity() - 1);
 
         // when
         eventWriter.tryWriteMessage();

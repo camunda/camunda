@@ -2,7 +2,6 @@ package org.camunda.tngp.client.impl.cmd;
 
 import java.time.Instant;
 
-import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.task.impl.PayloadField;
 
@@ -50,12 +49,7 @@ public class LockedTaskImpl implements LockedTask
     @Override
     public String getPayloadString()
     {
-        return payload.getPayloadString();
-    }
-
-    public void setPayload(DirectBuffer buffer, int offset, int length)
-    {
-        payload.initFromPayloadBuffer(buffer, offset, length);
+        return payload.getPayloadAsJson();
     }
 
 }

@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,10 +16,12 @@ import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.broker.util.msgpack.MsgPackUtil;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +43,9 @@ public class TaskInstanceStreamProcessorTest
     @FluentMock
     private CommandResponseWriter mockResponseWriter;
 
+    @FluentMock
+    private SubscribedEventWriter mockSubscribedEventWriter;
+
     @Rule
     public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
         TaskEvent.class,
@@ -54,7 +60,7 @@ public class TaskInstanceStreamProcessorTest
 
         when(mockLogStream.getId()).thenReturn(1);
 
-        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockIndexStore);
+        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockIndexStore);
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
@@ -85,16 +91,25 @@ public class TaskInstanceStreamProcessorTest
             event.setEventType(TaskEventType.CREATE));
 
         // when
-        mockController.processEvent(2L, event -> event
+        mockController.processEvent(2L,
+            event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(123)
-                .setLockOwner(3));
+                .setLockOwner(3),
+            metadata -> metadata
+                .reqChannelId(4)
+                .subscriptionId(5L));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter, times(2)).tryWriteResponse();
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+
+        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage();
+        verify(mockSubscribedEventWriter).channelId(4);
+        verify(mockSubscribedEventWriter).subscriptionId(5L);
+        verify(mockSubscribedEventWriter).subscriptionType(SubscriptionType.TASK_SUBSCRIPTION);
     }
 
     @Test
@@ -118,7 +133,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter, times(3)).tryWriteResponse();
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
 
     @Test
@@ -138,6 +153,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
+        verify(mockSubscribedEventWriter, never()).tryWriteMessage();
     }
 
     @Test
@@ -156,6 +172,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
+        verify(mockSubscribedEventWriter, never()).tryWriteMessage();
     }
 
     @Test
@@ -174,6 +191,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
+        verify(mockSubscribedEventWriter, never()).tryWriteMessage();
     }
 
     @Test
@@ -195,7 +213,8 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_FAILED);
 
-        verify(mockResponseWriter, times(2)).tryWriteResponse();
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage();
     }
 
     @Test
@@ -238,7 +257,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_FAILED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter, times(4)).tryWriteResponse();
+        verify(mockResponseWriter, times(3)).tryWriteResponse();
     }
 
     @Test
@@ -281,7 +300,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETE_FAILED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter, times(3)).tryWriteResponse();
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
 
 }

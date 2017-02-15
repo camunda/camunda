@@ -213,7 +213,10 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
     public void processEvent(long key, Consumer<T> eventSetter)
     {
-        processEvent(key, eventSetter, defaultMetadataSetter);
+        processEvent(key, eventSetter, metadata ->
+        {
+            // no additional metadata
+        });
     }
 
     public void processEvent(long key, Consumer<T> eventSetter, Consumer<BrokerEventMetadata> metadataSetter)
@@ -263,8 +266,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         position++;
 
         final T event = newEventInstance();
-        defaultEventSetter.accept(event);
-        final DirectBuffer buf = populateAndWrite(event, eventSetter);
+        final DirectBuffer buf = populateAndWrite(event, defaultEventSetter.andThen(eventSetter));
 
         doAnswer(invocation ->
         {
@@ -274,7 +276,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         }).when(mockLoggedEvent).readValue(any());
 
         final BrokerEventMetadata metaData = new BrokerEventMetadata();
-        final DirectBuffer metaDataBuf = populateAndWrite(metaData, metadataSetter);
+        final DirectBuffer metaDataBuf = populateAndWrite(metaData, defaultMetadataSetter.andThen(metadataSetter));
         doAnswer(invocation ->
         {
             final BufferReader arg = (BufferReader) invocation.getArguments()[0];

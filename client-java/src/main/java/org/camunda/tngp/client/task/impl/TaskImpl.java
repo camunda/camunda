@@ -3,17 +3,19 @@ package org.camunda.tngp.client.task.impl;
 import java.time.Instant;
 
 import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.task.Task;
 
 public class TaskImpl implements Task
 {
     protected final AsyncTasksClient tasksClient;
 
-    protected final long id;
+    protected final int topicId;
+    protected final long key;
     protected final Long workflowInstanceId;
     protected final String type;
-    protected final Instant lockExpirationTime;
-    protected final int taskQueueId;
+    protected final long lockExpirationTime;
+    protected final int lockOwner;
     protected final PayloadField payload = new PayloadField();
 
     protected int state;
@@ -23,27 +25,33 @@ public class TaskImpl implements Task
 
     public TaskImpl(
             AsyncTasksClient tasksClient,
-            TaskSubscriptionImpl subscription)
+            TaskSubscriptionImpl subscription,
+            long taskKey,
+            TaskEvent taskEvent)
     {
         this.tasksClient = tasksClient;
-        this.id = -1;
-        this.workflowInstanceId = -1L;
-        this.type = subscription.getTaskType();
-        this.lockExpirationTime = Instant.ofEpochMilli(0);
-        this.taskQueueId = subscription.getTopicId();
-        this.state = STATE_LOCKED;
+        this.key = taskKey;
 
-        // final DirectBuffer payloadBuffer = taskReader.payload();
-        // payload.initFromPayloadBuffer(payloadBuffer, 0, payloadBuffer.capacity());
+        this.topicId = subscription.getTopicId();
+        this.type = taskEvent.getType();
+        this.lockExpirationTime = taskEvent.getLockTime();
+        this.lockOwner = subscription.getLockOwner();
+        this.payload.setRawPayload(taskEvent.getPayload());
+
+        this.workflowInstanceId = -1L;
+
+        this.state = STATE_LOCKED;
     }
 
     @Override
     public void complete()
     {
         tasksClient.complete()
-            .taskKey(id)
-            .topicId(taskQueueId)
-            .payload(payload.getPayloadString())
+            .topicId(topicId)
+            .taskKey(key)
+            .taskType(type)
+            .lockOwner(lockOwner)
+            .payload(payload.getPayloadAsJson())
             .execute();
 
         state = STATE_COMPLETED;
@@ -57,7 +65,7 @@ public class TaskImpl implements Task
     @Override
     public long getId()
     {
-        return id;
+        return key;
     }
 
     @Override
@@ -75,19 +83,19 @@ public class TaskImpl implements Task
     @Override
     public Instant getLockExpirationTime()
     {
-        return lockExpirationTime;
+        return Instant.ofEpochMilli(lockExpirationTime);
     }
 
     @Override
     public String getPayloadString()
     {
-        return payload.getPayloadString();
+        return payload.getPayloadAsJson();
     }
 
     @Override
     public void setPayloadString(String updatedPayload)
     {
-        payload.setPayloadString(updatedPayload);
+        payload.setJsonPayload(updatedPayload);
     }
 
 }

@@ -11,6 +11,7 @@ import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
@@ -20,6 +21,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
@@ -31,6 +33,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final CommandResponseWriter responseWriter;
+    protected final SubscribedEventWriter subscribedEventWriter;
     protected final IndexStore indexStore;
 
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
@@ -50,9 +53,10 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected long eventPosition = 0;
     protected long eventKey = 0;
 
-    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, IndexStore indexStore)
+    public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, IndexStore indexStore)
     {
         this.responseWriter = responseWriter;
+        this.subscribedEventWriter = subscribedEventWriter;
         this.indexStore = indexStore;
 
         taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, INDEX_VALUE_LENGTH);
@@ -185,13 +189,15 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (isLocked)
             {
-                // TODO send response with full duplex protocol
-                success = responseWriter
-                    .brokerEventMetadata(sourceEventMetadata)
-                    .topicId(streamId)
-                    .longKey(eventKey)
-                    .eventWriter(taskEvent)
-                    .tryWriteResponse();
+                success = subscribedEventWriter
+                        .channelId(sourceEventMetadata.getReqChannelId())
+                        .topicId(streamId)
+                        .longKey(eventKey)
+                        .subscriptionId(sourceEventMetadata.getSubscriptionId())
+                        .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
+                        .eventType(TASK_EVENT)
+                        .eventWriter(taskEvent)
+                        .tryWriteMessage();
             }
             return success;
         }

@@ -27,6 +27,8 @@ import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.SingleMessageWriter;
+import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.store.IndexStore;
@@ -81,8 +83,11 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             throw new RuntimeException(String.format("Cannot create task stream processor index, no index file name provided."));
         }
 
-        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBufferInjector.getValue());
-        final TaskInstanceStreamProcessor streamProcessor = new TaskInstanceStreamProcessor(responseWriter, indexStore);
+        final Dispatcher sendBuffer = sendBufferInjector.getValue();
+        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
+        final SubscribedEventWriter subscribedEventWriter = new SubscribedEventWriter(new SingleMessageWriter(sendBuffer));
+
+        final TaskInstanceStreamProcessor streamProcessor = new TaskInstanceStreamProcessor(responseWriter, subscribedEventWriter, indexStore);
 
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 

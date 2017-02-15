@@ -38,6 +38,11 @@
         <validValue name="ADD_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">4</validValue>
     </enum>
+    
+    <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
+        <validValue name="TASK_SUBSCRIPTION">0</validValue>
+        <validValue name="TOPIC_SUBSCRIPTION">1</validValue>
+    </enum>
 
   </types>
 
@@ -80,8 +85,10 @@
     <field name="topicId" id="1" type="int32" />
     <field name="position" id="2" type="uint64" />
     <field name="longKey" id="3" type="uint64" />
-    <field name="eventType" id="4" type="EventType" />
-    <data name="event" id="5" type="varDataEncoding" />
+    <field name="subscriptionId" id="4" type="uint64" />
+    <field name="subscriptionType" id="5" type="SubscriptionType" />
+    <field name="eventType" id="6" type="EventType" />
+    <data name="event" id="7" type="varDataEncoding" />
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->

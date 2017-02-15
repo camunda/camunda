@@ -20,6 +20,7 @@ import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
@@ -29,6 +30,7 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
@@ -65,6 +67,9 @@ public class TaskStreamProcessorIntegrationTest
     @FluentMock
     private CommandResponseWriter mockResponseWriter;
 
+    @FluentMock
+    private SubscribedEventWriter mockSubscribedEventWriter;
+
     private LogStreamWriter logStreamWriter;
     private AgentRunnerService agentRunnerService;
 
@@ -77,6 +82,7 @@ public class TaskStreamProcessorIntegrationTest
         MockitoAnnotations.initMocks(this);
 
         when(mockResponseWriter.tryWriteResponse()).thenReturn(true);
+        when(mockSubscribedEventWriter.tryWriteMessage()).thenReturn(true);
 
         doAnswer(invocation ->
         {
@@ -105,7 +111,7 @@ public class TaskStreamProcessorIntegrationTest
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
         final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
 
-        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, indexStore);
+        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, indexStore);
         taskInstanceStreamProcessorController = LogStreams.createStreamProcessor("task-instance", 0, taskInstanceStreamProcessor)
             .sourceStream(logStream)
             .targetStream(logStream)
@@ -219,11 +225,12 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(PAYLOAD.length)
             .hasBytes(PAYLOAD);
 
-        verify(mockResponseWriter, times(2)).tryWriteResponse();
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
 
-        assertThat(lastBrokerEventMetadata.getSubscriptionId()).isEqualTo(subscription.getId());
-        assertThat(lastBrokerEventMetadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
-        assertThat(lastBrokerEventMetadata.getEventType()).isEqualTo(TASK_EVENT);
+        verify(mockSubscribedEventWriter, times(1)).tryWriteMessage();
+        verify(mockSubscribedEventWriter).channelId(11);
+        verify(mockSubscribedEventWriter).subscriptionId(1L);
+        verify(mockSubscribedEventWriter).subscriptionType(SubscriptionType.TASK_SUBSCRIPTION);
     }
 
     @Test
@@ -287,7 +294,7 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(modifiedPayload.length)
             .hasBytes(modifiedPayload);
 
-        verify(mockResponseWriter, times(3)).tryWriteResponse();
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
 
     private LoggedEvent getResultEventOf(long position)

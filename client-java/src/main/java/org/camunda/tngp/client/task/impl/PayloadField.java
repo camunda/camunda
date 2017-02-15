@@ -1,43 +1,28 @@
 package org.camunda.tngp.client.task.impl;
 
-import java.nio.charset.StandardCharsets;
-
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.client.impl.data.MsgPackConverter;
 
 public class PayloadField
 {
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
+    protected String jsonPayload;
+    protected byte[] rawPayload;
 
-    protected final byte[] payload = new byte[1024 * 1024]; // TODO: size
-    protected final UnsafeBuffer payloadBuffer = new UnsafeBuffer(0, 0);
-    protected String payloadString;
-
-    public String getPayloadString()
+    public String getPayloadAsJson()
     {
-        return payloadString;
+        return jsonPayload;
     }
 
-    public void setPayloadString(String updatedPayload)
+    public void setJsonPayload(String jsonPayload)
     {
-        // TODO: ensure not null; ensure length, etc.
-        this.payloadString = updatedPayload;
-        final byte[] payloadBytes = updatedPayload.getBytes(StandardCharsets.UTF_8);
-        this.payloadBuffer.wrap(payload, 0, payloadBytes.length);
-        this.payloadBuffer.putBytes(0, payloadBytes);
+        this.jsonPayload = jsonPayload;
     }
 
-    public DirectBuffer getPayloadBuffer()
+    public void setRawPayload(byte[] payload)
     {
-        return payloadBuffer;
-    }
-
-    public void initFromPayloadBuffer(DirectBuffer buffer, int offset, int length)
-    {
-        // TODO: check bounds
-        buffer.getBytes(offset, this.payload, 0, length);
-        this.payloadBuffer.wrap(this.payload, 0, length);
-        this.payloadString = new String(this.payload, 0, length, StandardCharsets.UTF_8);
+        this.rawPayload = payload;
+        this.jsonPayload = this.msgPackConverter.convertToJson(rawPayload);
     }
 
 }

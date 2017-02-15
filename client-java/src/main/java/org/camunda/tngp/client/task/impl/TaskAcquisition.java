@@ -138,20 +138,20 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
     }
 
     @Override
-    public void onTask(TaskEvent task)
+    public void onTask(long subscriptionId, long key, TaskEvent taskEvent)
     {
-//        final long subscriptionId = taskReader.subscriptionId();
-//        final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);
-//
-//        if (subscription != null && subscription.isOpen())
-//        {
-//            final TaskImpl task = new TaskImpl(
-//                    client,
-//                    taskReader,
-//                    subscription);
-//
-//            subscription.addTask(task);
-//        }
+        final TaskSubscriptionImpl subscription = taskSubscriptions.getSubscription(subscriptionId);
+
+        if (subscription != null && subscription.isOpen())
+        {
+            final TaskImpl task = new TaskImpl(
+                    client,
+                    subscription,
+                    key,
+                    taskEvent);
+
+            subscription.addTask(task);
+        }
     }
 
 }

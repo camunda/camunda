@@ -10,6 +10,8 @@ import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.dispatcher.Subscription;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class TaskSubscriptionManager
 {
 
@@ -22,11 +24,11 @@ public class TaskSubscriptionManager
 
     protected final boolean autoCompleteTasks;
 
-    public TaskSubscriptionManager(TngpClientImpl client, int numExecutionThreads, boolean autoCompleteTasks, Subscription receiveBufferSubscription)
+    public TaskSubscriptionManager(TngpClientImpl client, int numExecutionThreads, boolean autoCompleteTasks, Subscription receiveBufferSubscription, ObjectMapper objectMapper)
     {
         subscriptions = new TaskSubscriptions();
 
-        final TaskDataFrameCollector taskCollector = new TaskDataFrameCollector(receiveBufferSubscription);
+        final TaskDataFrameCollector taskCollector = new TaskDataFrameCollector(receiveBufferSubscription, objectMapper);
 
         acqusition = new TaskAcquisition(client, subscriptions, taskCollector);
         this.numExecutionThreads = numExecutionThreads;

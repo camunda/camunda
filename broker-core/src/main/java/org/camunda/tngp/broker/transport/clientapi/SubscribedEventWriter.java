@@ -1,12 +1,16 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
+import java.util.Objects;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.protocol.Protocol;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.util.buffer.BufferWriter;
+import org.camunda.tngp.util.buffer.DirectBufferWriter;
 
 public class SubscribedEventWriter implements BufferWriter
 {
@@ -18,8 +22,11 @@ public class SubscribedEventWriter implements BufferWriter
     protected int topicId;
     protected long position;
     protected long longKey;
+    protected long subscriptionId;
+    protected SubscriptionType subscriptionType;
     protected EventType eventType;
-    protected UnsafeBuffer event = new UnsafeBuffer(0, 0);
+    protected DirectBufferWriter eventBuffer = new DirectBufferWriter();
+    protected BufferWriter eventWriter;
 
     protected final SingleMessageWriter singleMessageWriter;
 
@@ -52,6 +59,18 @@ public class SubscribedEventWriter implements BufferWriter
         return this;
     }
 
+    public SubscribedEventWriter subscriptionId(long subscriptionId)
+    {
+        this.subscriptionId = subscriptionId;
+        return this;
+    }
+
+    public SubscribedEventWriter subscriptionType(SubscriptionType subscriptionType)
+    {
+        this.subscriptionType = subscriptionType;
+        return this;
+    }
+
     public SubscribedEventWriter eventType(EventType eventType)
     {
         this.eventType = eventType;
@@ -60,7 +79,14 @@ public class SubscribedEventWriter implements BufferWriter
 
     public SubscribedEventWriter event(DirectBuffer buffer, int offset, int length)
     {
-        this.event.wrap(buffer, offset, length);
+        this.eventBuffer.wrap(buffer, offset, length);
+        this.eventWriter = eventBuffer;
+        return this;
+    }
+
+    public SubscribedEventWriter eventWriter(BufferWriter eventWriter)
+    {
+        this.eventWriter = eventWriter;
         return this;
     }
 
@@ -70,7 +96,7 @@ public class SubscribedEventWriter implements BufferWriter
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedEventEncoder.BLOCK_LENGTH +
                 SubscribedEventEncoder.eventHeaderLength() +
-                event.capacity();
+                eventWriter.getLength();
     }
 
     @Override
@@ -83,17 +109,30 @@ public class SubscribedEventWriter implements BufferWriter
             .schemaId(bodyEncoder.sbeSchemaId())
             .version(bodyEncoder.sbeSchemaVersion());
 
+        offset += MessageHeaderEncoder.ENCODED_LENGTH;
+
         bodyEncoder
-            .wrap(buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
+            .wrap(buffer, offset)
             .topicId(topicId)
             .position(position)
             .longKey(longKey)
-            .eventType(eventType)
-            .putEvent(event, 0, event.capacity());
+            .subscriptionId(subscriptionId)
+            .subscriptionType(subscriptionType)
+            .eventType(eventType);
+
+        offset += SubscribedEventEncoder.BLOCK_LENGTH;
+
+        final int eventLength = eventWriter.getLength();
+        buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
+
+        offset += SubscribedEventEncoder.eventHeaderLength();
+        eventWriter.write(buffer, offset);
     }
 
     public boolean tryWriteMessage()
     {
+        Objects.requireNonNull(eventWriter);
+
         try
         {
             return singleMessageWriter.tryWrite(channelId, this);
@@ -110,7 +149,9 @@ public class SubscribedEventWriter implements BufferWriter
         this.topicId = SubscribedEventEncoder.topicIdNullValue();
         this.position = SubscribedEventEncoder.positionNullValue();
         this.longKey = SubscribedEventEncoder.longKeyNullValue();
+        this.subscriptionId = SubscribedEventEncoder.subscriptionIdNullValue();
+        this.subscriptionType = SubscriptionType.NULL_VAL;
         this.eventType = EventType.NULL_VAL;
-        this.event.wrap(0, 0);
+        this.eventWriter = null;
     }
 }
