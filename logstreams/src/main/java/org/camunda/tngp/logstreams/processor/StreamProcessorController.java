@@ -102,6 +102,8 @@ public class StreamProcessorController implements Agent
     protected final AgentRunnerService agentRunnerService;
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
+    protected final EventFilter eventFilter;
+
     public StreamProcessorController(StreamProcessorContext context)
     {
         this.streamProcessorContext = context;
@@ -113,6 +115,7 @@ public class StreamProcessorController implements Agent
         this.snapshotPolicy = context.getSnapshotPolicy();
         this.snapshotStorage = context.getSnapshotStorage();
         this.streamProcessorCmdQueue = context.getStreamProcessorCmdQueue();
+        this.eventFilter = context.getEventFilter();
     }
 
     @Override
@@ -201,6 +204,11 @@ public class StreamProcessorController implements Agent
         return streamProcessorContext.getTargetStream().getId() == streamProcessorContext.getSourceStream().getId();
     }
 
+    public EventFilter getEventFilter()
+    {
+        return eventFilter;
+    }
+
     protected final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
     {
         e.printStackTrace();
@@ -249,7 +257,10 @@ public class StreamProcessorController implements Agent
                 final LoggedEvent event = sourceLogStreamReader.next();
                 context.setEvent(event);
 
-                context.take(TRANSITION_PROCESS);
+                if (eventFilter == null || eventFilter.applies(event))
+                {
+                    context.take(TRANSITION_PROCESS);
+                }
             }
 
             return workCount;

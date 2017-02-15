@@ -104,28 +104,31 @@ public class StreamProcessorControllerTest
 
     private LogStreamFailureListener targetLogStreamFailureListener;
 
+    protected ControllableEventFilter eventFilter;
+
     private final ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
+
+    protected TestStreamProcessorBuilder builder;
 
     @Before
     public void init() throws Exception
     {
+
         MockitoAnnotations.initMocks(this);
+        eventFilter = new ControllableEventFilter();
 
         mockSourceLogStreamReader = new MockLogStreamReader();
-
-        final StreamProcessorContext context = new StreamProcessorContext();
-        context.setId(STREAM_PROCESSOR_ID);
-        context.setName(STREAM_PROCESSOR_NAME);
-        context.setAgentRunnerService(mockAgentRunnerService);
-        context.setStreamProcessor(mockStreamProcessor);
-        context.setSourceStream(mockSourceLogStream);
-        context.setTargetStream(mockTargetLogStream);
-        context.setSourceLogStreamReader(mockSourceLogStreamReader);
-        context.setTargetLogStreamReader(mockTargetLogStreamReader);
-        context.setLogStreamWriter(mockLogStreamWriter);
-        context.setSnapshotPolicy(mockSnapshotPolicy);
-        context.setSnapshotStorage(mockSnapshotStorage);
-        context.setStreamProcessorCmdQueue(streamProcessorCmdQueue);
+        builder = new TestStreamProcessorBuilder(STREAM_PROCESSOR_ID, STREAM_PROCESSOR_NAME, mockStreamProcessor)
+                .agentRunnerService(mockAgentRunnerService)
+                .sourceStream(mockSourceLogStream)
+                .targetStream(mockTargetLogStream)
+                .sourceLogStreamReader(mockSourceLogStreamReader)
+                .targetLogStreamReader(mockTargetLogStreamReader)
+                .logStreamWriter(mockLogStreamWriter)
+                .snapshotPolicy(mockSnapshotPolicy)
+                .snapshotStorage(mockSnapshotStorage)
+                .streamProcessorCmdQueue(streamProcessorCmdQueue)
+                .eventFilter(eventFilter);
 
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
@@ -138,7 +141,7 @@ public class StreamProcessorControllerTest
         when(mockLogStreamWriter.producerId(anyInt())).thenReturn(mockLogStreamWriter);
         when(mockLogStreamWriter.sourceEvent(anyInt(), anyLong())).thenReturn(mockLogStreamWriter);
 
-        controller = new StreamProcessorController(context);
+        controller = builder.build();
 
         doAnswer(invocation ->
         {
@@ -1030,6 +1033,66 @@ public class StreamProcessorControllerTest
         assertThat(controller.isFailed()).isTrue();
     }
 
+    @Test
+    public void shouldProcessEventsOnAcceptingFilter()
+    {
+        // given
+        eventFilter.doFilter = true;
+
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+        open();
+
+        // when
+        // -> open
+        controller.doWork();
+
+        // then
+        // next state transition (either processing or open)
+        controller.doWork();
+
+        verify(mockStreamProcessor).onEvent(mockSourceEvent);
+    }
+
+    @Test
+    public void shouldSkipEventsOnRejectingFilter()
+    {
+        // given
+        eventFilter.doFilter = false;
+
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+        open();
+
+        // when
+        // -> open
+        controller.doWork();
+
+        // then
+        // next state transition (either processing or open)
+        controller.doWork();
+
+        verify(mockStreamProcessor, never()).onEvent(any());
+    }
+
+    @Test
+    public void shouldProcessAllEventsOnNullFilter()
+    {
+        // given
+        controller = builder.eventFilter(null).build();
+
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+        open();
+
+        // when
+        // -> open
+        controller.doWork();
+
+        // then
+        // next state transition (either processing or open)
+        controller.doWork();
+
+        verify(mockStreamProcessor).onEvent(mockSourceEvent);
+    }
+
     protected void open()
     {
         controller.openAsync();
@@ -1046,6 +1109,19 @@ public class StreamProcessorControllerTest
         final LoggedEvent event = mock(LoggedEvent.class);
         when(event.getPosition()).thenReturn(position);
         return event;
+    }
+
+    protected static class ControllableEventFilter implements EventFilter
+    {
+
+        protected boolean doFilter = true;
+
+        @Override
+        public boolean applies(LoggedEvent event)
+        {
+            return doFilter;
+        }
+
     }
 
 }

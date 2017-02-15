@@ -27,6 +27,8 @@ public class StreamProcessorContext
 
     protected AgentRunnerService agentRunnerService;
 
+    protected EventFilter eventFilter;
+
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
 
     public LogStream getSourceStream()
@@ -147,6 +149,16 @@ public class StreamProcessorContext
     public void setStreamProcessorCmdQueue(ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue)
     {
         this.streamProcessorCmdQueue = streamProcessorCmdQueue;
+    }
+
+    public void setEventFilter(EventFilter eventFilter)
+    {
+        this.eventFilter = eventFilter;
+    }
+
+    public EventFilter getEventFilter()
+    {
+        return eventFilter;
     }
 
 }
