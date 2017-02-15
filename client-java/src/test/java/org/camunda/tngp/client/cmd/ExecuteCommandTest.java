@@ -1,7 +1,8 @@
 package org.camunda.tngp.client.cmd;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.protocol.clientapi.EventType;
@@ -84,6 +85,12 @@ public class ExecuteCommandTest
         public EventType getCommandEventType()
         {
             return commandEventType;
+        }
+
+        @Override
+        protected long getKey()
+        {
+            return 0;
         }
     }
 }

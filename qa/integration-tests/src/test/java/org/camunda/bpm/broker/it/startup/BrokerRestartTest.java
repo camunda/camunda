@@ -133,8 +133,8 @@ public class BrokerRestartTest
 
         // then
         final Long result = client.tasks().complete()
-                .taskQueueId(0)
-                .taskId(taskId)
+                .topicId(0)
+                .taskKey(taskId)
                 .execute();
 
         assertThat(result).isEqualTo(taskId);

@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import org.agrona.concurrent.UnsafeBuffer;
@@ -21,15 +20,16 @@ import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 
 public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
 {
-    protected static final int INDEX_VALUE_LENGTH = SIZE_OF_LONG + SIZE_OF_INT;
-    protected static final int INDEX_POSITION_OFFSET = 0;
-    protected static final int INDEX_STATE_OFFSET = SIZE_OF_LONG;
+    protected static final int INDEX_VALUE_LENGTH = SIZE_OF_INT + SIZE_OF_INT;
+    protected static final int INDEX_STATE_OFFSET = 0;
+    protected static final int INDEX_LOCK_OWNER_OFFSET = SIZE_OF_INT;
 
     protected final CommandResponseWriter responseWriter;
     protected final IndexStore indexStore;
 
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
     protected final LockTaskProcessor lockTaskProcessor = new LockTaskProcessor();
+    protected final CompleteTaskProcessor completeTaskProcessor = new CompleteTaskProcessor();
 
     protected final Long2BytesHashIndex taskIndex;
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
@@ -87,6 +87,9 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
             case LOCK:
                 eventProcessor = lockTaskProcessor;
                 break;
+            case COMPLETE:
+                eventProcessor = completeTaskProcessor;
+                break;
 
             default:
                 break;
@@ -143,7 +146,7 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
         @Override
         public void updateState()
         {
-            indexWriter.write(eventKey, eventPosition, TaskEventType.CREATED);
+            indexWriter.write(eventKey, TaskEventType.CREATED, -1);
         }
     }
 
@@ -210,7 +213,71 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
         {
             if (isLocked)
             {
-                indexWriter.write(eventKey, eventPosition, TaskEventType.LOCKED);
+                indexWriter.write(eventKey, TaskEventType.LOCKED, taskEvent.getLockOwner());
+            }
+        }
+    }
+
+    class CompleteTaskProcessor implements EventProcessor
+    {
+        protected boolean isCompleted;
+
+        @Override
+        public void processEvent()
+        {
+            isCompleted = false;
+
+            indexAccessor.wrapIndexKey(eventKey);
+            final int typeId = indexAccessor.getTypeId();
+            final int lockOwner = indexAccessor.getLockOwner();
+
+            if (typeId == TaskEventType.LOCKED.id() && lockOwner == taskEvent.getLockOwner())
+            {
+                taskEvent.setEventType(TaskEventType.COMPLETED);
+                isCompleted = true;
+            }
+
+            if (!isCompleted)
+            {
+                taskEvent.setEventType(TaskEventType.COMPLETE_FAILED);
+            }
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            final boolean success = responseWriter
+                .brokerEventMetadata(sourceEventMetadata)
+                .topicId(streamId)
+                .longKey(eventKey)
+                .eventWriter(taskEvent)
+                .tryWriteResponse();
+
+            return success;
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            targetEventMetadata.reset();
+            targetEventMetadata
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .eventType(TASK_EVENT);
+
+            // TODO: targetEventMetadata.raftTermId(raftTermId);
+
+            return writer.key(eventKey)
+                .metadataWriter(targetEventMetadata)
+                .valueWriter(taskEvent)
+                .tryWrite();
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isCompleted)
+            {
+                indexWriter.write(eventKey, TaskEventType.COMPLETED, -1);
             }
         }
     }
@@ -218,7 +285,7 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
     class IndexAccessor
     {
         static final int MISSING_VALUE_TYPE_ID = -1;
-        static final long MISSING_VALUE_POSITION_ID = -1L;
+        static final int MISSING_VALUE_LOCK_OWNER_ID = -1;
 
         protected final UnsafeBuffer indexValueReadBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
 
@@ -237,15 +304,15 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
             }
         }
 
-        public long getPosition()
+        public int getLockOwner()
         {
-            long position = MISSING_VALUE_POSITION_ID;
+            int lockOwner = MISSING_VALUE_LOCK_OWNER_ID;
 
             if (isRead)
             {
-                position = indexValueReadBuffer.getLong(INDEX_POSITION_OFFSET);
+                lockOwner = indexValueReadBuffer.getInt(INDEX_LOCK_OWNER_OFFSET);
             }
-            return position;
+            return lockOwner;
         }
 
         public int getTypeId()
@@ -264,10 +331,10 @@ public class TaskInstanceStreamProcessor extends BrokerStreamProcessor
     {
         protected final UnsafeBuffer indexValueWriteBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
 
-        protected void write(long eventKey, long eventPosition, TaskEventType eventType)
+        protected void write(long eventKey, TaskEventType eventType, int lockOwner)
         {
-            indexValueWriteBuffer.putLong(INDEX_POSITION_OFFSET, eventPosition);
             indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id());
+            indexValueWriteBuffer.putInt(INDEX_LOCK_OWNER_OFFSET, lockOwner);
 
             taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
         }

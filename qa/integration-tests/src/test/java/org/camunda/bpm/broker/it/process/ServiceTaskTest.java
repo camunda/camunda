@@ -8,11 +8,11 @@ import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.broker.it.TestUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
+import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
+import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -183,8 +183,8 @@ public class ServiceTaskTest
         // when
         final LockedTask task = tasksBatch.getLockedTasks().get(0);
         final Long result = client.tasks().complete()
-            .taskQueueId(0)
-            .taskId(task.getId())
+            .topicId(0)
+            .taskKey(task.getId())
             .execute();
 
         // then
@@ -223,8 +223,8 @@ public class ServiceTaskTest
 
         final LockedTask task1 = task1Batch.getLockedTasks().get(0);
         client.tasks().complete()
-            .taskQueueId(0)
-            .taskId(task1.getId())
+            .topicId(0)
+            .taskKey(task1.getId())
             .execute();
 
 
@@ -249,8 +249,8 @@ public class ServiceTaskTest
         assertThat(task2.getId()).isNotEqualTo(task1.getId());
 
         final Long result = client.tasks().complete()
-            .taskQueueId(0)
-            .taskId(task2.getId())
+            .topicId(0)
+            .taskKey(task2.getId())
             .execute();
 
         // then
@@ -299,8 +299,8 @@ public class ServiceTaskTest
         final Long result = client
             .tasks()
             .complete()
-            .taskQueueId(0)
-            .taskId(task.getId())
+            .topicId(0)
+            .taskKey(task.getId())
             .execute();
 
         assertThat(result).isEqualTo(task.getId());

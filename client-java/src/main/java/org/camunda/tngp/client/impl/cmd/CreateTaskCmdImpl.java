@@ -79,6 +79,12 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
+    protected long getKey()
+    {
+        return -1L;
+    }
+
+    @Override
     public void validate()
     {
         EnsureUtil.ensureGreaterThanOrEqual("topic id", topicId, 0);

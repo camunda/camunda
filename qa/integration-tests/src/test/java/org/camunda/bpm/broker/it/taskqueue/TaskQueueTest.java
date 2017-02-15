@@ -111,8 +111,8 @@ public class TaskQueueTest
         System.out.println("Completing task");
 
         final Long completedTaskId = taskService.complete()
-            .taskQueueId(0)
-            .taskId(taskId)
+            .topicId(0)
+            .taskKey(taskId)
             .execute();
 
         assertThat(completedTaskId).isEqualTo(taskId);
@@ -137,8 +137,8 @@ public class TaskQueueTest
         thrown.expectMessage("Task does not exist or is not locked");
 
         taskService.complete()
-            .taskQueueId(0)
-            .taskId(taskId)
+            .topicId(0)
+            .taskKey(taskId)
             .execute();
     }
 
@@ -167,14 +167,14 @@ public class TaskQueueTest
 
         final SilentFuture<Long> future1 = parallelRequests.submitRequest(
             () -> taskClient.complete()
-                .taskQueueId(0)
-                .taskId(taskId)
+                .topicId(0)
+                .taskKey(taskId)
                 .execute());
 
         final SilentFuture<Long> future2 = parallelRequests.submitRequest(
             () -> taskClient.complete()
-                .taskQueueId(0)
-                .taskId(taskId)
+                .topicId(0)
+                .taskKey(taskId)
                 .execute());
 
         // when

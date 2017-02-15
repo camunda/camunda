@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.client.impl.cmd;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
 
 import java.io.IOException;
 
@@ -90,6 +90,12 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         commandRequestEncoder.wrap(buffer, offset);
 
+        final long key = getKey();
+        if (key >= 0)
+        {
+            commandRequestEncoder.longKey(key);
+        }
+
         commandRequestEncoder
             .topicId(getTopicId())
             .eventType(commandEventType)
@@ -117,6 +123,8 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     protected abstract Object writeCommand();
 
     protected abstract long getTopicId();
+
+    protected abstract long getKey();
 
     protected abstract void reset();
 

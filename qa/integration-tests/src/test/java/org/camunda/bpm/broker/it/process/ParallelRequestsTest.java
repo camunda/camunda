@@ -134,7 +134,7 @@ public class ParallelRequestsTest
                     .execute());
         final SilentFuture<Long> completionFuture = parallelRequests.submitRequest(
             () ->
-                tasksClient.complete().taskQueueId(0).taskId(task1Id).execute());
+                tasksClient.complete().topicId(0).taskKey(task1Id).execute());
 
         // when
         parallelRequests.execute();

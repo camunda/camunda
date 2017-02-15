@@ -156,6 +156,7 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
 
         // then
+        taskEvent.reset();
         getResultEventOf(position).readValue(taskEvent);
 
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
@@ -186,7 +187,8 @@ public class TaskStreamProcessorIntegrationTest
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
-            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity());
+            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
+            .setPayload(new UnsafeBuffer(PAYLOAD));
 
         // when
         final long position = logStreamWriter
@@ -207,16 +209,85 @@ public class TaskStreamProcessorIntegrationTest
         assertThat(taskEvent.getLockOwner()).isEqualTo(1);
 
         event = getResultEventOf(event.getPosition());
+        taskEvent.reset();
         event.readValue(taskEvent);
         assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
         assertThat(taskEvent.getLockTime()).isGreaterThan(0);
         assertThat(taskEvent.getLockOwner()).isEqualTo(1);
+
+        assertThatBuffer(taskEvent.getPayload())
+            .hasCapacity(PAYLOAD.length)
+            .hasBytes(PAYLOAD);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
 
         assertThat(lastBrokerEventMetadata.getSubscriptionId()).isEqualTo(subscription.getId());
         assertThat(lastBrokerEventMetadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(lastBrokerEventMetadata.getEventType()).isEqualTo(TASK_EVENT);
+    }
+
+    @Test
+    public void shouldCompleteTask() throws InterruptedException, ExecutionException
+    {
+        // given
+        final TaskSubscription subscription = new TaskSubscription()
+                .setId(1L)
+                .setChannelId(11)
+                .setTaskType(TASK_TYPE_BUFFER)
+                .setLockDuration(Duration.ofMinutes(5).toMillis())
+                .setLockOwner(3)
+                .setCredits(10);
+
+        lockTaskStreamProcessor.addSubscription(subscription);
+
+        final TaskEvent taskEvent = new TaskEvent()
+            .setEventType(TaskEventType.CREATE)
+            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
+            .setPayload(new UnsafeBuffer(PAYLOAD));
+
+        long position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        LoggedEvent event = getResultEventOf(position);
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
+
+        // when
+        final byte[] modifiedPayload = "modified payload".getBytes();
+
+        taskEvent
+            .setEventType(TaskEventType.COMPLETE)
+            .setLockOwner(3)
+            .setPayload(new UnsafeBuffer(modifiedPayload));
+
+        position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        // then
+        event = getResultEventOf(position);
+        taskEvent.reset();
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.COMPLETED);
+
+        assertThatBuffer(taskEvent.getPayload())
+            .hasCapacity(modifiedPayload.length)
+            .hasBytes(modifiedPayload);
+
+        verify(mockResponseWriter, times(3)).tryWriteResponse();
     }
 
     private LoggedEvent getResultEventOf(long position)

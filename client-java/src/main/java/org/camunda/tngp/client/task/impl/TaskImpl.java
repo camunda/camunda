@@ -2,7 +2,6 @@ package org.camunda.tngp.client.task.impl;
 
 import java.time.Instant;
 
-import org.agrona.DirectBuffer;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.task.Task;
 
@@ -41,12 +40,10 @@ public class TaskImpl implements Task
     @Override
     public void complete()
     {
-        final DirectBuffer payloadBuffer = payload.getPayloadBuffer();
-
         tasksClient.complete()
-            .taskId(id)
-            .taskQueueId(taskQueueId)
-            //.payload(payloadBuffer, 0, payloadBuffer.capacity())
+            .taskKey(id)
+            .topicId(taskQueueId)
+            .payload(payload.getPayloadString())
             .execute();
 
         state = STATE_COMPLETED;

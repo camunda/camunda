@@ -83,6 +83,45 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks.get(0).getId()).isEqualTo(taskId);
     }
 
+    @Test
+    public void shouldCompleteLockedTask() throws InterruptedException
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final AsyncTasksClient taskService = client.tasks();
+
+        final Long taskKey = taskService.create()
+            .topicId(0)
+            .taskType("bar")
+            .payload("{ \"foo\" : 9 }")
+            .execute();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        taskService.newSubscription()
+            .handler(taskHandler)
+            .topicId(0)
+            .taskType("bar")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(5)
+            .open();
+
+        // TODO wait for locked task
+        Thread.sleep(1000);
+
+        // when
+        final Long result = taskService.complete()
+            .taskKey(taskKey)
+            .topicId(0)
+            .lockOwner(5)
+            .taskType("bar")
+            .payload("{ \"foo\" : 10 }")
+            .execute();
+
+        // then
+        assertThat(result).isEqualTo(taskKey);
+    }
+
     @Ignore
     @Test
     public void testCompletionInHandler() throws InterruptedException

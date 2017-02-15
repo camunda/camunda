@@ -254,7 +254,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     @Override
     public CompleteAsyncTaskCmd complete()
     {
-        return new CompleteTaskCmdImpl(cmdExecutor);
+        return new CompleteTaskCmdImpl(cmdExecutor, objectMapper);
     }
 
     @Override

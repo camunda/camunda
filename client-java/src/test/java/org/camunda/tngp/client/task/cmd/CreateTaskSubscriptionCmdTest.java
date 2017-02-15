@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.client.cmd;
+package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -19,9 +19,11 @@ import java.io.IOException;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.client.impl.cmd.CloseTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
+import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
+import org.camunda.tngp.protocol.clientapi.ControlMessageResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.junit.Before;
@@ -31,19 +33,21 @@ import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CloseTaskSubscriptionCmdTest
+public class CreateTaskSubscriptionCmdTest
 {
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ControlMessageRequestDecoder requestDecoder = new ControlMessageRequestDecoder();
+    private final ControlMessageResponseEncoder responseEncoder = new ControlMessageResponseEncoder();
 
     private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
 
-    private CloseTaskSubscriptionCmdImpl command;
+    private CreateTaskSubscriptionCmdImpl command;
     private ObjectMapper objectMapper;
 
     @Rule
@@ -56,7 +60,7 @@ public class CloseTaskSubscriptionCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CloseTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper);
+        command = new CreateTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -66,9 +70,11 @@ public class CloseTaskSubscriptionCmdTest
     {
         // given
         command
-            .subscriptionId(2)
             .topicId(1)
-            .taskType("foo");
+            .taskType("foo")
+            .lockDuration(1000)
+            .lockOwner(2)
+            .initialCredits(5);
 
         // when
         command.getRequestWriter().write(writeBuffer, 0);
@@ -83,38 +89,53 @@ public class CloseTaskSubscriptionCmdTest
 
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
-        assertThat(requestDecoder.messageType()).isEqualTo(ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
+        assertThat(requestDecoder.messageType()).isEqualTo(ControlMessageType.ADD_TASK_SUBSCRIPTION);
 
         final byte[] data = new byte[requestDecoder.dataLength()];
         requestDecoder.getData(data, 0, data.length);
 
         final TaskSubscription taskSubscription = objectMapper.readValue(data, TaskSubscription.class);
 
-        assertThat(taskSubscription.getId()).isEqualTo(2L);
         assertThat(taskSubscription.getTopicId()).isEqualTo(1);
         assertThat(taskSubscription.getTaskType()).isEqualTo("foo");
+        assertThat(taskSubscription.getLockDuration()).isEqualTo(1000);
+        assertThat(taskSubscription.getLockOwner()).isEqualTo(2);
+        assertThat(taskSubscription.getCredits()).isEqualTo(5);
     }
 
     @Test
-    public void shouldBeNotValidIfSubscriptionIdIsNotSet()
+    public void shouldReadResponse() throws JsonProcessingException
     {
-        command
-            .topicId(1)
-            .taskType("foo");
+        final ClientResponseHandler<Long> responseHandler = command.getResponseHandler();
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("subscription id must be greater than or equal to 0");
+        assertThat(responseHandler.getResponseSchemaId()).isEqualTo(responseEncoder.sbeSchemaId());
+        assertThat(responseHandler.getResponseTemplateId()).isEqualTo(responseEncoder.sbeTemplateId());
 
-        command.validate();
+        responseEncoder.wrap(writeBuffer, 0);
+
+        // given
+        final TaskSubscription taskSubscription = new TaskSubscription();
+        taskSubscription.setId(3L);
+
+        final byte[] jsonData = objectMapper.writeValueAsBytes(taskSubscription);
+
+        responseEncoder.putData(jsonData, 0, jsonData.length);
+
+        // when
+        final Long subscriptionId = responseHandler.readResponse(writeBuffer, 0, responseEncoder.encodedLength());
+
+        // then
+        assertThat(subscriptionId).isEqualTo(3L);
     }
-
 
     @Test
     public void shouldBeNotValidIfTopicIdIsNotSet()
     {
         command
-            .subscriptionId(2)
-            .taskType("foo");
+            .taskType("foo")
+            .lockDuration(1000)
+            .lockOwner(2)
+            .initialCredits(5);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("topic id must be greater than or equal to 0");
@@ -126,11 +147,58 @@ public class CloseTaskSubscriptionCmdTest
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
         command
-            .subscriptionId(2)
-            .topicId(1);
+            .topicId(1)
+            .lockDuration(1000)
+            .lockOwner(2)
+            .initialCredits(5);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task type must not be null");
+
+        command.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfLockDurationIsNotSet()
+    {
+        command
+            .topicId(1)
+            .taskType("foo")
+            .lockOwner(2)
+            .initialCredits(5);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("lock duration must be greater than 0");
+
+        command.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfLockOwnerIsNotSet()
+    {
+        command
+            .topicId(1)
+            .taskType("foo")
+            .lockDuration(1000)
+            .initialCredits(5);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("lock owner must be greater than or equal to 0");
+
+        command.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfInitialCreditsAreNotSet()
+    {
+        command
+            .topicId(1)
+            .taskType("foo")
+            .lockDuration(1000)
+            .lockOwner(2);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("initial credits must be greater than 0");
 
         command.validate();
     }
