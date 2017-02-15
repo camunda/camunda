@@ -18,7 +18,6 @@
       </includes>
       <unpackOptions>
         <excludes>
-          <exclude>**/config/elasticsearch.yml</exclude>
           <exclude>**/bin/elasticsearch</exclude>
           <exclude>**/bin/elasticsearch.bat</exclude>
         </excludes>
@@ -26,6 +25,13 @@
       <unpack>true</unpack>
     </dependencySet>
   </dependencySets>
+
+  <fileSets>
+    <fileSet>
+      <outputDirectory>/server/elasticsearch-${elasticsearch.version}/config/scripts</outputDirectory>
+      <directory>${project.basedir}/../backend/src/main/scripts</directory>
+    </fileSet>
+  </fileSets>
 
   <files>
     <file>
@@ -57,10 +63,6 @@
 
     <file>
       <source>src/config/.java.policy</source>
-      <outputDirectory>server/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
-    </file>
-    <file>
-      <source>src/config/elasticsearch.yml</source>
       <outputDirectory>server/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
     </file>
     <file>

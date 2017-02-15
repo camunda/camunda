@@ -376,7 +376,7 @@
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>
               <httpPort>9200</httpPort>
-              <pathScripts>${project.basedir}/src/main/resources/org/camunda/es/scripts</pathScripts>
+              <pathScripts>${project.basedir}/src/main/scripts</pathScripts>
               <skip>${skipTests}</skip>
             </configuration>
             <executions>
