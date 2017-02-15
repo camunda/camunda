@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {openModal, closeModal, createStartDateFilter,
+import {openModal, closeModal, createStartDateFilter, formatDate,
         __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/service';
 
 describe('Filter service', () => {
@@ -74,6 +74,14 @@ describe('Filter service', () => {
     it('should create action', () => {
       expect(createCreateStartDateFilterAction.calledOnce).to.eql(true);
       expect(createCreateStartDateFilterAction.calledWith(start, end)).to.eql(true);
+    });
+  });
+
+  describe('formatDate', () => {
+    it('should return only the date portion without time', () => {
+      const formatted = formatDate(new Date('2017-02-15T12:00:00'));
+
+      expect(formatted).to.eql('2017-02-15');
     });
   });
 });

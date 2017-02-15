@@ -14,3 +14,7 @@ export function closeModal() {
 export function createStartDateFilter(startDate, endDate) {
   dispatchAction(createCreateStartDateFilterAction(startDate, endDate));
 }
+
+export function formatDate(dateObj) {
+  return dateObj.toISOString().substr(0, 10);
+}
