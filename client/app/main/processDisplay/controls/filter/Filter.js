@@ -7,7 +7,7 @@ export function Filter() {
        <Scope selector={getFilter}>
          <List>
           <Match>
-            <Case predicate={isDate}>
+            <Case predicate={isType('startDate')}>
               <DateFilter selector="data" />
             </Case>
           </Match>
@@ -16,8 +16,8 @@ export function Filter() {
     </ul>
   </td>;
 
-  function isDate({type}) {
-    return type === 'startDate';
+  function isType(targetType) {
+    return ({type}) => type === targetType;
   }
 
   function getFilter({filter: {query}}) {
