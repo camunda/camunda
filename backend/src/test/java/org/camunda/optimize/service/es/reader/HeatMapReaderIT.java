@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.es.reader.HeatMapReader;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.util.DataUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -238,16 +239,10 @@ public class HeatMapReaderIT {
   private HeatMapQueryDto createStubHeatMapQueryDto(EventDto data, String operator, String type, Date dateValue) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(data.getProcessDefinitionId());
-    FilterDto filter = new FilterDto();
-    List<DateDto> dates = new ArrayList<>();
-    DateDto date = new DateDto();
-    date.setOperator(operator);
-    date.setType(type);
-    date.setValue(dateValue);
-    dates.add(date);
-    filter.setDates(dates);
-    dto.setFilter(filter);
+    DataUtilHelper.addDateFilter(operator, type, dateValue, dto);
     return dto;
   }
+
+
 
 }

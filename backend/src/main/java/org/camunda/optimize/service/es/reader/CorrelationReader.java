@@ -6,13 +6,15 @@ import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.FilterDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -43,6 +45,8 @@ public class CorrelationReader {
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
 
+  @Autowired
+  private DateFilterHelper dateFilterHelper;
 
   public GatewaySplitDto activityCorrelation(CorrelationQueryDto request) {
     ValidationHelper.validate(request);
@@ -50,18 +54,28 @@ public class CorrelationReader {
     List<String> gatewayOutcomes = fetchGatewayOutcomes(request.getProcessDefinitionId(), request.getGateway());
 
     for (String activity : gatewayOutcomes) {
-      CorrelationOutcomeDto correlation = activityCorrelation(request.getProcessDefinitionId(), activity, request.getEnd());
+      CorrelationOutcomeDto correlation = activityCorrelation(
+          request.getProcessDefinitionId(),
+          activity,
+          request.getEnd(),
+          request.getFilter()
+      );
       result.getFollowingNodes().add(correlation);
     }
 
-    CorrelationOutcomeDto end = activityCorrelation(request.getProcessDefinitionId(),request.getEnd(), request.getEnd());
+    CorrelationOutcomeDto end = activityCorrelation(
+        request.getProcessDefinitionId(),
+        request.getEnd(),
+        request.getEnd(),
+        request.getFilter()
+    );
     result.setEndEvent(end.getId());
     result.setTotal(end.getAll());
 
     return result;
   }
 
-  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity) {
+  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity, FilterDto filter) {
     ValidationHelper.ensureNotEmpty("processDefinitionId", processDefinitionId);
     ValidationHelper.ensureNotEmpty("activityId", activityId);
     ValidationHelper.ensureNotEmpty("endActivityId", endActivity);
@@ -72,15 +86,22 @@ public class CorrelationReader {
     correlationNodes.add(activityId);
     correlationNodes.add(endActivity);
 
-    QueryBuilder query;
-    SearchRequestBuilder srb = esclient.prepareSearch(configurationService.getOptimizeIndex())
+    BoolQueryBuilder query;
+    SearchRequestBuilder srb = esclient
+        .prepareSearch(configurationService.getOptimizeIndex())
         .setTypes(configurationService.getEventType());
-    if (processDefinitionId != null) {
-      query = QueryBuilders.matchQuery("processDefinitionId", processDefinitionId);
-      srb.setQuery(query);
+
+    query = QueryBuilders.boolQuery()
+        .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId));
+
+    if (filter != null) {
+      query = dateFilterHelper.addFilters(query, filter);
     }
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    srb.setQuery(query);
+
+
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("_targetActivities", correlationNodes);
     parameters.put("_startActivity", activityId);
     parameters.put("_agg", new HashMap<>());
@@ -98,9 +119,10 @@ public class CorrelationReader {
 
     InternalScriptedMetric processesWithActivities = sr.getAggregations().get("processesWithActivities");
     Map aggregation = (Map) processesWithActivities.aggregation();
-    result.setId(aggregation.get("id").toString());
-    result.setAll(Long.valueOf((Integer)aggregation.get("all")));
-    result.setReached(Long.valueOf((Integer)aggregation.get("reached")));
+    String id = aggregation.get("id") != null ? aggregation.get("id").toString() : activityId;
+    result.setId(id);
+    result.setAll(Long.valueOf((Integer) aggregation.get("all")));
+    result.setReached(Long.valueOf((Integer) aggregation.get("reached")));
 
     return result;
   }
@@ -147,5 +169,9 @@ public class CorrelationReader {
     InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(script);
     Scanner s = new Scanner(inputStream).useDelimiter("\\A");
     return s.hasNext() ? s.next() : "";
+  }
+
+  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String gatewayActivity, String endActivity) {
+    return this.activityCorrelation(processDefinitionId, gatewayActivity, endActivity, null);
   }
 }

@@ -5,6 +5,7 @@ def all = 0
 
 def finalMap = new HashMap()
 def targetActivities = new ArrayList<>()
+def startActivity = null
 
 //grab filtering criteria out of any agg, they are all same
 for (agg in _aggs) {
@@ -30,8 +31,8 @@ for (agg in _aggs) {
     }
 }
 
-//iterate over process instances and do counts
-if (targetActivities != null && targetActivities.size() > 0) {
+//iterate over process instances and do counts, but only if there are any mapping results available
+if (targetActivities != null && targetActivities.size() > 0 && startActivity != null) {
 
     for (pi in finalMap) {
         boolean allFound = true

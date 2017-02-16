@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.mapping;
 
 import org.camunda.optimize.dto.optimize.DateDto;
+import org.camunda.optimize.dto.optimize.FilterDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -35,11 +36,22 @@ public class DateFilterHelper {
   }
 
   public BoolQueryBuilder addFilters(BoolQueryBuilder query, HeatMapQueryDto dto) {
-    List<QueryBuilder> filters = query.filter();
-    for (DateDto dateDto : dto.getFilter().getDates()) {
-      RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(mapTimeColumn(dateDto));
-      queryDate = addBoundaries(queryDate, dateDto);
-      filters.add(queryDate);
+    FilterDto filter = dto.getFilter();
+    return this.addDateFilters(query, filter.getDates());
+  }
+
+  public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterDto filter) {
+    return this.addDateFilters(query, filter.getDates());
+  }
+
+  public BoolQueryBuilder addDateFilters(BoolQueryBuilder query, List<DateDto> dates) {
+    if (dates != null) {
+      List<QueryBuilder> filters = query.filter();
+      for (DateDto dateDto : dates) {
+        RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(mapTimeColumn(dateDto));
+        queryDate = addBoundaries(queryDate, dateDto);
+        filters.add(queryDate);
+      }
     }
     return query;
   }
