@@ -1,25 +1,26 @@
-import {jsx, withSelector, Scope, Text} from 'view-utils';
+import {jsx, withSelector, Scope, Text, OnEvent} from 'view-utils';
 
-export const DateFilter = withSelector(() => {
-  return <li className="list-group-item" style="padding: 6px;">
-    <button type="button" className="btn btn-link btn-xs" style="float: right;">
+export const DateFilter = withSelector(({onDelete}) => {
+  return <span>
+    <button type="button" className="btn btn-link btn-xs pull-right">
+      <OnEvent event='click' listener={onDelete} />
       ×
     </button>
     <span>
       Start Date between&nbsp;
-      <span className="badge" style="float: none;">
+      <span className="badge">
         <Scope selector={formatDate('start')}>
           <Text property="date" />
         </Scope>
       </span>
       &nbsp;and&nbsp;
-      <span className="badge" style="float: none;">
+      <span className="badge">
         <Scope selector={formatDate('end')}>
           <Text property="date" />
         </Scope>
       </span>
     </span>
-  </li>;
+  </span>;
 
   function formatDate(prop) {
     return (state) => {

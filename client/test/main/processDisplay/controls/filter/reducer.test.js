@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {reducer, createOpenDateFilterModalAction, createCreateStartDateFilterAction,
-        createCloseDateFilterModalAction} from 'main/processDisplay/controls/filter/reducer';
+        createDeleteFilterAction, createCloseDateFilterModalAction} from 'main/processDisplay/controls/filter/reducer';
 
 describe('Filter reducer', () => {
   let open;
@@ -15,6 +15,19 @@ describe('Filter reducer', () => {
     ({createModal: {open}} = reducer(undefined, createCloseDateFilterModalAction()));
 
     expect(open).to.eql(false);
+  });
+
+  it('should delete a filter', () => {
+    const filter = {
+      type: 'someType',
+      data: {
+        some: 'very',
+        important: 'data'
+      }
+    };
+    const {query} = reducer({query:[filter]}, createDeleteFilterAction(filter.data));
+
+    expect(query.length).to.eql(0);
   });
 
   describe('date filter', () => {

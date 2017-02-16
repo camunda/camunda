@@ -1,17 +1,19 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {openModal, closeModal, createStartDateFilter, formatDate,
+import {openModal, closeModal, createStartDateFilter, formatDate, deleteFilter,
         __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/service';
 
 describe('Filter service', () => {
   const OPEN_ACTION = 'OPEN_MODAL';
   const CLOSE_ACTION = 'CLOSE_MODAL';
   const CREATE_FILTER_ACTION = 'CREATE_FILTER_ACTION';
+  const DELETE_FILTER = 'DELETE_FILTER';
 
   let dispatchAction;
   let createOpenDateFilterModalAction;
   let createCloseDateFilterModalAction;
   let createCreateStartDateFilterAction;
+  let createDeleteFilterAction;
 
   beforeEach(() => {
     dispatchAction = sinon.spy();
@@ -25,6 +27,9 @@ describe('Filter service', () => {
 
     createCreateStartDateFilterAction = sinon.stub().returns(CREATE_FILTER_ACTION);
     __set__('createCreateStartDateFilterAction', createCreateStartDateFilterAction);
+
+    createDeleteFilterAction = sinon.stub().returns(DELETE_FILTER);
+    __set__('createDeleteFilterAction', createDeleteFilterAction);
   });
 
   afterEach(() => {
@@ -32,6 +37,7 @@ describe('Filter service', () => {
     __ResetDependency__('createOpenDateFilterModalAction');
     __ResetDependency__('createCloseDateFilterModalAction');
     __ResetDependency__('createCreateStartDateFilterAction');
+    __ResetDependency__('createDeleteFilterAction');
   });
 
   describe('openModal', () => {
@@ -82,6 +88,23 @@ describe('Filter service', () => {
       const formatted = formatDate(new Date('2017-02-15T12:00:00'));
 
       expect(formatted).to.eql('2017-02-15');
+    });
+  });
+
+  describe('delete filter', () => {
+    const filter = {start: 'date', end: 'anotherDate'};
+
+    beforeEach(() => {
+      deleteFilter(filter);
+    });
+
+    it('should dispatch delete filter action', () => {
+      expect(dispatchAction.calledWith(DELETE_FILTER)).to.eql(true);
+    });
+
+    it('should create action', () => {
+      expect(createDeleteFilterAction.calledOnce).to.eql(true);
+      expect(createDeleteFilterAction.calledWith(filter)).to.eql(true);
     });
   });
 });

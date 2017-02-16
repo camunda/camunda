@@ -22,7 +22,7 @@ export const Controls = withSelector(({onFilterChanged}) => {
             <tr>
               <ProcessDefinition selector="processDefinition" onProcessDefinitionSelected={onControlsChange} />
               <View />
-              <Filter />
+              <Filter onFilterDeleted={onControlsChange} />
               <CreateFilter onFilterAdded={onControlsChange} />
               <Result />
             </tr>

@@ -1,12 +1,14 @@
 import {jsx} from 'view-utils';
-import {mountTemplate} from 'testHelpers';
+import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
+import sinon from 'sinon';
 import {DateFilter} from 'main/processDisplay/controls/filter/DateFilter';
 
 describe('<DateFilter>', () => {
   let node;
   let update;
   let state;
+  let callback;
 
   const start = '2016-12-01T00:00:00';
   const end = '2016-12-31T23:59:59';
@@ -17,7 +19,9 @@ describe('<DateFilter>', () => {
       end
     }};
 
-    ({node, update} = mountTemplate(<DateFilter selector="filter"/>));
+    callback = sinon.spy();
+
+    ({node, update} = mountTemplate(<DateFilter selector="filter" onDelete={callback}/>));
 
     update(state);
   });
@@ -33,5 +37,15 @@ describe('<DateFilter>', () => {
   it('should strip any time information', () => {
     expect(node.textContent).to.not.contain('00:00:00');
     expect(node.textContent).to.not.contain('23:59:59');
+  });
+
+  it('should call the delete callback', () => {
+    triggerEvent({
+      node,
+      selector: 'button',
+      eventName: 'click'
+    });
+
+    expect(callback.calledOnce).to.eql(true);
   });
 });
