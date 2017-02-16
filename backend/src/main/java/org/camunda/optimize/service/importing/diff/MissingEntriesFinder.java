@@ -29,8 +29,8 @@ public abstract class MissingEntriesFinder<ENG extends EngineDto> {
 
   private Map<String, ENG> engineEntries = new HashMap<>();
 
-  public List<ENG> retrieveMissingEntities() {
-    Set<String> engineIds = getIdsFromEngine();
+  public List<ENG> retrieveMissingEntities(int indexOfFirstResult, int maxPageSize) {
+    Set<String> engineIds = getIdsFromEngine(indexOfFirstResult, maxPageSize);
     Set<String> missingDocumentIds = getMissingDocumentsFromElasticSearch(engineIds);
     List<ENG> newEngineEntities = retrieveMissingEntities(missingDocumentIds);
 
@@ -42,9 +42,9 @@ public abstract class MissingEntriesFinder<ENG extends EngineDto> {
     return ids.stream().map(id -> engineEntries.get(id)).collect(Collectors.toList());
   }
 
-  private Set<String> getIdsFromEngine() {
+  private Set<String> getIdsFromEngine(int indexOfFirstResult, int maxPageSize) {
     Set<String> ids = new HashSet<>();
-    List<ENG> entries = queryEngineRestPoint();
+    List<ENG> entries = queryEngineRestPoint(indexOfFirstResult, maxPageSize);
 
     for (ENG entry : entries) {
       ids.add(entry.getId());
@@ -81,7 +81,7 @@ public abstract class MissingEntriesFinder<ENG extends EngineDto> {
    * @return All entries from the engine that we want to
    * import to optimize, i.e. elasticsearch
    */
-  protected abstract List<ENG> queryEngineRestPoint();
+  protected abstract List<ENG> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize);
 
   /**
    * @return The elasticsearch type where we can find the

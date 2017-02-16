@@ -18,13 +18,18 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/applicationContext.xml"})
 public class ProcessDefinitionImportServiceTest {
 
-  public static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
+  private static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
   private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
@@ -58,7 +63,7 @@ public class ProcessDefinitionImportServiceTest {
 
     //then
     //verify invocations
-    Mockito.verify(clientMock, Mockito.times(1))
+    Mockito.verify(clientMock, Mockito.times(2))
       .target(Mockito.anyString());
 
     Mockito.verify(processDefinitionWriter, Mockito.times(1))
@@ -92,14 +97,16 @@ public class ProcessDefinitionImportServiceTest {
 
 
   private void setupClient(List<ProcessDefinitionEngineDto> resultList) {
-    WebTarget mockTarget = Mockito.mock(WebTarget.class);
-    Mockito.when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
-    Invocation.Builder builderMock = Mockito.mock(Invocation.Builder.class);
-    Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
+    WebTarget mockTarget = mock(WebTarget.class);
+    Invocation.Builder builderMock = mock(Invocation.Builder.class);
+    when(clientMock.target(eq(ENGINE_TARGET))).thenReturn(mockTarget);
+    when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
+    when(mockTarget.queryParam(anyString(), any())).thenReturn(mockTarget);
+    when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
+    when(builderMock.get(eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
     })))
-      .thenReturn(resultList);
-    Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    Mockito.when(clientMock.target(Mockito.eq(ENGINE_TARGET))).thenReturn(mockTarget);
+      .thenReturn(resultList)
+      .thenReturn(Collections.emptyList());
   }
 
 }

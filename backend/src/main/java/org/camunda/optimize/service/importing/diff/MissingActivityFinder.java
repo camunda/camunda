@@ -11,10 +11,14 @@ import java.util.List;
 public class MissingActivityFinder extends MissingEntriesFinder<HistoricActivityInstanceEngineDto> {
 
   @Override
-  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint() {
+  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
     List<HistoricActivityInstanceEngineDto> entries = client
       .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
       .path(configurationService.getHistoricActivityInstanceEndpoint())
+      .queryParam("sortBy", "startTime")
+      .queryParam("sortOrder", "asc")
+      .queryParam("firstResult", indexOfFirstResult)
+      .queryParam("maxResults", maxPageSize)
       .request(MediaType.APPLICATION_JSON)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
       });

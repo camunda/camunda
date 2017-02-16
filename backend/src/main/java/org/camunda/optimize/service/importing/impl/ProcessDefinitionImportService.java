@@ -3,7 +3,7 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.importing.ImportService;
+import org.camunda.optimize.service.importing.diff.MissingEntriesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionImportService implements ImportService {
+public class ProcessDefinitionImportService extends PaginatedImportService<ProcessDefinitionEngineDto, ProcessDefinitionOptimizeDto> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionImportService.class);
 
@@ -25,12 +25,12 @@ public class ProcessDefinitionImportService implements ImportService {
   private MissingProcessDefinitionFinder processDefinitionFinder;
 
   @Override
-  public void executeImport() {
+  protected MissingEntriesFinder<ProcessDefinitionEngineDto> getMissingEntriesFinder() {
+    return processDefinitionFinder;
+  }
 
-    List<ProcessDefinitionEngineDto> engineEntries = processDefinitionFinder.retrieveMissingEntities();
-
-    List<ProcessDefinitionOptimizeDto> optimizeEntries = mapToOptimizeDto(engineEntries);
-    logger.warn("Number of importing process definitions: " + optimizeEntries.size());
+  @Override
+  public void importToElasticSearch(List<ProcessDefinitionOptimizeDto> optimizeEntries) {
     try {
       procDefWriter.importProcessDefinitions(optimizeEntries);
     } catch (Exception e) {
@@ -38,7 +38,8 @@ public class ProcessDefinitionImportService implements ImportService {
     }
   }
 
-  private List<ProcessDefinitionOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionEngineDto> entries) {
+  @Override
+  public List<ProcessDefinitionOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionEngineDto> entries) {
     List<ProcessDefinitionOptimizeDto> result = new ArrayList<>(entries.size());
     for (ProcessDefinitionEngineDto entry : entries) {
       mapDefaults(entry);

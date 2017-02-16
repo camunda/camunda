@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -28,8 +29,8 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
@@ -66,6 +67,26 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.initMocks(this);
+    setImmediateRefreshForESTransportClient();
+  }
+
+  /**
+   * This is needed so that the all entries imported to elasticsearch
+   * are immediately searchable. Otherwise, it takes 1s until it is
+   * possible to search for new documents.
+   * See
+   * https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-refresh.html
+   * for more information!
+   */
+  private void setImmediateRefreshForESTransportClient() throws Exception {
+    Answer<Void> refreshAnswer = invocation -> {
+      invocation.callRealMethod();
+      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      return null;
+    };
+    doAnswer(refreshAnswer).when(processDefinitionWriter).importProcessDefinitions(any());
+    doAnswer(refreshAnswer).when(processDefinitionWriter).importProcessDefinitionXmls(any());
+    doAnswer(refreshAnswer).when(eventsWriter).importEvents(any());
   }
 
   @Test

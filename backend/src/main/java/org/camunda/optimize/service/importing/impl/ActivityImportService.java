@@ -3,8 +3,8 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
-import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
+import org.camunda.optimize.service.importing.diff.MissingEntriesFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 @Component
-public class ActivityImportService implements ImportService {
+public class ActivityImportService extends PaginatedImportService<HistoricActivityInstanceEngineDto, EventDto> {
 
   private static final String STATE_COMPLETED = "COMPLETED";
   private static final String STATE_CREATED = "CREATED";
@@ -28,12 +28,13 @@ public class ActivityImportService implements ImportService {
   @Autowired
   private MissingActivityFinder missingActivityFinder;
 
-  public void executeImport() {
+  @Override
+  protected MissingEntriesFinder<HistoricActivityInstanceEngineDto> getMissingEntriesFinder() {
+    return missingActivityFinder;
+  }
 
-    List<HistoricActivityInstanceEngineDto> entries = missingActivityFinder.retrieveMissingEntities();
-
-    List<EventDto> events = mapToOptimizeDto(entries);
-
+  @Override
+  public void importToElasticSearch(List<EventDto> events) {
     try {
       eventsWriter.importEvents(events);
     } catch (Exception e) {
@@ -41,7 +42,8 @@ public class ActivityImportService implements ImportService {
     }
   }
 
-  private List<EventDto> mapToOptimizeDto(List<HistoricActivityInstanceEngineDto> entries) {
+  @Override
+  public List<EventDto> mapToOptimizeDto(List<HistoricActivityInstanceEngineDto> entries) {
     List<EventDto> result = new ArrayList<>(entries.size());
     for (HistoricActivityInstanceEngineDto entry : entries) {
       final EventDto createEvent = new EventDto();

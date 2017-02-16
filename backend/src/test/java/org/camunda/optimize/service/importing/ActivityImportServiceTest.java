@@ -22,7 +22,10 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author Askar Akhmerov
@@ -31,9 +34,9 @@ import java.util.List;
 @ContextConfiguration(locations = { "/applicationContext.xml" })
 public class ActivityImportServiceTest {
 
-  public static final String TEST_ACTIVITY_ID = "testActivityId";
-  public static final String TEST_ID = "testId";
-  public static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
+  private static final String TEST_ACTIVITY_ID = "testActivityId";
+  private static final String TEST_ID = "testId";
+  private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
   @Autowired
@@ -66,11 +69,11 @@ public class ActivityImportServiceTest {
 
     //then
     //verify invocations
-    Mockito.verify(clientMock,Mockito.times(1))
-        .target(Mockito.anyString());
+    verify(clientMock, times(2))
+        .target(anyString());
 
-    Mockito.verify(eventsWriter, Mockito.times(1))
-        .importEvents(Mockito.argThat(matchesEvent()));
+    verify(eventsWriter, times(1))
+        .importEvents(argThat(matchesEvent()));
   }
 
   private List<HistoricActivityInstanceEngineDto> setupInputData() {
@@ -101,13 +104,16 @@ public class ActivityImportServiceTest {
 
 
   private void setupEngineClient(List<HistoricActivityInstanceEngineDto> resultList) {
-    WebTarget mockTarget = Mockito.mock(WebTarget.class);
-    Mockito.when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
-    Invocation.Builder builderMock = Mockito.mock(Invocation.Builder.class);
-    Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<HistoricActivityInstanceEngineDto>>() {})))
-        .thenReturn(resultList);
-    Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    Mockito.when(clientMock.target(ENGINE_TARGET)).thenReturn(mockTarget);
+    WebTarget mockTarget = mock(WebTarget.class);
+    Invocation.Builder builderMock = mock(Invocation.Builder.class);
+    when(clientMock.target(eq(ENGINE_TARGET))).thenReturn(mockTarget);
+    when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
+    when(mockTarget.queryParam(anyString(), any())).thenReturn(mockTarget);
+    when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
+    when(builderMock.get(eq(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
+    })))
+      .thenReturn(resultList)
+      .thenReturn(Collections.emptyList());
   }
 
 }

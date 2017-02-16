@@ -2,12 +2,9 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
-import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +19,10 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/applicationContext.xml"})
@@ -62,11 +62,11 @@ public class ProcessDefinitionXmlImportServiceTest {
 
     //then
     //verify invocations
-    Mockito.verify(clientMock, Mockito.times(2))
-      .target(Mockito.anyString());
+    verify(clientMock, times(3))
+      .target(anyString());
 
-    Mockito.verify(processDefinitionWriter, Mockito.times(1))
-      .importProcessDefinitionXmls(Mockito.argThat(matchesEvent()));
+    verify(processDefinitionWriter, times(1))
+      .importProcessDefinitionXmls(argThat(matchesEvent()));
   }
 
   private ProcessDefinitionXmlEngineDto setupInputData() {
@@ -94,17 +94,19 @@ public class ProcessDefinitionXmlImportServiceTest {
 
   private void setupClient(ProcessDefinitionXmlEngineDto xml) {
     List<ProcessDefinitionEngineDto> procDefList = setupProcessDefinitionInputData();
-    WebTarget mockTarget = Mockito.mock(WebTarget.class);
-    Mockito.when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
-    Invocation.Builder builderMock = Mockito.mock(Invocation.Builder.class);
-    Mockito.when(builderMock.get(Mockito.eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
+    WebTarget mockTarget = mock(WebTarget.class);
+    Invocation.Builder builderMock = mock(Invocation.Builder.class);
+    when(clientMock.target(eq(ENGINE_TARGET))).thenReturn(mockTarget);
+    when(mockTarget.path(anyString())).thenReturn(mockTarget);
+    when(mockTarget.queryParam(anyString(), any())).thenReturn(mockTarget);
+    when(mockTarget.request(anyString())).thenReturn(builderMock);
+    when(builderMock.get(eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
     })))
-      .thenReturn(procDefList);
-    Mockito.when(builderMock.get(Mockito.eq(new GenericType<ProcessDefinitionXmlEngineDto>() {
+      .thenReturn(procDefList)
+      .thenReturn(Collections.emptyList());
+    when(builderMock.get(eq(new GenericType<ProcessDefinitionXmlEngineDto>() {
     })))
       .thenReturn(xml);
-    Mockito.when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    Mockito.when(clientMock.target(Mockito.eq(ENGINE_TARGET))).thenReturn(mockTarget);
   }
 
   private List<ProcessDefinitionEngineDto> setupProcessDefinitionInputData() {

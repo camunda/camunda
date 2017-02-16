@@ -11,10 +11,14 @@ import java.util.List;
 public class MissingProcessDefinitionFinder extends MissingEntriesFinder<ProcessDefinitionEngineDto> {
 
   @Override
-  protected List<ProcessDefinitionEngineDto> queryEngineRestPoint() {
+  protected List<ProcessDefinitionEngineDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
     List<ProcessDefinitionEngineDto> entries = client
       .target(configurationService.getEngineRestApiEndpoint() + configurationService.getEngineName())
       .path(configurationService. getProcessDefinitionEndpoint())
+      .queryParam("sortBy", "id")
+      .queryParam("sortOrder", "asc")
+      .queryParam("firstResult", indexOfFirstResult)
+      .queryParam("maxResults", maxPageSize)
       .request(MediaType.APPLICATION_JSON)
       .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
       });

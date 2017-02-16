@@ -26,22 +26,22 @@ public class ElasticSearchSchemaManager {
   private Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
 
   @Autowired
-  TransportClient esclient;
+  private TransportClient esclient;
 
   @Autowired
-  ConfigurationService configurationService;
+  private ConfigurationService configurationService;
 
   @Autowired
-  EventType eventType;
+  private EventType eventType;
 
   @Autowired
-  ProcessDefinitionType processDefinitionType;
+  private ProcessDefinitionType processDefinitionType;
 
   @Autowired
-  ProcessDefinitionXmlType processDefinitionXmlType;
+  private ProcessDefinitionXmlType processDefinitionXmlType;
 
   @Autowired
-  UsersType usersType;
+  private UsersType usersType;
 
   List<TypeMappingCreator> mappings = new LinkedList<>();
 

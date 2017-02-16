@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.ImportService;
+import org.camunda.optimize.service.importing.diff.MissingEntriesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionXmlImportService implements ImportService {
+public class ProcessDefinitionXmlImportService extends PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto> {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportService.class);
 
   @Autowired
@@ -24,20 +25,21 @@ public class ProcessDefinitionXmlImportService implements ImportService {
   private MissingProcessDefinitionXmlFinder xmlFinder;
 
   @Override
-  public void executeImport() {
-    List<ProcessDefinitionXmlEngineDto> engineEntries = xmlFinder.retrieveMissingEntities();
-
-    List<ProcessDefinitionXmlOptimizeDto> optimizeDtos = mapToOptimizeDto(engineEntries);
-
-    try {
-      procDefWriter.importProcessDefinitionXmls(optimizeDtos);
-    } catch (Exception e) {
-      logger.error("error while writing process definitions to elasticsearch", e);
-    }
-
+  protected MissingEntriesFinder<ProcessDefinitionXmlEngineDto> getMissingEntriesFinder() {
+    return xmlFinder;
   }
 
-  private List<ProcessDefinitionXmlOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionXmlEngineDto> entries) {
+  @Override
+  public void importToElasticSearch(List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntriesToImport) {
+    try {
+      procDefWriter.importProcessDefinitionXmls(newOptimizeEntriesToImport);
+    } catch (Exception e) {
+      logger.error("error while writing process definition xmls to elasticsearch", e);
+    }
+  }
+
+  @Override
+  public List<ProcessDefinitionXmlOptimizeDto> mapToOptimizeDto(List<ProcessDefinitionXmlEngineDto> entries) {
     List<ProcessDefinitionXmlOptimizeDto> result = new ArrayList<>(entries.size());
     for (ProcessDefinitionXmlEngineDto entry : entries) {
       mapDefaults(entry);
