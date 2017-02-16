@@ -34,7 +34,7 @@ export const Controls = withSelector(({onFilterChanged}) => {
   </StateInjector>;
 
   function onControlsChange() {
-    const {processDefinition, filter: {query}} = StateInjector.getState();
+    const {processDefinition, filter: query} = StateInjector.getState();
 
     const newFilter = {
       definition: getDefinitionId(processDefinition),

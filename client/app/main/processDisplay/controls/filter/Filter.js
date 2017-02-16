@@ -5,7 +5,7 @@ import {deleteFilter as deleteFilterService} from './service';
 export function Filter({onFilterDeleted}) {
   return <td>
     <ul className="list-group filter-list">
-      <Scope selector={getFilter}>
+      <Scope selector="filter">
         <List>
           <li className="list-group-item">
             <Match>
@@ -27,9 +27,5 @@ export function Filter({onFilterDeleted}) {
 
   function isType(targetType) {
     return ({type}) => type === targetType;
-  }
-
-  function getFilter({filter: {query}}) {
-    return query;
   }
 }

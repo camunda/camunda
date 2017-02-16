@@ -1,16 +1,6 @@
 import {dispatchAction} from 'view-utils';
-import {createOpenDateFilterModalAction,
-        createCloseDateFilterModalAction,
-        createDeleteFilterAction,
+import {createDeleteFilterAction,
         createCreateStartDateFilterAction} from './reducer';
-
-export function openModal() {
-  dispatchAction(createOpenDateFilterModalAction());
-}
-
-export function closeModal() {
-  dispatchAction(createCloseDateFilterModalAction());
-}
 
 export function deleteFilter(filter) {
   dispatchAction(createDeleteFilterAction(filter));

@@ -24,15 +24,15 @@ describe('<Filter>', () => {
   });
 
   it('should be empty by default', () => {
-    update({filter: {query: []}});
+    update({filter: []});
 
     expect(node.querySelector('ul').textContent).to.be.empty;
   });
 
   it('should contain a representation of the filter', () => {
-    update({filter: {query: [
+    update({filter: [
       {type: 'startDate'}
-    ]}});
+    ]});
 
     expect(node.querySelector('ul').textContent).to.eql('DateFilter');
   });

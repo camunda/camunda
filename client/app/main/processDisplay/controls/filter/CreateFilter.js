@@ -1,6 +1,6 @@
 import {jsx, OnEvent, Socket, createReferenceComponent, $window, Scope} from 'view-utils';
-import {openModal, closeModal, createStartDateFilter, formatDate} from './service';
-import {Dropdown, DropdownItem, Modal} from 'widgets';
+import {createStartDateFilter, formatDate} from './service';
+import {Dropdown, DropdownItem, createModal} from 'widgets';
 import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
         LAST_WEEK, LAST_MONTH, LAST_YEAR,
         THIS_WEEK, THIS_MONTH, THIS_YEAR} from './DateButton';
@@ -8,6 +8,7 @@ import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
 export function CreateFilter({onFilterAdded}) {
   const nodes = {};
   const Reference = createReferenceComponent(nodes);
+  const Modal = createModal();
 
   return <td>
     <Dropdown>
@@ -15,15 +16,15 @@ export function CreateFilter({onFilterAdded}) {
         + <span className="caret"></span>
       </Socket>
       <Socket name="list">
-        <DropdownItem listener={openModal}>
+        <DropdownItem listener={Modal.open}>
           Start Date
         </DropdownItem>
       </Socket>
     </Dropdown>
-    <Modal isOpen={isModalOpen} onClose={closeModal}>
+    <Modal>
       <Socket name="head">
         <button type="button" className="close">
-          <OnEvent event='click' listener={closeModal} />
+          <OnEvent event='click' listener={Modal.close} />
           <span>×</span>
         </button>
         <h4 className="modal-title">New Filter</h4>
@@ -67,7 +68,7 @@ export function CreateFilter({onFilterAdded}) {
       </Socket>
       <Socket name="foot">
         <button type="button" className="btn btn-default">
-          <OnEvent event='click' listener={closeModal} />
+          <OnEvent event='click' listener={Modal.close} />
           Abort
         </button>
         <button type="button" className="btn btn-primary">
@@ -95,12 +96,8 @@ export function CreateFilter({onFilterAdded}) {
       nodes.endDate.value + 'T23:59:59'
     );
 
-    closeModal();
+    Modal.close();
 
     $window.setTimeout(onFilterAdded);
-  }
-
-  function isModalOpen({filter: {createModal}}) {
-    return createModal.open;
   }
 }

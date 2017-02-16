@@ -1,29 +1,19 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {openModal, closeModal, createStartDateFilter, formatDate, deleteFilter,
+import {createStartDateFilter, formatDate, deleteFilter,
         __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/service';
 
 describe('Filter service', () => {
-  const OPEN_ACTION = 'OPEN_MODAL';
-  const CLOSE_ACTION = 'CLOSE_MODAL';
   const CREATE_FILTER_ACTION = 'CREATE_FILTER_ACTION';
   const DELETE_FILTER = 'DELETE_FILTER';
 
   let dispatchAction;
-  let createOpenDateFilterModalAction;
-  let createCloseDateFilterModalAction;
   let createCreateStartDateFilterAction;
   let createDeleteFilterAction;
 
   beforeEach(() => {
     dispatchAction = sinon.spy();
     __set__('dispatchAction', dispatchAction);
-
-    createOpenDateFilterModalAction = sinon.stub().returns(OPEN_ACTION);
-    __set__('createOpenDateFilterModalAction', createOpenDateFilterModalAction);
-
-    createCloseDateFilterModalAction = sinon.stub().returns(CLOSE_ACTION);
-    __set__('createCloseDateFilterModalAction', createCloseDateFilterModalAction);
 
     createCreateStartDateFilterAction = sinon.stub().returns(CREATE_FILTER_ACTION);
     __set__('createCreateStartDateFilterAction', createCreateStartDateFilterAction);
@@ -34,36 +24,8 @@ describe('Filter service', () => {
 
   afterEach(() => {
     __ResetDependency__('dispatchAction');
-    __ResetDependency__('createOpenDateFilterModalAction');
-    __ResetDependency__('createCloseDateFilterModalAction');
     __ResetDependency__('createCreateStartDateFilterAction');
     __ResetDependency__('createDeleteFilterAction');
-  });
-
-  describe('openModal', () => {
-    beforeEach(() => {
-      openModal();
-    });
-    it('should dispatch open modal action', () => {
-      expect(dispatchAction.calledWith(OPEN_ACTION)).to.eql(true);
-    });
-
-    it('should create action', () => {
-      expect(createOpenDateFilterModalAction.calledOnce).to.eql(true);
-    });
-  });
-
-  describe('closeModal', () => {
-    beforeEach(() => {
-      closeModal();
-    });
-    it('should dispatch close modal action', () => {
-      expect(dispatchAction.calledWith(CLOSE_ACTION)).to.eql(true);
-    });
-
-    it('should create action', () => {
-      expect(createCloseDateFilterModalAction.calledOnce).to.eql(true);
-    });
   });
 
   describe('createStartDateFilter', () => {

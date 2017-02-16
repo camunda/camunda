@@ -85,9 +85,7 @@ describe('<Controls>', () => {
       state = {
         controls: {
           processDefinition: 'definition',
-          filter: {
-            query: []
-          }
+          filter: []
         }
       };
       update(state);
