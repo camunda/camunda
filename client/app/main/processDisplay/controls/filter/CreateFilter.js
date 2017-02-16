@@ -1,7 +1,9 @@
 import {jsx, OnEvent, Socket, createReferenceComponent, $window, Scope} from 'view-utils';
 import {openModal, closeModal, createStartDateFilter, formatDate} from './service';
 import {Dropdown, DropdownItem, Modal} from 'widgets';
-import {DateButton} from './DateButton';
+import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
+        LAST_WEEK, LAST_MONTH, LAST_YEAR,
+        THIS_WEEK, THIS_MONTH, THIS_YEAR} from './DateButton';
 
 export function CreateFilter({onFilterAdded}) {
   const nodes = {};
@@ -44,20 +46,20 @@ export function CreateFilter({onFilterAdded}) {
             <div className="form-group">
               <span className="label">Frequently Used:</span>
               <p className="four-button-row">
-                <DateButton date="Today" />
-                <DateButton date="Yesterday" />
-                <DateButton date="Past 7 days" />
-                <DateButton date="Past 30 days" />
+                <DateButton dateLabel={TODAY} />
+                <DateButton dateLabel={YESTERDAY} />
+                <DateButton dateLabel={PAST7} />
+                <DateButton dateLabel={PAST30} />
               </p>
               <p className="three-button-row">
-                <DateButton date="Last Week" />
-                <DateButton date="Last Month" />
-                <DateButton date="Last Year" />
+                <DateButton dateLabel={LAST_WEEK} />
+                <DateButton dateLabel={LAST_MONTH} />
+                <DateButton dateLabel={LAST_YEAR} />
               </p>
               <p className="three-button-row">
-                <DateButton date="This Week" />
-                <DateButton date="This Month" />
-                <DateButton date="This Year" />
+                <DateButton dateLabel={THIS_WEEK} />
+                <DateButton dateLabel={THIS_MONTH} />
+                <DateButton dateLabel={THIS_YEAR} />
               </p>
             </div>
           </Scope>

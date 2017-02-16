@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {DateButton, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/DateButton';
+import {DateButton, TODAY, YESTERDAY, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/DateButton';
 
 describe('<DateButton>', () => {
   let node;
@@ -18,7 +18,7 @@ describe('<DateButton>', () => {
     start = {};
     end = {};
 
-    ({node, update} = mountTemplate(<DateButton date="Today" />));
+    ({node, update} = mountTemplate(<DateButton dateLabel={TODAY} />));
     update({start, end});
 
     triggerEvent({
@@ -48,7 +48,7 @@ describe('<DateButton>', () => {
   it('should set the date value dependent on the date string', () => {
     const secondStart = {};
     const secondEnd = {};
-    const {node: secondNode, update: secondUpdate} = mountTemplate(<DateButton date="Yesterday" />);
+    const {node: secondNode, update: secondUpdate} = mountTemplate(<DateButton dateLabel={YESTERDAY} />);
 
     secondUpdate({start: secondStart, end: secondEnd});
     triggerEvent({
