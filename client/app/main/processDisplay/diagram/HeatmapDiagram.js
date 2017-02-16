@@ -13,7 +13,7 @@ function createHeatmapRenderer({viewer}) {
   let heatmapRendered = false;
 
   viewer.get('eventBus').on('element.hover', ({element}) => {
-    hoverElement(element);
+    hoverElement(viewer, element);
   });
 
   return ({state, diagramRendered}) => {
@@ -26,7 +26,7 @@ function createHeatmapRenderer({viewer}) {
     }
   };
 
-  function renderHeatmap({hovered, heatmap: {data}}) {
+  function renderHeatmap({heatmap: {data}}) {
     // add heatmap
     if (!heatmapRendered) {
       removeHeatmap(viewer);
@@ -37,7 +37,7 @@ function createHeatmapRenderer({viewer}) {
 
     // add heatmap overlays
     removeHeatmapOverlay(viewer);
-    addHeatmapOverlay(viewer, data, hovered);
+    addHeatmapOverlay(viewer, data);
   }
 
   function removeHeatmap() {

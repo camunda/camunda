@@ -138,16 +138,13 @@ describe('<HeatmapDiagram>', () => {
       expect(removeHeatmapOverlay.called).to.eql(true);
     });
 
-    it('should add overlays with the loaded heatmap data and the hovered element', () => {
+    it('should add overlays with the loaded heatmap data', () => {
       update({
-        state: {
-          ...loadedHeatmapState,
-          hovered: 'element'
-        },
+        state: loadedHeatmapState,
         diagramRendered: true
       });
 
-      expect(addHeatmapOverlay.calledWith(viewer, heatmapData, 'element')).to.eql(true);
+      expect(addHeatmapOverlay.calledWith(viewer, heatmapData)).to.eql(true);
     });
 
     it('should only render heatmap once', () => {

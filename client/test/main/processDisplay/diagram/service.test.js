@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
 import {getHeatmap, hoverElement, removeHeatmapOverlay, addHeatmapOverlay,
-        __set__, __ResetDependency__} from 'main/processDisplay/diagram/service';
+        VALUE_OVERLAY, __set__, __ResetDependency__} from 'main/processDisplay/diagram/service';
 
 describe('Diagram service', () => {
   const heatmap = {
@@ -29,6 +29,9 @@ describe('Diagram service', () => {
   let addFunction;
   let diagramGraphics;
   let createHoverElementAction;
+  let notHoveredOverlay;
+  let hoveredOverlay;
+  let getFunction;
 
   setupPromiseMocking();
 
@@ -49,11 +52,23 @@ describe('Diagram service', () => {
     diagramGraphics = document.createElement('div');
     diagramGraphics.innerHTML = '<div class="djs-hit" width="20"></div>';
 
+    notHoveredOverlay = document.createElement('div');
+    hoveredOverlay = document.createElement('div');
+
+    getFunction = sinon.stub();
+    getFunction.onFirstCall().returns([{
+      html: notHoveredOverlay
+    }]);
+    getFunction.returns([{
+      html: hoveredOverlay
+    }]);
+
     viewer = {
       get: sinon.stub().returns({
         clear: clearFunction,
         getGraphics: sinon.stub().returns(diagramGraphics),
-        add: addFunction
+        add: addFunction,
+        get: getFunction
       })
     };
   });
@@ -83,36 +98,46 @@ describe('Diagram service', () => {
   });
 
   describe('hover overlays', () => {
-    it('should dispatch hover action', () => {
-      hoverElement(diagramElement);
-
-      expect(dispatchAction.calledWith(HOVER_ACTION)).to.eql(true);
-    });
-
     it('should remove overlays', () => {
       removeHeatmapOverlay(viewer);
 
       expect(clearFunction.calledOnce).to.eql(true);
     });
 
-    it('should add an overlay on the specified element', () => {
-      addHeatmapOverlay(viewer, heatmapData, diagramElement.id);
+    it('should add overlays on the elements', () => {
+      addHeatmapOverlay(viewer, heatmapData);
 
       expect(addFunction.calledWith(diagramElement.id)).to.eql(true);
     });
 
     it('should add an overlay with the heat value as text content', () => {
-      addHeatmapOverlay(viewer, heatmapData, diagramElement.id);
+      addHeatmapOverlay(viewer, heatmapData);
 
-      const node = addFunction.getCall(0).args[1].html;
+      const node = addFunction.getCall(0).args[2].html;
 
       expect(node.textContent.trim()).to.eql(heatmapData[diagramElement.id].toString());
     });
 
-    it('should not add an overlay if specified element has no heat data', () => {
-      addHeatmapOverlay(viewer, heatmapData, 'nonExistent');
+    it('should add the overlay with the correct type', () => {
+      addHeatmapOverlay(viewer, heatmapData);
 
-      expect(addFunction.called).to.eql(false);
+      const type = addFunction.getCall(0).args[1];
+
+      expect(type).to.eql(VALUE_OVERLAY);
+    });
+
+    describe('interaction', () => {
+      it('should clear the opacity of all overlays', () => {
+        hoverElement(viewer, 'someElement');
+
+        expect(notHoveredOverlay.style.opacity).to.eql('0');
+      });
+
+      it('should set the opacity of the hovered element', () => {
+        hoverElement(viewer, 'someElement');
+
+        expect(hoveredOverlay.style.opacity).to.eql('1');
+      });
     });
   });
 });

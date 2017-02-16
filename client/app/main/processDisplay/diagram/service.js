@@ -1,57 +1,71 @@
-import {dispatchAction} from 'view-utils';
 import generateHeatmap from './heatmap';
-import {createHoverElementAction} from './reducer';
 
-export function hoverElement(element) {
-  dispatchAction(createHoverElementAction(element));
+export const VALUE_OVERLAY = 'VALUE_OVERLAY';
+export function hoverElement(viewer, element) {
+  // hide all hovered elements
+  viewer
+    .get('overlays')
+    .get({type: VALUE_OVERLAY})
+    .forEach(({html}) => {
+      html.style.opacity = 0;
+    });
+
+  // display the new hovered element
+  const node = viewer.get('overlays').get({element, type: VALUE_OVERLAY})[0];
+
+  if (node) {
+    node.html.style.opacity = 1;
+  }
 }
 
 export function removeHeatmapOverlay(viewer) {
   viewer.get('overlays').clear();
 }
 
-export function addHeatmapOverlay(viewer, data, element) {
-  const value = data[element];
+export function addHeatmapOverlay(viewer, data) {
+  Object.keys(data).forEach(element => {
+    const value = data[element];
 
-  if (value !== undefined) {
-    // create overlay node from html string
-    const container = document.createElement('div');
+    if (value !== undefined) {
+      // create overlay node from html string
+      const container = document.createElement('div');
 
-    container.innerHTML =
-    `<div class="tooltip top" role="tooltip" style="pointer-events: none; opacity: 1;">
+      container.innerHTML =
+      `<div class="tooltip top" role="tooltip" style="pointer-events: none; opacity: 0;">
       <div class="tooltip-arrow"></div>
       <div class="tooltip-inner" style="text-align: left;">${value}</div>
-    </div>`;
-    const overlayHtml = container.firstChild;
+      </div>`;
+      const overlayHtml = container.firstChild;
 
-    // calculate overlay width
-    document.body.appendChild(overlayHtml);
-    const overlayWidth = overlayHtml.clientWidth;
+      // calculate overlay width
+      document.body.appendChild(overlayHtml);
+      const overlayWidth = overlayHtml.clientWidth;
 
-    document.body.removeChild(overlayHtml);
+      document.body.removeChild(overlayHtml);
 
-    // calculate element width
-    const elementWidth = parseInt(
-      viewer
+      // calculate element width
+      const elementWidth = parseInt(
+        viewer
         .get('elementRegistry')
         .getGraphics(element)
         .querySelector('.djs-hit')
         .getAttribute('width')
-    , 10);
+        , 10);
 
-    // add overlay to viewer
-    viewer.get('overlays').add(element, {
-      position: {
-        top: -36,
-        left: elementWidth / 2 - overlayWidth / 2
-      },
-      show: {
-        minZoom: -Infinity,
-        maxZoom: +Infinity
-      },
-      html: overlayHtml
-    });
-  }
+        // add overlay to viewer
+      viewer.get('overlays').add(element, VALUE_OVERLAY, {
+        position: {
+          top: -36,
+          left: elementWidth / 2 - overlayWidth / 2
+        },
+        show: {
+          minZoom: -Infinity,
+          maxZoom: +Infinity
+        },
+        html: overlayHtml
+      });
+    }
+  });
 }
 
 export function getHeatmap(viewer, data) {
