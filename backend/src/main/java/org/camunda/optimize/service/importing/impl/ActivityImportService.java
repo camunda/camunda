@@ -53,7 +53,7 @@ public class ActivityImportService implements ImportService {
       if (entry.getEndTime() != null) {
         final EventDto completeEvent = new EventDto();
         completeEvent.setState(STATE_COMPLETED);
-        mapDefaults(entry, createEvent);
+        mapDefaults(entry, completeEvent);
         result.add(completeEvent);
       }
     }
