@@ -56,7 +56,7 @@ public class TaskSubscriptionTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    //@Rule
+    @Rule
     public Timeout timeout = Timeout.seconds(10);
 
     @Test
@@ -207,7 +207,7 @@ public class TaskSubscriptionTest
                 .execute();
         });
 
-        final Long taskId = taskService.create()
+        final Long taskKey = taskService.create()
             .topicId(0)
             .taskType("bar")
             .payload("{ \"foo\" : 9 }")
@@ -229,7 +229,7 @@ public class TaskSubscriptionTest
         waitUntil(() -> taskHandler.handledTasks.size() == 3);
 
         assertThat(taskHandler.handledTasks).hasSize(3);
-        assertThat(taskHandler.handledTasks.get(2).getId()).isEqualTo(taskId);
+        assertThat(taskHandler.handledTasks.get(2).getId()).isEqualTo(taskKey);
     }
 
     @Ignore

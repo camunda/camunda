@@ -214,9 +214,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     public void processEvent(long key, Consumer<T> eventSetter)
     {
         processEvent(key, eventSetter, metadata ->
-        {
-            // no additional metadata
-        });
+        { });
     }
 
     public void processEvent(long key, Consumer<T> eventSetter, Consumer<BrokerEventMetadata> metadataSetter)
@@ -253,7 +251,8 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
     public LoggedEvent buildLoggedEvent(long key, Consumer<T> eventSetter)
     {
-        return buildLoggedEvent(key, eventSetter, defaultMetadataSetter);
+        return buildLoggedEvent(key, eventSetter, m ->
+        { });
     }
 
     public LoggedEvent buildLoggedEvent(long key, Consumer<T> eventSetter, Consumer<BrokerEventMetadata> metadataSetter)
