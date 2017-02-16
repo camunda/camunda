@@ -73,7 +73,8 @@ public class CorrelationReader {
     correlationNodes.add(endActivity);
 
     QueryBuilder query;
-    SearchRequestBuilder srb = esclient.prepareSearch();
+    SearchRequestBuilder srb = esclient.prepareSearch(configurationService.getOptimizeIndex())
+        .setTypes(configurationService.getEventType());
     if (processDefinitionId != null) {
       query = QueryBuilders.matchQuery("processDefinitionId", processDefinitionId);
       srb.setQuery(query);

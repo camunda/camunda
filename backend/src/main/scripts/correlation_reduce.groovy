@@ -1,10 +1,12 @@
 package org.camunda.es.scripts
 
-reached = 0
-all = 0
+def reached = 0
+def all = 0
 
-finalMap = new HashMap()
-targetActivities = new ArrayList<>()
+def finalMap = new HashMap()
+def targetActivities = new ArrayList<>()
+
+//grab filtering criteria out of any agg, they are all same
 for (agg in _aggs) {
     if (agg["startActivity"] != null) {
         startActivity = agg["startActivity"]
@@ -15,8 +17,9 @@ for (agg in _aggs) {
     }
 }
 
-for (e in _aggs.process_activities) {
-    for (pa in e) {
+//build a map of process instances with all activities that they passed
+for (agg in _aggs) {
+    for (pa in agg.process_activities) {
         if (!finalMap.containsKey(pa.key)) {
             finalMap.put(pa.key, new ArrayList())
         }
@@ -27,7 +30,9 @@ for (e in _aggs.process_activities) {
     }
 }
 
+//iterate over process instances and do counts
 if (targetActivities != null && targetActivities.size() > 0) {
+
     for (pi in finalMap) {
         boolean allFound = true
         if (pi.value.contains(startActivity)) {
@@ -54,6 +59,6 @@ if (targetActivities != null && targetActivities.size() > 0) {
 def resultMap = [:]
 resultMap['reached'] = reached
 resultMap['all'] = all
-resultMap['id'] = targetActivities.get(0)
+resultMap['id'] = startActivity
 
 return resultMap
