@@ -224,19 +224,6 @@ public class Long2BytesHashIndexTest
     }
 
     @Test
-    public void shouldReset()
-    {
-        // given
-        index.put(0, VALUE);
-
-        // when
-        index.reset();
-
-        // then
-        assertThat(index.get(0)).isEqualTo(VALUE);
-    }
-
-    @Test
     public void shouldClear()
     {
         // given

@@ -1,27 +1,15 @@
 package org.camunda.tngp.hashindex;
 
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_COUNT_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_DATA_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.BLOCK_LENGTH_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.INDEX_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.INDEX_SIZE_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.RECORD_KEY_LENGTH_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.RECORD_VALUE_LENGTH_OFFSET;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.TYPE_RECORD;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.TYPE_TOMBSTONE;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.blockDepth;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.blockFillCount;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.blockId;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.decrementBlockFillCount;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.framedRecordLength;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.incrementBlockFillCount;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.indexEntryOffset;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.recordKeyOffset;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.recordTypeOffset;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.recordValueOffset;
-import static org.camunda.tngp.hashindex.HashIndexDescriptor.requiredIndexBufferSize;
+import static org.camunda.tngp.hashindex.HashIndexDescriptor.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.hashindex.buffer.BufferCache;
+import org.camunda.tngp.hashindex.buffer.BufferCacheMetrics;
+import org.camunda.tngp.hashindex.buffer.LoadedBuffer;
 import org.camunda.tngp.hashindex.store.IndexStore;
 
 /**
@@ -30,19 +18,32 @@ import org.camunda.tngp.hashindex.store.IndexStore;
  */
 public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 {
+    private static final int BUFFER_CACHE_SIZE = Integer.parseInt(System.getProperty("org.camunda.tngp.hashindex.bufferCacheSize", "32"));
+
     protected final IndexStore indexStore;
 
-    protected final LoadedBuffer loadedIndexBuffer;
-    protected final LoadedBuffer loadedBlockBuffer;
-    protected final LoadedBuffer loadedSplitWorkBuffer;
+    private final BufferCache bufferCache;
+    protected LoadedBuffer loadedIndexBuffer;
 
     protected final PutVisitor putVisitor = new PutVisitor();
     protected final GetVisitor getVisitor = new GetVisitor();
     protected final RemoveVisitor removeVisitor = new RemoveVisitor();
     protected final SplitVisitor splitVisitor;
 
-    protected K keyHandler;
-    protected V valueHandler;
+    protected final K keyHandler;
+    protected final V valueHandler;
+
+    // immutable metadata
+
+    protected final int blockLength;
+    protected final int indexSize;
+    protected final int recordKeyLength;
+    protected final int recordValueLength;
+    protected final int recordLength;
+
+    // mutable metadata
+
+    protected int blockCount;
 
     /**
      * Restore an existing index from the index store
@@ -53,17 +54,23 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             Class<V> valueHandlerType)
     {
         this.indexStore = indexStore;
-        this.loadedSplitWorkBuffer = new LoadedBuffer(indexStore, true);
-        this.loadedBlockBuffer = new LoadedBuffer(indexStore, true);
 
-        this.loadedIndexBuffer = new LoadedBuffer(indexStore, true, 0, INDEX_OFFSET);
-        this.loadedIndexBuffer.load(0, requiredIndexBufferSize(indexSize()));
-
-        final int recordKeyLength = recordKeyLength();
+        final LoadedBuffer indexSizeReadBuffer = new LoadedBuffer(indexStore, INDEX_OFFSET);
+        indexSizeReadBuffer.load(0);
+        this.indexSize = indexSizeReadBuffer.getBuffer().getInt(INDEX_SIZE_OFFSET);
+        this.loadedIndexBuffer = new LoadedBuffer(indexStore, requiredIndexBufferSize(indexSize));
+        loadedIndexBuffer.load(0);
+        this.blockLength = loadedIndexBuffer.getBuffer().getInt(BLOCK_LENGTH_OFFSET);
+        this.recordKeyLength = loadedIndexBuffer.getBuffer().getInt(RECORD_KEY_LENGTH_OFFSET);
+        this.recordValueLength = loadedIndexBuffer.getBuffer().getInt(RECORD_VALUE_LENGTH_OFFSET);
+        this.recordLength = framedRecordLength(recordKeyLength, recordValueLength);
+        this.blockCount = loadedIndexBuffer.getBuffer().getInt(BLOCK_COUNT_OFFSET);
 
         this.splitVisitor = new SplitVisitor(crateKeyHandlerInstance(keyHandlerType, recordKeyLength));
         this.keyHandler = crateKeyHandlerInstance(keyHandlerType, recordKeyLength);
         this.valueHandler = createInstance(valueHandlerType);
+
+        this.bufferCache = new BufferCache(indexStore, BUFFER_CACHE_SIZE, this.blockLength);
     }
 
     /**
@@ -82,29 +89,38 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         this.splitVisitor = new SplitVisitor(crateKeyHandlerInstance(keyHandlerType, keyLength));
         this.keyHandler = crateKeyHandlerInstance(keyHandlerType, keyLength);
         this.valueHandler = createInstance(valueHandlerType);
-        this.loadedSplitWorkBuffer = new LoadedBuffer(indexStore, true);
-
-        final int indexBufferSize = requiredIndexBufferSize(indexSize);
-        indexStore.allocate(indexBufferSize);
-        this.loadedIndexBuffer = new LoadedBuffer(indexStore, true, 0, indexBufferSize);
 
         final int blockLength = BLOCK_DATA_OFFSET  + blockSize * framedRecordLength(keyLength, valueLength);
 
-        // init metadata
+        this.blockLength = blockLength;
+        this.indexSize = indexSize;
+        this.recordKeyLength = keyLength;
+        this.recordValueLength = valueLength;
+        this.recordLength = framedRecordLength(keyLength, valueLength);
+        this.blockCount = 0;
+
+        this.bufferCache = new BufferCache(indexStore, BUFFER_CACHE_SIZE, this.blockLength);
+
+        init();
+    }
+
+    protected void init()
+    {
+        final int indexBufferSize = requiredIndexBufferSize(indexSize);
+        indexStore.allocate(indexBufferSize);
+        this.loadedIndexBuffer = new LoadedBuffer(indexStore, indexBufferSize);
+        loadedIndexBuffer.load(0);
+
+        // write metadata
         blockLength(blockLength);
-        recordKeyLength(keyLength);
-        recordValueLength(valueLength);
+        recordKeyLength(recordKeyLength);
+        recordValueLength(recordValueLength);
         indexSize(indexSize);
 
         // allocate and create first block
         final long firstBlockOffset = indexStore.allocate(blockLength);
-        this.loadedBlockBuffer = new LoadedBuffer(indexStore, true, firstBlockOffset, blockLength);
+        final LoadedBuffer loadedBlockBuffer = bufferCache.getBuffer(firstBlockOffset);
 
-        allocateInitialBlock(firstBlockOffset);
-    }
-
-    protected void allocateInitialBlock(long firstBlockOffset)
-    {
         final MutableDirectBuffer firstBlockBuffer = loadedBlockBuffer.getBuffer();
         blockFillCount(firstBlockBuffer, 0);
         blockId(firstBlockBuffer, 0);
@@ -112,17 +128,19 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
         // update index
         blockCount(1);
-        for (int i = 0; i < indexSize(); i++)
+
+        final MutableDirectBuffer indexBuffer = loadedIndexBuffer.getBuffer();
+
+        for (int i = 0; i < indexSize; i++)
         {
-            loadedIndexBuffer.getBuffer()
-                .putLong(indexEntryOffset(i), firstBlockOffset);
+            indexBuffer.putLong(indexEntryOffset(i), firstBlockOffset);
         }
 
         loadedIndexBuffer.write();
-        loadedBlockBuffer.write();
+        indexStore.flush();
     }
 
-    private K crateKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)
+    private static <K extends IndexKeyHandler> K crateKeyHandlerInstance(Class<K> keyHandlerType, int keyLength)
     {
         final K keyHandler = createInstance(keyHandlerType);
         keyHandler.setKeyLength(keyLength);
@@ -141,29 +159,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         }
     }
 
-    public void clear()
-    {
-        indexStore.clear();
-
-        reset();
-    }
-
-    public void reset()
-    {
-        this.loadedSplitWorkBuffer.clear();
-        this.loadedBlockBuffer.clear();
-
-        this.loadedIndexBuffer.clear();
-        this.loadedIndexBuffer.load(0, requiredIndexBufferSize(indexSize()));
-
-        if (blockCount() == 0)
-        {
-            // allocate and create first block
-            final long firstBlockOffset = indexStore.allocate(blockLength());
-            allocateInitialBlock(firstBlockOffset);
-        }
-    }
-
     protected boolean put()
     {
         final int keyHashCode = keyHandler.keyHashCode();
@@ -176,29 +171,26 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
         if (!updated)
         {
-            final int recordLength = recordLength();
             int putPosition = putVisitor.freeSlot;
             long putBlockOffset = blockOffset;
 
-            while (blockLength() < putPosition + recordLength)
+            while (blockLength < putPosition + recordLength)
             {
                 // block is filled
                 splitBlock(putBlockOffset);
                 putBlockOffset = blockForHashCode(keyHashCode);
                 // calculate put position (after the split, both blocks are compacted)
-                loadedBlockBuffer.ensureLoaded(putBlockOffset, blockLength());
+                final LoadedBuffer loadedBlockBuffer = bufferCache.getBuffer(putBlockOffset);
                 putPosition = BLOCK_DATA_OFFSET + (recordLength * blockFillCount(loadedBlockBuffer.getBuffer()));
             }
 
-            loadedBlockBuffer.ensureLoaded(putBlockOffset, blockLength());
+            final LoadedBuffer loadedBlockBuffer = bufferCache.getBuffer(putBlockOffset);
             final MutableDirectBuffer blockBuffer = loadedBlockBuffer.getBuffer();
             blockBuffer.putByte(recordTypeOffset(putPosition), TYPE_RECORD);
             keyHandler.writeKey(blockBuffer, recordKeyOffset(putPosition));
-            valueHandler.writeValue(blockBuffer, recordValueOffset(putPosition, recordKeyLength()), recordValueLength());
+            valueHandler.writeValue(blockBuffer, recordValueOffset(putPosition, recordKeyLength), recordValueLength);
             incrementBlockFillCount(blockBuffer);
         }
-
-        loadedBlockBuffer.write();
 
         return updated;
     }
@@ -222,23 +214,13 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         removeVisitor.init(keyHandler, valueHandler);
         scanBlock(blockOffset, removeVisitor);
 
-        if (removeVisitor.wasRecordRemoved)
-        {
-            loadedBlockBuffer.write();
-        }
-
         return removeVisitor.wasRecordRemoved;
     }
 
     private long blockForHashCode(int keyHashCode)
     {
-        final int mask = indexSize() - 1;
+        final int mask = indexSize - 1;
         return loadedIndexBuffer.getBuffer().getLong(indexEntryOffset(keyHashCode & mask));
-    }
-
-    public int blockLength()
-    {
-        return loadedIndexBuffer.getBuffer().getInt(BLOCK_LENGTH_OFFSET);
     }
 
     private void blockLength(int blockLength)
@@ -246,24 +228,9 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         loadedIndexBuffer.getBuffer().putInt(BLOCK_LENGTH_OFFSET, blockLength);
     }
 
-    public int recordLength()
-    {
-        return framedRecordLength(recordKeyLength(), recordValueLength());
-    }
-
-    public int recordValueLength()
-    {
-        return loadedIndexBuffer.getBuffer().getInt(RECORD_VALUE_LENGTH_OFFSET);
-    }
-
     private void recordValueLength(int length)
     {
         loadedIndexBuffer.getBuffer().putInt(RECORD_VALUE_LENGTH_OFFSET, length);
-    }
-
-    public int recordKeyLength()
-    {
-        return loadedIndexBuffer.getBuffer().getInt(RECORD_KEY_LENGTH_OFFSET);
     }
 
     private void recordKeyLength(int recordKeyLength)
@@ -271,24 +238,20 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         loadedIndexBuffer.getBuffer().putInt(RECORD_KEY_LENGTH_OFFSET, recordKeyLength);
     }
 
-    public int indexSize()
-    {
-        return loadedIndexBuffer.getBuffer().getInt(INDEX_SIZE_OFFSET);
-    }
-
     private void indexSize(int indexSize)
     {
         loadedIndexBuffer.getBuffer().putInt(INDEX_SIZE_OFFSET, indexSize);
     }
 
-    public int blockCount()
-    {
-        return loadedIndexBuffer.getBuffer().getInt(BLOCK_COUNT_OFFSET);
-    }
-
     private void blockCount(int blockCount)
     {
+        this.blockCount = blockCount;
         loadedIndexBuffer.getBuffer().putInt(BLOCK_COUNT_OFFSET, blockCount);
+    }
+
+    public int blockCount()
+    {
+        return blockCount;
     }
 
     /**
@@ -296,80 +259,94 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
      */
     private long splitBlock(long filledBlockOffset)
     {
-        final int blockCount = blockCount();
-        final int indexSize = indexSize();
-
         long newBlockOffset = -1;
-        if (blockCount < indexSize)
+        final LoadedBuffer loadedBlockBuffer = bufferCache.getBuffer(filledBlockOffset);
+        final MutableDirectBuffer filledBlockBuffer = loadedBlockBuffer.getBuffer();
+
+        final int filledBlockId = blockId(filledBlockBuffer);
+        final int blockDepth = blockDepth(filledBlockBuffer);
+        final int newBlockId = 1 << blockDepth | filledBlockId;
+        final int newBlockDepth = blockDepth + 1;
+
+        if (newBlockId >= indexSize)
         {
-            loadedBlockBuffer.ensureLoaded(filledBlockOffset, blockLength());
-            final MutableDirectBuffer filledBlockBuffer = loadedBlockBuffer.getBuffer();
+            throw new RuntimeException("Index Full. Cannot create new block with id " + newBlockId + ". Filled Block keys: " + listKeys(filledBlockOffset) + "\n" + getMetrics());
+        }
 
-            final int filledBlockId = blockId(filledBlockBuffer);
-            final int blockDepth = blockDepth(filledBlockBuffer);
-            final int newBlockId = 1 << blockDepth | filledBlockId;
-            final int newBlockDepth = blockDepth + 1;
+        // create new blocks
+        newBlockOffset = allocateBlock();
+        final LoadedBuffer loadedSplitWorkBuffer = bufferCache.getBuffer(newBlockOffset);
+        final MutableDirectBuffer splitBuffer = loadedSplitWorkBuffer.getBuffer();
+        blockId(splitBuffer, newBlockId);
+        blockDepth(filledBlockBuffer, newBlockDepth);
+        blockDepth(splitBuffer, newBlockDepth);
+        incrementBlockCount();
 
-            // create new blocks
-            newBlockOffset = allocateBlock();
-            loadedSplitWorkBuffer.ensureLoaded(newBlockOffset, blockLength());
-            final MutableDirectBuffer splitBuffer = loadedSplitWorkBuffer.getBuffer();
-            blockId(splitBuffer, newBlockId);
-            blockDepth(filledBlockBuffer, newBlockDepth);
-            blockDepth(splitBuffer, newBlockDepth);
-            incrementBlockCount();
+        // split filled block
+        splitVisitor.init(loadedBlockBuffer, loadedSplitWorkBuffer);
+        scanBlock(filledBlockOffset, splitVisitor);
+        blockFillCount(filledBlockBuffer, splitVisitor.filledBlockFillCount);
+        blockFillCount(splitBuffer, splitVisitor.newBlockFillCount);
 
-            // split filled block
-            splitVisitor.init();
-            scanBlock(filledBlockOffset, splitVisitor);
-            blockFillCount(filledBlockBuffer, splitVisitor.filledBlockFillCount);
-            blockFillCount(splitBuffer, splitVisitor.newBlockFillCount);
-
-            // update index
-            final MutableDirectBuffer indexBuffer = loadedIndexBuffer.getBuffer();
-            for (int idx = 0; idx < indexSize; idx++)
+        // update index
+        final MutableDirectBuffer indexBuffer = loadedIndexBuffer.getBuffer();
+        for (int idx = 0; idx < indexSize; idx++)
+        {
+            final int offset = indexEntryOffset(idx);
+            if (indexBuffer.getLong(offset) == filledBlockOffset)
             {
-                final int offset = indexEntryOffset(idx);
-                if (indexBuffer.getLong(offset) == filledBlockOffset)
+                if ((idx & newBlockId) == newBlockId)
                 {
-                    if ((idx & newBlockId) == newBlockId)
-                    {
-                        indexBuffer.putLong(offset, newBlockOffset);
-                    }
+                    indexBuffer.putLong(offset, newBlockOffset);
                 }
             }
-
-            loadedBlockBuffer.write();
-            loadedSplitWorkBuffer.write();
-            loadedIndexBuffer.write();
-        }
-        else
-        {
-            throw new RuntimeException("Index full");
         }
 
         return newBlockOffset;
     }
 
+    private String listKeys(long filledBlockOffset)
+    {
+        final StringBuffer buff = new StringBuffer();
+
+        scanBlock(filledBlockOffset, new RecordVisitor()
+        {
+            @Override
+            public boolean visitRecord(short recordType, MutableDirectBuffer buffer, int recordOffset, int recordLength)
+            {
+                if (recordType == TYPE_RECORD)
+                {
+                    keyHandler.readKey(buffer, recordKeyOffset(recordOffset));
+                    buff.append(keyHandler.toString());
+                    buff.append("(");
+                    buff.append(keyHandler.keyHashCode() & (indexSize - 1));
+                    buff.append(") ");
+                }
+                return false;
+            }
+        });
+
+        return buff.toString();
+    }
+
     private long allocateBlock()
     {
-        return indexStore.allocate(blockLength());
+        return indexStore.allocate(blockLength);
     }
 
     private void incrementBlockCount()
     {
-        blockCount(blockCount() + 1);
+        blockCount(blockCount + 1);
     }
 
     // block scanning and visitors /////////////////////////////////////////////
 
     private void scanBlock(long blockPosition, RecordVisitor visitor)
     {
-        ensureBlockLoaded(blockPosition);
+        final int scanLimit = blockLength;
+        final LoadedBuffer loadedBlockBuffer = bufferCache.getBuffer(blockPosition);
 
         final MutableDirectBuffer blockBuffer = loadedBlockBuffer.getBuffer();
-        final int recordSize = recordLength();
-        final int scanLimit = blockLength();
         final int fillCount = blockFillCount(blockBuffer);
 
         boolean visitorCompleted = false;
@@ -380,21 +357,13 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         {
             final short recordType = blockBuffer.getByte(recordTypeOffset(scanPos));
 
-            visitorCompleted = visitor.visitRecord(recordType, blockBuffer, scanPos, recordSize);
+            visitorCompleted = visitor.visitRecord(recordType, blockBuffer, scanPos, recordLength);
 
             if (recordType == TYPE_RECORD)
             {
                 ++recordsVisited;
             }
-            scanPos += recordSize;
-        }
-    }
-
-    private void ensureBlockLoaded(long blockPosition)
-    {
-        if (loadedBlockBuffer.getPosition() != blockPosition)
-        {
-            loadedBlockBuffer.load(blockPosition, blockLength());
+            scanPos += recordLength;
         }
     }
 
@@ -417,7 +386,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         {
             if (recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
             {
-                valueHandler.readValue(buffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
+                valueHandler.readValue(buffer, recordValueOffset(recordOffset, recordKeyLength), recordValueLength);
                 wasRecordFound = true;
                 return true;
             }
@@ -450,8 +419,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             {
                 if (keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
                 {
-                    valueHandler.writeValue(buffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
-                    incrementBlockFillCount(buffer);
+                    valueHandler.writeValue(buffer, recordValueOffset(recordOffset, recordKeyLength), recordValueLength);
                     recordUpdated = true;
                 }
                 if (freeSlot == recordOffset)
@@ -484,7 +452,7 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             {
                 if (recordType == TYPE_RECORD && keyHandler.keyEquals(buffer, recordKeyOffset(recordOffset)))
                 {
-                    valueHandler.readValue(buffer, recordValueOffset(recordOffset, recordKeyLength()), recordValueLength());
+                    valueHandler.readValue(buffer, recordValueOffset(recordOffset, recordKeyLength), recordValueLength);
                     buffer.putByte(recordTypeOffset(recordOffset), TYPE_TOMBSTONE);
                     decrementBlockFillCount(buffer);
                     wasRecordRemoved = true;
@@ -507,19 +475,21 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         int newBlockPutOffset;
         int newBlockFillCount;
         int splitMask;
+        LoadedBuffer loadedSplitWorkBuffer;
 
         SplitVisitor(IndexKeyHandler keyHandler)
         {
             this.keyHandler = keyHandler;
         }
 
-        void init()
+        void init(LoadedBuffer loadedBlockBuffer, LoadedBuffer loadedSplitWorkBuffer)
         {
+            this.loadedSplitWorkBuffer = loadedSplitWorkBuffer;
             this.filledBlockPutOffset = -1;
             this.filledBlockFillCount = blockFillCount(loadedBlockBuffer.getBuffer());
             this.newBlockPutOffset = BLOCK_DATA_OFFSET;
             this.newBlockFillCount = 0;
-            this.splitMask = 1 << blockDepth(loadedBlockBuffer.getBuffer()) - 1;
+            this.splitMask = 1 << (blockDepth(loadedBlockBuffer.getBuffer()) - 1);
         }
 
         @Override
@@ -531,9 +501,14 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
             {
                 // relocate record to the new block
                 loadedSplitWorkBuffer.getBuffer().putBytes(newBlockPutOffset, buffer, recordOffset, recordLength);
+                buffer.putByte(recordTypeOffset(recordOffset), TYPE_TOMBSTONE);
 
                 newBlockPutOffset += recordLength;
-                filledBlockPutOffset = recordOffset;
+
+                if (filledBlockPutOffset == -1)
+                {
+                    filledBlockPutOffset = recordOffset;
+                }
 
                 ++newBlockFillCount;
                 --filledBlockFillCount;
@@ -544,12 +519,95 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
                 {
                     // compact existing block
                     buffer.putBytes(filledBlockPutOffset, buffer, recordOffset, recordLength);
-                    filledBlockPutOffset = recordOffset;
+                    filledBlockPutOffset += recordLength;
                     buffer.putByte(recordTypeOffset(recordOffset), TYPE_TOMBSTONE);
                 }
             }
 
             return false;
         }
+    }
+
+    public void clear()
+    {
+        bufferCache.flush();
+        indexStore.clear();
+        init();
+    }
+
+    public void reInit()
+    {
+        loadedIndexBuffer.load(0);
+        bufferCache.clear();
+        blockCount = loadedIndexBuffer.getBuffer().getInt(BLOCK_COUNT_OFFSET);
+    }
+
+    public void flush()
+    {
+        bufferCache.flush();
+        loadedIndexBuffer.write();
+        indexStore.flush();
+    }
+
+    public BufferCacheMetrics getBufferCacheMetrics()
+    {
+        return bufferCache;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getMetrics();
+    }
+
+    private String getMetrics()
+    {
+        final StringBuilder builder = new StringBuilder();
+
+        builder.append(String.format("%d of %d blocks created (%.3f%% extended)\n", blockCount, indexSize, (((double)100) / indexSize) * blockCount));
+
+        final Map<Long, Double> blockFillPercent = new HashMap<>();
+        final MutableDirectBuffer indexBuffer = loadedIndexBuffer.getBuffer();
+
+        int size = 0;
+
+        for (int i = 0; i < indexSize; i++)
+        {
+            final long blockAddr = indexBuffer.getLong(indexEntryOffset(i));
+
+            if (!blockFillPercent.containsKey(blockAddr))
+            {
+                final LoadedBuffer blockBuffer = bufferCache.getBuffer(blockAddr);
+                final int blockFillCount = blockFillCount(blockBuffer.getBuffer());
+                size += blockFillCount;
+                blockFillPercent.put(blockAddr, (((double) 100) / (blockLength / recordLength)) * blockFillCount);
+            }
+        }
+
+        builder.append(String.format("Indexed Keys: %d\n", size));
+
+
+        final TreeMap<Integer, Integer> blockFillHistogram = new TreeMap<>();
+
+        for (Double fillPercent : blockFillPercent.values())
+        {
+            final int bucket = (int) (fillPercent / 10);
+
+            blockFillHistogram.compute(bucket, (k, v) -> v == null ? 1 : ++v);
+        }
+
+        builder.append("Block Fill Histogram: \n");
+
+        for (int i = 0; i < 10; i++)
+        {
+            Integer count = blockFillHistogram.get(i);
+            if (count == null)
+            {
+                count = 0;
+            }
+            builder.append(String.format("%d0%% | %d\n", i, count));
+        }
+
+        return builder.toString();
     }
 }

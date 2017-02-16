@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.*;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class Long2LongHashIndexMinimalBlockSizeTest
 {
@@ -13,6 +15,9 @@ public class Long2LongHashIndexMinimalBlockSizeTest
 
     Long2LongHashIndex index;
     FileChannelIndexStore indexStore;
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void createIndex()
@@ -184,5 +189,16 @@ public class Long2LongHashIndexMinimalBlockSizeTest
         {
             // expected
         }
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCollision()
+    {
+        index.put(0L, 1L);
+
+        expectedException.expect(RuntimeException.class);
+
+        // hash collision with 0L hashes to the same block. Block size = 1 => exception expected.
+        index.put(16L, 2L);
     }
 }

@@ -9,7 +9,6 @@ import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 import org.agrona.LangUtil;
-import org.camunda.tngp.hashindex.HashIndexDescriptor;
 
 public class FileChannelIndexStore implements IndexStore, Closeable
 {
@@ -51,9 +50,27 @@ public class FileChannelIndexStore implements IndexStore, Closeable
     }
 
     @Override
+    public void readFully(ByteBuffer buffer, long position)
+    {
+        try
+        {
+            do
+            {
+                position += fileChannel.read(buffer, position);
+            }
+            while (buffer.hasRemaining());
+        }
+        catch (IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+    }
+
+    @Override
     public int read(ByteBuffer buffer, long position)
     {
         int bytesRead = 0;
+
         try
         {
             bytesRead = fileChannel.read(buffer, position);
@@ -62,15 +79,20 @@ public class FileChannelIndexStore implements IndexStore, Closeable
         {
             LangUtil.rethrowUnchecked(e);
         }
+
         return bytesRead;
     }
 
     @Override
-    public void write(ByteBuffer buffer, long position)
+    public void writeFully(ByteBuffer buffer, long position)
     {
         try
         {
-            fileChannel.write(buffer, position);
+            do
+            {
+                position += fileChannel.write(buffer, position);
+            }
+            while (buffer.hasRemaining());
         }
         catch (IOException e)
         {
@@ -104,6 +126,7 @@ public class FileChannelIndexStore implements IndexStore, Closeable
                 zeroBytes.limit(blockRemainder);
                 fileChannel.write(zeroBytes);
             }
+
         }
         catch (final IOException ex)
         {
@@ -129,14 +152,9 @@ public class FileChannelIndexStore implements IndexStore, Closeable
 
     public static FileChannelIndexStore tempFileIndexStore()
     {
-        return tempFileIndexStore("index");
-    }
-
-    public static FileChannelIndexStore tempFileIndexStore(String name)
-    {
         try
         {
-            final File tmpFile = File.createTempFile(name + "-", ".idx");
+            final File tmpFile = File.createTempFile("index-", ".idx");
             tmpFile.deleteOnExit();
             final RandomAccessFile raf = new RandomAccessFile(tmpFile, "rw");
             final FileChannel channel = raf.getChannel();
@@ -176,17 +194,15 @@ public class FileChannelIndexStore implements IndexStore, Closeable
     @Override
     public void clear()
     {
-        // don't override the required metadata
-        int offset = HashIndexDescriptor.BLOCK_COUNT_OFFSET;
-        while (offset < allocatedLength)
+        try
         {
-            final int size = (int) Math.min(1024, allocatedLength - offset);
-            final byte[] zeroBytes = new byte[size];
-            Arrays.fill(zeroBytes, (byte) 0);
-
-            write(ByteBuffer.wrap(zeroBytes), offset);
-
-            offset += size;
+            fileChannel.truncate(0);
+            flush();
+            allocatedLength = 0;
+        }
+        catch (IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
         }
     }
 

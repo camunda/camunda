@@ -1,9 +1,8 @@
 package org.camunda.tngp.hashindex.types;
 
-import org.camunda.tngp.hashindex.IndexKeyHandler;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.hashindex.IndexKeyHandler;
 
 public class LongKeyHandler implements IndexKeyHandler
 {
@@ -18,8 +17,9 @@ public class LongKeyHandler implements IndexKeyHandler
     @Override
     public int keyHashCode()
     {
-        final int hash = (int)theKey ^ (int)(theKey >>> 32);
-        return hash ^ (hash >>> 16);
+        int hash = (int)theKey ^ (int)(theKey >>> 32);
+        hash = hash ^ (hash >>> 16);
+        return hash;
     }
 
     @Override
@@ -38,5 +38,11 @@ public class LongKeyHandler implements IndexKeyHandler
     public boolean keyEquals(DirectBuffer buffer, int recordKeyOffset)
     {
         return theKey == buffer.getLong(recordKeyOffset);
+    }
+
+    @Override
+    public String toString()
+    {
+        return Long.valueOf(theKey).toString();
     }
 }

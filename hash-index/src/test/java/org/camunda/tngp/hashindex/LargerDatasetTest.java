@@ -1,14 +1,18 @@
 package org.camunda.tngp.hashindex;
 
+import org.agrona.BitUtil;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
-public class IndexPutFailureTest
+public class LargerDatasetTest
 {
+    private static final int KEYS_TO_PUT = 500_000;
+
+    private static final int BLOCK_LENGTH = 128;
+
+    private static final int INDEX_SIZE = BitUtil.findNextPositivePowerOfTwo(KEYS_TO_PUT / BLOCK_LENGTH);
 
     protected Long2LongHashIndex index;
     FileChannelIndexStore indexStore;
@@ -17,7 +21,7 @@ public class IndexPutFailureTest
     public void setUp()
     {
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        index = new Long2LongHashIndex(indexStore, 32448, 2048);
+        index = new Long2LongHashIndex(indexStore, INDEX_SIZE, BLOCK_LENGTH);
     }
 
     @After
@@ -29,13 +33,9 @@ public class IndexPutFailureTest
     @Test
     public void shouldPutElements()
     {
-        for (int i = 0; i < 18; i++)
+        for (int i = 0; i < KEYS_TO_PUT; i++)
         {
-            for (int j = 0; j < 32; j++)
-            {
-                final long indexPos = i * j;
-                index.put(indexPos, 0);
-            }
+            index.put(i, 0);
         }
     }
 }

@@ -61,9 +61,9 @@ public class Long2BytesHashIndex extends HashIndex<LongKeyHandler, ByteArrayValu
     protected void checkValueLength(byte[] value)
     {
         final int length = value.length;
-        if (length > recordValueLength())
+        if (length > recordValueLength)
         {
-            throw new IllegalArgumentException("Illegal byte array length: expected at most " + recordValueLength() + ", but was " + length);
+            throw new IllegalArgumentException("Illegal byte array length: expected at most " + recordValueLength + ", but was " + length);
         }
     }
 
