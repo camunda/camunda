@@ -4,13 +4,17 @@ import java.util.Objects;
 
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 
+/**
+ * Implement to control which events should be handled by a {@link StreamProcessor}.
+ */
 @FunctionalInterface
 public interface EventFilter
 {
 
     /**
-     * @param event
-     * @return true to mark an event for processing
+     * @param event the event to be processed next
+     * @return true to mark an event for processing; false to skip it
+     * @throws RuntimeException to signal that processing cannot continue
      */
     boolean applies(LoggedEvent event);
 
