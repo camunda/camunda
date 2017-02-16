@@ -2,10 +2,11 @@ package org.camunda.tngp.broker.event.processor;
 
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
+import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 
 public class TopicSubscription extends UnpackedObject
 {
-    protected IntegerProperty idProp = new IntegerProperty("id", -1);
+    protected LongProperty idProp = new LongProperty("id", -1L);
     protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
 
     protected int channelId;
@@ -17,12 +18,12 @@ public class TopicSubscription extends UnpackedObject
             .declareProperty(topicIdProp);
     }
 
-    public int getId()
+    public long getId()
     {
         return idProp.getValue();
     }
 
-    public TopicSubscription setId(int id)
+    public TopicSubscription setId(long id)
     {
         this.idProp.setValue(id);
         return this;

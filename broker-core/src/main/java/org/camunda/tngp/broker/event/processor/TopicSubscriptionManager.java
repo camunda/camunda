@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.event.TopicSubscriptionNames;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
@@ -16,18 +16,18 @@ public class TopicSubscriptionManager implements Agent
 {
     protected static final String NAME = "topic.subscription.manager";
 
-    protected int nextSubscriptionId = 0;
+    protected long nextSubscriptionId = 0;
 
     protected final StreamProcessorManager streamProcessorManager;
     protected final AsyncContext asyncContext;
-    protected final Int2ObjectHashMap<TopicSubscriptionProcessor> subscriptionProcessors;
+    protected final Long2ObjectHashMap<TopicSubscriptionProcessor> subscriptionProcessors;
     protected final Supplier<SubscribedEventWriter> eventWriterFactory;
 
     public TopicSubscriptionManager(StreamProcessorManager streamProcessorManager, AsyncContext asyncContext, Supplier<SubscribedEventWriter> eventWriterFactory)
     {
         this.streamProcessorManager = streamProcessorManager;
         this.asyncContext = asyncContext;
-        this.subscriptionProcessors = new Int2ObjectHashMap<>();
+        this.subscriptionProcessors = new Long2ObjectHashMap<>();
         this.eventWriterFactory = eventWriterFactory;
     }
 
@@ -41,7 +41,7 @@ public class TopicSubscriptionManager implements Agent
         {
             // it is ok to access the subscription object asynchronously, because this code is guaranteed to execute not more
             // than once in parallel
-            final int subscriptionId = nextSubscriptionId++;
+            final long subscriptionId = nextSubscriptionId++;
             subscription.setId(subscriptionId);
 
             final ServiceName<LogStream> logStreamServiceName = streamProcessorManager.getServiceName(topicId);
@@ -50,12 +50,13 @@ public class TopicSubscriptionManager implements Agent
             final TopicSubscriptionProcessor streamProcessor = new TopicSubscriptionProcessor(
                     channelId,
                     topicId,
+                    subscriptionId,
                     eventWriterFactory.get());
 
             streamProcessorManager.createStreamProcessorService(
                     logStreamServiceName,
                     TopicSubscriptionNames.subscriptionServiceName(logStreamServiceName.getName(), subscriptionId),
-                    subscriptionId, // TODO: should this be a constant value as in tasksubscriptionmanager
+                    (int) subscriptionId, // TODO: should this be a constant value as in tasksubscriptionmanager
                     streamProcessor
                     )
                 .thenAccept((v) -> subscriptionProcessors.put(subscriptionId, streamProcessor))
@@ -63,7 +64,7 @@ public class TopicSubscriptionManager implements Agent
         });
     }
 
-    public CompletableFuture<Void> removeSubscription(int subscriptionId)
+    public CompletableFuture<Void> removeSubscription(long subscriptionId)
     {
         return asyncContext.runAsync((future) ->
         {

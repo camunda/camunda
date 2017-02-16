@@ -10,6 +10,7 @@ import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +38,7 @@ public class TopicSubscriptionProcessorTest
     {
         // given
         final TopicSubscriptionProcessor processor =
-                new TopicSubscriptionProcessor(1, 2, eventWriter);
+                new TopicSubscriptionProcessor(1, 2, 3, eventWriter);
 
         controller.initStreamProcessor(processor);
         final LoggedEvent event = controller.buildLoggedEvent(14L, (e) -> e.setId(4));
@@ -51,6 +52,8 @@ public class TopicSubscriptionProcessorTest
         verify(eventWriter).event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
         verify(eventWriter).eventType(EventType.RAFT_EVENT);
         verify(eventWriter).longKey(14L);
+        verify(eventWriter).subscriptionId(3);
+        verify(eventWriter).subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
         verify(eventWriter).position(INITIAL_LOG_POSITION);
         verify(eventWriter).tryWriteMessage();
     }

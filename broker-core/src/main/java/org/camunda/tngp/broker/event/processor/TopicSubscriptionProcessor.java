@@ -7,6 +7,7 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 
 public class TopicSubscriptionProcessor implements StreamProcessor, EventProcessor
 {
@@ -15,16 +16,18 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
 
     protected LoggedEvent event;
 
-    protected int channelId;
-    protected int logStreamId;
+    protected final int channelId;
+    protected final int logStreamId;
+    protected final long subscriptionId;
 
     protected final SubscribedEventWriter channelWriter;
 
-    public TopicSubscriptionProcessor(int channelId, int logStreamId, SubscribedEventWriter channelWriter)
+    public TopicSubscriptionProcessor(int channelId, int logStreamId, long subscriptionId, SubscribedEventWriter channelWriter)
     {
         this.channelWriter = channelWriter;
         this.channelId = channelId;
         this.logStreamId = logStreamId;
+        this.subscriptionId = subscriptionId;
     }
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
@@ -58,6 +61,8 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
             .longKey(event.getLongKey())
             .position(event.getPosition())
             .topicId(logStreamId)
+            .subscriptionId(subscriptionId)
+            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage();
     }
