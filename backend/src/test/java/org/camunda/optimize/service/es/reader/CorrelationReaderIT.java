@@ -107,9 +107,9 @@ public class CorrelationReaderIT {
 
     //then
     assertThat(result, is(notNullValue()));
-    assertThat(result.getId(), is(GATEWAY_ACTIVITY));
-    assertThat(result.getAll(), is(2L));
-    assertThat(result.getReached(), is(1L));
+    assertThat(result.getActivityId(), is(GATEWAY_ACTIVITY));
+    assertThat(result.getActivityCount(), is(2L));
+    assertThat(result.getActivitiesReached(), is(1L));
   }
 
   @Test
@@ -129,14 +129,14 @@ public class CorrelationReaderIT {
     assertThat(result.getFollowingNodes().size(), is(2));
 
     CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
-    assertThat(task1.getId(), is(TASK));
-    assertThat(task1.getReached(), is(1L));
-    assertThat(task1.getAll(), is(1L));
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
 
     CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
-    assertThat(task2.getId(), is(TASK_2));
-    assertThat(task2.getReached(), is(0L));
-    assertThat(task2.getAll(), is(0L));
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
   }
 
   private CorrelationQueryDto getBasicCorrelationQueryDto() {
@@ -182,14 +182,14 @@ public class CorrelationReaderIT {
     assertThat(result.getFollowingNodes().size(), is(2));
 
     CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
-    assertThat(task1.getId(), is(TASK));
-    assertThat(task1.getReached(), is(1L));
-    assertThat(task1.getAll(), is(1L));
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
 
     CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
-    assertThat(task2.getId(), is(TASK_2));
-    assertThat(task2.getReached(), is(0L));
-    assertThat(task2.getAll(), is(0L));
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
   }
 
   @Test
@@ -209,14 +209,14 @@ public class CorrelationReaderIT {
     assertThat(result.getFollowingNodes().size(), is(2));
 
     CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
-    assertThat(task1.getId(), is(TASK));
-    assertThat(task1.getReached(), is(0L));
-    assertThat(task1.getAll(), is(0L));
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(0L));
+    assertThat(task1.getActivityCount(), is(0L));
 
     CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
-    assertThat(task2.getId(), is(TASK_2));
-    assertThat(task2.getReached(), is(0L));
-    assertThat(task2.getAll(), is(0L));
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
   }
 
   @Test

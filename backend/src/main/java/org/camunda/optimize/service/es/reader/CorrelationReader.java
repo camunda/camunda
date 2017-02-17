@@ -60,7 +60,7 @@ public class CorrelationReader {
           request.getEnd(),
           request.getFilter()
       );
-      result.getFollowingNodes().put(correlation.getId(), correlation);
+      result.getFollowingNodes().put(correlation.getActivityId(), correlation);
     }
 
     CorrelationOutcomeDto end = activityCorrelation(
@@ -69,8 +69,8 @@ public class CorrelationReader {
         request.getEnd(),
         request.getFilter()
     );
-    result.setEndEvent(end.getId());
-    result.setTotal(end.getAll());
+    result.setEndEvent(end.getActivityId());
+    result.setTotal(end.getActivityCount());
 
     return result;
   }
@@ -119,10 +119,11 @@ public class CorrelationReader {
 
     InternalScriptedMetric processesWithActivities = sr.getAggregations().get("processesWithActivities");
     Map aggregation = (Map) processesWithActivities.aggregation();
-    String id = aggregation.get("id") != null ? aggregation.get("id").toString() : activityId;
-    result.setId(id);
-    result.setAll(Long.valueOf((Integer) aggregation.get("all")));
-    result.setReached(Long.valueOf((Integer) aggregation.get("reached")));
+    //this can happen if filter is too strict and there is nothing in result set
+    String id = aggregation.get("startActivityId") != null ? aggregation.get("startActivityId").toString() : activityId;
+    result.setActivityId(id);
+    result.setActivityCount(Long.valueOf((Integer) aggregation.get("startActivityCount")));
+    result.setActivitiesReached(Long.valueOf((Integer) aggregation.get("activitiesReached")));
 
     return result;
   }

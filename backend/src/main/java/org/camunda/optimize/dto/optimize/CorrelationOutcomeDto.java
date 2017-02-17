@@ -4,31 +4,31 @@ package org.camunda.optimize.dto.optimize;
  * @author Askar Akhmerov
  */
 public class CorrelationOutcomeDto {
-  private Long reached;
-  private Long all;
-  private String id;
+  private Long activitiesReached;
+  private Long activityCount;
+  private String activityId;
 
-  public Long getReached() {
-    return reached;
+  public Long getActivitiesReached() {
+    return activitiesReached;
   }
 
-  public void setReached(Long reached) {
-    this.reached = reached;
+  public void setActivitiesReached(Long activitiesReached) {
+    this.activitiesReached = activitiesReached;
   }
 
-  public Long getAll() {
-    return all;
+  public Long getActivityCount() {
+    return activityCount;
   }
 
-  public void setAll(Long all) {
-    this.all = all;
+  public void setActivityCount(Long activityCount) {
+    this.activityCount = activityCount;
   }
 
-  public String getId() {
-    return id;
+  public String getActivityId() {
+    return activityId;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setActivityId(String activityId) {
+    this.activityId = activityId;
   }
 }
