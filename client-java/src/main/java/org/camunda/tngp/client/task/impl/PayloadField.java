@@ -9,7 +9,7 @@ public class PayloadField
     protected String jsonPayload;
     protected byte[] rawPayload;
 
-    public String getPayloadAsJson()
+    public String getJsonPayload()
     {
         return jsonPayload;
     }
@@ -22,7 +22,7 @@ public class PayloadField
     public void setRawPayload(byte[] payload)
     {
         this.rawPayload = payload;
-        this.jsonPayload = this.msgPackConverter.convertToJson(rawPayload);
+        this.jsonPayload = this.msgPackConverter.convertToJson(payload);
     }
 
 }

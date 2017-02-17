@@ -20,7 +20,7 @@ public interface CreateAsyncTaskCmd extends SetPayloadCmd<Long, CreateAsyncTaskC
     CreateAsyncTaskCmd addHeader(String key, String value);
 
     /**
-     * Add the given key-value-pairs to the task header.
+     * Set the given key-value-pairs as the task headers.
      */
-    CreateAsyncTaskCmd addHeaders(Map<String, String> headers);
+    CreateAsyncTaskCmd setHeaders(Map<String, String> headers);
 }

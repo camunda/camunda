@@ -56,7 +56,7 @@ public class PayloadTest
             .handler((t) ->
             {
                 taskHandler.handle(t);
-                t.setPayloadString("bar");
+                t.setPayload("bar");
             })
             .taskType("foo")
             .open();
@@ -84,7 +84,7 @@ public class PayloadTest
         @Override
         public void handle(Task task)
         {
-            payloads.add(task.getPayloadString());
+            payloads.add(task.getPayload());
         }
 
     }

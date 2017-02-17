@@ -46,6 +46,7 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -118,6 +119,7 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         cmdExecutor = new ClientCmdExecutor(connectionPool, dataFramePool, channelResolver);
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));

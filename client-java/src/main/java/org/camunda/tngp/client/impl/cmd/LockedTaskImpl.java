@@ -49,7 +49,7 @@ public class LockedTaskImpl implements LockedTask
     @Override
     public String getPayloadString()
     {
-        return payload.getPayloadAsJson();
+        return payload.getJsonPayload();
     }
 
 }

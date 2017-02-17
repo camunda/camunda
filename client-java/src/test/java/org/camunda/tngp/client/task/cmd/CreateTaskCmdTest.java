@@ -122,7 +122,7 @@ public class CreateTaskCmdTest
         createTaskCommand
             .topicId(1)
             .taskType("foo")
-            .addHeaders(headers)
+            .setHeaders(headers)
             .payload(new ByteArrayInputStream(payload));
 
         // when

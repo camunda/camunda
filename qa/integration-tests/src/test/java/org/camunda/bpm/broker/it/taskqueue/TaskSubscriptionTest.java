@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.broker.it.TestUtil.waitUntil;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -66,10 +69,9 @@ public class TaskSubscriptionTest
         final TngpClient client = clientRule.getClient();
         final AsyncTasksClient taskService = client.tasks();
 
-        final Long taskId = taskService.create()
+        final Long taskKey = taskService.create()
             .topicId(0)
-            .taskType("bar")
-            .payload("{ \"foo\" : 9 }")
+            .taskType("foo")
             .execute();
 
         // when
@@ -78,7 +80,7 @@ public class TaskSubscriptionTest
         taskService.newSubscription()
             .handler(taskHandler)
             .topicId(0)
-            .taskType("bar")
+            .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(1)
             .open();
@@ -87,7 +89,7 @@ public class TaskSubscriptionTest
         waitUntil(() -> !taskHandler.handledTasks.isEmpty());
 
         assertThat(taskHandler.handledTasks).hasSize(1);
-        assertThat(taskHandler.handledTasks.get(0).getId()).isEqualTo(taskId);
+        assertThat(taskHandler.handledTasks.get(0).getKey()).isEqualTo(taskKey);
     }
 
     @Test
@@ -99,8 +101,9 @@ public class TaskSubscriptionTest
 
         final Long taskKey = taskService.create()
             .topicId(0)
-            .taskType("bar")
-            .payload("{ \"foo\" : 9 }")
+            .taskType("foo")
+            .payload("{ \"a\" : 1 }")
+            .addHeader("b", "2")
             .execute();
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
@@ -108,7 +111,7 @@ public class TaskSubscriptionTest
         taskService.newSubscription()
             .handler(taskHandler)
             .topicId(0)
-            .taskType("bar")
+            .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(5)
             .open();
@@ -120,8 +123,10 @@ public class TaskSubscriptionTest
             .taskKey(taskKey)
             .topicId(0)
             .lockOwner(5)
-            .taskType("bar")
-            .payload("{ \"foo\" : 10 }")
+            .taskType("foo")
+            .payload("{ \"a\" : 2 }")
+            .addHeader("b", "3")
+            .addHeader("c", "4")
             .execute();
 
         // then
@@ -135,19 +140,44 @@ public class TaskSubscriptionTest
         final TngpClient client = clientRule.getClient();
         final AsyncTasksClient taskService = client.tasks();
 
-        taskService.create()
+        final Long taskKey = taskService.create()
             .topicId(0)
-            .taskType("bar")
-            .payload("{ \"a\" : 8 }")
+            .taskType("foo")
+            .payload("{\"a\":1}")
+            .addHeader("b", "2")
             .execute();
 
         // when
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task -> task.complete());
+        final AtomicBoolean taskCompleted = new AtomicBoolean(false);
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task ->
+        {
+            assertThat(task.getKey()).isEqualTo(taskKey);
+            assertThat(task.getType()).isEqualTo("foo");
+            assertThat(task.getWorkflowInstanceId()).isNull();
+            assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
+
+            final String payload = task.getPayload();
+            final Map<String, String> headers = task.getHeaders();
+
+            assertThat(payload).isEqualTo("{\"a\":1}");
+            assertThat(headers).hasSize(1).containsEntry("b", "2");
+
+            task.setPayload("{\"a\":3}");
+
+            headers.put("b", "4");
+            headers.put("c", "5");
+            task.setHeaders(headers);
+
+            task.complete();
+
+            taskCompleted.set(true);
+        });
 
         taskService.newSubscription()
             .handler(taskHandler)
             .topicId(0)
-            .taskType("bar")
+            .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(2)
             .open();
@@ -156,6 +186,8 @@ public class TaskSubscriptionTest
         waitUntil(() -> !taskHandler.handledTasks.isEmpty());
 
         assertThat(taskHandler.handledTasks).hasSize(1);
+
+        assertThat(taskCompleted.get()).isTrue();
     }
 
     @Test
@@ -170,7 +202,7 @@ public class TaskSubscriptionTest
         final TaskSubscription subscription = taskService.newSubscription()
                 .handler(taskHandler)
                 .topicId(0)
-                .taskType("bar")
+                .taskType("foo")
                 .lockTime(Duration.ofMinutes(5))
                 .lockOwner(1)
                 .open();
@@ -181,8 +213,7 @@ public class TaskSubscriptionTest
         // then
         taskService.create()
             .topicId(0)
-            .taskType("bar")
-            .payload("{ \"foo\" : 9 }")
+            .taskType("foo")
             .execute();
 
         Thread.sleep(1000L);
@@ -190,7 +221,6 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks).isEmpty();
     }
 
-    @Ignore
     @Test
     public void shouldUpdateSubscriptionCredits() throws InterruptedException
     {
@@ -198,19 +228,17 @@ public class TaskSubscriptionTest
         final TngpClient client = clientRule.getClient();
         final AsyncTasksClient taskService = client.tasks();
 
-        Stream.of(1, 2).forEach(i ->
+        Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9).forEach(i ->
         {
             taskService.create()
                 .topicId(0)
-                .taskType("bar")
-                .payload("{ \"foo\" : 8 }")
+                .taskType("foo")
                 .execute();
         });
 
         final Long taskKey = taskService.create()
             .topicId(0)
-            .taskType("bar")
-            .payload("{ \"foo\" : 9 }")
+            .taskType("foo")
             .execute();
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task -> task.complete());
@@ -219,20 +247,20 @@ public class TaskSubscriptionTest
         taskService.newSubscription()
             .handler(taskHandler)
             .topicId(0)
-            .taskType("bar")
+            .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(1)
             .taskFetchSize(2)
             .open();
 
         // then
-        waitUntil(() -> taskHandler.handledTasks.size() == 3);
+        waitUntil(() -> taskHandler.handledTasks.size() == 10);
 
-        assertThat(taskHandler.handledTasks).hasSize(3);
-        assertThat(taskHandler.handledTasks.get(2).getId()).isEqualTo(taskKey);
+        assertThat(taskHandler.handledTasks).hasSize(10);
+        assertThat(taskHandler.handledTasks.get(9).getKey()).isEqualTo(taskKey);
     }
 
-    @Ignore
+    @Ignore("todo #147")
     @Test
     @SuppressWarnings("unchecked")
     public void testHandlerThrowingExceptionShouldNotBreakSubscription()
@@ -302,10 +330,9 @@ public class TaskSubscriptionTest
             .until((workCount) -> workCount == 1);
 
         assertThat(taskHandler.handledTasks).hasSize(1);
-        assertThat(taskHandler.handledTasks.get(0).getId()).isEqualTo(taskId);
+        assertThat(taskHandler.handledTasks.get(0).getKey()).isEqualTo(taskId);
     }
 
-    @Ignore
     @Test
     public void shouldOpenSubscriptionAfterClientReconnect()
     {
@@ -327,17 +354,17 @@ public class TaskSubscriptionTest
         client.tasks().newSubscription()
                 .topicId(0)
                 .taskType("foo")
-                .lockTime(100L)
+                .lockTime(Duration.ofMinutes(5))
+                .lockOwner(1)
                 .handler(taskHandler)
                 .open();
 
-        TestUtil.waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
+        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
 
         assertThat(taskHandler.getHandledTasks()).hasSize(1);
-
     }
 
-    @Ignore
+    @Ignore("todo #150")
     @Test
     public void shouldHandleMoreTasksThanPrefetchConfigured()
     {
@@ -372,26 +399,27 @@ public class TaskSubscriptionTest
         assertThat(handler.handledTasks).hasSize(numTasks);
     }
 
-    @Ignore
     @Test
     public void shouldGiveTaskToSingleSubscription()
     {
         // given
         final TngpClient client = clientRule.getClient();
 
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(Task::complete);
 
         client.tasks().newSubscription()
             .topicId(0)
-            .lockTime(Duration.ofHours(1L))
             .taskType("foo")
+            .lockTime(Duration.ofHours(1))
+            .lockOwner(1)
             .handler(taskHandler)
             .open();
 
         client.tasks().newSubscription()
             .topicId(0)
-            .lockTime(Duration.ofHours(1L))
             .taskType("foo")
+            .lockTime(Duration.ofHours(2))
+            .lockOwner(1)
             .handler(taskHandler)
             .open();
 
@@ -403,7 +431,7 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .execute();
 
-        TestUtil.waitUntil(() -> taskHandler.handledTasks.size() == 1);
+        waitUntil(() -> taskHandler.handledTasks.size() == 1);
 
         // then
         assertThat(taskHandler.handledTasks).hasSize(1);
@@ -430,8 +458,8 @@ public class TaskSubscriptionTest
         @Override
         public void handle(Task task)
         {
-            handledTasks.add(task);
             taskHandler.accept(task);
+            handledTasks.add(task);
         }
 
         public List<Task> getHandledTasks()

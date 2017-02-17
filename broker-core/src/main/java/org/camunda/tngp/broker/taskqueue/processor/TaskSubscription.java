@@ -25,12 +25,13 @@ public class TaskSubscription extends UnpackedObject
     protected LongProperty topicIdProp = new LongProperty("topicId");
     protected StringProperty taskTypeProp = new StringProperty("taskType");
 
-    protected IntegerProperty channelIdProp = new IntegerProperty("channelId", -1);
-
     protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
     protected IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
 
     protected IntegerProperty creditsProp = new IntegerProperty("credits", -1);
+
+    // transient field
+    protected int channelId = -1;
 
     public TaskSubscription()
     {
@@ -38,7 +39,6 @@ public class TaskSubscription extends UnpackedObject
             .declareProperty(idProp)
             .declareProperty(topicIdProp)
             .declareProperty(taskTypeProp)
-            .declareProperty(channelIdProp)
             .declareProperty(lockDurationProp)
             .declareProperty(lockOwnerProp)
             .declareProperty(creditsProp);
@@ -52,7 +52,7 @@ public class TaskSubscription extends UnpackedObject
 
     public TaskSubscription setChannelId(int channelId)
     {
-        this.channelIdProp.setValue(channelId);
+        this.channelId =  channelId;
         return this;
     }
 
@@ -108,7 +108,7 @@ public class TaskSubscription extends UnpackedObject
 
     public int getChannelId()
     {
-        return channelIdProp.getValue();
+        return channelId;
     }
 
     public long getTopicId()

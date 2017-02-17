@@ -1,6 +1,8 @@
 package org.camunda.tngp.client.task.impl;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
@@ -17,6 +19,7 @@ public class TaskImpl implements Task
     protected final long lockExpirationTime;
     protected final int lockOwner;
     protected final PayloadField payload = new PayloadField();
+    protected Map<String, String> headers;
 
     protected int state;
     protected static final int STATE_LOCKED = 0;
@@ -37,8 +40,9 @@ public class TaskImpl implements Task
         this.lockExpirationTime = taskEvent.getLockTime();
         this.lockOwner = subscription.getLockOwner();
         this.payload.setRawPayload(taskEvent.getPayload());
+        this.headers = taskEvent.getHeaders();
 
-        this.workflowInstanceId = -1L;
+        this.workflowInstanceId = null;
 
         this.state = STATE_LOCKED;
     }
@@ -51,7 +55,8 @@ public class TaskImpl implements Task
             .taskKey(key)
             .taskType(type)
             .lockOwner(lockOwner)
-            .payload(payload.getPayloadAsJson())
+            .payload(payload.getJsonPayload())
+            .headers(headers)
             .execute();
 
         state = STATE_COMPLETED;
@@ -63,7 +68,7 @@ public class TaskImpl implements Task
     }
 
     @Override
-    public long getId()
+    public long getKey()
     {
         return key;
     }
@@ -87,15 +92,27 @@ public class TaskImpl implements Task
     }
 
     @Override
-    public String getPayloadString()
+    public String getPayload()
     {
-        return payload.getPayloadAsJson();
+        return payload.getJsonPayload();
     }
 
     @Override
-    public void setPayloadString(String updatedPayload)
+    public void setPayload(String updatedPayload)
     {
         payload.setJsonPayload(updatedPayload);
+    }
+
+    @Override
+    public Map<String, String> getHeaders()
+    {
+        return new HashMap<>(headers);
+    }
+
+    @Override
+    public void setHeaders(Map<String, String> newHeaders)
+    {
+        this.headers = newHeaders;
     }
 
 }

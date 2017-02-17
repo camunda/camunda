@@ -59,7 +59,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         this.subscribedEventWriter = subscribedEventWriter;
         this.indexStore = indexStore;
 
-        taskIndex = new Long2BytesHashIndex(indexStore, 100, 1, INDEX_VALUE_LENGTH);
+        taskIndex = new Long2BytesHashIndex(indexStore, 1024, 32, INDEX_VALUE_LENGTH);
         indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
     }
 

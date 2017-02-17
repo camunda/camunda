@@ -14,7 +14,7 @@ import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 public class TaskEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_MAP = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
-    protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(0, 0);
+    protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     private final EnumProperty<TaskEventType> eventProp = new EnumProperty<>("event", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", -1L);

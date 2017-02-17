@@ -127,7 +127,7 @@ public class CompleteTaskCmdTest
             .topicId(1)
             .taskType("foo")
             .lockOwner(3)
-            .addHeaders(headers)
+            .headers(headers)
             .payload(new ByteArrayInputStream(payload));
 
         // when

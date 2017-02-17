@@ -148,7 +148,7 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
     protected void onTaskHandlingException(TaskImpl task, Exception e)
     {
         // could become configurable in the future (e.g. unlock task or report an error via API)
-        System.err.println("Exception during handling of task " + task.getId());
+        System.err.println("Exception during handling of task " + task.getKey());
         e.printStackTrace(System.err);
     }
 

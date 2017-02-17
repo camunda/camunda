@@ -66,9 +66,10 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    public CreateAsyncTaskCmd addHeaders(Map<String, String> headersToAdd)
+    public CreateAsyncTaskCmd setHeaders(Map<String, String> headers)
     {
-        headers.putAll(headersToAdd);
+        this.headers.clear();
+        this.headers.putAll(headers);
         return this;
     }
 

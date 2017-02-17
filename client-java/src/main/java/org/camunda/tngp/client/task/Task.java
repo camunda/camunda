@@ -1,6 +1,7 @@
 package org.camunda.tngp.client.task;
 
 import java.time.Instant;
+import java.util.Map;
 
 
 /**
@@ -8,13 +9,13 @@ import java.time.Instant;
  *
  * @author Lindhauer
  */
-public interface Task extends WaitStateResponse
+public interface Task
 {
 
     /**
-     * @return the task's id
+     * @return the key of the task
      */
-    long getId();
+    long getKey();
 
     /**
      * @return the id of the workflow instance this task belongs to. May be <code>null</code> if this
@@ -23,7 +24,7 @@ public interface Task extends WaitStateResponse
     Long getWorkflowInstanceId();
 
     /**
-     * @return the task's type
+     * @return the type of the task
      */
     String getType();
 
@@ -33,7 +34,33 @@ public interface Task extends WaitStateResponse
      */
     Instant getLockExpirationTime();
 
-    String getPayloadString();
+    /**
+     * @return the payload of the task as JSON string
+     */
+    String getPayload();
 
-    void setPayloadString(String updatedPayload);
+    /**
+     * Sets the new payload of task. Note that this overrides the existing payload.
+     *
+     * @param newPayload the new payload of the task as JSON string
+     */
+    void setPayload(String newPayload);
+
+    /**
+     * @return the headers of the task. This can be additional information about
+     *         the task, the related workflow instance or custom data.
+     */
+    Map<String, String> getHeaders();
+
+    /**
+     * Sets the new headers of the task. Note that this overrides the existing headers.
+     *
+     * @param newHeaders the new headers of the task
+     */
+    void setHeaders(Map<String, String> newHeaders);
+
+    /**
+     * Mark the task as complete. This may continue the workflow instance if the task belongs to one.
+     */
+    void complete();
 }
