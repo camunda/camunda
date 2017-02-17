@@ -379,7 +379,7 @@
               <httpPort>9200</httpPort>
               <pathScripts>${project.basedir}/src/main/scripts</pathScripts>
               <skip>${skipTests}</skip>
-              <timeout>60</timeout>
+              <timeout>120</timeout>
             </configuration>
             <executions>
               <!--
