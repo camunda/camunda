@@ -6,7 +6,7 @@ import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
-import org.camunda.optimize.dto.optimize.FilterDto;
+import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -75,7 +75,7 @@ public class CorrelationReader {
     return result;
   }
 
-  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity, FilterDto filter) {
+  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity, FilterMapDto filter) {
     ValidationHelper.ensureNotEmpty("processDefinitionId", processDefinitionId);
     ValidationHelper.ensureNotEmpty("activityId", activityId);
     ValidationHelper.ensureNotEmpty("endActivityId", endActivity);

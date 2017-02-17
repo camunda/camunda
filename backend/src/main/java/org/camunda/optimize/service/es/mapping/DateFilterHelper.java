@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.mapping;
 
-import org.camunda.optimize.dto.optimize.DateDto;
-import org.camunda.optimize.dto.optimize.FilterDto;
+import org.camunda.optimize.dto.optimize.DateFilterDto;
+import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -35,19 +35,14 @@ public class DateFilterHelper {
     formatter = new SimpleDateFormat(configurationService.getDateFormat());
   }
 
-  public BoolQueryBuilder addFilters(BoolQueryBuilder query, HeatMapQueryDto dto) {
-    FilterDto filter = dto.getFilter();
+  public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterMapDto filter) {
     return this.addDateFilters(query, filter.getDates());
   }
 
-  public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterDto filter) {
-    return this.addDateFilters(query, filter.getDates());
-  }
-
-  public BoolQueryBuilder addDateFilters(BoolQueryBuilder query, List<DateDto> dates) {
+  public BoolQueryBuilder addDateFilters(BoolQueryBuilder query, List<DateFilterDto> dates) {
     if (dates != null) {
       List<QueryBuilder> filters = query.filter();
-      for (DateDto dateDto : dates) {
+      for (DateFilterDto dateDto : dates) {
         RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(mapTimeColumn(dateDto));
         queryDate = addBoundaries(queryDate, dateDto);
         filters.add(queryDate);
@@ -56,7 +51,7 @@ public class DateFilterHelper {
     return query;
   }
 
-  private RangeQueryBuilder addBoundaries(RangeQueryBuilder queryDate, DateDto dto) {
+  private RangeQueryBuilder addBoundaries(RangeQueryBuilder queryDate, DateFilterDto dto) {
 
     if (dto.LESS.equalsIgnoreCase(dto.getOperator())) {
       queryDate.lt(formatter.format(dto.getValue()));
@@ -72,12 +67,12 @@ public class DateFilterHelper {
     return queryDate;
   }
 
-  private String mapTimeColumn(DateDto dateDto) {
+  private String mapTimeColumn(DateFilterDto dateDto) {
     String result = null;
-    if (DateDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
+    if (DateFilterDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
       result = EventType.START_DATE;
     }
-    if (DateDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
+    if (DateFilterDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
       result = EventType.END_DATE;
     }
     if (result == null) {

@@ -72,7 +72,7 @@ public class HeatMapReader {
 
     BoolQueryBuilder query = setupBaseQuery(dto.getProcessDefinitionId());
 
-    query = dateFilterHelper.addFilters(query, dto);
+    query = dateFilterHelper.addFilters(query, dto.getFilter());
 
     srb = srb.setQuery(query);
     Terms activities = getTermsWithAggregation(srb);

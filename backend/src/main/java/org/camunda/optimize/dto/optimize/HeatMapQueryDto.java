@@ -1,7 +1,6 @@
 package org.camunda.optimize.dto.optimize;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * @author Askar Akhmerov
@@ -9,13 +8,13 @@ import java.util.List;
 public class HeatMapQueryDto implements Serializable {
 
   protected String processDefinitionId;
-  protected FilterDto filter;
+  protected FilterMapDto filter;
 
-  public FilterDto getFilter() {
+  public FilterMapDto getFilter() {
     return filter;
   }
 
-  public void setFilter(FilterDto filter) {
+  public void setFilter(FilterMapDto filter) {
     this.filter = filter;
   }
 

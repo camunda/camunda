@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.util;
 
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
-import org.camunda.optimize.dto.optimize.DateDto;
+import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
@@ -14,7 +14,7 @@ public class ValidationHelper {
     ensureNotEmpty("query dto", dto);
     ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dto.getProcessDefinitionId());
     if (dto.getFilter() != null && dto.getFilter().getDates() != null) {
-      for (DateDto date : dto.getFilter().getDates()) {
+      for (DateFilterDto date : dto.getFilter().getDates()) {
         ensureNotEmpty("operator", date.getOperator());
         ensureNotEmpty("type", date.getType());
         ensureNotEmpty("value", date.getValue());

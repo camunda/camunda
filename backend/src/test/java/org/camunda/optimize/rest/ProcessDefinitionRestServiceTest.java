@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.DateDto;
-import org.camunda.optimize.dto.optimize.FilterDto;
+import org.camunda.optimize.dto.optimize.DateFilterDto;
+import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
@@ -114,9 +113,9 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   private HeatMapQueryDto prepareDto(Date targetDate) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId("test");
-    FilterDto filter = new FilterDto();
-    List<DateDto> dates = new ArrayList<>();
-    DateDto date = new DateDto();
+    FilterMapDto filter = new FilterMapDto();
+    List<DateFilterDto> dates = new ArrayList<>();
+    DateFilterDto date = new DateFilterDto();
     date.setOperator(">");
     date.setValue(targetDate);
     date.setType("start_date");
