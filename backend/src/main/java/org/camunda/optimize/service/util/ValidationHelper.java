@@ -11,6 +11,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 public class ValidationHelper {
 
   public static void validate(HeatMapQueryDto dto) throws OptimizeValidationException {
+    ensureNotEmpty("query dto", dto);
     ValidationHelper.ensureNotEmpty("ProcessDefinitionId", dto.getProcessDefinitionId());
     if (dto.getFilter() != null && dto.getFilter().getDates() != null) {
       for (DateDto date : dto.getFilter().getDates()) {

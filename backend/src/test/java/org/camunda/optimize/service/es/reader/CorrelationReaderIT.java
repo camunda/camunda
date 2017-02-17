@@ -1,17 +1,20 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.*;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.management.openmbean.OpenDataException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +36,7 @@ public class CorrelationReaderIT {
   public static final String END_ACTIVITY = "endActivity";
   public static final String GATEWAY_ACTIVITY = "gw_1";
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
+  public static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
   public static final String DIAGRAM = "gateway_process.bpmn";
   public static final String TASK = "task_1";
   public static final String TASK_2 = "task_2";
@@ -40,6 +44,9 @@ public class CorrelationReaderIT {
   @Autowired
   @Rule
   public ElasticSearchIntegrationTestRule rule;
+
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
 
   @Autowired
   private CorrelationReader correlationReader;
@@ -74,7 +81,7 @@ public class CorrelationReaderIT {
     event = new EventDto();
     event.setActivityId(GATEWAY_ACTIVITY);
     event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID + "2");
+    event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "3", event);
@@ -121,12 +128,12 @@ public class CorrelationReaderIT {
     assertThat(result.getTotal(), is(2L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(0);
+    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
     assertThat(task1.getId(), is(TASK));
     assertThat(task1.getReached(), is(1L));
     assertThat(task1.getAll(), is(1L));
 
-    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(1);
+    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
     assertThat(task2.getId(), is(TASK_2));
     assertThat(task2.getReached(), is(0L));
     assertThat(task2.getAll(), is(0L));
@@ -152,7 +159,7 @@ public class CorrelationReaderIT {
     event = new EventDto();
     event.setActivityId(END_ACTIVITY);
     event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID + "2");
+    event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
@@ -174,12 +181,12 @@ public class CorrelationReaderIT {
     assertThat(result.getTotal(), is(2L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(0);
+    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
     assertThat(task1.getId(), is(TASK));
     assertThat(task1.getReached(), is(1L));
     assertThat(task1.getAll(), is(1L));
 
-    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(1);
+    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
     assertThat(task2.getId(), is(TASK_2));
     assertThat(task2.getReached(), is(0L));
     assertThat(task2.getAll(), is(0L));
@@ -201,15 +208,57 @@ public class CorrelationReaderIT {
     assertThat(result.getTotal(), is(0L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(0);
+    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
     assertThat(task1.getId(), is(TASK));
     assertThat(task1.getReached(), is(0L));
     assertThat(task1.getAll(), is(0L));
 
-    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(1);
+    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
     assertThat(task2.getId(), is(TASK_2));
     assertThat(task2.getReached(), is(0L));
     assertThat(task2.getAll(), is(0L));
   }
+
+  @Test
+  public void testValidationExceptionOnNullDto () {
+    //expect
+    exception.expect(OptimizeValidationException.class);
+
+    //when
+    correlationReader.activityCorrelation(null);
+  }
+
+  @Test
+  public void testValidationExceptionOnNullProcessDefinition () {
+    //expect
+    exception.expect(OptimizeValidationException.class);
+
+    //when
+    correlationReader.activityCorrelation(new CorrelationQueryDto());
+  }
+
+  @Test
+  public void testValidationExceptionOnNullGateway () {
+    //expect
+    exception.expect(OptimizeValidationException.class);
+    //given
+    CorrelationQueryDto request = new CorrelationQueryDto();
+    request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    //when
+    correlationReader.activityCorrelation(request);
+  }
+
+  @Test
+  public void testValidationExceptionOnNullEndActivity () {
+    //expect
+    exception.expect(OptimizeValidationException.class);
+
+    CorrelationQueryDto request = new CorrelationQueryDto();
+    request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    request.setEnd(GATEWAY_ACTIVITY);
+    //when
+    correlationReader.activityCorrelation(new CorrelationQueryDto());
+  }
+
 
 }

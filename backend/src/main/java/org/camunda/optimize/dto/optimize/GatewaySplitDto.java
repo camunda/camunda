@@ -1,7 +1,7 @@
 package org.camunda.optimize.dto.optimize;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Askar Akhmerov
@@ -10,7 +10,7 @@ public class GatewaySplitDto {
   private String endEvent;
   private Long total;
 
-  private List<CorrelationOutcomeDto> followingNodes = new ArrayList<>();
+  private Map<String, CorrelationOutcomeDto> followingNodes = new HashMap<>();
 
   public String getEndEvent() {
     return endEvent;
@@ -28,11 +28,11 @@ public class GatewaySplitDto {
     this.total = total;
   }
 
-  public List<CorrelationOutcomeDto> getFollowingNodes() {
+  public Map<String, CorrelationOutcomeDto> getFollowingNodes() {
     return followingNodes;
   }
 
-  public void setFollowingNodes(List<CorrelationOutcomeDto> followingNodes) {
+  public void setFollowingNodes(Map<String, CorrelationOutcomeDto> followingNodes) {
     this.followingNodes = followingNodes;
   }
 }

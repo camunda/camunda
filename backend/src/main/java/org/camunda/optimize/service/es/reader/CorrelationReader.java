@@ -60,7 +60,7 @@ public class CorrelationReader {
           request.getEnd(),
           request.getFilter()
       );
-      result.getFollowingNodes().add(correlation);
+      result.getFollowingNodes().put(correlation.getId(), correlation);
     }
 
     CorrelationOutcomeDto end = activityCorrelation(
@@ -115,7 +115,7 @@ public class CorrelationReader {
             .reduceScript(getReduceScript())
             .params(parameters)
         )
-        .execute().actionGet();
+        .get();
 
     InternalScriptedMetric processesWithActivities = sr.getAggregations().get("processesWithActivities");
     Map aggregation = (Map) processesWithActivities.aggregation();
