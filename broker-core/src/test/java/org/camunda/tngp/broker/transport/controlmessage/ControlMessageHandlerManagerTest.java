@@ -61,6 +61,7 @@ public class ControlMessageHandlerManagerTest
 
     private final UnsafeBuffer requestWriteBuffer = new UnsafeBuffer(new byte[1024]);
 
+    private final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
     private final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
 
     @Mock
@@ -221,6 +222,10 @@ public class ControlMessageHandlerManagerTest
 
         // when wait for completion
         manager.doWork();
+        manager.doWork();
+        manager.doWork();
+
+        verify(mockSubscription, times(1)).poll(any(FragmentHandler.class), eq(1));
 
         spyFuture.complete(null);
 
@@ -231,7 +236,6 @@ public class ControlMessageHandlerManagerTest
         // then
         assertThat(manager.isOpen()).isTrue();
 
-        verify(spyFuture, times(2)).isDone();
         verify(mockSubscription, times(2)).poll(any(FragmentHandler.class), eq(1));
     }
 
@@ -303,16 +307,22 @@ public class ControlMessageHandlerManagerTest
         {
             final FragmentHandler fragmentHandler = (FragmentHandler) invocation.getArguments()[0];
 
-            requestEncoder.wrap(requestWriteBuffer, 0);
+            int offset = 0;
+
+            requestHeaderDescriptor
+                .wrap(requestWriteBuffer, offset)
+                .channelId(REQ_CHANNEL_ID)
+                .connectionId(REQ_CONNECTION_ID)
+                .requestId(REQ_REQUEST_ID);
+
+            offset += ControlMessageRequestHeaderDescriptor.headerLength();
 
             requestEncoder
+                .wrap(requestWriteBuffer, offset)
                 .messageType(type)
-                .reqChannelId(REQ_CHANNEL_ID)
-                .reqConnectionId(REQ_CONNECTION_ID)
-                .reqRequestId(REQ_REQUEST_ID)
                 .putData(CONTROL_MESSAGE_DATA, 0, CONTROL_MESSAGE_DATA.length);
 
-            fragmentHandler.onFragment(requestWriteBuffer, 0, requestWriteBuffer.capacity(), 0, false);
+            fragmentHandler.onFragment(requestWriteBuffer, 0, offset, 0, false);
 
             return 1;
         };

@@ -56,10 +56,7 @@
 
   <sbe:message name="ControlMessageRequest" id="10">
     <field name="messageType" id="1" type="ControlMessageType" />
-    <field name="reqChannelId" id="2" type="int32" />
-    <field name="reqConnectionId" id="3" type="uint64" />
-    <field name="reqRequestId" id="4" type="uint64" />
-    <data name="data" id="5" type="varDataEncoding" />
+    <data name="data" id="2" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ControlMessageResponse" id="11">

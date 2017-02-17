@@ -257,7 +257,7 @@ public class TaskSubscriptionTest
         waitUntil(() -> taskHandler.handledTasks.size() == 10);
 
         assertThat(taskHandler.handledTasks).hasSize(10);
-        assertThat(taskHandler.handledTasks.get(9).getKey()).isEqualTo(taskKey);
+        assertThat(taskHandler.handledTasks).extracting("key").contains(taskKey);
     }
 
     @Ignore("todo #147")

@@ -13,20 +13,12 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.camunda.tngp.broker.transport.clientapi.MockDispatcherFactory.dispatcherOn;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.transport.protocol.Protocols;
@@ -35,8 +27,6 @@ import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderD
 import org.camunda.tngp.util.buffer.DirectBufferWriter;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 public class CommandResponseWriterTest
 {
@@ -51,21 +41,14 @@ public class CommandResponseWriterTest
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
 
-    private Dispatcher mockSendBuffer;
     private CommandResponseWriter responseWriter;
 
     private BrokerEventMetadata metadata;
     private DirectBufferWriter eventWriter;
 
-    private ClaimedFragment claimedFragment;
-
     @Before
     public void setup()
     {
-        mockSendBuffer = mock(Dispatcher.class);
-
-        responseWriter = new CommandResponseWriter(mockSendBuffer);
-
         metadata = new BrokerEventMetadata();
         eventWriter = new DirectBufferWriter();
     }
@@ -73,9 +56,11 @@ public class CommandResponseWriterTest
     @Test
     public void shouldWriteResponse()
     {
-        // when
-        when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
+        // given
+        final Dispatcher mockDispatcher = dispatcherOn(1, sendBuffer).thatDoes().claim().done();
+        responseWriter = new CommandResponseWriter(mockDispatcher);
 
+        // when
         metadata
             .reqChannelId(1)
             .reqConnectionId(2L)
@@ -91,9 +76,7 @@ public class CommandResponseWriterTest
             .tryWriteResponse();
 
         // then
-        verify(mockSendBuffer).claim(any(ClaimedFragment.class), anyInt(), eq(1));
-
-        int offset = claimedFragment.getOffset();
+        int offset = DataFrameDescriptor.HEADER_LENGTH;
 
         transportHeaderDescriptor.wrap(sendBuffer, offset);
         assertThat(transportHeaderDescriptor.protocolId()).isEqualTo(Protocols.REQUEST_RESPONSE);
@@ -130,27 +113,13 @@ public class CommandResponseWriterTest
     @Test
     public void shouldRetryClaimFragmentIfPadding()
     {
+        // given
+        final Dispatcher mockDispatcher = dispatcherOn(1, sendBuffer).thatDoes().padding().then().claim().done();
+        responseWriter = new CommandResponseWriter(mockDispatcher);
+
         // when
-        when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(new Answer<Long>()
-        {
-            int invocationCount = 0;
-
-            @Override
-            public Long answer(InvocationOnMock invocation) throws Throwable
-            {
-                invocationCount += 1;
-                if (invocationCount == 1)
-                {
-                    return (long) RESULT_PADDING_AT_END_OF_PARTITION;
-                }
-                else
-                {
-                    return claimFragment(0).answer(invocation);
-                }
-            }
-        });
-
         metadata
+            .reqChannelId(1)
             .reqConnectionId(1L)
             .reqRequestId(2L);
 
@@ -165,17 +134,18 @@ public class CommandResponseWriterTest
 
         // then
         assertThat(isSent).isTrue();
-
-        verify(mockSendBuffer, times(2)).claim(any(ClaimedFragment.class), anyInt(), anyInt());
     }
 
     @Test
     public void shouldFailIfCannotClaimFragment()
     {
-        // when
-        when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenReturn(-1L);
+        // given
+        final Dispatcher mockDispatcher = dispatcherOn(1, sendBuffer).thatDoes().fail().done();
+        responseWriter = new CommandResponseWriter(mockDispatcher);
 
+        // when
         metadata
+            .reqChannelId(1)
             .reqConnectionId(1L)
             .reqRequestId(2L);
 
@@ -190,20 +160,6 @@ public class CommandResponseWriterTest
 
         // then
         assertThat(isSent).isFalse();
-    }
-
-    protected Answer<Long> claimFragment(final long offset)
-    {
-        return invocation ->
-        {
-            claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
-            final int length = (int) invocation.getArguments()[1];
-
-            claimedFragment.wrap(sendBuffer, 0, alignedLength(length));
-
-            final long claimedPosition = offset + alignedLength(length);
-            return claimedPosition;
-        };
     }
 
 }

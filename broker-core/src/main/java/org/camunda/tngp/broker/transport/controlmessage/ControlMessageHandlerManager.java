@@ -31,7 +31,6 @@ import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
-import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -71,7 +70,7 @@ public class ControlMessageHandlerManager implements Agent
     protected final AgentRunnerService agentRunnerService;
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    protected final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
     protected final ControlMessageRequestDecoder requestDecoder = new ControlMessageRequestDecoder();
 
     protected byte[] requestRawBuffer = new byte[1024 * 32];
@@ -219,21 +218,24 @@ public class ControlMessageHandlerManager implements Agent
         @Override
         public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
         {
-            requestDecoder.wrap(buffer, offset, requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
-
-            final ControlMessageType messageType = requestDecoder.messageType();
-
-            ensureBufferCapacity(requestDecoder.dataLength());
-            requestDecoder.getData(requestBuffer, 0, requestDecoder.dataLength());
-
-            context.lastRequestMessageType(messageType);
+            requestHeaderDescriptor.wrap(buffer, offset);
 
             eventMetada.reset();
 
             eventMetada
-                .reqChannelId(requestDecoder.reqChannelId())
-                .reqConnectionId(requestDecoder.reqConnectionId())
-                .reqRequestId(requestDecoder.reqRequestId());
+                .reqChannelId(requestHeaderDescriptor.channelId())
+                .reqConnectionId(requestHeaderDescriptor.connectionId())
+                .reqRequestId(requestHeaderDescriptor.requestId());
+
+            offset += ControlMessageRequestHeaderDescriptor.headerLength();
+
+            requestDecoder.wrap(buffer, offset, requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
+
+            final ControlMessageType messageType = requestDecoder.messageType();
+            context.lastRequestMessageType(messageType);
+
+            ensureBufferCapacity(requestDecoder.dataLength());
+            requestDecoder.getData(requestBuffer, 0, requestDecoder.dataLength());
 
             final ControlMessageHandler handler = handlersByTypeId.get(messageType.value());
             if (handler != null)

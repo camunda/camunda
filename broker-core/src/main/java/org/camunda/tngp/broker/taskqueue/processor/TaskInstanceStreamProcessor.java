@@ -3,6 +3,8 @@ package org.camunda.tngp.broker.taskqueue.processor;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
+import java.nio.ByteOrder;
+
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -320,7 +322,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (isRead)
             {
-                lockOwner = indexValueReadBuffer.getInt(INDEX_LOCK_OWNER_OFFSET);
+                lockOwner = indexValueReadBuffer.getInt(INDEX_LOCK_OWNER_OFFSET, ByteOrder.LITTLE_ENDIAN);
             }
             return lockOwner;
         }
@@ -331,7 +333,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (isRead)
             {
-                typeId = indexValueReadBuffer.getInt(INDEX_STATE_OFFSET);
+                typeId = indexValueReadBuffer.getInt(INDEX_STATE_OFFSET, ByteOrder.LITTLE_ENDIAN);
             }
             return typeId;
         }
@@ -343,8 +345,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
         protected void write(long eventKey, TaskEventType eventType, int lockOwner)
         {
-            indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id());
-            indexValueWriteBuffer.putInt(INDEX_LOCK_OWNER_OFFSET, lockOwner);
+            indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id(), ByteOrder.LITTLE_ENDIAN);
+            indexValueWriteBuffer.putInt(INDEX_LOCK_OWNER_OFFSET, lockOwner, ByteOrder.LITTLE_ENDIAN);
 
             taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
         }

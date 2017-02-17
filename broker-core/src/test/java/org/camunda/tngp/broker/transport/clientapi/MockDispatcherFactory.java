@@ -76,26 +76,6 @@ public class MockDispatcherFactory
         return new MockDispatcherFactory(streamId, sendBuffer);
     }
 
-    protected static Answer<Long> claimFragment(UnsafeBuffer sendBuffer)
-    {
-        return new Answer<Long>()
-        {
-            long offset = 0;
-
-            @Override
-            public Long answer(InvocationOnMock invocation) throws Throwable
-            {
-                final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
-                final int length = (int) invocation.getArguments()[1];
-
-                claimedFragment.wrap(sendBuffer, (int) offset, alignedLength(length));
-
-                offset += alignedLength(length);
-                return offset;
-            }
-        };
-    }
-
     protected static class ClaimAnswer implements Answer<Long>
     {
         protected UnsafeBuffer sendBuffer;

@@ -14,6 +14,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.test.util.FluentMock;
+import org.camunda.tngp.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.LogStreams;
@@ -59,6 +60,7 @@ public class ClientApiMessageHandlerTest
     protected final ExecuteCommandRequestEncoder commandRequestEncoder = new ExecuteCommandRequestEncoder();
     protected final ControlMessageRequestEncoder controlRequestEncoder = new ControlMessageRequestEncoder();
     protected final ControlMessageRequestDecoder controlRequestDecoder = new ControlMessageRequestDecoder();
+    protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
 
     int fragmentOffset = 0;
 
@@ -193,7 +195,7 @@ public class ClientApiMessageHandlerTest
         // given
         final int writtenLength = writeControlRequestToBuffer(buffer);
 
-        when(mockControlMessageDispatcher.offer(any(), anyInt(), anyInt())).thenReturn(12L);
+        when(mockControlMessageDispatcher.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
 
         // when
         final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
@@ -201,13 +203,19 @@ public class ClientApiMessageHandlerTest
         // then
         assertThat(isHandled).isTrue();
 
-        verify(mockControlMessageDispatcher).offer(buffer, controlRequestEncoder.offset(), controlRequestEncoder.encodedLength());
+        verify(mockControlMessageDispatcher).claim(any(ClaimedFragment.class), anyInt());
 
-        controlRequestDecoder.wrap(buffer, controlRequestEncoder.offset(), controlRequestDecoder.sbeBlockLength(), controlRequestDecoder.sbeSchemaVersion());
+        int offset = fragmentOffset;
 
-        assertThat(controlRequestDecoder.reqChannelId()).isEqualTo(TRANSPORT_CHANNEL_ID);
-        assertThat(controlRequestDecoder.reqConnectionId()).isEqualTo(CONNECTION_ID);
-        assertThat(controlRequestDecoder.reqRequestId()).isEqualTo(REQUEST_ID);
+        controlMessageRequestHeaderDescriptor.wrap(sendBuffer, offset);
+
+        assertThat(controlMessageRequestHeaderDescriptor.channelId()).isEqualTo(TRANSPORT_CHANNEL_ID);
+        assertThat(controlMessageRequestHeaderDescriptor.connectionId()).isEqualTo(CONNECTION_ID);
+        assertThat(controlMessageRequestHeaderDescriptor.requestId()).isEqualTo(REQUEST_ID);
+
+        offset += ControlMessageRequestHeaderDescriptor.headerLength();
+
+        controlRequestDecoder.wrap(sendBuffer, offset, controlRequestDecoder.sbeBlockLength(), controlRequestDecoder.sbeSchemaVersion());
 
         final int dataLength = controlRequestDecoder.dataLength();
         final byte[] requestData = new byte[dataLength];

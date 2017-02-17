@@ -99,19 +99,22 @@ public class TransportComponent implements Component
             .install();
 
         final ClientApiSocketBindingService socketBindingService = new ClientApiSocketBindingService(CLIENT_API_SOCKET_BINDING_NAME, bindAddr);
-        serviceContainer.createService(serverSocketBindingServiceName(CLIENT_API_SOCKET_BINDING_NAME), socketBindingService)
+        final CompletableFuture<Void> socketBindingServiceFuture = serviceContainer.createService(serverSocketBindingServiceName(CLIENT_API_SOCKET_BINDING_NAME), socketBindingService)
             .dependency(TRANSPORT, socketBindingService.getTransportInjector())
             .dependency(CLIENT_API_MESSAGE_HANDLER, socketBindingService.getMessageHandlerInjector())
             .install();
 
         final ControlMessageHandlerManagerService controlMessageHandlerManagerService = new ControlMessageHandlerManagerService(controlMessageRequestTimeoutInMillis);
-        return serviceContainer.createService(CONTROL_MESSAGE_HANDLER_MANAGER, controlMessageHandlerManagerService)
+        final CompletableFuture<Void> controlMessageServiceFuture = serviceContainer.createService(CONTROL_MESSAGE_HANDLER_MANAGER, controlMessageHandlerManagerService)
             .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), controlMessageHandlerManagerService.getControlMessageBufferInjector())
             .dependency(TRANSPORT_SEND_BUFFER, controlMessageHandlerManagerService.getSendBufferInjector())
             .dependency(AGENT_RUNNER_SERVICE, controlMessageHandlerManagerService.getAgentRunnerServicesInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
             .dependency(TOPIC_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTopicSubscriptionManagerInjector())
             .install();
+
+        // make sure that all services are installed
+        return CompletableFuture.allOf(socketBindingServiceFuture, controlMessageServiceFuture);
     }
 
     protected CompletableFuture<Void> bindManagement(ServiceContainer serviceContainer, TransportComponentCfg transportComponentCfg)

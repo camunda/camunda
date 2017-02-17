@@ -202,22 +202,7 @@ public class ObjectMappingTest
 
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
-            w.writeMapHeader(6);
-
-            w.writeString(utf8("enumProp"));
-            w.writeString(utf8(POJOEnum.BAR.toString()));
-
-            w.writeString(utf8("binaryProp"));
-            w.writeBinary(BUF1);
-
-            w.writeString(utf8("stringProp"));
-            w.writeString(BUF2);
-
-            w.writeString(utf8("packedProp"));
-            w.writeRaw(MSGPACK_BUF);
-
-            w.writeString(utf8("longProp"));
-            w.writeInteger(88888L);
+            w.writeMapHeader(1);
 
             w.writeString(utf8("intProp"));
             w.writeInteger(Integer.MAX_VALUE + 1L);

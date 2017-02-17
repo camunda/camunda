@@ -1,51 +1,35 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.ErrorResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
-import org.camunda.tngp.transport.protocol.Protocols;
-import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
-import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.util.EnsureUtil;
+import org.camunda.tngp.util.buffer.BufferWriter;
 
-public class ErrorResponseWriter
+public class ErrorResponseWriter implements BufferWriter
 {
-    protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
-    protected final RequestResponseProtocolHeaderDescriptor protocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
 
-    protected final int headerSize =
-            TransportHeaderDescriptor.HEADER_LENGTH +
-            RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            ErrorResponseEncoder.BLOCK_LENGTH +
-            ErrorResponseEncoder.errorDataHeaderLength() +
-            ErrorResponseEncoder.failedRequestHeaderLength();
-
     protected final DirectBuffer failedRequestBuffer = new UnsafeBuffer(0, 0);
 
-    protected final Dispatcher sendBuffer;
-    protected final ClaimedFragment errorMessageBuffer = new ClaimedFragment();
-
     protected ErrorCode errorCode;
-    protected String errorMessage;
+    protected byte[] errorMessage;
 
     protected BrokerEventMetadata metadata;
 
+    protected final ResponseWriter responseWriter;
+
     public ErrorResponseWriter(Dispatcher sendBuffer)
     {
-        this.sendBuffer = sendBuffer;
+        this.responseWriter = new ResponseWriter(sendBuffer);
     }
 
     public ErrorResponseWriter metadata(BrokerEventMetadata metadata)
@@ -62,13 +46,13 @@ public class ErrorResponseWriter
 
     public ErrorResponseWriter errorMessage(String errorMessage)
     {
-        this.errorMessage = errorMessage;
+        this.errorMessage = errorMessage.getBytes(StandardCharsets.UTF_8);
         return this;
     }
 
     public ErrorResponseWriter errorMessage(String errorMessage, Object... args)
     {
-        this.errorMessage = String.format(errorMessage, args);
+        this.errorMessage = String.format(errorMessage, args).getBytes(StandardCharsets.UTF_8);
         return this;
     }
 
@@ -82,63 +66,25 @@ public class ErrorResponseWriter
     {
         EnsureUtil.ensureNotNull("metadata", metadata);
         EnsureUtil.ensureNotNull("error code", errorCode);
-        EnsureUtil.ensureNotNullOrEmpty("error message", errorMessage);
+        EnsureUtil.ensureNotNull("error message", errorMessage);
 
-        final byte[] errorMessageBytes = errorMessage.getBytes(StandardCharsets.UTF_8);
-
-        final int responseLength = headerSize + errorMessageBytes.length + failedRequestBuffer.capacity();
-
-        long claimedOffset = -1;
-
-        do
+        try
         {
-            claimedOffset = sendBuffer.claim(errorMessageBuffer, responseLength, metadata.getReqChannelId());
+            return responseWriter.tryWrite(
+                    metadata.getReqChannelId(),
+                    metadata.getReqConnectionId(),
+                    metadata.getReqRequestId(),
+                    this);
         }
-        while (claimedOffset == RESULT_PADDING_AT_END_OF_PARTITION);
-
-        boolean isSent = false;
-
-        if (claimedOffset >= 0)
+        finally
         {
-            try
-            {
-                writeResponseToFragment(errorMessageBytes);
-
-                errorMessageBuffer.commit();
-                isSent = true;
-            }
-            catch (RuntimeException e)
-            {
-                errorMessageBuffer.abort();
-                throw e;
-            }
-            finally
-            {
-                reset();
-            }
+            reset();
         }
-
-        return isSent;
     }
 
-    protected void writeResponseToFragment(final byte[] errorMessageBytes)
+    @Override
+    public void write(MutableDirectBuffer buffer, int offset)
     {
-        final MutableDirectBuffer buffer = errorMessageBuffer.getBuffer();
-        int offset = errorMessageBuffer.getOffset();
-
-        // transport protocol header
-        transportHeaderDescriptor.wrap(buffer, offset)
-            .protocolId(Protocols.REQUEST_RESPONSE);
-
-        offset += TransportHeaderDescriptor.HEADER_LENGTH;
-
-        // request/response protocol header
-        protocolHeaderDescriptor.wrap(buffer, offset)
-            .connectionId(metadata.getReqConnectionId())
-            .requestId(metadata.getReqRequestId());
-
-        offset += RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
-
         // protocol header
         messageHeaderEncoder.wrap(buffer, offset);
 
@@ -154,7 +100,7 @@ public class ErrorResponseWriter
 
         errorResponseEncoder
             .errorCode(errorCode)
-            .putErrorData(errorMessageBytes, 0, errorMessageBytes.length)
+            .putErrorData(errorMessage, 0, errorMessage.length)
             .putFailedRequest(failedRequestBuffer, 0, failedRequestBuffer.capacity());
     }
 
@@ -166,11 +112,22 @@ public class ErrorResponseWriter
         {
             final  String failureMessage = String.format("Failed to write error response. Error code: '%s', error message: '%s'",
                     errorCode.name(),
-                    errorMessage);
+                    new String(errorMessage, StandardCharsets.UTF_8));
 
             System.err.println(failureMessage);
         }
         return isWritten;
+    }
+
+    @Override
+    public int getLength()
+    {
+        return  MessageHeaderEncoder.ENCODED_LENGTH +
+                ErrorResponseEncoder.BLOCK_LENGTH +
+                ErrorResponseEncoder.errorDataHeaderLength() +
+                errorMessage.length +
+                ErrorResponseEncoder.failedRequestHeaderLength() +
+                failedRequestBuffer.capacity();
     }
 
     protected void reset()

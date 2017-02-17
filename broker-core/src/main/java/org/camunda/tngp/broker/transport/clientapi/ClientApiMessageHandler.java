@@ -6,16 +6,18 @@ import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
 import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
+import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
-import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
@@ -34,7 +36,7 @@ public class ClientApiMessageHandler
     protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
     protected final RequestResponseProtocolHeaderDescriptor requestResponseProtocolHeaderDescriptor = new RequestResponseProtocolHeaderDescriptor();
     protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder = new ExecuteCommandRequestDecoder();
-    protected final ControlMessageRequestEncoder controlMessageRequestEncoder = new ControlMessageRequestEncoder();
+    protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
 
     protected final UnsafeBuffer writeControlMessageRequestBufferView = new UnsafeBuffer(0, 0);
 
@@ -46,8 +48,9 @@ public class ClientApiMessageHandler
     protected final LogStreamWriter logStreamWriter = new LogStreamWriter();
 
     protected final Dispatcher sendBuffer;
-    protected final Dispatcher controlMessageDispatcher;
     protected final ErrorResponseWriter errorResponseWriter;
+    protected final Dispatcher controlMessageDispatcher;
+    protected final ClaimedFragment claimedControlMessageFragment = new ClaimedFragment();
 
     public ClientApiMessageHandler(Dispatcher sendBuffer, Dispatcher controlMessageDispatcher, ErrorResponseWriter errorResponseWriter)
     {
@@ -200,19 +203,29 @@ public class ClientApiMessageHandler
 
         do
         {
-            writeControlMessageRequestBufferView.wrap(buffer);
-
-            controlMessageRequestEncoder
-                .wrap(writeControlMessageRequestBufferView, messageOffset)
-                .reqChannelId(eventMetadata.getReqChannelId())
-                .reqConnectionId(eventMetadata.getReqConnectionId())
-                .reqRequestId(eventMetadata.getReqRequestId());
-
-            publishPosition = controlMessageDispatcher.offer(buffer, messageOffset, messageLength);
+            publishPosition = controlMessageDispatcher.claim(claimedControlMessageFragment, ControlMessageRequestHeaderDescriptor.framedLength(messageLength));
         }
         while (publishPosition == -2);
 
-        isHandled = publishPosition >= 0;
+        if (publishPosition >= 0)
+        {
+            final MutableDirectBuffer writeBuffer = claimedControlMessageFragment.getBuffer();
+            int writeBufferOffset = claimedControlMessageFragment.getOffset();
+
+            controlMessageRequestHeaderDescriptor
+                .wrap(writeBuffer, writeBufferOffset)
+                .channelId(eventMetadata.getReqChannelId())
+                .connectionId(eventMetadata.getReqConnectionId())
+                .requestId(eventMetadata.getReqRequestId());
+
+            writeBufferOffset += ControlMessageRequestHeaderDescriptor.headerLength();
+
+            writeBuffer.putBytes(writeBufferOffset, buffer, messageOffset, messageLength);
+
+            claimedControlMessageFragment.commit();
+
+            isHandled = true;
+        }
 
         if (!isHandled)
         {
