@@ -13,6 +13,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -67,6 +68,7 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
       builder.setTypes(AdditionalMatchers.not(eq(configurationService.getElasticSearchUsersType())))
     ).thenReturn(newBuilder);
     when(newBuilder.setQuery(any())).thenReturn(newBuilder);
+    when(newBuilder.setFetchSource(false)).thenReturn(newBuilder);
     when(newBuilder.setSize(anyInt())).thenReturn(newBuilder);
     SearchResponse response = createImportTestSearchResponse();
     when(newBuilder.get()).thenReturn(response);

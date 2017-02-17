@@ -10,8 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Client;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
@@ -27,38 +29,35 @@ public abstract class MissingEntriesFinder<ENG extends EngineDto> {
   @Autowired
   private TransportClient esclient;
 
-  private Map<String, ENG> engineEntries = new HashMap<>();
-
   public List<ENG> retrieveMissingEntities(int indexOfFirstResult, int maxPageSize) {
-    Set<String> engineIds = getIdsFromEngine(indexOfFirstResult, maxPageSize);
-    Set<String> missingDocumentIds = getMissingDocumentsFromElasticSearch(engineIds);
-    List<ENG> newEngineEntities = retrieveMissingEntities(missingDocumentIds);
 
-    engineEntries.clear();
+    List<ENG> engineEntities = queryEngineRestPoint(indexOfFirstResult, maxPageSize);
+    Set<String> idsAlreadyAddedToOptimize = getIdsOfDocumentsAlreadyInElasticsearch(engineEntities);
+    List<ENG> newEngineEntities = removeAlreadyAddedEntities(idsAlreadyAddedToOptimize, engineEntities);
+
     return newEngineEntities;
   }
 
-  private List<ENG> retrieveMissingEntities(Set<String> ids) {
-    return ids.stream().map(id -> engineEntries.get(id)).collect(Collectors.toList());
-  }
-
-  private Set<String> getIdsFromEngine(int indexOfFirstResult, int maxPageSize) {
-    Set<String> ids = new HashSet<>();
-    List<ENG> entries = queryEngineRestPoint(indexOfFirstResult, maxPageSize);
-
-    for (ENG entry : entries) {
-      ids.add(entry.getId());
-      engineEntries.put(entry.getId(), entry);
+  private List<ENG> removeAlreadyAddedEntities(Set<String> idsAlreadyAddedToOptimize, List<ENG> engineEntities) {
+    List<ENG> newEngineEntities = new ArrayList<>(engineEntities.size());
+    for (ENG engineEntity : engineEntities) {
+      if (!idsAlreadyAddedToOptimize.contains(engineEntity.getId())) {
+        newEngineEntities.add(engineEntity);
+      }
     }
-    return ids;
+    return newEngineEntities;
   }
 
-  private Set<String> getMissingDocumentsFromElasticSearch(Set<String> engineIds) {
+  private Set<String> getIdsOfDocumentsAlreadyInElasticsearch(List<ENG> engineEntities) {
+
+    String[] engineIds = getEngineIds(engineEntities);
     QueryBuilder qb = idsQuery(elasticSearchType())
-      .addIds(engineIds.toArray(new String[engineIds.size()]));
+      .addIds(engineIds);
+
     SearchResponse idsResp = esclient.prepareSearch(configurationService.getOptimizeIndex())
       .setTypes(elasticSearchType())
       .setQuery(qb)
+      .setFetchSource(false)
       .setSize(configurationService.getEngineImportMaxPageSize())
       .get();
 
@@ -67,13 +66,14 @@ public abstract class MissingEntriesFinder<ENG extends EngineDto> {
       idsAlreadyAddedToOptimize.add(searchHit.getId());
     }
 
-    Set<String> missingDocumentIds;
-    missingDocumentIds = removeAllEntriesThatAreAlreadyInOptimize(engineIds, idsAlreadyAddedToOptimize);
-    return missingDocumentIds;
+    return idsAlreadyAddedToOptimize;
   }
 
-  private Set<String> removeAllEntriesThatAreAlreadyInOptimize(Set<String> engineIds, Set<String> optimizeIds) {
-    engineIds.removeAll(optimizeIds);
+  private String[] getEngineIds(List<ENG> engineEntities) {
+    String[] engineIds = new String[engineEntities.size()];
+    for ( int i=0; i<engineEntities.size(); i++ ) {
+      engineIds[i] = engineEntities.get(i).getId();
+    }
     return engineIds;
   }
 
