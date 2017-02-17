@@ -24,12 +24,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 /**
  * @author Askar Akhmerov
@@ -75,7 +73,7 @@ public class CorrelationReader {
     return result;
   }
 
-  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity, FilterMapDto filter) {
+  private CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity, FilterMapDto filter) {
     ValidationHelper.ensureNotEmpty("processDefinitionId", processDefinitionId);
     ValidationHelper.ensureNotEmpty("activityId", activityId);
     ValidationHelper.ensureNotEmpty("endActivityId", endActivity);
@@ -166,13 +164,7 @@ public class CorrelationReader {
     );
   }
 
-  private String getContent(String script) {
-    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(script);
-    Scanner s = new Scanner(inputStream).useDelimiter("\\A");
-    return s.hasNext() ? s.next() : "";
-  }
-
-  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String gatewayActivity, String endActivity) {
+  private CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String gatewayActivity, String endActivity) {
     return this.activityCorrelation(processDefinitionId, gatewayActivity, endActivity, null);
   }
 }
