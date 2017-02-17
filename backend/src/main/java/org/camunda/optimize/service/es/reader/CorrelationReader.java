@@ -164,7 +164,7 @@ public class CorrelationReader {
     );
   }
 
-  private CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String gatewayActivity, String endActivity) {
+  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String gatewayActivity, String endActivity) {
     return this.activityCorrelation(processDefinitionId, gatewayActivity, endActivity, null);
   }
 }
