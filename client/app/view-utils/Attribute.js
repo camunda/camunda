@@ -1,8 +1,9 @@
 import {withSelector} from './withSelector';
 
-const alwaysTrue = () => true;
+export const isTruthy = x => x;
+export const isFalsy = x => !x;
 
-export const Attribute = withSelector(({attribute, predicate = alwaysTrue}) => {
+export const Attribute = withSelector(({attribute, predicate = isTruthy}) => {
   return (node) => {
     return (state) => {
       if (predicate(state)) {
@@ -13,5 +14,3 @@ export const Attribute = withSelector(({attribute, predicate = alwaysTrue}) => {
     };
   };
 });
-
-export const isTruthy = x => x;

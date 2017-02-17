@@ -5,11 +5,13 @@ import {Router, RouteView} from 'router';
 import {LoginRoot, Authenticated} from 'login';
 import {LoginForm} from './loginForm';
 import {DynamicLoader} from 'dynamicLoader';
+import {Notifications} from './notifications';
 
 export function Main() {
   return <Router selector="router">
     <LoginRoot>
-      <Header/>
+      <Notifications selector="notifications" />
+      <Header />
       <div className="site-wrap">
         <div className="page-wrap">
           <Match>
@@ -24,7 +26,7 @@ export function Main() {
           </Match>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </LoginRoot>
   </Router>;
 }

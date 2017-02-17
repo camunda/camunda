@@ -12,6 +12,7 @@ describe('<Main>', () => {
   let Footer;
   let DynamicLoader;
   let LoginForm;
+  let Notifications;
   let router;
 
   beforeEach(() => {
@@ -19,12 +20,14 @@ describe('<Main>', () => {
     Footer = createMockComponent('footer-mock');
     DynamicLoader = createMockComponent('dynamic-loader');
     LoginForm = createMockComponent('login-form');
+    Notifications = createMockComponent('notifications');
 
     // Mocking components
     __set__('Header', Header);
     __set__('Footer', Footer);
     __set__('LoginForm', LoginForm);
     __set__('DynamicLoader', DynamicLoader);
+    __set__('Notifications', Notifications);
 
     ({node, update} = mountTemplate(<Main />));
 
@@ -37,6 +40,7 @@ describe('<Main>', () => {
     __ResetDependency__('Footer');
     __ResetDependency__('LoginForm');
     __ResetDependency__('DynamicLoader');
+    __ResetDependency__('Notifications');
 
     router.goTo.restore();
   });
@@ -47,6 +51,10 @@ describe('<Main>', () => {
 
   it('should include footer', () => {
     expect(node).to.contain.text(Footer.text);
+  });
+
+  it('should display notifications', () => {
+    expect(node).to.contain.text(Notifications.text);
   });
 
   it('should have container element', () => {
