@@ -5,10 +5,10 @@ def gitBranch = 'master'
 freeStyleJob('aws-create-database-from-snapshot') {
 
   displayName 'AWS - Create Database from Snapshot'
-  description 'Creates the Camunda Optimize database from latest snapshot of Marketing's Production database.'
+  description 'Creates the Camunda Optimize database from latest snapshot of Marketing\'s Production database.'
 
   parameters {
-    booleanParam('APPLY', 'false', 'Set to true to apply the changes Terraform suggests.')
+    booleanParam('APPLY', 'true', 'Set to true to apply the changes Terraform suggests.')
     booleanParam('DESTROY', 'false', 'Set to true to destroy the instance before Terraform applies changes.')
   }
 
