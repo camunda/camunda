@@ -64,6 +64,8 @@ public class EngineEntityFetcher {
       .path(configurationService.getProcessDefinitionEndpoint())
       .queryParam("firstResult", indexOfFirstResult)
       .queryParam("maxResults", maxPageSize)
+      .queryParam("sortBy", "id")
+      .queryParam("sortOrder", "asc")
       .request(MediaType.APPLICATION_JSON)
       .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
       });
