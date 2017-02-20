@@ -191,4 +191,63 @@ describe('<List>', () => {
       expect(Child.mocks.update.getCall(1).args).to.eql([otherValues[1]]);
     });
   });
+
+  describe('with Match as child', () => {
+    let list;
+
+    beforeEach(() => {
+      list = [
+        {a: 0, b: 'b0'},
+        {a: 1, b: 'b1'},
+        {a: 2, b: 'b2'}
+      ];
+
+      ({node, update} = mountTemplate(<List>
+        something: <Text property="b" />
+        <Match>
+          <Case predicate={({a}) => a % 2 === 0}>
+            <span class="even">even: <Text property="a" /></span>
+          </Case>
+          <Default>
+            <span class="odd">odd: <Text property="a" /></span>
+          </Default>
+        </Match>
+      </List>));
+
+      update(list);
+    });
+
+    it('should display all elements from the list', () => {
+      list.forEach(({a, b}) => {
+        expect(node).to.contain.text(`something: ${b}`);
+
+        if (a % 2 === 0) {
+          expect(node).to.contain.text(`even: ${a}`);
+        } else {
+          expect(node).to.contain.text(`odd: ${a}`);
+        }
+      });
+    });
+
+    it('should be possible to remove one element from list', () => {
+      list = [list[0], list[2]];
+      update(list);
+
+      list.forEach(({a, b}) => {
+        expect(node).to.contain.text(`something: ${b}`);
+        expect(node).to.contain.text(`even: ${a}`);
+      });
+
+      expect(node).not.to.contain.text('odd: 1');
+      expect(node).not.to.contain.text('something: 1');
+    });
+
+    it('should be possible to remove all items', () => {
+      update([]);
+
+      expect(node).not.to.contain.text('odd');
+      expect(node).not.to.contain.text('even');
+      expect(node).not.to.contain.text('something');
+    });
+  });
 });

@@ -3,9 +3,9 @@ import {addChildren} from './jsx';
 import {runUpdate} from './runUpdate';
 import {DESTROY_EVENT} from './events';
 import {$document} from './dom';
-import {insertAfter} from './insertAfter';
+import {createProxyNode} from './createProxyNode';
 
-export function List({onlyChild = false, key, children}) {
+export function List({key, children}) {
   return (parent, eventsBus) => {
     let nodes = [];
     const startMarker = $document.createComment('LIST START');
@@ -23,8 +23,7 @@ export function List({onlyChild = false, key, children}) {
         startMarker,
         nodes,
         valuesWithKey,
-        getNewNode.bind(null, eventsBus, children),
-        onlyChild ? parent : null
+        getNewNode.bind(null, parent, eventsBus, children)
       );
     };
   };
@@ -54,16 +53,16 @@ function wrapWithKey(keyProperty, value, index) {
   };
 }
 
-function getNewNode(eventsBus, children) {
-  const node = document.createDocumentFragment();
-  const updates = addChildren(node, eventsBus, children, true);
+function getNewNode(parent, eventsBus, children, startMarker) {
+  const proxyNode = createProxyNode(parent, startMarker);
+  const updates = addChildren(proxyNode, eventsBus, children, true);
   const update = runUpdate.bind(
     null,
     updates
   );
 
   return {
-    children: Array.prototype.slice.call(node.childNodes),
+    proxyNode,
     update,
     fireEvent: fireEvent.bind(null, updates)
   };
@@ -76,13 +75,9 @@ function fireEvent(updates, name, data) {
     });
 }
 
-function render(startMarker, nodes, valuesWithKey, getNewNode, parent) {
-  if (nodes.length) {
-    removeNodes(nodes, parent);
-  }
-
+function render(startMarker, nodes, valuesWithKey, getNewNode) {
   if (valuesWithKey.length > 0) {
-    return insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode, parent);
+    return insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode);
   } else {
     fireDestroyEventForNotUsed(nodes);
 
@@ -90,42 +85,22 @@ function render(startMarker, nodes, valuesWithKey, getNewNode, parent) {
   }
 }
 
-function removeNodes(nodes, parent) {
-  if (!parent) {
-    nodes.forEach(({children}) => {
-      children.forEach(node => node.parentNode.removeChild(node));
-    });
-  } else {
-    parent.innerHTML = '';
-  }
-}
-
-function insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode, parent) {
+function insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode) {
   const notUsed = splitNodes(nodes, valuesWithKey);
 
-  const fragment = document.createDocumentFragment();
+  let currentStartNode = startMarker;
 
   const newNodes = valuesWithKey.map(({node: updatedNode, key, value}) => {
-    const {children, update, ...rest} = updatedNode || getNextNode();
-
-    children.forEach(node => {
-      fragment.appendChild(node);
-    });
+    const {proxyNode, update, ...rest} = getNextNode(updatedNode);
 
     return {
       ...rest,
-      children,
+      proxyNode,
       update,
       value,
       key
     };
   });
-
-  if (parent) {
-    parent.appendChild(fragment);
-  } else {
-    insertAfter(fragment, startMarker);
-  }
 
   newNodes.forEach(({update, value}) => {
     update(value);
@@ -135,13 +110,35 @@ function insertValueNodes(startMarker, nodes, valuesWithKey, getNewNode, parent)
 
   return newNodes;
 
-  function getNextNode() {
-    return notUsed.shift() || getNewNode();
+  function getNextNode(updatedNode) {
+    const reusedNode = updatedNode || notUsed.shift();
+
+    if (reusedNode) {
+      const {proxyNode} = reusedNode;
+      const children = proxyNode.removeChildren();
+
+      proxyNode.setStartMarker(currentStartNode);
+      children.forEach(proxyNode.appendChild);
+
+      currentStartNode = children[children.length - 1] || currentStartNode;
+
+      return reusedNode;
+    }
+
+    const newNode = getNewNode(currentStartNode);
+    const {proxyNode: {childNodes}} = newNode;
+
+    currentStartNode = childNodes[childNodes.length - 1] || currentStartNode;
+
+    return newNode;
   }
 }
 
 function fireDestroyEventForNotUsed(notUsed) {
-  notUsed.forEach(({fireEvent}) => fireEvent(DESTROY_EVENT, {}));
+  notUsed.forEach(({fireEvent, proxyNode}) => {
+    proxyNode.removeChildren();
+    fireEvent(DESTROY_EVENT, {});
+  });
 }
 
 function splitNodes(nodes, valuesWithKey) {

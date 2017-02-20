@@ -3,20 +3,21 @@ import {runUpdate} from './runUpdate';
 import {updateOnlyWhenStateChanges} from './updateOnlyWhenStateChanges';
 import {DESTROY_EVENT} from './events';
 import {$document} from './dom';
-import {insertAfter} from './insertAfter';
+import {createProxyNode} from './createProxyNode';
 
 const truePredicate = () => true;
 
 export function Match({didStateChange, children}) {
   assertAllChildrenAreCase(children);
 
-  return (node, eventsBus) => {
+  return (parentNode, eventsBus) => {
     let lastChild;
     let update;
-    let childNodes = [];
     const startMarker = $document.createComment('START MATCH');
 
-    node.appendChild(startMarker);
+    parentNode.appendChild(startMarker);
+
+    const proxyNode = createProxyNode(parentNode, startMarker);
 
     return updateOnlyWhenStateChanges(
       (state) => {
@@ -24,16 +25,15 @@ export function Match({didStateChange, children}) {
 
         if (child) {
           if (child !== lastChild) {
-            ({update, childNodes} = replaceChild(startMarker, childNodes, update, eventsBus, child));
+            update = replaceChild(proxyNode, update, eventsBus, child);
             lastChild = child;
           }
 
           runUpdate(update, state);
         } else {
-          removeChild(childNodes, update);
+          removeChild(proxyNode, update);
           update = undefined;
           lastChild = undefined;
-          childNodes = [];
         }
       },
       didStateChange
@@ -45,23 +45,14 @@ function findChild(children, state) {
   return children.find(({predicate}) => predicate(state));
 }
 
-function replaceChild(startMarker, childNodes, update, eventsBus, child) {
-  removeChild(childNodes, update);
+function replaceChild(proxyNode, update, eventsBus, child) {
+  removeChild(proxyNode, update);
 
-  const fragment = document.createDocumentFragment();
-  const newUpdate = addChild(fragment, eventsBus, child, true);
-  const newChildNodes = Array.prototype.slice.call(fragment.childNodes);
-
-  insertAfter(fragment, startMarker);
-
-  return {
-    update: newUpdate,
-    childNodes: newChildNodes
-  };
+  return addChild(proxyNode, eventsBus, child, true);
 }
 
-function removeChild(childNodes, {eventsBus} = {}) {
-  childNodes.forEach(node => node.parentNode.removeChild(node));
+function removeChild(proxyNode, {eventsBus} = {}) {
+  proxyNode.removeChildren();
 
   if (eventsBus) {
     eventsBus.fireEvent(DESTROY_EVENT, {});
