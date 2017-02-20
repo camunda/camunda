@@ -7,6 +7,8 @@ folder=$(basename "${PWD}")
 
 rm -rf .terraform
 
+echo "disable_checkpoint = true" > .terraformrc
+
 terraform remote config \
     -backend=s3 \
     -backend-config="bucket=${bucket_id}" \

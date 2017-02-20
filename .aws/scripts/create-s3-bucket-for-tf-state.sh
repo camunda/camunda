@@ -8,5 +8,5 @@ source ../scripts/init-terraform.sh
 terraform plan
 
 if [ "${APPLY}" = "true" ]; then
-	terraform apply
+  terraform apply
 fi

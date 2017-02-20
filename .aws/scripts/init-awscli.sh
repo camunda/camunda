@@ -3,8 +3,6 @@ set -ex
 
 DATE="date +%Y/%m/%d-%H:%M:%S"
 REGION=eu-west-1
-DB_INSTANCE_ID=processenginedemo
-DB_NEW_PASSWORD=camunda
 
 # params
 PROFILE=
@@ -16,6 +14,10 @@ function awscli {
   aws --region=${REGION} ${PROFILE} "$@"
 }
 
+function generatePassword {
+  date +%s | sha256sum | base64 | head -c 32; echo
+}
+
 function get_latest_db_snapshot {
   local db_instance_id=$1
   local latest_snapshot
@@ -23,36 +25,30 @@ function get_latest_db_snapshot {
   echo "${latest_snapshot}"
 }
 
-function generatePassword {
-  date +%s | sha256sum | base64 | head -c 32; echo
-}
-
-function modify_db {
-  # usage: modify_db ${database_instance_identifier}
+function awscli_modify_db {
+  # usage: modify_db ${database_instance_identifier} "modifications"
   local db_instance_id=$1
+  local modifications=$2
   awscli rds \
       modify-db-instance \
-      --db-instance-identifier ${db_instance_id} \
-      --master-user-password ${DB_NEW_PASSWORD} \
-      --backup-retention-period 0 \
+      --db-instance-identifier=${db_instance_id} \
+      ${modifications} \
       --apply-immediately && \
     echo "`${DATE}` SUCCESS:modifying  ${db_instance_id}" || echo "`${DATE}` FAILED:modifying   ${db_instance_id}"
-#       --master-user-password ${DB_NEW_PASSWORD} \
-#       --vpc-security-group-ids ${_DB_SEC_GROUP} \
-
 
     # modifying -> available
-    wait_available ${db_instance_id} &&\
+    awscli_wait_available ${db_instance_id} &&\
     echo "`${DATE}` SUCCESS:modified   ${db_instance_id}" || echo "`${DATE}` FAILED:modified    ${db_instance_id}"
 }
 
-function wait_available {
+function awscli_wait_available {
   # usage : wait_available ${DB_INSTANCE_ID}
   local db_instance_id=$1
   local sleep_time=10
+  local num_of_sleeps=30
   echo "`${DATE}` START:available    ${db_instance_id}"
 
-  for (( i = 0; i < 3; i++ )); do
+  for (( i = 0; i < ${num_of_sleeps}; i++ )); do
     while :
     do
       sleep ${sleep_time}
@@ -82,7 +78,7 @@ function wait_available {
           is_break=false
           is_exit=true
           ;;
-        incompatible-paraameters)
+        incompatible-parameters)
           is_break=false
           is_exit=true
           ;;
@@ -91,8 +87,6 @@ function wait_available {
         rebooting)
           ;;
         resetting-master-credentials)
-          is_break=false
-          is_exit=true
           ;;
         storage-full)
           is_break=false
@@ -118,24 +112,3 @@ function wait_available {
     done
   done
 }
-
-
-
-###  Main script ###
-
-cd .aws/terraform/db
-
-source ../scripts/init-terraform.sh
-
-if [ "${DESTROY}" = "true" ]; then
-	terraform destroy -force
-fi
-
-latest_snapshot="$(get_latest_db_snapshot ${DB_INSTANCE_ID})"
-terraform plan -var db_latest_snapshot=${latest_snapshot}
-
-if [ "${APPLY}" = "true" ]; then
-	terraform apply -var db_latest_snapshot=${latest_snapshot}
-  new_db_instance_id="$(terraform output db-instance-identifier)"
-  modify_db ${new_db_instance_id}
-fi
