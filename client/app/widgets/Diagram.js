@@ -13,11 +13,16 @@ function BpmnViewer({createOverlaysRenderer}) {
     const viewer = new Viewer({
       container: node
     });
-    const renderOverlays = createOverlaysRenderer({
+
+    if (typeof createOverlaysRenderer === 'function') {
+      createOverlaysRenderer = [createOverlaysRenderer];
+    }
+
+    const renderOverlays = createOverlaysRenderer.map(createFct => createFct({
       viewer,
       node,
       eventsBus
-    });
+    }));
     let diagramRendered = false;
 
     const update = (display) => {
@@ -27,10 +32,10 @@ function BpmnViewer({createOverlaysRenderer}) {
         diagramRendered = false;
       }
 
-      renderOverlays({
+      renderOverlays.forEach(fct => fct({
         state: display,
         diagramRendered
-      });
+      }));
     };
 
     function renderDiagram(display) {
@@ -42,10 +47,10 @@ function BpmnViewer({createOverlaysRenderer}) {
           diagramRendered = true;
           resetZoom(viewer);
 
-          renderOverlays({
+          renderOverlays.forEach(fct => fct({
             state: display,
             diagramRendered
-          });
+          }));
         });
       }
     }

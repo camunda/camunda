@@ -3,9 +3,10 @@ import {getHeatmap, hoverElement,
 import {withSelector, jsx} from 'view-utils';
 import {isLoaded} from 'utils/loading';
 import {Diagram} from 'widgets/Diagram';
+import {createAnalyticsRenderer} from './analytics';
 
 export const HeatmapDiagram = withSelector(() =>
-  <Diagram createOverlaysRenderer={createHeatmapRenderer} />
+  <Diagram createOverlaysRenderer={[createHeatmapRenderer, createAnalyticsRenderer]} />
 );
 
 function createHeatmapRenderer({viewer}) {

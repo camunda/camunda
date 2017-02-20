@@ -80,7 +80,7 @@ describe('<HeatmapDiagram>', () => {
 
     mountTemplate(<HeatmapDiagram selector="display" />);
 
-    update = Diagram.calls[0][0].createOverlaysRenderer({viewer});
+    update = Diagram.calls[0][0].createOverlaysRenderer[0]({viewer});
   });
 
   afterEach(() => {

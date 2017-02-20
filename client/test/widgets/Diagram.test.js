@@ -97,6 +97,24 @@ describe('<Diagram>', () => {
         diagramRendered: true
       }));
     });
+
+    it('should be able to have multiple overlay renderer', () => {
+      const renderOverlays1 = sinon.spy();
+      const createOverlaysRenderer1 = sinon.stub().returns(renderOverlays1);
+      const renderOverlays2 = sinon.spy();
+      const createOverlaysRenderer2 = sinon.stub().returns(renderOverlays2);
+
+      ({update} = mountTemplate(
+        <Diagram selector="display" createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} />
+      ));
+
+      update(loadedDiagramState);
+
+      expect(createOverlaysRenderer1.called).to.eql(true);
+      expect(createOverlaysRenderer2.called).to.eql(true);
+      expect(renderOverlays1.called).to.eql(true);
+      expect(renderOverlays2.called).to.eql(true);
+    });
   });
 
   describe('initial state', () => {
