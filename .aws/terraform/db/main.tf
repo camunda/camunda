@@ -25,7 +25,7 @@ resource "aws_db_instance" "camunda_optimize_db" {
 #
 resource "aws_security_group" "camunda_optimize_db" {
   name   = "${data.terraform_remote_state.global.project_name} - ${data.terraform_remote_state.global.env} - DB Security Group"
-  vpc_id = "${data.terraform_remote_state.global.vpc_id}"
+  vpc_id = "${data.terraform_remote_state.global.vpc_default_id}"
 
   tags {
     Name = "${data.terraform_remote_state.global.project_name} - ${data.terraform_remote_state.global.env} - DB Security Group"
