@@ -8,8 +8,8 @@ freeStyleJob('aws-create-database-from-snapshot') {
   description 'Creates the Camunda Optimize database from latest snapshot of Marketing\'s Production database.'
 
   parameters {
-    booleanParam('APPLY', 'true', 'Set to true to apply the changes Terraform suggests.')
-    booleanParam('DESTROY', 'false', 'Set to true to destroy the instance before Terraform applies changes.')
+    booleanParam('APPLY', true, 'Set to true to apply the changes Terraform suggests.')
+    booleanParam('DESTROY', false, 'Set to true to destroy the instance before Terraform applies changes.')
   }
 
   scm {
