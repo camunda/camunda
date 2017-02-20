@@ -9,7 +9,6 @@ import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.client.Client;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,20 +17,16 @@ import java.util.Set;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 @Component
-public abstract class MissingEntriesFinder<ENG extends EngineDto> {
+public abstract class MissingEntitiesFinder<ENG extends EngineDto> {
 
   @Autowired
   protected ConfigurationService configurationService;
 
   @Autowired
-  protected Client client;
-
-  @Autowired
   private TransportClient esclient;
 
-  public List<ENG> retrieveMissingEntities(int indexOfFirstResult, int maxPageSize) {
+  public List<ENG> retrieveMissingEntities(List<ENG> engineEntities ) {
 
-    List<ENG> engineEntities = queryEngineRestPoint(indexOfFirstResult, maxPageSize);
     Set<String> idsAlreadyAddedToOptimize = getIdsOfDocumentsAlreadyInElasticsearch(engineEntities);
     List<ENG> newEngineEntities = removeAlreadyAddedEntities(idsAlreadyAddedToOptimize, engineEntities);
 
@@ -76,12 +71,6 @@ public abstract class MissingEntriesFinder<ENG extends EngineDto> {
     }
     return engineIds;
   }
-
-  /**
-   * @return All entries from the engine that we want to
-   * import to optimize, i.e. elasticsearch
-   */
-  protected abstract List<ENG> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize);
 
   /**
    * @return The elasticsearch type where we can find the

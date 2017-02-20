@@ -27,7 +27,7 @@ public class EventsWriter {
 
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (EventDto e : events) {
-      String eventId = e.getActivityInstanceId() + "_" + e.getState();
+      String eventId = e.getId();
       bulkRequest.add(esclient
           .prepareIndex(
               configurationService.getOptimizeIndex(),
@@ -40,12 +40,4 @@ public class EventsWriter {
     bulkRequest.execute().get();
   }
 
-
-  public TransportClient getEsclient() {
-    return esclient;
-  }
-
-  public void setEsclient(TransportClient esclient) {
-    this.esclient = esclient;
-  }
 }

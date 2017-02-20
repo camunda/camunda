@@ -48,6 +48,7 @@ public class EventsWriterTest {
     List<EventDto> events = new ArrayList<>();
     EventDto event = new EventDto();
     event.setActivityId("test");
+    event.setId("123");
     events.add(event);
 
     //when
@@ -75,7 +76,7 @@ public class EventsWriterTest {
     Mockito.when(transportClient.prepareIndex(
         Mockito.eq(configurationService.getOptimizeIndex()),
         Mockito.eq(configurationService.getEventType()),
-        Mockito.eq("null_null"))
+        Mockito.eq("123"))
     )
         .thenReturn(indexMock);
     return indexMock;

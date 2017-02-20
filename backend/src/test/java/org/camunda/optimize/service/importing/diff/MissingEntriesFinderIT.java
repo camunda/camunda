@@ -94,6 +94,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
 
     // given
     deployImportAndDeployAgainProcess();
+    processDefinitionImportService.resetImportStartIndex();
 
     // when I trigger the import a second time
     Response response = target("import")
@@ -113,6 +114,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
   public void onlyNewActivitiesAreImportedToES() throws Exception {
     // given
     deployImportAndDeployAgainProcess();
+    activityImportService.resetImportStartIndex();
 
     // when I trigger the import a second time
     Response response = target("import")
@@ -121,17 +123,18 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
     assertThat(response.getStatus(), is(200));
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    // then only 12 activities should be imported during the second import
+    // then only 6 activities should be imported during the second import
     ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
     verify(eventsWriter, times(2)).importEvents(captor.capture());
     assertThat(captor.getAllValues().size(), is(2));
-    assertThat(captor.getAllValues().get(1).size(), is(12));
+    assertThat(captor.getAllValues().get(1).size(), is(6));
   }
 
   @Test
   public void onlyNewProcessDefinitionXmlsAreImportedToES() throws Exception {
     // given
     deployImportAndDeployAgainProcess();
+    processDefinitionXmlImportService.resetImportStartIndex();
 
     // when I trigger the import a second time
     Response response = target("import")

@@ -33,4 +33,10 @@ public class ValidationHelper {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }
+
+  public static void ensureGreaterThanZero(int value) {
+    if( value <= 0) {
+      throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!" );
+    }
+  }
 }

@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
-import org.camunda.optimize.service.importing.diff.MissingEntriesFinder;
+import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +29,13 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   private MissingActivityFinder missingActivityFinder;
 
   @Override
-  protected MissingEntriesFinder<HistoricActivityInstanceEngineDto> getMissingEntriesFinder() {
+  protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
     return missingActivityFinder;
+  }
+
+  @Override
+  protected List<HistoricActivityInstanceEngineDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
+    return engineEntityFetcher.fetchHistoricActivityInstances(indexOfFirstResult, maxPageSize);
   }
 
   @Override
@@ -56,6 +61,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
         final EventDto completeEvent = new EventDto();
         completeEvent.setState(STATE_COMPLETED);
         mapDefaults(entry, completeEvent);
+        setActivityInstanceIdForCompleteEvent(completeEvent);
         result.add(completeEvent);
       }
     }
@@ -63,7 +69,13 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
     return result;
   }
 
+  private void setActivityInstanceIdForCompleteEvent(EventDto completeEvent) {
+    String newId = completeEvent.getId() +  "_" + STATE_COMPLETED;
+    completeEvent.setId(newId);
+  }
+
   private void mapDefaults(HistoricActivityInstanceEngineDto dto, EventDto createEvent) {
+    createEvent.setId(dto.getId());
     createEvent.setActivityId(dto.getActivityId());
     createEvent.setActivityInstanceId(dto.getParentActivityInstanceId());
     createEvent.setTimestamp(dto.getStartTime());

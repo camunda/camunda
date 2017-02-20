@@ -1,46 +1,43 @@
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.*;
+import org.mockito.ArgumentMatcher;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/applicationContext.xml"})
 public class ProcessDefinitionXmlImportServiceTest {
 
   private static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
-  private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
   @Autowired
   private ProcessDefinitionXmlImportService underTest;
 
-  @InjectMocks
-  @Autowired
-  private MissingProcessDefinitionXmlFinder missingProcessDefinitionXmlFinder;
-
   @Mock
-  private Client clientMock;
+  private EngineEntityFetcher engineEntityFetcher;
 
   @Mock
   private ProcessDefinitionWriter processDefinitionWriter;
@@ -53,26 +50,27 @@ public class ProcessDefinitionXmlImportServiceTest {
   @Test
   public void executeImport() throws Exception {
     //given
-    ProcessDefinitionXmlEngineDto xml = setupInputData();
-
-    setupClient(xml);
+    List<ProcessDefinitionXmlEngineDto> xmls = setupInputData();
+    setupEngineEntityFetcher(xmls);
 
     //when
     underTest.executeImport();
 
     //then
     //verify invocations
-    verify(clientMock, times(3))
-      .target(anyString());
+    verify(engineEntityFetcher, atLeast(1))
+      .fetchProcessDefinitionXmls(anyInt(), anyInt());
 
     verify(processDefinitionWriter, times(1))
       .importProcessDefinitionXmls(argThat(matchesEvent()));
   }
 
-  private ProcessDefinitionXmlEngineDto setupInputData() {
+  private List<ProcessDefinitionXmlEngineDto> setupInputData() {
+    List<ProcessDefinitionXmlEngineDto> list = new ArrayList<>();
     ProcessDefinitionXmlEngineDto instance = new ProcessDefinitionXmlEngineDto();
     instance.setId(TEST_PROCESS_DEFINITION_ID);
-    return instance;
+    list.add(instance);
+    return list;
   }
 
   private <Object> ArgumentMatcher<Object> matchesEvent() {
@@ -91,30 +89,10 @@ public class ProcessDefinitionXmlImportServiceTest {
     };
   }
 
-
-  private void setupClient(ProcessDefinitionXmlEngineDto xml) {
-    List<ProcessDefinitionEngineDto> procDefList = setupProcessDefinitionInputData();
-    WebTarget mockTarget = mock(WebTarget.class);
-    Invocation.Builder builderMock = mock(Invocation.Builder.class);
-    when(clientMock.target(eq(ENGINE_TARGET))).thenReturn(mockTarget);
-    when(mockTarget.path(anyString())).thenReturn(mockTarget);
-    when(mockTarget.queryParam(anyString(), any())).thenReturn(mockTarget);
-    when(mockTarget.request(anyString())).thenReturn(builderMock);
-    when(builderMock.get(eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
-    })))
-      .thenReturn(procDefList)
+  private void setupEngineEntityFetcher(List<ProcessDefinitionXmlEngineDto> resultList) {
+    when(engineEntityFetcher.fetchProcessDefinitionXmls(anyInt(), anyInt()))
+      .thenReturn(resultList)
       .thenReturn(Collections.emptyList());
-    when(builderMock.get(eq(new GenericType<ProcessDefinitionXmlEngineDto>() {
-    })))
-      .thenReturn(xml);
-  }
-
-  private List<ProcessDefinitionEngineDto> setupProcessDefinitionInputData() {
-    List<ProcessDefinitionEngineDto> resultList = new ArrayList<>();
-    ProcessDefinitionEngineDto instance = new ProcessDefinitionEngineDto();
-    instance.setId(TEST_PROCESS_DEFINITION_ID);
-    resultList.add(instance);
-    return resultList;
   }
 
 }

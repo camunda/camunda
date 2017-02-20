@@ -8,6 +8,8 @@ import java.util.Map;
  * @author Askar Akhmerov
  */
 public class EventDto implements Serializable,OptimizeDto {
+
+  private String id;
   private String activityId;
   private String state;
   private String activityInstanceId;
@@ -18,6 +20,13 @@ public class EventDto implements Serializable,OptimizeDto {
   private Date startDate;
   private Date endDate;
 
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public String getActivityId() {
     return activityId;

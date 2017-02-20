@@ -51,8 +51,12 @@ public class ConfigurationService {
   private String engineRestApiEndpoint;
   @Value("${camunda.optimize.engine.hai.endpoint}")
   private String historicActivityInstanceEndpoint;
+  @Value("${camunda.optimize.engine.hai.count.endpoint}")
+  private String historicActivityInstanceCountEndpoint;
   @Value("${camunda.optimize.engine.procdef.endpoint}")
   private String processDefinitionEndpoint;
+  @Value("${camunda.optimize.engine.procdef.count.endpoint}")
+  private String processDefinitionCountEndpoint;
   @Value("${camunda.optimize.engine.procdef.xml.endpoint}")
   private String processDefinitionXmlEndpoint;
   @Value("${camunda.optimize.engine.user.validation.endpoint}")
@@ -89,6 +93,10 @@ public class ConfigurationService {
     return engineRestApiEndpoint;
   }
 
+  public String getEngineRestApiEndpointOfCustomEngine() {
+    return engineRestApiEndpoint + engineName;
+  }
+
   public String getCorrelationInitScriptPath() {
     return correlationInitScriptPath;
   }
@@ -109,6 +117,10 @@ public class ConfigurationService {
     return historicActivityInstanceEndpoint;
   }
 
+  public String getHistoricActivityInstanceCountEndpoint() {
+    return historicActivityInstanceCountEndpoint;
+  }
+
   public String getEventType() {
     return eventType;
   }
@@ -127,6 +139,10 @@ public class ConfigurationService {
 
   public String getProcessDefinitionEndpoint() {
     return processDefinitionEndpoint;
+  }
+
+  public String getProcessDefinitionCountEndpoint() {
+    return processDefinitionCountEndpoint;
   }
 
   public String getProcessDefinitionXmlType() {

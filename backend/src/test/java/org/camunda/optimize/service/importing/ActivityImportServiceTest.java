@@ -3,7 +3,6 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
-import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,43 +10,38 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
+@ContextConfiguration(locations = {"/applicationContext.xml"})
 public class ActivityImportServiceTest {
 
   private static final String TEST_ACTIVITY_ID = "testActivityId";
   private static final String TEST_ID = "testId";
-  private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
   @Autowired
   private ActivityImportService underTest;
 
-  @InjectMocks
-  @Autowired
-  private MissingActivityFinder missingActivityFinder;
-
   @Mock
-  private Client clientMock;
+  private EngineEntityFetcher engineEntityFetcher;
 
   @Mock
   private EventsWriter eventsWriter;
@@ -61,19 +55,18 @@ public class ActivityImportServiceTest {
   public void executeImport() throws Exception {
     //given
     List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
-
-    setupEngineClient(resultList);
+    setupEngineEntityFetcher(resultList);
 
     //when
     underTest.executeImport();
 
     //then
     //verify invocations
-    verify(clientMock, times(2))
-        .target(anyString());
+    verify(engineEntityFetcher, atLeast(1))
+      .fetchHistoricActivityInstances(anyInt(), anyInt());
 
     verify(eventsWriter, times(1))
-        .importEvents(argThat(matchesEvent()));
+      .importEvents(argThat(matchesEvent()));
   }
 
   private List<HistoricActivityInstanceEngineDto> setupInputData() {
@@ -94,7 +87,7 @@ public class ActivityImportServiceTest {
 
         if (t instanceof List) {
           List cast = (List) t;
-          result = cast.size() == 1 && TEST_ACTIVITY_ID.equals(((EventDto)cast.get(0)).getActivityId());
+          result = cast.size() == 1 && TEST_ACTIVITY_ID.equals(((EventDto) cast.get(0)).getActivityId());
 
         }
         return result;
@@ -102,16 +95,8 @@ public class ActivityImportServiceTest {
     };
   }
 
-
-  private void setupEngineClient(List<HistoricActivityInstanceEngineDto> resultList) {
-    WebTarget mockTarget = mock(WebTarget.class);
-    Invocation.Builder builderMock = mock(Invocation.Builder.class);
-    when(clientMock.target(eq(ENGINE_TARGET))).thenReturn(mockTarget);
-    when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
-    when(mockTarget.queryParam(anyString(), any())).thenReturn(mockTarget);
-    when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    when(builderMock.get(eq(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
-    })))
+  private void setupEngineEntityFetcher(List<HistoricActivityInstanceEngineDto> resultList) {
+    when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
       .thenReturn(resultList)
       .thenReturn(Collections.emptyList());
   }

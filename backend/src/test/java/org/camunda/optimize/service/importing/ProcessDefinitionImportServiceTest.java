@@ -3,26 +3,26 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionFinder;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.*;
+import org.mockito.ArgumentMatcher;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -30,18 +30,13 @@ import static org.mockito.Mockito.when;
 public class ProcessDefinitionImportServiceTest {
 
   private static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
-  private static final String ENGINE_TARGET = "http://localhost:8080/engine-rest/engine/default";
 
   @InjectMocks
   @Autowired
   private ProcessDefinitionImportService underTest;
 
-  @InjectMocks
-  @Autowired
-  private MissingProcessDefinitionFinder missingProcessDefinitionFinder;
-
   @Mock
-  private Client clientMock;
+  private EngineEntityFetcher engineEntityFetcher;
 
   @Mock
   private ProcessDefinitionWriter processDefinitionWriter;
@@ -55,18 +50,17 @@ public class ProcessDefinitionImportServiceTest {
   public void executeImport() throws Exception {
     //given
     List<ProcessDefinitionEngineDto> resultList = setupInputData();
-
-    setupClient(resultList);
+    setupEngineEntityFetcher(resultList);
 
     //when
     underTest.executeImport();
 
     //then
     //verify invocations
-    Mockito.verify(clientMock, Mockito.times(2))
-      .target(Mockito.anyString());
+    verify(engineEntityFetcher, atLeast(1))
+      .fetchProcessDefinitions(anyInt(), anyInt());
 
-    Mockito.verify(processDefinitionWriter, Mockito.times(1))
+    verify(processDefinitionWriter, Mockito.times(1))
       .importProcessDefinitions(Mockito.argThat(matchesEvent()));
   }
 
@@ -95,16 +89,8 @@ public class ProcessDefinitionImportServiceTest {
     };
   }
 
-
-  private void setupClient(List<ProcessDefinitionEngineDto> resultList) {
-    WebTarget mockTarget = mock(WebTarget.class);
-    Invocation.Builder builderMock = mock(Invocation.Builder.class);
-    when(clientMock.target(eq(ENGINE_TARGET))).thenReturn(mockTarget);
-    when(mockTarget.path(Mockito.anyString())).thenReturn(mockTarget);
-    when(mockTarget.queryParam(anyString(), any())).thenReturn(mockTarget);
-    when(mockTarget.request(Mockito.anyString())).thenReturn(builderMock);
-    when(builderMock.get(eq(new GenericType<List<ProcessDefinitionEngineDto>>() {
-    })))
+  private void setupEngineEntityFetcher(List<ProcessDefinitionEngineDto> resultList) {
+    when(engineEntityFetcher.fetchProcessDefinitions(anyInt(), anyInt()))
       .thenReturn(resultList)
       .thenReturn(Collections.emptyList());
   }
