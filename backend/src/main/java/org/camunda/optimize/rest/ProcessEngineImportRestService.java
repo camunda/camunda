@@ -1,6 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.service.importing.ImportServiceHandler;
+import org.camunda.optimize.service.importing.ImportScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,11 +13,11 @@ import javax.ws.rs.core.Response;
 public class ProcessEngineImportRestService {
 
   @Autowired
-  private ImportServiceHandler importServiceHandler;
+  private ImportScheduler importScheduler;
 
   @GET
   public Response importDataFromEngine() {
-    importServiceHandler.executeProcessEngineImport();
+    importScheduler.scheduleProcessEngineImport();
     return Response.ok().build();
   }
 

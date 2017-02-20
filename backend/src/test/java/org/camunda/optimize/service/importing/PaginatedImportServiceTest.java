@@ -69,7 +69,6 @@ public class PaginatedImportServiceTest {
 
     // when
     activityImportService.executeImport();
-
   }
 
   @Test

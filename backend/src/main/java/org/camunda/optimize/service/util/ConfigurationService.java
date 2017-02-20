@@ -75,6 +75,10 @@ public class ConfigurationService {
   private String tokenizer;
   @Value("${camunda.optimize.es.analyzer.tokenfilter}")
   private String tokenFilter;
+  @Value("${camunda.optimize.es.import.handler.interval}")
+  private long importHandlerWait;
+  @Value("${camunda.optimize.es.import.handler.max.backoff}")
+  private long maximumBackoff;
 
 
   public String getSecret() {
@@ -193,6 +197,14 @@ public class ConfigurationService {
 
   public int getEngineImportMaxPageSize() {
     return engineImportMaxPageSize;
+  }
+
+  public long getImportHandlerWait() {
+    return importHandlerWait;
+  }
+
+  public long getMaximumBackoff() {
+    return maximumBackoff;
   }
 
   public int getMaxJobQueueSize() {

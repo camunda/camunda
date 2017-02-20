@@ -5,9 +5,11 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
@@ -66,10 +68,23 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
   @Autowired
   private EventsWriter eventsWriter;
 
+  @Autowired
+  private ImportScheduler importScheduler;
+
+  @Autowired
+  private ConfigurationService configurationService;
+
+  private ArgumentCaptor<List<ProcessDefinitionOptimizeDto>> definitionCaptor = ArgumentCaptor.forClass(List.class);
+
+  private ArgumentCaptor<List<EventDto>> eventCaptor = ArgumentCaptor.forClass(List.class);
+
+  private ArgumentCaptor<List<ProcessDefinitionXmlOptimizeDto>> xmlCaptor = ArgumentCaptor.forClass(List.class);
+
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.initMocks(this);
     setImmediateRefreshForESTransportClient();
+    importScheduler.start();
   }
 
   /**
@@ -86,9 +101,9 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
       return null;
     };
-    doAnswer(refreshAnswer).when(processDefinitionWriter).importProcessDefinitions(any());
-    doAnswer(refreshAnswer).when(processDefinitionWriter).importProcessDefinitionXmls(any());
-    doAnswer(refreshAnswer).when(eventsWriter).importEvents(any());
+    doAnswer(refreshAnswer).when(processDefinitionWriter).importProcessDefinitions(definitionCaptor.capture());
+    doAnswer(refreshAnswer).when(processDefinitionWriter).importProcessDefinitionXmls(xmlCaptor.capture());
+    doAnswer(refreshAnswer).when(eventsWriter).importEvents(eventCaptor.capture());
   }
 
   @Test
@@ -103,12 +118,13 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
       .request()
       .get();
     assertThat(response.getStatus(), is(200));
+    Thread.currentThread().sleep(configurationService.getImportHandlerWait());
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then only one process definition should be imported during the second import
-    ArgumentCaptor<List<ProcessDefinitionOptimizeDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(processDefinitionWriter, times(2)).importProcessDefinitions(captor.capture());
-    assertThat(captor.getAllValues().size(), is(2));
-    assertThat(captor.getAllValues().get(1).size(), is(1));
+    verify(processDefinitionWriter, times(2)).importProcessDefinitions(any());
+    assertThat(definitionCaptor.getAllValues().size(), is(2));
+    assertThat(definitionCaptor.getAllValues().get(1).size(), is(1));
   }
 
   @Test
@@ -123,12 +139,12 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
       .get();
     assertThat(response.getStatus(), is(200));
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    Thread.currentThread().sleep(configurationService.getImportHandlerWait());
 
     // then only 6 activities should be imported during the second import
-    ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(eventsWriter, times(2)).importEvents(captor.capture());
-    assertThat(captor.getAllValues().size(), is(2));
-    assertThat(captor.getAllValues().get(1).size(), is(6));
+    verify(eventsWriter, times(2)).importEvents(any());
+    assertThat(eventCaptor.getAllValues().size(), is(2));
+    assertThat(eventCaptor.getAllValues().get(1).size(), is(6));
   }
 
   @Test
@@ -142,22 +158,24 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
       .request()
       .get();
     assertThat(response.getStatus(), is(200));
+    Thread.currentThread().sleep(configurationService.getImportHandlerWait());
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then only one process definition xml should be imported during the second import
-    ArgumentCaptor<List<ProcessDefinitionXmlOptimizeDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(processDefinitionWriter, times(2)).importProcessDefinitionXmls(captor.capture());
-    assertThat(captor.getAllValues().size(), is(2));
-    assertThat(captor.getAllValues().get(1).size(), is(1));
+    verify(processDefinitionWriter, times(2)).importProcessDefinitionXmls(any());
+    assertThat(xmlCaptor.getAllValues().size(), is(2));
+    assertThat(xmlCaptor.getAllValues().get(1).size(), is(1));
   }
 
-  private void deployImportAndDeployAgainProcess() {
+  private void deployImportAndDeployAgainProcess() throws InterruptedException {
 
     engineRule.deployServiceTaskProcess();
     Response response = target("import")
       .request()
       .get();
     assertThat(response.getStatus(), is(200));
+    //let import handler do it's job
+    Thread.currentThread().sleep(configurationService.getImportHandlerWait() + 1000);
     // refresh so it is possible to retrieve the index
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 

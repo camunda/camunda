@@ -27,7 +27,8 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
   private int indexOfFirstResult = 0;
 
   @Override
-  public void executeImport() {
+  public int executeImport() {
+    int pagesWithData = 0;
     int searchedSize;
     int maxPageSize = configurationService.getEngineImportMaxPageSize();
     ensureGreaterThanZero(maxPageSize);
@@ -36,12 +37,15 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
       List<ENG> newEngineEntities =
         getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
       if (!newEngineEntities.isEmpty()) {
+        pagesWithData = pagesWithData + 1;
         List<OPT> newOptimizeEntities = mapToOptimizeDto(newEngineEntities);
         importToElasticSearch(newOptimizeEntities);
       }
       searchedSize = pageOfEngineEntities.size();
       indexOfFirstResult += searchedSize;
     } while (searchedSize > 0);
+
+    return pagesWithData;
   }
 
   public void resetImportStartIndex() {

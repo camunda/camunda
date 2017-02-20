@@ -48,10 +48,16 @@ public class PaginatedImportServiceIT extends AbstractJerseyTest {
   @Autowired
   private EventsWriter eventsWriter;
 
+  @Autowired
+  private ImportScheduler importScheduler;
+
+  private ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
+
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.initMocks(this);
     setImmediateRefreshForESTransportClient();
+    importScheduler.start();
   }
 
   /**
@@ -68,7 +74,7 @@ public class PaginatedImportServiceIT extends AbstractJerseyTest {
       elasticSearchRule.refreshOptimizeIndexInElasticsearch();
       return null;
     };
-    doAnswer(refreshAnswer).when(eventsWriter).importEvents(any());
+    doAnswer(refreshAnswer).when(eventsWriter).importEvents(captor.capture());
   }
 
   @Test
@@ -76,6 +82,7 @@ public class PaginatedImportServiceIT extends AbstractJerseyTest {
 
     // given a page size of 1 and a process with (start->servicetask->end)
     when(configurationService.getEngineImportMaxPageSize()).thenReturn(1);
+    when(configurationService.getImportHandlerWait()).thenReturn(1000L);
     engineRule.deployServiceTaskProcess();
 
     // when I start the import
@@ -83,10 +90,12 @@ public class PaginatedImportServiceIT extends AbstractJerseyTest {
       .request()
       .get();
     assertThat(response.getStatus(), is(200));
+    //wait for import thread to finish it's work
+    Thread.currentThread().sleep(configurationService.getImportHandlerWait() * 2);
 
     // then each page contains one event
-    ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(eventsWriter, times(3)).importEvents(captor.capture());
+
+    verify(eventsWriter, times(3)).importEvents(any());
     assertThat(captor.getAllValues().size(), is(3));
     assertThat(captor.getAllValues().get(0).size(), is(2));
     assertThat(captor.getAllValues().get(1).size(), is(2));

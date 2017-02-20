@@ -1,9 +1,12 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.service.importing.ImportScheduler;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +37,16 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
   @Rule
   public ElasticSearchIntegrationTestRule elasticSearchRule;
 
+  @Autowired
+  private ConfigurationService configurationService;
+
+  @Autowired
+  private ImportScheduler importScheduler;
+
   @Test
   public void importDataFromEngine() throws Exception {
     //given
+    importScheduler.start();
     engineRule.deployServiceTaskProcess();
 
     //when
@@ -46,6 +56,7 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
 
     //then
     assertThat(response.getStatus(),is(200));
+    Thread.currentThread().sleep(configurationService.getImportHandlerWait() * 2);
 
     //given
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -62,8 +73,6 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(),is(notNullValue()));
   }
-
-
 
   @Override
   protected String getContextLocation() {
