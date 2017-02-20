@@ -83,7 +83,7 @@ public class TaskSubscriptionBuilderTest
 
         final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(654L);
-        assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE);
+        assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_FETCH_SIZE);
         assertThat(subscriptionImpl.getTopicId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
@@ -115,7 +115,7 @@ public class TaskSubscriptionBuilderTest
 
         final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(654L);
-        assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE);
+        assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_FETCH_SIZE);
         assertThat(subscriptionImpl.getTopicId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 

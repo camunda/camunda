@@ -10,7 +10,7 @@ import org.camunda.tngp.util.EnsureUtil;
 public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscriptionBuilder
 {
 
-    protected int taskPrefetchSize = TaskSubscriptionBuilderImpl.DEFAULT_TASK_PREFETCH_SIZE;
+    protected int taskPrefetchSize = TaskSubscriptionBuilderImpl.DEFAULT_TASK_FETCH_SIZE;
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int lockOwner = -1;

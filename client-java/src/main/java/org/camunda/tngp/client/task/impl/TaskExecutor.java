@@ -19,7 +19,13 @@ public class TaskExecutor implements Agent
         int workCount = 0;
         for (TaskSubscriptionImpl subscription : subscriptions.getManagedExecutionSubscriptions())
         {
-            workCount += subscription.poll();
+            final int handledTasks = subscription.poll();
+            if (handledTasks > 0)
+            {
+                subscription.fetchTasks();
+            }
+
+            workCount += handledTasks;
         }
 
         return workCount;

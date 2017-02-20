@@ -19,6 +19,7 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -436,18 +437,22 @@ public class TaskSubscriptionTest
         acquisition.evaluateCommands();
 
         acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
+        acquisition.onTask(SUBSCRIPTION_ID, 2L, task());
+        acquisition.onTask(SUBSCRIPTION_ID, 3L, task());
+        acquisition.onTask(SUBSCRIPTION_ID, 4L, task());
 
         // when
         subscription.poll(taskHandler);
+        subscription.fetchTasks();
         acquisition.evaluateCommands();
 
         // then
-        verify(client).updateSubscriptionCredits();
+        verify(client, times(1)).updateSubscriptionCredits();
         verify(updateCreditsCmd).subscriptionId(subscription.getId());
         verify(updateCreditsCmd).taskType(TASK_TYPE);
         verify(updateCreditsCmd).topicId(TOPIC_ID);
-        verify(updateCreditsCmd).credits(1);
-        verify(updateCreditsCmd).execute();
+        verify(updateCreditsCmd).credits(4);
+        verify(updateCreditsCmd, times(1)).execute();
     }
 
     @Test

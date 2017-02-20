@@ -9,15 +9,14 @@ import org.camunda.tngp.util.EnsureUtil;
 
 public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 {
-
-    public static final int DEFAULT_TASK_PREFETCH_SIZE = 32;
+    public static final int DEFAULT_TASK_FETCH_SIZE = 32;
 
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int lockOwner = -1;
     protected int topicId = 0;
     protected TaskHandler taskHandler;
-    protected int taskFetchSize = DEFAULT_TASK_PREFETCH_SIZE;
+    protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
 
     protected final TaskAcquisition taskAcquisition;
     protected final boolean autoCompleteTasks;
@@ -62,6 +61,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         return this;
     }
 
+    @Override
     public TaskSubscriptionBuilder taskFetchSize(int numTasks)
     {
         this.taskFetchSize = numTasks;

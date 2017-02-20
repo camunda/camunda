@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
@@ -23,8 +22,6 @@ import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
-import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
-import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -216,42 +213,36 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldUpdateSubscriptionCredits() throws InterruptedException
+    public void shouldFetchAndHandleTasks()
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
 
-        Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9).forEach(i ->
+        final int numTasks = 100;
+        for (int i = 0; i < numTasks; i++)
         {
-            taskService.create()
+            client.tasks().create()
                 .topicId(0)
                 .taskType("foo")
                 .execute();
-        });
+        }
 
-        final Long taskKey = taskService.create()
-            .topicId(0)
-            .taskType("foo")
-            .execute();
+        final RecordingTaskHandler handler = new RecordingTaskHandler(Task::complete);
 
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(Task::complete);
-
-        // when
-        taskService.newSubscription()
-            .handler(taskHandler)
+        client.tasks().newSubscription()
+            .handler(handler)
             .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(1)
-            .taskFetchSize(2)
+            .taskFetchSize(10)
             .open();
 
-        // then
-        waitUntil(() -> taskHandler.handledTasks.size() == 10);
+        // when
+        waitUntil(() -> handler.handledTasks.size() == numTasks);
 
-        assertThat(taskHandler.handledTasks).hasSize(10);
-        assertThat(taskHandler.handledTasks).extracting("key").contains(taskKey);
+        // then
+        assertThat(handler.handledTasks).hasSize(numTasks);
     }
 
     @Test
@@ -347,41 +338,6 @@ public class TaskSubscriptionTest
         waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
 
         assertThat(taskHandler.getHandledTasks()).hasSize(1);
-    }
-
-    @Ignore("todo #150")
-    @Test
-    public void shouldHandleMoreTasksThanPrefetchConfigured()
-    {
-        // given
-        final TngpClient client = clientRule.getClient();
-
-        final int numTasks = 100;
-        for (int i = 0; i < numTasks; i++)
-        {
-            client.tasks().create()
-                .topicId(0)
-                .taskType("foo")
-                .execute();
-        }
-
-        final RecordingTaskHandler handler = new RecordingTaskHandler();
-
-        final TaskSubscriptionBuilder builder = client.tasks().newSubscription()
-            .topicId(0)
-            .taskType("foo")
-            .lockTime(10000L)
-            .handler(handler);
-
-        // when
-        ((TaskSubscriptionBuilderImpl) builder)
-            .taskFetchSize(2)
-            .open();
-
-        TestUtil.waitUntil(() -> handler.handledTasks.size() == numTasks);
-
-        // then
-        assertThat(handler.handledTasks).hasSize(numTasks);
     }
 
     @Test

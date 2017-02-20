@@ -12,7 +12,6 @@ import org.junit.Test;
 
 public class TaskExecutorTest
 {
-
     @Test
     public void shouldExecuteTasks() throws Exception
     {
@@ -32,6 +31,6 @@ public class TaskExecutorTest
         assertThat(workCount).isEqualTo(34);
 
         verify(subscription).poll();
-
+        verify(subscription).fetchTasks();
     }
 }

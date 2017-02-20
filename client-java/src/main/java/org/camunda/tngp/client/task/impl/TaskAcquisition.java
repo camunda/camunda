@@ -119,16 +119,22 @@ public class TaskAcquisition implements Agent, Consumer<AcquisitionCmd>, Subscri
         subscription.doOpen();
     }
 
-    public void updateCredits(TaskSubscriptionImpl subscription, int credits)
+    public void updateCredits(TaskSubscriptionImpl subscription)
     {
         if (subscription.isOpen())
         {
-            client.updateSubscriptionCredits()
-                .subscriptionId(subscription.getId())
-                .topicId(subscription.getTopicId())
-                .taskType(subscription.getTaskType())
-                .credits(credits)
-                .execute();
+            final int credits = subscription.getAndDecrementRemainingCapacity();
+
+            if (credits > 0)
+            {
+                client.updateSubscriptionCredits()
+                    .subscriptionId(subscription.getId())
+                    .topicId(subscription.getTopicId())
+                    .taskType(subscription.getTaskType())
+                    .credits(credits)
+                    .execute();
+            }
+
         }
     }
 

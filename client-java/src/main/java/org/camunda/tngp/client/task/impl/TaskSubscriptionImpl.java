@@ -23,6 +23,8 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
     protected final int lockOwner;
     protected final int capacity;
 
+    protected final AtomicInteger remainingCapacity = new AtomicInteger(0);
+
     protected final AtomicInteger state;
 
     protected final TaskAcquisition acquisition;
@@ -113,7 +115,7 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
 
         TaskImpl task;
 
-        // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
+        // avoids very long cycles that we spend in this method
         // in case the broker continuously produces new tasks
         while (handledTasks < currentlyAvailableTasks)
         {
@@ -139,7 +141,7 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
                 onTaskHandlingException(task, e);
             }
 
-            submitCredits(1);
+            remainingCapacity.incrementAndGet();
         }
 
         return handledTasks;
@@ -263,9 +265,9 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
         return future;
     }
 
-    public void submitCredits(int credits)
+    public void fetchTasks()
     {
-        acquisition.scheduleCommand((a) -> a.updateCredits(this, credits));
+        acquisition.scheduleCommand((a) -> a.updateCredits(this));
     }
 
     public int size()
@@ -285,6 +287,15 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
 
     public int capacity()
     {
+        return capacity;
+    }
+
+    public int getAndDecrementRemainingCapacity()
+    {
+        final int capacity = remainingCapacity.get();
+
+        remainingCapacity.addAndGet(-capacity);
+
         return capacity;
     }
 
