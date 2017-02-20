@@ -19,8 +19,8 @@ import java.io.IOException;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.client.impl.cmd.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
+import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;

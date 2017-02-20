@@ -19,17 +19,19 @@ import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
+import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
 import org.camunda.tngp.client.event.impl.TngpEventsClientImpl;
-import org.camunda.tngp.client.impl.cmd.CloseTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CompleteTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CreateTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
 import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceCmdImpl;
-import org.camunda.tngp.client.impl.cmd.UpdateSubscriptionCreditsCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CompleteTaskCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.FailTaskCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceCmdImpl;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
@@ -231,6 +233,12 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     public CreateAsyncTaskCmd create()
     {
         return new CreateTaskCmdImpl(cmdExecutor, objectMapper);
+    }
+
+    @Override
+    public FailAsyncTaskCmd fail()
+    {
+        return new FailTaskCmdImpl(cmdExecutor, objectMapper);
     }
 
     @Override

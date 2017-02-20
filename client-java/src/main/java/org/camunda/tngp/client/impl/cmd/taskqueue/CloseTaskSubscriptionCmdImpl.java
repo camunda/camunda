@@ -1,17 +1,16 @@
-package org.camunda.tngp.client.impl.cmd;
+package org.camunda.tngp.client.impl.cmd.taskqueue;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
+import org.camunda.tngp.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
+public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
@@ -19,34 +18,27 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
     private long subscriptionId = -1L;
     private long topicId = -1L;
     private String taskType;
-    private int credits = 0;
 
-    public UpdateSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper)
+    public CloseTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper)
     {
-        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.UPDATE_TASK_SUBSCRIPTION);
+        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
     }
 
-    public UpdateSubscriptionCreditsCmdImpl subscriptionId(long subscriptionId)
+    public CloseTaskSubscriptionCmdImpl subscriptionId(long subscriptionId)
     {
         this.subscriptionId = subscriptionId;
         return this;
     }
 
-    public UpdateSubscriptionCreditsCmdImpl topicId(long topicId)
+    public CloseTaskSubscriptionCmdImpl topicId(long topicId)
     {
         this.topicId = topicId;
         return this;
     }
 
-    public UpdateSubscriptionCreditsCmdImpl taskType(String taskType)
+    public CloseTaskSubscriptionCmdImpl taskType(String taskType)
     {
         this.taskType = taskType;
-        return this;
-    }
-
-    public UpdateSubscriptionCreditsCmdImpl credits(int credits)
-    {
-        this.credits = credits;
         return this;
     }
 
@@ -56,7 +48,6 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
         ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);
         ensureGreaterThanOrEqual("topic id", topicId, 0);
         ensureNotNull("task type", taskType);
-        ensureGreaterThan("credits", credits, 0);
     }
 
     @Override
@@ -65,7 +56,6 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
         subscriptionId = -1L;
         topicId = -1;
         taskType = null;
-        credits = 0;
     }
 
     @Override
@@ -74,7 +64,6 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
         subscription.setId(subscriptionId);
         subscription.setTopicId(topicId);
         subscription.setTaskType(taskType);
-        subscription.setCredits(credits);
 
         return subscription;
     }

@@ -7,19 +7,19 @@ public enum TaskEventType
 
     LOCK(2),
     LOCKED(3),
-    LOCK_FAILED(4),
+    LOCK_REJECTED(4),
 
     COMPLETE(5),
     COMPLETED(6),
-    COMPLETE_FAILED(7),
+    COMPLETE_REJECTED(7),
 
     EXPIRE_LOCK(8),
     LOCK_EXPIRED(9),
-    LOCK_EXPIRATION_FAILED(10),
+    LOCK_EXPIRATION_REJECTED(10),
 
-    ABORT(11),
-    ABORTED(12),
-    ABORT_FAILED(13);
+    FAIL(11),
+    FAILED(12),
+    FAIL_REJECTED(13);
 
     // don't change the ids because the task stream processor use them for the index
     private final int id;

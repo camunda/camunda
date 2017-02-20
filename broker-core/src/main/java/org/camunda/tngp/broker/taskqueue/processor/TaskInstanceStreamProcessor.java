@@ -41,6 +41,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final CreateTaskProcessor createTaskProcessor = new CreateTaskProcessor();
     protected final LockTaskProcessor lockTaskProcessor = new LockTaskProcessor();
     protected final CompleteTaskProcessor completeTaskProcessor = new CompleteTaskProcessor();
+    protected final FailTaskProcessor failTaskProcessor = new FailTaskProcessor();
 
     protected final Long2BytesHashIndex taskIndex;
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
@@ -76,6 +77,11 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         streamId = context.getSourceStream().getId();
     }
 
+    public static MetadataFilter eventFilter()
+    {
+        return (m) -> m.getEventType() == EventType.TASK_EVENT;
+    }
+
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
@@ -100,6 +106,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             case COMPLETE:
                 eventProcessor = completeTaskProcessor;
                 break;
+            case FAIL:
+                eventProcessor = failTaskProcessor;
+                break;
 
             default:
                 break;
@@ -114,6 +123,32 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         taskEvent.reset();
     }
 
+    protected boolean writeResponse()
+    {
+        return responseWriter
+            .brokerEventMetadata(sourceEventMetadata)
+            .topicId(streamId)
+            .longKey(eventKey)
+            .eventWriter(taskEvent)
+            .tryWriteResponse();
+    }
+
+    protected long writeEventToLogStream(LogStreamWriter writer)
+    {
+        targetEventMetadata.reset();
+        targetEventMetadata
+            .protocolVersion(Constants.PROTOCOL_VERSION)
+            .eventType(TASK_EVENT);
+
+        // TODO: targetEventMetadata.raftTermId(raftTermId);
+
+        return writer
+            .key(eventKey)
+            .metadataWriter(targetEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+    }
+
     class CreateTaskProcessor implements EventProcessor
     {
 
@@ -126,31 +161,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public boolean executeSideEffects()
         {
-            boolean success = true;
-
-            success = responseWriter.brokerEventMetadata(sourceEventMetadata)
-                .topicId(streamId)
-                .longKey(eventKey)
-                .eventWriter(taskEvent)
-                .tryWriteResponse();
-
-            return success;
+            return writeResponse();
         }
 
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-            return writer.key(eventKey)
-                .metadataWriter(targetEventMetadata)
-                .valueWriter(taskEvent)
-                .tryWrite();
+            return writeEventToLogStream(writer);
         }
 
         @Override
@@ -172,7 +189,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             indexAccessor.wrapIndexKey(eventKey);
             final int typeId = indexAccessor.getTypeId();
 
-            if (typeId == TaskEventType.CREATED.id() && taskEvent.getLockTime() > 0)
+            if ((typeId == TaskEventType.CREATED.id() || typeId == TaskEventType.FAILED.id()) && taskEvent.getLockTime() > 0)
             {
                 taskEvent.setEventType(TaskEventType.LOCKED);
                 isLocked = true;
@@ -180,7 +197,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (!isLocked)
             {
-                taskEvent.setEventType(TaskEventType.LOCK_FAILED);
+                taskEvent.setEventType(TaskEventType.LOCK_REJECTED);
             }
         }
 
@@ -207,17 +224,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-            return writer.key(eventKey)
-                .metadataWriter(targetEventMetadata)
-                .valueWriter(taskEvent)
-                .tryWrite();
+            return writeEventToLogStream(writer);
         }
 
         @Override
@@ -251,37 +258,20 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             if (!isCompleted)
             {
-                taskEvent.setEventType(TaskEventType.COMPLETE_FAILED);
+                taskEvent.setEventType(TaskEventType.COMPLETE_REJECTED);
             }
         }
 
         @Override
         public boolean executeSideEffects()
         {
-            final boolean success = responseWriter
-                .brokerEventMetadata(sourceEventMetadata)
-                .topicId(streamId)
-                .longKey(eventKey)
-                .eventWriter(taskEvent)
-                .tryWriteResponse();
-
-            return success;
+            return writeResponse();
         }
 
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                .protocolVersion(Constants.PROTOCOL_VERSION)
-                .eventType(TASK_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-            return writer.key(eventKey)
-                .metadataWriter(targetEventMetadata)
-                .valueWriter(taskEvent)
-                .tryWrite();
+            return writeEventToLogStream(writer);
         }
 
         @Override
@@ -290,6 +280,53 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             if (isCompleted)
             {
                 indexWriter.write(eventKey, TaskEventType.COMPLETED, -1);
+            }
+        }
+    }
+
+    class FailTaskProcessor implements EventProcessor
+    {
+        protected boolean isFailed;
+
+        @Override
+        public void processEvent()
+        {
+            isFailed = false;
+
+            indexAccessor.wrapIndexKey(eventKey);
+            final int typeId = indexAccessor.getTypeId();
+            final int lockOwner = indexAccessor.getLockOwner();
+
+            if (typeId == TaskEventType.LOCKED.id() && lockOwner == taskEvent.getLockOwner())
+            {
+                taskEvent.setEventType(TaskEventType.FAILED);
+                isFailed = true;
+            }
+
+            if (!isFailed)
+            {
+                taskEvent.setEventType(TaskEventType.FAIL_REJECTED);
+            }
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            return writeResponse();
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeEventToLogStream(writer);
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isFailed)
+            {
+                indexWriter.write(eventKey, TaskEventType.FAILED, -1);
             }
         }
     }
@@ -350,11 +387,6 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             taskIndex.put(eventKey, indexValueWriteBuffer.byteArray());
         }
-    }
-
-    public static MetadataFilter eventFilter()
-    {
-        return (m) -> m.getEventType() == EventType.TASK_EVENT;
     }
 
 }

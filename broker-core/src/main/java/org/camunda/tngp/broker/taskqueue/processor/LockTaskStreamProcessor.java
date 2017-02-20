@@ -41,11 +41,9 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.buffer.BufferUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 
-public class LockTaskStreamProcessor implements StreamProcessor
+public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 {
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
-
-    protected final LockTaskEventProcessor lockTaskEventProcessor = new LockTaskEventProcessor();
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
@@ -60,6 +58,9 @@ public class LockTaskStreamProcessor implements StreamProcessor
     protected final TaskEvent taskEvent = new TaskEvent();
     protected long eventPosition = 0;
     protected long eventKey = 0;
+
+    protected boolean hasLockedTask;
+    protected TaskSubscription lockSubscription;
 
     // activate the processor while adding the first subscription
     protected boolean isSuspended = true;
@@ -212,6 +213,11 @@ public class LockTaskStreamProcessor implements StreamProcessor
         return nextSubscription;
     }
 
+    public static MetadataFilter eventFilter()
+    {
+        return (m) -> m.getEventType() == EventType.TASK_EVENT;
+    }
+
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
@@ -229,7 +235,8 @@ public class LockTaskStreamProcessor implements StreamProcessor
             {
                 case CREATED:
                 case LOCK_EXPIRED:
-                    eventProcessor = lockTaskEventProcessor;
+                case FAILED:
+                    eventProcessor = this;
                     break;
 
                 default:
@@ -239,73 +246,62 @@ public class LockTaskStreamProcessor implements StreamProcessor
         return eventProcessor;
     }
 
-    public static MetadataFilter eventFilter()
+    @Override
+    public void processEvent()
     {
-        return (m) -> m.getEventType() == EventType.TASK_EVENT;
+        hasLockedTask = false;
+
+        lockSubscription = getNextAvailableSubscription();
+        if (lockSubscription != null)
+        {
+            final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockDuration();
+
+            taskEvent
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(lockTimeout)
+                .setLockOwner(lockSubscription.getLockOwner());
+
+            hasLockedTask = true;
+        }
     }
 
-    class LockTaskEventProcessor implements EventProcessor
+    @Override
+    public long writeEvent(LogStreamWriter writer)
     {
-        protected boolean hasLockedTask;
-        protected TaskSubscription lockSubscription;
+        long position = 0;
 
-        @Override
-        public void processEvent()
+        if (hasLockedTask)
         {
-            hasLockedTask = false;
+            targetEventMetadata.reset();
 
-            lockSubscription = getNextAvailableSubscription();
-            if (lockSubscription != null)
-            {
-                final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockDuration();
+            targetEventMetadata
+                .reqChannelId(lockSubscription.getChannelId())
+                .subscriptionId(lockSubscription.getId())
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .eventType(TASK_EVENT);
+            // TODO: targetEventMetadata.raftTermId(raftTermId);
 
-                taskEvent
-                    .setEventType(TaskEventType.LOCK)
-                    .setLockTime(lockTimeout)
-                    .setLockOwner(lockSubscription.getLockOwner());
-
-                hasLockedTask = true;
-            }
+            position = writer.key(eventKey)
+                    .metadataWriter(targetEventMetadata)
+                    .valueWriter(taskEvent)
+                    .tryWrite();
         }
+        return position;
+    }
 
-        @Override
-        public long writeEvent(LogStreamWriter writer)
+    @Override
+    public void updateState()
+    {
+        if (hasLockedTask)
         {
-            long position = 0;
+            final int credits = lockSubscription.getCredits();
+            lockSubscription.setCredits(credits - 1);
 
-            if (hasLockedTask)
+            availableSubscriptionCredits -= 1;
+
+            if (availableSubscriptionCredits <= 0)
             {
-                targetEventMetadata.reset();
-
-                targetEventMetadata
-                    .reqChannelId(lockSubscription.getChannelId())
-                    .subscriptionId(lockSubscription.getId())
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
-                    .eventType(TASK_EVENT);
-                // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-                position = writer.key(eventKey)
-                        .metadataWriter(targetEventMetadata)
-                        .valueWriter(taskEvent)
-                        .tryWrite();
-            }
-            return position;
-        }
-
-        @Override
-        public void updateState()
-        {
-            if (hasLockedTask)
-            {
-                final int credits = lockSubscription.getCredits();
-                lockSubscription.setCredits(credits - 1);
-
-                availableSubscriptionCredits -= 1;
-
-                if (availableSubscriptionCredits <= 0)
-                {
-                    isSuspended = true;
-                }
+                isSuspended = true;
             }
         }
     }

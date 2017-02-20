@@ -1,4 +1,4 @@
-package org.camunda.tngp.client.impl.cmd;
+package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
@@ -10,8 +10,7 @@ import java.util.Map;
 
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
+import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

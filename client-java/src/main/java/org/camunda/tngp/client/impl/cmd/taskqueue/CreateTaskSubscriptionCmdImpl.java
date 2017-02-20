@@ -1,4 +1,4 @@
-package org.camunda.tngp.client.impl.cmd;
+package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
@@ -7,7 +7,7 @@ import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 import java.util.function.Function;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
+import org.camunda.tngp.client.impl.cmd.AbstractControlMessageCmd;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 

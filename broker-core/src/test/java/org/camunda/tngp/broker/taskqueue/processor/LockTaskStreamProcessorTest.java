@@ -137,6 +137,30 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
+    public void shouldLockFailedTask()
+    {
+        // given
+        streamProcessor.addSubscription(subscription);
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.FAILED)
+                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+
+        // then
+        final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
+
+        final TaskEvent taskEvent = lastWrittenEvent.getValue();
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
+
+        final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
+        assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+    }
+
+    @Test
     public void shouldIgnoreTaskWithOtherType()
     {
         // given

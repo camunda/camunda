@@ -24,7 +24,7 @@ import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.client.impl.cmd.CreateTaskCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;

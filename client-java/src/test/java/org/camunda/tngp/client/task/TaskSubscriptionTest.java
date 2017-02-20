@@ -28,12 +28,13 @@ import java.util.HashMap;
 
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
+import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
 import org.camunda.tngp.client.impl.TngpClientImpl;
-import org.camunda.tngp.client.impl.cmd.CloseTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.UpdateSubscriptionCreditsCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
+import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.task.impl.TaskAcquisition;
 import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;
@@ -74,6 +75,9 @@ public class TaskSubscriptionTest
     @FluentMock
     protected CompleteAsyncTaskCmd completeCmd;
 
+    @FluentMock
+    protected FailAsyncTaskCmd failCmd;
+
     @Mock
     protected TaskHandler taskHandler;
 
@@ -90,8 +94,9 @@ public class TaskSubscriptionTest
         when(client.brokerTaskSubscription()).thenReturn(createSubscriptionCmd);
         when(createSubscriptionCmd.execute()).thenReturn(SUBSCRIPTION_ID);
         when(client.closeBrokerTaskSubscription()).thenReturn(closeSubscriptionCmd);
-        when(client.complete()).thenReturn(completeCmd);
         when(client.updateSubscriptionCredits()).thenReturn(updateCreditsCmd);
+        when(client.complete()).thenReturn(completeCmd);
+        when(client.fail()).thenReturn(failCmd);
     }
 
     @Test
@@ -258,11 +263,12 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldNotAutoCompleteTaskOnException() throws Exception
+    public void shouldMarkTaskAsFailedOnException() throws Exception
     {
         // given
         final TaskSubscriptions subscriptions = new TaskSubscriptions();
         final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
+
         doThrow(new RuntimeException()).when(taskHandler).handle(any());
 
         final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
@@ -270,7 +276,9 @@ public class TaskSubscriptionTest
         subscription.openAsync();
         acquisition.evaluateCommands();
 
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
+        final TaskEvent task = task();
+
+        acquisition.onTask(SUBSCRIPTION_ID, 1L, task);
 
         // when
         try
@@ -283,10 +291,19 @@ public class TaskSubscriptionTest
         }
 
         // then
+        verify(client).fail();
+        verify(failCmd).taskKey(1L);
+        verify(failCmd).topicId(TOPIC_ID);
+        verify(failCmd).taskType(TASK_TYPE);
+        verify(failCmd).lockOwner(LOCK_OWNER);
+        verify(failCmd).headers(task.getHeaders());
+        verify(failCmd).payload(msgPackConverter.convertToJson(task.getPayload()));
+        verify(failCmd).failure(any(RuntimeException.class));
+        verify(failCmd).execute();
+
         verify(client, never()).complete();
         verify(completeCmd, never()).execute();
     }
-
 
     @Test
     public void shouldDistributeTasks()

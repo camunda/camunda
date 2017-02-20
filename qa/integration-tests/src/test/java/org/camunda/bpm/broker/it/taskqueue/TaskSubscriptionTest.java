@@ -11,20 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.broker.it.TestUtil;
-import org.camunda.bpm.broker.it.process.ProcessModels;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowsClient;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
@@ -241,7 +235,7 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .execute();
 
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task -> task.complete());
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(Task::complete);
 
         // when
         taskService.newSubscription()
@@ -260,48 +254,39 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks).extracting("key").contains(taskKey);
     }
 
-    @Ignore("todo #147")
     @Test
-    @SuppressWarnings("unchecked")
-    public void testHandlerThrowingExceptionShouldNotBreakSubscription()
+    public void shouldMarkTaskAsFailedAsRetryIfHandlerThrowsException()
     {
         // given
         final TngpClient client = clientRule.getClient();
         final AsyncTasksClient taskService = client.tasks();
-        final WorkflowsClient workflowsClient = client.workflows();
 
-        final WorkflowDefinition workflowDefinition = workflowsClient.deploy()
-            .bpmnModelInstance(ProcessModels.TWO_TASKS_PROCESS)
+        final Long taskKey = taskService.create()
+            .topicId(0)
+            .taskType("foo")
             .execute();
 
-        final QueueBasedHandler taskHandler = new QueueBasedHandler(
-            (t) ->
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(
+            t ->
             {
-                throw new RuntimeException("oh no");
+                throw new RuntimeException("expected failure");
             },
-            (t) -> t.complete()
+            Task::complete
             );
 
+        // when
         taskService.newSubscription()
             .handler(taskHandler)
+            .topicId(0)
             .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(1)
             .open();
 
-        // when
-        workflowsClient
-            .start()
-            .workflowDefinitionId(workflowDefinition.getId())
-            .execute();
-
         // then the subscription is not broken and other tasks are still handled
-        TestUtil.waitUntil(() -> taskHandler.getNumTasksHandled() == 1);
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
 
-        workflowsClient
-            .start()
-            .workflowDefinitionId(workflowDefinition.getId())
-            .execute();
-
-        TestUtil.waitUntil(() -> taskHandler.getNumTasksHandled() == 2);
+        assertThat(taskHandler.getHandledTasks()).extracting("key").contains(taskKey, taskKey);
     }
 
     @Ignore
@@ -440,7 +425,8 @@ public class TaskSubscriptionTest
     public static class RecordingTaskHandler implements TaskHandler
     {
         protected List<Task> handledTasks = Collections.synchronizedList(new ArrayList<>());
-        protected final Consumer<Task> taskHandler;
+        protected int nextTaskHandler = 0;
+        protected final TaskHandler[] taskHandlers;
 
         public RecordingTaskHandler()
         {
@@ -450,16 +436,25 @@ public class TaskSubscriptionTest
             });
         }
 
-        public RecordingTaskHandler(Consumer<Task> taskHandler)
+        public RecordingTaskHandler(TaskHandler... taskHandlers)
         {
-            this.taskHandler = taskHandler;
+            this.taskHandlers = taskHandlers;
         }
 
         @Override
         public void handle(Task task)
         {
-            taskHandler.accept(task);
-            handledTasks.add(task);
+            final TaskHandler handler = taskHandlers[nextTaskHandler];
+            nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
+
+            try
+            {
+                handler.handle(task);
+            }
+            finally
+            {
+                handledTasks.add(task);
+            }
         }
 
         public List<Task> getHandledTasks()
@@ -470,39 +465,6 @@ public class TaskSubscriptionTest
         public void clear()
         {
             handledTasks.clear();
-        }
-    }
-
-    public static class QueueBasedHandler implements TaskHandler
-    {
-        protected final ManyToManyConcurrentArrayQueue<Consumer<Task>> actionsQueue;
-        protected AtomicInteger numTasksHandled = new AtomicInteger();
-
-        public QueueBasedHandler(@SuppressWarnings("unchecked") Consumer<Task>... actions)
-        {
-            actionsQueue = new ManyToManyConcurrentArrayQueue<>(actions.length);
-            for (Consumer<Task> action : actions)
-            {
-                actionsQueue.add(action);
-            }
-        }
-
-        @Override
-        public void handle(Task task)
-        {
-            numTasksHandled.incrementAndGet();
-
-            final Consumer<Task> action = actionsQueue.poll();
-
-            if (action != null)
-            {
-                action.accept(task);
-            }
-        }
-
-        public int getNumTasksHandled()
-        {
-            return numTasksHandled.get();
         }
     }
 

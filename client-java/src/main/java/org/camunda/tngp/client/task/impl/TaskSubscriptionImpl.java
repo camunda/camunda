@@ -150,6 +150,8 @@ public class TaskSubscriptionImpl implements TaskSubscription, PollableTaskSubsc
         // could become configurable in the future (e.g. unlock task or report an error via API)
         System.err.println("Exception during handling of task " + task.getKey());
         e.printStackTrace(System.err);
+
+        task.fail(e);
     }
 
     public int poll()

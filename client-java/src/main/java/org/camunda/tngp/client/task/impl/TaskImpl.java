@@ -24,7 +24,7 @@ public class TaskImpl implements Task
     protected int state;
     protected static final int STATE_LOCKED = 0;
     protected static final int STATE_COMPLETED = 1;
-
+    protected static final int STATE_FAILED = 2;
 
     public TaskImpl(
             AsyncTasksClient tasksClient,
@@ -60,6 +60,21 @@ public class TaskImpl implements Task
             .execute();
 
         state = STATE_COMPLETED;
+    }
+
+    public void fail(Exception e)
+    {
+        tasksClient.fail()
+            .topicId(topicId)
+            .taskKey(key)
+            .taskType(type)
+            .lockOwner(lockOwner)
+            .payload(payload.getJsonPayload())
+            .headers(headers)
+            .failure(e)
+            .execute();
+
+        state = STATE_FAILED;
     }
 
     public boolean isCompleted()

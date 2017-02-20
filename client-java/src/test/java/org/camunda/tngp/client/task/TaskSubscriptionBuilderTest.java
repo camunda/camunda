@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.impl.TngpClientImpl;
-import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.PollableTaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskAcquisition;
 import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;

@@ -297,6 +297,71 @@ public class TaskStreamProcessorIntegrationTest
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
 
+    @Test
+    public void shouldFailTask() throws InterruptedException, ExecutionException
+    {
+        // given
+        final TaskSubscription subscription = new TaskSubscription()
+                .setId(1L)
+                .setChannelId(11)
+                .setTaskType(TASK_TYPE_BUFFER)
+                .setLockDuration(Duration.ofMinutes(5).toMillis())
+                .setLockOwner(3)
+                .setCredits(10);
+
+        lockTaskStreamProcessor.addSubscription(subscription);
+
+        final TaskEvent taskEvent = new TaskEvent()
+            .setEventType(TaskEventType.CREATE)
+            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
+            .setPayload(new UnsafeBuffer(PAYLOAD));
+
+        long position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        LoggedEvent event = getResultEventOf(position);
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
+
+        // when
+        taskEvent
+            .setEventType(TaskEventType.FAIL)
+            .setLockOwner(3);
+
+        position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        // then
+        event = getResultEventOf(position);
+        taskEvent.reset();
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.FAILED);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+
+        event = getResultEventOf(event.getPosition());
+        event.readValue(taskEvent);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
     private LoggedEvent getResultEventOf(long position)
     {
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);

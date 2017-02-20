@@ -24,7 +24,7 @@ import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CompleteTaskCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.FailTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
@@ -42,7 +42,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CompleteTaskCmdTest
+public class FailTaskCmdTest
 {
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
@@ -53,7 +53,7 @@ public class CompleteTaskCmdTest
 
     private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
 
-    private CompleteTaskCmdImpl completeTaskCommand;
+    private FailTaskCmdImpl failTaskCommand;
     private ObjectMapper objectMapper;
 
     @Rule
@@ -66,7 +66,7 @@ public class CompleteTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        completeTaskCommand = new CompleteTaskCmdImpl(clientCmdExecutor, objectMapper);
+        failTaskCommand = new FailTaskCmdImpl(clientCmdExecutor, objectMapper);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -75,17 +75,15 @@ public class CompleteTaskCmdTest
     public void shouldWriteRequest() throws JsonParseException, JsonMappingException, IOException
     {
         // given
-        completeTaskCommand
-            .taskKey(2)
+        failTaskCommand
             .topicId(1)
             .taskType("foo")
-            .lockOwner(3)
             .addHeader("a", "b")
             .addHeader("c", "d")
             .payload("{ \"bar\" : 4 }");
 
         // when
-        completeTaskCommand.getRequestWriter().write(writeBuffer, 0);
+        failTaskCommand.getRequestWriter().write(writeBuffer, 0);
 
         // then
         headerDecoder.wrap(writeBuffer, 0);
@@ -99,14 +97,13 @@ public class CompleteTaskCmdTest
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
         assertThat(requestDecoder.topicId()).isEqualTo(1L);
-        assertThat(requestDecoder.longKey()).isEqualTo(2L);
 
         final byte[] command = new byte[requestDecoder.commandLength()];
         requestDecoder.getCommand(command, 0, command.length);
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
-        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.COMPLETE);
+        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.FAIL);
         assertThat(taskEvent.getType()).isEqualTo("foo");
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
         assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));
@@ -122,16 +119,14 @@ public class CompleteTaskCmdTest
         headers.put("a", "b");
         headers.put("c", "d");
 
-        completeTaskCommand
-            .taskKey(2)
+        failTaskCommand
             .topicId(1)
             .taskType("foo")
-            .lockOwner(3)
             .headers(headers)
             .payload(new ByteArrayInputStream(payload));
 
         // when
-        completeTaskCommand.getRequestWriter().write(writeBuffer, 0);
+        failTaskCommand.getRequestWriter().write(writeBuffer, 0);
 
         // then
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
@@ -148,7 +143,7 @@ public class CompleteTaskCmdTest
     @Test
     public void shouldReadSuccessfulResponse() throws JsonProcessingException
     {
-        final ClientResponseHandler<Long> responseHandler = completeTaskCommand.getResponseHandler();
+        final ClientResponseHandler<Long> responseHandler = failTaskCommand.getResponseHandler();
 
         assertThat(responseHandler.getResponseSchemaId()).isEqualTo(responseEncoder.sbeSchemaId());
         assertThat(responseHandler.getResponseTemplateId()).isEqualTo(responseEncoder.sbeTemplateId());
@@ -157,7 +152,7 @@ public class CompleteTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.COMPLETED);
+        taskEvent.setEvent(TaskEventType.FAILED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -177,7 +172,7 @@ public class CompleteTaskCmdTest
     @Test
     public void shouldReadFailedResponse() throws JsonProcessingException
     {
-        final ClientResponseHandler<Long> responseHandler = completeTaskCommand.getResponseHandler();
+        final ClientResponseHandler<Long> responseHandler = failTaskCommand.getResponseHandler();
 
         assertThat(responseHandler.getResponseSchemaId()).isEqualTo(responseEncoder.sbeSchemaId());
         assertThat(responseHandler.getResponseTemplateId()).isEqualTo(responseEncoder.sbeTemplateId());
@@ -186,7 +181,7 @@ public class CompleteTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.COMPLETE_REJECTED);
+        taskEvent.setEvent(TaskEventType.FAIL_REJECTED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -206,7 +201,7 @@ public class CompleteTaskCmdTest
     @Test
     public void shouldBeNotValidIfTopicIdIsNotSet()
     {
-        completeTaskCommand
+        failTaskCommand
             .taskKey(2L)
             .taskType("foo")
             .lockOwner(3)
@@ -216,13 +211,13 @@ public class CompleteTaskCmdTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("topic id must be greater than or equal to 0");
 
-        completeTaskCommand.validate();
+        failTaskCommand.validate();
     }
 
     @Test
     public void shouldBeNotValidIfTaskKeyIsNotSet()
     {
-        completeTaskCommand
+        failTaskCommand
             .topicId(1L)
             .taskType("foo")
             .lockOwner(3)
@@ -232,13 +227,13 @@ public class CompleteTaskCmdTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task key must be greater than or equal to 0");
 
-        completeTaskCommand.validate();
+        failTaskCommand.validate();
     }
 
     @Test
     public void shouldBeNotValidIfLockOwnerIsNotSet()
     {
-        completeTaskCommand
+        failTaskCommand
             .taskKey(2L)
             .topicId(1L)
             .taskType("foo")
@@ -248,13 +243,13 @@ public class CompleteTaskCmdTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("lock owner must be greater than or equal to 0");
 
-        completeTaskCommand.validate();
+        failTaskCommand.validate();
     }
 
     @Test
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
-        completeTaskCommand
+        failTaskCommand
             .taskKey(2L)
             .topicId(1L)
             .lockOwner(3)
@@ -264,7 +259,7 @@ public class CompleteTaskCmdTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task type must not be null");
 
-        completeTaskCommand.validate();
+        failTaskCommand.validate();
     }
 
 }

@@ -20,7 +20,7 @@ import java.io.IOException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.client.impl.cmd.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageResponseEncoder;
