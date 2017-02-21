@@ -3,7 +3,7 @@ import {
   reducer,
   createAddNotificationAction,
   createRemoveNotificationAction
-} from 'main/notifications/reducer';
+} from 'notifications/reducer';
 
 describe('notifications reducer', () => {
   let state;

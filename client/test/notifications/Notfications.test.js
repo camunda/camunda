@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
-import {Notifications} from 'main/notifications/Notifications';
+import {Notifications} from 'notifications/Notifications';
 
 describe('<Notifications>', () => {
   let node;

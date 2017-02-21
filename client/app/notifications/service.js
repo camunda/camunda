@@ -1,9 +1,7 @@
 import {dispatchAction, $window} from 'view-utils';
 import {createAddNotificationAction, createRemoveNotificationAction} from './reducer';
 
-const oneMinute = 60 * 1000;
-
-export function addNotification({status, text, isError = false, timeout = oneMinute}) {
+export function addNotification({status, text, timeout, isError = false}) {
   const notification = {
     status,
     text,

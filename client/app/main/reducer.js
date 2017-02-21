@@ -2,7 +2,7 @@ import {createRouterReducer, getRouter} from 'router';
 import {combineReducers} from 'redux';
 import {reducer as login} from 'login';
 import {reducer as loginForm} from './loginForm';
-import {reducer as notifications} from './notifications';
+import {reducer as notifications} from 'notifications';
 import {createDynamicReducer} from 'dynamicLoader';
 
 //For now child reducer is just child, but that will change

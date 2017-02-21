@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {mountTemplate, triggerEvent} from 'testHelpers';
-import {Notification, __set__, __ResetDependency__} from 'main/notifications/Notification';
+import {Notification, __set__, __ResetDependency__} from 'notifications/Notification';
 
 describe('<Notification>', () => {
   let removeNotification;

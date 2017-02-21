@@ -5,7 +5,7 @@ import {
   removeNotification,
   __set__,
   __ResetDependency__
-} from 'main/notifications/service';
+} from 'notifications/service';
 
 describe('notifications service', () => {
   let dispatchAction;
