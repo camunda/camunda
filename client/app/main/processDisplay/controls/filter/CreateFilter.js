@@ -1,4 +1,5 @@
-import {jsx, OnEvent, Socket, createReferenceComponent, $window, Scope} from 'view-utils';
+import {jsx, OnEvent, Socket, createReferenceComponent, Scope} from 'view-utils';
+import {onNextUpdate} from 'utils';
 import {createStartDateFilter, formatDate} from './service';
 import {Dropdown, DropdownItem, createModal} from 'widgets';
 import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
@@ -98,6 +99,6 @@ export function CreateFilter({onFilterAdded}) {
 
     Modal.close();
 
-    $window.setTimeout(onFilterAdded);
+    onNextUpdate(onFilterAdded);
   }
 }

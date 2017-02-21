@@ -4,7 +4,7 @@ import {ProcessDefinition, getDefinitionId} from './processDefinition';
 import {Result} from './result';
 import {View} from './view';
 
-export const Controls = withSelector(({onFilterChanged}) => {
+export const Controls = withSelector(({onCriteriaChanged}) => {
   const StateInjector = createStateInjector();
 
   return <StateInjector>
@@ -36,11 +36,11 @@ export const Controls = withSelector(({onFilterChanged}) => {
   function onControlsChange() {
     const {processDefinition, filter: query} = StateInjector.getState();
 
-    const newFilter = {
+    const criteria = {
       definition: getDefinitionId(processDefinition),
       query
     };
 
-    onFilterChanged(newFilter);
+    onCriteriaChanged(criteria);
   }
 });

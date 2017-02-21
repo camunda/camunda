@@ -1,4 +1,5 @@
-import {jsx, Scope, List, Match, Case, $window} from 'view-utils';
+import {jsx, Scope, List, Match, Case} from 'view-utils';
+import {onNextUpdate} from 'utils';
 import {DateFilter} from './DateFilter';
 import {deleteFilter as deleteFilterService} from './service';
 
@@ -22,7 +23,7 @@ export function Filter({onFilterDeleted}) {
   function deleteFilter({state}) {
     deleteFilterService(state);
 
-    $window.setTimeout(onFilterDeleted);
+    onNextUpdate(onFilterDeleted);
   }
 
   function isType(targetType) {

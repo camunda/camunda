@@ -1,6 +1,6 @@
-import {jsx, withSelector, Scope, List, Text, Attribute, OnEvent, $window} from 'view-utils';
+import {jsx, withSelector, Scope, List, Text, Attribute, OnEvent} from 'view-utils';
 import {loadProcessDefinitions, selectProcessDefinition} from './service';
-import {isInitial} from 'utils';
+import {isInitial, onNextUpdate} from 'utils';
 
 export const ProcessDefinition = withSelector(ProcessDefinitionComponent);
 
@@ -26,7 +26,7 @@ function ProcessDefinitionComponent({onProcessDefinitionSelected}) {
     // new state is already calculated.
     // There is also possibility to compute filter on fly, so that there is no need for timeout.
     // Although this option is better, because this code is not doing reducers job
-    $window.setTimeout(onProcessDefinitionSelected);
+    onNextUpdate(onProcessDefinitionSelected);
   }
 
   function getAvailableDefinitions({availableProcessDefinitions}) {

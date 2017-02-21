@@ -3,8 +3,8 @@ import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
 
-export function loadData(filter) {
-  const params = getParams(filter);
+export function loadData(criteria) {
+  const params = getParams(criteria);
 
   if (areParamsValid(params)) {
     loadDiagram(params);

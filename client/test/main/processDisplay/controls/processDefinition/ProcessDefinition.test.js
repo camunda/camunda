@@ -77,13 +77,11 @@ describe('<ProcessDefinition>', () => {
     });
 
     describe('on selection', () => {
-      let $window;
+      let onNextUpdate;
 
       beforeEach(() => {
-        $window = {
-          setTimeout: sinon.stub().callsArg(0)
-        };
-        __set__('$window', $window);
+        onNextUpdate =  sinon.stub().callsArg(0);
+        __set__('onNextUpdate', onNextUpdate);
 
         node.querySelector('select').value = 'id1';
         triggerEvent({
@@ -94,7 +92,7 @@ describe('<ProcessDefinition>', () => {
       });
 
       afterEach(() => {
-        __ResetDependency__('$window');
+        __ResetDependency__('onNextUpdate');
       });
 
       it('should select process definition', () => {
@@ -102,7 +100,7 @@ describe('<ProcessDefinition>', () => {
       });
 
       it('should run onProcessDefinitionSelected in timeout', () => {
-        expect($window.setTimeout.calledWith(onProcessDefinitionSelected));
+        expect(onNextUpdate.calledWith(onProcessDefinitionSelected));
         expect(onProcessDefinitionSelected.calledOnce).to.eql(true);
       });
     });

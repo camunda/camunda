@@ -11,7 +11,7 @@ describe('<Controls>', () => {
   let getDefinitionId;
   let Result;
   let View;
-  let onFilterChanged;
+  let onCriteriaChanged;
   let node;
   let update;
 
@@ -30,9 +30,9 @@ describe('<Controls>', () => {
     __set__('View', View);
     __set__('getDefinitionId', getDefinitionId);
 
-    onFilterChanged = sinon.spy();
+    onCriteriaChanged = sinon.spy();
 
-    ({node, update} = mountTemplate(<Controls selector="controls" onFilterChanged={onFilterChanged} />));
+    ({node, update} = mountTemplate(<Controls selector="controls" onCriteriaChanged={onCriteriaChanged} />));
   });
 
   afterEach(() => {
@@ -91,12 +91,12 @@ describe('<Controls>', () => {
       update(state);
     });
 
-    it('should create filter object and call onFilterChanged with it', () => {
+    it('should create filter object and call onCriteriaChanged with it', () => {
       onProcessDefinitionSelected();
 
-      expect(onFilterChanged.called).to.eql(true, 'expected onFilterChanged to be called');
+      expect(onCriteriaChanged.called).to.eql(true, 'expected onFilterChanged to be called');
       expect(
-        onFilterChanged.calledWith({
+        onCriteriaChanged.calledWith({
           definition: state.controls.processDefinition,
           query: []
         })

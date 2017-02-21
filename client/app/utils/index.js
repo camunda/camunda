@@ -4,3 +4,4 @@ export {
   addLoading, createLoadingActionFunction, createResultActionFunction,
   isInitial, isLoading, isLoaded
 } from './loading';
+export {onNextUpdate} from './onNextUpdate';

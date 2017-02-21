@@ -8,7 +8,7 @@ export const ProcessDisplay = withSelector(Process);
 
 function Process() {
   const template = <div className="process-display">
-    <Controls selector="controls" onFilterChanged={loadData} />
+    <Controls selector="controls" onCriteriaChanged={loadData} />
     <div className="diagram">
       <Match>
         <Case predicate={isLoadingSomething}>
@@ -17,7 +17,7 @@ function Process() {
             <div className="text">loading</div>
           </div>
         </Case>
-        <Case predicate={areControlsDataEmpty}>
+        <Case predicate={isThereNoProcessDefinitions}>
           <div className="help_screen overlay">
             <div className="no_definitions">
               <span className="indicator glyphicon glyphicon-info-sign"></span>
@@ -45,7 +45,7 @@ function Process() {
     return isLoading(diagram) || isLoading(heatmap) || areControlsLoadingSomething(controls);
   }
 
-  function areControlsDataEmpty({controls}) {
+  function isThereNoProcessDefinitions({controls}) {
     return isDataEmpty(controls);
   }
 

@@ -35,8 +35,8 @@ describe('<ProcessDisplay>', () => {
     expect(node.querySelector('.diagram')).to.exist;
   });
 
-  it('should pass loadData to Controls component as onFilterChanged attribute', () => {
-    expect(Controls.calls[0][0].onFilterChanged).to.eql(loadData);
+  it('should pass loadData to Controls component as onCriteriaChanged attribute', () => {
+    expect(Controls.getAttribute('onCriteriaChanged')).to.eql(loadData);
   });
 
   it('should display a no process definitions hint', () => {
