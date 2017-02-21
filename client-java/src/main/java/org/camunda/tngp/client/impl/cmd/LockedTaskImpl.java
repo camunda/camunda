@@ -3,14 +3,14 @@ package org.camunda.tngp.client.impl.cmd;
 import java.time.Instant;
 
 import org.camunda.tngp.client.cmd.LockedTask;
-import org.camunda.tngp.client.task.impl.PayloadField;
+import org.camunda.tngp.client.task.impl.MsgPackField;
 
 public class LockedTaskImpl implements LockedTask
 {
     protected long id;
     protected Long workflowInstanceId;
     protected Instant lockTime;
-    protected PayloadField payload = new PayloadField();
+    protected MsgPackField payload = new MsgPackField();
 
     public void setId(long taskId)
     {
@@ -49,7 +49,7 @@ public class LockedTaskImpl implements LockedTask
     @Override
     public String getPayloadString()
     {
-        return payload.getJsonPayload();
+        return payload.getAsJson();
     }
 
 }

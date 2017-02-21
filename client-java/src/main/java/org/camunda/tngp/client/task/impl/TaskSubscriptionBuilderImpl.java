@@ -3,6 +3,9 @@ package org.camunda.tngp.client.task.impl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.event.impl.EventAcquisition;
+import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.util.EnsureUtil;
@@ -18,13 +21,20 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     protected TaskHandler taskHandler;
     protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
 
-    protected final TaskAcquisition taskAcquisition;
+    protected final AsyncTasksClient taskClient;
+    protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final boolean autoCompleteTasks;
+    protected final MsgPackMapper msgPackMapper;
 
-    public TaskSubscriptionBuilderImpl(TaskAcquisition taskAcquisition, boolean autoCompleteTasks)
+    public TaskSubscriptionBuilderImpl(AsyncTasksClient taskClient,
+            EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
+            boolean autoCompleteTasks,
+            MsgPackMapper msgPackMapper)
     {
+        this.taskClient = taskClient;
         this.taskAcquisition = taskAcquisition;
         this.autoCompleteTasks = autoCompleteTasks;
+        this.msgPackMapper = msgPackMapper;
     }
 
     @Override
@@ -85,7 +95,17 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskHandler, taskType, topicId, lockTime, lockOwner, taskFetchSize, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(
+                        taskClient,
+                        taskHandler,
+                        taskType,
+                        topicId,
+                        lockTime,
+                        lockOwner,
+                        taskFetchSize,
+                        taskAcquisition,
+                        msgPackMapper,
+                        autoCompleteTasks);
         subscription.open();
         return subscription;
     }

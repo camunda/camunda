@@ -13,23 +13,39 @@
 package org.camunda.tngp.client.event.impl;
 
 import org.camunda.tngp.client.EventsClient;
-import org.camunda.tngp.client.event.cmd.PollEventsCmd;
-import org.camunda.tngp.client.event.impl.cmd.PollEventsCmdImpl;
+import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
+import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
+import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.task.impl.SubscriptionManager;
 
 public class TngpEventsClientImpl implements EventsClient
 {
     protected final ClientCmdExecutor commandExecutor;
+    protected final SubscriptionManager subscriptionManager;
 
-    public TngpEventsClientImpl(ClientCmdExecutor commandExecutor)
+    public TngpEventsClientImpl(ClientCmdExecutor commandExecutor, SubscriptionManager subscriptionManager)
     {
         this.commandExecutor = commandExecutor;
+        this.subscriptionManager = subscriptionManager;
     }
 
     @Override
-    public PollEventsCmd poll()
+    public TopicSubscriptionBuilder newSubscription(int topicId)
     {
-        return new PollEventsCmdImpl(commandExecutor);
+        return subscriptionManager.newTopicSubscription(topicId);
+    }
+
+    @Override
+    public PollableTopicSubscriptionBuilder newPollableSubscription(int topicId)
+    {
+        return subscriptionManager.newPollableTopicSubscription(topicId);
+    }
+
+    @Override
+    public TaskTopicSubscriptionBuilder newTaskTopicSubscription(int topicId)
+    {
+        return subscriptionManager.newTaskTopicSubscription(topicId);
     }
 
 }

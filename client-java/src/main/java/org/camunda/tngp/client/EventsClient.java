@@ -1,28 +1,28 @@
-/* Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.camunda.tngp.client;
 
-import org.camunda.tngp.client.event.cmd.PollEventsCmd;
+import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
+import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
+import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
 
-/**
- * Client Api for Events.
- */
 public interface EventsClient
 {
 
     /**
-     * Creates a command for poll event from the broker.
+     * @param topicId the id of the topic to subscribe to
+     * @return a builder for a general purpose event subscription and managed event handling
      */
-    PollEventsCmd poll();
+    TopicSubscriptionBuilder newSubscription(int topicId);
 
+    /**
+     * @param topicId the id of the topic to subscribe to
+     * @return a builder for a general purpose event subscription and manual event handling
+     */
+    PollableTopicSubscriptionBuilder newPollableSubscription(int topicId);
+
+    /**
+     * @param topicId the id of the topic to subscribe to
+     * @return a builder for an event subscription on a task topic that allows registering
+     *   specific event handlers for well known task events. Handler invocation is managed.
+     */
+    TaskTopicSubscriptionBuilder newTaskTopicSubscription(int topicId);
 }

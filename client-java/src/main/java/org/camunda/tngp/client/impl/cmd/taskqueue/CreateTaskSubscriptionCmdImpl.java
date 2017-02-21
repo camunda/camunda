@@ -8,7 +8,6 @@ import java.util.function.Function;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageCmd;
-import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +17,6 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     protected static final Function<TaskSubscription, Long> RESPONSE_HANDLER = TaskSubscription::getId;
 
     protected final TaskSubscription subscription = new TaskSubscription();
-    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     private long topicId = -1L;
     private String taskType;

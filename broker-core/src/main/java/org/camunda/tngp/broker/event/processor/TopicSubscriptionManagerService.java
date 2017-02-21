@@ -41,6 +41,8 @@ public class TopicSubscriptionManagerService implements Service<TopicSubscriptio
             {
                 return new SubscribedEventWriter(new SingleMessageWriter(sendBufferInjector.getValue()));
             });
+
+        agentRunnerService.run(subscriptionManager);
     }
 
     @Override

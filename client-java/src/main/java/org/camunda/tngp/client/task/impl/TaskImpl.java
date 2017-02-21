@@ -18,7 +18,7 @@ public class TaskImpl implements Task
     protected final String type;
     protected final long lockExpirationTime;
     protected final int lockOwner;
-    protected final PayloadField payload = new PayloadField();
+    protected final MsgPackField payload = new MsgPackField();
     protected Map<String, String> headers;
 
     protected int state;
@@ -39,8 +39,8 @@ public class TaskImpl implements Task
         this.type = taskEvent.getType();
         this.lockExpirationTime = taskEvent.getLockTime();
         this.lockOwner = subscription.getLockOwner();
-        this.payload.setRawPayload(taskEvent.getPayload());
         this.headers = taskEvent.getHeaders();
+        this.payload.setMsgPack(taskEvent.getPayload());
 
         this.workflowInstanceId = null;
 
@@ -55,8 +55,8 @@ public class TaskImpl implements Task
             .taskKey(key)
             .taskType(type)
             .lockOwner(lockOwner)
-            .payload(payload.getJsonPayload())
             .headers(headers)
+            .payload(payload.getAsJson())
             .execute();
 
         state = STATE_COMPLETED;
@@ -69,7 +69,7 @@ public class TaskImpl implements Task
             .taskKey(key)
             .taskType(type)
             .lockOwner(lockOwner)
-            .payload(payload.getJsonPayload())
+            .payload(payload.getAsJson())
             .headers(headers)
             .failure(e)
             .execute();
@@ -109,13 +109,13 @@ public class TaskImpl implements Task
     @Override
     public String getPayload()
     {
-        return payload.getJsonPayload();
+        return payload.getAsJson();
     }
 
     @Override
     public void setPayload(String updatedPayload)
     {
-        payload.setJsonPayload(updatedPayload);
+        payload.setJson(updatedPayload);
     }
 
     @Override

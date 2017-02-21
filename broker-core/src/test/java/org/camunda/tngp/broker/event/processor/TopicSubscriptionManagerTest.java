@@ -49,7 +49,7 @@ public class TopicSubscriptionManagerTest
         creationFutures = new FuturePool();
         removalFutures = new FuturePool();
         when(streamProcessorManager.getServiceName(LOG_STREAM_ID)).thenReturn(EXAMPLE_LOG_STREAM_NAME);
-        when(streamProcessorManager.createStreamProcessorService(any(), any(), anyInt(), any())).thenAnswer((invocation) -> creationFutures.next());
+        when(streamProcessorManager.createStreamProcessorService(any(), any(), anyInt(), any(), any())).thenAnswer((invocation) -> creationFutures.next());
         when(streamProcessorManager.removeStreamProcessorService(any())).thenAnswer((invocation) -> removalFutures.next());
 
         subscription = new TopicSubscription()
@@ -92,7 +92,7 @@ public class TopicSubscriptionManagerTest
 
         // then
         assertThat(future).isNotDone();
-        verify(streamProcessorManager).createStreamProcessorService(same(EXAMPLE_LOG_STREAM_NAME), any(), anyInt(), processorCaptor.capture());
+        verify(streamProcessorManager).createStreamProcessorService(same(EXAMPLE_LOG_STREAM_NAME), any(), anyInt(), processorCaptor.capture(), any());
 
         final TopicSubscriptionProcessor processor = processorCaptor.getValue();
         assertThat(processor.getLogStreamId()).isEqualTo(LOG_STREAM_ID);

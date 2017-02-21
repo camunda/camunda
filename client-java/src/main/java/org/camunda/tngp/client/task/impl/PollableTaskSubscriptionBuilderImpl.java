@@ -3,6 +3,9 @@ package org.camunda.tngp.client.task.impl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.event.impl.EventAcquisition;
+import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.util.EnsureUtil;
@@ -16,13 +19,21 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected int lockOwner = -1;
     protected int taskQueueId = 0;
 
-    protected final TaskAcquisition taskAcquisition;
+    protected final AsyncTasksClient taskClient;
+    protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final boolean autoCompleteTasks;
+    protected final MsgPackMapper msgPackMapper;
 
-    public PollableTaskSubscriptionBuilderImpl(TaskAcquisition taskAcquisition, boolean autoCompleteTasks)
+    public PollableTaskSubscriptionBuilderImpl(
+            AsyncTasksClient taskClient,
+            EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
+            boolean autoCompleteTasks,
+            MsgPackMapper msgPackMapper)
     {
+        this.taskClient = taskClient;
         this.taskAcquisition = taskAcquisition;
         this.autoCompleteTasks = autoCompleteTasks;
+        this.msgPackMapper = msgPackMapper;
     }
 
     @Override
@@ -71,7 +82,18 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
 
         final TaskSubscriptionImpl subscription =
-                new TaskSubscriptionImpl(taskType, taskQueueId, lockTime, lockOwner, taskPrefetchSize, taskAcquisition, autoCompleteTasks);
+                new TaskSubscriptionImpl(
+                        taskClient,
+                        null,
+                        taskType,
+                        taskQueueId,
+                        lockTime,
+                        lockOwner,
+                        taskPrefetchSize,
+                        taskAcquisition,
+                        msgPackMapper,
+                        autoCompleteTasks);
+
         subscription.open();
         return subscription;
     }

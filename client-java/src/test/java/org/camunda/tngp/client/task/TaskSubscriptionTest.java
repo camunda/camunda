@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,21 +27,24 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
+import org.camunda.tngp.client.event.TopicEventType;
+import org.camunda.tngp.client.event.impl.EventAcquisition;
+import org.camunda.tngp.client.event.impl.TaskSubscriptionLifecycle;
+import org.camunda.tngp.client.event.impl.TopicEventImpl;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
-import org.camunda.tngp.client.task.impl.TaskAcquisition;
-import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;
-import org.camunda.tngp.client.task.impl.TaskImpl;
+import org.camunda.tngp.client.impl.data.MsgPackMapper;
+import org.camunda.tngp.client.task.impl.EventSubscriptions;
+import org.camunda.tngp.client.task.impl.SubscribedEventCollector;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
-import org.camunda.tngp.client.task.impl.TaskSubscriptions;
 import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,6 +53,9 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TaskSubscriptionTest
 {
@@ -59,7 +66,12 @@ public class TaskSubscriptionTest
     private static final int LOCK_OWNER = 1;
     private static final long LOCK_TIME = 123L;
 
+    protected final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
     private final MsgPackConverter msgPackConverter = new MsgPackConverter();
+    protected final MsgPackMapper msgPackMapper = new MsgPackMapper(objectMapper);
+
+    protected EventSubscriptions<TaskSubscriptionImpl> subscriptions;
+    protected EventAcquisition<TaskSubscriptionImpl> acquisition;
 
     @Mock
     protected TngpClientImpl client;
@@ -83,7 +95,7 @@ public class TaskSubscriptionTest
     protected TaskHandler taskHandler;
 
     @Mock
-    protected TaskDataFrameCollector taskCollector;
+    protected SubscribedEventCollector taskCollector;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -98,26 +110,26 @@ public class TaskSubscriptionTest
         when(client.updateSubscriptionCredits()).thenReturn(updateCreditsCmd);
         when(client.complete()).thenReturn(completeCmd);
         when(client.fail()).thenReturn(failCmd);
+
+        subscriptions = new EventSubscriptions<>();
+        acquisition = new EventAcquisition<>(subscriptions, new TaskSubscriptionLifecycle(client));
     }
 
     @Test
     public void shouldOpenManagedExecutionSubscription() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         // when
         subscription.openAsync();
-        final int workCount = acquisition.evaluateCommands();
+        final int workCount = acquisition.doWork();
 
         // then
         assertThat(workCount).isEqualTo(1);
 
         assertThat(subscription.isOpen()).isTrue();
-        assertThat(subscriptions.getManagedExecutionSubscriptions()).containsExactly(subscription);
+        assertThat(subscriptions.getManagedSubscriptions()).containsExactly(subscription);
         assertThat(subscriptions.getPollableSubscriptions()).isEmpty();
 
         verify(client).brokerTaskSubscription();
@@ -130,25 +142,22 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldCloseManagedExecutionSubscription()
+    public void shouldCloseManagedExecutionSubscription() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
         // when
-        subscription.closeAsnyc();
+        subscription.closeAsync();
 
         // then the subscription is staged as closing
         assertThat(subscription.isOpen()).isFalse();
         assertThat(subscription.isClosing()).isTrue();
         assertThat(subscription.isClosed()).isFalse();
-        assertThat(subscriptions.getManagedExecutionSubscriptions()).isNotEmpty();
+        assertThat(subscriptions.getManagedSubscriptions()).isNotEmpty();
 
         // and closed on the next acquisition cycle
         final int workCount = acquisition.manageSubscriptions();
@@ -158,7 +167,7 @@ public class TaskSubscriptionTest
         assertThat(subscription.isOpen()).isFalse();
         assertThat(subscription.isClosing()).isFalse();
         assertThat(subscription.isClosed()).isTrue();
-        assertThat(subscriptions.getManagedExecutionSubscriptions()).isEmpty();
+        assertThat(subscriptions.getManagedSubscriptions()).isEmpty();
 
         verify(client).closeBrokerTaskSubscription();
         verify(closeSubscriptionCmd).subscriptionId(SUBSCRIPTION_ID);
@@ -168,37 +177,17 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldAcquireTasksInWorkLoop() throws Exception
-    {
-        // given
-        final TaskDataFrameCollector taskCollector = mock(TaskDataFrameCollector.class);
-        when(taskCollector.doWork()).thenReturn(32);
-
-        final TaskAcquisition acquisition = new TaskAcquisition(client, new TaskSubscriptions(), taskCollector);
-
-        // when
-        final int result = acquisition.doWork();
-
-        // then
-        assertThat(result).isEqualTo(32);
-        verify(taskCollector).doWork();
-    }
-
-    @Test
     public void shouldInvokeHandlerOnPoll() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
         // two subscribed tasks
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 2L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 2L));
 
         // when
         final int workCount = subscription.poll();
@@ -212,20 +201,16 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldAutoCompleteTask()
+    public void shouldAutoCompleteTask() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
-        final TaskEvent task = task();
-
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task);
+        final TopicEventImpl event = task(1L, 1L);
+        acquisition.onEvent(SUBSCRIPTION_ID, event);
 
         // when
         subscription.poll();
@@ -236,24 +221,26 @@ public class TaskSubscriptionTest
         verify(completeCmd).topicId(TOPIC_ID);
         verify(completeCmd).taskType(TASK_TYPE);
         verify(completeCmd).lockOwner(LOCK_OWNER);
-        verify(completeCmd).headers(task.getHeaders());
-        verify(completeCmd).payload(msgPackConverter.convertToJson(task.getPayload()));
+        verify(completeCmd).headers(eq(new HashMap<>()));
+        verify(completeCmd).payload("{}");
         verify(completeCmd).execute();
     }
 
     @Test
-    public void shouldNotAutoCompleteTask()
+    public void shouldNotAutoCompleteTask() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
+        final EventSubscriptions<TaskSubscriptionImpl> subscriptions = new EventSubscriptions<>();
+        final EventAcquisition<TaskSubscriptionImpl> acquisition = new EventAcquisition<>(
+                subscriptions, new TaskSubscriptionLifecycle(client));
 
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, false);
+        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(
+                client, taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, msgPackMapper, false);
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
 
         // when
         subscription.poll();
@@ -267,19 +254,16 @@ public class TaskSubscriptionTest
     public void shouldMarkTaskAsFailedOnException() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
         doThrow(new RuntimeException()).when(taskHandler).handle(any());
 
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
-        final TaskEvent task = task();
+        final TopicEventImpl event = task(1L, 1L);
 
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task);
+        acquisition.onEvent(SUBSCRIPTION_ID, event);
 
         // when
         try
@@ -297,8 +281,8 @@ public class TaskSubscriptionTest
         verify(failCmd).topicId(TOPIC_ID);
         verify(failCmd).taskType(TASK_TYPE);
         verify(failCmd).lockOwner(LOCK_OWNER);
-        verify(failCmd).headers(task.getHeaders());
-        verify(failCmd).payload(msgPackConverter.convertToJson(task.getPayload()));
+        verify(failCmd).headers(eq(new HashMap<>()));
+        verify(failCmd).payload("{}");
         verify(failCmd).failure(any(RuntimeException.class));
         verify(failCmd).execute();
 
@@ -307,106 +291,91 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldDistributeTasks()
+    public void shouldDistributeTasks() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
         // when
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 2L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 3L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(3L, 1L));
 
         // then
         assertThat(subscription.size()).isEqualTo(3);
     }
 
     @Test
-    public void shouldDistributeWithTwoSubscriptionsForSameType()
+    public void shouldDistributeWithTwoSubscriptionsForSameType() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription1 = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
-        final TaskSubscriptionImpl subscription2 = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription1 = newDefaultSubscription();
+        final TaskSubscriptionImpl subscription2 = newDefaultSubscription();
 
         subscription1.openAsync();
         subscription2.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
         // when
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
 
         // then
         assertThat(subscription1.size() + subscription2.size()).isEqualTo(1);
     }
 
     @Test
-    public void shouldNotDistributeMoreThanSubscriptionCapacity()
+    public void shouldNotDistributeMoreThanSubscriptionCapacity() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
         for (int i = 0; i < subscription.capacity(); i++)
         {
-            subscription.addTask(mock(TaskImpl.class));
+            subscription.addEvent(mock(TopicEventImpl.class));
         }
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot add any more tasks. Task queue saturated.");
+        exception.expectMessage("Cannot add any more events. Event queue saturated.");
 
         // when
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
     }
 
     @Test
-    public void shouldOpenPollableSubscription()
+    public void shouldOpenPollableSubscription() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription(null);
 
         // when
         subscription.openAsync();
-        final int workCount = acquisition.evaluateCommands();
+        final int workCount = acquisition.doWork();
 
         // then
         assertThat(workCount).isEqualTo(1);
         assertThat(subscription.isOpen()).isTrue();
         assertThat(subscriptions.getPollableSubscriptions()).containsExactly(subscription);
-        assertThat(subscriptions.getManagedExecutionSubscriptions()).isEmpty();
+        assertThat(subscriptions.getManagedSubscriptions()).isEmpty();
     }
 
     @Test
     public void shouldPollSubscription() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 2L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 2L));
 
         // when
         int workCount = subscription.poll(taskHandler);
@@ -425,26 +394,22 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldAddCredits()
+    public void shouldAddCredits() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 2L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 3L, task());
-        acquisition.onTask(SUBSCRIPTION_ID, 4L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(3L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(4L, 1L));
 
         // when
         subscription.poll(taskHandler);
-        subscription.fetchTasks();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
         // then
         verify(client, times(1)).updateSubscriptionCredits();
@@ -459,15 +424,12 @@ public class TaskSubscriptionTest
     public void shouldPopulateTaskProperties() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
-        final TaskAcquisition acquisition = new TaskAcquisition(client, subscriptions, taskCollector);
-
-        final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, true);
+        final TaskSubscriptionImpl subscription = newDefaultSubscription();
 
         subscription.openAsync();
-        acquisition.evaluateCommands();
+        acquisition.doWork();
 
-        acquisition.onTask(SUBSCRIPTION_ID, 1L, task());
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
 
         // when
         subscription.poll(taskHandler);
@@ -484,18 +446,27 @@ public class TaskSubscriptionTest
         }));
     }
 
-    protected TaskEvent task()
+    protected TopicEventImpl task(long position, long key)
     {
-        final TaskEvent taskEvent = new TaskEvent();
+        final Map<String, Object> taskEvent = new HashMap<>();
+        taskEvent.put("event", TaskEventType.LOCKED.toString());
+        taskEvent.put("lockTime", LOCK_TIME);
+        taskEvent.put("lockOwner", LOCK_OWNER);
+        taskEvent.put("payload", msgPackConverter.convertToMsgPack("{}"));
+        taskEvent.put("headers", new HashMap<>());
+        taskEvent.put("type", TASK_TYPE);
 
-        taskEvent.setEvent(TaskEventType.LOCKED);
-        taskEvent.setType(TASK_TYPE);
-        taskEvent.setLockTime(123L);
-        taskEvent.setLockOwner(1);
-        taskEvent.setPayload(msgPackConverter.convertToMsgPack("{}"));
-        taskEvent.setHeaders(new HashMap<>());
+        final byte[] encodedEvent;
+        try
+        {
+            encodedEvent = objectMapper.writeValueAsBytes(taskEvent);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
 
-        return taskEvent;
+        return new TopicEventImpl(key, position, TopicEventType.TASK, encodedEvent);
     }
 
     protected static ArgumentMatcher<Task> hasKey(final long taskKey)
@@ -508,6 +479,17 @@ public class TaskSubscriptionTest
                 return argument instanceof Task && ((Task) argument).getKey() == taskKey;
             }
         };
+    }
+
+    protected TaskSubscriptionImpl newDefaultSubscription()
+    {
+        return newDefaultSubscription(taskHandler);
+    }
+
+    protected TaskSubscriptionImpl newDefaultSubscription(TaskHandler taskHandler)
+    {
+        return new TaskSubscriptionImpl(
+                client, taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, msgPackMapper, true);
     }
 
 }

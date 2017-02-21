@@ -9,14 +9,15 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.camunda.tngp.client.event.impl.EventAcquisition;
+import org.camunda.tngp.client.event.impl.TaskSubscriptionLifecycle;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.data.MsgPackMapper;
+import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.PollableTaskSubscriptionBuilderImpl;
-import org.camunda.tngp.client.task.impl.TaskAcquisition;
-import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
-import org.camunda.tngp.client.task.impl.TaskSubscriptions;
 import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,12 +25,16 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TaskSubscriptionBuilderTest
 {
 
-    protected TaskSubscriptions subscriptions;
-    protected TaskAcquisition acquisition;
+    protected EventSubscriptions<TaskSubscriptionImpl> subscriptions;
+    protected EventAcquisition<TaskSubscriptionImpl> acquisition;
+    protected MsgPackMapper msgPackMapper;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -50,13 +55,14 @@ public class TaskSubscriptionBuilderTest
         when(client.brokerTaskSubscription()).thenReturn(openSubscriptionCmd);
         when(openSubscriptionCmd.execute()).thenReturn(123L);
 
-        subscriptions = new TaskSubscriptions();
-        acquisition = new TaskAcquisition(client, subscriptions, mock(TaskDataFrameCollector.class))
+        subscriptions = new EventSubscriptions<>();
+        acquisition = new EventAcquisition<TaskSubscriptionImpl>(subscriptions, new TaskSubscriptionLifecycle(client))
         {
             {
-                this.cmdQueue = new ImmediateCommandQueue<>(this);
+                asyncContext = new SyncContext();
             }
         };
+        msgPackMapper = new MsgPackMapper(new ObjectMapper(new MessagePackFactory()));
 
 
     }
@@ -65,7 +71,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldBuildSubscription()
     {
         // given
-        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         final TaskHandler handler = mock(TaskHandler.class);
         builder
@@ -87,7 +93,7 @@ public class TaskSubscriptionBuilderTest
         assertThat(subscriptionImpl.getTopicId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
-        assertThat(subscriptions.getManagedExecutionSubscriptions()).contains(subscriptionImpl);
+        assertThat(subscriptions.getManagedSubscriptions()).contains(subscriptionImpl);
 
         verify(client).brokerTaskSubscription();
         verify(openSubscriptionCmd).lockOwner(2);
@@ -100,7 +106,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldBuildPollableSubscription()
     {
         // given
-        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(acquisition, true);
+        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
             .lockTime(654L)
@@ -126,7 +132,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldValidateMissingTaskType()
     {
         // given
-        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(acquisition, true);
+        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
             .lockTime(654L)
@@ -144,7 +150,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldValidateMissingTaskHandler()
     {
         // given
-        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
             .lockTime(654L)
@@ -164,7 +170,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldValidateLockTime()
     {
         // given
-        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
             .lockTime(0L)
@@ -186,7 +192,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldSetLockTimeWithTimeUnit()
     {
         // given
-        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
             .handler(mock(TaskHandler.class))
@@ -208,7 +214,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldSetLockTimeWithTimeUnitForPollableSubscription()
     {
         // given
-        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(acquisition, true);
+        final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
             .lockTime(Duration.ofDays(10))
@@ -228,7 +234,7 @@ public class TaskSubscriptionBuilderTest
     public void shouldThrowExceptionWhenSubscriptionCannotBeOpened()
     {
         // given
-        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(acquisition, true);
+        final TaskSubscriptionBuilder builder = new TaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         final TaskHandler handler = mock(TaskHandler.class);
         builder
@@ -249,10 +255,10 @@ public class TaskSubscriptionBuilderTest
         catch (RuntimeException e)
         {
             // then
-            assertThat(e).hasMessageContaining("Could not open subscription");
+            assertThat(e).hasMessageContaining("Exception while opening subscription");
         }
 
-        assertThat(subscriptions.getManagedExecutionSubscriptions()).isEmpty();
+        assertThat(subscriptions.getManagedSubscriptions()).isEmpty();
     }
 
 }

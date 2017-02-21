@@ -5,9 +5,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.camunda.tngp.client.task.impl.TaskExecutor;
+import org.camunda.tngp.client.task.impl.SubscriptionExecutor;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
-import org.camunda.tngp.client.task.impl.TaskSubscriptions;
+import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.junit.Test;
 
 public class TaskExecutorTest
@@ -16,13 +16,14 @@ public class TaskExecutorTest
     public void shouldExecuteTasks() throws Exception
     {
         // given
-        final TaskSubscriptions subscriptions = new TaskSubscriptions();
+        final EventSubscriptions<TaskSubscriptionImpl> subscriptions = new EventSubscriptions<>();
 
         final TaskSubscriptionImpl subscription = mock(TaskSubscriptionImpl.class);
+        when(subscription.isManagedSubscription()).thenReturn(true);
         when(subscription.poll()).thenReturn(34);
-        subscriptions.addManagedExecutionSubscription(subscription);
+        subscriptions.addSubscription(subscription);
 
-        final TaskExecutor executor = new TaskExecutor(subscriptions);
+        final SubscriptionExecutor executor = new SubscriptionExecutor(subscriptions);
 
         // when
         final int workCount = executor.doWork();
@@ -31,6 +32,5 @@ public class TaskExecutorTest
         assertThat(workCount).isEqualTo(34);
 
         verify(subscription).poll();
-        verify(subscription).fetchTasks();
     }
 }
