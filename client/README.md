@@ -8,7 +8,7 @@ npm install -g yarn
 ```
 
 Go to ``scripts/`` and copy ``be-config.default.js`` as ``be-config.js``.
-Edit ``elastic-config.js`` so that ``elastic`` property points to your elastic search executable
+Edit ``be-config.js`` so that ``elastic`` property points to your elastic search executable
 and ``version`` is current version number of optimize (needed for finding jar file with backend api).
 
 Example:
