@@ -19,6 +19,7 @@
     "react/jsx-pascal-case": 2,
     "react/jsx-uses-vars": 2,
     "react/jsx-uses-react": 2,
+    "jsx-quotes": 2,
     "no-console": 1,
     "no-debugger": 1,
     "eol-last": [2, "always"],

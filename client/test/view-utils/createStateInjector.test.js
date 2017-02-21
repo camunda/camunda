@@ -1,18 +1,18 @@
 import {expect} from 'chai';
 import {mountTemplate} from 'testHelpers';
-import {createStateInjector, jsx} from 'view-utils';
+import {createStateComponent, jsx} from 'view-utils';
 
-describe('createStateInjector', () => {
+describe('createStateComponent', () => {
   const text = 'some text';
-  let StateInjector;
+  let State;
   let node;
   let update;
 
   beforeEach(() => {
-    StateInjector = createStateInjector();
+    State = createStateComponent();
 
     ({node, update} = mountTemplate(
-      <StateInjector>{text}</StateInjector>
+      <State>{text}</State>
     ));
   });
 
@@ -26,7 +26,7 @@ describe('createStateInjector', () => {
 
       update(state);
 
-      expect(StateInjector.getState()).to.equal(state);
+      expect(State.getState()).to.equal(state);
     });
   });
 });

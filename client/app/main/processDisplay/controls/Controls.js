@@ -1,13 +1,13 @@
-import {jsx, createStateInjector, withSelector} from 'view-utils';
+import {jsx, createStateComponent, withSelector} from 'view-utils';
 import {Filter, CreateFilter} from './filter';
 import {ProcessDefinition, getDefinitionId} from './processDefinition';
 import {Result} from './result';
 import {View} from './view';
 
 export const Controls = withSelector(({onCriteriaChanged}) => {
-  const StateInjector = createStateInjector();
+  const State = createStateComponent();
 
-  return <StateInjector>
+  return <State>
     <div className="controls row">
       <div className="col-xs-12">
         <form>
@@ -31,10 +31,10 @@ export const Controls = withSelector(({onCriteriaChanged}) => {
         </form>
       </div>
     </div>
-  </StateInjector>;
+  </State>;
 
   function onControlsChange() {
-    const {processDefinition, filter: query} = StateInjector.getState();
+    const {processDefinition, filter: query} = State.getState();
 
     const criteria = {
       definition: getDefinitionId(processDefinition),
