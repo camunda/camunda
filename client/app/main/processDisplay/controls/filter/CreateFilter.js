@@ -25,7 +25,7 @@ export function CreateFilter({onFilterAdded}) {
     <Modal>
       <Socket name="head">
         <button type="button" className="close">
-          <OnEvent event='click' listener={Modal.close} />
+          <OnEvent event="click" listener={Modal.close} />
           <span>×</span>
         </button>
         <h4 className="modal-title">New Filter</h4>
@@ -69,11 +69,11 @@ export function CreateFilter({onFilterAdded}) {
       </Socket>
       <Socket name="foot">
         <button type="button" className="btn btn-default">
-          <OnEvent event='click' listener={Modal.close} />
+          <OnEvent event="click" listener={Modal.close} />
           Abort
         </button>
         <button type="button" className="btn btn-primary">
-          <OnEvent event='click' listener={createFilter} />
+          <OnEvent event="click" listener={createFilter} />
           Create Filter
         </button>
       </Socket>
