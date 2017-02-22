@@ -576,7 +576,32 @@ public class StreamProcessorControllerTest
 
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockSnapshotStorage, never()).createSnapshot(STREAM_PROCESSOR_NAME, 1L);
+        verify(mockSnapshotStorage, never()).createSnapshot(anyString(), anyLong());
+    }
+
+    @Test
+    public void shouldNotCreateSnapshotIfNoEventIsWritten() throws Exception
+    {
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(0L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+        // -> open
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockSnapshotStorage, never()).createSnapshot(anyString(), anyLong());
     }
 
     @Test
@@ -972,7 +997,6 @@ public class StreamProcessorControllerTest
         assertThat(controller.isFailed()).isTrue();
     }
 
-
     @Test
     public void shouldFailToCreateSnapshot() throws Exception
     {
@@ -1027,6 +1051,21 @@ public class StreamProcessorControllerTest
         // verify that it can't be recovered
         targetLogStreamFailureListener.onFailed(2L);
         targetLogStreamFailureListener.onRecovered();
+
+        controller.doWork();
+
+        assertThat(controller.isFailed()).isTrue();
+    }
+
+    @Test
+    public void shouldFailToExecuteCommands() throws Exception
+    {
+        streamProcessorCmdQueue.add(() ->
+        {
+            throw new RuntimeException("expected failure");
+        });
+
+        open();
 
         controller.doWork();
 

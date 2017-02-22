@@ -265,6 +265,12 @@ public class StreamProcessorController implements Agent
 
             return workCount;
         }
+
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            stateFailureHandler.accept(context, e);
+        }
     }
 
     private class ProcessState extends ComposedState<Context>
@@ -318,9 +324,13 @@ public class StreamProcessorController implements Agent
 
             streamProcessor.afterEvent();
 
-            context.setLastWrittenEventPosition(eventPosition);
+            final boolean hasWrittenEvent = eventPosition > 0;
+            if (hasWrittenEvent)
+            {
+                context.setLastWrittenEventPosition(eventPosition);
+            }
 
-            if (snapshotPolicy.apply(context.getEvent().getPosition()))
+            if (hasWrittenEvent && snapshotPolicy.apply(context.getEvent().getPosition()))
             {
                 context.take(TRANSITION_SNAPSHOT);
             }
