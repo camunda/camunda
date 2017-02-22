@@ -52,11 +52,9 @@ module "optimize_db_security_in" {
 # Optimize instance
 #
 resource "aws_instance" "optimize" {
-  #ami = "ami-d8f4deab"
   ami = "${data.aws_ami.ubuntu.id}"
-  instance_type = "t2.medium" # t2.large
+  instance_type = "t2.medium" # or maybe t2.large
   key_name = "${data.terraform_remote_state.global.jenkins_aws_key_id}"
-#  subnet_id              = "${aws_subnet.default.0.id}"
   vpc_security_group_ids = ["${aws_security_group.optimize.id}"]
 
   associate_public_ip_address = true
@@ -68,6 +66,7 @@ resource "aws_instance" "optimize" {
   }
 }
 
+# EIP for Optimize instance
 #resource "aws_eip" "camunda_optimize_ip" {
 #  instance = "${aws_instance.camunda_optimize.id}"
 #  vpc = true
