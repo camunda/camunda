@@ -58,7 +58,7 @@ public class ProcessDefinitionXmlImportServiceTest {
 
     //then
     //verify invocations
-    verify(engineEntityFetcher, atLeast(1))
+    verify(engineEntityFetcher, times(2))
       .fetchProcessDefinitionXmls(anyInt(), anyInt());
 
     verify(processDefinitionWriter, times(1))

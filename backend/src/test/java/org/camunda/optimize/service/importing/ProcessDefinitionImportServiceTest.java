@@ -22,6 +22,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,10 +58,10 @@ public class ProcessDefinitionImportServiceTest {
 
     //then
     //verify invocations
-    verify(engineEntityFetcher, atLeast(1))
+    verify(engineEntityFetcher, times(2))
       .fetchProcessDefinitions(anyInt(), anyInt());
 
-    verify(processDefinitionWriter, Mockito.times(1))
+    verify(processDefinitionWriter, times(1))
       .importProcessDefinitions(Mockito.argThat(matchesEvent()));
   }
 
