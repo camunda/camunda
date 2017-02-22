@@ -8,8 +8,8 @@ def dslScriptsToExecute = '''\
 '''
 
 def dslScriptPathToMonitor = '''\
-.ci/jobs/.*\.dsl
-.ci/views/.*\.dsl
+.ci/jobs/.*\\.dsl
+.ci/views/.*\\.dsl
 '''
 
 def setBrokenPageAsDefault = '''\
