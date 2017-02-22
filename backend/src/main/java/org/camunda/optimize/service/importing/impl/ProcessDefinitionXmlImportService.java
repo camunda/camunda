@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
+import org.camunda.optimize.service.importing.job.impl.ProcessDefinitionXmlImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +36,12 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
 
   @Override
   public void importToElasticSearch(List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntriesToImport) {
+    ProcessDefinitionXmlImportJob procDefXmlImportJob = new ProcessDefinitionXmlImportJob(procDefWriter);
+    procDefXmlImportJob.addEntitiesToImport(newOptimizeEntriesToImport);
     try {
-      procDefWriter.importProcessDefinitionXmls(newOptimizeEntriesToImport);
-    } catch (Exception e) {
-      logger.error("error while writing process definition xmls to elasticsearch", e);
+      importJobExecutor.addNewImportJob(procDefXmlImportJob);
+    } catch (InterruptedException e) {
+      logger.error("Interruption during import of process definition xml import job!", e);
     }
   }
 

@@ -24,6 +24,10 @@ public class ConfigurationService {
   private String dateFormat;
   @Value("${camunda.optimize.engine.import.page.size.max}")
   private int engineImportMaxPageSize;
+  @Value("${camunda.optimize.engine.import.jobqueue.size.max}")
+  private int maxJobQueueSize;
+  @Value("${camunda.optimize.engine.import.executor.thread.count}")
+  private int importExecutorThreadCount;
 
   @Value("${camunda.optimize.es.host}")
   private String elasticSearchHost;
@@ -189,5 +193,13 @@ public class ConfigurationService {
 
   public int getEngineImportMaxPageSize() {
     return engineImportMaxPageSize;
+  }
+
+  public int getMaxJobQueueSize() {
+    return maxJobQueueSize;
+  }
+
+  public int getImportExecutorThreadCount() {
+    return importExecutorThreadCount;
   }
 }

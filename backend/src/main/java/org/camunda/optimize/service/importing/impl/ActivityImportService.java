@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
+import org.camunda.optimize.service.importing.job.impl.EventImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,10 +41,12 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   public void importToElasticSearch(List<EventDto> events) {
+    EventImportJob eventImportJob = new EventImportJob(eventsWriter);
+    eventImportJob.addEntitiesToImport(events);
     try {
-      eventsWriter.importEvents(events);
-    } catch (Exception e) {
-      logger.error("error while writing events to elasticsearch", e);
+      importJobExecutor.addNewImportJob(eventImportJob);
+    } catch (InterruptedException e) {
+      logger.error("Interruption during import of activity job!", e);
     }
   }
 

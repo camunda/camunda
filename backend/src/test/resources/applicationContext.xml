@@ -24,6 +24,9 @@
 
   <bean id="importServiceProvider"  class="org.camunda.optimize.test.factory.MockImportServiceProviderFactory"/>
 
+  <bean id="importHandler" class="org.camunda.optimize.service.importing.ImportServiceHandler" />
+
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"

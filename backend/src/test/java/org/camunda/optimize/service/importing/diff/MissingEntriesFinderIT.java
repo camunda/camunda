@@ -30,7 +30,9 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
@@ -101,7 +103,6 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
       .request()
       .get();
     assertThat(response.getStatus(), is(200));
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then only one process definition should be imported during the second import
     ArgumentCaptor<List<ProcessDefinitionOptimizeDto>> captor = ArgumentCaptor.forClass(List.class);

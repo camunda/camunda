@@ -23,6 +23,8 @@
 
   <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
+  <bean id="importHandler" class="org.camunda.optimize.service.importing.ImportServiceHandler" />
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"

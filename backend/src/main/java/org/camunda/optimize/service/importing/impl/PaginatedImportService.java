@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.importing.EngineEntityFetcher;
+import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -20,6 +21,8 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
   protected ConfigurationService configurationService;
   @Autowired
   protected EngineEntityFetcher engineEntityFetcher;
+  @Autowired
+  protected ImportJobExecutor importJobExecutor;
 
   private int indexOfFirstResult = 0;
 
