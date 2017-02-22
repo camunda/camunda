@@ -108,3 +108,58 @@ freeStyleJob(jobs[1].name) {
   blockOnUpstreamProjects()
   logRotator(-1, 10, -1, 1)
 }
+
+
+
+
+
+
+
+freeStyleJob('aws-execute-single-terraform-component') {
+
+  displayName 'AWS - Execute single Terraform component (manual)'
+  description 'Allows to execute a single Terraform component on any branch.'
+
+  parameters {
+    booleanParam('APPLY', true, 'Set to true to apply the changes Terraform suggests.')
+    booleanParam('DESTROY', false, 'Set to true to destroy the instance before Terraform applies changes.')
+    choiceParam('TF_LOG', ['INFO', 'DEBUG', 'TRACE', 'ERROR', 'WARN'], 'Sets the log level of Terraform. Useful for debugging purposes.')
+    choiceParam('COMPONENT', ['global', 'optimize', 's3'], 'Choose the component. Equals to subdir name inside Terraform folder hierachy.')
+    stringParam('BRANCH', 'master', 'Choose the branch which should be used.')
+  }
+
+  scm {
+    git {
+      remote {
+        github "${githubOrga}/${gitRepository}", 'ssh'
+        credentials 'camunda-jenkins-github-ssh'
+      }
+      branch ('${BRANCH}')
+      extensions {
+        cleanBeforeCheckout()
+        localBranch ('${BRANCH}')
+      }
+    }
+  }
+
+  label 'opstools'
+  jdk '(Default)'
+
+  steps {
+    shell readFileFromWorkspace('.aws/terraform/scripts/run-terraform.sh')
+  }
+
+  wrappers {
+    timestamps()
+
+    timeout {
+      noActivity 15
+    }
+
+    credentialsBinding {
+      usernamePassword('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'jenkins-optimize-aws-secrets')
+    }
+  }
+
+  logRotator(-1, 10, -1, 1)
+}
