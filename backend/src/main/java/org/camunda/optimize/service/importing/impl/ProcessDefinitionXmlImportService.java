@@ -37,7 +37,7 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
   @Override
   public void importToElasticSearch(List<ProcessDefinitionXmlOptimizeDto> newOptimizeEntriesToImport) {
     ProcessDefinitionXmlImportJob procDefXmlImportJob = new ProcessDefinitionXmlImportJob(procDefWriter);
-    procDefXmlImportJob.addEntitiesToImport(newOptimizeEntriesToImport);
+    procDefXmlImportJob.setEntitiesToImport(newOptimizeEntriesToImport);
     try {
       importJobExecutor.executeImportJob(procDefXmlImportJob);
     } catch (InterruptedException e) {

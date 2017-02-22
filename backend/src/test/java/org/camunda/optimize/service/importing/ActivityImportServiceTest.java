@@ -81,8 +81,8 @@ public class ActivityImportServiceTest {
     ArgumentCaptor<EventImportJob> eventCaptor = ArgumentCaptor.forClass(EventImportJob.class);
     verify(importJobExecutor).executeImportJob(eventCaptor.capture());
     assertThat(eventCaptor.getAllValues().size(), is(1));
-    assertThat(eventCaptor.getAllValues().get(0).getNewOptimizeEntities().size(), is(1));
-    EventDto eventDto = eventCaptor.getAllValues().get(0).getNewOptimizeEntities().get(0);
+    assertThat(eventCaptor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
+    EventDto eventDto = eventCaptor.getAllValues().get(0).getEntitiesToImport().get(0);
     assertThat(eventDto.getId(), is(TEST_ID));
     assertThat(eventDto.getActivityId(), is(TEST_ACTIVITY_ID));
   }

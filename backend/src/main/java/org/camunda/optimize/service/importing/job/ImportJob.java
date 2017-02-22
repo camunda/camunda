@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ import java.util.List;
  */
 public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
 
-  protected List<OPT> newOptimizeEntities;
+  protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
   /**
    * Run the import job by first fetching missing data
@@ -27,7 +28,7 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
     executeImport();
   }
 
-  public List<OPT> getNewOptimizeEntities() {
+  public List<OPT> getEntitiesToImport() {
     return newOptimizeEntities;
   }
 
@@ -37,20 +38,20 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
    * @param pageOfOptimizeEntities that are not already in
    *                               elasticsearch and need to be imported.
    */
-  public void addEntitiesToImport(List<OPT> pageOfOptimizeEntities) {
+  public void setEntitiesToImport(List<OPT> pageOfOptimizeEntities) {
     this.newOptimizeEntities = pageOfOptimizeEntities;
   }
 
   /**
    * If information is still missing, this method enriches all
-   * given entities from {@link #addEntitiesToImport(List)} with
+   * given entities from {@link #setEntitiesToImport(List)} with
    * the remaining information to fully represent the entity type.
    */
   protected  abstract void getAbsentAggregateInformation();
 
   /**
    * This executes the import and adds all the given entities
-   * from {@link #addEntitiesToImport(List)} to elasticsearch.
+   * from {@link #setEntitiesToImport(List)} to elasticsearch.
    */
   protected  abstract void executeImport();
 

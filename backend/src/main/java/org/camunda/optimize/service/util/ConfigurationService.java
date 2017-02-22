@@ -63,6 +63,8 @@ public class ConfigurationService {
   private String processDefinitionCountEndpoint;
   @Value("${camunda.optimize.engine.procdef.xml.endpoint}")
   private String processDefinitionXmlEndpoint;
+  @Value("${camunda.optimize.engine.history.procinst.endpoint}")
+  private String historicProcessInstanceEndpoint;
   @Value("${camunda.optimize.engine.user.validation.endpoint}")
   private String userValidationEndpoint;
   @Value("${camunda.optimize.engine.name}")
@@ -214,6 +216,10 @@ public class ConfigurationService {
 
   public int getImportExecutorThreadCount() {
     return importExecutorThreadCount;
+  }
+
+  public String getHistoricProcessInstanceEndpoint() {
+    return historicProcessInstanceEndpoint;
   }
 
   public double getImportResetInterval() {

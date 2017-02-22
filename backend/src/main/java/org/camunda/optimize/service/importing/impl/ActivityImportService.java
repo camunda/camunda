@@ -41,8 +41,8 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   public void importToElasticSearch(List<EventDto> events) {
-    EventImportJob eventImportJob = new EventImportJob(eventsWriter);
-    eventImportJob.addEntitiesToImport(events);
+    EventImportJob eventImportJob = new EventImportJob(engineEntityFetcher, eventsWriter);
+    eventImportJob.setEntitiesToImport(events);
     try {
       importJobExecutor.executeImportJob(eventImportJob);
     } catch (InterruptedException e) {

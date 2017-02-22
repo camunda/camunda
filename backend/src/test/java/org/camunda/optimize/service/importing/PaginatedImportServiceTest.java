@@ -1,11 +1,10 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.job.ImportJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,9 +47,6 @@ public class PaginatedImportServiceTest {
   private EngineEntityFetcher engineEntityFetcher;
 
   @Mock
-  private EventsWriter eventsWriter;
-
-  @Autowired
   private ImportJobExecutor importJobExecutor;
 
   @Spy
@@ -94,11 +90,11 @@ public class PaginatedImportServiceTest {
     // then
     verify(engineEntityFetcher, times(4))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
-    ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(eventsWriter, times(3)).importEvents(captor.capture());
-    assertThat(captor.getAllValues().get(0).size(), is(2));
-    assertThat(captor.getAllValues().get(1).size(), is(2));
-    assertThat(captor.getAllValues().get(2).size(), is(1));
+    ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
+    verify(importJobExecutor, times(3)).executeImportJob(captor.capture());
+    assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(1).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(1));
 
   }
 
@@ -121,15 +117,15 @@ public class PaginatedImportServiceTest {
     // then
     verify(engineEntityFetcher, times(5))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
-    ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(eventsWriter, times(3)).importEvents(captor.capture());
-    assertThat(captor.getAllValues().get(0).size(), is(2));
-    assertThat(captor.getAllValues().get(1).size(), is(2));
-    assertThat(captor.getAllValues().get(2).size(), is(1));
+    ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
+    verify(importJobExecutor, times(3)).executeImportJob(captor.capture());
+    assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(1).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(1));
   }
 
   @Test
-  public void importCanBeReseted() throws Exception {
+  public void importCanBeReset() throws Exception {
     // given
     List<HistoricActivityInstanceEngineDto> resultList = setupInputData();
     when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
@@ -148,11 +144,11 @@ public class PaginatedImportServiceTest {
     // then
     verify(engineEntityFetcher, times(5))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
-    ArgumentCaptor<List<EventDto>> captor = ArgumentCaptor.forClass(List.class);
-    verify(eventsWriter, times(3)).importEvents(captor.capture());
-    assertThat(captor.getAllValues().get(0).size(), is(1));
-    assertThat(captor.getAllValues().get(1).size(), is(2));
-    assertThat(captor.getAllValues().get(2).size(), is(2));
+    ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
+    verify(importJobExecutor, times(3)).executeImportJob(captor.capture());
+    assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
+    assertThat(captor.getAllValues().get(1).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
   }
 
   private List<HistoricActivityInstanceEngineDto> setupInputData() {
@@ -161,6 +157,7 @@ public class PaginatedImportServiceTest {
       HistoricActivityInstanceEngineDto instance = new HistoricActivityInstanceEngineDto();
       instance.setId("testId" + i);
       instance.setActivityId(TEST_ACTIVITY_ID);
+      instance.setProcessInstanceId("procInstId");
       resultList.add(instance);
     }
     return resultList;

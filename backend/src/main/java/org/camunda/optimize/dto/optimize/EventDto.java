@@ -2,7 +2,6 @@ package org.camunda.optimize.dto.optimize;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.Map;
 
 /**
  * @author Askar Akhmerov
@@ -19,6 +18,8 @@ public class EventDto implements Serializable,OptimizeDto {
   private String processInstanceId;
   private Date startDate;
   private Date endDate;
+  private Date processInstanceStartDate;
+  private Date processInstanceEndDate;
 
   public String getId() {
     return id;
@@ -99,5 +100,21 @@ public class EventDto implements Serializable,OptimizeDto {
 
   public void setEndDate(Date endDate) {
     this.endDate = endDate;
+  }
+
+  public Date getProcessInstanceStartDate() {
+    return processInstanceStartDate;
+  }
+
+  public void setProcessInstanceStartDate(Date processInstanceStartDate) {
+    this.processInstanceStartDate = processInstanceStartDate;
+  }
+
+  public Date getProcessInstanceEndDate() {
+    return processInstanceEndDate;
+  }
+
+  public void setProcessInstanceEndDate(Date processInstanceEndDate) {
+    this.processInstanceEndDate = processInstanceEndDate;
   }
 }

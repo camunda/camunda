@@ -85,8 +85,8 @@ public class ProcessDefinitionXmlImportServiceTest {
     ArgumentCaptor<ProcessDefinitionXmlImportJob> procDefXmlCaptor = ArgumentCaptor.forClass(ProcessDefinitionXmlImportJob.class);
     verify(importJobExecutor).executeImportJob(procDefXmlCaptor.capture());
     assertThat(procDefXmlCaptor.getAllValues().size(), is(1));
-    assertThat(procDefXmlCaptor.getAllValues().get(0).getNewOptimizeEntities().size(), is(1));
-    ProcessDefinitionXmlOptimizeDto procDefXmlDto = procDefXmlCaptor.getAllValues().get(0).getNewOptimizeEntities().get(0);
+    assertThat(procDefXmlCaptor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
+    ProcessDefinitionXmlOptimizeDto procDefXmlDto = procDefXmlCaptor.getAllValues().get(0).getEntitiesToImport().get(0);
     assertThat(procDefXmlDto.getId(), is(TEST_PROCESS_DEFINITION_ID));
   }
 

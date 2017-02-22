@@ -43,6 +43,7 @@ public class DeployServiceTaskProcessServlet extends HttpServlet {
     String key = "testProcess";
 
     BpmnModelInstance model = Bpmn.createExecutableProcess(key)
+      .name("ServiceTask")
         .startEvent()
           .serviceTask()
             .camundaExpression("${true}")

@@ -78,8 +78,8 @@ public class ProcessDefinitionImportServiceTest {
     ArgumentCaptor<ProcessDefinitionImportJob> procDefCaptor = ArgumentCaptor.forClass(ProcessDefinitionImportJob.class);
     verify(importJobExecutor).executeImportJob(procDefCaptor.capture());
     assertThat(procDefCaptor.getAllValues().size(), is(1));
-    assertThat(procDefCaptor.getAllValues().get(0).getNewOptimizeEntities().size(), is(1));
-    ProcessDefinitionOptimizeDto procDefDto = procDefCaptor.getAllValues().get(0).getNewOptimizeEntities().get(0);
+    assertThat(procDefCaptor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
+    ProcessDefinitionOptimizeDto procDefDto = procDefCaptor.getAllValues().get(0).getEntitiesToImport().get(0);
     assertThat(procDefDto.getId(), is(TEST_PROCESS_DEFINITION_ID));
   }
 

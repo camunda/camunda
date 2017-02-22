@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -99,6 +100,24 @@ public class EngineEntityFetcher {
       entries = Collections.emptyList();
     }
 
+    return entries;
+  }
+
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(String[] processInstanceIds) {
+    List<HistoricProcessInstanceDto> entries;
+    try {
+      entries = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getHistoricProcessInstanceEndpoint())
+        .queryParam("processInstanceIds", processInstanceIds)
+        .request(MediaType.APPLICATION_JSON)
+        .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+        });
+      return entries;
+    } catch (RuntimeException e) {
+      logger.error("Could not fetch historic process instances from engine. Please check the connection!");
+      entries = Collections.emptyList();
+    }
     return entries;
   }
 
