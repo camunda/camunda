@@ -6,8 +6,8 @@ listView('AWS') {
   jobFilters {
     regex {
       matchType(MatchType.INCLUDE_MATCHED)
-      matchValue(RegexMatchValue.DESCRIPTION)
-      regex('AWS-.*')
+      matchValue(RegexMatchValue.NAME)
+      regex('aws.*')
     }
   }
 
