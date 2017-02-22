@@ -3,14 +3,18 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.importing.diff.MissingProcessDefinitionXmlFinder;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
+import org.camunda.optimize.service.importing.job.impl.ProcessDefinitionXmlImportJob;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -19,10 +23,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,7 +36,6 @@ public class ProcessDefinitionXmlImportServiceTest {
   private static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";
 
   @InjectMocks
-  @Autowired
   private ProcessDefinitionXmlImportService underTest;
 
   @Mock
@@ -41,6 +43,17 @@ public class ProcessDefinitionXmlImportServiceTest {
 
   @Mock
   private ProcessDefinitionWriter processDefinitionWriter;
+
+  @Mock
+  private ImportJobExecutor importJobExecutor;
+
+  @Spy
+  @Autowired
+  private ConfigurationService configurationService;
+
+  @Spy
+  @Autowired
+  private MissingProcessDefinitionXmlFinder missingProcessDefinitionXmlFinder;
 
   @Before
   public void setup() throws Exception {
@@ -57,12 +70,7 @@ public class ProcessDefinitionXmlImportServiceTest {
     underTest.executeImport();
 
     //then
-    //verify invocations
-    verify(engineEntityFetcher, times(2))
-      .fetchProcessDefinitionXmls(anyInt(), anyInt());
-
-    verify(processDefinitionWriter, times(1))
-      .importProcessDefinitionXmls(argThat(matchesEvent()));
+    ensureThatAJobWithCorrectIdWasCreated();
   }
 
   private List<ProcessDefinitionXmlEngineDto> setupInputData() {
@@ -73,20 +81,13 @@ public class ProcessDefinitionXmlImportServiceTest {
     return list;
   }
 
-  private <Object> ArgumentMatcher<Object> matchesEvent() {
-    return new ArgumentMatcher<Object>() {
-      @Override
-      public boolean matches(Object t) {
-        boolean result = false;
-
-        if (t instanceof List) {
-          List cast = (List) t;
-          result = cast.size() == 1 && TEST_PROCESS_DEFINITION_ID.equals(((ProcessDefinitionXmlOptimizeDto) cast.get(0)).getId());
-
-        }
-        return result;
-      }
-    };
+  private void ensureThatAJobWithCorrectIdWasCreated() throws InterruptedException {
+    ArgumentCaptor<ProcessDefinitionXmlImportJob> procDefXmlCaptor = ArgumentCaptor.forClass(ProcessDefinitionXmlImportJob.class);
+    verify(importJobExecutor).executeImportJob(procDefXmlCaptor.capture());
+    assertThat(procDefXmlCaptor.getAllValues().size(), is(1));
+    assertThat(procDefXmlCaptor.getAllValues().get(0).getNewOptimizeEntities().size(), is(1));
+    ProcessDefinitionXmlOptimizeDto procDefXmlDto = procDefXmlCaptor.getAllValues().get(0).getNewOptimizeEntities().get(0);
+    assertThat(procDefXmlDto.getId(), is(TEST_PROCESS_DEFINITION_ID));
   }
 
   private void setupEngineEntityFetcher(List<ProcessDefinitionXmlEngineDto> resultList) {

@@ -27,6 +27,10 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
     executeImport();
   }
 
+  public List<OPT> getNewOptimizeEntities() {
+    return newOptimizeEntities;
+  }
+
   /**
    * Prepares the given page of entities to be imported.
    *

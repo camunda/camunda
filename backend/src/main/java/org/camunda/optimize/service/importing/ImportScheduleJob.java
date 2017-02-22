@@ -1,14 +1,11 @@
 package org.camunda.optimize.service.importing;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 /**
  * @author Askar Akhmerov
  */
 public class ImportScheduleJob extends Thread {
   private int totalPages;
 
-  @Autowired
   private ImportServiceProvider importServiceProvider;
 
   @Override

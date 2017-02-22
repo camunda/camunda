@@ -6,22 +6,13 @@ import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 public class ProcessDefinitionXmlImportJob extends ImportJob<ProcessDefinitionXmlOptimizeDto> {
 
   private ProcessDefinitionWriter processDefinitionWriter;
   private Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportJob.class);
 
-    private List<ProcessDefinitionXmlOptimizeDto> optimizeEntities;
-
   public ProcessDefinitionXmlImportJob(ProcessDefinitionWriter processDefinitionWriter) {
     this.processDefinitionWriter = processDefinitionWriter;
-  }
-
-  @Override
-  public void addEntitiesToImport(List<ProcessDefinitionXmlOptimizeDto> pageOfOptimizeEntities) {
-    this.optimizeEntities = pageOfOptimizeEntities;
   }
 
   @Override
@@ -32,7 +23,7 @@ public class ProcessDefinitionXmlImportJob extends ImportJob<ProcessDefinitionXm
   @Override
   protected void executeImport() {
     try {
-      processDefinitionWriter.importProcessDefinitionXmls(optimizeEntities);
+      processDefinitionWriter.importProcessDefinitionXmls(newOptimizeEntities);
     } catch (Exception e) {
       logger.error("error while writing process definitions to elasticsearch", e);
     }

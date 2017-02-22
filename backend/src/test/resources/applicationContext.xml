@@ -24,6 +24,8 @@
 
   <bean id="importServiceProvider"  class="org.camunda.optimize.test.factory.MockImportServiceProviderFactory"/>
 
+  <bean id="importJobExecutor" class="org.camunda.optimize.test.factory.MockImportJobExecutorFactory" />
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"
@@ -31,6 +33,6 @@
   />
 
   <!-- provide a bean, but do not start it -->
-  <bean class="org.camunda.optimize.service.importing.ImportScheduler" />
+  <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
 </beans>

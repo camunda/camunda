@@ -24,12 +24,14 @@
 
   <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
 
+  <bean id="importJobExecutor" class="org.camunda.optimize.service.importing.ImportJobExecutor" />
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createDefaultMapper"
         factory-bean="objectMapperFactory"
   />
 
-  <bean class="org.camunda.optimize.service.importing.ImportScheduler" />
+  <bean id="importScheduler" class="org.camunda.optimize.test.factory.MockImportSchedulerFactory" />
 
 </beans>

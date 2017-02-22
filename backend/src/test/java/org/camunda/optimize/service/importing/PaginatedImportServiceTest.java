@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
@@ -41,7 +42,6 @@ public class PaginatedImportServiceTest {
   public final ExpectedException exception = ExpectedException.none();
 
   @InjectMocks
-  @Autowired
   private ActivityImportService activityImportService;
 
   @Mock
@@ -49,6 +49,13 @@ public class PaginatedImportServiceTest {
 
   @Mock
   private EventsWriter eventsWriter;
+
+  @Autowired
+  private ImportJobExecutor importJobExecutor;
+
+  @Spy
+  @Autowired
+  private MissingActivityFinder missingActivityFinder;
 
   @Autowired
   @Spy
