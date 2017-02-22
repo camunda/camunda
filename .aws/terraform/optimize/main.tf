@@ -2,9 +2,6 @@
 # DB instance
 #
 resource "aws_db_instance" "optimize_db" {
-  /*vpc_security_group_ids     = ["${aws_security_group.db.id}", "${data.terraform_remote_state.ops.prometheus_db_security_group_id}", "${data.terraform_remote_state.ops.jenkins_db_security_group_id}"]
-  db_subnet_group_name       = "${aws_db_subnet_group.default.id}"*/
-
   identifier             = "camunda-optimize-db-${data.terraform_remote_state.global.env}"
   storage_type           = "gp2"
   instance_class         = "db.t2.micro"

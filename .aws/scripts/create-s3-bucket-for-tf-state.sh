@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
+#
+# This script is ONLY for documentation.
+# Use it has to be executed only ONE time except:
+# - the remote terraform state is gone from S3 due to DRAGON ATTACK.
+#
 set -eux
 
 cd .aws/terraform/s3
 
-source ../scripts/init-terraform.sh
+rm -rf .terraform
 
 terraform plan
 

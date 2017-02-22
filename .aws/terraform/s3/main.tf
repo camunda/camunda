@@ -7,8 +7,8 @@ resource "aws_s3_bucket" "camunda-optimize-s3" {
   }
 
   tags {
-    Name = "${data.terraform_remote_state.global.project_name} - ${data.terraform_remote_state.global.env} - S3 Terraform State"
-    Env = "${data.terraform_remote_state.global.env}"
+    Name = "${var.project_name} - ${var.env} - S3 Terraform State"
+    Env = "${var.env}"
     Managed = "terraform"
   }
 }
