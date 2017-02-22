@@ -7,6 +7,11 @@ def dslScriptsToExecute = '''\
 .ci/views/*.dsl
 '''
 
+def dslScriptPathToMonitor = '''\
+.ci/jobs/.*\.dsl
+.ci/views/.*\.dsl
+'''
+
 def setBrokenPageAsDefault = '''\
 import jenkins.model.Jenkins
 
@@ -32,7 +37,7 @@ job('seed-job-optimize') {
       extensions {
         localBranch gitBranch
         pathRestriction {
-          includedRegions(dslScriptsToExecute)
+          includedRegions(dslScriptPathToMonitor)
           excludedRegions('')
         }
       }
