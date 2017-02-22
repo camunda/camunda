@@ -1,4 +1,4 @@
-# CI/CD overview for Camunda Optimize
+# CI overview for Camunda Optimize
 
 Camunda Optimize uses [Jenkins](https://jenkins.io/) for CI/CD.
 
