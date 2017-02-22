@@ -18,8 +18,9 @@ public class IntegrationTestImportServiceHandler extends ImportServiceHandler {
 
   @Override
   public void executeProcessEngineImport() {
+    importJobExecutor.startExecutingImportJobs();
     super.executeProcessEngineImport();
-    importJobExecutor.waitUntilExecutorIsIdle();
+    importJobExecutor.stopExecutingImportJobs();
   }
 
 }

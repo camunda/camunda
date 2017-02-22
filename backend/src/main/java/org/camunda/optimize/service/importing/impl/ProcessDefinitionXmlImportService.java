@@ -39,7 +39,7 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
     ProcessDefinitionXmlImportJob procDefXmlImportJob = new ProcessDefinitionXmlImportJob(procDefWriter);
     procDefXmlImportJob.addEntitiesToImport(newOptimizeEntriesToImport);
     try {
-      importJobExecutor.addNewImportJob(procDefXmlImportJob);
+      importJobExecutor.executeImportJob(procDefXmlImportJob);
     } catch (InterruptedException e) {
       logger.error("Interruption during import of process definition xml import job!", e);
     }

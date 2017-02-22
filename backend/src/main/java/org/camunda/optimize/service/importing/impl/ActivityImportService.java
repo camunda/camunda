@@ -44,7 +44,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
     EventImportJob eventImportJob = new EventImportJob(eventsWriter);
     eventImportJob.addEntitiesToImport(events);
     try {
-      importJobExecutor.addNewImportJob(eventImportJob);
+      importJobExecutor.executeImportJob(eventImportJob);
     } catch (InterruptedException e) {
       logger.error("Interruption during import of activity job!", e);
     }

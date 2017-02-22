@@ -40,7 +40,7 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
     ProcessDefinitionImportJob procDefImportJob = new ProcessDefinitionImportJob(procDefWriter);
     procDefImportJob.addEntitiesToImport(optimizeEntries);
     try {
-      importJobExecutor.addNewImportJob(procDefImportJob);
+      importJobExecutor.executeImportJob(procDefImportJob);
     } catch (InterruptedException e) {
       logger.error("Interruption during import of process definition import job!", e);
     }

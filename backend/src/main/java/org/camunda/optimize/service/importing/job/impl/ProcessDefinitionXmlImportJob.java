@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class ProcessDefinitionXmlImportJob implements ImportJob<ProcessDefinitionXmlOptimizeDto> {
+public class ProcessDefinitionXmlImportJob extends ImportJob<ProcessDefinitionXmlOptimizeDto> {
 
   private ProcessDefinitionWriter processDefinitionWriter;
   private Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportJob.class);
@@ -25,12 +25,12 @@ public class ProcessDefinitionXmlImportJob implements ImportJob<ProcessDefinitio
   }
 
   @Override
-  public void fetchMissingEntityInformation() {
+  protected void fetchMissingEntityInformation() {
     // nothing to do here
   }
 
   @Override
-  public void executeImport() {
+  protected void executeImport() {
     try {
       processDefinitionWriter.importProcessDefinitionXmls(optimizeEntities);
     } catch (Exception e) {

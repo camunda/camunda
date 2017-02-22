@@ -13,7 +13,19 @@ import java.util.List;
  * all information needed, the missing information can
  * also be fetched.
  */
-public interface ImportJob<OPT extends OptimizeDto> {
+public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
+
+  protected List<OPT> newOptimizeEntities;
+
+  /**
+   * Run the import job by first fetching missing data
+   * and then import the new entities to elasticsearch.
+   */
+  @Override
+  public void run() {
+    fetchMissingEntityInformation();
+    executeImport();
+  }
 
   /**
    * Prepares the given page of entities to be imported.
@@ -21,19 +33,21 @@ public interface ImportJob<OPT extends OptimizeDto> {
    * @param pageOfOptimizeEntities that are not already in
    *                               elasticsearch and need to be imported.
    */
-  void addEntitiesToImport(List<OPT> pageOfOptimizeEntities);
+  public void addEntitiesToImport(List<OPT> pageOfOptimizeEntities) {
+    this.newOptimizeEntities = pageOfOptimizeEntities;
+  }
 
   /**
    * If information is still missing, this method enriches all
    * given entities from {@link #addEntitiesToImport(List)} with
    * the remaining information to fully represent the entity type.
    */
-  void fetchMissingEntityInformation();
+  protected  abstract void fetchMissingEntityInformation();
 
   /**
    * This executes the import and adds all the given entities
    * from {@link #addEntitiesToImport(List)} to elasticsearch.
    */
-  void executeImport();
+  protected  abstract void executeImport();
 
 }
