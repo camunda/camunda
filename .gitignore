@@ -6,6 +6,7 @@ node_modules
 
 # terraform
 *.tfvars
+terraform.tfstate
 # ansible
 hosts
 *.retry

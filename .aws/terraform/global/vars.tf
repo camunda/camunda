@@ -17,3 +17,7 @@ variable "aws_profile" {
 variable "aws_vpc_default" {
   default = "vpc-6e21ee0b"
 }
+
+variable "aws_eip_allocation_id_default" {
+  default = "eipalloc-c03beca5"
+}

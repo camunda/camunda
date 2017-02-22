@@ -21,3 +21,7 @@ output "vpc_default_id" {
 output "jenkins_aws_key_id" {
   value = "${aws_key_pair.jenkins-optimize-aws.key_name}"
 }
+
+output "aws_eip_allocation_id_default" {
+  value = "${var.aws_eip_allocation_id_default}"
+}

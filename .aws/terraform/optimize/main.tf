@@ -63,11 +63,11 @@ resource "aws_instance" "optimize" {
   }
 }
 
-# EIP for Optimize instance
-#resource "aws_eip" "camunda_optimize_ip" {
-#  instance = "${aws_instance.camunda_optimize.id}"
-#  vpc = true
-#}
+# Assign EIP for Optimize instance
+resource "aws_eip_association" "camunda_optimize_eip" {
+  instance_id = "${aws_instance.camunda_optimize.id}"
+  allocation_id = "${data.terraform_remote_state.global.aws_eip_allocation_id_default}"
+}
 
 #
 # Optimize instance Security
