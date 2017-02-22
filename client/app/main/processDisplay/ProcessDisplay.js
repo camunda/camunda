@@ -1,6 +1,7 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {HeatmapDiagram} from './diagram';
 import {Controls, areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
+import {Statistics} from './statistics';
 import {isLoading} from 'utils';
 import {loadData} from './service';
 
@@ -39,6 +40,7 @@ function Process() {
         </Default>
       </Match>
     </div>
+    <Statistics selector="display" />
   </div>;
 
   function isLoadingSomething({display: {diagram, heatmap}, controls}) {

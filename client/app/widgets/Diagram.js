@@ -4,7 +4,7 @@ import {isLoaded} from 'utils/loading';
 
 export function Diagram({createOverlaysRenderer}) {
   return <div className="diagram__holder">
-    <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />;
+    <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />
   </div>;
 }
 

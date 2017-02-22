@@ -1,14 +1,20 @@
-import {jsx, Socket, OnEvent, createReferenceComponent, createStateComponent, runUpdate} from 'view-utils';
+import {jsx, Socket, OnEvent, createReferenceComponent, DESTROY_EVENT, createStateComponent, runUpdate, $document} from 'view-utils';
 import {createModal} from 'widgets';
+import {enterGatewayAnalysisMode, setEndEvent, unsetEndEvent, setGateway, leaveGatewayAnalysisMode} from './service';
+import {GATEWAY_ANALYSIS_MODE} from './reducer';
+import {is} from 'utils';
 
 export function createAnalyticsRenderer({viewer, node, eventsBus}) {
+  const canvas = viewer.get('canvas');
+  const elementRegistry = viewer.get('elementRegistry');
+
   const nodes = {};
   const Reference = createReferenceComponent(nodes);
   const Modal = createModal();
   const State = createStateComponent();
 
   const template = <State>
-    <Modal>
+    <Modal onClose={unsetEndEvent}>
       <Socket name="head">
         <button type="button" className="close">
           <OnEvent event="click" listener={Modal.close} />
@@ -36,7 +42,8 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
           </tbody>
         </table>
         <h5>Actions</h5>
-        <button type="button" className="btn btn-default">
+        <button type="button" className="btn btn-default startGatewayAnalysis">
+          <OnEvent event="click" listener={startAnalyis} />
           Perform Gateway Analysis
         </button>
       </Socket>
@@ -50,33 +57,81 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
   </State>;
   const templateUpdate = template(node, eventsBus);
 
-  viewer.get('eventBus').on('element.click', ({element: {type, name, id}}) => {
-    if (type === 'bpmn:EndEvent') {
-      const {heatmap: {data}} = State.getState();
-      const instancesCount = getMax(data);
+  function startAnalyis() {
+    Modal.close({
+      ignoreListeners: true
+    });
+    enterGatewayAnalysisMode();
+  }
 
-      nodes.name.textContent = name || id;
-      nodes.counterAll.textContent = instancesCount;
-      nodes.counterReached.textContent = data[id];
-      nodes.counterReachedPercentage.textContent = Math.round(data[id] / instancesCount * 1000) / 10;
+  function updateModalContent(element, data) {
+    const instancesCount = getMax(data);
+
+    nodes.name.textContent = element.name || element.id;
+    nodes.counterAll.textContent = instancesCount || 0;
+    nodes.counterReached.textContent = data[element.id] || 0;
+    nodes.counterReachedPercentage.textContent = Math.round(data[element.id] / instancesCount * 1000) / 10 || 0;
+  }
+
+  viewer.get('eventBus').on('element.click', ({element}) => {
+    const {mode, heatmap: {data}} = State.getState();
+
+    if (mode === GATEWAY_ANALYSIS_MODE) {
+      if (is(element, 'Gateway')) {
+        setGateway(element);
+      }
+    } else if (is(element, 'EndEvent')) {
+      setEndEvent(element);
+
+      updateModalContent(element, data);
       Modal.open();
     }
   });
 
+  const keydownListener = ({keyCode}) => {
+    const {mode, gateway} = State.getState();
+
+    if (keyCode === 27 && mode === GATEWAY_ANALYSIS_MODE && !gateway) {
+      leaveGatewayAnalysisMode();
+    }
+  };
+
+  $document.addEventListener('keydown', keydownListener);
+  eventsBus.on(DESTROY_EVENT, () => {
+    $document.removeEventListener('keydown', keydownListener);
+  });
+
+  function needsHighlight(element, mode) {
+    return mode === GATEWAY_ANALYSIS_MODE && is(element, 'Gateway') ||
+           mode !== GATEWAY_ANALYSIS_MODE && is(element, 'EndEvent');
+  }
+
+  function removeHighlight(element) {
+    canvas.removeMarker(element, 'highlight');
+    canvas.removeMarker(element, 'highlight_selected');
+  }
+
+  function highlight(element, type = 'highlight') {
+    if (element) {
+      canvas.addMarker(element, type);
+      const outline = elementRegistry.getGraphics(element).querySelector('.djs-outline');
+
+      outline.setAttribute('rx', '14px');
+      outline.setAttribute('ry', '14px');
+    }
+  }
+
   return ({state, diagramRendered}) => {
     if (diagramRendered) {
-      // highlight end events
-      const canvas = viewer.get('canvas');
-
-      viewer.get('elementRegistry').forEach((element, gfx) => {
-        if (element.type === 'bpmn:EndEvent') {
-          canvas.addMarker(element.id, 'highlight');
-          const outline = gfx.querySelector('.djs-outline');
-
-          outline.setAttribute('rx', '14px');
-          outline.setAttribute('ry', '14px');
+      elementRegistry.forEach((element) => {
+        removeHighlight(element);
+        if (needsHighlight(element, state.mode)) {
+          highlight(element);
         }
       });
+
+      highlight(state.endEvent, 'highlight_selected');
+      highlight(state.gateway, 'highlight_selected');
     }
 
     runUpdate(templateUpdate, state);

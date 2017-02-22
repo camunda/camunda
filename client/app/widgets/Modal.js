@@ -1,10 +1,11 @@
-import {jsx, DESTROY_EVENT, Children, createReferenceComponent, withSockets, $document} from 'view-utils';
+import {jsx, DESTROY_EVENT, Children, createReferenceComponent, withSockets, $document, noop} from 'view-utils';
 import $ from 'jquery';
 
 export function createModal() {
   let modalNode;
+  let ignoreListeners = false;
 
-  const Modal = withSockets(({sockets: {head, body, foot}}) => {
+  const Modal = withSockets(({sockets: {head, body, foot}, onClose = noop}) => {
     const nodes = {};
     const Reference = createReferenceComponent(nodes);
 
@@ -38,6 +39,12 @@ export function createModal() {
         show: false
       });
 
+      modalNode.on('hide.bs.modal', () => {
+        if (!ignoreListeners) {
+          onClose();
+        }
+      });
+
       return templateUpdate;
     };
   });
@@ -46,8 +53,10 @@ export function createModal() {
     modalNode.modal('show');
   };
 
-  Modal.close = () => {
+  Modal.close = (config = {}) => {
+    ignoreListeners = config.ignoreListeners;
     modalNode.modal('hide');
+    ignoreListeners = false;
   };
 
   return Modal;

@@ -6,7 +6,7 @@ export const ProcessDefinition = withSelector(ProcessDefinitionComponent);
 
 function ProcessDefinitionComponent({onProcessDefinitionSelected}) {
   const template = <td>
-    <select className="form-control">
+    <select className="form-control processDefinitionSelect">
       <OnEvent event="change" listener={select} />
       <option disabled="" value="">Select Process</option>
       <Scope selector={getAvailableDefinitions}>
