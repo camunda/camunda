@@ -14,4 +14,9 @@ public interface ImportService {
    * @return number of pages with new data that has been processed
    */
   int executeImport();
+
+  /**
+   * reset starting point of importing.
+   */
+  void resetImportStartIndex();
 }

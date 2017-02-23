@@ -7,10 +7,13 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -102,6 +105,21 @@ public class ImportSchedulerTest {
 
     //then
     assertThat(importScheduler.getBackoffCounter(), is(1L));
+  }
+
+  @Test
+  public void testResetAfterPeriod () throws Exception {
+    List<ImportService> services = mockImportServices();
+    when(importServiceProvider.getServices()).thenReturn(services);
+
+    LocalDateTime expectedReset = LocalDateTime.now().plus(Double.valueOf(configurationService.getImportResetInterval()).longValue(), ChronoUnit.HOURS);
+    long toSleep = LocalDateTime.now().until(expectedReset, ChronoUnit.MILLIS);
+    
+    //when
+    Thread.currentThread().sleep(toSleep + 1);
+    importScheduler.checkAndResetImportIndexing();
+
+    Mockito.verify(importServiceProvider.getServices().get(0),times(1)).resetImportStartIndex();
   }
 
   @Test

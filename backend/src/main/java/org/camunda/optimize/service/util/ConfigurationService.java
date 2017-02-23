@@ -77,9 +77,10 @@ public class ConfigurationService {
   private String tokenFilter;
   @Value("${camunda.optimize.es.import.handler.interval.ms}")
   private long importHandlerWait;
+  @Value("${camunda.optimize.es.import.handler.pages.reset.interval.hours}")
+  private double importResetInterval;
   @Value("${camunda.optimize.es.import.handler.max.backoff}")
   private long maximumBackoff;
-
 
   public String getSecret() {
     return secret;
@@ -213,5 +214,9 @@ public class ConfigurationService {
 
   public int getImportExecutorThreadCount() {
     return importExecutorThreadCount;
+  }
+
+  public double getImportResetInterval() {
+    return importResetInterval;
   }
 }

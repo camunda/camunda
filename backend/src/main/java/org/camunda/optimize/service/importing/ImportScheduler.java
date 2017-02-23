@@ -5,6 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class ImportScheduler extends Thread {
@@ -18,7 +21,14 @@ public class ImportScheduler extends Thread {
   @Autowired
   protected ImportServiceProvider importServiceProvider;
 
+  @Autowired
+  protected ImportJobExecutor importJobExecutor;
+
   protected long backoffCounter = 0;
+
+  private boolean enabled = true;
+
+  private LocalDateTime lastReset = LocalDateTime.now();
 
   public void scheduleProcessEngineImport() {
     ImportScheduleJob job = new ImportScheduleJob();
@@ -28,8 +38,19 @@ public class ImportScheduler extends Thread {
 
   @Override
   public void run() {
-    while (true) {
+    while (isEnabled()) {
+      checkAndResetImportIndexing();
       executeJob();
+    }
+  }
+
+  protected void checkAndResetImportIndexing() {
+    long castToLong = Double.valueOf(configurationService.getImportResetInterval()).longValue();
+    LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
+    if (LocalDateTime.now().isAfter(resetDueDate)) {
+      for (ImportService importService : importServiceProvider.getServices()) {
+        importService.resetImportStartIndex();
+      }
     }
   }
 
@@ -96,5 +117,9 @@ public class ImportScheduler extends Thread {
 
   protected void resetBackoffCounter() {
     this.backoffCounter = 0;
+  }
+
+  public boolean isEnabled() {
+    return enabled;
   }
 }
