@@ -47,7 +47,7 @@ freeStyleJob(jobs[0].name) {
     timestamps()
 
     timeout {
-      noActivity 15
+      noActivity 15 * 60
     }
 
     credentialsBinding {
@@ -95,7 +95,7 @@ freeStyleJob(jobs[1].name) {
     timestamps()
 
     timeout {
-      noActivity 15
+      noActivity 15 * 60
     }
 
     sshAgent ('jenkins-optimize-aws-ssh')
@@ -153,7 +153,7 @@ freeStyleJob('aws-execute-single-terraform-component') {
     timestamps()
 
     timeout {
-      noActivity 15
+      noActivity 15 * 60
     }
 
     credentialsBinding {
