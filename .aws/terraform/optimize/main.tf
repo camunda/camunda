@@ -65,7 +65,7 @@ resource "aws_instance" "optimize" {
 
 # Assign EIP for Optimize instance
 resource "aws_eip_association" "camunda_optimize_eip" {
-  instance_id = "${aws_instance.camunda_optimize.id}"
+  instance_id = "${aws_instance.optimize.id}"
   allocation_id = "${data.terraform_remote_state.global.aws_eip_allocation_id_default}"
 }
 
