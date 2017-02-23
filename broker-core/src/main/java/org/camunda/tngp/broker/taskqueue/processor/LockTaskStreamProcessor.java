@@ -56,7 +56,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     protected int availableSubscriptionCredits = 0;
 
     protected final TaskEvent taskEvent = new TaskEvent();
-    protected long eventPosition = 0;
     protected long eventKey = 0;
 
     protected boolean hasLockedTask;
@@ -74,7 +73,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     @Override
     public SnapshotSupport getStateResource()
     {
-        // need the snapshot resource to restore the log position
+        // need to restore the log position
         return noopSnapshotSupport;
     }
 
@@ -221,7 +220,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
-        eventPosition = event.getPosition();
         eventKey = event.getLongKey();
 
         taskEvent.reset();

@@ -22,6 +22,8 @@ import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
+import org.camunda.tngp.util.time.ClockUtil;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +54,12 @@ public class TaskSubscriptionTest
 
     @Rule
     public Timeout timeout = Timeout.seconds(10);
+
+    @After
+    public void cleanUp()
+    {
+        ClockUtil.reset();
+    }
 
     @Test
     public void shouldOpenSubscription() throws InterruptedException
@@ -279,6 +287,45 @@ public class TaskSubscriptionTest
 
         assertThat(taskHandler.getHandledTasks()).extracting("key").contains(taskKey, taskKey);
     }
+
+    @Test
+    public void shouldExpireTaskLock() throws InterruptedException
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final AsyncTasksClient taskService = client.tasks();
+
+        final Long taskKey = taskService.create()
+            .topicId(0)
+            .taskType("foo")
+            .execute();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task ->
+        {
+            // don't complete the task - just wait for lock expiration
+        });
+
+        taskService.newSubscription()
+            .handler(taskHandler)
+            .topicId(0)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(5)
+            .open();
+
+        waitUntil(() -> taskHandler.handledTasks.size() == 1);
+
+        // when
+        ClockUtil.setCurrentTime(Instant.now().plus(Duration.ofMinutes(5)));
+
+        // then
+        waitUntil(() -> taskHandler.handledTasks.size() == 2);
+
+        assertThat(taskHandler.handledTasks)
+            .hasSize(2)
+            .extracting("key").contains(taskKey, taskKey);
+    }
+
 
     @Ignore
     @Test

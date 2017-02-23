@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
@@ -34,6 +35,7 @@ import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
+import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,9 +56,11 @@ public class TaskStreamProcessorIntegrationTest
     private LogStream logStream;
 
     private LockTaskStreamProcessor lockTaskStreamProcessor;
+    private TaskExpireLockStreamProcessor taskExpireLockStreamProcessor;
 
     private StreamProcessorController taskInstanceStreamProcessorController;
     private StreamProcessorController taskSubscriptionStreamProcessorController;
+    private StreamProcessorController taskExpireLockStreamProcessorController;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -74,7 +78,9 @@ public class TaskStreamProcessorIntegrationTest
     private AgentRunnerService agentRunnerService;
 
     private final BrokerEventMetadata defaultBrokerEventMetadata = new BrokerEventMetadata();
-    private BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
+    private final BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
+
+    private final TaskEvent followUpTaskEvent = new TaskEvent();
 
     @Before
     public void setup() throws InterruptedException, ExecutionException
@@ -104,6 +110,7 @@ public class TaskStreamProcessorIntegrationTest
             .logRootPath(rootPath)
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService)
+            .deleteOnClose(true)
             .build();
 
         logStream.open();
@@ -127,8 +134,17 @@ public class TaskStreamProcessorIntegrationTest
             .agentRunnerService(agentRunnerService)
             .build();
 
+        taskExpireLockStreamProcessor = new TaskExpireLockStreamProcessor();
+        taskExpireLockStreamProcessorController = LogStreams.createStreamProcessor("task-expire-lock", 2, taskExpireLockStreamProcessor)
+                .sourceStream(logStream)
+                .targetStream(logStream)
+                .snapshotStorage(snapshotStorage)
+                .agentRunnerService(agentRunnerService)
+                .build();
+
         taskInstanceStreamProcessorController.openAsync().get();
         taskSubscriptionStreamProcessorController.openAsync().get();
+        taskExpireLockStreamProcessorController.openAsync().get();
 
         logStreamWriter = new LogStreamWriter(logStream);
         defaultBrokerEventMetadata.eventType(TASK_EVENT);
@@ -139,10 +155,13 @@ public class TaskStreamProcessorIntegrationTest
     {
         taskInstanceStreamProcessorController.closeAsync().get();
         taskSubscriptionStreamProcessorController.closeAsync().get();
+        taskExpireLockStreamProcessorController.closeAsync().get();
 
         logStream.close();
 
         agentRunnerService.close();
+
+        ClockUtil.reset();
     }
 
     @Test
@@ -162,13 +181,11 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
 
         // then
-        taskEvent.reset();
-        getResultEventOf(position).readValue(taskEvent);
+        assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
 
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
-        assertThatBuffer(taskEvent.getType()).hasBytes(TASK_TYPE_BUFFER.byteArray());
+        assertThatBuffer(followUpTaskEvent.getType()).hasBytes(TASK_TYPE_BUFFER.byteArray());
 
-        assertThatBuffer(taskEvent.getPayload())
+        assertThatBuffer(followUpTaskEvent.getPayload())
             .hasCapacity(PAYLOAD.length)
             .hasBytes(PAYLOAD);
 
@@ -204,24 +221,14 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
 
         // then
-        LoggedEvent event = getResultEventOf(position);
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
 
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
-        assertThat(taskEvent.getLockTime()).isGreaterThan(0);
-        assertThat(taskEvent.getLockOwner()).isEqualTo(1);
+        assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(0);
+        assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(1);
 
-        event = getResultEventOf(event.getPosition());
-        taskEvent.reset();
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
-        assertThat(taskEvent.getLockTime()).isGreaterThan(0);
-        assertThat(taskEvent.getLockOwner()).isEqualTo(1);
-
-        assertThatBuffer(taskEvent.getPayload())
+        assertThatBuffer(followUpTaskEvent.getPayload())
             .hasCapacity(PAYLOAD.length)
             .hasBytes(PAYLOAD);
 
@@ -258,17 +265,9 @@ public class TaskStreamProcessorIntegrationTest
             .valueWriter(taskEvent)
             .tryWrite();
 
-        LoggedEvent event = getResultEventOf(position);
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
-
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
-
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
 
         // when
         final byte[] modifiedPayload = "modified payload".getBytes();
@@ -285,12 +284,9 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
 
         // then
-        event = getResultEventOf(position);
-        taskEvent.reset();
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.COMPLETED);
+        event = assertThatEventIsFollowedBy(position, TaskEventType.COMPLETED);
 
-        assertThatBuffer(taskEvent.getPayload())
+        assertThatBuffer(followUpTaskEvent.getPayload())
             .hasCapacity(modifiedPayload.length)
             .hasBytes(modifiedPayload);
 
@@ -322,17 +318,9 @@ public class TaskStreamProcessorIntegrationTest
             .valueWriter(taskEvent)
             .tryWrite();
 
-        LoggedEvent event = getResultEventOf(position);
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATED);
-
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
-
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
 
         // when
         taskEvent
@@ -346,20 +334,86 @@ public class TaskStreamProcessorIntegrationTest
             .tryWrite();
 
         // then
-        event = getResultEventOf(position);
-        taskEvent.reset();
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.FAILED);
-
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
-
-        event = getResultEventOf(event.getPosition());
-        event.readValue(taskEvent);
-        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCKED);
+        event = assertThatEventIsFollowedBy(position, TaskEventType.FAILED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldExpireTaskLock() throws InterruptedException, ExecutionException
+    {
+        // given
+        final Instant now = Instant.now();
+        final Duration lockDuration = Duration.ofMinutes(5);
+
+        ClockUtil.setCurrentTime(now);
+
+        final TaskSubscription subscription = new TaskSubscription()
+                .setId(1L)
+                .setChannelId(11)
+                .setTaskType(TASK_TYPE_BUFFER)
+                .setLockDuration(lockDuration.toMillis())
+                .setLockOwner(3)
+                .setCredits(10);
+
+        lockTaskStreamProcessor.addSubscription(subscription);
+
+        final TaskEvent taskEvent = new TaskEvent()
+            .setEventType(TaskEventType.CREATE)
+            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
+            .setPayload(new UnsafeBuffer(PAYLOAD));
+
+        final long position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+
+        // when
+        ClockUtil.setCurrentTime(now.plus(lockDuration));
+
+        // TODO wait till processor has seen all events
+        Thread.sleep(1000);
+        taskExpireLockStreamProcessor.checkLockExpirationAsync();
+
+        // then
+        event = assertThatEventIsFollowedBy(event, TaskEventType.EXPIRE_LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK_EXPIRED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+
+        assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(now.plus(lockDuration).toEpochMilli());
+        assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(3);
+
+        assertThatBuffer(followUpTaskEvent.getPayload())
+            .hasCapacity(PAYLOAD.length)
+            .hasBytes(PAYLOAD);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+        verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
+    }
+
+    private LoggedEvent assertThatEventIsFollowedBy(LoggedEvent event, TaskEventType eventType)
+    {
+        return assertThatEventIsFollowedBy(event.getPosition(), eventType);
+    }
+
+    private LoggedEvent assertThatEventIsFollowedBy(long position, TaskEventType eventType)
+    {
+        final LoggedEvent event = getResultEventOf(position);
+
+        followUpTaskEvent.reset();
+        event.readValue(followUpTaskEvent);
+
+        assertThat(followUpTaskEvent.getEventType()).isEqualTo(eventType);
+
+        return event;
     }
 
     private LoggedEvent getResultEventOf(long position)

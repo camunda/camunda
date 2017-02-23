@@ -161,6 +161,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         this.streamProcessor = streamProcessor;
 
         context.setStreamProcessorCmdQueue(cmdQueue);
+        context.setLogStreamWriter(mockLogStreamWriter);
 
         streamProcessor.onOpen(context);
     }
@@ -231,10 +232,14 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         simulateStreamProcessorController(event);
     }
 
+    public void drainCommandQueue()
+    {
+        cmdQueue.drain(cmd -> cmd.execute());
+    }
 
     protected void simulateStreamProcessorController(final LoggedEvent loggedEvent)
     {
-        cmdQueue.drain(cmd -> cmd.execute());
+        drainCommandQueue();
 
         if (!streamProcessor.isSuspended())
         {

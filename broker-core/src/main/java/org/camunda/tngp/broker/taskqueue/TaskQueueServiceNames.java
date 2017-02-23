@@ -31,4 +31,9 @@ public class TaskQueueServiceNames
     {
         return ServiceName.newServiceName(String.format("taskqueue.%s.processor.lock.%s", taskQueueName, taskType), StreamProcessorController.class);
     }
+
+    public static ServiceName<StreamProcessorController> taskQueueExpireLockStreamProcessorServiceName(String taskQueueName)
+    {
+        return ServiceName.newServiceName(String.format("taskqueue.%s.processor.expire.lock", taskQueueName), StreamProcessorController.class);
+    }
 }

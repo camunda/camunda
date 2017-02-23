@@ -22,6 +22,7 @@ public class TaskQueueComponent implements Component
 
         final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService(configurationManager);
         serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
+            .dependency(AGENT_RUNNER_SERVICE, taskQueueManagerService.getAgentRunnerServicesInjector())
             .dependency(TRANSPORT_SEND_BUFFER, taskQueueManagerService.getSendBufferInjector())
             .install();
 

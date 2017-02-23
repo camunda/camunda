@@ -20,4 +20,6 @@ public class StreamProcessorIds
 
     public static final int TASK_LOCK_STREAM_PROCESSOR_ID = 20;
 
+    public static final int TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID = 30;
+
 }

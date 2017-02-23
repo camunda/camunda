@@ -27,9 +27,9 @@ import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
-    protected static final int INDEX_VALUE_LENGTH = SIZE_OF_INT + SIZE_OF_INT;
+    protected static final int INDEX_VALUE_LENGTH = 2 * SIZE_OF_INT;
     protected static final int INDEX_STATE_OFFSET = 0;
-    protected static final int INDEX_LOCK_OWNER_OFFSET = SIZE_OF_INT;
+    protected static final int INDEX_LOCK_OWNER_OFFSET = INDEX_STATE_OFFSET + SIZE_OF_INT;
 
     protected BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -42,6 +42,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final LockTaskProcessor lockTaskProcessor = new LockTaskProcessor();
     protected final CompleteTaskProcessor completeTaskProcessor = new CompleteTaskProcessor();
     protected final FailTaskProcessor failTaskProcessor = new FailTaskProcessor();
+    protected final ExpireLockTaskProcessor expireLockTaskProcessor = new ExpireLockTaskProcessor();
 
     protected final Long2BytesHashIndex taskIndex;
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
@@ -55,6 +56,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     protected long eventPosition = 0;
     protected long eventKey = 0;
+    protected long sourceEventPosition = 0;
 
     public TaskInstanceStreamProcessor(CommandResponseWriter responseWriter, SubscribedEventWriter subscribedEventWriter, IndexStore indexStore)
     {
@@ -87,6 +89,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     {
         eventPosition = event.getPosition();
         eventKey = event.getLongKey();
+        sourceEventPosition = event.getSourceEventPosition();
 
         event.readMetadata(sourceEventMetadata);
 
@@ -108,6 +111,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                 break;
             case FAIL:
                 eventProcessor = failTaskProcessor;
+                break;
+            case EXPIRE_LOCK:
+                eventProcessor = expireLockTaskProcessor;
                 break;
 
             default:
@@ -173,13 +179,14 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            indexWriter.write(eventKey, TaskEventType.CREATED, -1);
+            indexWriter.write(eventKey, TaskEventType.CREATED, -1, -1L);
         }
     }
 
     class LockTaskProcessor implements EventProcessor
     {
         protected boolean isLocked;
+        protected long writtenEventPosition;
 
         @Override
         public void processEvent()
@@ -189,7 +196,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             indexAccessor.wrapIndexKey(eventKey);
             final int typeId = indexAccessor.getTypeId();
 
-            if ((typeId == TaskEventType.CREATED.id() || typeId == TaskEventType.FAILED.id()) && taskEvent.getLockTime() > 0)
+            final boolean isLockable = typeId == TaskEventType.CREATED.id() || typeId == TaskEventType.FAILED.id() || typeId == TaskEventType.LOCK_EXPIRED.id();
+
+            if (isLockable && taskEvent.getLockTime() > 0)
             {
                 taskEvent.setEventType(TaskEventType.LOCKED);
                 isLocked = true;
@@ -224,7 +233,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeEventToLogStream(writer);
+            writtenEventPosition = writeEventToLogStream(writer);
+
+            return writtenEventPosition;
         }
 
         @Override
@@ -232,7 +243,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isLocked)
             {
-                indexWriter.write(eventKey, TaskEventType.LOCKED, taskEvent.getLockOwner());
+                indexWriter.write(eventKey, TaskEventType.LOCKED, taskEvent.getLockOwner(), writtenEventPosition);
             }
         }
     }
@@ -250,7 +261,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             final int typeId = indexAccessor.getTypeId();
             final int lockOwner = indexAccessor.getLockOwner();
 
-            if (typeId == TaskEventType.LOCKED.id() && lockOwner == taskEvent.getLockOwner())
+            final boolean isCompletable = typeId == TaskEventType.LOCKED.id() || typeId == TaskEventType.LOCK_EXPIRED.id();
+
+            if (isCompletable && lockOwner == taskEvent.getLockOwner())
             {
                 taskEvent.setEventType(TaskEventType.COMPLETED);
                 isCompleted = true;
@@ -279,7 +292,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isCompleted)
             {
-                indexWriter.write(eventKey, TaskEventType.COMPLETED, -1);
+                indexWriter.write(eventKey, TaskEventType.COMPLETED, -1, -1);
             }
         }
     }
@@ -326,15 +339,56 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         {
             if (isFailed)
             {
-                indexWriter.write(eventKey, TaskEventType.FAILED, -1);
+                indexWriter.write(eventKey, TaskEventType.FAILED, -1, -1);
+            }
+        }
+    }
+
+    class ExpireLockTaskProcessor implements EventProcessor
+    {
+        protected boolean isExpired;
+
+        @Override
+        public void processEvent()
+        {
+            isExpired = false;
+
+            indexAccessor.wrapIndexKey(eventKey);
+            final int typeId = indexAccessor.getTypeId();
+
+            if (typeId == TaskEventType.LOCKED.id())
+            {
+                taskEvent.setEventType(TaskEventType.LOCK_EXPIRED);
+                isExpired = true;
+            }
+
+            if (!isExpired)
+            {
+                taskEvent.setEventType(TaskEventType.LOCK_EXPIRATION_REJECTED);
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeEventToLogStream(writer);
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isExpired)
+            {
+                final int lockOwner = indexAccessor.getLockOwner();
+
+                indexWriter.write(eventKey, TaskEventType.LOCK_EXPIRED, lockOwner, -1);
             }
         }
     }
 
     class IndexAccessor
     {
-        static final int MISSING_VALUE_TYPE_ID = -1;
-        static final int MISSING_VALUE_LOCK_OWNER_ID = -1;
+        static final int MISSING_VALUE = -1;
 
         protected final UnsafeBuffer indexValueReadBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
 
@@ -355,7 +409,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
         public int getLockOwner()
         {
-            int lockOwner = MISSING_VALUE_LOCK_OWNER_ID;
+            int lockOwner = MISSING_VALUE;
 
             if (isRead)
             {
@@ -366,7 +420,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
         public int getTypeId()
         {
-            int typeId = MISSING_VALUE_TYPE_ID;
+            int typeId = MISSING_VALUE;
 
             if (isRead)
             {
@@ -380,7 +434,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     {
         protected final UnsafeBuffer indexValueWriteBuffer = new UnsafeBuffer(new byte[INDEX_VALUE_LENGTH]);
 
-        protected void write(long eventKey, TaskEventType eventType, int lockOwner)
+        protected void write(long eventKey, TaskEventType eventType, int lockOwner, long position)
         {
             indexValueWriteBuffer.putInt(INDEX_STATE_OFFSET, eventType.id(), ByteOrder.LITTLE_ENDIAN);
             indexValueWriteBuffer.putInt(INDEX_LOCK_OWNER_OFFSET, lockOwner, ByteOrder.LITTLE_ENDIAN);

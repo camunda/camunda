@@ -154,6 +154,47 @@ public class TaskInstanceStreamProcessorTest
     }
 
     @Test
+    public void shouldLockExpiredTask()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L,
+            event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3),
+            metadata -> metadata
+                .reqChannelId(4)
+                .subscriptionId(5L));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L,
+            event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3),
+            metadata -> metadata
+                .reqChannelId(6)
+                .subscriptionId(7L));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+
+        verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
+        verify(mockSubscribedEventWriter).channelId(6);
+        verify(mockSubscribedEventWriter).subscriptionId(7L);
+    }
+
+    @Test
     public void shouldCompleteTask() throws InterruptedException, ExecutionException
     {
         // given
@@ -163,6 +204,34 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
                 .setLockTime(123)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.COMPLETE)
+                .setLockOwner(3));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.COMPLETED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldCompleteExpiredTask() throws InterruptedException, ExecutionException
+    {
+        // given
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK)
                 .setLockOwner(3));
 
         // when
@@ -199,6 +268,29 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldExpireTaskLock()
+    {
+        // given
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
     }
 
     @Test
@@ -477,6 +569,119 @@ public class TaskInstanceStreamProcessorTest
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.FAIL_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectExpireLockIfNotExists()
+    {
+        // when
+        mockController.processEvent(4L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, never()).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectExpireLockIfAlreadyExpired()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectExpireLockIfNotLocked()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK)
+                .setLockOwner(3));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectExpireLockIfAlreadyCompleted()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.COMPLETE)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectExpireLockIfAlreadyFailed()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.FAIL)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.EXPIRE_LOCK));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
