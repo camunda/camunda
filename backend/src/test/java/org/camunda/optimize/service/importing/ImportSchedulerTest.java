@@ -4,10 +4,10 @@ import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -16,11 +16,13 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ContextConfiguration(locations = {"/applicationContext.xml"})
 public class ImportSchedulerTest {
 
   @Autowired
@@ -32,6 +34,12 @@ public class ImportSchedulerTest {
   @Autowired
   private ConfigurationService configurationService;
 
+  @Before
+  public void setUp() {
+    importScheduler.resetBackoffCounter();
+    importScheduler.importScheduleJobs.clear();
+  }
+
   @Test
   public void allImportsAreTriggered() throws InterruptedException {
 
@@ -41,12 +49,11 @@ public class ImportSchedulerTest {
     importScheduler.scheduleProcessEngineImport();
 
     // when
-    importScheduler.start();
-    Thread.currentThread().sleep(configurationService.getImportHandlerWait());
+    importScheduler.executeJob();
 
     // then
     for (ImportService service : services) {
-      verify(service, atLeastOnce()).executeImport();
+      verify(service, times(1)).executeImport();
     }
   }
 
@@ -59,7 +66,7 @@ public class ImportSchedulerTest {
   }
 
   @Test
-  public void testNotBackingOffIfImportPagesFound () throws Exception {
+  public void testNotBackingOffIfImportPagesFound() throws Exception {
     //given
     List<ImportService> services = mockImportServices();
     when(importServiceProvider.getServices()).thenReturn(services);
@@ -69,11 +76,11 @@ public class ImportSchedulerTest {
     //when
     importScheduler.executeJob();
 
-    assertThat(importScheduler.getBackoffCounter(),is(0L));
+    assertThat(importScheduler.getBackoffCounter(), is(1L));
   }
 
   @Test
-  public void testBackingOffIfNoImportPagesFound () throws Exception {
+  public void testBackingOffIfNoImportPagesFound() throws Exception {
     //given
     List<ImportService> services = mockImportServices();
     when(importServiceProvider.getServices()).thenReturn(services);
@@ -83,31 +90,50 @@ public class ImportSchedulerTest {
     //when
     importScheduler.executeJob();
 
-    assertThat(importScheduler.getBackoffCounter(),is(1L));
+    assertThat(importScheduler.getBackoffCounter(), is(1L));
   }
 
   @Test
-  public void testBackoffIncreaseWithoutJobs () throws Exception {
-    assertThat(importScheduler.getBackoffCounter(),is(0L));
+  public void testBackoffIncreaseWithoutJobs() throws Exception {
+    assertThat(importScheduler.getBackoffCounter(), is(0L));
 
     //when
     importScheduler.executeJob();
 
     //then
-    assertThat(importScheduler.getBackoffCounter(),is(1L));
+    assertThat(importScheduler.getBackoffCounter(), is(1L));
   }
 
   @Test
-  public void testBackoffNotExceedingMax () throws Exception {
-    assertThat(importScheduler.calculateBackoff(0),is(1L));
-    assertThat(importScheduler.calculateBackoff(1),is(1L));
+  public void testBackoffResetAfterPage() {
+    //given
+    assertThat(importScheduler.getBackoffCounter(), is(0L));
+    importScheduler.executeJob();
+    assertThat(importScheduler.getBackoffCounter(), is(1L));
+    importScheduler.executeJob();
+    assertThat(importScheduler.getBackoffCounter(), is(2L));
+    List<ImportService> services = mockImportServices();
+    when(importServiceProvider.getServices()).thenReturn(services);
+    when(services.get(0).executeImport()).thenReturn(1);
+
+    //when
+    importScheduler.executeJob();
+
+    //then
+    assertThat(importScheduler.getBackoffCounter(), is(1L));
+  }
+
+  @Test
+  public void testBackoffNotExceedingMax() throws Exception {
+    assertThat(importScheduler.calculateBackoff(0), is(1L));
+    assertThat(importScheduler.calculateBackoff(1), is(1L));
     //does not increase after 2
     importScheduler.executeJob();
-    assertThat(importScheduler.calculateBackoff(0),is(2L));
+    assertThat(importScheduler.calculateBackoff(0), is(2L));
     importScheduler.executeJob();
-    assertThat(importScheduler.calculateBackoff(0),is(3L));
+    assertThat(importScheduler.calculateBackoff(0), is(3L));
     importScheduler.executeJob();
-    assertThat(importScheduler.calculateBackoff(0),is(3L));
+    assertThat(importScheduler.calculateBackoff(0), is(3L));
   }
 
 }

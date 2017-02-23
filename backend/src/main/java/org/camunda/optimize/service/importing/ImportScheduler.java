@@ -10,15 +10,15 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class ImportScheduler extends Thread {
   private final Logger logger = LoggerFactory.getLogger(ImportScheduler.class);
 
-  private final ArrayBlockingQueue<ImportScheduleJob> importScheduleJobs = new ArrayBlockingQueue<>(3);
+  protected final ArrayBlockingQueue<ImportScheduleJob> importScheduleJobs = new ArrayBlockingQueue<>(3);
   
   @Autowired
-  private ConfigurationService configurationService;
+  protected ConfigurationService configurationService;
 
   @Autowired
-  private ImportServiceProvider importServiceProvider;
+  protected ImportServiceProvider importServiceProvider;
 
-  private long backoffCounter = 0;
+  protected long backoffCounter = 0;
 
   public void scheduleProcessEngineImport() {
     ImportScheduleJob job = new ImportScheduleJob();
@@ -42,21 +42,15 @@ public class ImportScheduler extends Thread {
   protected void executeJob() {
     logger.debug("executing import round");
     int pagesPassed = 0;
-    try {
 
-      if (!importScheduleJobs.isEmpty()) {
-        ImportScheduleJob toExecute = importScheduleJobs.poll();
-        toExecute.start();
-        toExecute.join();
-        pagesPassed = toExecute.getTotalPages();
-        if (pagesPassed > 0) {
-          logger.debug("Processed [" + pagesPassed + "] pages during data import run, scheduling one more run");
-          this.scheduleProcessEngineImport();
-        }
+    if (!importScheduleJobs.isEmpty()) {
+      ImportScheduleJob toExecute = importScheduleJobs.poll();
+      pagesPassed = toExecute.execute();
+      if (pagesPassed > 0) {
+        logger.debug("Processed [" + pagesPassed + "] pages during data import run, scheduling one more run");
+        this.scheduleProcessEngineImport();
+        backoffCounter = calculateBackoff(pagesPassed);
       }
-
-    } catch (InterruptedException e) {
-      logger.error("Import handler interrupted while executing import", e);
     }
 
     if (importScheduleJobs.isEmpty()) {
@@ -98,5 +92,9 @@ public class ImportScheduler extends Thread {
 
   protected long getBackoffCounter() {
     return backoffCounter;
+  }
+
+  protected void resetBackoffCounter() {
+    this.backoffCounter = 0;
   }
 }

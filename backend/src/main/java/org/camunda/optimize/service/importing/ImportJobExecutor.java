@@ -39,7 +39,7 @@ public class ImportJobExecutor {
   }
 
   public void startExecutingImportJobs() {
-    if (importExecutor==null || importExecutor.isShutdown()) {
+    if (importExecutor == null || importExecutor.isShutdown()) {
       BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(queueSize);
       importExecutor = new ThreadPoolExecutor(corePoolSize, maxPoolSize, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue);
     }
@@ -52,9 +52,9 @@ public class ImportJobExecutor {
     // Waits for 1 minute to finish all currently executing jobs
     try {
       boolean timeElapsedBeforeTermination = !importExecutor.awaitTermination(60L, TimeUnit.SECONDS);
-      if(timeElapsedBeforeTermination) {
+      if (timeElapsedBeforeTermination) {
         logger.warn("Timeout during shutdown of import job executor! " +
-          "The current running jobs could not end within 60 seconds after shutdown operation.");
+            "The current running jobs could not end within 60 seconds after shutdown operation.");
       }
     } catch (InterruptedException e) {
       logger.error("Interrupted while shutting down the import job executor!", e);

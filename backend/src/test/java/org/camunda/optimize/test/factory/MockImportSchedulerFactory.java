@@ -34,7 +34,7 @@ public class MockImportSchedulerFactory implements FactoryBean<ImportScheduler> 
       importJobExecutor.startExecutingImportJobs();
       ImportScheduleJob job = new ImportScheduleJob();
       job.setImportServiceProvider(importServiceProvider);
-      job.run();
+      job.execute();
       importJobExecutor.stopExecutingImportJobs();
       return null;
     };
