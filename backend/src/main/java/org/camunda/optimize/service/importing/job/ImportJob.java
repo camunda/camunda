@@ -23,7 +23,7 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
    */
   @Override
   public void run() {
-    fetchMissingEntityInformation();
+    getAbsentAggregateInformation();
     executeImport();
   }
 
@@ -46,7 +46,7 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
    * given entities from {@link #addEntitiesToImport(List)} with
    * the remaining information to fully represent the entity type.
    */
-  protected  abstract void fetchMissingEntityInformation();
+  protected  abstract void getAbsentAggregateInformation();
 
   /**
    * This executes the import and adds all the given entities

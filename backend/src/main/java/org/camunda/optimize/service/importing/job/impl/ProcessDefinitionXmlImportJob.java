@@ -16,7 +16,7 @@ public class ProcessDefinitionXmlImportJob extends ImportJob<ProcessDefinitionXm
   }
 
   @Override
-  protected void fetchMissingEntityInformation() {
+  protected void getAbsentAggregateInformation() {
     // nothing to do here
   }
 

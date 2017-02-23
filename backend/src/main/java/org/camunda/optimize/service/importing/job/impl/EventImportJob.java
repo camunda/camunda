@@ -15,7 +15,7 @@ public class EventImportJob extends ImportJob<EventDto>{
     this.eventsWriter = eventsWriter;
   }
   @Override
-  protected void fetchMissingEntityInformation() {
+  protected void getAbsentAggregateInformation() {
     // do nothing yet
   }
 
