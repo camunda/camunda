@@ -17,6 +17,8 @@ public class EventType implements TypeMappingCreator{
 
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
+  public static final String PROCESS_INSTANCE_START_DATE = "processInstanceStartDate";
+  public static final String PROCESS_INSTANCE_END_DATE = "processInstanceEndDate";
   private Logger logger = LoggerFactory.getLogger(EventType.class);
 
   @Autowired
@@ -66,11 +68,11 @@ public class EventType implements TypeMappingCreator{
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
             .endObject()
-            .startObject("processInstanceStartDate")
+            .startObject(PROCESS_INSTANCE_START_DATE)
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
             .endObject()
-            .startObject("processInstanceEndDate")
+            .startObject(PROCESS_INSTANCE_END_DATE)
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
             .endObject()

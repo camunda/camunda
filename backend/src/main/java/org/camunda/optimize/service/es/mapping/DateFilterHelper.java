@@ -70,10 +70,10 @@ public class DateFilterHelper {
   private String mapTimeColumn(DateFilterDto dateDto) {
     String result = null;
     if (DateFilterDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
-      result = EventType.START_DATE;
+      result = EventType.PROCESS_INSTANCE_START_DATE;
     }
     if (DateFilterDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
-      result = EventType.END_DATE;
+      result = EventType.PROCESS_INSTANCE_END_DATE;
     }
     if (result == null) {
       throw new OptimizeRuntimeException("invalid date column provided for mapping");

@@ -68,6 +68,8 @@ public class CorrelationReaderIT {
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
+    event.setProcessInstanceStartDate(new Date());
+    event.setProcessInstanceEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "1", event);
 
     event = new EventDto();
@@ -76,6 +78,8 @@ public class CorrelationReaderIT {
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
+    event.setProcessInstanceStartDate(new Date());
+    event.setProcessInstanceEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "2", event);
 
     event = new EventDto();
@@ -84,6 +88,8 @@ public class CorrelationReaderIT {
     event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
+    event.setProcessInstanceStartDate(new Date());
+    event.setProcessInstanceEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "3", event);
   }
 
@@ -154,6 +160,8 @@ public class CorrelationReaderIT {
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
+    event.setProcessInstanceStartDate(new Date());
+    event.setProcessInstanceEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "4", event);
 
     event = new EventDto();
@@ -162,6 +170,8 @@ public class CorrelationReaderIT {
     event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     event.setStartDate(new Date());
     event.setEndDate(new Date());
+    event.setProcessInstanceStartDate(new Date());
+    event.setProcessInstanceEndDate(new Date());
     rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
   }
 

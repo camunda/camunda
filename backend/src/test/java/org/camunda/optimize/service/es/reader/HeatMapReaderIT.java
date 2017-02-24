@@ -339,6 +339,8 @@ public class HeatMapReaderIT {
     data.setProcessDefinitionId(TEST_DEFINITION);
     data.setStartDate(past);
     data.setEndDate(past);
+    data.setProcessInstanceStartDate(past);
+    data.setProcessInstanceEndDate(past);
     return data;
   }
 
