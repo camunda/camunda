@@ -57,4 +57,17 @@ public class EnsureUtil
         }
     }
 
+    public static void ensureAtLeastOneNotNull(String property, Object... values)
+    {
+        for (int i = 0; i < values.length; i++)
+        {
+            if (values[i] != null)
+            {
+                return;
+            }
+        }
+
+        throw new RuntimeException(property + " must have at least one non-null value");
+    }
+
 }
