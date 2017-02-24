@@ -1,14 +1,13 @@
-def githubOrga = 'camunda'
-def gitRepository = 'camunda-optimize'
-def gitBranch = 'master'
-
 def JOBS = [
   [name: 'aws-setup-rds-and-ec2-instance', downstream: 'aws-upgrade-db-schema'],
   [name: 'aws-upgrade-db-schema', downstream: 'aws-provision-camunda-bpm'],
   [name: 'aws-provision-camunda-bpm', downstream: '']
 ]
 
-def job = freeStyleJob(JOBS[0].name) {
+def sshKeyId = 'jenkins-optimize-aws-ssh'
+
+def job = createJobWithCommonProperties(this, JOBS[0].name)
+job.with {
 
   displayName 'AWS - Setup RDS and EC2 instance'
   description 'Creates the Camunda Optimize database from latest snapshot of Marketing\'s Production database and spins up the EC2 instance.'
@@ -32,52 +31,54 @@ def job = freeStyleJob(JOBS[0].name) {
   }
 
 }
-addCommonJobProperties(job)
 
 
-job = freeStyleJob(JOBS[1].name) {
+job = createJobWithCommonProperties(this, JOBS[1].name)
+job.with {
 
   displayName 'AWS - Upgrade DB Schema'
   description 'Upgrades the DB schema to latest available version of Camunda BPM Platform.'
 
   steps {
+    shell 'echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.vault_password'
     shell readFileFromWorkspace('.aws/scripts/upgrade-db-schema.sh')
   }
 
   wrappers {
-    sshAgent ('jenkins-optimize-aws-ssh')
+    sshAgent (sshKeyId)
   }
 
   publishers {
     downstream(JOBS[1].downstream)
   }
 }
-addCommonJobProperties(job)
 
 
-job = freeStyleJob(JOBS[2].name) {
+job = createJobWithCommonProperties(this, JOBS[2].name)
+job.with {
 
   displayName 'AWS - Provision Camunda BPM'
   description 'Provision the Camunda BPM Platform on EC2 instance.'
 
   steps {
+    shell 'echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.vault_password'
     shell readFileFromWorkspace('.aws/scripts/provision-camunda-bpm.sh')
   }
 
   wrappers {
-    sshAgent ('jenkins-optimize-aws-ssh')
+    sshAgent (sshKeyId)
 
     credentialsBinding {
       string('OPTIMIZE_VAULT_SECRET', 'optimize-vault-secret')
+      usernamePassword('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'jenkins-optimize-aws-secrets')
     }
   }
 }
-addCommonJobProperties(job)
 
 
 
-
-job = freeStyleJob('aws-execute-single-terraform-component') {
+job = createJobWithCommonProperties(this, 'aws-execute-single-terraform-component')
+job.with {
 
   displayName 'AWS - Execute single Terraform component (manual)'
   description 'Allows to execute a single Terraform component on any branch.'
@@ -94,10 +95,15 @@ job = freeStyleJob('aws-execute-single-terraform-component') {
     shell readFileFromWorkspace('.aws/terraform/scripts/run-terraform.sh')
   }
 }
-addCommonJobProperties(job)
 
 
-def static addCommonJobProperties(job) {
+
+def static createJobWithCommonProperties(dslFactory, name) {
+  def githubOrga = 'camunda'
+  def gitRepository = 'camunda-optimize'
+  def gitBranch = 'master'
+
+  def job = dslFactory.freeStyleJob(name, {})
   job.with {
 
     logRotator(-1, 10, -1, 1)
