@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.impl.PollableTaskSubscriptionBuilderImpl;
@@ -18,6 +17,7 @@ import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptions;
+import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

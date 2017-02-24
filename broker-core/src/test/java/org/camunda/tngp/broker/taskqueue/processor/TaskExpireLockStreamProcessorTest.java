@@ -13,8 +13,8 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 

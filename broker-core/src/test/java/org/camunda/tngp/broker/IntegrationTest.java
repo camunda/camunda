@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
@@ -12,7 +12,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
-import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.ClientApiMessageHandler;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -27,6 +26,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
+import org.camunda.tngp.test.util.FluentMock;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;

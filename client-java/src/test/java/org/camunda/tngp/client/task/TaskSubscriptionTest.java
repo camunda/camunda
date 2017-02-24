@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 
-import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
 import org.camunda.tngp.client.impl.TngpClientImpl;
@@ -42,6 +41,7 @@ import org.camunda.tngp.client.task.impl.TaskDataFrameCollector;
 import org.camunda.tngp.client.task.impl.TaskImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptions;
+import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

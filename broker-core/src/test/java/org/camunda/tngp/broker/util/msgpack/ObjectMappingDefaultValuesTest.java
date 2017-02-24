@@ -2,9 +2,9 @@ package org.camunda.tngp.broker.util.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
 import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.utf8;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 
 import java.util.Map;
 

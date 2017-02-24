@@ -1,8 +1,8 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
@@ -19,7 +19,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
-import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
@@ -32,9 +31,8 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.agent.SharedAgentRunnerService;
-import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
+import org.camunda.tngp.test.util.FluentMock;
+import org.camunda.tngp.test.util.agent.ControllableAgentRunnerService;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -63,6 +61,9 @@ public class TaskStreamProcessorIntegrationTest
     private StreamProcessorController taskExpireLockStreamProcessorController;
 
     @Rule
+    public ControllableAgentRunnerService agentRunnerService = new ControllableAgentRunnerService();
+
+    @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
@@ -75,7 +76,6 @@ public class TaskStreamProcessorIntegrationTest
     private SubscribedEventWriter mockSubscribedEventWriter;
 
     private LogStreamWriter logStreamWriter;
-    private AgentRunnerService agentRunnerService;
 
     private final BrokerEventMetadata defaultBrokerEventMetadata = new BrokerEventMetadata();
     private final BrokerEventMetadata lastBrokerEventMetadata = new BrokerEventMetadata();
@@ -101,8 +101,6 @@ public class TaskStreamProcessorIntegrationTest
 
             return invocation.getMock();
         }).when(mockResponseWriter).brokerEventMetadata(any(BrokerEventMetadata.class));
-
-        agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
 
         final String rootPath = tempFolder.getRoot().getAbsolutePath();
 
@@ -159,7 +157,7 @@ public class TaskStreamProcessorIntegrationTest
 
         logStream.close();
 
-        agentRunnerService.close();
+        //agentRunnerService.close();
 
         ClockUtil.reset();
     }
@@ -378,8 +376,8 @@ public class TaskStreamProcessorIntegrationTest
         // when
         ClockUtil.setCurrentTime(now.plus(lockDuration));
 
-        // TODO wait till processor has seen all events
-        Thread.sleep(1000);
+        agentRunnerService.waitUntilDone();
+
         taskExpireLockStreamProcessor.checkLockExpirationAsync();
 
         // then

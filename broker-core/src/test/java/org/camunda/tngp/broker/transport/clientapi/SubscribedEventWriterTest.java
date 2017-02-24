@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Mockito.verify;
 
 import java.nio.charset.StandardCharsets;

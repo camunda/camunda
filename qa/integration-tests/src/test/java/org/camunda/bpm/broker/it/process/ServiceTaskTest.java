@@ -1,7 +1,7 @@
 package org.camunda.bpm.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrap;
+import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
 
 import org.camunda.bpm.broker.it.ClientRule;
 import org.camunda.bpm.broker.it.EmbeddedBrokerRule;

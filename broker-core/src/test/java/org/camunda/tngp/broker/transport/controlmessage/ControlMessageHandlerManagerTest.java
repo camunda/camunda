@@ -13,7 +13,7 @@
 package org.camunda.tngp.broker.transport.controlmessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
@@ -31,7 +31,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.FragmentHandler;
@@ -39,6 +38,7 @@ import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
+import org.camunda.tngp.test.util.FluentMock;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;

@@ -13,13 +13,13 @@ import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.broker.event.handler.FuturePool;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
-import org.camunda.tngp.broker.test.util.FluentMock;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceBuilder;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;

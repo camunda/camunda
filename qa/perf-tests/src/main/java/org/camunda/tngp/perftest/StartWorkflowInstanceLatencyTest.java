@@ -1,6 +1,6 @@
 package org.camunda.tngp.perftest;
 
-import static org.camunda.tngp.broker.test.util.bpmn.TngpModelInstance.wrap;
+import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
