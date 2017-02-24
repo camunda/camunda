@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.test.util;
+package org.camunda.tngp.test.util;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;

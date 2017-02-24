@@ -1,6 +1,6 @@
 package org.mockito.configuration;
 
-import org.camunda.tngp.broker.test.util.TngpMockitoAnnotationEngine;
+import org.camunda.tngp.test.util.TngpMockitoAnnotationEngine;
 
 public class MockitoConfiguration extends DefaultMockitoConfiguration
 {

@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.test.util;
+package org.camunda.tngp.test.util;
 
 import java.util.ArrayList;
 import java.util.List;

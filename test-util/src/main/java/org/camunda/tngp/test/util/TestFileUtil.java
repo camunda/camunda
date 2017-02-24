@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.test.util;
+package org.camunda.tngp.test.util;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

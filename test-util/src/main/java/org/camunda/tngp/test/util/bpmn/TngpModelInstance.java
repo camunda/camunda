@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.test.util.bpmn;
+package org.camunda.tngp.test.util.bpmn;
 
 import java.util.Collection;
 
