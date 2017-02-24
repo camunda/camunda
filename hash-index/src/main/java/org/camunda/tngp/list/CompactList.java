@@ -1,14 +1,7 @@
 package org.camunda.tngp.list;
 
-import static java.lang.Math.max;
-import static org.camunda.tngp.list.CompactListDescriptor.capacityOffset;
-import static org.camunda.tngp.list.CompactListDescriptor.elementDataOffset;
-import static org.camunda.tngp.list.CompactListDescriptor.elementLengthOffset;
-import static org.camunda.tngp.list.CompactListDescriptor.elementMaxLengthOffset;
-import static org.camunda.tngp.list.CompactListDescriptor.elementOffset;
-import static org.camunda.tngp.list.CompactListDescriptor.framedLength;
-import static org.camunda.tngp.list.CompactListDescriptor.requiredBufferCapacity;
-import static org.camunda.tngp.list.CompactListDescriptor.sizeOffset;
+import static java.lang.Math.*;
+import static org.camunda.tngp.list.CompactListDescriptor.*;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -197,6 +190,11 @@ public class CompactList implements Iterable<MutableDirectBuffer>
     public int size()
     {
         return listBuffer.getInt(sizeOffset());
+    }
+
+    public int sizeVolatile()
+    {
+        return listBuffer.getIntVolatile(sizeOffset());
     }
 
     /**
