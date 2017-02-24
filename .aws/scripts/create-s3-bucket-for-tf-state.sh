@@ -4,7 +4,9 @@
 # Use it has to be executed only ONE time except:
 # - the remote terraform state is gone from S3 due to DRAGON ATTACK.
 #
-set -eux
+set -o errexit
+set -o nounset
+set -o errtrace
 
 cd .aws/terraform/s3
 

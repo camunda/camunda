@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -ex
+set -o errexit
+set -o errtrace
 
 DATE="date +%Y/%m/%d-%H:%M:%S"
 REGION=eu-west-1

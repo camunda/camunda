@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-set -ex
+set -o errexit
+set -o errtrace
 
-DB_INSTANCE_ID=${1:-processenginedemo}
-DB_NEW_PASSWORD=${2:-camunda123}
-TF_PLAN=setup_db_and_instance.plan
+__db_instance_id=${1:-processenginedemo}
+__db_new_password=${2:-camunda123}
+__tf_plan=setup_db_and_instance.plan
 
 cd .aws/terraform/optimize
 
@@ -14,12 +15,12 @@ if [ "${DESTROY}" = "true" ]; then
   terraform destroy -force
 fi
 
-latest_snapshot="$(get_latest_db_snapshot ${DB_INSTANCE_ID})"
-terraform plan -var db_latest_snapshot=${latest_snapshot} -out ${TF_PLAN}
+latest_snapshot="$(get_latest_db_snapshot ${__db_instance_id})"
+terraform plan -var db_latest_snapshot=${latest_snapshot} -out ${__tf_plan}
 
 if [ "${APPLY}" = "true" ]; then
-  terraform apply ${TF_PLAN}
-  new_db_instance_id="$(terraform output db-instance-identifier)"
+  terraform apply ${__tf_plan}
+  __new_db_instance_id="$(terraform output db-instance-identifier)"
   # change master password and disable backup
-  awscli_modify_db ${new_db_instance_id} "--master-user-password ${DB_NEW_PASSWORD} --backup-retention-period 0"
+  awscli_modify_db ${__new_db_instance_id} "--master-user-password ${__db_new_password} --backup-retention-period 0"
 fi

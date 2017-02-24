@@ -19,7 +19,7 @@ EOF
 
 ansible-playbook bootstrap-python.yml -i hosts
 
-ansible-playbook -v upgrade-db.yml \
+ansible-playbook camunda-bpm.yml \
   -i hosts \
   -e db_name=${DB_NAME} \
   -e db_host=${DB_HOST}
