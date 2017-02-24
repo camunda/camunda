@@ -1,14 +1,8 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostLengthOffset;
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostOffset;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member.Type;
-import org.camunda.tngp.broker.clustering.raft.util.MemberTypeResolver;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.JoinRequestDecoder;
 import org.camunda.tngp.clustering.raft.JoinRequestEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
@@ -24,19 +18,19 @@ public class JoinRequest implements BufferReader, BufferWriter
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final JoinRequestDecoder bodyDecoder = new JoinRequestDecoder();
 
-    protected int log;
-    protected final Endpoint endpoint = new Endpoint();
-    protected final Member member = new Member(endpoint, Member.Type.INACTIVE);
+    protected int id;
+
+    protected final Member member = new Member();
     protected boolean isMemberAvailable = false;
 
-    public int log()
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public JoinRequest log(final int log)
+    public JoinRequest id(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -47,17 +41,15 @@ public class JoinRequest implements BufferReader, BufferWriter
 
     public JoinRequest member(final Member member)
     {
+        isMemberAvailable = false;
+        this.member.endpoint().reset();
         if (member != null)
         {
-            endpoint.wrap(member.endpoint());
-            this.member.type(member.type());
+            this.member.endpoint().wrap(member.endpoint());
             isMemberAvailable = true;
         }
         else
         {
-            endpoint.clear();
-            this.member.type(Member.Type.INACTIVE);
-            isMemberAvailable = false;
         }
 
         return this;
@@ -72,7 +64,7 @@ public class JoinRequest implements BufferReader, BufferWriter
 
         if (isMemberAvailable)
         {
-            size += endpoint.hostLength();
+            size += member.endpoint().hostLength();
         }
 
         return size;
@@ -89,17 +81,11 @@ public class JoinRequest implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(-1);
-
-        bodyEncoder
-            .memberType(MemberTypeResolver.getMemberType(member.type()))
-            .port(endpoint.port());
-
-        bodyEncoder.putHost(endpoint.getBuffer(), hostOffset(0), endpoint.hostLength());
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(-1)
+            .port(member.endpoint().port())
+            .putHost(member.endpoint().getHostBuffer(), 0, member.endpoint().hostLength());
     }
 
     @Override
@@ -110,31 +96,29 @@ public class JoinRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        log = bodyDecoder.header().log();
+        id = bodyDecoder.id();
 
         isMemberAvailable = false;
-        endpoint.clear();
+        member.endpoint().reset();
 
         final int hostLength = bodyDecoder.hostLength();
         if (hostLength > 0)
         {
-            endpoint.port(bodyDecoder.port());
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) endpoint.getBuffer();
+            member.endpoint().port(bodyDecoder.port());
 
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            bodyDecoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
+            member.endpoint().hostLength(hostLength);
+            bodyDecoder.getHost(endpointBuffer, 0, hostLength);
 
-            member.type(MemberTypeResolver.getType(bodyDecoder.memberType()));
             isMemberAvailable = true;
         }
     }
 
     public void reset()
     {
-        log = -1;
+        id = -1;
         isMemberAvailable = false;
-        endpoint.clear();
-        member.type(Type.INACTIVE);
+        member.endpoint().reset();
     }
 
 }

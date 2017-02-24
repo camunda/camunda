@@ -1,28 +1,21 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostLengthOffset;
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostOffset;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestDecoder.MembersDecoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestDecoder.MembersDecoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestDecoder.MembersDecoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.*;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.raft.util.MemberTypeResolver;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder.MembersDecoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder;
-import org.camunda.tngp.clustering.raft.MemberType;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.clustering.raft.RaftHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -34,20 +27,22 @@ public class ConfigureRequest implements BufferReader, BufferWriter
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ConfigureRequestDecoder bodyDecoder = new ConfigureRequestDecoder();
 
-    protected int log;
+    protected int id;
     protected int term;
+
     protected long configurationEntryPosition;
     protected int configurationEntryTerm;
-    protected List<Member> members;
 
-    public int log()
+    protected List<Member> members = new CopyOnWriteArrayList<>();
+
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public ConfigureRequest log(final int log)
+    public ConfigureRequest id(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -91,7 +86,8 @@ public class ConfigureRequest implements BufferReader, BufferWriter
 
     public ConfigureRequest members(final List<Member> members)
     {
-        this.members = members;
+        this.members.clear();
+        this.members.addAll(members);
         return this;
     }
 
@@ -123,13 +119,9 @@ public class ConfigureRequest implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(term);
-
-        bodyEncoder
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
             .configurationEntryPosition(configurationEntryPosition)
             .configurationEntryTerm(configurationEntryTerm);
 
@@ -142,9 +134,8 @@ public class ConfigureRequest implements BufferReader, BufferWriter
             final Endpoint endpoint = member.endpoint();
 
             encoder.next()
-                .memberType(MemberTypeResolver.getMemberType(member.type()))
                 .port(endpoint.port())
-                .putHost(endpoint.getBuffer(), hostOffset(0), endpoint.hostLength());
+                .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
     }
 
@@ -156,35 +147,38 @@ public class ConfigureRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final RaftHeaderDecoder raftHeaderDecoder = bodyDecoder.header();
-
-        log = raftHeaderDecoder.log();
-        term = raftHeaderDecoder.term();
-
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
         configurationEntryPosition = bodyDecoder.configurationEntryPosition();
         configurationEntryTerm = bodyDecoder.configurationEntryTerm();
 
-        // TODO: make this garbage free if necessary
-        members = new ArrayList<>();
+        members.clear();
 
         final Iterator<MembersDecoder> iterator = bodyDecoder.members().iterator();
         while (iterator.hasNext())
         {
             final MembersDecoder decoder = iterator.next();
 
-            final MemberType memberType = decoder.memberType();
+            final Member member = new Member();
+            member.endpoint().port(decoder.port());
 
-            final Endpoint endpoint = new Endpoint();
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) endpoint.getBuffer();
-
-            endpoint.port(decoder.port());
-
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
             final int hostLength = decoder.hostLength();
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            decoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            member.endpoint().hostLength(hostLength);
+            decoder.getHost(endpointBuffer, 0, hostLength);
 
-            members.add(new Member(endpoint, MemberTypeResolver.getType(memberType)));
+            // TODO: make this garbage free
+            members.add(member);
         }
+    }
+
+    public void reset()
+    {
+        id = -1;
+        term = -1;
+        configurationEntryPosition = -1L;
+        configurationEntryTerm = -1;
+        members.clear();
     }
 
 }

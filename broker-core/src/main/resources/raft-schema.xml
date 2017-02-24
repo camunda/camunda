@@ -4,17 +4,13 @@
     semanticVersion="0.1.0" description="Tngp Management Raft Protocol" byteOrder="littleEndian">
 
     <types>
+
         <composite name="messageHeader"
             description="Message identifiers and length of message root">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="templateId" primitiveType="uint16"/>
             <type name="schemaId" primitiveType="uint16"/>
             <type name="version" primitiveType="uint16"/>
-        </composite>
-        
-        <composite name="raftHeader">
-            <type name="log" primitiveType="uint16"/>
-            <type name="term" primitiveType="uint16"/>
         </composite>
         
         <composite name="varDataEncoding">
@@ -29,89 +25,95 @@
     </types>
 
     <types>
+    
+        <!-- GENERAL -->
+        
         <enum name="BooleanType" encodingType="uint8" semanticType="Boolean">
             <validValue name="FALSE">0</validValue>
             <validValue name="TRUE">1</validValue>
         </enum>
-        <enum name="MemberType" encodingType="uint8">
-            <validValue name="INACTIVE">0</validValue>
-            <validValue name="ACTIVE">1</validValue>
-        </enum>
+
     </types>
 
+    <!-- RAFT MESSAGES: 0 - 199 -->
+
     <sbe:message name="JoinRequest" id="0">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="memberType" id="1" type="MemberType"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
         <field name="port" id="2" type="uint16"/>
         <data name="host" id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="JoinResponse" id="1">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="status" id="1" type="BooleanType" />
-        <field name="configurationEntryPosition" id="2" type="uint64"/>
-        <field name="configurationEntryTerm" id="3" type="int32"/>
-        <group name="members" id="4" dimensionType="groupSizeEncoding">
-            <field name="memberType" id="5" type="MemberType"/>
-            <field name="port" id="6" type="uint16"/>
-            <data name="host" id="7" type="varDataEncoding"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="succeeded" id="3" type="BooleanType" />
+        <field name="configurationEntryPosition" id="4" type="uint64"/>
+        <field name="configurationEntryTerm" id="5" type="int32"/>
+        <group name="members" id="6" dimensionType="groupSizeEncoding">
+            <field name="port" id="7" type="uint16"/>
+            <data name="host" id="8" type="varDataEncoding"/>
         </group>
     </sbe:message>
 
     <sbe:message name="ConfigureRequest" id="2">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="configurationEntryPosition" id="1" type="uint64"/>
-        <field name="configurationEntryTerm" id="2" type="int32"/>
-        <group name="members" id="3" dimensionType="groupSizeEncoding">
-            <field name="memberType" id="4" type="MemberType"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="configurationEntryPosition" id="2" type="uint64"/>
+        <field name="configurationEntryTerm" id="3" type="int32"/>
+        <group name="members" id="4" dimensionType="groupSizeEncoding">
             <field name="port" id="5" type="uint16"/>
             <data name="host" id="6" type="varDataEncoding"/>
         </group>
     </sbe:message>
 
     <sbe:message name="ConfigureResponse" id="3">
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
     </sbe:message>
 
     <sbe:message name="VoteRequest" id="4">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="lastEntryPosition" id="1" type="uint64"/>
-        <field name="lastEntryTerm" id="2" type="int32"/>
-        <field name="port" id="3" type="uint16"/>
-        <data name="host" id="4" type="varDataEncoding"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="lastEntryPosition" id="2" type="uint64"/>
+        <field name="lastEntryTerm" id="3" type="int32"/>
+        <field name="port" id="4" type="uint16"/>
+        <data name="host" id="5" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="VoteResponse" id="5">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="granted" id="1" type="BooleanType"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="granted" id="2" type="BooleanType"/>
     </sbe:message>
 
     <sbe:message name="AppendRequest" id="6">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="previousEntryPosition" id="1" type="uint64"/>
-        <field name="previousEntryTerm" id="2" type="int32"/>
-        <field name="commitPosition" id="3" type="uint64"/>
-        <field name="port" id="4" type="uint16"/>
-        <field name="index" id="7" type="uint16"/>
-        <data name="host" id="5" type="varDataEncoding"/>
-        <data name="data" id="6" type="varDataEncoding"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="previousEntryPosition" id="2" type="uint64"/>
+        <field name="previousEntryTerm" id="3" type="int32"/>
+        <field name="commitPosition" id="4" type="uint64"/>
+        <field name="port" id="5" type="uint16"/>
+        <data name="host" id="6" type="varDataEncoding"/>
+        <data name="data" id="7" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="AppendResponse" id="7">
-        <field name="header" id="0" type="raftHeader"/>
-        <field name="succeeded" id="1" type="BooleanType"/>
-        <field name="entryPosition" id="2" type="uint64"/>
-        <field name="port" id="3" type="uint16"/>
-        <data name="host" id="4" type="varDataEncoding"/>
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="succeeded" id="2" type="BooleanType"/>
+        <field name="entryPosition" id="3" type="uint64"/>
+        <field name="port" id="4" type="uint16"/>
+        <data name="host" id="5" type="varDataEncoding"/>
     </sbe:message>
 
-    <!-- Entries -->
+    <!-- ENTRY DESCRIPTOR: 200 - ... -->
 
     <sbe:message name="InitializeEntry" id="200">
     </sbe:message>
 
     <sbe:message name="ConfigurationEntry" id="201">
         <group name="members" id="0" dimensionType="groupSizeEncoding">
-            <field name="memberType" id="1" type="MemberType"/>
             <field name="port" id="2" type="uint16"/>
             <data name="host" id="3" type="varDataEncoding"/>
         </group>

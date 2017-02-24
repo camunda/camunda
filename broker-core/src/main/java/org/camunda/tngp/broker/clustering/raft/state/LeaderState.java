@@ -1,142 +1,269 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
+import static org.camunda.tngp.broker.clustering.raft.Raft.State.*;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
 
-import org.camunda.tngp.broker.clustering.raft.entry.ConfigurationEntry;
+import org.agrona.DirectBuffer;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Configuration;
+import org.camunda.tngp.broker.clustering.raft.Member;
+import org.camunda.tngp.broker.clustering.raft.Raft;
+import org.camunda.tngp.broker.clustering.raft.RaftContext;
+import org.camunda.tngp.broker.clustering.raft.controller.AppendController;
+import org.camunda.tngp.broker.clustering.raft.controller.ConfigurationController;
+import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
 import org.camunda.tngp.broker.clustering.raft.entry.InitializeEntry;
-import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
-import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
-import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.broker.clustering.raft.protocol.Configuration;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft.State;
-import org.camunda.tngp.broker.clustering.raft.state.controller.LeaderEntryController;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
-import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
+import org.camunda.tngp.broker.clustering.util.MessageWriter;
+import org.camunda.tngp.dispatcher.FragmentHandler;
+import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
 import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
 import org.camunda.tngp.util.state.TransitionState;
 import org.camunda.tngp.util.state.WaitState;
 
 public class LeaderState extends ActiveState
 {
-    protected static final int TRANSITION_OPEN = 0;
-    protected static final int TRANSITION_DEFAULT = 1;
-    protected static final int TRANSITION_CONFIGURE = 2;
-    protected static final int TRANSITION_FAILED = 3;
-    protected static final int TRANSITION_CLOSE = 3;
+    private static final int TRANSITION_OPEN = 0;
+    private static final int TRANSITION_DEFAULT = 1;
+    private static final int TRANSITION_CLOSE = 2;
 
-    protected final ClosedState closedState = new ClosedState();
-    protected final PreInitializeState preInitializeState = new PreInitializeState();
-    protected final InitializeState initializeState = new InitializeState();
-    protected final PreConfigurationState preConfigurationState = new PreConfigurationState();
-    protected final AppendConfigurationState appendConfigureState = new AppendConfigurationState();
-    protected final ApplyConfigurationState applyConfigureState = new ApplyConfigurationState();
-    protected final CommitConfigurationState commitConfigureState = new CommitConfigurationState();
-    protected final SendConfigurationState sendConfigurationState = new SendConfigurationState();
-    protected final OpenState openState = new OpenState();
-
-    protected LeaderContext leaderContext;
-
-    protected final Function<StateMachine<LeaderContext>, LeaderContext> contextFactory = (s) ->
+    private static final StateMachineCommand<LeaderContext> CLOSE_LEADER_STATE_MACHINE_COMMAND = (c) ->
     {
-        leaderContext = new LeaderContext(s);
-        return leaderContext;
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
     };
 
-    protected final StateMachineAgent<LeaderContext> leaderStateMachine = new StateMachineAgent<>(StateMachine
-            .<LeaderContext> builder(contextFactory).initialState(closedState)
-
-            .from(closedState).take(TRANSITION_OPEN).to(preInitializeState)
-
-            .from(preInitializeState).take(TRANSITION_DEFAULT).to(initializeState)
-
-            .from(initializeState).take(TRANSITION_DEFAULT).to(preConfigurationState)
-
-            .from(preConfigurationState).take(TRANSITION_DEFAULT).to(appendConfigureState)
-
-            .from(appendConfigureState).take(TRANSITION_DEFAULT).to(applyConfigureState)
-            .from(appendConfigureState).take(TRANSITION_FAILED).to(sendConfigurationState)
-
-            .from(applyConfigureState).take(TRANSITION_DEFAULT).to(commitConfigureState)
-
-            .from(commitConfigureState).take(TRANSITION_DEFAULT).to(sendConfigurationState)
-
-            .from(sendConfigurationState).take(TRANSITION_DEFAULT).to(openState)
-
-            .from(openState).take(TRANSITION_CONFIGURE).to(preConfigurationState)
-            .from(openState).take(TRANSITION_CLOSE).to(closedState)
-
-            .build());
-
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
-
-    protected final InitializeEntry initialEntry = new InitializeEntry();
-    protected final ConfigurationEntry configurationEntry = new ConfigurationEntry();
-
-    protected final LeaderEntryController entryController;
-
-    protected long leaderInitialEntryPosition = 0L;
-    protected boolean configuring = false;
-
-    protected DeferredResponse deferedJoinResponse;
-
-    public LeaderState(final Raft raft, final LogStreamState logStreamState)
+    private static final StateMachineCommand<ReplicationContext> CLOSE_REPLICATION_STATE_MACHINE_COMMAND = (c) ->
     {
-        super(raft, logStreamState);
-        this.entryController = new LeaderEntryController(raft);
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
+    private final WaitState<LeaderContext> leaderClosedState = (c) ->
+    {
+    };
+    private final WaitState<LeaderContext> leaderInitializedState = (c) ->
+    {
+    };
+
+    private final OpenAppendControllerState openAppendControllerState = new OpenAppendControllerState();
+    private final AppendInitialEntryState appendInitialEntryState = new AppendInitialEntryState();
+    private final OpenConfigurationControllerState openConfigurationControllerState = new OpenConfigurationControllerState();
+    private final CloseAppendControllerState closeAppendControllerState = new CloseAppendControllerState();
+    private final ClosingAppendControllerState closingAppendControllerState = new ClosingAppendControllerState();
+
+    private final StateMachineAgent<LeaderContext> leaderStateMachine;
+    private LeaderContext leaderContext;
+
+    private final WaitState<ReplicationContext> replicationClosedState = (c) ->
+    {
+    };
+
+    private final ReplicationState replicationState = new ReplicationState();
+    private final CloseReplicationsState closeReplicationsState = new CloseReplicationsState();
+    private final ClosingReplicationsState closingReplicationsState = new ClosingReplicationsState();
+
+    private final StateMachineAgent<ReplicationContext> replicationStateMachine;
+    private ReplicationContext replicationContext;
+
+    private final List<Member> joiningMembers;
+    private final Member joiningMember;
+
+    private boolean sendJoinResponse;
+    private int joinChannelId;
+    private long joinConnectionId;
+    private long joinRequestId;
+
+    private final ConfigurationController configurationController;
+
+    private final MessageWriter messageWriter;
+
+
+    public LeaderState(final RaftContext context)
+    {
+        super(context);
+
+        this.joiningMembers = new CopyOnWriteArrayList<>();
+        this.joiningMember = new Member();
+
+        this.configurationController = new ConfigurationController(context);
+
+        this.messageWriter = new MessageWriter(context.getSendBuffer());
+
+        this.leaderStateMachine = new StateMachineAgent<>(StateMachine
+                .<LeaderContext> builder(s ->
+                {
+                    leaderContext = new LeaderContext(s, context);
+                    leaderContext.configController = configurationController;
+                    return leaderContext;
+                })
+                .initialState(leaderClosedState)
+
+                .from(leaderClosedState).take(TRANSITION_OPEN).to(openAppendControllerState)
+                .from(leaderClosedState).take(TRANSITION_CLOSE).to(leaderClosedState)
+
+                .from(openAppendControllerState).take(TRANSITION_DEFAULT).to(appendInitialEntryState)
+                .from(openAppendControllerState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+
+                .from(appendInitialEntryState).take(TRANSITION_DEFAULT).to(openConfigurationControllerState)
+                .from(appendInitialEntryState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+
+                .from(openConfigurationControllerState).take(TRANSITION_DEFAULT).to(leaderInitializedState)
+                .from(openConfigurationControllerState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+
+                .from(leaderInitializedState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+
+                .from(closeAppendControllerState).take(TRANSITION_DEFAULT).to(closingAppendControllerState)
+                .from(closeAppendControllerState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+
+                .from(closingAppendControllerState).take(TRANSITION_DEFAULT).to(leaderClosedState)
+                .from(closingAppendControllerState).take(TRANSITION_CLOSE).to(closingAppendControllerState)
+
+                .build());
+
+        this.replicationStateMachine = new StateMachineAgent<>(StateMachine
+                .<ReplicationContext> builder(s ->
+                {
+                    replicationContext = new ReplicationContext(s, context);
+                    return replicationContext;
+                })
+                .initialState(replicationClosedState)
+
+                .from(replicationClosedState).take(TRANSITION_OPEN).to(replicationState)
+                .from(replicationClosedState).take(TRANSITION_CLOSE).to(replicationClosedState)
+
+                .from(replicationState).take(TRANSITION_CLOSE).to(closeReplicationsState)
+
+                .from(closeReplicationsState).take(TRANSITION_DEFAULT).to(closingReplicationsState)
+                .from(closeReplicationsState).take(TRANSITION_CLOSE).to(closeReplicationsState)
+
+                .from(closingReplicationsState).take(TRANSITION_DEFAULT).to(replicationClosedState)
+                .from(closingReplicationsState).take(TRANSITION_CLOSE).to(closingReplicationsState)
+
+                .build());
+    }
+
+    public int onAppendResponse(final DirectBuffer buffer, final int offset, final int length)
+    {
+        appendResponse.reset();
+        appendResponse.wrap(buffer, offset, length);
+
+        final Member respondedBy = appendResponse.member();
+        final boolean succeeded = appendResponse.succeeded();
+        final long entryPosition = appendResponse.entryPosition();
+
+        if (respondedBy != null)
+        {
+            final Member member = raft.getMemberByEndpoint(respondedBy.endpoint());
+
+            if (member != null)
+            {
+                member.lastContact(System.currentTimeMillis());
+
+                System.out.println("[APPEND RESPONSE] succeeded: " + succeeded + ", entryPosition: " + entryPosition);
+
+                if (succeeded)
+                {
+                    member.failures(0);
+                }
+                else
+                {
+                    member.incrementFailures();
+                    member.resetReaderToPreviousEntry(entryPosition);
+                }
+            }
+        }
+
+        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+
+    public int onJoinRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    {
+        joinRequest.reset();
+        joinRequest.wrap(buffer, offset, length);
+
+        joinResponse.reset();
+        boolean respond = false;
+
+        final int id = raft.id();
+        final int term = raft.term();
+
+        final Configuration configuration = raft.configuration();
+        final List<Member> members = configuration.members();
+
+        if (initializing() || configuring())
+        {
+            respond = true;
+            joinResponse
+                .id(id)
+                .term(term)
+                .succeeded(false)
+                .members(members);
+        }
+        else if (members.contains(joinRequest.member()))
+        {
+            respond = true;
+            joinResponse
+                .id(id)
+                .term(term)
+                .succeeded(true)
+                .members(members);
+        }
+        else
+        {
+            final Endpoint endpoint = joinRequest.member().endpoint();
+            joiningMember.endpoint().wrap(endpoint);
+
+            joiningMembers.clear();
+            joiningMembers.addAll(members);
+            joiningMembers.add(joiningMember);
+
+            sendJoinResponse = true;
+            joinChannelId = channelId;
+            joinConnectionId = connectionId;
+            joinRequestId = requestId;
+
+            configurationController.open(joiningMembers);
+        }
+
+        if (respond)
+        {
+            messageWriter.protocol(Protocols.REQUEST_RESPONSE)
+                .channelId(channelId)
+                .connectionId(connectionId)
+                .requestId(requestId)
+                .message(joinResponse)
+                .tryWriteMessage();
+        }
+
+        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+
+    public boolean initializing()
+    {
+        return leaderStateMachine.getCurrentState() != leaderInitializedState;
+    }
+
+    public boolean configuring()
+    {
+        return !configurationController.isClosed();
     }
 
     @Override
-    public State state()
+    public Raft.State state()
     {
         return Raft.State.LEADER;
-    }
-
-    @Override
-    public void doOpen()
-    {
-        System.out.println("[LEADER] leader for " + raft.id());
-
-        takeLeadership();
-
-        startAppendEntries();
-
-        leaderStateMachine.addCommand((c) ->
-        {
-            final boolean closed = c.tryTake(TRANSITION_OPEN);
-            if (!closed)
-            {
-                throw new IllegalStateException("Cannot open state machine.");
-            }
-        });
-    }
-
-    @Override
-    public void doClose()
-    {
-        stepdown();
-
-        stopAppendEntries();
-
-        leaderStateMachine.addCommand((c) ->
-        {
-            final boolean closed = c.tryTake(TRANSITION_CLOSE);
-            if (!closed)
-            {
-                throw new IllegalStateException("Cannot close state machine.");
-            }
-        });
-
     }
 
     @Override
@@ -144,396 +271,386 @@ public class LeaderState extends ActiveState
     {
         int workcount = 0;
 
-        workcount += doAppendEntries();
+        workcount += replicationStateMachine.doWork();
         workcount += leaderStateMachine.doWork();
+        workcount += configurationController.doWork();
 
-        return workcount;
-    }
-
-    protected void startAppendEntries()
-    {
-        final Member leader = raft.member();
-        final List<Member> members = raft.members();
-
-        for (int i = 0; i < members.size(); i++)
+        if (configurationController.isConfigured() || configurationController.isFailed())
         {
-            final Member member = members.get(i);
-            if (member != null && member.equals(leader))
+            workcount += 1;
+
+            if (sendJoinResponse)
             {
-                member.resetToLastEntry();
-                member.sendAppendRequest();
-            }
-        }
-    }
-
-    protected int doAppendEntries()
-    {
-        int workcount = 0;
-
-        if (isOpen())
-        {
-            final Member leader = raft.member();
-            final List<Member> members = raft.members();
-
-            for (int i = 0; i < members.size(); i++)
-            {
-                final Member member = members.get(i);
-
-                if (member != null && !member.equals(leader))
-                {
-                    workcount += member.doAppend();
-
-                    if (member.shouldAppend())
-                    {
-                        workcount += 1;
-                        member.cancelAppendRequest();
-                        member.sendAppendRequest();
-                        workcount += member.doAppend();
-                    }
-                }
-            }
-        }
-
-        return workcount;
-    }
-
-    protected void stopAppendEntries()
-    {
-        final Member leader = raft.member();
-        final List<Member> members = raft.members();
-
-        for (int i = 0; i < members.size(); i++)
-        {
-            final Member member = members.get(i);
-            if (member != null && member.equals(leader))
-            {
-                member.cancelAppendRequest();
-            }
-        }
-    }
-
-    public boolean initializing()
-    {
-        return leaderInitialEntryPosition == 0;
-    }
-
-    public boolean configuring()
-    {
-        return configuring;
-    }
-
-    protected void takeLeadership()
-    {
-        final Member member = raft.member();
-        final Endpoint endpoint = member.endpoint();
-
-        raft.leader(endpoint);
-    }
-
-    protected void stepdown()
-    {
-        leaderInitialEntryPosition = 0;
-        configuring = false;
-    }
-
-    @Override
-    public void join(final JoinRequest request, final DeferredResponse response)
-    {
-        joinResponse.reset();
-
-
-        if (configuring() || initializing())
-        {
-            joinResponse
-                .term(raft.term())
-                .log(raft.stream().getId())
-                .status(false)
-                .members(raft.members());
-
-            if (response.allocateAndWrite(joinResponse))
-            {
-                response.commit();
-            }
-        }
-        else
-        {
-            final Member joiningMember = request.member();
-            if (!raft.members().contains(joiningMember))
-            {
-                final List<Member> members = new CopyOnWriteArrayList<>(raft.members());
-                members.add(joiningMember);
-
-                raft.configure(new Configuration(0, 0, members));
-
-                leaderStateMachine.addCommand((c) -> c.tryTake(TRANSITION_CONFIGURE));
-
-                response.defer();
-                deferedJoinResponse = response;
-            }
-            else
-            {
+                joinResponse.reset();
                 joinResponse
+                    .id(raft.id())
                     .term(raft.term())
-                    .log(raft.stream().getId())
-                    .status(true)
+                    .succeeded(configurationController.isConfigured())
                     .configurationEntryPosition(raft.configuration().configurationEntryPosition())
                     .configurationEntryTerm(raft.configuration().configurationEntryTerm())
-                    .members(raft.members());
+                    .members(raft.configuration().members());
 
-                if (response.allocateAndWrite(joinResponse))
-                {
-                    response.commit();
-                }
+                messageWriter.protocol(Protocols.REQUEST_RESPONSE)
+                    .channelId(joinChannelId)
+                    .connectionId(joinConnectionId)
+                    .requestId(joinRequestId)
+                    .message(joinResponse)
+                    .tryWriteMessage();
+
+                sendJoinResponse = false;
+
+                joinChannelId = -1;
+                joinConnectionId = -1L;
+                joinRequestId = -1L;
             }
+
+            configurationController.close();
+
+        }
+
+        return workcount;
+    }
+
+    @Override
+    public void open()
+    {
+        if (isLeaderStateMachineClosed())
+        {
+            leaderContext.take(TRANSITION_OPEN);
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot open state machine, has not been closed.");
+        }
+
+
+        if (isReplicationStateMachineClosed())
+        {
+            replicationContext.take(TRANSITION_OPEN);
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot open state machine, has not been closed.");
         }
     }
 
     @Override
-    public VoteResponse vote(VoteRequest request)
+    public void close()
     {
-        if (updateTermAndLeader(request.term(), null))
-        {
-            raft.transition(Raft.State.FOLLOWER);
-            return super.vote(request);
-        }
-        else
-        {
-            voteResponse.reset();
-            return voteResponse.term(raft.term())
-                .granted(false);
-        }
+        replicationStateMachine.addCommand(CLOSE_REPLICATION_STATE_MACHINE_COMMAND);
+        leaderStateMachine.addCommand(CLOSE_LEADER_STATE_MACHINE_COMMAND);
     }
 
     @Override
-    public AppendResponse append(final AppendRequest request)
+    public boolean isClosed()
     {
-        AppendResponse response = null;
+        return isLeaderStateMachineClosed() && isReplicationStateMachineClosed();
+    }
 
-        if (updateTermAndLeader(request.term(), request.leader()))
-        {
-            raft.transition(Raft.State.FOLLOWER);
-            response = super.append(request);
-        }
-        else if (request.term() < raft.term())
-        {
-            response = rejectAppendRequest(request.previousEntryPosition());
-        }
-        else
-        {
-            raft.transition(Raft.State.FOLLOWER);
-            response = super.append(request);
-        }
+    protected boolean isLeaderStateMachineClosed()
+    {
+        return leaderStateMachine.getCurrentState() == leaderClosedState;
+    }
 
-        return response;
+    protected boolean isReplicationStateMachineClosed()
+    {
+        return replicationStateMachine.getCurrentState() == replicationClosedState;
     }
 
     class LeaderContext extends SimpleStateMachineContext
     {
-        protected final List<Member> members = new CopyOnWriteArrayList<>();
-        protected boolean configurationSucceeded = false;
+        final RaftContext raftContext;
+        final AppendController appendController;
+        final InitializeEntry initialEntry;
 
-        LeaderContext(final StateMachine<LeaderContext> stateMachine)
+        ConfigurationController configController;
+
+        LeaderContext(final StateMachine<?> stateMachine, final RaftContext raftContext)
         {
             super(stateMachine);
+            this.raftContext = raftContext;
+            this.appendController = new AppendController(raftContext);
+            this.initialEntry = new InitializeEntry();
         }
-    }
 
-    class PreInitializeState implements TransitionState<LeaderContext>
-    {
-        @Override
-        public void work(LeaderContext context) throws Exception
+        public void reset()
         {
             initialEntry.reset();
-            entryController.open(initialEntry, false);
+        }
+    }
+
+    class OpenAppendControllerState implements TransitionState<LeaderContext>
+    {
+        @Override
+        public void work(LeaderContext context) throws Exception
+        {
+            final InitializeEntry initialEntry = context.initialEntry;
+            final AppendController appendController = context.appendController;
+            initialEntry.reset();
+
+            appendController.open(initialEntry, false);
             context.take(TRANSITION_DEFAULT);
         }
     }
 
-    class InitializeState implements org.camunda.tngp.util.state.State<LeaderContext>
+    class AppendInitialEntryState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
         {
+            final AppendController appendController = context.appendController;
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
             int workcount = 0;
 
-            workcount += entryController.doWork();
+            workcount += appendController.doWork();
 
-            if (entryController.isEntryAppended())
+            if (appendController.isAppended())
             {
                 workcount += 1;
-                leaderInitialEntryPosition = entryController.entryPosition();
-
-                final Configuration configuration = raft.configuration();
-                final List<Member> members = configuration.members();
-                context.members.clear();
-                context.members.addAll(members);
-
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (entryController.isEntryFailed())
+            else if (appendController.isFailed())
             {
-                // failed to append initial entry, stepdown as leader
-                raft.transition(State.FOLLOWER);
+                workcount += 1;
+                raft.transition(FOLLOWER);
             }
 
             return workcount;
         }
-
-        @Override
-        public void onExit()
-        {
-            entryController.close();
-            entryController.doWork();
-        }
     }
 
-    class PreConfigurationState implements TransitionState<LeaderContext>
+    class OpenConfigurationControllerState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
         {
-            configuring = true;
-
-            configurationEntry.reset();
-            configurationEntry.members(context.members);
-            entryController.open(configurationEntry, true);
+            final ConfigurationController configController = context.configController;
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+            final Configuration configuration = raft.configuration();
+            configController.open(configuration.members());
             context.take(TRANSITION_DEFAULT);
         }
     }
 
-    class AppendConfigurationState implements org.camunda.tngp.util.state.State<LeaderContext>
+    class ConfigureState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
         {
+            final ConfigurationController configController = context.configController;
+
             int workcount = 0;
 
-            workcount += entryController.doWork();
+            workcount += configController.doWork();
 
-            if (entryController.isEntryAppended())
+            if (configController.isConfigured())
             {
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (entryController.isEntryFailed())
+            else if (configController.isFailed())
             {
+                // TODO: what should we do, when we were not able to
+                // apply (or commit) current configuration during initialization.
                 workcount += 1;
-                context.configurationSucceeded = false;
-                context.take(TRANSITION_FAILED);
+                raft.transition(FOLLOWER);
             }
 
             return workcount;
         }
-
     }
 
-    class ApplyConfigurationState implements TransitionState<LeaderContext>
+    class CloseAppendControllerState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
         {
-            final long newConfigPosition = entryController.entryPosition();
-            final List<Member> members = new CopyOnWriteArrayList<>(context.members);
-            raft.configure(new Configuration(newConfigPosition, raft.term(), members));
-            context.take(TRANSITION_DEFAULT);
+            final AppendController appendController = context.appendController;
 
-            final BufferedLogStreamReader reader = new BufferedLogStreamReader();
-            reader.wrap(raft.stream());
-            reader.seek(newConfigPosition);
-            if (reader.hasNext())
+            if (!appendController.isClosed())
             {
-                final LoggedEvent event = reader.next();
-                configurationEntry.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+                appendController.close();
             }
+
+            context.take(TRANSITION_DEFAULT);
         }
     }
 
-    class CommitConfigurationState implements org.camunda.tngp.util.state.State<LeaderContext>
+    class ClosingAppendControllerState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
         {
+            final AppendController appendController = context.appendController;
+
             int workcount = 0;
 
-            workcount += entryController.doWork();
+            workcount += appendController.doWork();
 
-            if (entryController.isEntryCommitted())
+            if (appendController.isClosed())
             {
                 workcount += 1;
-                context.configurationSucceeded = true;
                 context.take(TRANSITION_DEFAULT);
             }
 
             return workcount;
         }
-
-        @Override
-        public void onExit()
-        {
-            entryController.close();
-            entryController.doWork();
-        }
     }
 
-    class SendConfigurationState implements TransitionState<LeaderContext>
+    class CloseConfigurationControllerState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
         {
-            if (deferedJoinResponse != null)
+            final ConfigurationController configController = context.configController;
+
+            if (configController.isClosed())
             {
-                joinResponse.reset();
-                joinResponse
-                    .log(raft.stream().getId())
-                    .term(raft.term())
-                    .status(context.configurationSucceeded);
+                configController.close();
+            }
 
-                if (context.configurationSucceeded)
-                {
-                    final Configuration configuration = raft.configuration();
-                    joinResponse
-                        .configurationEntryPosition(configuration.configurationEntryPosition())
-                        .configurationEntryTerm(configuration.configurationEntryTerm())
-                        .members(configuration.members());
-                }
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
 
-                if (deferedJoinResponse.allocateAndWrite(configureResponse))
+    class ClosingConfigurationControllerState implements State<LeaderContext>
+    {
+        @Override
+        public int doWork(LeaderContext context) throws Exception
+        {
+            final ConfigurationController configController = context.configController;
+
+            int workcount = 0;
+
+            workcount += configController.doWork();
+
+            if (configController.isClosed())
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
+    class ReplicationContext extends SimpleStateMachineContext
+    {
+        final RaftContext raftContext;
+
+        ReplicationContext(StateMachine<?> stateMachine, final RaftContext raftContext)
+        {
+            super(stateMachine);
+            this.raftContext = raftContext;
+        }
+
+    }
+
+    class ReplicationState implements State<ReplicationContext>
+    {
+
+        @Override
+        public int doWork(ReplicationContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            int workcount = 0;
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final ReplicationController replicationController = member.getReplicationController();
+
+                if (!self.equals(member) && replicationController != null)
                 {
-                    deferedJoinResponse.commit();
-                }
-                else
-                {
-                    deferedJoinResponse.abort();
+                    if (replicationController.isClosed())
+                    {
+                        member.resetReaderToLastEntry();
+                        replicationController.open();
+                        workcount += 1;
+                    }
+
+                    workcount += replicationController.doWork();
                 }
             }
 
-            context.configurationSucceeded = false;
+            return workcount;
+        }
+    }
+
+    class CloseReplicationsState implements TransitionState<ReplicationContext>
+    {
+        @Override
+        public void work(ReplicationContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final ReplicationController replicationController = member.getReplicationController();
+
+                if (!self.equals(member) && replicationController != null)
+                {
+                    if (!replicationController.isClosed())
+                    {
+                        replicationController.close();
+                    }
+                }
+            }
             context.take(TRANSITION_DEFAULT);
         }
-
-        @Override
-        public void onExit()
-        {
-            deferedJoinResponse = null;
-            configuring = false;
-        }
     }
 
-    class OpenState implements WaitState<LeaderContext>
+    class ClosingReplicationsState implements State<ReplicationContext>
     {
         @Override
-        public void work(LeaderContext context) throws Exception
+        public int doWork(ReplicationContext context) throws Exception
         {
-            // nothing to do!
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            int workcount = 0;
+            int closed = 0;
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final ReplicationController replicationController = member.getReplicationController();
+
+                if (!self.equals(member) && replicationController != null)
+                {
+                    workcount += replicationController.doWork();
+
+                    if (replicationController.isClosed())
+                    {
+                        closed += 1;
+                    }
+                }
+            }
+
+            if (closed == members.size() - 1)
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
         }
     }
 
-    class ClosedState implements WaitState<LeaderContext>
-    {
-        @Override
-        public void work(LeaderContext context) throws Exception
-        {
-            // nothing to do!
-        }
-    }
 }

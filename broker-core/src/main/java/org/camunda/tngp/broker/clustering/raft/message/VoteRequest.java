@@ -1,14 +1,12 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
 import static org.camunda.tngp.clustering.raft.VoteRequestDecoder.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.clustering.raft.RaftHeaderDecoder;
 import org.camunda.tngp.clustering.raft.VoteRequestDecoder;
 import org.camunda.tngp.clustering.raft.VoteRequestEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -22,22 +20,22 @@ public class VoteRequest implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final VoteRequestEncoder bodyEncoder = new VoteRequestEncoder();
 
-    protected int log;
+    protected int id;
     protected int term;
 
     protected long lastEntryPosition;
     protected int lastEntryTerm;
 
-    protected Endpoint candidate = new Endpoint();
+    protected final Member candidate = new Member();
 
-    public int log()
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public VoteRequest log(final int log)
+    public VoteRequest id(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -74,14 +72,15 @@ public class VoteRequest implements BufferReader, BufferWriter
         return this;
     }
 
-    public Endpoint candidate()
+    public Member candidate()
     {
         return candidate;
     }
 
-    public VoteRequest candidate(final Endpoint candidate)
+    public VoteRequest candidate(final Member candidate)
     {
-        this.candidate = candidate;
+        this.candidate.endpoint().reset();
+        this.candidate.endpoint().wrap(candidate.endpoint());
         return this;
     }
 
@@ -93,20 +92,17 @@ public class VoteRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final RaftHeaderDecoder raftHeaderDecoder = bodyDecoder.header();
-
-        log = raftHeaderDecoder.log();
-        term = raftHeaderDecoder.term();
-
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
         lastEntryPosition = bodyDecoder.lastEntryPosition();
         lastEntryTerm = bodyDecoder.lastEntryTerm();
 
-        candidate.port(bodyDecoder.port());
-        final int hostLength = bodyDecoder.hostLength();
-        final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) candidate.getBuffer();
+        candidate.endpoint().port(bodyDecoder.port());
 
-        endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-        bodyDecoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+        final int hostLength = bodyDecoder.hostLength();
+        final MutableDirectBuffer endpointBuffer = candidate.endpoint().getHostBuffer();
+        candidate.endpoint().hostLength(hostLength);
+        bodyDecoder.getHost(endpointBuffer, 0, hostLength);
     }
 
     @Override
@@ -115,7 +111,7 @@ public class VoteRequest implements BufferReader, BufferWriter
         return headerEncoder.encodedLength() +
                 bodyEncoder.sbeBlockLength() +
                 hostHeaderLength() +
-                candidate.hostLength();
+                candidate.endpoint().hostLength();
     }
 
     @Override
@@ -129,27 +125,23 @@ public class VoteRequest implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(term);
-
-        bodyEncoder
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
             .lastEntryPosition(lastEntryPosition)
             .lastEntryTerm(lastEntryTerm);
 
-        bodyEncoder.port(candidate.port());
-        bodyEncoder.putHost(candidate.getBuffer(), hostOffset(0), candidate.hostLength());
+        bodyEncoder.port(candidate.endpoint().port());
+        bodyEncoder.putHost(candidate.endpoint().getHostBuffer(), 0, candidate.endpoint().hostLength());
     }
 
     public void reset()
     {
-        log = -1;
+        id = -1;
         term = -1;
         lastEntryPosition = -1L;
         lastEntryTerm = -1;
-        candidate.clear();
+        candidate.endpoint().reset();
     }
 
 }

@@ -155,7 +155,7 @@
           <arguments>
             <argument>${project.build.resources[0].directory}/gossip-schema.xml</argument>
             <argument>${project.build.resources[0].directory}/raft-schema.xml</argument>
-            <argument>${project.build.resources[0].directory}/cluster-management-schema.xml</argument>
+            <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
         </configuration>

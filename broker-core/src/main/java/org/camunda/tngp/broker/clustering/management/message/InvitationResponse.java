@@ -2,11 +2,10 @@ package org.camunda.tngp.broker.clustering.management.message;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.management.cluster.BooleanType;
-import org.camunda.tngp.management.cluster.InvitationResponseDecoder;
-import org.camunda.tngp.management.cluster.InvitationResponseEncoder;
-import org.camunda.tngp.management.cluster.MessageHeaderDecoder;
-import org.camunda.tngp.management.cluster.MessageHeaderEncoder;
+import org.camunda.tngp.clustering.management.InvitationResponseDecoder;
+import org.camunda.tngp.clustering.management.InvitationResponseEncoder;
+import org.camunda.tngp.clustering.management.MessageHeaderDecoder;
+import org.camunda.tngp.clustering.management.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -18,16 +17,28 @@ public class InvitationResponse implements BufferWriter, BufferReader
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final InvitationResponseEncoder bodyEncoder = new InvitationResponseEncoder();
 
-    protected boolean acknowledged;
+    protected int id;
+    protected int term;
 
-    public boolean acknowledged()
+    public int id()
     {
-        return acknowledged;
+        return id;
     }
 
-    public InvitationResponse acknowledged(final boolean acknowledged)
+    public InvitationResponse id(final int id)
     {
-        this.acknowledged = acknowledged;
+        this.id = id;
+        return this;
+    }
+
+    public int term()
+    {
+        return term;
+    }
+
+    public InvitationResponse term(final int term)
+    {
+        this.term = term;
         return this;
     }
 
@@ -38,7 +49,9 @@ public class InvitationResponse implements BufferWriter, BufferReader
         offset += headerDecoder.encodedLength();
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-        acknowledged = bodyDecoder.acknowledged() == BooleanType.TRUE;
+
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
     }
 
     @Override
@@ -59,6 +72,11 @@ public class InvitationResponse implements BufferWriter, BufferReader
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .acknowledged(acknowledged ? BooleanType.TRUE : BooleanType.FALSE);
+            .id(id)
+            .term(term);
+    }
+
+    public void reset()
+    {
     }
 }

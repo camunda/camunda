@@ -1,16 +1,14 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
 import static org.camunda.tngp.clustering.raft.AppendRequestDecoder.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.AppendRequestDecoder;
 import org.camunda.tngp.clustering.raft.AppendRequestEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.clustering.raft.RaftHeaderDecoder;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader.LoggedEventImpl;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -24,30 +22,29 @@ public class AppendRequest implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final AppendRequestEncoder bodyEncoder = new AppendRequestEncoder();
 
+    protected int id;
     protected int term;
-    protected int log;
-    protected int index;
 
     protected long previousEntryPosition;
     protected int previousEntryTerm;
 
     protected long commitPosition;
 
-    protected final Endpoint leader = new Endpoint();
+    protected final Member leader = new Member();
     protected final LoggedEventImpl readableEntry = new LoggedEventImpl();
     protected LoggedEventImpl writeableEntry;
 
     protected boolean isLeaderAvailable = false;
     protected boolean isReadableEntryAvailable = false;
 
-    public int log()
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public AppendRequest log(final int log)
+    public AppendRequest log(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -59,17 +56,6 @@ public class AppendRequest implements BufferReader, BufferWriter
     public AppendRequest term(final int term)
     {
         this.term = term;
-        return this;
-    }
-
-    public int index()
-    {
-        return index;
-    }
-
-    public AppendRequest index(final int index)
-    {
-        this.index = index;
         return this;
     }
 
@@ -106,28 +92,26 @@ public class AppendRequest implements BufferReader, BufferWriter
         return this;
     }
 
-    public Endpoint leader()
+    public Member leader()
     {
         return isLeaderAvailable ? leader : null;
     }
 
-    public AppendRequest leader(final Endpoint leader)
+    public AppendRequest leader(final Member leader)
     {
         isLeaderAvailable = false;
+        this.leader.endpoint().reset();
+
         if (leader != null)
         {
-            this.leader.wrap(leader);
+            this.leader.endpoint().wrap(leader.endpoint());
             isLeaderAvailable = true;
-        }
-        else
-        {
-            this.leader.clear();
         }
 
         return this;
     }
 
-    public LoggedEvent entry()
+    public LoggedEventImpl entry()
     {
         return isReadableEntryAvailable ? readableEntry : null;
     }
@@ -146,26 +130,24 @@ public class AppendRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final RaftHeaderDecoder raftHeaderDecoder = bodyDecoder.header();
-        log = raftHeaderDecoder.log();
-        term = raftHeaderDecoder.term();
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
 
         previousEntryPosition = bodyDecoder.previousEntryPosition();
         previousEntryTerm = bodyDecoder.previousEntryTerm();
         commitPosition = bodyDecoder.commitPosition();
-        index = bodyDecoder.index();
 
         isLeaderAvailable = false;
-        leader.clear();
+        leader.endpoint().reset();
 
         final int hostLength = bodyDecoder.hostLength();
         if (hostLength > 0)
         {
-            leader.port(bodyDecoder.port());
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) leader.getBuffer();
+            leader.endpoint().port(bodyDecoder.port());
 
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            bodyDecoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            final MutableDirectBuffer endpointBuffer = leader.endpoint().getHostBuffer();
+            leader.endpoint().hostLength(hostLength);
+            bodyDecoder.getHost(endpointBuffer, 0, hostLength);
 
             isLeaderAvailable = true;
         }
@@ -193,7 +175,7 @@ public class AppendRequest implements BufferReader, BufferWriter
 
         if (isLeaderAvailable)
         {
-            size += leader.hostLength();
+            size += leader.endpoint().hostLength();
         }
 
         if (writeableEntry != null)
@@ -215,20 +197,14 @@ public class AppendRequest implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(term);
-
-        bodyEncoder
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
             .previousEntryPosition(previousEntryPosition)
             .previousEntryTerm(previousEntryTerm)
             .commitPosition(commitPosition)
-            .index(index);
-
-        bodyEncoder.port(leader.port());
-        bodyEncoder.putHost(leader.getBuffer(), hostOffset(0), leader.hostLength());
+            .port(leader.endpoint().port())
+            .putHost(leader.endpoint().getHostBuffer(), 0, leader.endpoint().hostLength());
 
         if (writeableEntry != null)
         {
@@ -241,11 +217,11 @@ public class AppendRequest implements BufferReader, BufferWriter
 
     public void reset()
     {
-        log = -1;
+        id = -1;
         term = -1;
         previousEntryPosition = -1L;
         previousEntryTerm = -1;
-        leader.clear();
+        leader.endpoint().reset();
         isLeaderAvailable = false;
         isReadableEntryAvailable = false;
         writeableEntry = null;

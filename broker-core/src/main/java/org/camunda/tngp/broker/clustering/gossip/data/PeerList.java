@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.clustering.gossip.data;
 
 import static org.camunda.tngp.broker.clustering.gossip.data.Peer.*;
-import static org.camunda.tngp.management.gossip.PeerState.*;
+import static org.camunda.tngp.clustering.gossip.PeerState.*;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -12,12 +12,9 @@ import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.clustering.gossip.GossipListener;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder;
 import org.camunda.tngp.list.CompactList;
-import org.camunda.tngp.management.gossip.PeerDescriptorDecoder;
 
 /**
  * <p>An instance of {@link PeerManager} contains a list of peers.</p>
@@ -38,17 +35,17 @@ public class PeerList implements Iterable<Peer>
         }
     };
 
-    protected static final int MAX_PEER_CAPACITY = 1000;
     protected final CompactList underlyingList;
 
     protected final PeerListIterator iterator;
+    protected final PeerListIterator localIterator;
 
     protected final UnsafeBuffer tmpPeerBuffer = new UnsafeBuffer(new byte[MAX_PEER_LENGTH]);
-    protected final Peer tmpPeer = new Peer();
-    protected final Random random = new Random();
-    protected final EpochClock clock = new SystemEpochClock();
 
-    protected final List<GossipListener> gossipListeners = new CopyOnWriteArrayList<>();
+    protected final Peer shuffledPeer = new Peer();
+    protected final Random shuffleRandom = new Random();
+
+    protected final List<PeerListListener> listeners = new CopyOnWriteArrayList<>();
 
     public PeerList(final int capacity)
     {
@@ -59,6 +56,7 @@ public class PeerList implements Iterable<Peer>
     {
         this.underlyingList = underlyingList;
         this.iterator = new PeerListIterator(this);
+        this.localIterator = new PeerListIterator(this);
     }
     /**
      * <p>Returns a {@link CompactList list} containing peer information.</p>
@@ -98,18 +96,17 @@ public class PeerList implements Iterable<Peer>
      */
     public void merge(final Iterator<Peer> updates, final PeerList diff)
     {
-        final PeerListIterator thisIterator = iterator();
+        localIterator.reset();
 
-        if (thisIterator.hasNext())
+        if (localIterator.hasNext())
         {
             Peer thatPeer = updates.hasNext() ? updates.next() : null;
             boolean keepPosition = false;
             Peer thisPeer = null;
 
-
             do
             {
-                thisPeer = !keepPosition ? thisIterator.next() : thisPeer;
+                thisPeer = !keepPosition ? localIterator.next() : thisPeer;
                 keepPosition = false;
 
                 int cmp = -1;
@@ -125,7 +122,7 @@ public class PeerList implements Iterable<Peer>
                         diff.append(thisPeer);
                     }
 
-                    if (!thisIterator.hasNext() && thatPeer != null)
+                    if (!localIterator.hasNext() && thatPeer != null)
                     {
                         append(thatPeer);
                     }
@@ -134,11 +131,7 @@ public class PeerList implements Iterable<Peer>
                 {
                     if (thatPeer.state() == ALIVE)
                     {
-                        thisIterator.add(thatPeer);
-                        for (int i = 0; i < gossipListeners.size(); i++)
-                        {
-                            gossipListeners.get(i).onPeerJoin(thatPeer);
-                        }
+                        add(localIterator.position(), thatPeer);
                     }
                     else
                     {
@@ -148,7 +141,7 @@ public class PeerList implements Iterable<Peer>
                 }
                 else
                 {
-                    if (mergeState(thisPeer, thatPeer))
+                    if (mergePeer(thisPeer, thatPeer, localIterator.position()))
                     {
                         if (diff != null)
                         {
@@ -156,7 +149,7 @@ public class PeerList implements Iterable<Peer>
                         }
                     }
 
-                    if (thisIterator.hasNext() && updates.hasNext())
+                    if (localIterator.hasNext() && updates.hasNext())
                     {
                         thatPeer = updates.next();
                     }
@@ -166,7 +159,7 @@ public class PeerList implements Iterable<Peer>
                     }
                 }
             }
-            while (thisIterator.hasNext());
+            while (localIterator.hasNext());
         }
 
         while (updates.hasNext())
@@ -177,20 +170,19 @@ public class PeerList implements Iterable<Peer>
 
     }
 
-    protected boolean mergeState(final Peer thisPeer, final Peer thatPeer)
+    protected boolean mergePeer(final Peer thisPeer, final Peer thatPeer, final int idx)
     {
-        if (thisPeer.localPeer() && thatPeer.state() != ALIVE)
-        {
-            // refute
-            thisPeer.state(ALIVE)
-                .heartbeat().generation(clock.time());
-            return true;
-        }
-
         final Heartbeat thisHeartbeat = thisPeer.heartbeat();
         final Heartbeat thatHeartbeat = thatPeer.heartbeat();
 
         final int cmp = thisHeartbeat.compareTo(thatHeartbeat);
+
+        if (cmp < 0)
+        {
+            thisPeer.clientEndpoint().wrap(thatPeer.clientEndpoint());
+            thisPeer.managementEndpoint().wrap(thatPeer.managementEndpoint());
+            thisPeer.replicationEndpoint().wrap(thatPeer.replicationEndpoint());
+        }
 
         switch (thatPeer.state())
         {
@@ -199,8 +191,8 @@ public class PeerList implements Iterable<Peer>
                 if (cmp < 0)
                 {
                     thisHeartbeat.wrap(thatHeartbeat);
-                    markPeerAsAlive(thisPeer);
-                    set(thisPeer);
+                    thisPeer.alive();
+                    set(idx, thisPeer);
                 }
                 break;
             }
@@ -210,13 +202,13 @@ public class PeerList implements Iterable<Peer>
                 if (thisPeer.state() == SUSPECT && cmp < 0)
                 {
                     thisHeartbeat.wrap(thatHeartbeat);
-                    set(thisPeer);
+                    set(idx, thisPeer);
                 }
                 else if (thisPeer.state() == ALIVE && !(cmp > 0))
                 {
                     thisHeartbeat.wrap(thatHeartbeat);
-                    markPeerAsSuspected(thisPeer);
-                    set(thisPeer);
+                    thisPeer.suspect();
+                    set(idx, thisPeer);
                 }
                 break;
             }
@@ -226,15 +218,18 @@ public class PeerList implements Iterable<Peer>
                 if (!(cmp > 0))
                 {
                     thisHeartbeat.wrap(thatHeartbeat);
-                    markPeerAsDead(thisPeer);
-                    set(thisPeer);
+                    thisPeer.dead();
+                    set(idx, thisPeer);
                 }
                 break;
             }
 
             default:
             {
-                // nothing to do;
+                if (cmp < 0)
+                {
+                    set(idx, thisPeer);
+                }
             }
         }
 
@@ -253,6 +248,23 @@ public class PeerList implements Iterable<Peer>
         dst.wrap(tmpPeerBuffer, 0, tmpPeerBuffer.capacity());
     }
 
+    public void set(final int idx, final Peer src)
+    {
+        src.write(tmpPeerBuffer, 0);
+        underlyingList.set(idx, tmpPeerBuffer, 0, src.getLength());
+    }
+
+    public void add(final int idx, final Peer peer)
+    {
+        peer.write(tmpPeerBuffer, 0);
+        underlyingList.add(tmpPeerBuffer, 0, peer.getLength(), idx);
+
+        for (int i = 0; i < listeners.size(); i++)
+        {
+            listeners.get(i).onPeerJoin(peer);
+        }
+    }
+
     /**
      * Append the passed peer to the end of the list.
      *
@@ -260,13 +272,7 @@ public class PeerList implements Iterable<Peer>
      */
     public void append(final Peer peer)
     {
-        peer.write(tmpPeerBuffer, 0);
-        underlyingList.add(tmpPeerBuffer, 0, peer.getLength());
-
-        for (int i = 0; i < gossipListeners.size(); i++)
-        {
-            gossipListeners.get(i).onPeerJoin(peer);
-        }
+        add(size(), peer);
     }
 
     /**
@@ -283,12 +289,7 @@ public class PeerList implements Iterable<Peer>
         final int idx = find(peer);
         if (idx < 0)
         {
-            underlyingList.add(tmpPeerBuffer, 0, peer.getLength(), ~idx);
-
-            for (int i = 0; i < gossipListeners.size(); i++)
-            {
-                gossipListeners.get(i).onPeerJoin(peer);
-            }
+            add(~idx, peer);
         }
     }
 
@@ -300,12 +301,12 @@ public class PeerList implements Iterable<Peer>
      *
      * @param peer to set.
      */
-    public void set(final Peer peer)
+    public void update(final Peer peer)
     {
         final int idx = find(peer);
         if (idx > -1)
         {
-            underlyingList.set(idx, tmpPeerBuffer, 0, peer.getLength());
+            set(idx, peer);
         }
     }
 
@@ -320,48 +321,6 @@ public class PeerList implements Iterable<Peer>
         return underlyingList.find(tmpPeerBuffer, PEER_COMPARATOR);
     }
 
-    /**
-     * Update the heartbeat of the passed peer and replace
-     * the existing peer in the list with the passed peer.
-     *
-     * @param peer to update the peer.
-     */
-    public void updateHeartbeat(final Peer peer)
-    {
-        final Heartbeat heartbeat = peer.heartbeat();
-        heartbeat.version(heartbeat.version() + 1);
-        set(peer);
-    }
-
-    public void markPeerAsAlive(final Peer peer)
-    {
-        if (peer.state() != ALIVE)
-        {
-            peer.state(ALIVE)
-                .changeStateTime(clock.time());
-            set(peer);
-        }
-    }
-
-    public void markPeerAsSuspected(final Peer peer)
-    {
-        if (peer.state() == ALIVE)
-        {
-            peer.state(SUSPECT)
-                .changeStateTime(clock.time());
-            set(peer);
-        }
-    }
-
-    public void markPeerAsDead(final Peer peer)
-    {
-        if (peer.state() != DEAD)
-        {
-            peer.state(DEAD)
-                .changeStateTime(clock.time());
-            set(peer);
-        }
-    }
     /**
      * Clear the list of peers.
      */
@@ -380,6 +339,11 @@ public class PeerList implements Iterable<Peer>
         return underlyingList.size();
     }
 
+    public int sizeVolatile()
+    {
+        return underlyingList.sizeVolatile();
+    }
+
     public int capacity()
     {
         return underlyingList.capacity();
@@ -390,18 +354,18 @@ public class PeerList implements Iterable<Peer>
         final int size = size();
         for (int i = size; i > 1; i--)
         {
-            swap(i - 1, random.nextInt(i));
+            swap(i - 1, shuffleRandom.nextInt(i));
         }
     }
 
     public void swap(final int i, final int j)
     {
-        get(i, tmpPeer);
+        get(i, shuffledPeer);
 
         underlyingList.get(j, tmpPeerBuffer, 0);
         underlyingList.set(i, tmpPeerBuffer);
 
-        tmpPeer.write(tmpPeerBuffer, 0);
+        shuffledPeer.write(tmpPeerBuffer, 0);
         underlyingList.set(j, tmpPeerBuffer);
     }
 
@@ -432,8 +396,14 @@ public class PeerList implements Iterable<Peer>
         return underlyingList.toInputStream();
     }
 
-    public void registerGossipListener(final GossipListener listener)
+    public void registerListener(final PeerListListener listener)
     {
-        gossipListeners.add(listener);
+        listeners.add(listener);
     }
+
+    public void removeListener(final PeerListListener listener)
+    {
+        listeners.remove(listener);
+    }
+
 }

@@ -5,7 +5,6 @@ import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.clustering.raft.BooleanType;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.clustering.raft.RaftHeaderDecoder;
 import org.camunda.tngp.clustering.raft.VoteResponseDecoder;
 import org.camunda.tngp.clustering.raft.VoteResponseEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -19,19 +18,19 @@ public class VoteResponse implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final VoteResponseEncoder bodyEncoder = new VoteResponseEncoder();
 
-    protected int log;
+    protected int id;
     protected int term;
 
     protected boolean granted;
 
-    public int log()
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public VoteResponse log(final int log)
+    public VoteResponse id(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -65,11 +64,8 @@ public class VoteResponse implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final RaftHeaderDecoder raftHeaderDecoder = bodyDecoder.header();
-
-        log = raftHeaderDecoder.log();
-        term = raftHeaderDecoder.term();
-
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
         granted = bodyDecoder.granted() == BooleanType.TRUE;
     }
 
@@ -90,18 +86,15 @@ public class VoteResponse implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(term);
-
-        bodyEncoder.granted(granted ? BooleanType.TRUE : BooleanType.FALSE);
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
+            .granted(granted ? BooleanType.TRUE : BooleanType.FALSE);
     }
 
     public void reset()
     {
-        log = -1;
+        id = -1;
         term = -1;
         granted = false;
     }

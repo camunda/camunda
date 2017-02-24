@@ -1,57 +1,41 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
-import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
-import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
-import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft.State;
+import org.camunda.tngp.broker.clustering.raft.Raft;
+import org.camunda.tngp.broker.clustering.raft.Raft.State;
+import org.camunda.tngp.broker.clustering.raft.RaftContext;
 
 public class FollowerState extends ActiveState
 {
-    protected static final int STATE_CLOSED = 0;
-    protected static final int STATE_OPEN = 1;
+    private boolean open;
 
-    protected int state = STATE_CLOSED;
+    private long heartbeatTimeoutConfig = 350L;
+    private long heartbeatTimeout = -1L;
 
-    protected long heartbeatTimeoutConfig = 350L;
-    protected long heartbeatTimeout = -1L;
-
-    public FollowerState(final Raft raft, final LogStreamState logStreamState)
+    public FollowerState(final RaftContext context)
     {
-        super(raft, logStreamState);
+        super(context);
     }
 
     @Override
-    public State state()
+    public void open()
     {
-        return Raft.State.FOLLOWER;
-    }
-
-
-    @Override
-    public void doOpen()
-    {
-        heartbeatTimeout = randomTimeout(heartbeatTimeoutConfig);
+        context.getLogStreamState().reset();
         raft.lastContact(System.currentTimeMillis());
+        heartbeatTimeout = randomTimeout(heartbeatTimeoutConfig);
+        open = true;
     }
 
     @Override
-    public void doClose()
+    public void close()
     {
         heartbeatTimeout = -1L;
+        open = false;
     }
 
     @Override
-    protected VoteResponse handleVoteRequest(final VoteRequest request)
+    public boolean isClosed()
     {
-        final VoteResponse voteResponse = super.handleVoteRequest(request);
-        if (voteResponse.granted())
-        {
-            raft.lastContact(System.currentTimeMillis());
-            heartbeatTimeout = randomTimeout(heartbeatTimeoutConfig);
-        }
-        return voteResponse;
+        return !open;
     }
 
     @Override
@@ -59,37 +43,19 @@ public class FollowerState extends ActiveState
     {
         int workcount = 0;
 
-        if (isOpen())
+        final long current = System.currentTimeMillis();
+        if (current >= (raft.lastContact() + heartbeatTimeout))
         {
-            final long lastContact = raft.lastContact();
-
-            final long now = System.currentTimeMillis();
-
-            if (now >= (lastContact + heartbeatTimeout))
-            {
-//                System.out.println("timeout");
-//                System.out.println("now: " + now);
-//                System.out.println("lastContact + heartbeatTimeout: " + (lastContact + heartbeatTimeout));
-                raft.transition(Raft.State.CANDIDATE);
-                workcount += 1;
-            }
+            raft.transition(Raft.State.CANDIDATE);
+            workcount += 1;
         }
 
         return workcount;
     }
 
-
     @Override
-    public AppendResponse append(final AppendRequest request)
+    public State state()
     {
-        raft.lastContact(System.currentTimeMillis());
-        heartbeatTimeout = randomTimeout(heartbeatTimeoutConfig);
-
-//        System.out.println("\n");
-//        System.out.println(">>> index: " + request.index());
-//        System.out.println(">>> lastContact: " + raft.lastContact());
-//        System.out.println(">>> heartbeatTimeout: " + heartbeatTimeout);
-
-        return super.append(request);
+        return Raft.State.FOLLOWER;
     }
 }

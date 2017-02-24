@@ -1,63 +1,77 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
-	package="org.camunda.tngp.management.gossip" id="3" version="1"
+	package="org.camunda.tngp.clustering.gossip" id="3" version="1"
 	semanticVersion="0.1.0" description="Tngp Management Gossip Protocol" byteOrder="littleEndian">
 
-	<types>
-		<composite name="messageHeader"
-			description="Message identifiers and length of message root">
-			<type name="blockLength" primitiveType="uint16" />
-			<type name="templateId" primitiveType="uint16" />
-			<type name="schemaId" primitiveType="uint16" />
-			<type name="version" primitiveType="uint16" />
-		</composite>
-		<composite name="varDataEncoding">
-			<type name="length" primitiveType="uint16" />
-			<type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
-		</composite>
-		<composite name="groupSizeEncoding">
-			<type name="blockLength" primitiveType="uint16" />
-			<type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
-		</composite>
-	</types>
+    <types>
+
+        <composite name="messageHeader"
+            description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16" />
+            <type name="templateId" primitiveType="uint16" />
+            <type name="schemaId" primitiveType="uint16" />
+            <type name="version" primitiveType="uint16" />
+        </composite>
+
+        <composite name="varDataEncoding">
+            <type name="length" primitiveType="uint16" />
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
+        </composite>
+
+        <composite name="groupSizeEncoding">
+            <type name="blockLength" primitiveType="uint16" />
+            <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+        </composite>
+
+    </types>
 
     <types>
-         <enum name="PeerState" encodingType="uint8">     
+    
+        <!-- GOSSIP -->
+
+        <enum name="PeerState" encodingType="uint8">     
             <validValue name="ALIVE">0</validValue>
             <validValue name="SUSPECT">1</validValue>
             <validValue name="DEAD">2</validValue>
         </enum>
-        <enum name="BooleanType" encodingType="uint8" semanticType="Boolean">
-            <validValue name="FALSE">0</validValue>
-            <validValue name="TRUE">1</validValue>
-        </enum>
+        
     </types>
 
+    <!-- GOSSIP MESSAGES: 0 - 99 -->
 
-	<sbe:message name="Gossip" id="0">
-		<group name="peers" id="1" dimensionType="groupSizeEncoding">
+    <sbe:message name="Gossip" id="0">
+        <group name="peers" id="1" dimensionType="groupSizeEncoding">
             <field name="state" id="2" type="PeerState"/>
             <field name="generation" id="3" type="uint64"/>
-            <field name="version" id="4" type="uint64"/>
-            <field name="port" id="5" type="uint16"/>
-            <data name="host" id="6" type="varDataEncoding"/>
-		</group>
-	</sbe:message>
-
-    <sbe:message name="Probe" id="1">
-        <field name="port" id="0" type="uint16"/>
-        <data name="host" id="6" type="varDataEncoding"/>
+            <field name="version" id="4" type="uint16"/>
+            <field name="clientPort" id="5" type="uint16"/>
+            <field name="managementPort" id="6" type="uint16"/>
+            <field name="replicationPort" id="7" type="uint16"/>
+            <data name="clientHost" id="8" type="varDataEncoding"/>
+            <data name="managementHost" id="9" type="varDataEncoding"/>
+            <data name="replicationHost" id="10" type="varDataEncoding"/>
+            <!-- TODO: rafts and state -->
+        </group>
     </sbe:message>
 
-    <sbe:message name="PeerDescriptor" id="2">
+    <sbe:message name="Probe" id="1">
+        <field name="port" id="1" type="uint16"/>
+        <data name="host" id="2" type="varDataEncoding"/>
+    </sbe:message>
+
+    <!-- COMMON DESCRIPTOR: 100 - ... -->
+
+    <sbe:message name="PeerDescriptor" id="100">
         <field name="state" id="1" type="PeerState"/>
         <field name="generation" id="2" type="uint64"/>
-        <field name="version" id="3" type="uint64"/>
-        <field name="localPeer" id="4" type="BooleanType"/>
+        <field name="version" id="3" type="uint16"/>
         <field name="changeStateTime" id="5" type="uint64"/>
-        <field name="locked" id="6" type="BooleanType"/>
-        <field name="port" id="7" type="uint16"/>
-        <data name="host" id="8" type="varDataEncoding"/>
+        <field name="clientPort" id="7" type="uint16"/>
+        <field name="managementPort" id="8" type="uint16"/>
+        <field name="replicationPort" id="9" type="uint16"/>
+        <data name="clientHost" id="10" type="varDataEncoding"/>
+        <data name="managementHost" id="11" type="varDataEncoding"/>
+        <data name="replicationHost" id="12" type="varDataEncoding"/>
     </sbe:message>
 
 </sbe:messageSchema>

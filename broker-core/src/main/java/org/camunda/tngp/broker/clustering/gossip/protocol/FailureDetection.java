@@ -1,242 +1,379 @@
 package org.camunda.tngp.broker.clustering.gossip.protocol;
 
+import static org.camunda.tngp.clustering.gossip.PeerState.*;
+
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.clustering.gossip.GossipProtocol;
-import org.camunda.tngp.broker.clustering.gossip.channel.ClientChannelManager;
+import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
+import org.camunda.tngp.broker.clustering.gossip.GossipContext;
+import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
-import org.camunda.tngp.broker.clustering.gossip.data.ShuffledPeerList;
-import org.camunda.tngp.broker.clustering.gossip.message.GossipReader;
-import org.camunda.tngp.broker.clustering.gossip.message.ProbeWriter;
-import org.camunda.tngp.broker.clustering.gossip.util.Requestor;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+import org.camunda.tngp.broker.clustering.gossip.data.PeerSelector;
+import org.camunda.tngp.broker.clustering.gossip.message.GossipResponse;
+import org.camunda.tngp.broker.clustering.gossip.message.ProbeRequest;
+import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.State;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
+import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 public class FailureDetection
 {
-    protected static final int STATE_CLOSED = 0;
-    protected static final int STATE_SELECTING = 1;
-    protected static final int STATE_OPENING = 2;
-    protected static final int STATE_OPEN = 3;
-    protected static final int STATE_ACKNOWLEDGED = 4;
-    protected static final int STATE_FAILED = 5;
+    private static final int TRANSITION_DEFAULT = 0;
+    private static final int TRANSITION_OPEN = 1;
+    private static final int TRANSITION_FAILED = 2;
+    private static final int TRANSITION_CLOSE = 3;
 
-    protected int state = STATE_CLOSED;
-
-    protected final GossipProtocol gossipProtocol;
-    protected final PeerList members;
-    protected ShuffledPeerList shuffledMembers;
-
-    protected final Peer suspiciousMember = new Peer();
-
-    protected final Requestor[] requestors;
-    protected final int probeCapacity;
-    protected final Peer[] probers;
-    protected int proberLength = -1;
-    protected Requestor acknowledgedRequestor;
-
-    protected final ProbeWriter writer = new ProbeWriter();
-    protected final GossipReader reader = new GossipReader();
-
-    public FailureDetection(final GossipProtocol gossipProtocol, final int proberCapacity, final int failureDetectionTimeout)
+    private static final StateMachineCommand<FailureDetectionContext> OPEN_STATE_MACHINE_COMMAND = (c) ->
     {
-        this.gossipProtocol = gossipProtocol;
-        this.members = gossipProtocol.getMembers();
-        this.shuffledMembers = gossipProtocol.getShuffledPeerList();
-
-        this.probeCapacity = proberCapacity;
-        this.requestors = new Requestor[proberCapacity];
-        this.probers = new Peer[proberCapacity];
-
-        final ClientChannelManager channelManager = gossipProtocol.getClientChannelManager();
-        final TransportConnection connection = gossipProtocol.getConnection();
-
-        for (int i = 0; i < proberCapacity; i++)
+        final boolean open = c.tryTake(TRANSITION_OPEN);
+        if (!open)
         {
-            probers[i] = new Peer();
-            requestors[i] = new Requestor(channelManager, connection, failureDetectionTimeout);
+            throw new IllegalStateException("Cannot open disseminator, has not been closed.");
         }
+    };
+
+    private static final StateMachineCommand<FailureDetectionContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
+    {
+        c.reset();
+
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
+    private final GossipContext gossipContext;
+    private FailureDetectionContext failureDetectionContext;
+
+    private final WaitState<FailureDetectionContext> closedState = (s) ->
+    {
+    };
+    private final WaitState<FailureDetectionContext> acknowledgedState = (s) ->
+    {
+    };
+    private final WaitState<FailureDetectionContext> failedState = (s) ->
+    {
+    };
+    private final CloseRequestsState closeRequestsState = new CloseRequestsState();
+    private final ClosingState closingState = new ClosingState();
+    private final OpenRequestState openingState = new OpenRequestState();
+    private final OpenState openState = new OpenState();
+    private final SuspectPeerState suspectPeerState = new SuspectPeerState();
+    private final ProcessResponseState processResponseState = new ProcessResponseState();
+    private final StateMachineAgent<FailureDetectionContext> failureDetectionStateMachine;
+
+    public FailureDetection(final GossipContext context)
+    {
+        this.gossipContext = context;
+        this.failureDetectionStateMachine = new StateMachineAgent<>(
+                StateMachine.<FailureDetectionContext> builder(s ->
+                {
+                    failureDetectionContext = new FailureDetectionContext(s, context.getLocalPeer());
+                    return failureDetectionContext;
+                })
+
+                        .initialState(closedState)
+
+                        .from(closedState).take(TRANSITION_OPEN).to(openingState)
+
+                        .from(openingState).take(TRANSITION_DEFAULT).to(openState)
+
+                        .from(openState).take(TRANSITION_DEFAULT).to(processResponseState)
+                        .from(openState).take(TRANSITION_FAILED).to(suspectPeerState)
+                        .from(openState).take(TRANSITION_CLOSE).to(closeRequestsState)
+
+                        .from(processResponseState).take(TRANSITION_DEFAULT).to(acknowledgedState)
+                        .from(suspectPeerState).take(TRANSITION_DEFAULT).to(failedState)
+
+                        .from(acknowledgedState).take(TRANSITION_CLOSE).to(closeRequestsState)
+                        .from(failedState).take(TRANSITION_CLOSE).to(closeRequestsState)
+
+                        .from(closeRequestsState).take(TRANSITION_DEFAULT).to(closingState)
+                        .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+
+                        .build());
     }
 
-    public void begin(final Peer member)
+    public boolean isPeerEqualTo(final Peer peer)
     {
-        if (state == STATE_CLOSED)
-        {
-            suspiciousMember.wrap(member);
-            state = STATE_SELECTING;
-        }
-        else
-        {
-            throw new IllegalStateException("Cannot open failure detector, has not been closed.");
-        }
+        return failureDetectionContext.peer.managementEndpoint().compareTo(peer.managementEndpoint()) == 0;
     }
 
-    public int execute()
+    public void open(final Peer peer)
     {
-        int workcount = 0;
-
-        switch (state)
-        {
-            case STATE_SELECTING:
-            {
-                workcount += 1;
-                workcount += executeSelecting();
-                break;
-            }
-
-            case STATE_OPENING:
-            {
-                workcount += 1;
-                workcount += executeOpening();
-                break;
-            }
-
-            case STATE_OPEN:
-            {
-                workcount += 1;
-                workcount += pollResponse();
-                break;
-            }
-        }
-
-        return workcount;
-    }
-
-    protected int executeSelecting()
-    {
-        proberLength = shuffledMembers.next(probeCapacity, probers, suspiciousMember);
-        state = STATE_OPENING;
-        return 1;
-    }
-
-    protected int executeOpening()
-    {
-        int workcount = 0;
-
-        writer.member(suspiciousMember);
-
-        for (int i = 0; i < proberLength; i++)
-        {
-            workcount += 1;
-            requestors[i].begin(probers[i].endpoint(), writer);
-        }
-
-//        System.out.println("[FAILURE DETECTOR OPENING] now: " + System.currentTimeMillis() + ", endpoint: " + suspiciousMember.endpoint());
-        state = STATE_OPEN;
-        return workcount;
-    }
-
-    protected int pollResponse()
-    {
-        int workcount = 0;
-
-        boolean isResponseAvailable = false;
-        int numFailedProbe = 0;
-
-        for (int i = 0; i < proberLength; i++)
-        {
-            final Requestor requestor = requestors[i];
-            workcount += requestor.execute();
-
-            if (requestor.isResponseAvailable())
-            {
-                acknowledgedRequestor = requestor;
-                isResponseAvailable = true;
-                break;
-            }
-            else if (requestor.isFailed())
-            {
-                numFailedProbe += 1;
-            }
-        }
-
-        if (isResponseAvailable)
-        {
-//            System.out.println("[FAILURE DETECTOR ACK] now: " + System.currentTimeMillis() + ", endpoint: " + suspiciousMember.endpoint());
-            workcount += 1;
-            workcount += executeResponse();
-        }
-        else if (numFailedProbe == proberLength)
-        {
-//            System.out.println("[FAILURE DETECTOR FAILED] now: " + System.currentTimeMillis() + ", endpoint: " + suspiciousMember.endpoint());
-            workcount += 1;
-            workcount += processFailed();
-        }
-
-        return workcount;
-    }
-    protected int executeResponse()
-    {
-        final DirectBuffer buffer = acknowledgedRequestor.getResponseBuffer();
-        final int length = acknowledgedRequestor.getResponseLength();
-
-        reader.wrap(buffer, 0, length);
-        members.merge(reader);
-
-        state = STATE_ACKNOWLEDGED;
-        return 1;
-    }
-
-    protected int processFailed()
-    {
-        updateMember();
-        members.markPeerAsSuspected(suspiciousMember);
-
-        state = STATE_FAILED;
-        return 1;
-    }
-
-    protected void updateMember()
-    {
-        final int idx = members.find(suspiciousMember);
-        if (idx > -1)
-        {
-            members.get(idx, suspiciousMember);
-        }
-    }
-
-    protected void releaseMember()
-    {
-        suspiciousMember.locked(false);
-        members.set(suspiciousMember);
+        failureDetectionContext.peer.wrap(peer);
+        failureDetectionStateMachine.addCommand(OPEN_STATE_MACHINE_COMMAND);
     }
 
     public void close()
     {
-        try
-        {
-            for (int i = 0; i < proberLength; i++)
-            {
-                requestors[i].close();
-            }
-            this.proberLength = -1;
-        }
-        finally
-        {
-            updateMember();
-            releaseMember();
-
-            acknowledgedRequestor = null;
-            state = STATE_CLOSED;
-        }
+        failureDetectionStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
     }
 
-    public boolean isOpen()
+    public int doWork()
     {
-        return state == STATE_OPEN;
+        return failureDetectionStateMachine.doWork();
     }
+
 
     public boolean isClosed()
     {
-        return state == STATE_CLOSED;
+        return failureDetectionStateMachine.getCurrentState() == closedState;
     }
 
     public boolean isAcknowledged()
     {
-        return state == STATE_ACKNOWLEDGED;
+        return failureDetectionStateMachine.getCurrentState() == acknowledgedState;
     }
 
     public boolean isFailed()
     {
-        return state == STATE_FAILED;
+        return failureDetectionStateMachine.getCurrentState() == failedState;
     }
+
+    class FailureDetectionContext extends SimpleStateMachineContext
+    {
+        DirectBuffer responseBuffer;
+        int responseLength;
+
+        final PeerList peers;
+
+        final PeerSelector peerSelector;
+        final RequestResponseController[] requestControllers;
+        final Peer peer;
+        final Peer[] targets;
+        int targetLength;
+        final Peer[] exclusions;
+
+        final ProbeRequest request;
+        final GossipResponse response;
+
+        FailureDetectionContext(StateMachine<?> stateMachine, final Peer localPeer)
+        {
+            super(stateMachine);
+
+            this.peer = new Peer();
+            this.peers = gossipContext.getPeers();
+
+            this.request = new ProbeRequest();
+            this.response = new GossipResponse();
+
+            final ClientChannelManager clientChannelManager = gossipContext.getClientChannelManager();
+            final TransportConnectionPool connections = gossipContext.getConnections();
+            final GossipConfiguration config = gossipContext.getConfig();
+            final PeerSelector peerSelector = gossipContext.getPeerSelector();
+
+            final int capacity = config.failureDetectionCapacity;
+
+            this.peerSelector = peerSelector;
+            this.requestControllers = new RequestResponseController[capacity];
+            this.targets = new Peer[capacity];
+            this.targetLength = 0;
+            this.exclusions = new Peer[2];
+            this.exclusions[0] = localPeer;
+            this.exclusions[1] = peer;
+
+            for (int i = 0; i < capacity; i++)
+            {
+                targets[i] = new Peer();
+                requestControllers[i] = new RequestResponseController(clientChannelManager, connections, config.failureDetectorTimeout);
+            }
+        }
+
+        public void reset()
+        {
+            for (int i = 0; i < targets.length; i++)
+            {
+                targets[i].reset();
+            }
+            targetLength = 0;
+            responseBuffer = null;
+            responseLength = 0;
+            request.reset();
+        }
+    }
+
+    class SelectPeersState implements TransitionState<FailureDetectionContext>
+    {
+        @Override
+        public void work(FailureDetectionContext context) throws Exception
+        {
+            final PeerSelector peerSelector = context.peerSelector;
+            final Peer[] targets = context.targets;
+            final Peer[] exclusions = context.exclusions;
+
+            context.targetLength = peerSelector.next(targets.length, targets, exclusions);
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class OpenRequestState implements TransitionState<FailureDetectionContext>
+    {
+        @Override
+        public void work(FailureDetectionContext context) throws Exception
+        {
+            final ProbeRequest request = context.request;
+            final Peer peer = context.peer;
+            final int targetLength = context.targetLength;
+            final RequestResponseController[] requestControllers = context.requestControllers;
+            final Peer[] targets = context.targets;
+
+            request.reset();
+            request.target(peer.managementEndpoint());
+
+            for (int i = 0; i < targetLength; i++)
+            {
+                final RequestResponseController controller = requestControllers[i];
+                final Peer target = targets[i];
+                controller.open(target.managementEndpoint(), request);
+            }
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class OpenState implements State<FailureDetectionContext>
+    {
+        @Override
+        public int doWork(FailureDetectionContext context) throws Exception
+        {
+            final RequestResponseController[] requestControllers = context.requestControllers;
+            final int targetLength = context.targetLength;
+
+            int workcount = 0;
+            int failed = 0;
+
+            for (int i = 0; i < targetLength; i++)
+            {
+                final RequestResponseController controller = requestControllers[i];
+                workcount += controller.doWork();
+
+                if (controller.isResponseAvailable())
+                {
+                    workcount += 1;
+
+                    context.responseBuffer = controller.getResponseBuffer();
+                    context.responseLength = controller.getResponseLength();
+
+                    context.take(TRANSITION_DEFAULT);
+
+                    break;
+                }
+                else if (controller.isFailed())
+                {
+                    failed += 1;
+                }
+            }
+
+
+            if (failed == targetLength)
+            {
+                workcount += 1;
+                context.take(TRANSITION_FAILED);
+            }
+
+            return workcount;
+        }
+    }
+
+    class ProcessResponseState implements TransitionState<FailureDetectionContext>
+    {
+        @Override
+        public void work(FailureDetectionContext context) throws Exception
+        {
+            final GossipResponse response = context.response;
+            final PeerList peers = context.peers;
+            final DirectBuffer responseBuffer = context.responseBuffer;
+            final int responseLength = context.responseLength;
+
+            response.wrap(responseBuffer, 0, responseLength);
+            peers.merge(response.peers());
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class SuspectPeerState implements TransitionState<FailureDetectionContext>
+    {
+        @Override
+        public void work(FailureDetectionContext context) throws Exception
+        {
+            final PeerList peers = context.peers;
+            final Peer peer = context.peer;
+
+            final int idx = peers.find(peer);
+            if (idx >= 0)
+            {
+                peers.get(idx, peer);
+                if (peer.state() == ALIVE)
+                {
+                    peer.suspect();
+                    peers.set(idx, peer);
+                }
+            }
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class CloseRequestsState implements TransitionState<FailureDetectionContext>
+    {
+        @Override
+        public void work(FailureDetectionContext context) throws Exception
+        {
+            final RequestResponseController[] requestControllers = context.requestControllers;
+            final int targetLength = context.targetLength;
+
+            for (int i = 0; i < targetLength; i++)
+            {
+                final RequestResponseController controller = requestControllers[i];
+                if (!controller.isClosed())
+                {
+                    controller.close();
+                }
+            }
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class ClosingState implements State<FailureDetectionContext>
+    {
+
+        @Override
+        public int doWork(FailureDetectionContext context) throws Exception
+        {
+            final RequestResponseController[] requestControllers = context.requestControllers;
+
+            int workcount = 0;
+            int closed = 0;
+
+            for (int i = 0; i < requestControllers.length; i++)
+            {
+                final RequestResponseController controller = requestControllers[i];
+                workcount += controller.doWork();
+
+                if (controller.isClosed())
+                {
+                    closed += 1;
+                    workcount += 1;
+                }
+            }
+
+            if (requestControllers.length == closed)
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
 }

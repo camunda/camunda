@@ -1,10 +1,6 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostLengthOffset;
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostOffset;
-import static org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder.*;
 
 import java.util.Iterator;
 import java.util.List;
@@ -12,18 +8,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.raft.util.MemberTypeResolver;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.BooleanType;
 import org.camunda.tngp.clustering.raft.JoinResponseDecoder;
 import org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder;
 import org.camunda.tngp.clustering.raft.JoinResponseEncoder;
 import org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder;
-import org.camunda.tngp.clustering.raft.MemberType;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.clustering.raft.RaftHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -35,32 +28,22 @@ public class JoinResponse implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final JoinResponseEncoder bodyEncoder = new JoinResponseEncoder();
 
-    protected int log = -1;
+    protected int id = -1;
     protected int term = -1;
+
     protected long configurationEntryPosition = -1L;
     protected int configurationEntryTerm = -1;
-    protected boolean status;
+    protected boolean succeeded;
     protected List<Member> members = new CopyOnWriteArrayList<>();
 
-    public boolean status()
+    public int id()
     {
-        return status;
+        return id;
     }
 
-    public JoinResponse status(final boolean status)
+    public JoinResponse id(final int id)
     {
-        this.status = status;
-        return this;
-    }
-
-    public int log()
-    {
-        return log;
-    }
-
-    public JoinResponse log(final int log)
-    {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -72,6 +55,17 @@ public class JoinResponse implements BufferReader, BufferWriter
     public JoinResponse term(final int term)
     {
         this.term = term;
+        return this;
+    }
+
+    public boolean succeeded()
+    {
+        return succeeded;
+    }
+
+    public JoinResponse succeeded(final boolean succeeded)
+    {
+        this.succeeded = succeeded;
         return this;
     }
 
@@ -137,14 +131,10 @@ public class JoinResponse implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(term);
-
-        bodyEncoder
-            .status(status ? BooleanType.TRUE : BooleanType.FALSE)
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
+            .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
             .configurationEntryPosition(configurationEntryPosition)
             .configurationEntryTerm(configurationEntryTerm);
 
@@ -157,9 +147,8 @@ public class JoinResponse implements BufferReader, BufferWriter
             final Endpoint endpoint = member.endpoint();
 
             encoder.next()
-                .memberType(MemberTypeResolver.getMemberType(member.type()))
                 .port(endpoint.port())
-                .putHost(endpoint.getBuffer(), hostOffset(0), endpoint.hostLength());
+                .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
     }
 
@@ -171,43 +160,39 @@ public class JoinResponse implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final RaftHeaderDecoder raftHeaderDecoder = bodyDecoder.header();
-
-        log = raftHeaderDecoder.log();
-        term = raftHeaderDecoder.term();
-
-        status = bodyDecoder.status() == BooleanType.TRUE;
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
+        succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
         configurationEntryPosition = bodyDecoder.configurationEntryPosition();
         configurationEntryTerm = bodyDecoder.configurationEntryTerm();
 
         members.clear();
+
         final Iterator<MembersDecoder> iterator = bodyDecoder.members().iterator();
         while (iterator.hasNext())
         {
             final MembersDecoder decoder = iterator.next();
 
-            final MemberType memberType = decoder.memberType();
-
-            final Endpoint endpoint = new Endpoint();
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) endpoint.getBuffer();
-
-            endpoint.port(decoder.port());
+            final Member member = new Member();
+            member.endpoint().port(decoder.port());
 
             final int hostLength = decoder.hostLength();
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            decoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
+            member.endpoint().hostLength(hostLength);
+            decoder.getHost(endpointBuffer, 0, hostLength);
 
-            members.add(new Member(endpoint, MemberTypeResolver.getType(memberType)));
+            // TODO: make this garbage free
+            members.add(member);
         }
     }
 
     public void reset()
     {
-        log = -1;
+        id = -1;
         term = -1;
         configurationEntryPosition = -1L;
         configurationEntryTerm = -1;
-        status = false;
+        succeeded = false;
         members.clear();
     }
 

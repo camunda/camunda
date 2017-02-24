@@ -7,17 +7,22 @@ hostname = "0.0.0.0"
 sendBufferSize = 128
 
 [network.clientApi]
-port = 6060
+port = 7776
 receiveBufferSize = 16
 
-[network.management]
+[network.managementApi]
 host = "localhost"
 port = 7777
 receiveBufferSize = 16
 
-[network.management.gossip]
+[network.replicationApi]
+host = "localhost"
+port = 7778
+receiveBufferSize = 16
+
+[network.gossip]
 initialContactPoints = [
-    "localhost:6666"
+  "localhost:51016"
 ]
 peersStorageFile = "/tmp/7777.tngp"
 
@@ -37,15 +42,20 @@ useTempCountersFile = true
 logWriteBufferSize = 256
 defaultLogSegmentSize = 512
 
+[[log]]
+name = "default-task-queue-log"
+id = 0
+logDirectory = "/tmp/tngp-7777-task"
+
+[snapshot]
+useTempSnapshotDirectory = true
+
 # Task Queues ------------------------------------------
 
 [task-queues]
 numberOfWorkers = 1
 perWorkerResponsePoolCapacity = 32
 
-# Workflow ---------------------------------------------
-
-[workflow]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
+[[task-queue]]
+logName = "default-task-queue-log"
+useTempIndexFile = true

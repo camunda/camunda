@@ -1,39 +1,50 @@
 package org.camunda.tngp.broker.clustering.gossip.data;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
-import static org.camunda.tngp.management.gossip.BooleanType.*;
-import static org.camunda.tngp.management.gossip.PeerDescriptorDecoder.BLOCK_LENGTH;
-import static org.camunda.tngp.management.gossip.PeerDescriptorDecoder.SCHEMA_VERSION;
-import static org.camunda.tngp.management.gossip.PeerDescriptorEncoder.hostHeaderLength;
-import static org.camunda.tngp.management.gossip.PeerState.NULL_VAL;
+import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.*;
+import static org.camunda.tngp.clustering.gossip.PeerState.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
-import org.camunda.tngp.management.gossip.PeerDescriptorDecoder;
-import org.camunda.tngp.management.gossip.PeerDescriptorEncoder;
-import org.camunda.tngp.management.gossip.PeerState;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder;
+import org.camunda.tngp.clustering.gossip.PeerState;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-
 public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
 {
-    public static final int MAX_PEER_LENGTH = 128;
+    public static final int MAX_PEER_LENGTH = BLOCK_LENGTH +
+            clientHostHeaderLength() +
+            managementHostHeaderLength() +
+            replicationHostHeaderLength() +
+            (Endpoint.MAX_HOST_LENGTH * 3);
 
     protected final PeerDescriptorDecoder decoder = new PeerDescriptorDecoder();
     protected final PeerDescriptorEncoder encoder = new PeerDescriptorEncoder();
 
-    protected final Endpoint endPoint = new Endpoint();
+    protected final Endpoint clientEndpoint = new Endpoint();
+    protected final Endpoint managementEndpoint = new Endpoint();
+    protected final Endpoint replicationEndpoint = new Endpoint();
+
     protected final Heartbeat heartbeat = new Heartbeat();
     protected PeerState state = NULL_VAL;
-    protected long changeStateTime = -1;
-    protected boolean localPeer = false;
-    protected boolean locked = false;
 
-    public Endpoint endpoint()
+    protected long changeStateTime = -1L;
+
+    public Endpoint clientEndpoint()
     {
-        return endPoint;
+        return clientEndpoint;
+    }
+
+    public Endpoint managementEndpoint()
+    {
+        return managementEndpoint;
+    }
+
+    public Endpoint replicationEndpoint()
+    {
+        return replicationEndpoint;
     }
 
     public Heartbeat heartbeat()
@@ -63,32 +74,41 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
         return this;
     }
 
-    public boolean localPeer()
+    public Peer alive()
     {
-        return localPeer;
-    }
-
-    public Peer localPeer(final boolean localPeer)
-    {
-        this.localPeer = localPeer;
+        if (state != ALIVE)
+        {
+            state = ALIVE;
+            changeStateTime = System.currentTimeMillis();
+        }
         return this;
     }
 
-    public boolean locked()
+    public Peer suspect()
     {
-        return locked;
+        if (state != SUSPECT)
+        {
+            state = SUSPECT;
+            changeStateTime = System.currentTimeMillis();
+        }
+        return this;
     }
 
-    public Peer locked(final boolean locked)
+    public Peer dead()
     {
-        this.locked = locked;
+        if (state != DEAD)
+        {
+            state = DEAD;
+            changeStateTime = System.currentTimeMillis();
+        }
         return this;
+
     }
 
     @Override
     public int compareTo(Peer o)
     {
-        return endPoint.compareTo(o.endpoint());
+        return managementEndpoint.compareTo(o.managementEndpoint());
     }
 
     @Override
@@ -96,59 +116,104 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     {
         decoder.wrap(buffer, offset, BLOCK_LENGTH, SCHEMA_VERSION);
 
+        state(decoder.state()).changeStateTime(decoder.changeStateTime());
+
         heartbeat()
             .generation(decoder.generation())
             .version(decoder.version());
 
-        final int hostnameOffset = decoder.sbeBlockLength() + hostHeaderLength();
-        final int hostnameLength = decoder.hostLength();
+        final int clientPort = decoder.clientPort();
+        final int managementPort = decoder.managementPort();
+        final int replicationPort = decoder.replicationPort();
 
-        endpoint()
-            .host(buffer, hostnameOffset, hostnameLength)
-            .port(decoder.port());
+        final int clientHostLength = decoder.clientHostLength();
+        final Endpoint clientEndpoint = clientEndpoint();
+        clientEndpoint.port(clientPort);
+        clientEndpoint.hostLength(clientHostLength);
+        decoder.getClientHost(clientEndpoint.getHostBuffer(), 0, clientHostLength);
 
-        this.state(decoder.state())
-            .changeStateTime(decoder.changeStateTime())
-            .localPeer(decoder.localPeer() == TRUE)
-            .locked(decoder.locked() == TRUE);
+        final int managementHostLength = decoder.managementHostLength();
+        final Endpoint managementEndpoint = managementEndpoint();
+        managementEndpoint.port(managementPort);
+        managementEndpoint.hostLength(managementHostLength);
+        decoder.getManagementHost(managementEndpoint.getHostBuffer(), 0, managementHostLength);
+
+        final int replicationHostLength = decoder.replicationHostLength();
+        final Endpoint replicationEndpoint = replicationEndpoint();
+        replicationEndpoint.port(replicationPort);
+        replicationEndpoint.hostLength(replicationHostLength);
+        decoder.getReplicationHost(replicationEndpoint.getHostBuffer(), 0, replicationHostLength);
     }
 
     public void wrap(final Peer peer)
     {
         heartbeat().wrap(peer.heartbeat());
-        endpoint().wrap(peer.endpoint());
 
-        this.state(peer.state())
-            .changeStateTime(peer.changeStateTime())
-            .localPeer(peer.localPeer())
-            .locked(peer.locked());
+        clientEndpoint().wrap(peer.clientEndpoint());
+        managementEndpoint().wrap(peer.managementEndpoint());
+        replicationEndpoint().wrap(peer.replicationEndpoint());
+
+        this.state(peer.state()).changeStateTime(peer.changeStateTime());
     }
 
     @Override
     public int getLength()
     {
         return encoder.sbeBlockLength() +
-                hostHeaderLength() +
-                endPoint.hostLength();
+                clientHostHeaderLength() +
+                clientEndpoint().hostLength() +
+                managementHostHeaderLength() +
+                managementEndpoint().hostLength() +
+                replicationHostHeaderLength() +
+                replicationEndpoint().hostLength();
     }
 
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
     {
         final Heartbeat heartbeat = heartbeat();
-        final Endpoint endpoint = endpoint();
 
-        final DirectBuffer hostBuffer = endpoint.getBuffer();
+        final Endpoint clientEndpoint = clientEndpoint();
+        final Endpoint managementEndpoint = managementEndpoint();
+        final Endpoint replicationEndpoint = replicationEndpoint();
+
+        final DirectBuffer clientEndpointBuffer = clientEndpoint.getHostBuffer();
+        final int clientHostLength = clientEndpoint.hostLength();
+
+        final DirectBuffer managementEndpointBuffer = managementEndpoint.getHostBuffer();
+        final int managementHostLength = managementEndpoint.hostLength();
+
+        final DirectBuffer replicationEndpointBuffer = replicationEndpoint.getHostBuffer();
+        final int replicationHostLength = replicationEndpoint.hostLength();
 
         encoder.wrap(buffer, offset)
-            .port(endpoint.port())
             .state(state())
             .generation(heartbeat.generation())
             .version(heartbeat.version())
             .changeStateTime(changeStateTime())
-            .localPeer(localPeer() ? TRUE : FALSE)
-            .locked(locked() ? TRUE : FALSE)
-            .putHost(hostBuffer, hostOffset(0), endpoint.hostLength());
+            .clientPort(clientEndpoint.port())
+            .managementPort(managementEndpoint.port())
+            .replicationPort(replicationEndpoint.port())
+            .putClientHost(clientEndpointBuffer, 0, clientHostLength)
+            .putManagementHost(managementEndpointBuffer, 0, managementHostLength)
+            .putReplicationHost(replicationEndpointBuffer, 0, replicationHostLength);
     }
 
+    public void reset()
+    {
+        heartbeat().generation(PeerDescriptorEncoder.generationNullValue());
+        heartbeat().version(PeerDescriptorEncoder.versionNullValue());
+
+        clientEndpoint().reset();
+        clientEndpoint().port(PeerDescriptorEncoder.clientPortNullValue());
+
+        managementEndpoint().reset();
+        managementEndpoint().port(PeerDescriptorEncoder.managementPortNullValue());
+
+        replicationEndpoint().reset();
+        replicationEndpoint().port(PeerDescriptorEncoder.replicationPortNullValue());
+
+        state = NULL_VAL;
+        changeStateTime = -1L;
+    }
 }

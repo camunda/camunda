@@ -2,21 +2,27 @@ package org.camunda.tngp.broker.clustering.raft.state;
 
 import java.util.Random;
 
+import org.agrona.DirectBuffer;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
+import org.camunda.tngp.broker.clustering.raft.Raft;
+import org.camunda.tngp.broker.clustering.raft.Raft.State;
+import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
 import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.transport.protocol.Protocols;
 
 public abstract class ActiveState extends InactiveState
 {
-    protected final Random random = new Random();
+    private final Random random = new Random();
 
-    public ActiveState(final Raft raft, final LogStreamState logStreamState)
+    public ActiveState(final RaftContext context)
     {
-        super(raft, logStreamState);
+        super(context);
     }
 
     protected long randomTimeout(final long min)
@@ -24,7 +30,25 @@ public abstract class ActiveState extends InactiveState
         return min + (Math.abs(random.nextLong()) % min);
     }
 
-    @Override
+    public abstract State state();
+
+    public int onVoteRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connection, final long requestId)
+    {
+        voteRequest.reset();
+        voteRequest.wrap(buffer, offset, length);
+
+        final VoteResponse voteResponse = vote(voteRequest);
+
+        messageWriter.protocol(Protocols.REQUEST_RESPONSE)
+            .channelId(channelId)
+            .connectionId(connection)
+            .requestId(requestId)
+            .message(voteResponse)
+            .tryWriteMessage();
+
+        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+
     public VoteResponse vote(final VoteRequest voteRequest)
     {
         final int voteTerm = voteRequest.term();
@@ -50,7 +74,7 @@ public abstract class ActiveState extends InactiveState
         final int voteTerm = voteRequest.term();
         final long lastEntryPosition = voteRequest.lastEntryPosition();
         final int lastEntryTerm = voteRequest.lastEntryTerm();
-        final Endpoint candidate = voteRequest.candidate();
+        final Member candidate = voteRequest.candidate();
 
         boolean granted = false;
 
@@ -73,13 +97,14 @@ public abstract class ActiveState extends InactiveState
 
         if (granted)
         {
-            raft.lastVotedFor(candidate);
+            raft.lastVotedFor(candidate.endpoint());
         }
 
         voteResponse.reset();
         return voteResponse
-            .term(currentTerm)
-            .granted(granted);
+                .id(raft.id())
+                .term(currentTerm)
+                .granted(granted);
     }
 
     protected boolean isLogUpToDate(final long entryPosition, final int entryTerm)
@@ -87,11 +112,25 @@ public abstract class ActiveState extends InactiveState
         return logStreamState.isLastReceivedEntry(entryPosition, entryTerm);
     }
 
-    @Override
-    public AppendResponse append(final AppendRequest request)
+    public int onAppendRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId)
+    {
+        appendRequest.reset();
+        appendRequest.wrap(buffer, offset, length);
+
+        final AppendResponse appendResponse = append(appendRequest);
+
+        messageWriter.protocol(Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
+            .channelId(channelId)
+            .message(appendResponse)
+            .tryWriteMessage();
+
+        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+
+    protected AppendResponse append(final AppendRequest request)
     {
         final int term = request.term();
-        final Endpoint leader = request.leader();
+        final Member leader = request.leader();
 
         final boolean transition = updateTermAndLeader(term, leader);
 
@@ -159,6 +198,9 @@ public abstract class ActiveState extends InactiveState
 
         if (entry != null)
         {
+            System.out.println("\n");
+            System.out.println("append");
+
             logStreamState.append(entry);
         }
 
@@ -189,15 +231,13 @@ public abstract class ActiveState extends InactiveState
 
         final int term = raft.term();
         final int log = raft.stream().getId();
-        final Endpoint member = raft.member().endpoint();
 
         return appendResponse
-                .succeeded(succeeded)
+                .id(log)
                 .term(term)
-                .log(log)
+                .succeeded(succeeded)
                 .entryPosition(logPosition)
-                .member(member);
+                .member(raft.member());
 
     }
-
 }

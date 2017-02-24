@@ -3,7 +3,6 @@ package org.camunda.tngp.broker.clustering.gossip.data;
 import java.util.Iterator;
 
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.list.CompactListIterator;
 
 public class PeerListIterator implements Iterator<Peer>
@@ -11,9 +10,7 @@ public class PeerListIterator implements Iterator<Peer>
     protected PeerList values;
     protected CompactListIterator iterator;
 
-    protected final Peer currentPeer = new Peer();
-
-    protected final UnsafeBuffer tmpPeerBuffer = new UnsafeBuffer(new byte[Peer.MAX_PEER_LENGTH]);
+    protected final Peer curr = new Peer();
 
     public PeerListIterator(final PeerList values)
     {
@@ -39,49 +36,14 @@ public class PeerListIterator implements Iterator<Peer>
     public Peer next()
     {
         final MutableDirectBuffer next = iterator.next();
-        currentPeer.wrap(next, 0, next.capacity());
+        curr.wrap(next, 0, next.capacity());
 
-        return currentPeer;
+        return curr;
     }
 
-    /**
-     * Inserts the specified peer into the list. The peer is
-     * inserted before the last peer returned by {@link #next}.
-     *
-     * Note that the position of this iterator does not change.
-     *
-     * @param peer the peer to insert
-     * @throws IllegalStateException if {@code next} has not been called
-     */
-    public void add(Peer peer)
+    public int position()
     {
-        final int position = iterator.position();
-        if (position < 0)
-        {
-            throw new IllegalStateException();
-        }
-
-        peer.write(tmpPeerBuffer, 0);
-        values.getPeers().add(tmpPeerBuffer, 0, peer.getLength(), position);
-    }
-
-    /**
-     * Replaces the last peer returned by {@link #next} with the specified peer.
-     *
-     * @param peer the peer with which to replace the last peer returned by
-     *          {@code next}
-     * @throws IllegalStateException if {@code next} has not been called
-     */
-    public void set(Peer peer)
-    {
-        final int position = iterator.position();
-        if (position < 0)
-        {
-            throw new IllegalStateException();
-        }
-
-        peer.write(tmpPeerBuffer, 0);
-        values.getPeers().set(position, tmpPeerBuffer, 0, peer.getLength());
+        return iterator.position();
     }
 
 }

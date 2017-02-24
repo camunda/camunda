@@ -10,12 +10,17 @@ sendBufferSize = 128
 port = 8080
 receiveBufferSize = 16
 
-[network.management]
+[network.managementApi]
 host = "localhost"
 port = 5555
 receiveBufferSize = 16
 
-[network.management.gossip]
+[network.replicationApi]
+host = "localhost"
+port = 5556
+receiveBufferSize = 16
+
+[network.gossip]
 initialContactPoints = [
   "localhost:51016"
 ]
@@ -37,15 +42,21 @@ useTempCountersFile = true
 logWriteBufferSize = 256
 defaultLogSegmentSize = 512
 
+[[log]]
+name = "default-task-queue-log"
+id = 0
+logDirectory = "/tmp/tngp-5555-task"
+
+[snapshot]
+useTempSnapshotDirectory = true
+
 # Task Queues ------------------------------------------
 
 [task-queues]
 numberOfWorkers = 1
 perWorkerResponsePoolCapacity = 32
 
-# Workflow ---------------------------------------------
-
-[workflow]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
+[[task-queue]]
+logName = "default-task-queue-log"
+useTempIndexFile = true
 

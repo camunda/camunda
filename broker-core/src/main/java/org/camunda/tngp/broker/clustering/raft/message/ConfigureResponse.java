@@ -17,6 +17,31 @@ public class ConfigureResponse implements BufferReader, BufferWriter
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ConfigureResponseDecoder bodyDecoder = new ConfigureResponseDecoder();
 
+    private int id;
+    private int term;
+
+    public int id()
+    {
+        return id;
+    }
+
+    public ConfigureResponse id(final int id)
+    {
+        this.id = id;
+        return this;
+    }
+
+    public int term()
+    {
+        return term;
+    }
+
+    public ConfigureResponse term(final int term)
+    {
+        this.term = term;
+        return this;
+    }
+
     @Override
     public int getLength()
     {
@@ -32,16 +57,30 @@ public class ConfigureResponse implements BufferReader, BufferWriter
             .templateId(bodyEncoder.sbeTemplateId())
             .schemaId(bodyEncoder.sbeSchemaId())
             .version(bodyEncoder.sbeSchemaVersion());
+
+        offset += headerEncoder.encodedLength();
+
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term);
     }
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
     {
         headerDecoder.wrap(buffer, offset);
+
+        offset += headerDecoder.encodedLength();
+
+        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
     }
 
     public void reset()
     {
+        id = -1;
+        term = -1;
     }
 
 }

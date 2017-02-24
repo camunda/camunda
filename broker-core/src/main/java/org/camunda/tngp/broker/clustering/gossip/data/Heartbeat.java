@@ -1,10 +1,9 @@
 package org.camunda.tngp.broker.clustering.gossip.data;
 
-
 public class Heartbeat implements Comparable<Heartbeat>
 {
     protected long generation;
-    protected long version;
+    protected int version;
 
     public long generation()
     {
@@ -17,12 +16,12 @@ public class Heartbeat implements Comparable<Heartbeat>
         return this;
     }
 
-    public long version()
+    public int version()
     {
         return version;
     }
 
-    public Heartbeat version(final long version)
+    public Heartbeat version(final int version)
     {
         this.version = version;
         return this;

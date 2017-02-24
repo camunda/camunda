@@ -1,23 +1,21 @@
 package org.camunda.tngp.broker.clustering.management.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
-import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.*;
+import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.*;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
-import org.camunda.tngp.management.cluster.InvitationRequestDecoder;
-import org.camunda.tngp.management.cluster.InvitationRequestDecoder.ClusterDecoder;
-import org.camunda.tngp.management.cluster.InvitationRequestEncoder;
-import org.camunda.tngp.management.cluster.InvitationRequestEncoder.ClusterEncoder;
-import org.camunda.tngp.management.cluster.MessageHeaderDecoder;
-import org.camunda.tngp.management.cluster.MessageHeaderEncoder;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
+import org.camunda.tngp.clustering.management.InvitationRequestDecoder;
+import org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder;
+import org.camunda.tngp.clustering.management.InvitationRequestEncoder;
+import org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder;
+import org.camunda.tngp.clustering.management.MessageHeaderDecoder;
+import org.camunda.tngp.clustering.management.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -29,35 +27,48 @@ public class InvitationRequest implements BufferWriter, BufferReader
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final InvitationRequestEncoder bodyEncoder = new InvitationRequestEncoder();
 
-    protected int log;
-    protected List<Member> cluster;
+    protected int id;
+    protected int term;
+    protected List<Member> members = new CopyOnWriteArrayList<>();
 
-    public int log()
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public InvitationRequest log(final int log)
+    public InvitationRequest id(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
-    public List<Member> cluster()
+    public int term()
     {
-        return cluster;
+        return term;
     }
 
-    public InvitationRequest cluster(final List<Member> members)
+    public InvitationRequest term(final int term)
     {
-        this.cluster = members;
+        this.term = term;
+        return this;
+    }
+
+    public List<Member> members()
+    {
+        return members;
+    }
+
+    public InvitationRequest members(final List<Member> members)
+    {
+        this.members.clear();
+        this.members.addAll(members);
         return this;
     }
 
     @Override
     public int getLength()
     {
-        final int size = cluster.size();
+        final int size = members.size();
 
         int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
 
@@ -65,18 +76,9 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         for (int i = 0; i < size; i++)
         {
-            final Member member = cluster.get(i);
-            final String host = member.endpoint().host();
-
-            try
-            {
-                final byte[] bytes = host.getBytes("UTF-8");
-                length += bytes.length;
-            }
-            catch (final UnsupportedEncodingException e)
-            {
-                e.printStackTrace();
-            }
+            final Member member = members.get(i);
+            final Endpoint endpoint = member.endpoint();
+            length += endpoint.hostLength();
         }
 
         return length;
@@ -93,18 +95,21 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         offset += headerEncoder.encodedLength();
 
-        final int size = cluster.size();
+        final int size = members.size();
 
-        final ClusterEncoder encoder = bodyEncoder.wrap(buffer, offset)
-            .log(log)
-            .clusterCount(size);
+        final MembersEncoder encoder = bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
+            .membersCount(size);
+
         for (int i = 0; i < size; i++)
         {
-            final Member member = cluster.get(i);
+            final Member member = members.get(i);
+            final Endpoint endpoint = member.endpoint();
 
             encoder.next()
-                .port(member.endpoint().port())
-                .host(member.endpoint().host());
+                .port(endpoint.port())
+                .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
     }
 
@@ -116,26 +121,34 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        log = bodyDecoder.log();
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
 
-        cluster = new ArrayList<>();
+        members.clear();
 
-        final Iterator<ClusterDecoder> iterator = bodyDecoder.cluster().iterator();
+        final Iterator<MembersDecoder> iterator = bodyDecoder.members().iterator();
 
         while (iterator.hasNext())
         {
-            final ClusterDecoder decoder = iterator.next();
-            final Endpoint endpoint = new Endpoint();
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) endpoint.getBuffer();
+            final MembersDecoder decoder = iterator.next();
 
-            endpoint.port(decoder.port());
+            final Member member = new Member();
+            member.endpoint().port(decoder.port());
 
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
             final int hostLength = decoder.hostLength();
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            decoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            member.endpoint().hostLength(hostLength);
+            decoder.getHost(endpointBuffer, 0, hostLength);
 
-            cluster.add(new Member(endpoint, Member.Type.ACTIVE));
+            members.add(member);
         }
+    }
+
+    public void reset()
+    {
+        members.clear();
+        id = -1;
+        term = -1;
     }
 
 }

@@ -2,7 +2,7 @@ package org.camunda.tngp.broker;
 
 import java.io.InputStream;
 
-import org.camunda.tngp.broker.clustering.ManagementComponent;
+import org.camunda.tngp.broker.clustering.ClusterComponent;
 import org.camunda.tngp.broker.logstreams.LogStreamsComponent;
 import org.camunda.tngp.broker.system.SystemContext;
 import org.camunda.tngp.broker.system.metrics.MetricsComponent;
@@ -33,7 +33,7 @@ public class Broker implements AutoCloseable
         brokerContext.addComponent(new TransportComponent());
         brokerContext.addComponent(new LogStreamsComponent());
         brokerContext.addComponent(new TaskQueueComponent());
-        brokerContext.addComponent(new ManagementComponent());
+        brokerContext.addComponent(new ClusterComponent());
 
         brokerContext.init();
     }

@@ -1,10 +1,6 @@
 package org.camunda.tngp.broker.clustering.raft.entry;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostLengthOffset;
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.hostOffset;
-import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.*;
 
 import java.util.Iterator;
 import java.util.List;
@@ -12,14 +8,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.raft.util.MemberTypeResolver;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder;
 import org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder;
 import org.camunda.tngp.clustering.raft.ConfigurationEntryEncoder;
 import org.camunda.tngp.clustering.raft.ConfigurationEntryEncoder.MembersEncoder;
-import org.camunda.tngp.clustering.raft.MemberType;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -86,9 +80,8 @@ public class ConfigurationEntry implements BufferReader, BufferWriter
             final Endpoint endpoint = member.endpoint();
 
             encoder.next()
-                .memberType(MemberTypeResolver.getMemberType(member.type()))
                 .port(endpoint.port())
-                .putHost(endpoint.getBuffer(), hostOffset(0), endpoint.hostLength());
+                .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
     }
 
@@ -107,18 +100,16 @@ public class ConfigurationEntry implements BufferReader, BufferWriter
         {
             final MembersDecoder decoder = iterator.next();
 
-            final MemberType memberType = decoder.memberType();
+            final Member member = new Member();
 
-            final Endpoint endpoint = new Endpoint();
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) endpoint.getBuffer();
+            member.endpoint().port(decoder.port());
 
-            endpoint.port(decoder.port());
-
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
             final int hostLength = decoder.hostLength();
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            decoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            member.endpoint().hostLength(hostLength);
+            decoder.getHost(endpointBuffer, 0, hostLength);
 
-            members.add(new Member(endpoint, MemberTypeResolver.getType(memberType)));
+            members.add(member);
         }
     }
 

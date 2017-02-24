@@ -1,150 +1,309 @@
 package org.camunda.tngp.broker.clustering.gossip.protocol;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.clustering.gossip.GossipProtocol;
-import org.camunda.tngp.broker.clustering.gossip.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.gossip.data.Peer;
+import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
+import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.gossip.GossipContext;
+import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
-import org.camunda.tngp.broker.clustering.gossip.message.GossipReader;
-import org.camunda.tngp.broker.clustering.gossip.message.GossipWriter;
-import org.camunda.tngp.broker.clustering.gossip.util.Requestor;
-import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
-import org.camunda.tngp.transport.requestresponse.server.DeferredResponse;
+import org.camunda.tngp.broker.clustering.gossip.message.GossipRequest;
+import org.camunda.tngp.broker.clustering.gossip.message.GossipResponse;
+import org.camunda.tngp.broker.clustering.gossip.message.ProbeRequest;
+import org.camunda.tngp.broker.clustering.util.MessageWriter;
+import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.State;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
+import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 public class Probe
 {
-    protected static final int STATE_CLOSED = 0;
-    protected static final int STATE_OPEN = 1;
-    protected static final int STATE_ACKNOWLEDGED = 2;
-    protected static final int STATE_FAILED = 3;
+    private static final int TRANSITION_DEFAULT = 0;
+    private static final int TRANSITION_OPEN = 1;
+    private static final int TRANSITION_FAILED = 2;
+    private static final int TRANSITION_CLOSE = 3;
 
-    protected int state = STATE_CLOSED;
-
-    protected final GossipProtocol gossipProtocol;
-    protected final Requestor requestor;
-    protected final PeerList members;
-
-    protected final GossipReader reader = new GossipReader();
-    protected final GossipWriter writer;
-
-    protected final Peer target = new Peer();
-
-    protected DeferredResponse response;
-
-    public Probe(final GossipProtocol gossipProtocol, final int probeTimeout)
+    private static final StateMachineCommand<ProbeContext> OPEN_STATE_MACHINE_COMMAND = (c) ->
     {
-        this.gossipProtocol = gossipProtocol;
-        this.members = gossipProtocol.getMembers();
-        this.writer = new GossipWriter(members);
+        final boolean open = c.tryTake(TRANSITION_OPEN);
+        if (!open)
+        {
+            throw new IllegalStateException("Cannot open disseminator, has not been closed.");
+        }
+    };
 
-        final ClientChannelManager channelManager = gossipProtocol.getClientChannelManager();
-        final TransportConnection connection = gossipProtocol.getConnection();
-        this.requestor = new Requestor(channelManager, connection, probeTimeout);
+    private static final StateMachineCommand<ProbeContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
+    {
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
+    private final GossipContext gossipContext;
+    private ProbeContext probeContext;
+
+    private final WaitState<ProbeContext> closedState = (c) ->
+    {
+    };
+    private final WaitState<ProbeContext> acknowledgedState = (c) ->
+    {
+    };
+    private final WaitState<ProbeContext> failedState = (c) ->
+    {
+    };
+    private final CloseRequestState closeRequestState = new CloseRequestState();
+    private final ClosingState closingState = new ClosingState();
+    private final OpeningState openingState = new OpeningState();
+    private final OpenState openState = new OpenState();
+    private final ProcessResponseState processResponseState = new ProcessResponseState();
+    private final ForwardResponseState sendResponseState = new ForwardResponseState();
+    private final StateMachineAgent<ProbeContext> probeStateMachine;
+
+    public Probe(final GossipContext context)
+    {
+        this.gossipContext = context;
+        this.probeStateMachine = new StateMachineAgent<>(
+                StateMachine.<ProbeContext> builder(s ->
+                {
+                    probeContext = new ProbeContext(s);
+                    return probeContext;
+                })
+                        .initialState(closedState)
+
+                        .from(closedState).take(TRANSITION_OPEN).to(openingState)
+
+                        .from(openingState).take(TRANSITION_DEFAULT).to(openState)
+
+                        .from(openState).take(TRANSITION_DEFAULT).to(processResponseState)
+                        .from(openState).take(TRANSITION_FAILED).to(failedState)
+                        .from(openState).take(TRANSITION_CLOSE).to(closeRequestState)
+
+                        .from(processResponseState).take(TRANSITION_DEFAULT).to(sendResponseState)
+
+                        .from(sendResponseState).take(TRANSITION_DEFAULT).to(acknowledgedState)
+                        .from(sendResponseState).take(TRANSITION_FAILED).to(failedState)
+                        .from(sendResponseState).take(TRANSITION_CLOSE).to(closeRequestState)
+
+                        .from(acknowledgedState).take(TRANSITION_CLOSE).to(closeRequestState)
+                        .from(failedState).take(TRANSITION_CLOSE).to(closeRequestState)
+
+                        .from(closeRequestState).take(TRANSITION_DEFAULT).to(closingState)
+                        .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+
+                        .build());
     }
 
-    public void begin(final Peer member, final DeferredResponse response)
+    public void open(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
     {
-        if (state == STATE_CLOSED)
-        {
-            this.response = response;
-            this.target.wrap(member);
-//            System.out.println("[PROBE OPEN] now: " + System.currentTimeMillis() + ", endpoint: " + target.endpoint());
-            this.requestor.begin(member.endpoint(), writer);
+        probeContext.channelId = channelId;
+        probeContext.connectionId = connectionId;
+        probeContext.requestId = requestId;
+        probeContext.probeRequest.wrap(buffer, offset, length);
 
-            response.defer();
-            state = STATE_OPEN;
-        }
-        else
-        {
-            throw new IllegalStateException("Cannot open prober, has not been closed.");
-        }
-    }
-
-    public int execute()
-    {
-        int workcount = 0;
-
-        if (state == STATE_OPEN)
-        {
-            workcount += requestor.execute();
-
-            if (requestor.isResponseAvailable())
-            {
-//                System.out.println("[PROBE ACK] now: " + System.currentTimeMillis() + ", endpoint: " + target.endpoint());
-                workcount += 1;
-                workcount += executeResponse();
-            }
-            else if (requestor.isFailed())
-            {
-//                System.out.println("[PROBE FAILED] now: " + System.currentTimeMillis() + ", endpoint: " + target.endpoint());
-                workcount += 1;
-                workcount += executeFailed();
-            }
-        }
-
-        return workcount;
-    }
-
-    protected int executeResponse()
-    {
-        int workcount = 0;
-
-        final DirectBuffer responseBuffer = requestor.getResponseBuffer();
-        final int responseLength = requestor.getResponseLength();
-
-        reader.wrap(responseBuffer, 0, responseLength);
-        members.merge(reader);
-
-        if (response.allocateAndWrite(writer))
-        {
-            workcount += 1;
-            response.commit();
-        }
-        else
-        {
-            response.abort();
-        }
-
-        state = STATE_ACKNOWLEDGED;
-        return workcount;
-    }
-
-    protected int executeFailed()
-    {
-        state = STATE_FAILED;
-        return 0;
+        probeStateMachine.addCommand(OPEN_STATE_MACHINE_COMMAND);
     }
 
     public void close()
     {
-        try
-        {
-            requestor.close();
-        }
-        finally
-        {
-            response = null;
-            state = STATE_CLOSED;
-        }
+        probeContext.reset();
+
+        probeStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
     }
 
-    public boolean isOpen()
+    public int doWork()
     {
-        return state == STATE_OPEN;
-    }
-
-    public boolean isClosed()
-    {
-        return state == STATE_CLOSED;
+        return probeStateMachine.doWork();
     }
 
     public boolean isAcknowledged()
     {
-        return state == STATE_ACKNOWLEDGED;
+        return probeStateMachine.getCurrentState() == acknowledgedState;
     }
 
     public boolean isFailed()
     {
-        return state == STATE_FAILED;
+        return probeStateMachine.getCurrentState() == failedState;
     }
+
+    public boolean isClosed()
+    {
+        return probeStateMachine.getCurrentState() == closedState;
+    }
+
+    class ProbeContext extends SimpleStateMachineContext
+    {
+        final PeerList peers;
+        final RequestResponseController requestController;
+
+        int channelId;
+        long connectionId;
+        long requestId;
+
+        final ProbeRequest probeRequest;
+        final GossipRequest gossipRequest;
+        final GossipResponse gossipResponse;
+
+        final MessageWriter messageWriter;
+
+        ProbeContext(StateMachine<?> stateMachine)
+        {
+            super(stateMachine);
+            this.peers = gossipContext.getPeers();
+
+            final ClientChannelManager clientChannelManager = gossipContext.getClientChannelManager();
+            final TransportConnectionPool connections = gossipContext.getConnections();
+            final GossipConfiguration config = gossipContext.getConfig();
+            this.requestController = new RequestResponseController(clientChannelManager, connections, config.probeTimeout);
+
+            this.probeRequest = new ProbeRequest();
+            this.gossipRequest = new GossipRequest();
+            this.gossipResponse = new GossipResponse();
+
+            this.messageWriter = new MessageWriter(gossipContext.getSendBuffer());
+        }
+
+        public void reset()
+        {
+            channelId = -1;
+            connectionId = -1L;
+            requestId = -1L;
+            probeRequest.reset();
+        }
+
+    }
+
+    class OpeningState implements TransitionState<ProbeContext>
+    {
+        @Override
+        public void work(ProbeContext context) throws Exception
+        {
+            final GossipRequest gossipRequest = context.gossipRequest;
+            final PeerList peers = context.peers;
+            final ProbeRequest probeRequest = context.probeRequest;
+            final RequestResponseController requestController = context.requestController;
+
+            gossipRequest.peers(peers);
+
+            final Endpoint target = probeRequest.target();
+            requestController.open(target, gossipRequest);
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class OpenState implements State<ProbeContext>
+    {
+        @Override
+        public int doWork(ProbeContext context) throws Exception
+        {
+            final RequestResponseController requestController = context.requestController;
+
+            int workcount = 0;
+
+            workcount += requestController.doWork();
+
+            if (requestController.isResponseAvailable())
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+            else if (requestController.isFailed())
+            {
+                workcount += 1;
+                context.take(TRANSITION_FAILED);
+            }
+
+            return workcount;
+        }
+    }
+
+    class ProcessResponseState implements TransitionState<ProbeContext>
+    {
+        @Override
+        public void work(ProbeContext context) throws Exception
+        {
+            final RequestResponseController requestController = context.requestController;
+            final GossipResponse gossipResponse = context.gossipResponse;
+            final PeerList peers = context.peers;
+
+            final DirectBuffer responseBuffer = requestController.getResponseBuffer();
+            final int responseLength = requestController.getResponseLength();
+
+            gossipResponse.wrap(responseBuffer, 0, responseLength);
+            peers.merge(gossipResponse.peers());
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class ForwardResponseState implements State<ProbeContext>
+    {
+        @Override
+        public int doWork(ProbeContext context) throws Exception
+        {
+            final MessageWriter messageWriter = context.messageWriter;
+            final int channelId = context.channelId;
+            final long connectionId = context.connectionId;
+            final long requestId = context.requestId;
+            final GossipResponse gossipResponse = context.gossipResponse;
+
+            int workcount = 0;
+
+            messageWriter.protocol(Protocols.REQUEST_RESPONSE)
+                .channelId(channelId)
+                .connectionId(connectionId)
+                .requestId(requestId)
+                .message(gossipResponse);
+
+            if (messageWriter.tryWriteMessage())
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
+    class CloseRequestState implements TransitionState<ProbeContext>
+    {
+        @Override
+        public void work(ProbeContext context) throws Exception
+        {
+            final RequestResponseController requestController = context.requestController;
+
+            if (!requestController.isClosed())
+            {
+                requestController.close();
+            }
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class ClosingState implements State<ProbeContext>
+    {
+        @Override
+        public int doWork(ProbeContext context) throws Exception
+        {
+            final RequestResponseController requestController = context.requestController;
+
+            int workcount = 0;
+
+            workcount += requestController.doWork();
+            if (requestController.isClosed())
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
+
 }

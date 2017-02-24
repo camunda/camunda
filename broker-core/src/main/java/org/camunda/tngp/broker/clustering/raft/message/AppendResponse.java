@@ -1,16 +1,13 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.broker.clustering.util.EndpointDescriptor.*;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.util.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.AppendResponseDecoder;
 import org.camunda.tngp.clustering.raft.AppendResponseEncoder;
 import org.camunda.tngp.clustering.raft.BooleanType;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.clustering.raft.RaftHeaderDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -22,23 +19,23 @@ public class AppendResponse implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final AppendResponseEncoder bodyEncoder = new AppendResponseEncoder();
 
-    protected int log;
+    protected int id;
     protected int term;
 
     protected boolean succeeded;
     protected long entryPosition;
 
-    protected Endpoint member = new Endpoint();
+    protected final Member member = new Member();
     protected boolean isMemberAvailable = false;
 
-    public int log()
+    public int id()
     {
-        return log;
+        return id;
     }
 
-    public AppendResponse log(final int log)
+    public AppendResponse id(final int id)
     {
-        this.log = log;
+        this.id = id;
         return this;
     }
 
@@ -75,22 +72,19 @@ public class AppendResponse implements BufferReader, BufferWriter
         return this;
     }
 
-    public Endpoint member()
+    public Member member()
     {
         return isMemberAvailable ? member : null;
     }
 
-    public AppendResponse member(final Endpoint member)
+    public AppendResponse member(final Member member)
     {
         isMemberAvailable = false;
+        this.member.endpoint().reset();
         if (member != null)
         {
-            this.member.wrap(member);
+            this.member.endpoint().wrap(member.endpoint());
             isMemberAvailable = true;
-        }
-        else
-        {
-            this.member.clear();
         }
 
         return this;
@@ -105,24 +99,22 @@ public class AppendResponse implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        final RaftHeaderDecoder raftHeaderDecoder = bodyDecoder.header();
-        log = raftHeaderDecoder.log();
-        term = raftHeaderDecoder.term();
-
+        id = bodyDecoder.id();
+        term = bodyDecoder.term();
         succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
         entryPosition = bodyDecoder.entryPosition();
 
         isMemberAvailable = false;
-        member.clear();
+        member.endpoint().reset();
 
         final int hostLength = bodyDecoder.hostLength();
         if (hostLength > 0)
         {
-            member.port(bodyDecoder.port());
-            final MutableDirectBuffer endpointBuffer = (MutableDirectBuffer) member.getBuffer();
+            member.endpoint().port(bodyDecoder.port());
 
-            endpointBuffer.putInt(hostLengthOffset(0), hostLength);
-            bodyDecoder.getHost(endpointBuffer, hostOffset(0), hostLength);
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
+            member.endpoint().hostLength(hostLength);
+            bodyDecoder.getHost(endpointBuffer, 0, hostLength);
 
             isMemberAvailable = true;
         }
@@ -137,7 +129,7 @@ public class AppendResponse implements BufferReader, BufferWriter
 
         if (isMemberAvailable)
         {
-            size += member.hostLength();
+            size += member.endpoint().hostLength();
         }
 
         return size;
@@ -154,28 +146,23 @@ public class AppendResponse implements BufferReader, BufferWriter
 
         offset += headerEncoder.encodedLength();
 
-        bodyEncoder.wrap(buffer, offset);
-
-        bodyEncoder.header()
-            .log(log)
-            .term(term);
-
-        bodyEncoder
+        bodyEncoder.wrap(buffer, offset)
+            .id(id)
+            .term(term)
             .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
-            .entryPosition(entryPosition);
-
-        bodyEncoder.port(member.port());
-        bodyEncoder.putHost(member.getBuffer(), hostOffset(0), member.hostLength());
+            .entryPosition(entryPosition)
+            .port(member.endpoint().port())
+            .putHost(member.endpoint().getHostBuffer(), 0, member.endpoint().hostLength());
 
     }
 
     public void reset()
     {
-        log = -1;
+        id = -1;
         term = -1;
         succeeded = false;
         entryPosition = -1L;
-        member.clear();
+        member.endpoint().reset();
         isMemberAvailable = false;
     }
 

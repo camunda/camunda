@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://www.fixprotocol.org/ns/simple/RC3"
+    package="org.camunda.tngp.clustering.management" id="5" version="1"
+    semanticVersion="0.1.0" description="Tngp Cluster Management Protocol" byteOrder="littleEndian">
+
+    <types>
+
+        <composite name="messageHeader"
+            description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16" />
+            <type name="templateId" primitiveType="uint16" />
+            <type name="schemaId" primitiveType="uint16" />
+            <type name="version" primitiveType="uint16" />
+        </composite>
+
+        <composite name="varDataEncoding">
+            <type name="length" primitiveType="uint16" />
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
+        </composite>
+
+        <composite name="groupSizeEncoding">
+            <type name="blockLength" primitiveType="uint16" />
+            <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+        </composite>
+
+    </types>
+
+    <sbe:message name="InvitationRequest" id="0">
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <!-- TODO: provide more details to raft -->
+        <group name="members" id="2" dimensionType="groupSizeEncoding">
+            <field name="port" id="3" type="uint16"/>
+            <data name="host" id="4" type="varDataEncoding"/>
+        </group>
+    </sbe:message>
+
+    <sbe:message name="InvitationResponse" id="1">
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+    </sbe:message>
+
+</sbe:messageSchema>

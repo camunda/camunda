@@ -143,8 +143,6 @@ public class LogStreamState
 
             lastReceivedPosition = lastWrittenPosition;
             lastReceivedTerm = lastWrittenTerm;
-
-
         }
     }
 

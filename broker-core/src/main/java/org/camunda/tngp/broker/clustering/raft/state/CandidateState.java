@@ -2,35 +2,116 @@ package org.camunda.tngp.broker.clustering.raft.state;
 
 import java.util.List;
 
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.SystemEpochClock;
-import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
-import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
-import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.broker.clustering.raft.protocol.Member;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft;
-import org.camunda.tngp.broker.clustering.raft.protocol.Raft.State;
+import org.camunda.tngp.broker.clustering.raft.Member;
+import org.camunda.tngp.broker.clustering.raft.Raft;
+import org.camunda.tngp.broker.clustering.raft.Raft.State;
+import org.camunda.tngp.broker.clustering.raft.RaftContext;
+import org.camunda.tngp.broker.clustering.raft.controller.VoteController;
+import org.camunda.tngp.broker.clustering.raft.util.Quorum;
+import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
+import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 public class CandidateState extends ActiveState
 {
-    protected static final int STATE_CLOSED = 0;
-    protected static final int STATE_OPENING = 1;
-    protected static final int STATE_OPEN = 2;
+    private static final int TRANSITION_DEFAULT = 0;
+    private static final int TRANSITION_OPEN = 1;
+    private static final int TRANSITION_CLOSE = 2;
+    private static final int TRANSITION_RETRY = 3;
 
-    protected int state = STATE_CLOSED;
-
-    protected final EpochClock clock = new SystemEpochClock();
-    protected long electionTimeoutConfig = 350L;
-
-    protected long electionTime = -1L;
-    protected long electionTimeout = -1L;
-
-    protected final VoteRequest voteRequest = new VoteRequest();
-
-    public CandidateState(final Raft raft, final LogStreamState logStreamState)
+    private static final StateMachineCommand<CandidateContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
     {
-        super(raft, logStreamState);
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
+    private final WaitState<CandidateContext> closedState = (c) ->
+    {
+    };
+
+    private final PrepareState prepareState = new PrepareState();
+    private final OpenVoteRequestsState openVoteRequestsState = new OpenVoteRequestsState();
+    private final OpenState openState = new OpenState();
+    private final CloseVoteRequestsState closeVoteRequestsState = new CloseVoteRequestsState();
+    private final ClosingState closingState = new ClosingState();
+
+    private final StateMachineAgent<CandidateContext> candidateStateMachine;
+    private CandidateContext candidateContext;
+
+    public CandidateState(final RaftContext context)
+    {
+        super(context);
+
+        this.candidateStateMachine = new StateMachineAgent<>(StateMachine
+                .<CandidateContext> builder(s ->
+                {
+                    candidateContext = new CandidateContext(s, context);
+                    return candidateContext;
+                })
+                .initialState(closedState)
+
+                .from(closedState).take(TRANSITION_OPEN).to(prepareState)
+                .from(closedState).take(TRANSITION_CLOSE).to(closedState)
+
+                .from(prepareState).take(TRANSITION_DEFAULT).to(openVoteRequestsState)
+                .from(prepareState).take(TRANSITION_CLOSE).to(closeVoteRequestsState)
+
+                .from(openVoteRequestsState).take(TRANSITION_DEFAULT).to(openState)
+                .from(openVoteRequestsState).take(TRANSITION_CLOSE).to(closeVoteRequestsState)
+
+                .from(openState).take(TRANSITION_RETRY).to(prepareState)
+                .from(openState).take(TRANSITION_CLOSE).to(closeVoteRequestsState)
+
+                .from(closeVoteRequestsState).take(TRANSITION_DEFAULT).to(closingState)
+                .from(closeVoteRequestsState).take(TRANSITION_CLOSE).to(closeVoteRequestsState)
+
+                .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+                .from(closingState).take(TRANSITION_RETRY).to(prepareState)
+                .from(closingState).take(TRANSITION_CLOSE).to(closingState)
+
+                .build());
+    }
+
+    @Override
+    public void open()
+    {
+        if (isClosed())
+        {
+            if (logStreamState != null)
+            {
+                logStreamState.reset();
+            }
+
+            candidateContext.take(TRANSITION_OPEN);
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot open state machine, has not been closed.");
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        candidateStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
+    }
+
+    @Override
+    public int doWork()
+    {
+        return candidateStateMachine.doWork();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return candidateStateMachine.getCurrentState() == closedState;
     }
 
     @Override
@@ -39,183 +120,216 @@ public class CandidateState extends ActiveState
         return Raft.State.CANDIDATE;
     }
 
-    @Override
-    public void doOpen()
+    class CandidateContext extends SimpleStateMachineContext
     {
-        startElection();
-    }
+        final Raft raft;
+        final Quorum quorum;
 
-    @Override
-    public void doClose()
-    {
-        cancelElection();
-    }
+        long electionTimeoutConfig = 350L;
+        long electionTime = -1L;
+        long electionTimeout = -1L;
+        int transitionAfterClosing = TRANSITION_DEFAULT;
 
-    @Override
-    public int doWork()
-    {
-        int workcount = 0;
-        if (isOpen())
+        CandidateContext(final StateMachine<?> stateMachine, final RaftContext context)
         {
-            workcount += executeElection();
-        }
-        return workcount;
-    }
-
-    @Override
-    public VoteResponse vote(final VoteRequest request)
-    {
-        if (updateTermAndLeader(request.term(), null))
-        {
-            final VoteResponse voteResponse = super.vote(request);
-            raft.transition(Raft.State.FOLLOWER);
-            return voteResponse;
-        }
-        else if (request.candidate().equals(raft.member().endpoint()))
-        {
-            voteResponse.reset();
-            return voteResponse
-                .term(raft.term())
-                .granted(true);
-        }
-        else
-        {
-            voteResponse.reset();
-            return voteResponse
-                .term(raft.term())
-                .granted(false);
-        }
-    }
-
-    protected void startElection()
-    {
-        raft
-            .term(raft.term() + 1)
-            .lastVotedFor(raft.member().endpoint());
-
-        final List<Member> votingMembers = raft.members();
-
-        if (votingMembers.size() == 1)
-        {
-            raft.transition(Raft.State.LEADER);
-            return;
+            super(stateMachine);
+            this.quorum = new Quorum();
+            this.raft = context.getRaft();
         }
 
-        final VoteRequest voteRequest = prepareVoteRequest();
-
-        for (int i = 0; i < votingMembers.size(); i++)
-        {
-            final Member votingMember = votingMembers.get(i);
-            if (!votingMember.equals(raft.member()))
-            {
-                votingMember.sendVoteRequest(voteRequest);
-            }
-        }
-
-        electionTime = clock.time();
-        electionTimeout = randomTimeout(electionTimeoutConfig);
-    }
-
-    protected VoteRequest prepareVoteRequest()
-    {
-        voteRequest.reset();
-        voteRequest
-            .log(raft.stream().getId())
-            .term(raft.term())
-            .lastEntryPosition(logStreamState.lastReceivedPosition())
-            .lastEntryTerm(logStreamState.lastReceivedTerm())
-            .candidate(raft.member().endpoint());
-        return voteRequest;
-    }
-
-    protected int executeElection()
-    {
-        int votes = 1;
-
-        int workcount = 0;
-
-        boolean shouldStepDown = false;
-        int currentTerm = raft.term();
-
-        for (int i = 0; i < raft.members().size(); i++)
-        {
-            final Member member = raft.members().get(i);
-
-            if (member.equals(raft.member()))
-            {
-                continue;
-            }
-
-            workcount += member.doVote();
-
-            final VoteResponse voteResponse = member.getVoteResponse();
-
-            if (voteResponse != null)
-            {
-                final int term = voteResponse.term();
-                if (currentTerm == term)
-                {
-                    if (voteResponse.granted())
-                    {
-                        votes += 1;
-                    }
-                }
-                else if (currentTerm < term)
-                {
-                    currentTerm = term;
-                    shouldStepDown = true;
-                    break;
-                }
-            }
-        }
-
-        if (shouldStepDown)
-        {
-            workcount += 1;
-            raft.term(currentTerm);
-            raft.transition(Raft.State.FOLLOWER);
-            System.out.println("[CANDIDATE]: step down from CANDIDATE state, log: " + raft.id() + ", now: " + System.currentTimeMillis());
-        }
-        if (votes >= (raft.members().size() / 2 + 1))
-        {
-            System.out.println("[CANDIDATE]: become LEADER, log: " + raft.id() + ", now: " + System.currentTimeMillis());
-            workcount += 1;
-            raft.transition(Raft.State.LEADER);
-        }
-        else if (clock.time() >= electionTime + electionTimeout)
-        {
-            workcount += 1;
-            raft.transition(Raft.State.CANDIDATE);
-        }
-
-        return workcount;
-    }
-
-    protected void cancelElection()
-    {
-        try
-        {
-            for (int i = 0; i < raft.members().size(); i++)
-            {
-                raft.members().get(i).cancelVoteRequest();
-            }
-        }
-        finally
+        public void reset()
         {
             electionTime = -1L;
             electionTimeout = -1L;
-            state = STATE_CLOSED;
         }
     }
 
-    @Override
-    public AppendResponse append(final AppendRequest request)
+    class PrepareState implements TransitionState<CandidateContext>
     {
-        if (request.term() >= raft.term())
+        public void work(final CandidateContext context) throws Exception
         {
-            raft.term(request.term());
-            raft.transition(Raft.State.FOLLOWER);
+            final Quorum quorum = context.quorum;
+            final Raft raft = context.raft;
+            final List<Member> members = raft.members();
+
+            final int currentTerm = raft.term();
+            raft.term(currentTerm + 1);
+
+            if (members.size() == 1)
+            {
+                context.take(TRANSITION_CLOSE);
+                raft.transition(Raft.State.LEADER);
+            }
+            else
+            {
+                quorum.open(raft.quorum());
+                context.take(TRANSITION_DEFAULT);
+            }
         }
-        return super.append(request);
     }
+
+    class OpenVoteRequestsState implements TransitionState<CandidateContext>
+    {
+        @Override
+        public void work(final CandidateContext context) throws Exception
+        {
+            final Raft raft = context.raft;
+            final Quorum quorum = context.quorum;
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final VoteController voteController = member.getVoteController();
+
+                if (!self.equals(member) && voteController != null)
+                {
+                    voteController.open(quorum);
+                }
+            }
+
+            context.electionTime = System.currentTimeMillis();
+            context.electionTimeout = randomTimeout(context.electionTimeoutConfig);
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class OpenState implements org.camunda.tngp.util.state.State<CandidateContext>
+    {
+        @Override
+        public int doWork(CandidateContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final Raft raft = context.raft;
+            final long electionTime = context.electionTime;
+            final long electionTimeout = context.electionTimeout;
+            final Quorum quorum = context.quorum;
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final VoteController voteController = member.getVoteController();
+
+                if (!self.equals(member) && voteController != null)
+                {
+                    workcount += voteController.doWork();
+                }
+            }
+
+            if (quorum.isCompleted())
+            {
+                if (quorum.isElected())
+                {
+                    // this will close this current state
+                    raft.transition(Raft.State.LEADER);
+                }
+                else
+                {
+                    // this will close this current state
+                    raft.transition(Raft.State.FOLLOWER);
+                }
+            }
+            else if (System.currentTimeMillis() >= electionTime + electionTimeout)
+            {
+                System.out.println("[CANDIDATE]: start new election round, log: " + raft.id() + ", now: " + System.currentTimeMillis());
+
+                for (int i = 0; i < members.size(); i++)
+                {
+                    final Member member = members.get(i);
+                    final VoteController voteController = member.getVoteController();
+
+                    if (!self.equals(member) && voteController != null)
+                    {
+                        voteController.closeForcibly();
+                    }
+                }
+
+                quorum.close();
+
+                workcount += 1;
+                context.take(TRANSITION_RETRY);
+            }
+
+            return workcount;
+        }
+    }
+
+    class CloseVoteRequestsState implements org.camunda.tngp.util.state.State<CandidateContext>
+    {
+        @Override
+        public int doWork(CandidateContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final Raft raft = context.raft;
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final VoteController voteController = member.getVoteController();
+
+                if (!self.equals(member) && voteController != null && !voteController.isClosed())
+                {
+                    workcount += 1;
+                    voteController.close();
+                }
+            }
+
+            context.take(TRANSITION_DEFAULT);
+
+            return workcount;
+        }
+    }
+
+    class ClosingState implements org.camunda.tngp.util.state.State<CandidateContext>
+    {
+
+        @Override
+        public int doWork(CandidateContext context) throws Exception
+        {
+            final Raft raft = context.raft;
+
+            int workcount = 0;
+            int closed = 0;
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final VoteController voteController = member.getVoteController();
+
+                if (!self.equals(member) && voteController != null)
+                {
+                    workcount += voteController.doWork();
+
+                    if (voteController.isClosed())
+                    {
+                        closed += 1;
+                    }
+                }
+            }
+
+            if (members.size() - 1 == closed)
+            {
+                context.quorum.close();
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+
+    }
+
 }

@@ -15,7 +15,8 @@ public class TransportServiceNames
     public static final ServiceName<ControlMessageHandlerManager> CONTROL_MESSAGE_HANDLER_MANAGER = ServiceName.newServiceName("transport.clientApi.controlMessage", ControlMessageHandlerManager.class);
 
     public static final String CLIENT_API_SOCKET_BINDING_NAME = "clientApi";
-    public static final String MANAGEMENT_SOCKET_BINDING_NAME = "management";
+    public static final String MANAGEMENT_SOCKET_BINDING_NAME = "managementApi";
+    public static final String REPLICATION_SOCKET_BINDING_NAME = "replicationApi";
 
     public static ServiceName<ServerSocketBinding> serverSocketBindingServiceName(String bindingName)
     {

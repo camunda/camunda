@@ -11,14 +11,18 @@ port = 51015
 receiveBufferSize = 16
 controlMessageRequestTimeoutInMillis = 10000
 
-[network.management]
+[network.managementApi]
 host = "localhost"
 port = 51016
 receiveBufferSize = 16
 
-[network.management.gossip]
-peersStorageFile = "/tmp/51016.tngp"
+[network.replicationApi]
+host = "localhost"
+port = 51017
+receiveBufferSize = 16
 
+[network.gossip]
+peersStorageFile = "/tmp/51016.tngp"
 
 # System Configuration --------------------------------
 
