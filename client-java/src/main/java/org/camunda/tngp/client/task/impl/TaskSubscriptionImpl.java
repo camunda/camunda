@@ -5,16 +5,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.EventSubscription;
+import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
+import org.slf4j.Logger;
 
 public class TaskSubscriptionImpl
     extends EventSubscription<TaskSubscriptionImpl>
     implements TaskSubscription, PollableTaskSubscription
 {
+    protected static final Logger LOGGER = Loggers.TASK_SUBSCRIPTION_LOGGER;
 
     protected final TaskHandler taskHandler;
     protected final AsyncTasksClient taskClient;
@@ -96,7 +99,7 @@ public class TaskSubscriptionImpl
             }
             catch (Exception ex)
             {
-                ex.printStackTrace(System.err);
+                LOGGER.info("An error ocurred when handling task " + task.getKey() + ". Reporting to broker.", ex);
                 task.fail(ex);
             }
 

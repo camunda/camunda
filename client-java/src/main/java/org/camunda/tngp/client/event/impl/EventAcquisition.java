@@ -4,11 +4,16 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.Agent;
+import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.SubscribedEventCollector.SubscribedEventHandler;
+import org.slf4j.Logger;
 
 public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Agent
 {
+
+    protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
+
     protected final SubscriptionLifecycle<T> lifecycle;
     protected final EventSubscriptions<T> subscriptions;
     protected AsyncContext asyncContext;
@@ -82,7 +87,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
         else
         {
-            System.out.println(roleName() + ": Ignoring event " + event.toString() + " for subscription " + subscriptionId);
+            LOGGER.debug(roleName() + ": Ignoring event " + event.toString() + " for subscription " + subscriptionId);
         }
     }
 

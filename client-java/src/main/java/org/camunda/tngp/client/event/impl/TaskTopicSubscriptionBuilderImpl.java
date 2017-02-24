@@ -5,11 +5,14 @@ import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.TopicEventHandler;
 import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.event.TopicSubscription;
+import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.util.EnsureUtil;
+import org.slf4j.Logger;
 
 public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBuilder
 {
+    protected static final Logger LOGGER = Loggers.TOPIC_SUBSCRIPTION_LOGGER;
 
     protected final TopicSubscriptionBuilderImpl innerBuilder;
     protected final MsgPackMapper msgPackMapper;
@@ -58,7 +61,7 @@ public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBu
         }
         else
         {
-            System.out.println("Ignoring event at position " + event.getEventPosition());
+            LOGGER.info("Ignoring event at position " + event.getEventPosition());
         }
     }
 }

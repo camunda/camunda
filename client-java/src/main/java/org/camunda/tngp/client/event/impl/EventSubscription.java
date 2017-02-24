@@ -4,10 +4,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.util.CheckedConsumer;
+import org.slf4j.Logger;
 
 public abstract class EventSubscription<T extends EventSubscription<T>>
 {
+    protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     public static final int STATE_NEW = 0;
     public static final int STATE_OPENING = 1;
@@ -176,8 +179,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected void onEventHandlingException(TopicEventImpl event, Exception e)
     {
         // could become configurable in the future (e.g. unlock task or report an error via API)
-        System.err.println("Exception during handling of event " + event.getEventKey());
-        e.printStackTrace(System.err);
+        LOGGER.error("Exception during handling of event " + event.getEventKey(), e);
     }
 
     public void onClose()

@@ -4,6 +4,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.event.impl.EventTypeMapping;
 import org.camunda.tngp.client.event.impl.TopicEventImpl;
+import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
@@ -11,9 +12,11 @@ import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
+import org.slf4j.Logger;
 
 public class SubscribedEventCollector implements Agent
 {
+    protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
     protected static final String NAME = "event-collector";
 
     protected final TransportHeaderDescriptor transportHeaderDescriptor = new TransportHeaderDescriptor();
@@ -95,7 +98,7 @@ public class SubscribedEventCollector implements Agent
                 }
                 else
                 {
-                    System.out.println("Ignoring event for unknown subscription type");
+                    LOGGER.info("Ignoring event for unknown subscription type " + subscriptionType.toString());
                 }
             }
 
