@@ -2,23 +2,34 @@
 
 var data = require('./data');
 var elasticsearch = require('elasticsearch');
-var client = new elasticsearch.Client({
-  host: 'localhost:9200',
-  // log: 'trace' // uncomment this for elastic search debug logs
-});
+var client;
+var NODE_ENV = process.env.NODE_ENV;
 
 module.exports = {
   removeIndex: removeIndex,
   populateData: populateData
 };
 
+function initClient() {
+  if (!client) {  
+    client = new elasticsearch.Client({
+      host: 'localhost:9200',
+      // log: 'trace' // uncomment this for elastic search debug logs
+    });
+  }
+}
+
 function removeIndex() {
+  initClient();
+
   return client.indices.delete({
     index: 'optimize'
   });
 }
 
 function populateData() {
+  initClient();
+
   return data
     .getData()
     .then(function(demoData) {

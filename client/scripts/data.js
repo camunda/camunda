@@ -5,6 +5,7 @@ var bpmn = require('./bpmn');
 var states = ['COMPLETED', 'CREATED'];
 var eventsFactor = 10;
 var processInstanceFactor = 4;
+var isCI = process.env.NODE_ENV === 'ci';
 
 module.exports = {
   getData: getData
@@ -13,7 +14,7 @@ module.exports = {
 function getData() {
   return bpmn
     .getBpmnEntries()
-    .then(function(bpmnEntries) {
+    .then(function(bpmnEntries) {  
       var processDefinitions = createProcessDefinitions(bpmnEntries);
 
       return {

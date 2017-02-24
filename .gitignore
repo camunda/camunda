@@ -10,3 +10,5 @@ terraform.tfstate
 # ansible
 hosts
 *.retry
+nohup.out
+errorShots/

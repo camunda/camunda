@@ -65,6 +65,9 @@
     "beforeEach": false,
     "afterEach": false,
     "before": false,
-    "after": false
+    "after": false,
+    "browser": false,
+    "$": false,
+    "$$": false
   }
 }
