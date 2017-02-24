@@ -8,6 +8,7 @@ public class GossipConfiguration
 
     public int peersStorageInterval = 1;
     public String peersStorageFile = "/tmp/tngp.cluster";
+    public boolean useTempFile = false;
 
     public int disseminatorCapacity = 16;
     public int disseminationInterval = 1;

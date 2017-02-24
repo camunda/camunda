@@ -22,7 +22,7 @@ port = 51017
 receiveBufferSize = 16
 
 [network.gossip]
-peersStorageFile = "/tmp/51016.tngp"
+useTempFile = true
 
 # System Configuration --------------------------------
 
