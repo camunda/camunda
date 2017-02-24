@@ -4,7 +4,7 @@ def gitBranch = 'master'
 
 def JOBS = [
   [name: 'aws-setup-rds-and-ec2-instance', downstream: 'aws-upgrade-db-schema'],
-  [name: 'aws-upgrade-db-schema', downstream: 'aws-provision-camunda-bpm']
+  [name: 'aws-upgrade-db-schema', downstream: 'aws-provision-camunda-bpm'],
   [name: 'aws-provision-camunda-bpm', downstream: '']
 ]
 
