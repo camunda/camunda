@@ -45,7 +45,7 @@ yarn run compile
 
 Should create ``dist`` folder with built application.
 
-## Testing
+## Unit Testing
 
 To run tests single time:
 ```bash
@@ -56,6 +56,18 @@ Watch:
 ```bash
 yarn run test-watch
 ```
+
+## E2E Testing
+
+### Production mode (only for unix systems):
+
+1. Go to root directory of repository
+2. Run ``sh ./start-e2e.sh``
+
+### Development mode:
+
+1. Start development server.
+2. Run ``yarn run test-e2e``.
 
 ## Contributing
 
