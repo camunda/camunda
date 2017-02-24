@@ -32,18 +32,17 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
     int searchedSize;
     int maxPageSize = configurationService.getEngineImportMaxPageSize();
     ensureGreaterThanZero(maxPageSize);
-    do {
-      List<ENG> pageOfEngineEntities = queryEngineRestPoint(indexOfFirstResult, maxPageSize);
-      List<ENG> newEngineEntities =
-        getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
-      if (!newEngineEntities.isEmpty()) {
-        pagesWithData = pagesWithData + 1;
-        List<OPT> newOptimizeEntities = mapToOptimizeDto(newEngineEntities);
-        importToElasticSearch(newOptimizeEntities);
-      }
-      searchedSize = pageOfEngineEntities.size();
-      indexOfFirstResult += searchedSize;
-    } while (searchedSize > 0);
+
+    List<ENG> pageOfEngineEntities = queryEngineRestPoint(indexOfFirstResult, maxPageSize);
+    List<ENG> newEngineEntities =
+      getMissingEntitiesFinder().retrieveMissingEntities(pageOfEngineEntities);
+    if (!newEngineEntities.isEmpty()) {
+      pagesWithData = pagesWithData + 1;
+      List<OPT> newOptimizeEntities = mapToOptimizeDto(newEngineEntities);
+      importToElasticSearch(newOptimizeEntities);
+    }
+    searchedSize = pageOfEngineEntities.size();
+    indexOfFirstResult += searchedSize;
 
     return pagesWithData;
   }

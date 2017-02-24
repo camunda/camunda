@@ -5,15 +5,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ImportScheduler extends Thread {
+  protected static final long STARTING_BACKOFF = 0;
   private final Logger logger = LoggerFactory.getLogger(ImportScheduler.class);
 
-  protected final ArrayBlockingQueue<ImportScheduleJob> importScheduleJobs = new ArrayBlockingQueue<>(3);
+  protected final LinkedBlockingQueue<ImportScheduleJob> importScheduleJobs = new LinkedBlockingQueue<>();
   
   @Autowired
   protected ConfigurationService configurationService;
@@ -24,16 +24,18 @@ public class ImportScheduler extends Thread {
   @Autowired
   protected ImportJobExecutor importJobExecutor;
 
-  protected long backoffCounter = 0;
+  protected long backoffCounter = STARTING_BACKOFF;
 
   private boolean enabled = true;
 
   private LocalDateTime lastReset = LocalDateTime.now();
 
   public void scheduleProcessEngineImport() {
-    ImportScheduleJob job = new ImportScheduleJob();
-    job.setImportServiceProvider(importServiceProvider);
-    this.importScheduleJobs.add(job);
+    for (ImportService service : importServiceProvider.getServices()) {
+      ImportScheduleJob job = new ImportScheduleJob();
+      job.setImportService(service);
+      this.importScheduleJobs.add(job);
+    }
   }
 
   @Override
@@ -69,8 +71,8 @@ public class ImportScheduler extends Thread {
       pagesPassed = toExecute.execute();
       if (pagesPassed > 0) {
         logger.debug("Processed [" + pagesPassed + "] pages during data import run, scheduling one more run");
-        this.scheduleProcessEngineImport();
-        backoffCounter = calculateBackoff(pagesPassed);
+        importScheduleJobs.add(toExecute);
+        backoffCounter = STARTING_BACKOFF;
       }
     }
 
@@ -106,7 +108,7 @@ public class ImportScheduler extends Thread {
         result = backoffCounter;
       }
     } else {
-      result = 1;
+      result = STARTING_BACKOFF;
     }
     return result;
   }
@@ -116,7 +118,7 @@ public class ImportScheduler extends Thread {
   }
 
   protected void resetBackoffCounter() {
-    this.backoffCounter = 0;
+    this.backoffCounter = STARTING_BACKOFF;
   }
 
   public boolean isEnabled() {

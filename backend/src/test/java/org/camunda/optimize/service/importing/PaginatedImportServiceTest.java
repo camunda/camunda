@@ -49,6 +49,7 @@ public class PaginatedImportServiceTest {
   @Mock
   private ImportJobExecutor importJobExecutor;
 
+  //do not remove as it is used for autowiring
   @Spy
   @Autowired
   private MissingActivityFinder missingActivityFinder;
@@ -86,6 +87,9 @@ public class PaginatedImportServiceTest {
 
     // when
     activityImportService.executeImport();
+    activityImportService.executeImport();
+    activityImportService.executeImport();
+    activityImportService.executeImport();
 
     // then
     verify(engineEntityFetcher, times(4))
@@ -113,6 +117,9 @@ public class PaginatedImportServiceTest {
 
     // when
     activityImportService.executeImport();
+    activityImportService.executeImport();
+    activityImportService.executeImport();
+    activityImportService.executeImport();
 
     // then
     verify(engineEntityFetcher, times(5))
@@ -139,6 +146,9 @@ public class PaginatedImportServiceTest {
 
     // when
     activityImportService.resetImportStartIndex();
+    activityImportService.executeImport();
+    activityImportService.executeImport();
+    activityImportService.executeImport();
     activityImportService.executeImport();
 
     // then

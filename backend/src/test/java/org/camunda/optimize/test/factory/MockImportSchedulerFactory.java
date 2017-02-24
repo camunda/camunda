@@ -3,6 +3,7 @@ package org.camunda.optimize.test.factory;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportScheduler;
+import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.FactoryBean;
@@ -32,9 +33,11 @@ public class MockImportSchedulerFactory implements FactoryBean<ImportScheduler> 
     // execute job import immediately when triggered
     Answer<Void> answer = invocationOnMock -> {
       importJobExecutor.startExecutingImportJobs();
-      ImportScheduleJob job = new ImportScheduleJob();
-      job.setImportServiceProvider(importServiceProvider);
-      job.execute();
+      for (ImportService importService : importServiceProvider.getServices()) {
+        ImportScheduleJob job = new ImportScheduleJob();
+        job.setImportService(importService);
+        job.execute();
+      }
       importJobExecutor.stopExecutingImportJobs();
       return null;
     };

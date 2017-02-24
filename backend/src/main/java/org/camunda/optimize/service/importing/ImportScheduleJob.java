@@ -4,19 +4,18 @@ package org.camunda.optimize.service.importing;
  * @author Askar Akhmerov
  */
 public class ImportScheduleJob {
-  private int totalPages;
 
-  private ImportServiceProvider importServiceProvider;
+  private ImportService importService;
 
   public int execute() {
-    for (ImportService service : importServiceProvider.getServices()) {
-      totalPages = totalPages + service.executeImport();
-    }
-    return totalPages;
+    return importService.executeImport();
   }
 
-  public void setImportServiceProvider(ImportServiceProvider importServiceProvider) {
-    this.importServiceProvider = importServiceProvider;
+  public void setImportService(ImportService importService) {
+    this.importService = importService;
   }
 
+  public ImportService getImportService() {
+    return importService;
+  }
 }
