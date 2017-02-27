@@ -5,6 +5,9 @@ def JOBS = [
 ]
 
 def sshKeyId = 'jenkins-optimize-aws-ssh'
+def writeVaultPasswordFile = '''
+echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.aws/ansible/.vault_password
+'''
 
 def job = createJobWithCommonProperties(this, JOBS[0].name)
 job.with {
@@ -40,7 +43,7 @@ job.with {
   description 'Upgrades the DB schema to latest available version of Camunda BPM Platform.'
 
   steps {
-    shell 'echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.vault_password'
+    shell writeVaultPasswordFile
     shell readFileFromWorkspace('.aws/scripts/upgrade-db-schema.sh')
   }
 
@@ -61,7 +64,7 @@ job.with {
   description 'Provision the Camunda BPM Platform and Optimize on EC2 instance.'
 
   steps {
-    shell 'echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.vault_password'
+    shell writeVaultPasswordFile
     shell readFileFromWorkspace('.aws/scripts/provision-camunda.sh')
   }
 
