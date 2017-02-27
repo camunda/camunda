@@ -25,7 +25,7 @@ public class CreateTaskLatencyTest extends FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final TaskTopicClient taskClient = client.taskTopic();
+        final TaskTopicClient taskClient = client.taskTopic(0);
 
         return () ->
         {

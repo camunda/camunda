@@ -21,8 +21,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
-        client.taskTopic().newSubscription()
-            .topicId(0)
+        client.taskTopic(0).newTaskSubscription()
             .taskType("another" + TASK_TYPE)
             .handler((t) ->
             { })
@@ -34,7 +33,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final TaskTopicClient tasksClient = client.taskTopic();
+        final TaskTopicClient tasksClient = client.taskTopic(0);
 
         return () ->
         {

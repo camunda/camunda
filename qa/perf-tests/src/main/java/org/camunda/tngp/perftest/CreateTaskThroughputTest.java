@@ -21,7 +21,7 @@ public class CreateTaskThroughputTest extends MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final TaskTopicClient tasksClient = client.taskTopic();
+        final TaskTopicClient tasksClient = client.taskTopic(0);
 
         return () ->
         {

@@ -91,9 +91,8 @@ public class TaskSubscriptionThroughputTest
 
         final long testTimeNanos = TimeUnit.MILLISECONDS.toNanos(testTimeMs);
 
-        final TaskSubscription subscription = client.taskTopic().newSubscription()
+        final TaskSubscription subscription = client.taskTopic(0).newTaskSubscription()
             .lockTime(10000)
-            .topicId(0)
             .taskType(TASK_TYPE)
             .handler((t) ->
             {
@@ -117,8 +116,7 @@ public class TaskSubscriptionThroughputTest
 
         try (TransportConnection connection = client.getConnectionPool().openConnection())
         {
-            final Supplier<Future> request = () -> client.taskTopic().create()
-                    .topicId(0)
+            final Supplier<Future> request = () -> client.taskTopic(0).create()
                     .taskType(TASK_TYPE)
                     .executeAsync(connection);
 
