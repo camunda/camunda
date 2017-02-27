@@ -23,4 +23,5 @@ until ${COMMAND} > /dev/null;
   fi
 done
 
+node ./client/scripts/add_demo_data.js
 ./client/node_modules/.bin/wdio ./client/wdio-ci.conf.js
