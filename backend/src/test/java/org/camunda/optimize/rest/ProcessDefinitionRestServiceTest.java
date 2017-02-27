@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -23,13 +24,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -70,8 +69,8 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
         .post(Entity.json(dto));
 
     //then
-    HashMap deserializedResult = response.readEntity(new GenericType<HashMap<String, Long>>(){});
-    assertThat(deserializedResult.size(),is(2));
+    HeatMapResponseDto deserializedResult = response.readEntity(HeatMapResponseDto.class);
+    assertThat(deserializedResult.getFlowNodes().size(),is(1));
   }
 
   private void setUpElasticSearchMock(String expectedDate) {

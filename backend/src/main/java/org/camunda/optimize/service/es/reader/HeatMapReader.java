@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -13,7 +14,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
-import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,8 +42,10 @@ public class HeatMapReader {
     this.esclient = esclient;
   }
 
-  public Map<String, Long> getHeatMap(String processDefinitionId) {
-    Map<String, Long> result = new HashMap<>();
+  public HeatMapResponseDto getHeatMap(String processDefinitionId) {
+    HeatMapResponseDto result = new HeatMapResponseDto();
+    Map<String, Long> flowNodes = new HashMap<>();
+    result.setFlowNodes(flowNodes);
 
     SearchRequestBuilder srb = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
@@ -63,9 +65,11 @@ public class HeatMapReader {
     return query;
   }
 
-  public Map<String, Long> getHeatMap(HeatMapQueryDto dto) {
+  public HeatMapResponseDto getHeatMap(HeatMapQueryDto dto) {
+    HeatMapResponseDto result = new HeatMapResponseDto();
     ValidationHelper.validate(dto);
-    Map<String, Long> result = new HashMap<>();
+    Map<String, Long> flowNodes = new HashMap<>();
+    result.setFlowNodes(flowNodes);
 
     SearchRequestBuilder srb = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
@@ -77,18 +81,19 @@ public class HeatMapReader {
 
     srb = srb.setQuery(query);
     processAggregations(result, srb);
+
     return result;
   }
 
-  private void processAggregations(Map<String, Long> result, SearchRequestBuilder srb) {
+  private void processAggregations(HeatMapResponseDto result, SearchRequestBuilder srb) {
     Aggregations aggregations = getTermsWithAggregation(srb);
     Terms activities = aggregations.get("activities");
     for (Terms.Bucket b : activities.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
+      result.getFlowNodes().put(b.getKeyAsString(), b.getDocCount());
     }
 
     Cardinality pi = aggregations.get("pi");
-    result.put(PI_COUNT, pi.getValue());
+    result.setPiCount(pi.getValue());
   }
 
 

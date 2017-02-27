@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.CorrelationReader;
 import org.camunda.optimize.service.es.reader.HeatMapReader;
@@ -43,7 +44,7 @@ public class ProcessDefinitionRestService {
   @GET
   @Path("/{id}/heatmap")
   @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, Long> getHeatMap(@PathParam("id") String processDefinitionId) {
+  public HeatMapResponseDto getHeatMap(@PathParam("id") String processDefinitionId) {
     return heatMapReader.getHeatMap(processDefinitionId);
   }
 
@@ -51,7 +52,7 @@ public class ProcessDefinitionRestService {
   @Path("/heatmap")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Map<String, Long> getHeatMap(HeatMapQueryDto to) {
+  public HeatMapResponseDto getHeatMap(HeatMapQueryDto to) {
     return heatMapReader.getHeatMap(to);
   }
 
