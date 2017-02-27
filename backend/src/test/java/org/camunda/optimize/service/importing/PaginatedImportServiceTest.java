@@ -110,13 +110,13 @@ public class PaginatedImportServiceTest {
       .thenReturn(resultList.subList(0, 2))
       .thenReturn(Collections.emptyList());
     activityImportService.executeImport();
+    activityImportService.executeImport();
     when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
       .thenReturn(resultList.subList(2, 4))
       .thenReturn(resultList.subList(4, 5))
       .thenReturn(Collections.emptyList());
 
     // when
-    activityImportService.executeImport();
     activityImportService.executeImport();
     activityImportService.executeImport();
     activityImportService.executeImport();
@@ -139,6 +139,7 @@ public class PaginatedImportServiceTest {
       .thenReturn(resultList.subList(4, 5))
       .thenReturn(Collections.emptyList());
     activityImportService.executeImport();
+    activityImportService.executeImport();
     when(engineEntityFetcher.fetchHistoricActivityInstances(anyInt(), anyInt()))
       .thenReturn(resultList.subList(0, 2))
       .thenReturn(resultList.subList(2, 4))
@@ -146,7 +147,6 @@ public class PaginatedImportServiceTest {
 
     // when
     activityImportService.resetImportStartIndex();
-    activityImportService.executeImport();
     activityImportService.executeImport();
     activityImportService.executeImport();
     activityImportService.executeImport();
