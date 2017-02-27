@@ -49,11 +49,11 @@ job.with {
 
   wrappers {
     sshAgent (sshKeyId)
-  }
 
-  credentialsBinding {
-    string('OPTIMIZE_VAULT_SECRET', 'optimize-vault-secret')
-    usernamePassword('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'jenkins-optimize-aws-secrets')
+    credentialsBinding {
+      string('OPTIMIZE_VAULT_SECRET', 'optimize-vault-secret')
+      usernamePassword('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'jenkins-optimize-aws-secrets')
+    }
   }
 
   publishers {
