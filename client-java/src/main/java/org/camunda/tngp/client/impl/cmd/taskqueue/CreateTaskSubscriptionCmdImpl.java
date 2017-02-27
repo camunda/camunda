@@ -18,26 +18,21 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
 
     protected final TaskSubscription subscription = new TaskSubscription();
 
-    private long topicId = -1L;
+    private final int topicId;
     private String taskType;
     private long lockDuration = -1L;
     private long lockOwner = -1L;
     private int initialCredits = -1;
 
-    public CreateTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper)
+    public CreateTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
     {
         super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.ADD_TASK_SUBSCRIPTION, RESPONSE_HANDLER);
+        this.topicId = topicId;
     }
 
     public CreateTaskSubscriptionCmdImpl lockOwner(int lockOwner)
     {
         this.lockOwner = lockOwner;
-        return this;
-    }
-
-    public CreateTaskSubscriptionCmdImpl topicId(long topicId)
-    {
-        this.topicId = topicId;
         return this;
     }
 
@@ -72,7 +67,6 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     @Override
     public void reset()
     {
-        topicId = -1;
         taskType = null;
         lockDuration = -1L;
         lockOwner = -1L;

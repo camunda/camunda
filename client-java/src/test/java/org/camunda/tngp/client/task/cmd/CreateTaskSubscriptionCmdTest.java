@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateTaskSubscriptionCmdTest
 {
+    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -60,7 +61,7 @@ public class CreateTaskSubscriptionCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CreateTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper);
+        command = new CreateTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -70,7 +71,6 @@ public class CreateTaskSubscriptionCmdTest
     {
         // given
         command
-            .topicId(1)
             .taskType("foo")
             .lockDuration(1000)
             .lockOwner(2)
@@ -129,25 +129,9 @@ public class CreateTaskSubscriptionCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTopicIdIsNotSet()
-    {
-        command
-            .taskType("foo")
-            .lockDuration(1000)
-            .lockOwner(2)
-            .initialCredits(5);
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        command.validate();
-    }
-
-    @Test
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
         command
-            .topicId(1)
             .lockDuration(1000)
             .lockOwner(2)
             .initialCredits(5);
@@ -162,7 +146,6 @@ public class CreateTaskSubscriptionCmdTest
     public void shouldBeNotValidIfLockDurationIsNotSet()
     {
         command
-            .topicId(1)
             .taskType("foo")
             .lockOwner(2)
             .initialCredits(5);
@@ -177,7 +160,6 @@ public class CreateTaskSubscriptionCmdTest
     public void shouldBeNotValidIfLockOwnerIsNotSet()
     {
         command
-            .topicId(1)
             .taskType("foo")
             .lockDuration(1000)
             .initialCredits(5);
@@ -192,7 +174,6 @@ public class CreateTaskSubscriptionCmdTest
     public void shouldBeNotValidIfInitialCreditsAreNotSet()
     {
         command
-            .topicId(1)
             .taskType("foo")
             .lockDuration(1000)
             .lockOwner(2);

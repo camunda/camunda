@@ -8,7 +8,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowsClient;
+import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
@@ -50,7 +50,7 @@ public class ServiceTaskTest
     public void shouldStartProcessWithServiceTask()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
 
@@ -71,7 +71,7 @@ public class ServiceTaskTest
     public void shouldPollAndLockServiceTask() throws InterruptedException
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
 
@@ -88,9 +88,8 @@ public class ServiceTaskTest
         // when
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
             client
-                .tasks()
+                .taskTopic(0)
                 .pollAndLock()
-                .taskQueueId(0)
                 .taskType("foo")
                 .lockTime(100000L)
                 .maxTasks(1)
@@ -108,7 +107,7 @@ public class ServiceTaskTest
     public void shouldNotLockServiceTaskOfDifferentType()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         // given
         final WorkflowDefinition workflow1 = clientRule.deployProcess(oneTaskProcess("foo"));
@@ -135,9 +134,8 @@ public class ServiceTaskTest
         // when
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
             client
-                .tasks()
+                .taskTopic(0)
                 .pollAndLock()
-                .taskQueueId(0)
                 .taskType("bar")
                 .lockTime(100000L)
                 .maxTasks(2)
@@ -154,7 +152,7 @@ public class ServiceTaskTest
     public void shouldCompleteServiceTask()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         // given
         final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
@@ -170,9 +168,8 @@ public class ServiceTaskTest
 
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
             client
-                .tasks()
+                .taskTopic(0)
                 .pollAndLock()
-                .taskQueueId(0)
                 .taskType("foo")
                 .lockTime(100000L)
                 .maxTasks(1)
@@ -182,8 +179,7 @@ public class ServiceTaskTest
 
         // when
         final LockedTask task = tasksBatch.getLockedTasks().get(0);
-        final Long result = client.tasks().complete()
-            .topicId(0)
+        final Long result = client.taskTopic(0).complete()
             .taskKey(task.getId())
             .execute();
 
@@ -195,7 +191,7 @@ public class ServiceTaskTest
     public void shouldExecuteSequenceOfServiceTasks()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         // given
         final WorkflowDefinition workflow = clientRule.deployProcess(ProcessModels.TWO_TASKS_PROCESS);
@@ -211,9 +207,8 @@ public class ServiceTaskTest
 
         final LockedTasksBatch task1Batch = TestUtil.doRepeatedly(() ->
             client
-                .tasks()
+                .taskTopic(0)
                 .pollAndLock()
-                .taskQueueId(0)
                 .taskType("foo")
                 .lockTime(100000L)
                 .maxTasks(5)
@@ -222,8 +217,7 @@ public class ServiceTaskTest
                 (tasks) -> !tasks.getLockedTasks().isEmpty());
 
         final LockedTask task1 = task1Batch.getLockedTasks().get(0);
-        client.tasks().complete()
-            .topicId(0)
+        client.taskTopic(0).complete()
             .taskKey(task1.getId())
             .execute();
 
@@ -231,9 +225,8 @@ public class ServiceTaskTest
         // when
         final LockedTasksBatch task2Batch = TestUtil.doRepeatedly(() ->
             client
-                .tasks()
+                .taskTopic(0)
                 .pollAndLock()
-                .taskQueueId(0)
                 .taskType("bar")
                 .lockTime(100000L)
                 .maxTasks(5)
@@ -248,8 +241,7 @@ public class ServiceTaskTest
 
         assertThat(task2.getId()).isNotEqualTo(task1.getId());
 
-        final Long result = client.tasks().complete()
-            .topicId(0)
+        final Long result = client.taskTopic(0).complete()
             .taskKey(task2.getId())
             .execute();
 
@@ -261,7 +253,7 @@ public class ServiceTaskTest
     public void shouldExecuteServiceTaskWithoutOutgoingFlow()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         final WorkflowDefinition workflow = clientRule.deployProcess(
                 wrap(oneTaskProcess("foo"))
@@ -280,9 +272,8 @@ public class ServiceTaskTest
         // when
         final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
             client
-                .tasks()
+                .taskTopic(0)
                 .pollAndLock()
-                .taskQueueId(0)
                 .taskType("foo")
                 .lockTime(100000L)
                 .maxTasks(1)
@@ -297,9 +288,8 @@ public class ServiceTaskTest
         assertThat(task.getId()).isGreaterThan(0);
 
         final Long result = client
-            .tasks()
+            .taskTopic(0)
             .complete()
-            .topicId(0)
             .taskKey(task.getId())
             .execute();
 

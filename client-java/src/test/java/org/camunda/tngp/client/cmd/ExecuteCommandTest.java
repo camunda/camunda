@@ -51,7 +51,7 @@ public class ExecuteCommandTest
     {
         ClientCommand(EventType commandEventType)
         {
-            super(null, null, Void.class, commandEventType);
+            super(null, null, Void.class, 0, commandEventType);
         }
 
         @Override
@@ -63,12 +63,6 @@ public class ExecuteCommandTest
         protected Object writeCommand()
         {
             return null;
-        }
-
-        @Override
-        protected long getTopicId()
-        {
-            return 0;
         }
 
         @Override

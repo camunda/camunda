@@ -2,10 +2,10 @@ package org.camunda.tngp.client.task.impl;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.EventSubscription;
 import org.camunda.tngp.client.impl.Loggers;
+import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
@@ -20,10 +20,9 @@ public class TaskSubscriptionImpl
     protected static final Logger LOGGER = Loggers.TASK_SUBSCRIPTION_LOGGER;
 
     protected final TaskHandler taskHandler;
-    protected final AsyncTasksClient taskClient;
+    protected final TaskTopicClientImpl taskClient;
 
     protected final String taskType;
-    protected final int topicId;
     protected final long lockTime;
     protected final int lockOwner;
     protected final AtomicInteger remainingCapacity = new AtomicInteger(0);
@@ -32,10 +31,9 @@ public class TaskSubscriptionImpl
     protected MsgPackMapper msgPackMapper;
 
     public TaskSubscriptionImpl(
-            AsyncTasksClient taskClient,
+            TaskTopicClientImpl client,
             TaskHandler taskHandler,
             String taskType,
-            int taskQueueId,
             long lockTime,
             int lockOwner,
             int upperBoundCapacity,
@@ -44,10 +42,9 @@ public class TaskSubscriptionImpl
             boolean autoComplete)
     {
         super(acquisition, upperBoundCapacity);
-        this.taskClient = taskClient;
+        this.taskClient = client;
         this.taskHandler = taskHandler;
         this.taskType = taskType;
-        this.topicId = taskQueueId;
         this.lockTime = lockTime;
         this.lockOwner = lockOwner;
         this.autoComplete = autoComplete;
@@ -57,11 +54,6 @@ public class TaskSubscriptionImpl
     public String getTaskType()
     {
         return taskType;
-    }
-
-    public int getTopicId()
-    {
-        return topicId;
     }
 
     public long getLockTime()
@@ -121,5 +113,44 @@ public class TaskSubscriptionImpl
         remainingCapacity.addAndGet(-capacity);
 
         return capacity;
+    }
+
+    @Override
+    public Long requestNewSubscription()
+    {
+        return taskClient.brokerTaskSubscription()
+                .taskType(taskType)
+                .lockDuration(lockTime)
+                .lockOwner(lockOwner)
+                .initialCredits(capacity)
+                .execute();
+    }
+
+    @Override
+    public void requestSubscriptionClose()
+    {
+        taskClient.closeBrokerTaskSubscription()
+            .subscriptionId(id)
+            .taskType(taskType)
+            .execute();
+
+    }
+
+    @Override
+    public void onEventsPolled(int numEvents)
+    {
+        if (isOpen())
+        {
+            final int credits = getAndDecrementRemainingCapacity();
+
+            if (credits > 0)
+            {
+                taskClient.updateSubscriptionCredits()
+                    .subscriptionId(id)
+                    .taskType(taskType)
+                    .credits(credits)
+                    .execute();
+            }
+        }
     }
 }

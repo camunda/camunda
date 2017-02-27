@@ -62,7 +62,7 @@ public class BrokerRestartTest
         client = clientRule.getClient();
 
         clientRule.getClient()
-            .workflows()
+            .workflowTopic()
             .deploy()
             .bpmnModelInstance(ServiceTaskTest.oneTaskProcess("foo"))
             .execute();
@@ -74,7 +74,7 @@ public class BrokerRestartTest
 
         // given
         TestUtil.doRepeatedly(() ->
-            client.workflows()
+            client.workflowTopic()
                 .start()
                 .workflowDefinitionKey("anId")
                 .execute())
@@ -83,9 +83,8 @@ public class BrokerRestartTest
                 (exception) -> !exception.getMessage().contains("(1-3)"));
 
         TestUtil.doRepeatedly(() ->
-                client.tasks()
+                client.taskTopic(0)
                     .pollAndLock()
-                    .taskQueueId(0)
                     .taskType("foo")
                     .lockTime(1234L)
                     .execute())
@@ -96,9 +95,8 @@ public class BrokerRestartTest
 
         // then
         final LockedTasksBatch tasksBatchAfterRestart = TestUtil.doRepeatedly(() ->
-                client.tasks()
+                client.taskTopic(0)
                     .pollAndLock()
-                    .taskQueueId(0)
                     .taskType("foo")
                     .lockTime(1234L)
                     .execute())
@@ -112,15 +110,14 @@ public class BrokerRestartTest
     public void shouldCompleteTaskAfterRestart()
     {
         // given
-        client.workflows()
+        client.workflowTopic()
             .start()
             .workflowDefinitionKey("anId")
             .execute();
 
         final LockedTasksBatch taskBatch = TestUtil.doRepeatedly(() ->
-                client.tasks()
+                client.taskTopic(0)
                     .pollAndLock()
-                    .taskQueueId(0)
                     .taskType("foo")
                     .lockTime(1234L)
                     .execute())
@@ -132,8 +129,7 @@ public class BrokerRestartTest
         restartBroker();
 
         // then
-        final Long result = client.tasks().complete()
-                .topicId(0)
+        final Long result = client.taskTopic(0).complete()
                 .taskKey(taskId)
                 .execute();
 
@@ -147,7 +143,7 @@ public class BrokerRestartTest
         restartBroker();
 
         // then
-        final WorkflowInstance wfInstance = client.workflows()
+        final WorkflowInstance wfInstance = client.workflowTopic()
             .start()
             .workflowDefinitionKey("anId")
             .execute();
@@ -159,7 +155,7 @@ public class BrokerRestartTest
     public void shouldContinueAscendingWfRuntimeIdGenerationAfterRestart()
     {
         // given
-        final WorkflowInstance wfInstance = client.workflows()
+        final WorkflowInstance wfInstance = client.workflowTopic()
             .start()
             .workflowDefinitionKey("anId")
             .execute();
@@ -167,7 +163,7 @@ public class BrokerRestartTest
         restartBroker();
 
         // when
-        final WorkflowInstance wfInstance2 = client.workflows()
+        final WorkflowInstance wfInstance2 = client.workflowTopic()
             .start()
             .workflowDefinitionKey("anId")
             .execute();
@@ -180,18 +176,16 @@ public class BrokerRestartTest
     public void shouldContinueAscendingTaskIdGenerationAfterRestart()
     {
         // given
-        final Long taskId = client.tasks()
+        final Long taskId = client.taskTopic(0)
             .create()
-            .topicId(0)
             .taskType("foo")
             .execute();
 
         restartBroker();
 
         // when
-        final Long task2Id = client.tasks()
+        final Long task2Id = client.taskTopic(0)
             .create()
-            .topicId(0)
             .taskType("foo")
             .execute();
 
@@ -205,14 +199,13 @@ public class BrokerRestartTest
         // given
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
-        client.tasks().newSubscription()
-            .topicId(0)
+        client.taskTopic(0).newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofMinutes(10L))
             .handler(taskHandler)
             .open();
 
-        client.tasks().create()
+        client.taskTopic(0).create()
             .taskType("foo")
             .execute();
 
@@ -224,8 +217,7 @@ public class BrokerRestartTest
         // then
         taskHandler.clear();
 
-        client.tasks().newSubscription()
-            .topicId(0)
+        client.taskTopic(0).newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofMinutes(10L))
             .handler(taskHandler)

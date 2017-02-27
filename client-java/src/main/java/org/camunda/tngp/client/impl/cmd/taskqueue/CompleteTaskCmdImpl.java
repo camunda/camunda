@@ -21,28 +21,20 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
-    protected long topicId = -1L;
     protected int lockOwner = -1;
     protected String taskType;
     protected byte[] payload;
     protected Map<String, String> headers = new HashMap<>();
 
-    public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper)
+    public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
     {
-        super(clientCmdExecutor, objectMapper, TaskEvent.class, TASK_EVENT);
+        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicId, TASK_EVENT);
     }
 
     @Override
     public CompleteAsyncTaskCmd taskKey(long taskKey)
     {
         this.taskKey = taskKey;
-        return this;
-    }
-
-    @Override
-    public CompleteAsyncTaskCmd topicId(long topicId)
-    {
-        this.topicId = topicId;
         return this;
     }
 
@@ -90,12 +82,6 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     }
 
     @Override
-    protected long getTopicId()
-    {
-        return topicId;
-    }
-
-    @Override
     protected long getKey()
     {
         return taskKey;
@@ -126,7 +112,6 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected void reset()
     {
         taskKey = -1L;
-        topicId = -1L;
         lockOwner = -1;
         taskType = null;
         payload = null;

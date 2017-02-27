@@ -10,11 +10,6 @@ public interface CompleteAsyncTaskCmd extends SetPayloadCmd<Long, CompleteAsyncT
     CompleteAsyncTaskCmd taskKey(long taskKey);
 
     /**
-     * Set the id of the topic the task is created for.
-     */
-    CompleteAsyncTaskCmd topicId(long topicId);
-
-    /**
      * Set the id of the owner who complete the task.
      */
     CompleteAsyncTaskCmd lockOwner(int lockOwner);

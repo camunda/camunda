@@ -16,25 +16,20 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
     protected final TaskSubscription subscription = new TaskSubscription();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
+    private final int topicId;
     private long subscriptionId = -1L;
-    private long topicId = -1L;
     private String taskType;
     private int credits = 0;
 
-    public UpdateSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper)
+    public UpdateSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
     {
         super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.UPDATE_TASK_SUBSCRIPTION);
+        this.topicId = topicId;
     }
 
     public UpdateSubscriptionCreditsCmdImpl subscriptionId(long subscriptionId)
     {
         this.subscriptionId = subscriptionId;
-        return this;
-    }
-
-    public UpdateSubscriptionCreditsCmdImpl topicId(long topicId)
-    {
-        this.topicId = topicId;
         return this;
     }
 
@@ -63,7 +58,6 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
     public void reset()
     {
         subscriptionId = -1L;
-        topicId = -1;
         taskType = null;
         credits = 0;
     }

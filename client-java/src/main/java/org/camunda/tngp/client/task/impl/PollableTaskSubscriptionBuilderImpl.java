@@ -3,8 +3,8 @@ package org.camunda.tngp.client.task.impl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
+import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
@@ -17,15 +17,14 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int lockOwner = -1;
-    protected int taskQueueId = 0;
 
-    protected final AsyncTasksClient taskClient;
+    protected final TaskTopicClientImpl taskClient;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final boolean autoCompleteTasks;
     protected final MsgPackMapper msgPackMapper;
 
     public PollableTaskSubscriptionBuilderImpl(
-            AsyncTasksClient taskClient,
+            TaskTopicClientImpl taskClient,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
             boolean autoCompleteTasks,
             MsgPackMapper msgPackMapper)
@@ -62,13 +61,6 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
         return this;
     }
 
-    @Override
-    public PollableTaskSubscriptionBuilder taskQueueId(int taskQueueId)
-    {
-        this.taskQueueId = taskQueueId;
-        return this;
-    }
-
     public PollableTaskSubscriptionBuilderImpl taskPrefetchSize(int numTasks)
     {
         this.taskPrefetchSize = numTasks;
@@ -86,7 +78,6 @@ public class PollableTaskSubscriptionBuilderImpl implements PollableTaskSubscrip
                         taskClient,
                         null,
                         taskType,
-                        taskQueueId,
                         lockTime,
                         lockOwner,
                         taskPrefetchSize,

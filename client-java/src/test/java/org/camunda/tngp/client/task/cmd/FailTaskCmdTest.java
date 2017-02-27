@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class FailTaskCmdTest
 {
+    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -66,7 +67,7 @@ public class FailTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        failTaskCommand = new FailTaskCmdImpl(clientCmdExecutor, objectMapper);
+        failTaskCommand = new FailTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -76,7 +77,6 @@ public class FailTaskCmdTest
     {
         // given
         failTaskCommand
-            .topicId(1)
             .taskType("foo")
             .addHeader("a", "b")
             .addHeader("c", "d")
@@ -96,7 +96,7 @@ public class FailTaskCmdTest
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
-        assertThat(requestDecoder.topicId()).isEqualTo(1L);
+        assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
 
         final byte[] command = new byte[requestDecoder.commandLength()];
         requestDecoder.getCommand(command, 0, command.length);
@@ -120,7 +120,6 @@ public class FailTaskCmdTest
         headers.put("c", "d");
 
         failTaskCommand
-            .topicId(1)
             .taskType("foo")
             .headers(headers)
             .payload(new ByteArrayInputStream(payload));
@@ -157,7 +156,6 @@ public class FailTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .topicId(1L)
             .longKey(2L)
             .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
@@ -186,7 +184,6 @@ public class FailTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .topicId(1L)
             .longKey(2L)
             .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
@@ -199,26 +196,9 @@ public class FailTaskCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTopicIdIsNotSet()
-    {
-        failTaskCommand
-            .taskKey(2L)
-            .taskType("foo")
-            .lockOwner(3)
-            .addHeader("k", "v")
-            .payload("{ \"bar\" : 4 }");
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        failTaskCommand.validate();
-    }
-
-    @Test
     public void shouldBeNotValidIfTaskKeyIsNotSet()
     {
         failTaskCommand
-            .topicId(1L)
             .taskType("foo")
             .lockOwner(3)
             .addHeader("k", "v")
@@ -235,7 +215,6 @@ public class FailTaskCmdTest
     {
         failTaskCommand
             .taskKey(2L)
-            .topicId(1L)
             .taskType("foo")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
@@ -251,7 +230,6 @@ public class FailTaskCmdTest
     {
         failTaskCommand
             .taskKey(2L)
-            .topicId(1L)
             .lockOwner(3)
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");

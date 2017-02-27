@@ -6,10 +6,9 @@ import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.PollableTopicSubscriptionBuilderImpl;
+import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.event.impl.TopicSubscriptionBuilderImpl;
 import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionLifecycle;
-import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTopicSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.SyncContext;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
@@ -30,7 +29,7 @@ public class TopicSubscriptionBuilderTest
     protected EventSubscriptions<TopicSubscriptionImpl> subscriptions;
 
     @Mock
-    protected TngpClientImpl client;
+    protected TopicClientImpl client;
 
     @FluentMock
     protected CreateTopicSubscriptionCmdImpl openSubscriptionCmd;
@@ -48,7 +47,7 @@ public class TopicSubscriptionBuilderTest
         when(client.createTopicSubscription()).thenReturn(openSubscriptionCmd);
         when(openSubscriptionCmd.execute()).thenReturn(123L);
 
-        acquisition = new EventAcquisition<TopicSubscriptionImpl>(subscriptions, new TopicSubscriptionLifecycle(client))
+        acquisition = new EventAcquisition<TopicSubscriptionImpl>(subscriptions)
         {
             {
                 asyncContext = new SyncContext();
@@ -61,7 +60,7 @@ public class TopicSubscriptionBuilderTest
     {
         // given
 
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(14, acquisition)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
                 .handler(noOpHandler);
 
         // when
@@ -69,12 +68,10 @@ public class TopicSubscriptionBuilderTest
 
         // then
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscription);
-        assertThat(subscription.getTopicId()).isEqualTo(14);
         assertThat(subscription.getId()).isEqualTo(123L);
         assertThat(subscription.getHandler()).isNotNull();
 
         verify(client).createTopicSubscription();
-        verify(openSubscriptionCmd).topicId(14);
         verify(openSubscriptionCmd).execute();
     }
 
@@ -82,19 +79,17 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildPollableSubscription()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(14, acquisition);
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition);
 
         // when
         final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder.open();
 
         // then
         assertThat(subscriptions.getPollableSubscriptions()).contains(subscription);
-        assertThat(subscription.getTopicId()).isEqualTo(14);
         assertThat(subscription.getId()).isEqualTo(123L);
         assertThat(subscription.getHandler()).isNull();
 
         verify(client).createTopicSubscription();
-        verify(openSubscriptionCmd).topicId(14);
         verify(openSubscriptionCmd).execute();
     }
 
@@ -102,40 +97,11 @@ public class TopicSubscriptionBuilderTest
     public void shouldValidateEventHandlerForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(14, acquisition);
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition);
 
         // then
         exception.expect(RuntimeException.class);
         exception.expectMessage("handler must not be null");
-
-        // when
-        builder.open();
-    }
-
-    @Test
-    public void shouldValidateTopicIdForManagedSubscription()
-    {
-        // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(-1, acquisition)
-                .handler(noOpHandler);
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("topicId must be greater than or equal to 0");
-
-        // when
-        builder.open();
-    }
-
-    @Test
-    public void shouldValidateTopicIdForPollableSubscription()
-    {
-        // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(-1, acquisition);
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("topicId must be greater than or equal to 0");
 
         // when
         builder.open();

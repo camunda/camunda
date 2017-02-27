@@ -6,17 +6,16 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.CompositeAgent;
-import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.TopicSubscriptionBuilder;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.PollableTopicSubscriptionBuilderImpl;
-import org.camunda.tngp.client.event.impl.TaskSubscriptionLifecycle;
 import org.camunda.tngp.client.event.impl.TaskTopicSubscriptionBuilderImpl;
+import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.event.impl.TopicSubscriptionBuilderImpl;
 import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionLifecycle;
+import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
@@ -32,8 +31,8 @@ public class SubscriptionManager
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcqusition;
     protected final EventAcquisition<TopicSubscriptionImpl> topicSubscriptionAcquisition;
     protected final SubscribedEventCollector taskCollector;
-    protected final AsyncTasksClient taskClient;
     protected final MsgPackMapper msgPackMapper;
+    protected final TngpClientImpl client;
 
     protected AgentRunner acquisitionRunner;
     protected AgentRunner[] executionRunners;
@@ -50,15 +49,13 @@ public class SubscriptionManager
             boolean autoCompleteTasks,
             Subscription receiveBufferSubscription)
     {
-        this.taskClient = client;
+        this.client = client;
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 
         this.taskCollector = new SubscribedEventCollector(receiveBufferSubscription);
-        this.taskAcqusition = new EventAcquisition<>(
-                "task-acquisition", taskSubscriptions, new TaskSubscriptionLifecycle(client));
-        this.topicSubscriptionAcquisition = new EventAcquisition<>(
-                "topic-event-acquisition", topicSubscriptions, new TopicSubscriptionLifecycle(client));
+        this.taskAcqusition = new EventAcquisition<>("task-acquisition", taskSubscriptions);
+        this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions);
         taskCollector.setTaskHandler(taskAcqusition);
         taskCollector.setTopicEventHandler(topicSubscriptionAcquisition);
 
@@ -136,29 +133,29 @@ public class SubscriptionManager
         this.topicSubscriptions.closeAll();
     }
 
-    public TaskSubscriptionBuilder newTaskSubscription()
+    public TaskSubscriptionBuilder newTaskSubscription(TaskTopicClientImpl client)
     {
-        return new TaskSubscriptionBuilderImpl(taskClient, taskAcqusition, autoCompleteTasks, msgPackMapper);
+        return new TaskSubscriptionBuilderImpl(client, taskAcqusition, autoCompleteTasks, msgPackMapper);
     }
 
-    public PollableTaskSubscriptionBuilder newPollableTaskSubscription()
+    public PollableTaskSubscriptionBuilder newPollableTaskSubscription(TaskTopicClientImpl client)
     {
-        return new PollableTaskSubscriptionBuilderImpl(taskClient, taskAcqusition, autoCompleteTasks, msgPackMapper);
+        return new PollableTaskSubscriptionBuilderImpl(client, taskAcqusition, autoCompleteTasks, msgPackMapper);
     }
 
-    public TopicSubscriptionBuilder newTopicSubscription(int topicId)
+    public TopicSubscriptionBuilder newTopicSubscription(TopicClientImpl client)
     {
-        return new TopicSubscriptionBuilderImpl(topicId, topicSubscriptionAcquisition);
+        return new TopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition);
     }
 
-    public PollableTopicSubscriptionBuilder newPollableTopicSubscription(int topicId)
+    public PollableTopicSubscriptionBuilder newPollableTopicSubscription(TopicClientImpl client)
     {
-        return new PollableTopicSubscriptionBuilderImpl(topicId, topicSubscriptionAcquisition);
+        return new PollableTopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition);
     }
 
     public TaskTopicSubscriptionBuilder newTaskTopicSubscription(int topicId)
     {
-        return new TaskTopicSubscriptionBuilderImpl(topicId, topicSubscriptionAcquisition, msgPackMapper);
+        return new TaskTopicSubscriptionBuilderImpl(client.topic(topicId), topicSubscriptionAcquisition, msgPackMapper);
     }
 
 }

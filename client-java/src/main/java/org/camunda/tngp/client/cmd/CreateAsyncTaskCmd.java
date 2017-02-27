@@ -4,10 +4,6 @@ import java.util.Map;
 
 public interface CreateAsyncTaskCmd extends SetPayloadCmd<Long, CreateAsyncTaskCmd>
 {
-    /**
-     * Set the id of the topic the task is create for.
-     */
-    CreateAsyncTaskCmd topicId(long topicId);
 
     /**
      * Set the type of the task.

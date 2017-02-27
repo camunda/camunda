@@ -188,4 +188,10 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         closeFuture.complete(null);
     }
 
+    protected abstract Long requestNewSubscription();
+
+    protected abstract void requestSubscriptionClose();
+
+    protected abstract void onEventsPolled(int numEvents);
+
 }

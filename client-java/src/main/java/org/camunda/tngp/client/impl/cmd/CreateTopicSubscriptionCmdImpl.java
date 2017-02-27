@@ -8,23 +8,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<TopicSubscription, Long>
 {
-    protected TopicSubscription subscription = new TopicSubscription();
+    protected final TopicSubscription subscription = new TopicSubscription();
 
-    public CreateTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper)
+    public CreateTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
     {
         super(cmdExecutor, objectMapper, TopicSubscription.class, ControlMessageType.ADD_TOPIC_SUBSCRIPTION, TopicSubscription::getId);
+        this.subscription.setTopicId(topicId);
     }
 
     @Override
     public void validate()
     {
         EnsureUtil.ensureGreaterThanOrEqual("topicId", subscription.getTopicId(), 0);
-    }
-
-    public CreateTopicSubscriptionCmdImpl topicId(int topicId)
-    {
-        this.subscription.setTopicId(topicId);
-        return this;
     }
 
     @Override

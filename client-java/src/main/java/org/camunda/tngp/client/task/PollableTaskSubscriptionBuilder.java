@@ -30,11 +30,6 @@ public interface PollableTaskSubscriptionBuilder
     PollableTaskSubscriptionBuilder lockTime(Duration lockDuration);
 
     /**
-     * Sets the task queue id to subscribe to.
-     */
-    PollableTaskSubscriptionBuilder taskQueueId(int taskQueueId);
-
-    /**
      * Opens a new {@link PollableTaskSubscription}. Begins receiving
      * tasks from that point on.
      */

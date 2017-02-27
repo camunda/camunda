@@ -14,23 +14,21 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
 
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
-    protected final SubscriptionLifecycle<T> lifecycle;
     protected final EventSubscriptions<T> subscriptions;
     protected AsyncContext asyncContext;
     protected String name;
 
 
-    public EventAcquisition(String name, EventSubscriptions<T> subscriptions, SubscriptionLifecycle<T> lifecycle)
+    public EventAcquisition(String name, EventSubscriptions<T> subscriptions)
     {
         this.name = name;
-        this.lifecycle = lifecycle;
         this.asyncContext = new AsyncContext();
         this.subscriptions = subscriptions;
     }
 
-    public EventAcquisition(EventSubscriptions<T> subscriptions, SubscriptionLifecycle<T> lifecycle)
+    public EventAcquisition(EventSubscriptions<T> subscriptions)
     {
-        this("event-acquisition", subscriptions, lifecycle);
+        this("event-acquisition", subscriptions);
     }
 
     @Override
@@ -52,7 +50,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     {
         return asyncContext.runAsync((future) ->
         {
-            final Long subscriptionId = lifecycle.requestNewSubscription(subscription);
+            final Long subscriptionId = subscription.requestNewSubscription();
 
             subscription.setId(subscriptionId);
             subscriptions.addSubscription(subscription);
@@ -62,7 +60,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
 
     public void closeSubscription(T subscription)
     {
-        lifecycle.requestSubscriptionClose(subscription);
+        subscription.requestSubscriptionClose();
         subscriptions.removeSubscription(subscription);
         subscription.onClose();
     }
@@ -71,7 +69,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     {
         return asyncContext.runAsync((future) ->
         {
-            lifecycle.onEventsPolled(subscription, numEvents);
+            subscription.onEventsPolled(numEvents);
             future.complete(null);
         });
     }

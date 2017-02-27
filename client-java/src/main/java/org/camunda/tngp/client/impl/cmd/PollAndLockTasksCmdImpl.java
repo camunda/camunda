@@ -17,12 +17,6 @@ public class PollAndLockTasksCmdImpl extends AbstractCmdImpl<LockedTasksBatch>
     }
 
     @Override
-    public PollAndLockTasksCmdImpl taskQueueId(int taskQueueId)
-    {
-        return this;
-    }
-
-    @Override
     public PollAndLockTasksCmdImpl taskType(String taskType)
     {
         return this;

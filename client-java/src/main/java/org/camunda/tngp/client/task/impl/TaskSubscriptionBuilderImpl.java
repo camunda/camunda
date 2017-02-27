@@ -3,8 +3,8 @@ package org.camunda.tngp.client.task.impl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
+import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
@@ -17,21 +17,21 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     protected String taskType;
     protected long lockTime = TimeUnit.MINUTES.toMillis(1);
     protected int lockOwner = -1;
-    protected int topicId = 0;
     protected TaskHandler taskHandler;
     protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
 
-    protected final AsyncTasksClient taskClient;
+    protected final TaskTopicClientImpl client;
     protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final boolean autoCompleteTasks;
     protected final MsgPackMapper msgPackMapper;
 
-    public TaskSubscriptionBuilderImpl(AsyncTasksClient taskClient,
+    public TaskSubscriptionBuilderImpl(
+            TaskTopicClientImpl client,
             EventAcquisition<TaskSubscriptionImpl> taskAcquisition,
             boolean autoCompleteTasks,
             MsgPackMapper msgPackMapper)
     {
-        this.taskClient = taskClient;
+        this.client = client;
         this.taskAcquisition = taskAcquisition;
         this.autoCompleteTasks = autoCompleteTasks;
         this.msgPackMapper = msgPackMapper;
@@ -55,13 +55,6 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     public TaskSubscriptionBuilder lockTime(Duration lockDuration)
     {
         return lockTime(lockDuration.toMillis());
-    }
-
-    @Override
-    public TaskSubscriptionBuilder topicId(int taskQueueId)
-    {
-        this.topicId = taskQueueId;
-        return this;
     }
 
     @Override
@@ -96,10 +89,9 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
 
         final TaskSubscriptionImpl subscription =
                 new TaskSubscriptionImpl(
-                        taskClient,
+                        client,
                         taskHandler,
                         taskType,
-                        topicId,
                         lockTime,
                         lockOwner,
                         taskFetchSize,

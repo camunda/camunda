@@ -45,7 +45,11 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
 
     protected byte[] serializedCommand;
 
-    public AbstractControlMessageCmd(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, Class<E> messageType, ControlMessageType controlMessageType, Function<E, R> responseHandler)
+    public AbstractControlMessageCmd(ClientCmdExecutor cmdExecutor,
+            ObjectMapper objectMapper,
+            Class<E> messageType,
+            ControlMessageType controlMessageType,
+            Function<E, R> responseHandler)
     {
         super(cmdExecutor);
 

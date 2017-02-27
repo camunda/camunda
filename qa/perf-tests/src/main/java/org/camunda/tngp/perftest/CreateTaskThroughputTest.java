@@ -3,7 +3,7 @@ package org.camunda.tngp.perftest;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.perftest.helper.MaxRateThroughputTest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
@@ -21,7 +21,7 @@ public class CreateTaskThroughputTest extends MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final AsyncTasksClient tasksClient = client.tasks();
+        final TaskTopicClient tasksClient = client.taskTopic();
 
         return () ->
         {

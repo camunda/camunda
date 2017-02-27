@@ -56,14 +56,14 @@ public class TopicSubscriptionTest
     public Timeout timeout = Timeout.seconds(10);
 
     protected TngpClient client;
-    protected RecordingEventHandler recodingHandler;
+    protected RecordingEventHandler recordingHandler;
     protected ObjectMapper objectMapper;
 
     @Before
     public void setUp()
     {
         this.client = clientRule.getClient();
-        this.recodingHandler = new RecordingEventHandler();
+        this.recordingHandler = new RecordingEventHandler();
         this.objectMapper = new ObjectMapper();
     }
 
@@ -71,8 +71,8 @@ public class TopicSubscriptionTest
     public void shouldOpenSubscription()
     {
         // when
-        final TopicSubscription subscription = client.events().newSubscription(0)
-            .handler(recodingHandler)
+        final TopicSubscription subscription = client.topic(0).newSubscription()
+            .handler(recordingHandler)
             .open();
 
         // then
@@ -84,58 +84,56 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsCreatedAfterSubscription() throws IOException
     {
         // given
-        client.events().newSubscription(0)
-            .handler(recodingHandler)
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
             .open();
 
         // when
-        final Long taskKey = client.tasks().create()
-            .topicId(0)
+        final Long taskKey = client.taskTopic(0).create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
             .execute();
 
         // then
-        TestUtil.waitUntil(() -> recodingHandler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() == 2);
 
-        assertThat(recodingHandler.numRecordedEvents()).isEqualTo(2);
+        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(2);
 
-        recodingHandler.assertTaskEvent(0, taskKey, "CREATE");
-        recodingHandler.assertTaskEvent(1, taskKey, "CREATED");
+        recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
+        recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
     }
 
     @Test
     public void shouldReceiveEventsCreatedBeforeSubscription() throws IOException
     {
         // given
-        final Long taskKey = client.tasks().create()
-                .topicId(0)
+        final Long taskKey = client.taskTopic(0).create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
                 .execute();
 
         // when
-        client.events().newSubscription(0)
-            .handler(recodingHandler)
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
             .open();
 
         // then
-        TestUtil.waitUntil(() -> recodingHandler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() == 2);
 
-        assertThat(recodingHandler.numRecordedEvents()).isEqualTo(2);
+        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(2);
 
-        recodingHandler.assertTaskEvent(0, taskKey, "CREATE");
-        recodingHandler.assertTaskEvent(1, taskKey, "CREATED");
+        recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
+        recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
     }
 
     @Test
     public void shouldCloseSubscription() throws InterruptedException
     {
         // given
-        final TopicSubscription subscription = client.events().newSubscription(0)
-            .handler(recodingHandler)
+        final TopicSubscription subscription = client.topic(0).newSubscription()
+            .handler(recordingHandler)
             .open();
 
         // when
@@ -144,45 +142,43 @@ public class TopicSubscriptionTest
         // then
         assertThat(subscription.isOpen()).isFalse();
 
-        client.tasks().create()
-            .topicId(0)
+        client.taskTopic(0).create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
             .execute();
 
         Thread.sleep(1000L);
-        assertThat(recodingHandler.numRecordedEvents()).isEqualTo(0);
+        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(0);
     }
 
     @Test
     public void shouldOpenMultipleSubscriptionsOnSameTopic() throws IOException
     {
         // given
-        final Long taskKey = client.tasks().create()
-            .topicId(0)
+        final Long taskKey = client.taskTopic(0).create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
             .execute();
 
-        client.events().newSubscription(0)
-            .handler(recodingHandler)
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
             .open();
 
 
         final RecordingEventHandler secondEventHandler = new RecordingEventHandler();
-        client.events().newSubscription(0)
+        client.topic(0).newSubscription()
             .handler(secondEventHandler)
             .open();
 
         // when
-        TestUtil.waitUntil(() -> recodingHandler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() == 2);
         TestUtil.waitUntil(() -> secondEventHandler.numRecordedEvents() == 2);
 
         // then
-        recodingHandler.assertTaskEvent(0, taskKey, "CREATE");
-        recodingHandler.assertTaskEvent(1, taskKey, "CREATED");
+        recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
+        recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
         secondEventHandler.assertTaskEvent(0, taskKey, "CREATE");
         secondEventHandler.assertTaskEvent(1, taskKey, "CREATED");
     }
@@ -191,8 +187,7 @@ public class TopicSubscriptionTest
     public void shouldHandleOneEventAtATime() throws InterruptedException
     {
         // given
-        client.tasks().create()
-            .topicId(0)
+        client.taskTopic(0).create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -202,7 +197,7 @@ public class TopicSubscriptionTest
         final ParallelismDetectionHandler handler = new ParallelismDetectionHandler(handlingIntervalLength);
 
         // when
-        client.events().newSubscription(0)
+        client.topic(0).newSubscription()
             .handler(handler)
             .open();
 
@@ -218,25 +213,24 @@ public class TopicSubscriptionTest
     public void shouldCreatePollableSubscription() throws IOException
     {
         // given
-        final Long taskKey = client.tasks().create()
-                .topicId(0)
+        final Long taskKey = client.taskTopic(0).create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
                 .execute();
 
-        final PollableTopicSubscription subscription = client.events()
-            .newPollableSubscription(0)
+        final PollableTopicSubscription subscription = client.topic(0)
+            .newPollableSubscription()
             .open();
 
         // when
-        TestUtil.doRepeatedly(() -> subscription.poll(recodingHandler)).until((i) -> recodingHandler.numRecordedEvents() == 2);
+        TestUtil.doRepeatedly(() -> subscription.poll(recordingHandler)).until((i) -> recordingHandler.numRecordedEvents() == 2);
 
         // then
-        assertThat(recodingHandler.numRecordedEvents()).isEqualTo(2);
+        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(2);
 
-        recodingHandler.assertTaskEvent(0, taskKey, "CREATE");
-        recodingHandler.assertTaskEvent(1, taskKey, "CREATED");
+        recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
+        recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
     }
 
     protected static class ParallelismDetectionHandler implements TopicEventHandler
@@ -285,5 +279,18 @@ public class TopicSubscriptionTest
 
     }
 
+    @Test
+    public void testValidateTopicId()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("id must be greater than or equal to 0");
+
+        // when
+        client.topic(-1);
+    }
 
 }

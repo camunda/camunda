@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateTaskCmdTest
 {
+    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -66,7 +67,7 @@ public class CreateTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        createTaskCommand = new CreateTaskCmdImpl(clientCmdExecutor, objectMapper);
+        createTaskCommand = new CreateTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -76,7 +77,6 @@ public class CreateTaskCmdTest
     {
         // given
         createTaskCommand
-            .topicId(1)
             .taskType("foo")
             .addHeader("a", "b")
             .addHeader("c", "d")
@@ -96,7 +96,7 @@ public class CreateTaskCmdTest
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
-        assertThat(requestDecoder.topicId()).isEqualTo(1L);
+        assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
 
         final byte[] command = new byte[requestDecoder.commandLength()];
         requestDecoder.getCommand(command, 0, command.length);
@@ -120,7 +120,6 @@ public class CreateTaskCmdTest
         headers.put("c", "d");
 
         createTaskCommand
-            .topicId(1)
             .taskType("foo")
             .setHeaders(headers)
             .payload(new ByteArrayInputStream(payload));
@@ -163,7 +162,6 @@ public class CreateTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .topicId(1L)
             .longKey(2L)
             .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
@@ -176,39 +174,9 @@ public class CreateTaskCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTopicIdIsNotSet()
-    {
-        createTaskCommand
-            .taskType("foo")
-            .addHeader("k", "v")
-            .payload("{ \"bar\" : 4 }");
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        createTaskCommand.validate();
-    }
-
-    @Test
-    public void shouldBeNotValidIfTopicIdIsNegative()
-    {
-        createTaskCommand
-            .topicId(-2)
-            .taskType("foo")
-            .addHeader("k", "v")
-            .payload("{ \"bar\" : 4 }");
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        createTaskCommand.validate();
-    }
-
-    @Test
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
         createTaskCommand
-            .topicId(0)
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
 
@@ -222,7 +190,6 @@ public class CreateTaskCmdTest
     public void shouldBeNotValidIfTaskTypeIsEmpty()
     {
         createTaskCommand
-            .topicId(0)
             .taskType("")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");

@@ -10,11 +10,6 @@ public interface FailAsyncTaskCmd extends SetPayloadCmd<Long, FailAsyncTaskCmd>
     FailAsyncTaskCmd taskKey(long taskKey);
 
     /**
-     * Set the id of the topic the task is created for.
-     */
-    FailAsyncTaskCmd topicId(long topicId);
-
-    /**
      * Set the id of the owner who worked on the task.
      */
     FailAsyncTaskCmd lockOwner(int lockOwner);

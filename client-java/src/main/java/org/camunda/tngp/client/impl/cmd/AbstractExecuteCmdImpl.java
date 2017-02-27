@@ -40,10 +40,16 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     protected final ObjectMapper objectMapper;
     protected final Class<E> eventType;
     protected final EventType commandEventType;
+    protected final int topicId;
 
     protected byte[] serializedCommand;
 
-    public AbstractExecuteCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, Class<E> eventType, EventType commandEventType)
+    public AbstractExecuteCmdImpl(
+            ClientCmdExecutor cmdExecutor,
+            ObjectMapper objectMapper,
+            Class<E> eventType,
+            int topicId,
+            EventType commandEventType)
     {
         super(cmdExecutor);
 
@@ -55,6 +61,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         this.objectMapper = objectMapper;
         this.eventType = eventType;
         this.commandEventType = commandEventType;
+        this.topicId = topicId;
     }
 
     @Override
@@ -97,7 +104,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         }
 
         commandRequestEncoder
-            .topicId(getTopicId())
+            .topicId(topicId)
             .longKey(key)
             .eventType(commandEventType)
             .putCommand(serializedCommand, 0, serializedCommand.length);
@@ -122,8 +129,6 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     }
 
     protected abstract Object writeCommand();
-
-    protected abstract long getTopicId();
 
     protected abstract long getKey();
 

@@ -37,11 +37,6 @@ public interface TaskSubscriptionBuilder
     TaskSubscriptionBuilder lockOwner(int lockOwner);
 
     /**
-     * Sets the topic id to subscribe to.
-     */
-    TaskSubscriptionBuilder topicId(int topicId);
-
-    /**
      * Sets the number of tasks which will be locked at the same time.
      *
      * @param numTasks number of locked tasks

@@ -19,21 +19,13 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    protected long topicId = -1L;
     protected String taskType;
     protected byte[] payload;
     protected Map<String, String> headers = new HashMap<>();
 
-    public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper)
+    public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
     {
-        super(clientCmdExecutor, objectMapper, TaskEvent.class, TASK_EVENT);
-    }
-
-    @Override
-    public CreateTaskCmdImpl topicId(final long topicId)
-    {
-        this.topicId = topicId;
-        return this;
+        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicId, TASK_EVENT);
     }
 
     @Override
@@ -73,12 +65,6 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    protected long getTopicId()
-    {
-        return topicId;
-    }
-
-    @Override
     protected long getKey()
     {
         return -1L;
@@ -105,7 +91,6 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     @Override
     protected void reset()
     {
-        topicId = -1L;
         taskType = null;
         payload = null;
         headers.clear();

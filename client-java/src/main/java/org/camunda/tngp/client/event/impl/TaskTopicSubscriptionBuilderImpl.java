@@ -19,9 +19,12 @@ public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBu
     protected TopicEventHandler defaultHandler;
     protected TaskEventHandler taskHandler;
 
-    public TaskTopicSubscriptionBuilderImpl(int topicId, EventAcquisition<TopicSubscriptionImpl> acquisition, MsgPackMapper msgPackMapper)
+    public TaskTopicSubscriptionBuilderImpl(
+            TopicClientImpl client,
+            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            MsgPackMapper msgPackMapper)
     {
-        innerBuilder = new TopicSubscriptionBuilderImpl(topicId, acquisition);
+        innerBuilder = new TopicSubscriptionBuilderImpl(client, acquisition);
         this.msgPackMapper = msgPackMapper;
     }
 

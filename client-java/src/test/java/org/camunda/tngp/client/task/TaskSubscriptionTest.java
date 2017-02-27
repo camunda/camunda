@@ -33,9 +33,8 @@ import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
 import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
 import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
-import org.camunda.tngp.client.event.impl.TaskSubscriptionLifecycle;
 import org.camunda.tngp.client.event.impl.TopicEventImpl;
-import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
@@ -61,7 +60,6 @@ public class TaskSubscriptionTest
 {
 
     public static final long SUBSCRIPTION_ID = 123L;
-    private static final int TOPIC_ID = 0;
     private static final String TASK_TYPE = "foo";
     private static final int LOCK_OWNER = 1;
     private static final long LOCK_TIME = 123L;
@@ -74,7 +72,7 @@ public class TaskSubscriptionTest
     protected EventAcquisition<TaskSubscriptionImpl> acquisition;
 
     @Mock
-    protected TngpClientImpl client;
+    protected TaskTopicClientImpl client;
 
     @FluentMock
     protected CreateTaskSubscriptionCmdImpl createSubscriptionCmd;
@@ -112,7 +110,7 @@ public class TaskSubscriptionTest
         when(client.fail()).thenReturn(failCmd);
 
         subscriptions = new EventSubscriptions<>();
-        acquisition = new EventAcquisition<>(subscriptions, new TaskSubscriptionLifecycle(client));
+        acquisition = new EventAcquisition<>(subscriptions);
     }
 
     @Test
@@ -133,7 +131,6 @@ public class TaskSubscriptionTest
         assertThat(subscriptions.getPollableSubscriptions()).isEmpty();
 
         verify(client).brokerTaskSubscription();
-        verify(createSubscriptionCmd).topicId(TOPIC_ID);
         verify(createSubscriptionCmd).taskType(TASK_TYPE);
         verify(createSubscriptionCmd).lockDuration(LOCK_TIME);
         verify(createSubscriptionCmd).lockOwner(LOCK_OWNER);
@@ -171,7 +168,6 @@ public class TaskSubscriptionTest
 
         verify(client).closeBrokerTaskSubscription();
         verify(closeSubscriptionCmd).subscriptionId(SUBSCRIPTION_ID);
-        verify(closeSubscriptionCmd).topicId(TOPIC_ID);
         verify(closeSubscriptionCmd).taskType(TASK_TYPE);
         verify(closeSubscriptionCmd).execute();
     }
@@ -218,7 +214,6 @@ public class TaskSubscriptionTest
         // then
         verify(client).complete();
         verify(completeCmd).taskKey(1L);
-        verify(completeCmd).topicId(TOPIC_ID);
         verify(completeCmd).taskType(TASK_TYPE);
         verify(completeCmd).lockOwner(LOCK_OWNER);
         verify(completeCmd).headers(eq(new HashMap<>()));
@@ -230,12 +225,8 @@ public class TaskSubscriptionTest
     public void shouldNotAutoCompleteTask() throws Exception
     {
         // given
-        final EventSubscriptions<TaskSubscriptionImpl> subscriptions = new EventSubscriptions<>();
-        final EventAcquisition<TaskSubscriptionImpl> acquisition = new EventAcquisition<>(
-                subscriptions, new TaskSubscriptionLifecycle(client));
-
         final TaskSubscriptionImpl subscription = new TaskSubscriptionImpl(
-                client, taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, msgPackMapper, false);
+                client, taskHandler, TASK_TYPE, LOCK_TIME, LOCK_OWNER, 5, acquisition, msgPackMapper, false);
 
         subscription.openAsync();
         acquisition.doWork();
@@ -278,7 +269,6 @@ public class TaskSubscriptionTest
         // then
         verify(client).fail();
         verify(failCmd).taskKey(1L);
-        verify(failCmd).topicId(TOPIC_ID);
         verify(failCmd).taskType(TASK_TYPE);
         verify(failCmd).lockOwner(LOCK_OWNER);
         verify(failCmd).headers(eq(new HashMap<>()));
@@ -415,7 +405,6 @@ public class TaskSubscriptionTest
         verify(client, times(1)).updateSubscriptionCredits();
         verify(updateCreditsCmd).subscriptionId(subscription.getId());
         verify(updateCreditsCmd).taskType(TASK_TYPE);
-        verify(updateCreditsCmd).topicId(TOPIC_ID);
         verify(updateCreditsCmd).credits(4);
         verify(updateCreditsCmd, times(1)).execute();
     }
@@ -489,7 +478,7 @@ public class TaskSubscriptionTest
     protected TaskSubscriptionImpl newDefaultSubscription(TaskHandler taskHandler)
     {
         return new TaskSubscriptionImpl(
-                client, taskHandler, TASK_TYPE, TOPIC_ID, LOCK_TIME, LOCK_OWNER, 5, acquisition, msgPackMapper, true);
+                client, taskHandler, TASK_TYPE, LOCK_TIME, LOCK_OWNER, 5, acquisition, msgPackMapper, true);
     }
 
 }

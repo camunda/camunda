@@ -11,32 +11,15 @@ import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
-import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
-import org.camunda.tngp.client.EventsClient;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowsClient;
-import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
-import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
+import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
-import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
-import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
 import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
-import org.camunda.tngp.client.event.impl.TngpEventsClientImpl;
-import org.camunda.tngp.client.impl.cmd.CloseTopicSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.CreateTopicSubscriptionCmdImpl;
+import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
-import org.camunda.tngp.client.impl.cmd.PollAndLockTasksCmdImpl;
 import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CompleteTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.FailTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceCmdImpl;
-import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
-import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.impl.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -48,13 +31,14 @@ import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
+import org.camunda.tngp.util.EnsureUtil;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsClient
+public class TngpClientImpl implements TngpClient, WorkflowTopicClient
 {
     public static final int DEFAULT_RESOURCE_ID = 0;
     public static final int DEFAULT_SHARD_ID = 0;
@@ -72,8 +56,6 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     protected final ObjectMapper objectMapper;
 
     protected SubscriptionManager subscriptionManager;
-
-    protected final EventsClient eventsClient;
 
     public TngpClientImpl(final Properties properties)
     {
@@ -130,7 +112,6 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
 
         subscriptionManager = new SubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
 
-        eventsClient = new TngpEventsClientImpl(cmdExecutor, subscriptionManager);
     }
 
     @Override
@@ -213,70 +194,24 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
     }
 
     @Override
-    public AsyncTasksClient tasks()
+    public TaskTopicClientImpl taskTopic(int id)
     {
-        return this;
+        EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
+        return new TaskTopicClientImpl(this, id);
     }
 
     @Override
-    public WorkflowsClient workflows()
+    public WorkflowTopicClient workflowTopic()
     {
-        return this;
+        // Note: when implementing this, make sure to structure the API like for task topics
+        throw new RuntimeException("not implemented");
     }
 
     @Override
-    public EventsClient events()
+    public TopicClientImpl topic(int id)
     {
-        return eventsClient;
-    }
-
-    @Override
-    public CreateAsyncTaskCmd create()
-    {
-        return new CreateTaskCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    @Override
-    public FailAsyncTaskCmd fail()
-    {
-        return new FailTaskCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    @Override
-    public PollAndLockAsyncTasksCmd pollAndLock()
-    {
-        return new PollAndLockTasksCmdImpl(cmdExecutor);
-    }
-
-    public CreateTaskSubscriptionCmdImpl brokerTaskSubscription()
-    {
-        return new CreateTaskSubscriptionCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    public CloseTaskSubscriptionCmdImpl closeBrokerTaskSubscription()
-    {
-        return new CloseTaskSubscriptionCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    public CreateTopicSubscriptionCmdImpl createTopicSubscription()
-    {
-        return new CreateTopicSubscriptionCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    public CloseTopicSubscriptionCmdImpl closeTopicSubscription()
-    {
-        return new CloseTopicSubscriptionCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    public UpdateSubscriptionCreditsCmdImpl updateSubscriptionCredits()
-    {
-        return new UpdateSubscriptionCreditsCmdImpl(cmdExecutor, objectMapper);
-    }
-
-    @Override
-    public CompleteAsyncTaskCmd complete()
-    {
-        return new CompleteTaskCmdImpl(cmdExecutor, objectMapper);
+        EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
+        return new TopicClientImpl(this, id);
     }
 
     @Override
@@ -291,15 +226,19 @@ public class TngpClientImpl implements TngpClient, AsyncTasksClient, WorkflowsCl
         return new StartWorkflowInstanceCmdImpl(cmdExecutor);
     }
 
-    @Override
-    public TaskSubscriptionBuilder newSubscription()
+    public ClientCmdExecutor getCmdExecutor()
     {
-        return subscriptionManager.newTaskSubscription();
+        return cmdExecutor;
     }
 
-    @Override
-    public PollableTaskSubscriptionBuilder newPollableSubscription()
+    public SubscriptionManager getSubscriptionManager()
     {
-        return subscriptionManager.newPollableTaskSubscription();
+        return subscriptionManager;
     }
+
+    public ObjectMapper getObjectMapper()
+    {
+        return objectMapper;
+    }
+
 }

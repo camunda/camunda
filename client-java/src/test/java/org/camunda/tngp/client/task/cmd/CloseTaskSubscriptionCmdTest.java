@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CloseTaskSubscriptionCmdTest
 {
+    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -56,7 +57,7 @@ public class CloseTaskSubscriptionCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CloseTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper);
+        command = new CloseTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -67,7 +68,6 @@ public class CloseTaskSubscriptionCmdTest
         // given
         command
             .subscriptionId(2)
-            .topicId(1)
             .taskType("foo");
 
         // when
@@ -91,7 +91,7 @@ public class CloseTaskSubscriptionCmdTest
         final TaskSubscription taskSubscription = objectMapper.readValue(data, TaskSubscription.class);
 
         assertThat(taskSubscription.getId()).isEqualTo(2L);
-        assertThat(taskSubscription.getTopicId()).isEqualTo(1);
+        assertThat(taskSubscription.getTopicId()).isEqualTo(TOPIC_ID);
         assertThat(taskSubscription.getTaskType()).isEqualTo("foo");
     }
 
@@ -99,7 +99,6 @@ public class CloseTaskSubscriptionCmdTest
     public void shouldBeNotValidIfSubscriptionIdIsNotSet()
     {
         command
-            .topicId(1)
             .taskType("foo");
 
         thrown.expect(RuntimeException.class);
@@ -108,26 +107,11 @@ public class CloseTaskSubscriptionCmdTest
         command.validate();
     }
 
-
-    @Test
-    public void shouldBeNotValidIfTopicIdIsNotSet()
-    {
-        command
-            .subscriptionId(2)
-            .taskType("foo");
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        command.validate();
-    }
-
     @Test
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
         command
-            .subscriptionId(2)
-            .topicId(1);
+            .subscriptionId(2);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task type must not be null");

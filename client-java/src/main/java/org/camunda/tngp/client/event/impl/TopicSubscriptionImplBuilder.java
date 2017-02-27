@@ -6,13 +6,13 @@ public class TopicSubscriptionImplBuilder
 {
     protected static final int PREFETCH_SIZE = 32;
 
-    protected int topicId;
+    protected final TopicClientImpl client;
     protected CheckedConsumer<TopicEventImpl> handler;
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
 
-    public TopicSubscriptionImplBuilder(int topicId, EventAcquisition<TopicSubscriptionImpl> acquisition)
+    public TopicSubscriptionImplBuilder(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
     {
-        this.topicId = topicId;
+        this.client = client;
         this.acquisition = acquisition;
     }
 
@@ -27,16 +27,11 @@ public class TopicSubscriptionImplBuilder
         return handler;
     }
 
-    public int getTopicId()
-    {
-        return topicId;
-    }
-
     public TopicSubscriptionImpl build()
     {
         return new TopicSubscriptionImpl(
+            client,
             handler,
-            topicId,
             acquisition,
             PREFETCH_SIZE);
     }

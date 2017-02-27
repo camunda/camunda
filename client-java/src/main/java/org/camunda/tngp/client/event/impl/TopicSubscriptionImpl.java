@@ -12,25 +12,20 @@ public class TopicSubscriptionImpl
     implements TopicSubscription, PollableTopicSubscription
 {
 
-    protected final int topicId;
     protected CheckedConsumer<TopicEventImpl> handler;
+    protected final TopicClientImpl client;
 
     protected AtomicBoolean processingFlag = new AtomicBoolean(false);
 
     public TopicSubscriptionImpl(
+            TopicClientImpl client,
             CheckedConsumer<TopicEventImpl> handler,
-            int topicId,
             EventAcquisition<TopicSubscriptionImpl> eventAcquisition,
             int prefetchSize)
     {
         super(eventAcquisition, prefetchSize);
+        this.client = client;
         this.handler = handler;
-        this.topicId = topicId;
-    }
-
-    public int getTopicId()
-    {
-        return topicId;
     }
 
     @Override
@@ -75,5 +70,24 @@ public class TopicSubscriptionImpl
     public CheckedConsumer<TopicEventImpl> getHandler()
     {
         return handler;
+    }
+
+    @Override
+    protected Long requestNewSubscription()
+    {
+        return client.createTopicSubscription().execute();
+    }
+
+    @Override
+    protected void requestSubscriptionClose()
+    {
+        client.closeTopicSubscription()
+            .id(id)
+            .execute();
+    }
+
+    @Override
+    protected void onEventsPolled(int numEvents)
+    {
     }
 }

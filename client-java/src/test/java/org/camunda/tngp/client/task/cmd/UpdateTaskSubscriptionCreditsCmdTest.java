@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class UpdateTaskSubscriptionCreditsCmdTest
 {
+    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -56,7 +57,7 @@ public class UpdateTaskSubscriptionCreditsCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new UpdateSubscriptionCreditsCmdImpl(clientCmdExecutor, objectMapper);
+        command = new UpdateSubscriptionCreditsCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -67,7 +68,6 @@ public class UpdateTaskSubscriptionCreditsCmdTest
         // given
         command
             .subscriptionId(2)
-            .topicId(1)
             .taskType("foo")
             .credits(5);
 
@@ -92,7 +92,7 @@ public class UpdateTaskSubscriptionCreditsCmdTest
         final TaskSubscription taskSubscription = objectMapper.readValue(data, TaskSubscription.class);
 
         assertThat(taskSubscription.getId()).isEqualTo(2L);
-        assertThat(taskSubscription.getTopicId()).isEqualTo(1);
+        assertThat(taskSubscription.getTopicId()).isEqualTo(TOPIC_ID);
         assertThat(taskSubscription.getTaskType()).isEqualTo("foo");
         assertThat(taskSubscription.getCredits()).isEqualTo(5);
     }
@@ -101,7 +101,6 @@ public class UpdateTaskSubscriptionCreditsCmdTest
     public void shouldBeNotValidIfSubscriptionIdIsNotSet()
     {
         command
-            .topicId(1)
             .taskType("foo")
             .credits(5);
 
@@ -112,25 +111,10 @@ public class UpdateTaskSubscriptionCreditsCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTopicIdIsNotSet()
-    {
-        command
-            .subscriptionId(2)
-            .taskType("foo")
-            .credits(5);
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        command.validate();
-    }
-
-    @Test
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
         command
             .subscriptionId(2)
-            .topicId(1)
             .credits(5);
 
         thrown.expect(RuntimeException.class);
@@ -144,7 +128,6 @@ public class UpdateTaskSubscriptionCreditsCmdTest
     {
         command
             .subscriptionId(2)
-            .topicId(1)
             .taskType("foo");
 
         thrown.expect(RuntimeException.class);

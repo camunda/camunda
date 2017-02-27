@@ -46,7 +46,7 @@ public class ClientRule extends ExternalResource
     public WorkflowDefinition deployProcess(BpmnModelInstance process)
     {
         return client
-            .workflows()
+            .workflowTopic()
             .deploy()
             .bpmnModelInstance(process)
             .execute();

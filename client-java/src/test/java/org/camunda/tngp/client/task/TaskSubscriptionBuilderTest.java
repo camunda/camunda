@@ -10,8 +10,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.client.event.impl.EventAcquisition;
-import org.camunda.tngp.client.event.impl.TaskSubscriptionLifecycle;
-import org.camunda.tngp.client.impl.TngpClientImpl;
+import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
@@ -40,7 +39,7 @@ public class TaskSubscriptionBuilderTest
     public ExpectedException exception = ExpectedException.none();
 
     @Mock
-    protected TngpClientImpl client;
+    protected TaskTopicClientImpl client;
 
     @FluentMock
     protected CreateTaskSubscriptionCmdImpl openSubscriptionCmd;
@@ -56,7 +55,7 @@ public class TaskSubscriptionBuilderTest
         when(openSubscriptionCmd.execute()).thenReturn(123L);
 
         subscriptions = new EventSubscriptions<>();
-        acquisition = new EventAcquisition<TaskSubscriptionImpl>(subscriptions, new TaskSubscriptionLifecycle(client))
+        acquisition = new EventAcquisition<TaskSubscriptionImpl>(subscriptions)
         {
             {
                 asyncContext = new SyncContext();
@@ -78,7 +77,6 @@ public class TaskSubscriptionBuilderTest
             .handler(handler)
             .lockTime(654L)
             .lockOwner(2)
-            .topicId(123)
             .taskType("fooo");
 
         // when
@@ -90,7 +88,6 @@ public class TaskSubscriptionBuilderTest
         final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(654L);
         assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_FETCH_SIZE);
-        assertThat(subscriptionImpl.getTopicId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscriptionImpl);
@@ -110,7 +107,6 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(654L)
-            .taskQueueId(123)
             .taskType("fooo");
 
         // when
@@ -122,7 +118,6 @@ public class TaskSubscriptionBuilderTest
         final TaskSubscriptionImpl subscriptionImpl = (TaskSubscriptionImpl) taskSubscription;
         assertThat(subscriptionImpl.getLockTime()).isEqualTo(654L);
         assertThat(subscriptionImpl.capacity()).isEqualTo(TaskSubscriptionBuilderImpl.DEFAULT_TASK_FETCH_SIZE);
-        assertThat(subscriptionImpl.getTopicId()).isEqualTo(123);
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
         assertThat(subscriptions.getPollableSubscriptions()).contains(subscriptionImpl);
@@ -135,8 +130,7 @@ public class TaskSubscriptionBuilderTest
         final PollableTaskSubscriptionBuilder builder = new PollableTaskSubscriptionBuilderImpl(client, acquisition, true, msgPackMapper);
 
         builder
-            .lockTime(654L)
-            .taskQueueId(123);
+            .lockTime(654L);
 
         // then
         exception.expect(RuntimeException.class);
@@ -155,7 +149,6 @@ public class TaskSubscriptionBuilderTest
         builder
             .lockTime(654L)
             .lockOwner(2)
-            .topicId(123)
             .taskType("foo");
 
         // then
@@ -175,7 +168,6 @@ public class TaskSubscriptionBuilderTest
         builder
             .lockTime(0L)
             .lockOwner(2)
-            .topicId(123)
             .taskType("foo")
             .handler((t) ->
             { });
@@ -198,7 +190,6 @@ public class TaskSubscriptionBuilderTest
             .handler(mock(TaskHandler.class))
             .lockTime(Duration.ofDays(10))
             .lockOwner(2)
-            .topicId(123)
             .taskType("fooo");
 
         // when
@@ -218,7 +209,6 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(Duration.ofDays(10))
-            .taskQueueId(123)
             .taskType("fooo");
 
         // when
@@ -241,7 +231,6 @@ public class TaskSubscriptionBuilderTest
             .handler(handler)
             .lockTime(654L)
             .lockOwner(2)
-            .topicId(123)
             .taskType("fooo");
 
         when(openSubscriptionCmd.execute()).thenThrow(new RuntimeException("foo"));

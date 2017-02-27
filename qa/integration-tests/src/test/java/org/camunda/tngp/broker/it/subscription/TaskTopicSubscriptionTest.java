@@ -51,8 +51,7 @@ public class TaskTopicSubscriptionTest
     public void shouldReceiveTaskPOJOEvents()
     {
         // given
-        client.tasks().create()
-                .topicId(0)
+        client.taskTopic(0).create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -61,7 +60,7 @@ public class TaskTopicSubscriptionTest
         final RecordingTaskPOJOEventHandler handler = new RecordingTaskPOJOEventHandler();
 
         // when
-        client.events().newTaskTopicSubscription(0)
+        client.taskTopic(0).newSubscription()
             .taskEventHandler(handler)
             .open();
 
@@ -85,8 +84,7 @@ public class TaskTopicSubscriptionTest
     public void shouldInvokeDefaultHandler() throws IOException
     {
         // given
-        final long taskKey = client.tasks().create()
-                .topicId(0)
+        final long taskKey = client.taskTopic(0).create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -95,7 +93,7 @@ public class TaskTopicSubscriptionTest
         final RecordingEventHandler handler = new RecordingEventHandler();
 
         // when no POJO handler is registered
-        client.events().newTaskTopicSubscription(0)
+        client.taskTopic(0).newSubscription()
             .defaultHandler(handler)
             .open();
 

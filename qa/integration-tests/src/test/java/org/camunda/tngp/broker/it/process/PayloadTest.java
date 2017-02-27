@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowsClient;
+import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
@@ -36,8 +36,8 @@ public class PayloadTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
-        final WorkflowsClient workflowsClient = client.workflows();
+        final TaskTopicClient taskService = client.taskTopic(0);
+        final WorkflowTopicClient workflowsClient = client.workflowTopic();
 
         final WorkflowDefinition workflowDefinition = workflowsClient.deploy()
             .bpmnModelInstance(ProcessModels.TWO_TASKS_PROCESS)
@@ -52,7 +52,7 @@ public class PayloadTest
         // when
         final PayloadRecordingHandler taskHandler = new PayloadRecordingHandler();
 
-        taskService.newSubscription()
+        taskService.newTaskSubscription()
             .handler((t) ->
             {
                 taskHandler.handle(t);
@@ -61,7 +61,7 @@ public class PayloadTest
             .taskType("foo")
             .open();
 
-        taskService.newSubscription()
+        taskService.newTaskSubscription()
             .handler(taskHandler)
             .taskType("bar")
             .open();

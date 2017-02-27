@@ -16,23 +16,18 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     private long subscriptionId = -1L;
-    private long topicId = -1L;
+    private final int topicId;
     private String taskType;
 
-    public CloseTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper)
+    public CloseTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
     {
         super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
+        this.topicId = topicId;
     }
 
     public CloseTaskSubscriptionCmdImpl subscriptionId(long subscriptionId)
     {
         this.subscriptionId = subscriptionId;
-        return this;
-    }
-
-    public CloseTaskSubscriptionCmdImpl topicId(long topicId)
-    {
-        this.topicId = topicId;
         return this;
     }
 
@@ -54,7 +49,6 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
     public void reset()
     {
         subscriptionId = -1L;
-        topicId = -1;
         taskType = null;
     }
 

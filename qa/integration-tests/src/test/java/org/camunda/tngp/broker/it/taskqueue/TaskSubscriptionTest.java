@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
@@ -66,19 +66,17 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskKey = taskService.create()
-            .topicId(0)
+        final Long taskKey = topicClient.create()
             .taskType("foo")
             .execute();
 
         // when
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
-        taskService.newSubscription()
+        topicClient.newTaskSubscription()
             .handler(taskHandler)
-            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(1)
@@ -96,10 +94,9 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskKey = taskService.create()
-            .topicId(0)
+        final Long taskKey = topicClient.create()
             .taskType("foo")
             .payload("{ \"a\" : 1 }")
             .addHeader("b", "2")
@@ -107,9 +104,8 @@ public class TaskSubscriptionTest
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
-        taskService.newSubscription()
+        topicClient.newTaskSubscription()
             .handler(taskHandler)
-            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(5)
@@ -118,9 +114,8 @@ public class TaskSubscriptionTest
         waitUntil(() -> !taskHandler.handledTasks.isEmpty());
 
         // when
-        final Long result = taskService.complete()
+        final Long result = topicClient.complete()
             .taskKey(taskKey)
-            .topicId(0)
             .lockOwner(5)
             .taskType("foo")
             .payload("{ \"a\" : 2 }")
@@ -137,10 +132,9 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskKey = taskService.create()
-            .topicId(0)
+        final Long taskKey = topicClient.create()
             .taskType("foo")
             .payload("{\"a\":1}")
             .addHeader("b", "2")
@@ -173,9 +167,8 @@ public class TaskSubscriptionTest
             taskCompleted.set(true);
         });
 
-        taskService.newSubscription()
+        topicClient.newTaskSubscription()
             .handler(taskHandler)
-            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(2)
@@ -194,13 +187,12 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
-        final TaskSubscription subscription = taskService.newSubscription()
+        final TaskSubscription subscription = topicClient.newTaskSubscription()
                 .handler(taskHandler)
-                .topicId(0)
                 .taskType("foo")
                 .lockTime(Duration.ofMinutes(5))
                 .lockOwner(1)
@@ -210,8 +202,7 @@ public class TaskSubscriptionTest
         subscription.close();
 
         // then
-        taskService.create()
-            .topicId(0)
+        topicClient.create()
             .taskType("foo")
             .execute();
 
@@ -229,17 +220,15 @@ public class TaskSubscriptionTest
         final int numTasks = 100;
         for (int i = 0; i < numTasks; i++)
         {
-            client.tasks().create()
-                .topicId(0)
+            client.taskTopic(0).create()
                 .taskType("foo")
                 .execute();
         }
 
         final RecordingTaskHandler handler = new RecordingTaskHandler(Task::complete);
 
-        client.tasks().newSubscription()
+        client.taskTopic(0).newTaskSubscription()
             .handler(handler)
-            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(1)
@@ -258,10 +247,9 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskKey = taskService.create()
-            .topicId(0)
+        final Long taskKey = topicClient.create()
             .taskType("foo")
             .execute();
 
@@ -274,9 +262,8 @@ public class TaskSubscriptionTest
             );
 
         // when
-        taskService.newSubscription()
+        topicClient.newTaskSubscription()
             .handler(taskHandler)
-            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(1)
@@ -293,10 +280,9 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskKey = taskService.create()
-            .topicId(0)
+        final Long taskKey = topicClient.create()
             .taskType("foo")
             .execute();
 
@@ -305,9 +291,8 @@ public class TaskSubscriptionTest
             // don't complete the task - just wait for lock expiration
         });
 
-        taskService.newSubscription()
+        topicClient.newTaskSubscription()
             .handler(taskHandler)
-            .topicId(0)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
             .lockOwner(5)
@@ -333,16 +318,14 @@ public class TaskSubscriptionTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final PollableTaskSubscription subscription = taskService.newPollableSubscription()
+        final PollableTaskSubscription subscription = topicClient.newPollableTaskSubscription()
             .lockTime(123L)
             .taskType("foo")
-            .taskQueueId(0)
             .open();
 
-        final Long taskId = taskService.create()
-            .topicId(0)
+        final Long taskId = topicClient.create()
             .taskType("foo")
             .execute();
 
@@ -362,8 +345,7 @@ public class TaskSubscriptionTest
         // given
         final TngpClient client = clientRule.getClient();
 
-        client.tasks().create()
-            .topicId(0)
+        client.taskTopic(0).create()
             .taskType("foo")
             .execute();
 
@@ -374,8 +356,7 @@ public class TaskSubscriptionTest
         // then
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
-        client.tasks().newSubscription()
-                .topicId(0)
+        client.taskTopic(0).newTaskSubscription()
                 .taskType("foo")
                 .lockTime(Duration.ofMinutes(5))
                 .lockOwner(1)
@@ -395,16 +376,14 @@ public class TaskSubscriptionTest
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(Task::complete);
 
-        client.tasks().newSubscription()
-            .topicId(0)
+        client.taskTopic(0).newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofHours(1))
             .lockOwner(1)
             .handler(taskHandler)
             .open();
 
-        client.tasks().newSubscription()
-            .topicId(0)
+        client.taskTopic(0).newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofHours(2))
             .lockOwner(1)
@@ -413,9 +392,8 @@ public class TaskSubscriptionTest
 
         // when
         client
-            .tasks()
+            .taskTopic(0)
             .create()
-            .topicId(0)
             .taskType("foo")
             .execute();
 

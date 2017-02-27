@@ -3,10 +3,10 @@ package org.camunda.tngp.broker.it.process;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestUtil;
@@ -39,7 +39,7 @@ public class StartProcessInstanceTest
     public void deployProcess()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         process = workflowService.deploy()
             .bpmnModelInstance(
@@ -54,7 +54,7 @@ public class StartProcessInstanceTest
     public void shouldStartProcessById()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         // when
         final WorkflowInstance processInstance = TestUtil.doRepeatedly(() ->
@@ -73,7 +73,7 @@ public class StartProcessInstanceTest
     public void shouldStartProcessByKey() throws InterruptedException
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         // when
         final WorkflowInstance processInstance = TestUtil.doRepeatedly(() ->

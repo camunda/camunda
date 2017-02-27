@@ -7,14 +7,20 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 
 public interface TngpClient extends AutoCloseable
 {
-    AsyncTasksClient tasks();
-
-    WorkflowsClient workflows();
+    /**
+     * Provides APIs specific to topics of type <code>task</code>.
+     */
+    TaskTopicClient taskTopic(int id);
 
     /**
-     * Access the Event Api.
+     * Provides APIs specific to topics of type <code>workflow</code>.
      */
-    EventsClient events();
+    WorkflowTopicClient workflowTopic();
+
+    /**
+     * Provides general purpose APIs for any kind of topic.
+     */
+    TopicClient topic(int id);
 
     TransportConnectionPool getConnectionPool();
 

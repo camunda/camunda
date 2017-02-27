@@ -4,15 +4,14 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.task.Task;
 
 public class TaskImpl implements Task
 {
-    protected final AsyncTasksClient tasksClient;
+    protected final TaskTopicClient tasksClient;
 
-    protected final int topicId;
     protected final long key;
     protected final Long workflowInstanceId;
     protected final String type;
@@ -27,7 +26,7 @@ public class TaskImpl implements Task
     protected static final int STATE_FAILED = 2;
 
     public TaskImpl(
-            AsyncTasksClient tasksClient,
+            TaskTopicClient tasksClient,
             TaskSubscriptionImpl subscription,
             long taskKey,
             TaskEvent taskEvent)
@@ -35,7 +34,6 @@ public class TaskImpl implements Task
         this.tasksClient = tasksClient;
         this.key = taskKey;
 
-        this.topicId = subscription.getTopicId();
         this.type = taskEvent.getType();
         this.lockExpirationTime = taskEvent.getLockTime();
         this.lockOwner = subscription.getLockOwner();
@@ -51,7 +49,6 @@ public class TaskImpl implements Task
     public void complete()
     {
         tasksClient.complete()
-            .topicId(topicId)
             .taskKey(key)
             .taskType(type)
             .lockOwner(lockOwner)
@@ -65,7 +62,6 @@ public class TaskImpl implements Task
     public void fail(Exception e)
     {
         tasksClient.fail()
-            .topicId(topicId)
             .taskKey(key)
             .taskType(type)
             .lockOwner(lockOwner)

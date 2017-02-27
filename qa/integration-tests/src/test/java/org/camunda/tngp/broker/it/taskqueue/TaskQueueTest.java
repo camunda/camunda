@@ -11,7 +11,7 @@ import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.ParallelRequests;
 import org.camunda.tngp.broker.it.util.ParallelRequests.SilentFuture;
-import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.camunda.tngp.client.cmd.LockedTask;
@@ -50,8 +50,7 @@ public class TaskQueueTest
     {
         final TngpClient client = clientRule.getClient();
 
-        final Long taskKey = client.tasks().create()
-            .topicId(0)
+        final Long taskKey = client.taskTopic(0).create()
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
@@ -69,8 +68,7 @@ public class TaskQueueTest
         thrown.expect(BrokerRequestException.class);
         thrown.expectMessage("Cannot execute command. Topic with id '999' not found");
 
-        client.tasks().create()
-            .topicId(999)
+        client.taskTopic(999).create()
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
@@ -83,12 +81,11 @@ public class TaskQueueTest
     public void testCycle()
     {
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
         System.out.println("Creating task");
 
-        final Long taskId = taskService.create()
-            .topicId(0)
+        final Long taskId = topicClient.create()
             .payload("{}")
             .taskType("bar")
             .execute();
@@ -97,8 +94,7 @@ public class TaskQueueTest
 
         System.out.println("Locking task");
 
-        final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
-            .taskQueueId(0)
+        final LockedTasksBatch lockedTasksBatch = topicClient.pollAndLock()
             .taskType("bar")
             .lockTime(100 * 1000)
             .execute();
@@ -110,8 +106,7 @@ public class TaskQueueTest
 
         System.out.println("Completing task");
 
-        final Long completedTaskId = taskService.complete()
-            .topicId(0)
+        final Long completedTaskId = topicClient.complete()
             .taskKey(taskId)
             .execute();
 
@@ -123,10 +118,9 @@ public class TaskQueueTest
     public void testCannotCompleteUnlockedTask()
     {
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskId = taskService.create()
-            .topicId(0)
+        final Long taskId = topicClient.create()
             .payload("{}")
             .taskType("bar")
             .execute();
@@ -136,8 +130,7 @@ public class TaskQueueTest
         thrown.expect(BrokerRequestException.class);
         thrown.expectMessage("Task does not exist or is not locked");
 
-        taskService.complete()
-            .topicId(0)
+        topicClient.complete()
             .taskKey(taskId)
             .execute();
     }
@@ -148,16 +141,14 @@ public class TaskQueueTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskClient = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
-        final Long taskId = taskClient.create()
-            .topicId(0)
+        final Long taskId = topicClient.create()
             .payload("foo")
             .taskType("bar")
             .execute();
 
-        taskClient.pollAndLock()
-            .taskQueueId(0)
+        topicClient.pollAndLock()
             .taskType("bar")
             .lockTime(Duration.ofHours(1L))
             .execute();
@@ -166,14 +157,12 @@ public class TaskQueueTest
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
         final SilentFuture<Long> future1 = parallelRequests.submitRequest(
-            () -> taskClient.complete()
-                .topicId(0)
+            () -> topicClient.complete()
                 .taskKey(taskId)
                 .execute());
 
         final SilentFuture<Long> future2 = parallelRequests.submitRequest(
-            () -> taskClient.complete()
-                .topicId(0)
+            () -> topicClient.complete()
                 .taskKey(taskId)
                 .execute());
 
@@ -193,11 +182,10 @@ public class TaskQueueTest
     public void testLockZeroTasks()
     {
         // given
-        final AsyncTasksClient taskService = clientRule.getClient().tasks();
+        final TaskTopicClient topicClient = clientRule.getClient().taskTopic(0);
 
         // when
-        final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
-                .taskQueueId(0)
+        final LockedTasksBatch lockedTasksBatch = topicClient.pollAndLock()
                 .taskType("bar")
                 .lockTime(100 * 1000)
                 .execute();
@@ -212,19 +200,17 @@ public class TaskQueueTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient taskService = client.tasks();
+        final TaskTopicClient topicClient = client.taskTopic(0);
 
         System.out.println("Creating task");
 
-        final Long taskId = taskService.create()
-            .topicId(0)
+        final Long taskId = topicClient.create()
             .payload("foo")
             .taskType("bar")
             .execute();
 
         // when
-        final LockedTasksBatch lockedTasksBatch = taskService.pollAndLock()
-            .taskQueueId(0)
+        final LockedTasksBatch lockedTasksBatch = topicClient.pollAndLock()
             .taskType("bar")
             .lockTime(10000L)
             .execute();
@@ -237,6 +223,20 @@ public class TaskQueueTest
         assertThat(tasks.get(0).getId()).isEqualTo(taskId);
         assertThat(tasks.get(0).getPayloadString()).isEqualTo("foo");
 
+    }
+
+    @Test
+    public void testValidateTopicId()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        // then
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("id must be greater than or equal to 0");
+
+        // when
+        client.taskTopic(-1);
     }
 
 }

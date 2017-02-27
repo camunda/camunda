@@ -124,7 +124,7 @@ public class CommandResponseWriter implements BufferWriter
 
     protected void reset()
     {
-        topicId = (int) ExecuteCommandResponseEncoder.topicIdNullValue();
+        topicId = ExecuteCommandResponseEncoder.topicIdNullValue();
         longKey = ExecuteCommandResponseEncoder.longKeyNullValue();
         bytesKey.wrap(0, 0);
         eventWriter = null;

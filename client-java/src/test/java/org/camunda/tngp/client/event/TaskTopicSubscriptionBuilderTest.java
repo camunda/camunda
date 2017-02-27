@@ -6,9 +6,8 @@ import static org.mockito.Mockito.when;
 
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.TaskTopicSubscriptionBuilderImpl;
+import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
-import org.camunda.tngp.client.event.impl.TopicSubscriptionLifecycle;
-import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTopicSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.SyncContext;
@@ -30,7 +29,7 @@ public class TaskTopicSubscriptionBuilderTest
     protected EventSubscriptions<TopicSubscriptionImpl> subscriptions;
 
     @Mock
-    protected TngpClientImpl client;
+    protected TopicClientImpl client;
 
     @Mock
     protected MsgPackMapper msgPackMapper;
@@ -54,7 +53,7 @@ public class TaskTopicSubscriptionBuilderTest
         when(client.createTopicSubscription()).thenReturn(openSubscriptionCmd);
         when(openSubscriptionCmd.execute()).thenReturn(123L);
 
-        acquisition = new EventAcquisition<TopicSubscriptionImpl>(subscriptions, new TopicSubscriptionLifecycle(client))
+        acquisition = new EventAcquisition<TopicSubscriptionImpl>(subscriptions)
         {
             {
                 asyncContext = new SyncContext();
@@ -67,7 +66,7 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscription()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(14, acquisition, msgPackMapper)
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
                 .defaultHandler(noOpHandler).taskEventHandler(noOpTaskHandler);
 
         // when
@@ -75,12 +74,10 @@ public class TaskTopicSubscriptionBuilderTest
 
         // then
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscription);
-        assertThat(subscription.getTopicId()).isEqualTo(14);
         assertThat(subscription.getId()).isEqualTo(123L);
         assertThat(subscription.getHandler()).isNotNull();
 
         verify(client).createTopicSubscription();
-        verify(openSubscriptionCmd).topicId(14);
         verify(openSubscriptionCmd).execute();
     }
 
@@ -88,26 +85,11 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldValidateAtLeastOneEventHandlerForManagedSubscription()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(14, acquisition, msgPackMapper);
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper);
 
         // then
         exception.expect(RuntimeException.class);
         exception.expectMessage("handlers must have at least one non-null value");
-
-        // when
-        builder.open();
-    }
-
-    @Test
-    public void shouldValidateTopicIdForManagedSubscription()
-    {
-        // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(-1, acquisition, msgPackMapper)
-                .defaultHandler(noOpHandler);
-
-        // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("topicId must be greater than or equal to 0");
 
         // when
         builder.open();

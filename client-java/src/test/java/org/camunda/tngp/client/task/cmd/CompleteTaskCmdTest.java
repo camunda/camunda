@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CompleteTaskCmdTest
 {
+    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -66,7 +67,7 @@ public class CompleteTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        completeTaskCommand = new CompleteTaskCmdImpl(clientCmdExecutor, objectMapper);
+        completeTaskCommand = new CompleteTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -77,7 +78,6 @@ public class CompleteTaskCmdTest
         // given
         completeTaskCommand
             .taskKey(2)
-            .topicId(1)
             .taskType("foo")
             .lockOwner(3)
             .addHeader("a", "b")
@@ -98,7 +98,7 @@ public class CompleteTaskCmdTest
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
-        assertThat(requestDecoder.topicId()).isEqualTo(1L);
+        assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
         assertThat(requestDecoder.longKey()).isEqualTo(2L);
 
         final byte[] command = new byte[requestDecoder.commandLength()];
@@ -124,7 +124,6 @@ public class CompleteTaskCmdTest
 
         completeTaskCommand
             .taskKey(2)
-            .topicId(1)
             .taskType("foo")
             .lockOwner(3)
             .headers(headers)
@@ -162,7 +161,6 @@ public class CompleteTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .topicId(1L)
             .longKey(2L)
             .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
@@ -191,7 +189,6 @@ public class CompleteTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .topicId(1L)
             .longKey(2L)
             .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
@@ -204,26 +201,9 @@ public class CompleteTaskCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTopicIdIsNotSet()
-    {
-        completeTaskCommand
-            .taskKey(2L)
-            .taskType("foo")
-            .lockOwner(3)
-            .addHeader("k", "v")
-            .payload("{ \"bar\" : 4 }");
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("topic id must be greater than or equal to 0");
-
-        completeTaskCommand.validate();
-    }
-
-    @Test
     public void shouldBeNotValidIfTaskKeyIsNotSet()
     {
         completeTaskCommand
-            .topicId(1L)
             .taskType("foo")
             .lockOwner(3)
             .addHeader("k", "v")
@@ -240,7 +220,6 @@ public class CompleteTaskCmdTest
     {
         completeTaskCommand
             .taskKey(2L)
-            .topicId(1L)
             .taskType("foo")
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");
@@ -256,7 +235,6 @@ public class CompleteTaskCmdTest
     {
         completeTaskCommand
             .taskKey(2L)
-            .topicId(1L)
             .lockOwner(3)
             .addHeader("k", "v")
             .payload("{ \"bar\" : 4 }");

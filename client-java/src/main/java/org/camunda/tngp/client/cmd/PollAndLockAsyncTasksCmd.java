@@ -6,8 +6,6 @@ import org.camunda.tngp.client.ClientCommand;
 
 public interface PollAndLockAsyncTasksCmd extends ClientCommand<LockedTasksBatch>
 {
-    PollAndLockAsyncTasksCmd taskQueueId(int taskQueueId);
-
     PollAndLockAsyncTasksCmd lockTime(long lockTimeMs);
 
     PollAndLockAsyncTasksCmd lockTime(Duration timeDuration);

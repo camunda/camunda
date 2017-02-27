@@ -8,9 +8,9 @@ import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.ParallelRequests;
 import org.camunda.tngp.broker.it.util.ParallelRequests.SilentFuture;
-import org.camunda.tngp.client.AsyncTasksClient;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowsClient;
+import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
@@ -42,7 +42,7 @@ public class ParallelRequestsTest
     public void deployModelInstance()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowService = client.workflows();
+        final WorkflowTopicClient workflowService = client.workflowTopic();
 
         workflowDefinition = workflowService.deploy()
             .bpmnModelInstance(MODEL)
@@ -59,13 +59,13 @@ public class ParallelRequestsTest
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
         final TngpClient client = clientRule.getClient();
-        final WorkflowsClient workflowsClient = client.workflows();
+        final WorkflowTopicClient workflowsClient = client.workflowTopic();
 
         final SilentFuture<WorkflowInstance> instantiationFuture =
                 parallelRequests.submitRequest(
                     () ->
                     TestUtil.doRepeatedly(() ->
-                        client.workflows()
+                        client.workflowTopic()
                             .start()
                             .workflowDefinitionId(workflowDefinition.getId())
                             .execute())
@@ -104,22 +104,19 @@ public class ParallelRequestsTest
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
         final TngpClient client = clientRule.getClient();
-        final AsyncTasksClient tasksClient = client.tasks();
+        final TaskTopicClient tasksClient = client.taskTopic(0);
 
         final Long task1Id = tasksClient.create()
-            .topicId(0)
             .taskType("foo")
             .execute();
 
         tasksClient.pollAndLock()
-            .taskQueueId(0)
             .taskType("foo")
             .lockTime(10000L)
             .maxTasks(1)
             .execute();
 
         final Long task2Id = tasksClient.create()
-            .topicId(0)
             .taskType("bar")
             .execute();
 
@@ -127,14 +124,13 @@ public class ParallelRequestsTest
             () ->
                 tasksClient
                     .pollAndLock()
-                    .taskQueueId(0)
                     .taskType("bar")
                     .lockTime(10000L)
                     .maxTasks(1)
                     .execute());
         final SilentFuture<Long> completionFuture = parallelRequests.submitRequest(
             () ->
-                tasksClient.complete().topicId(0).taskKey(task1Id).execute());
+                tasksClient.complete().taskKey(task1Id).execute());
 
         // when
         parallelRequests.execute();

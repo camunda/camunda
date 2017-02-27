@@ -11,9 +11,9 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 
     protected TopicSubscriptionImplBuilder implBuilder;
 
-    public TopicSubscriptionBuilderImpl(int topicId, EventAcquisition<TopicSubscriptionImpl> acquisition)
+    public TopicSubscriptionBuilderImpl(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(topicId, acquisition);
+        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition);
     }
 
     @Override
@@ -33,7 +33,6 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     public TopicSubscription open()
     {
         EnsureUtil.ensureNotNull("handler", implBuilder.getHandler());
-        EnsureUtil.ensureGreaterThanOrEqual("topicId", implBuilder.getTopicId(), 0);
 
         final TopicSubscriptionImpl subscription = implBuilder.build();
         subscription.open();

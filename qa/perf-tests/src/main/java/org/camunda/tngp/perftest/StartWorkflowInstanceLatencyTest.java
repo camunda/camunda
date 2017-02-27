@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.WorkflowsClient;
+import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.perftest.helper.FixedRateLatencyTest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
@@ -21,7 +21,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
-        final WorkflowsClient workflowsClient = client.workflows();
+        final WorkflowTopicClient workflowsClient = client.workflowTopic();
 
         final BpmnModelInstance processModel = Bpmn.createExecutableProcess()
                 .startEvent()
@@ -53,7 +53,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final WorkflowsClient workflowsClient = client.workflows();
+        final WorkflowTopicClient workflowsClient = client.workflowTopic();
 
         return () ->
         {
