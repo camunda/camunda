@@ -20,7 +20,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -29,7 +28,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/it-applicationContext.xml" })
+@ContextConfiguration(locations = {"/it-applicationContext.xml"})
 public class HeatMapReaderIT {
 
   public static final String TEST_DEFINITION = "testDefinition";
@@ -59,15 +58,13 @@ public class HeatMapReaderIT {
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
 
     // when
     HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
 
     // then
-    assertThat(testDefinition.getFlowNodes().size(),is(1));
-    assertThat(testDefinition.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(testDefinition.getPiCount(),is(1L));
+    assertResults(testDefinition, 1, TEST_ACTIVITY, 1L, 1L);
   }
 
   @Test
@@ -78,20 +75,17 @@ public class HeatMapReaderIT {
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"6", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
 
     event.setActivityId(TEST_ACTIVITY_2);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"7", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
 
     // when
     HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
 
     // then
-    assertThat(testDefinition.getFlowNodes().size(),is(2));
-    assertThat(testDefinition.getFlowNodes().get(TEST_ACTIVITY),is(2L));
-
-    assertThat(testDefinition.getPiCount(),is(1L));
+    assertResults(testDefinition, 2, TEST_ACTIVITY, 2L, 1L);
   }
 
   @Test
@@ -101,31 +95,29 @@ public class HeatMapReaderIT {
     EventDto event = new EventDto();
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"6", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
 
     event = new EventDto();
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION_2);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"7", event);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
 
     // when
     HeatMapResponseDto testDefinition1 = heatMapReader.getHeatMap(TEST_DEFINITION);
     HeatMapResponseDto testDefinition2 = heatMapReader.getHeatMap(TEST_DEFINITION_2);
 
     // then
-    assertThat(testDefinition1.getFlowNodes().size(),is(1));
-    assertThat(testDefinition1.getFlowNodes().get(TEST_ACTIVITY),is(2L));
-    assertThat(testDefinition2.getFlowNodes().size(),is(1));
-    assertThat(testDefinition2.getFlowNodes().get(TEST_ACTIVITY),is(1L));
+    assertResults(testDefinition1, 1, TEST_ACTIVITY, 2L, 0L);
+    assertResults(testDefinition2, 1, TEST_ACTIVITY, 1L, 0L);
   }
 
   @Test
-  public void testGetHeatMapWithLtStartDateCriteria () throws Exception {
+  public void testGetHeatMapWithLtStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
@@ -135,31 +127,27 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0,0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0,0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
   }
 
   @Test
-  public void testGetHeatMapWithLteStartDateCriteria () throws Exception {
+  public void testGetHeatMapWithLteStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = ">=";
     String type = "start_date";
@@ -169,29 +157,27 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
+    assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
   }
 
   @Test
-  public void testGetHeatMapWithLteEndDateCriteria () throws Exception {
+  public void testGetHeatMapWithLteEndDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = ">=";
     String type = "end_date";
@@ -201,32 +187,27 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
   }
 
   @Test
-  public void testGetHeatMapWithGtStartDateCriteria () throws Exception {
+  public void testGetHeatMapWithGtStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = "<";
     String type = "start_date";
@@ -236,31 +217,27 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
   }
 
   @Test
-  public void testGetHeatMapWithMixedDateCriteria () throws Exception {
+  public void testGetHeatMapWithMixedDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
@@ -274,8 +251,7 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, 1L);
 
     //given
     operator = ">";
@@ -289,16 +265,15 @@ public class HeatMapReaderIT {
     resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
   }
 
   @Test
-  public void testGetHeatMapWithGtEndDateCriteria () throws Exception {
+  public void testGetHeatMapWithGtEndDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = "<";
     String type = "end_date";
@@ -308,31 +283,27 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
   }
 
   @Test
-  public void testGetHeatMapWithGteStartDateCriteria () throws Exception {
+  public void testGetHeatMapWithGteStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(),"1", data);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
 
     String operator = "<=";
     String type = "start_date";
@@ -342,24 +313,29 @@ public class HeatMapReaderIT {
     HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(1));
-    assertThat(resultMap.getFlowNodes().get(TEST_ACTIVITY),is(1L));
-    assertThat(resultMap.getPiCount(),is(1L));
+    assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.getFlowNodes().size(),is(0));
-    assertThat(resultMap.getPiCount(),is(0L));
+    assertResults(resultMap, 0, 0L);
+  }
+
+  private void assertResults(HeatMapResponseDto resultMap, int size, long piCount) {
+    assertThat(resultMap.getFlowNodes().size(), is(size));
+    assertThat(resultMap.getPiCount(), is(piCount));
+  }
+
+  public void assertResults(HeatMapResponseDto resultMap, int size, String activity, Long activityCount, Long piCount) {
+    this.assertResults(resultMap, size, piCount);
+    assertThat(resultMap.getFlowNodes().get(activity), is(activityCount));
   }
 
   private EventDto prepareESData(Date past) {
@@ -382,7 +358,7 @@ public class HeatMapReaderIT {
   }
 
   @Test
-  public void testValidationExceptionOnNullDto () {
+  public void testValidationExceptionOnNullDto() {
     //expect
     exception.expect(OptimizeValidationException.class);
 
@@ -391,7 +367,7 @@ public class HeatMapReaderIT {
   }
 
   @Test
-  public void testValidationExceptionOnNullProcessDefinition () {
+  public void testValidationExceptionOnNullProcessDefinition() {
     //expect
     exception.expect(OptimizeValidationException.class);
 
@@ -400,7 +376,7 @@ public class HeatMapReaderIT {
   }
 
   @Test
-  public void testValidationExceptionOnNullFilterField () {
+  public void testValidationExceptionOnNullFilterField() {
     //expect
     exception.expect(OptimizeValidationException.class);
 
