@@ -109,7 +109,7 @@ function awscli_wait_available {
         exit 1
       fi
 
-      echo -e "\033[0;32m`${DATE}` sleep ${_SLEEP_TIME} (${status})\033[0;39m"
+      echo -e "\033[0;32m`${DATE}` sleep ${sleep_time} (${status})\033[0;39m"
     done
   done
 }
