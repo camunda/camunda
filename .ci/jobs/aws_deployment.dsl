@@ -1,7 +1,7 @@
 def JOBS = [
   [name: 'aws-setup-rds-and-ec2-instance', downstream: 'aws-upgrade-db-schema'],
-  [name: 'aws-upgrade-db-schema', downstream: 'aws-provision-camunda-bpm'],
-  [name: 'aws-provision-camunda-bpm', downstream: '']
+  [name: 'aws-upgrade-db-schema', downstream: 'aws-provision-camunda'],
+  [name: 'aws-provision-camunda', downstream: '']
 ]
 
 def sshKeyId = 'jenkins-optimize-aws-ssh'
@@ -57,12 +57,12 @@ job.with {
 job = createJobWithCommonProperties(this, JOBS[2].name)
 job.with {
 
-  displayName 'AWS - Provision Camunda BPM'
-  description 'Provision the Camunda BPM Platform on EC2 instance.'
+  displayName 'AWS - Provision Camunda BPM and Optimize'
+  description 'Provision the Camunda BPM Platform and Optimize on EC2 instance.'
 
   steps {
     shell 'echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.vault_password'
-    shell readFileFromWorkspace('.aws/scripts/provision-camunda-bpm.sh')
+    shell readFileFromWorkspace('.aws/scripts/provision-camunda.sh')
   }
 
   wrappers {

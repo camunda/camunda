@@ -19,7 +19,7 @@ EOF
 
 ansible-playbook bootstrap-python.yml -i hosts
 
-ansible-playbook camunda-bpm.yml \
+ansible-playbook camunda.yml \
   -i hosts \
   -e db_name=${DB_NAME} \
   -e db_host=${DB_HOST}
