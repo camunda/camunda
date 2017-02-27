@@ -44,7 +44,7 @@ public class NonBlockingTaskCreator
             client.connect();
 
             final TransportConnectionPool connectionPool = client.getConnectionPool();
-            final TaskTopicClient asyncTaskService = client.taskTopic();
+            final TaskTopicClient asyncTaskService = client.taskTopic(0);
 
             final String payload = "{}";
 
