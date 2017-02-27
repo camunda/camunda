@@ -22,23 +22,17 @@ import org.junit.rules.ExternalResource;
 
 public class ControllableAgentRunnerService extends ExternalResource implements AgentRunnerService
 {
-    protected AtomicBoolean isRunning = new AtomicBoolean(false);
+    protected static final int MAX_WORK_COUNT = 1_000;
+
+    protected AtomicBoolean isRunning = new AtomicBoolean(true);
 
     protected final List<Agent> agents = new ArrayList<>();
-
-    private Thread runningThread;
-
-    protected int workCount = 0;
-
-    @Override
-    protected void before() throws Throwable
-    {
-        start();
-    }
 
     @Override
     protected void after()
     {
+        waitUntilDone();
+
         try
         {
             close();
@@ -49,44 +43,42 @@ public class ControllableAgentRunnerService extends ExternalResource implements 
         }
     }
 
-    protected void start()
+    public void waitUntilDone()
     {
-        if (isRunning.compareAndSet(false, true))
+        if (isRunning.get())
         {
-            runningThread = new Thread(() ->
-            {
-                while (isRunning.get())
-                {
-                    workCount = 0;
+            int totalWorkCount = 0;
+            int workCount;
 
-                    final ArrayList<Agent> agentList = new ArrayList<>(agents);
-                    for (int i = 0; i < agentList.size() && isRunning.get(); i++)
+            do
+            {
+                workCount = 0;
+
+                final ArrayList<Agent> agentList = new ArrayList<>(agents);
+                for (int i = 0; i < agentList.size() && isRunning.get(); i++)
+                {
+                    final Agent agent = agentList.get(i);
+                    if (agent != null)
                     {
-                        final Agent agent = agentList.get(i);
-                        if (agent != null)
+                        try
                         {
-                            try
-                            {
-                                workCount += agent.doWork();
-                            }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                            }
+                            workCount += agent.doWork();
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
                         }
                     }
                 }
-            }, "controllable-agent-runner-service");
 
-            runningThread.start();
-        }
-    }
+                totalWorkCount += workCount;
 
-    public void waitUntilDone()
-    {
-        while (isRunning.get() && workCount > 0)
-        {
-            // waiting
+                if (totalWorkCount > MAX_WORK_COUNT)
+                {
+                    throw new RuntimeException("work count limit of agent runner service exceeded");
+                }
+            }
+            while (workCount > 0);
         }
     }
 
@@ -98,11 +90,6 @@ public class ControllableAgentRunnerService extends ExternalResource implements 
             for (Agent agent : agents)
             {
                 agent.onClose();
-            }
-
-            while (runningThread.isAlive())
-            {
-                // waiting
             }
         }
     }
