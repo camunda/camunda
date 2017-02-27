@@ -2,7 +2,8 @@
 set -o errexit
 set -o errtrace
 
-vault_password_file="${ANSIBLE_VAULT_PASSWORD_FILE:-.vault_password}"
+cwd="$(pwd)"
+vault_password_file="${ANSIBLE_VAULT_PASSWORD_FILE:-$cwd/.vault_password}"
 if [ ! -e "${vault_password_file}" ] && [ ! -e "${HOME}/${vault_password_file}" ]; then
   echo """
 Error:

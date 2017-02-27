@@ -6,7 +6,7 @@ def JOBS = [
 
 def sshKeyId = 'jenkins-optimize-aws-ssh'
 def writeVaultPasswordFile = '''
-echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.aws/ansible/.vault_password
+echo ${OPTIMIZE_VAULT_SECRET} > ${WORKSPACE}/.vault_password
 '''
 
 def job = createJobWithCommonProperties(this, JOBS[0].name)
@@ -49,6 +49,11 @@ job.with {
 
   wrappers {
     sshAgent (sshKeyId)
+  }
+
+  credentialsBinding {
+    string('OPTIMIZE_VAULT_SECRET', 'optimize-vault-secret')
+    usernamePassword('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'jenkins-optimize-aws-secrets')
   }
 
   publishers {
