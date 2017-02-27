@@ -87,7 +87,7 @@ module "optimize_security_in" {
   source = "../modules/security_rule_global"
   group  = "${aws_security_group.optimize.id}"
   type   = "ingress"
-  ports  = [22, 8080]
+  ports  = [22, 8090]
   cidr_blocks = ["178.19.212.50/32"]
 }
 
@@ -95,15 +95,15 @@ module "optimize_security_out" {
   source = "../modules/security_rule_global"
   group  = "${aws_security_group.optimize.id}"
   type   = "egress"
-  ports  = [80,443,8080]
-  cidr_blocks = ["178.19.212.50/32"]
+  ports  = [80,443]
 }
 
-module "optimize_security_apt" {
+module "optimize_security_ldaps" {
   source = "../modules/security_rule_global"
   group  = "${aws_security_group.optimize.id}"
   type   = "egress"
-  ports  = [80,443]
+  ports  = [636]
+  cidr_blocks = ["91.109.21.65/32"]
 }
 
 module "optimize_to_optimize_db" {
