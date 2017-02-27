@@ -36,7 +36,9 @@ public class ProcessDefinitionXmlType implements TypeMappingCreator {
             .field("type", "keyword")
           .endObject()
           .startObject("bpmn20Xml")
-            .field("type", "keyword")
+            .field("type", "string")
+            .field("index", "not_analyzed")
+            .field("ignore_above",256)
           .endObject()
         .endObject()
         .endObject();

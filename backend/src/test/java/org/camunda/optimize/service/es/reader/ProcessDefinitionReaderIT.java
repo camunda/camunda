@@ -13,7 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -86,14 +95,25 @@ public class ProcessDefinitionReaderIT {
     // given
     ProcessDefinitionXmlEngineDto xmlDto = new ProcessDefinitionXmlEngineDto();
     xmlDto.setId("123");
-    xmlDto.setBpmn20Xml("testBpmnXml");
+    String leadXml = readDiagram();
+    xmlDto.setBpmn20Xml(leadXml);
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(),"123", xmlDto);
 
     // when
     String testXml = procDefReader.getProcessDefinitionXml("123");
 
     // then
-    assertThat(testXml, is("testBpmnXml"));
+    assertThat(testXml, is(leadXml));
+  }
+
+  private String readDiagram() throws IOException {
+    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream("org/camunda/optimize/service/es/reader/leadQualification.bpmn"));
+  }
+
+  public static String read(InputStream input) throws IOException {
+    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
+      return buffer.lines().collect(Collectors.joining("\n"));
+    }
   }
 
 }
