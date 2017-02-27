@@ -49,7 +49,7 @@ export function loadHeatmap(filter) {
   post('/api/process-definition/heatmap', filter)
     .then(response => response.json())
     .then(result => {
-      dispatchAction(createLoadingHeatmapResultAction(result));
+      dispatchAction(createLoadingHeatmapResultAction(result.flowNodes));
     })
     .catch(err => {
       //TODO: Add error handling with notifications

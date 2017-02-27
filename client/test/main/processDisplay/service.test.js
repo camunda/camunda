@@ -27,10 +27,10 @@ describe('ProcessDisplay service', () => {
   setupPromiseMocking();
 
   beforeEach(() => {
-    heatmapData = {
+    heatmapData = {flowNodes: {
       act1: 2,
       act2: 8
-    };
+    }};
 
     filter = {
       processDefinitionId: processId,
@@ -172,7 +172,7 @@ describe('ProcessDisplay service', () => {
     it('creates action with returned heatmap data', () => {
       Promise.runAll();
 
-      expect(createLoadingHeatmapResultAction.calledWith(heatmapData)).to.eql(true);
+      expect(createLoadingHeatmapResultAction.calledWith(heatmapData.flowNodes)).to.eql(true);
     });
   });
 
