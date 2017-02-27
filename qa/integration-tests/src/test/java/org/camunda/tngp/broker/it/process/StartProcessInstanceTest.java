@@ -1,15 +1,15 @@
-package org.camunda.bpm.broker.it.process;
+package org.camunda.tngp.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.camunda.bpm.broker.it.ClientRule;
-import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.bpm.broker.it.TestUtil;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.client.WorkflowsClient;
+import org.camunda.tngp.broker.it.ClientRule;
+import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
+import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;

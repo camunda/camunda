@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it;
+package org.camunda.tngp.broker.it;
 
 import java.io.InputStream;
 import java.util.function.Supplier;

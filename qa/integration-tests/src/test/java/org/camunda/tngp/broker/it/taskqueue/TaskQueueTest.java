@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.taskqueue;
+package org.camunda.tngp.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,10 +7,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.camunda.bpm.broker.it.ClientRule;
-import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.bpm.broker.it.util.ParallelRequests;
-import org.camunda.bpm.broker.it.util.ParallelRequests.SilentFuture;
+import org.camunda.tngp.broker.it.ClientRule;
+import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.it.util.ParallelRequests;
+import org.camunda.tngp.broker.it.util.ParallelRequests.SilentFuture;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;

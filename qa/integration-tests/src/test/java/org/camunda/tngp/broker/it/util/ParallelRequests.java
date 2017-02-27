@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.util;
+package org.camunda.tngp.broker.it.util;
 
 import java.util.ArrayList;
 import java.util.List;

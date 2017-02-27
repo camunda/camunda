@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.subscription;
+package org.camunda.tngp.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.bpm.broker.it.ClientRule;
-import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.bpm.broker.it.TestUtil;
+import org.camunda.tngp.broker.it.ClientRule;
+import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.event.TaskEventHandler;
+import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

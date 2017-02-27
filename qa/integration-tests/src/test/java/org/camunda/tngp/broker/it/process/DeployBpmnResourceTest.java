@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.process;
+package org.camunda.tngp.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
@@ -6,12 +6,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.nio.charset.StandardCharsets;
 
-import org.camunda.bpm.broker.it.ClientRule;
-import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.tngp.broker.it.ClientRule;
+import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowsClient;
 import org.camunda.tngp.client.cmd.BrokerRequestException;

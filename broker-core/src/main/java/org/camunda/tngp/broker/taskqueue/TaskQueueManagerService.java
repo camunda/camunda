@@ -25,10 +25,10 @@ import java.nio.channels.FileChannel;
 import java.time.Duration;
 import java.util.List;
 
-import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
-import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
+import org.camunda.tngp.broker.system.executor.ScheduledCommand;
+import org.camunda.tngp.broker.system.executor.ScheduledExecutor;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.broker.taskqueue.processor.TaskExpireLockStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
@@ -46,19 +46,17 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.util.FileUtil;
-import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.camunda.tngp.util.time.ClockUtil;
 
 public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager
 {
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
-    protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
+    protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
 
     protected ServiceStartContext serviceContext;
 
-    protected CheckExpireLockScheduler checkExpireLockScheduler;
+    protected ScheduledCommand scheduledCheckExpirationCmd;
 
     public TaskQueueManagerService(ConfigurationManager configurationManager)
     {
@@ -119,13 +117,10 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
     protected void startExpireLockService(String logStreamName, ServiceName<LogStream> logStreamServiceName)
     {
-        final AgentRunnerService agentRunnerService = agentRunnerServicesInjector.getValue().conductorAgentRunnerService();
+        final ScheduledExecutor executor = executorInjector.getValue();
 
         final ServiceName<StreamProcessorController> expireLockStreamProcessorServiceName = taskQueueExpireLockStreamProcessorServiceName(logStreamName);
         final TaskExpireLockStreamProcessor expireLockStreamProcessor = new TaskExpireLockStreamProcessor();
-
-        final String schedulerName = String.format("taskqueue.%s.expire.lock.scheduler", logStreamName);
-        checkExpireLockScheduler = new CheckExpireLockScheduler(agentRunnerService, schedulerName, expireLockStreamProcessor, Duration.ofSeconds(30));
 
         final StreamProcessorService expireLockStreamProcessorService = new StreamProcessorService(
                 expireLockStreamProcessorServiceName.getName(),
@@ -139,7 +134,10 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             .dependency(SNAPSHOT_STORAGE_SERVICE, expireLockStreamProcessorService.getSnapshotStorageInjector())
             .dependency(AGENT_RUNNER_SERVICE, expireLockStreamProcessorService.getAgentRunnerInjector())
             .install()
-            .thenRun(() -> checkExpireLockScheduler.start());
+            .thenRun(() ->
+            {
+                scheduledCheckExpirationCmd = executor.scheduleAtFixedRate(expireLockStreamProcessor::checkLockExpirationAsync, Duration.ofSeconds(30));
+            });
     }
 
     @Override
@@ -159,7 +157,10 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     @Override
     public void stop(ServiceStopContext ctx)
     {
-        ctx.run(() -> checkExpireLockScheduler.stop());
+        ctx.run(() ->
+        {
+            scheduledCheckExpirationCmd.cancel();
+        });
     }
 
     @Override
@@ -173,68 +174,9 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         return sendBufferInjector;
     }
 
-    public Injector<AgentRunnerServices> getAgentRunnerServicesInjector()
+    public Injector<ScheduledExecutor> getExecutorInjector()
     {
-        return agentRunnerServicesInjector;
-    }
-
-    class CheckExpireLockScheduler implements Agent
-    {
-        protected final AgentRunnerService agentRunnerService;
-        protected final String name;
-        protected final TaskExpireLockStreamProcessor streamProcessor;
-        protected final long period;
-
-        protected long dueDate;
-
-        CheckExpireLockScheduler(AgentRunnerService agentRunnerService, String name, TaskExpireLockStreamProcessor streamProcessor, Duration period)
-        {
-            this.agentRunnerService = agentRunnerService;
-            this.name = name;
-            this.streamProcessor = streamProcessor;
-            this.period = period.toMillis();
-
-            dueDate = getNextDueDate();
-        }
-
-        public void start()
-        {
-            agentRunnerService.run(this);
-        }
-
-        public void stop()
-        {
-            agentRunnerService.remove(this);
-        }
-
-        @Override
-        public int doWork() throws Exception
-        {
-            int workCount = 0;
-
-            if (ClockUtil.getCurrentTimeInMillis() >= dueDate)
-            {
-                streamProcessor.checkLockExpirationAsync();
-
-                dueDate = getNextDueDate();
-
-                workCount += 1;
-            }
-
-            return workCount;
-        }
-
-        protected long getNextDueDate()
-        {
-            return ClockUtil.getCurrentTimeInMillis() + this.period;
-        }
-
-        @Override
-        public String roleName()
-        {
-            return name;
-        }
-
+        return executorInjector;
     }
 
 }

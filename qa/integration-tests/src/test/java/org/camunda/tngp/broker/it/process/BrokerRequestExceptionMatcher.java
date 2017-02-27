@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.process;
+package org.camunda.tngp.broker.it.process;
 
 import org.camunda.tngp.client.cmd.BrokerRequestException;
 import org.hamcrest.BaseMatcher;

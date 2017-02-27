@@ -111,7 +111,7 @@ public class TaskStreamProcessorIntegrationTest
             .deleteOnClose(true)
             .build();
 
-        logStream.open();
+        logStream.openAsync();
 
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
         final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
@@ -140,24 +140,24 @@ public class TaskStreamProcessorIntegrationTest
                 .agentRunnerService(agentRunnerService)
                 .build();
 
-        taskInstanceStreamProcessorController.openAsync().get();
-        taskSubscriptionStreamProcessorController.openAsync().get();
-        taskExpireLockStreamProcessorController.openAsync().get();
+        taskInstanceStreamProcessorController.openAsync();
+        taskSubscriptionStreamProcessorController.openAsync();
+        taskExpireLockStreamProcessorController.openAsync();
 
         logStreamWriter = new LogStreamWriter(logStream);
         defaultBrokerEventMetadata.eventType(TASK_EVENT);
+
+        agentRunnerService.waitUntilDone();
     }
 
     @After
     public void cleanUp() throws Exception
     {
-        taskInstanceStreamProcessorController.closeAsync().get();
-        taskSubscriptionStreamProcessorController.closeAsync().get();
-        taskExpireLockStreamProcessorController.closeAsync().get();
+        taskInstanceStreamProcessorController.closeAsync();
+        taskSubscriptionStreamProcessorController.closeAsync();
+        taskExpireLockStreamProcessorController.closeAsync();
 
-        logStream.close();
-
-        //agentRunnerService.close();
+        logStream.closeAsync();
 
         ClockUtil.reset();
     }
@@ -376,8 +376,6 @@ public class TaskStreamProcessorIntegrationTest
         // when
         ClockUtil.setCurrentTime(now.plus(lockDuration));
 
-        agentRunnerService.waitUntilDone();
-
         taskExpireLockStreamProcessor.checkLockExpirationAsync();
 
         // then
@@ -416,6 +414,8 @@ public class TaskStreamProcessorIntegrationTest
 
     private LoggedEvent getResultEventOf(long position)
     {
+        agentRunnerService.waitUntilDone();
+
         final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
 
         LoggedEvent loggedEvent = null;

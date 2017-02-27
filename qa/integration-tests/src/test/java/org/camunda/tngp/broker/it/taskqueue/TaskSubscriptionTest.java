@@ -1,7 +1,7 @@
-package org.camunda.bpm.broker.it.taskqueue;
+package org.camunda.tngp.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.broker.it.TestUtil.waitUntil;
+import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -12,9 +12,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.camunda.bpm.broker.it.ClientRule;
-import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.bpm.broker.it.TestUtil;
+import org.camunda.tngp.broker.it.ClientRule;
+import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.AsyncTasksClient;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
@@ -22,6 +21,7 @@ import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
+import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Ignore;

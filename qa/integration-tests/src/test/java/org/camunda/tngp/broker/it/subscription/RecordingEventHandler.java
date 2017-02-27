@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.subscription;
+package org.camunda.tngp.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package org.camunda.bpm.broker.it.process;
+package org.camunda.tngp.broker.it.process;
 
 import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
 

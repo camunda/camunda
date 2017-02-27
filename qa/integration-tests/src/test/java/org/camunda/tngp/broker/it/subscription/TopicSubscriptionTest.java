@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.broker.it.subscription;
+package org.camunda.tngp.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,15 +19,15 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.camunda.bpm.broker.it.ClientRule;
-import org.camunda.bpm.broker.it.EmbeddedBrokerRule;
-import org.camunda.bpm.broker.it.TestUtil;
+import org.camunda.tngp.broker.it.ClientRule;
+import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.PollableTopicSubscription;
 import org.camunda.tngp.client.event.TopicEvent;
 import org.camunda.tngp.client.event.TopicEventHandler;
 import org.camunda.tngp.client.event.TopicSubscription;
+import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
