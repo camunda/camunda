@@ -31,9 +31,14 @@ import static org.junit.Assert.assertThat;
 @ContextConfiguration(locations = { "/it-applicationContext.xml" })
 public class HeatMapReaderIT {
 
+  public static final String PI_COUNT = "piCount";
+
   public static final String TEST_DEFINITION = "testDefinition";
   public static final String TEST_DEFINITION_2 = "testDefinition2";
   public static final String TEST_ACTIVITY = "testActivity";
+  public static final String PROCESS_INSTANCE_ID = "testProcessInstanceId";
+  private static final String TEST_ACTIVITY_2 = "testActivity_2";
+
   @Rule
   public final ExpectedException exception = ExpectedException.none();
 
@@ -54,14 +59,16 @@ public class HeatMapReaderIT {
     EventDto event = new EventDto();
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
+    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
 
     // when
     Map<String, Long> testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
 
     // then
-    assertThat(testDefinition.size(),is(1));
+    assertThat(testDefinition.size(),is(2));
     assertThat(testDefinition.get(TEST_ACTIVITY),is(1L));
+    assertThat(testDefinition.get(PI_COUNT),is(1L));
   }
 
   @Test
@@ -71,15 +78,21 @@ public class HeatMapReaderIT {
     EventDto event = new EventDto();
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
+    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     rule.addEntryToElasticsearch(configurationService.getEventType(),"5", event);
     rule.addEntryToElasticsearch(configurationService.getEventType(),"6", event);
+
+    event.setActivityId(TEST_ACTIVITY_2);
+    rule.addEntryToElasticsearch(configurationService.getEventType(),"7", event);
 
     // when
     Map<String, Long> testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
 
     // then
-    assertThat(testDefinition.size(),is(1));
+    assertThat(testDefinition.size(),is(3));
     assertThat(testDefinition.get(TEST_ACTIVITY),is(2L));
+
+    assertThat(testDefinition.get(PI_COUNT),is(1L));
   }
 
   @Test
@@ -102,9 +115,9 @@ public class HeatMapReaderIT {
     Map<String, Long> testDefinition2 = heatMapReader.getHeatMap(TEST_DEFINITION_2);
 
     // then
-    assertThat(testDefinition1.size(),is(1));
+    assertThat(testDefinition1.size(),is(2));
     assertThat(testDefinition1.get(TEST_ACTIVITY),is(2L));
-    assertThat(testDefinition2.size(),is(1));
+    assertThat(testDefinition2.size(),is(2));
     assertThat(testDefinition2.get(TEST_ACTIVITY),is(1L));
   }
 
@@ -123,20 +136,23 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
   }
 
   @Test
@@ -154,20 +170,20 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
   }
 
@@ -186,21 +202,24 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
   }
 
   @Test
@@ -218,20 +237,23 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
   }
 
   @Test
@@ -253,7 +275,8 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
 
     //given
     operator = ">";
@@ -267,7 +290,8 @@ public class HeatMapReaderIT {
     resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
   }
 
   @Test
@@ -285,20 +309,23 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
   }
 
   @Test
@@ -316,27 +343,31 @@ public class HeatMapReaderIT {
     Map<String, Long> resultMap = heatMapReader.getHeatMap(dto);
 
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.size(),is(2));
     assertThat(resultMap.get(TEST_ACTIVITY),is(1L));
+    assertThat(resultMap.get(PI_COUNT),is(1L));
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
     resultMap = heatMapReader.getHeatMap(dto);
     //then
-    assertThat(resultMap.size(),is(0));
+    assertThat(resultMap.size(),is(1));
+    assertThat(resultMap.get(PI_COUNT),is(0L));
   }
 
   private EventDto prepareESData(Date past) {
     EventDto data = new EventDto();
     data.setActivityId(TEST_ACTIVITY);
     data.setProcessDefinitionId(TEST_DEFINITION);
+    data.setProcessInstanceId(PROCESS_INSTANCE_ID);
     data.setStartDate(past);
     data.setEndDate(past);
     data.setProcessInstanceStartDate(past);

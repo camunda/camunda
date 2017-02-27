@@ -13,6 +13,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
@@ -70,7 +71,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
 
     //then
     HashMap deserializedResult = response.readEntity(new GenericType<HashMap<String, Long>>(){});
-    assertThat(deserializedResult.size(),is(1));
+    assertThat(deserializedResult.size(),is(2));
   }
 
   private void setUpElasticSearchMock(String expectedDate) {
@@ -105,6 +106,11 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     mockBuckets.add(mockBucket);
     Mockito.when(mockTerms.getBuckets()).thenReturn(mockBuckets);
     Mockito.when(aggregations.get(Mockito.eq("activities"))).thenReturn(mockTerms);
+
+    Cardinality mockCardinality = Mockito.mock(Cardinality.class);
+    Mockito.when(mockCardinality.getValue()).thenReturn(1L);
+    Mockito.when(aggregations.get(Mockito.eq("pi"))).thenReturn(mockCardinality);
+
     Mockito.when(mockResponse.getAggregations()).thenReturn(aggregations);
     Mockito.when(futureResponse.actionGet()).thenReturn(mockResponse);
     return futureResponse;

@@ -10,7 +10,10 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
+import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +25,7 @@ import java.util.Map;
  */
 @Component
 public class HeatMapReader {
+  public static final String PI_COUNT = "piCount";
   @Autowired
   private TransportClient esclient;
   @Autowired
@@ -48,10 +52,7 @@ public class HeatMapReader {
     BoolQueryBuilder query = setupBaseQuery(processDefinitionId);
 
     srb = srb.setQuery(query);
-    Terms activities = getTermsWithAggregation(srb);
-    for (Terms.Bucket b : activities.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
-    }
+    processAggregations(result, srb);
     return result;
   }
 
@@ -75,24 +76,36 @@ public class HeatMapReader {
     query = dateFilterHelper.addFilters(query, dto.getFilter());
 
     srb = srb.setQuery(query);
-    Terms activities = getTermsWithAggregation(srb);
-    for (Terms.Bucket b : activities.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
-    }
+    processAggregations(result, srb);
     return result;
   }
 
+  private void processAggregations(Map<String, Long> result, SearchRequestBuilder srb) {
+    Aggregations aggregations = getTermsWithAggregation(srb);
+    Terms activities = aggregations.get("activities");
+    for (Terms.Bucket b : activities.getBuckets()) {
+      result.put(b.getKeyAsString(), b.getDocCount());
+    }
+
+    Cardinality pi = aggregations.get("pi");
+    result.put(PI_COUNT, pi.getValue());
+  }
 
 
-  private Terms getTermsWithAggregation(SearchRequestBuilder srb) {
+  private Aggregations getTermsWithAggregation(SearchRequestBuilder srb) {
     SearchResponse sr = srb
         .addAggregation(AggregationBuilders
             .terms("activities")
             .field("activityId")
         )
+        .addAggregation(AggregationBuilders
+            .cardinality("pi")
+            .field("processInstanceId")
+        )
         .execute().actionGet();
 
-    return sr.getAggregations().get("activities");
+    Aggregations aggregations = sr.getAggregations();
+    return aggregations;
   }
 
 }
