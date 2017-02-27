@@ -14,7 +14,8 @@
     "eslint": "eslint app test || true",
     "eslint-fix": "eslint app test --fix || true",
     "start-backend": "node scripts/run-backend.js",
-    "test-e2e": "node scripts/run-e2e-tests.js"
+    "test-e2e": "node scripts/run-e2e-tests.js",
+    "test-e2e-watch": "node scripts/run-e2e-tests.js --watch"
   },
   "author": "",
   "license": "UNLICENSED",

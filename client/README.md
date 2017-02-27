@@ -69,6 +69,12 @@ yarn run test-watch
 1. Start development server.
 2. Run ``yarn run test-e2e``.
 
+Running tests in watch mode:
+
+```bash
+yarn run test-e2e-watch
+```
+
 ## Contributing
 
 Please refer to the [.eslintrc file](https://github.com/camunda/camunda-optimize/blob/master/client/.eslintrc.json) for coding style guidelines.
