@@ -1,12 +1,19 @@
 package org.camunda.optimize;
 
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.GzipFilter;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
@@ -29,6 +36,8 @@ import java.util.Properties;
  */
 public class Main {
 
+  public static final String PROTOCOL = "http/1.1";
+
   static {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
     SLF4JBridgeHandler.install();
@@ -47,31 +56,73 @@ public class Main {
   public static void main(String[] args) throws Exception {
     Properties properties = getProperties();
 
+    Server jettyServer = initServer(properties);
+
+    ServletHolder jerseyServlet = initJerseyServlet();
+
+    ServletContextHandler context = setupServletContextHandler(jerseyServlet);
+
+    jettyServer.setHandler(context);
+    try {
+      jettyServer.start();
+      jettyServer.join();
+    } finally {
+      jettyServer.destroy();
+    }
+  }
+
+  private static Server initServer(Properties properties) {
+    String host = properties.getProperty("camunda.optimize.container.host");
+    String keystorePass = properties.getProperty("camunda.optimize.container.keystore.password");
+    String keystoreLocation = properties.getProperty("camunda.optimize.container.keystore.location");
+    Server server = new Server();
+
+    ServerConnector connector = initHttpConnector(properties, host, server);
+
+    ServerConnector sslConnector = initHttpsConnector(properties, host, keystorePass, keystoreLocation, server);
+
+    server.setConnectors(new Connector[] { connector, sslConnector });
+
+    return server;
+  }
+
+  private static ServerConnector initHttpsConnector(Properties properties, String host, String keystorePass, String keystoreLocation, Server server) {
+    HttpConfiguration https = new HttpConfiguration();
+    https.addCustomizer(new SecureRequestCustomizer());
+    SslContextFactory sslContextFactory = new SslContextFactory();
+    sslContextFactory.setKeyStorePath(Main.class.getClassLoader().getResource(
+        keystoreLocation).toExternalForm());
+    sslContextFactory.setKeyStorePassword(keystorePass);
+    sslContextFactory.setKeyManagerPassword(keystorePass);
+
+    ServerConnector sslConnector = new ServerConnector(server,
+        new SslConnectionFactory(sslContextFactory, PROTOCOL),
+        new HttpConnectionFactory(https));
+    sslConnector.setPort(Integer.parseInt(properties.getProperty("camunda.optimize.container.https.port")));
+    sslConnector.setHost(host);
+    return sslConnector;
+  }
+
+  private static ServerConnector initHttpConnector(Properties properties, String host, Server server) {
+    ServerConnector connector = new ServerConnector(server);
+    connector.setPort(Integer.parseInt(properties.getProperty("camunda.optimize.container.port")));
+    connector.setHost(host);
+    return connector;
+  }
+
+  private static ServletHolder initJerseyServlet() {
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
         .packages("org.camunda.optimize.rest")
         .register(JacksonFeature.class);
 
-    ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-    context.setContextPath("/");
-
-    InetSocketAddress address = new InetSocketAddress(
-        properties.getProperty("camunda.optimize.container.host"),
-        Integer.parseInt(properties.getProperty("camunda.optimize.container.port")));
-    Server jettyServer = new Server(address);
-
-    jettyServer.setHandler(context);
-
     ServletHolder jerseyServlet = new ServletHolder(new
         org.glassfish.jersey.servlet.ServletContainer(application));
     jerseyServlet.setInitOrder(0);
+    return jerseyServlet;
+  }
 
-    context.addServlet(jerseyServlet, "/api/*");
-
-    //add spring
-    context.addEventListener(new ContextLoaderListener());
-    context.setInitParameter("contextConfigLocation","classpath:applicationContext.xml");
-
+  private static void addStaticResources(ServletContextHandler context) {
     //add static resources
     URL webappURL = Main.class.getClassLoader().getResource("webapp");
     if (webappURL != null) {
@@ -91,13 +142,19 @@ public class Main {
 
       context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
     }
+  }
 
-    try {
-      jettyServer.start();
-      jettyServer.join();
-    } finally {
-      jettyServer.destroy();
-    }
+  private static ServletContextHandler setupServletContextHandler(ServletHolder jerseyServlet) {
+    ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+    context.setContextPath("/");
+    context.addServlet(jerseyServlet, "/api/*");
+
+    //add spring
+    context.addEventListener(new ContextLoaderListener());
+    context.setInitParameter("contextConfigLocation","classpath:applicationContext.xml");
+
+    addStaticResources(context);
+    return context;
   }
 
   private static WebApplicationContext getContext() {
