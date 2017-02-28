@@ -1,6 +1,6 @@
 package org.camunda.tngp.msgpack.spec;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Test;
 
@@ -13,6 +13,14 @@ public class MsgPackWriterMiscTest
         assertThat(MsgPackWriter.getEncodedMapHeaderLenght(0x0f)).isEqualTo(1);
         assertThat(MsgPackWriter.getEncodedMapHeaderLenght(0xffff)).isEqualTo(3);
         assertThat(MsgPackWriter.getEncodedMapHeaderLenght(0x7fff_ffff)).isEqualTo(5);
+    }
+
+    @Test
+    public void testEncodedArayHeaderLength()
+    {
+        assertThat(MsgPackWriter.getEncodedArrayHeaderLenght(0x0f)).isEqualTo(1);
+        assertThat(MsgPackWriter.getEncodedArrayHeaderLenght(0xffff)).isEqualTo(3);
+        assertThat(MsgPackWriter.getEncodedArrayHeaderLenght(0x7fff_ffff)).isEqualTo(5);
     }
 
     @Test

@@ -1,38 +1,7 @@
 package org.camunda.tngp.msgpack.spec;
 
-import static org.agrona.BitUtil.SIZE_OF_BYTE;
-import static org.agrona.BitUtil.SIZE_OF_FLOAT;
-import static org.agrona.BitUtil.SIZE_OF_DOUBLE;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.SIZE_OF_SHORT;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.ARRAY16;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.ARRAY32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BIN16;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BIN32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BIN8;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.BYTE_ORDER;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FALSE;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FIXARRAY_PREFIX;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FIXMAP_PREFIX;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FIXSTR_PREFIX;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT16;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT64;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.INT8;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.MAP16;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.MAP32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.NIL;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.STR16;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.STR32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.STR8;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.TRUE;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT16;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT64;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.UINT8;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FLOAT32;
-import static org.camunda.tngp.msgpack.spec.MsgPackCodes.FLOAT64;
+import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -353,6 +322,26 @@ public class MsgPackWriter
     }
 
     public static int getEncodedMapHeaderLenght(int size)
+    {
+        final int length;
+
+        if (size < (1 << 4))
+        {
+            length = SIZE_OF_BYTE;
+        }
+        else if (size < (1 << 16))
+        {
+            length = SIZE_OF_BYTE + SIZE_OF_SHORT;
+        }
+        else
+        {
+            length = SIZE_OF_BYTE + SIZE_OF_INT;
+        }
+
+        return length;
+    }
+
+    public static int getEncodedArrayHeaderLenght(int size)
     {
         final int length;
 
