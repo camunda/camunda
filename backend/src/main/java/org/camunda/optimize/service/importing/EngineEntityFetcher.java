@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
@@ -103,13 +104,14 @@ public class EngineEntityFetcher {
     return entries;
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(String[] processInstanceIds) {
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {
     List<HistoricProcessInstanceDto> entries;
+    String processInstanceIdsAsCommaSeparatedString = String.join(",", processInstanceIds);
     try {
       entries = client
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
         .path(configurationService.getHistoricProcessInstanceEndpoint())
-        .queryParam("processInstanceIds", processInstanceIds)
+        .queryParam("processInstanceIds", processInstanceIdsAsCommaSeparatedString)
         .request(MediaType.APPLICATION_JSON)
         .get(new GenericType<List<HistoricProcessInstanceDto>>() {
         });

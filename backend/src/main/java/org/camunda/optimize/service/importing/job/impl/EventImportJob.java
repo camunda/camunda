@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EventImportJob extends ImportJob<EventDto>{
@@ -31,10 +32,9 @@ public class EventImportJob extends ImportJob<EventDto>{
   }
 
   private List<HistoricProcessInstanceDto> getHistoricProcessInstancesFromNewEntities() {
-    List<String> processInstanceIds =
-      newOptimizeEntities.stream().map(EventDto::getProcessInstanceId).collect(Collectors.toList());
-    String[] processInstanceIdArray = processInstanceIds.toArray(new String[processInstanceIds.size()]);
-    return engineEntityFetcher.fetchHistoricProcessInstances(processInstanceIdArray);
+    Set<String> processInstanceIds =
+      newOptimizeEntities.stream().map(EventDto::getProcessInstanceId).collect(Collectors.toSet());
+    return engineEntityFetcher.fetchHistoricProcessInstances(processInstanceIds);
   }
 
   private Map<String, HistoricProcessInstanceDto> createHistoricProcessInstanceMap(List<HistoricProcessInstanceDto> processInstances) {

@@ -21,8 +21,10 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,7 +85,9 @@ public class ImportJobTest {
     importJob.setEntitiesToImport(entitiesToImport);
 
     HistoricProcessInstanceDto procInst = createMissingAggregateInformation();
-    String[] ids = {PROCESS_INSTANCE_ID};
+//    String[] ids = {PROCESS_INSTANCE_ID};
+    Set<String> ids = new HashSet<>();
+    ids.add(PROCESS_INSTANCE_ID);
     when(engineEntityFetcher.fetchHistoricProcessInstances(ids)).thenReturn(Collections.singletonList(procInst));
 
     // when
