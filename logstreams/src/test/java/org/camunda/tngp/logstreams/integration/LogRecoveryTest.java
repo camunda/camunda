@@ -1,12 +1,5 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
@@ -20,6 +13,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 
 public class LogRecoveryTest
 {
@@ -51,21 +51,23 @@ public class LogRecoveryTest
     @After
     public void destroy() throws Exception
     {
+        temFolder.delete();
         agentRunnerService.close();
     }
 
     @Test
     public void shouldRecoverIndexFromLogStorage() throws InterruptedException, ExecutionException
     {
+
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .logSegmentSize(LOG_SEGMENT_SIZE)
-                .indexBlockSize(INDEX_BLOCK_SIZE)
-                .snapshotPolicy(pos -> false)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .logSegmentSize(LOG_SEGMENT_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> false)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
@@ -83,14 +85,14 @@ public class LogRecoveryTest
         final AtomicBoolean isLastLogEntry = new AtomicBoolean(false);
 
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, 0)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .logSegmentSize(LOG_SEGMENT_SIZE)
-                .indexBlockSize(INDEX_BLOCK_SIZE)
-                .snapshotPolicy(pos -> isLastLogEntry.getAndSet(false))
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .logSegmentSize(LOG_SEGMENT_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> isLastLogEntry.getAndSet(false))
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
@@ -114,20 +116,21 @@ public class LogRecoveryTest
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
 
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, 0)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .logSegmentSize(LOG_SEGMENT_SIZE)
-                .indexBlockSize(INDEX_BLOCK_SIZE)
-                .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .logSegmentSize(LOG_SEGMENT_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .agentRunnerService(agentRunnerService)
+            .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, 0);
         waitUntilWrittenKey(log, WORK_COUNT / 2);
 
+        // enables creation of snapshot to store half of the block indices
         isSnapshotPoint.set(true);
 
         writeLogEvents(log, WORK_COUNT / 2, MSG_SIZE, WORK_COUNT / 2);
@@ -146,14 +149,14 @@ public class LogRecoveryTest
         final AtomicInteger snapshotCount = new AtomicInteger(0);
 
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, 0)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .logSegmentSize(LOG_SEGMENT_SIZE)
-                .indexBlockSize(INDEX_BLOCK_SIZE)
-                .snapshotPolicy(pos -> (snapshotCount.incrementAndGet() % snapshotInterval) == 0)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .logSegmentSize(LOG_SEGMENT_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .snapshotPolicy(pos -> (snapshotCount.incrementAndGet() % snapshotInterval) == 0)
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
@@ -169,12 +172,12 @@ public class LogRecoveryTest
     public void shouldRecoverEventPosition() throws InterruptedException, ExecutionException
     {
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .snapshotPolicy(pos -> false)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .snapshotPolicy(pos -> false)
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
@@ -186,12 +189,12 @@ public class LogRecoveryTest
 
         // re-open the log
         final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .snapshotPolicy(pos -> false)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .snapshotPolicy(pos -> false)
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         newLog.open();
 
@@ -209,12 +212,12 @@ public class LogRecoveryTest
     public void shouldResumeLogStream() throws InterruptedException, ExecutionException
     {
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
-                .logRootPath(logPath)
-                .deleteOnClose(false)
-                .snapshotPolicy(pos -> false)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(false)
+            .snapshotPolicy(pos -> false)
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
@@ -239,12 +242,12 @@ public class LogRecoveryTest
     protected void readLogAndAssertEvents(int workCount)
     {
         final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
-                .logRootPath(logPath)
-                .deleteOnClose(true)
-                .logSegmentSize(LOG_SEGMENT_SIZE)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logPath)
+            .deleteOnClose(true)
+            .logSegmentSize(LOG_SEGMENT_SIZE)
+            .agentRunnerService(agentRunnerService)
+            .withoutLogStreamController(true)
+            .build();
 
         newLog.open();
 

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
+import org.camunda.tngp.logstreams.impl.LogStreamImpl;
 import org.camunda.tngp.logstreams.integration.util.ControllableFsLogStorage;
 import org.camunda.tngp.logstreams.integration.util.ControllableFsLogStreamBuilder;
 import org.camunda.tngp.logstreams.integration.util.Counter;
@@ -213,7 +214,7 @@ public class StreamProcessorIntegrationTest
     }
 
     @Test
-    public void shouldRecoverFromSnapshot() throws FileNotFoundException, Exception
+    public void shouldRecoverFromSnapshot() throws Exception
     {
         final AtomicBoolean isLastLogEntry = new AtomicBoolean(false);
 
@@ -411,8 +412,8 @@ public class StreamProcessorIntegrationTest
                 .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
-        final ControllableFsLogStorage controllableTargetLogStorage = (ControllableFsLogStorage) controllableTargetLogStream.getContext().getLogStorage();
-        final LogStreamController targetLogStreamController = controllableTargetLogStream.getContext().getLogStreamController();
+        final ControllableFsLogStorage controllableTargetLogStorage = (ControllableFsLogStorage) controllableTargetLogStream.getLogStorage();
+        final LogStreamController targetLogStreamController = ((LogStreamImpl) controllableTargetLogStream).getLogStreamController();
 
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
 

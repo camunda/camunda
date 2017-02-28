@@ -51,11 +51,8 @@ public class BufferedLogStreamReaderTest
 
         mockLogStorage = new MockLogStorage();
 
-        final StreamContext streamContext = new StreamContext();
-        streamContext.setLogStorage(mockLogStorage.getMock());
-        streamContext.setBlockIndex(mockBlockIndex);
-
-        when(mockLogStream.getContext()).thenReturn(streamContext);
+        when(mockLogStream.getLogStorage()).thenReturn(mockLogStorage.getMock());
+        when(mockLogStream.getLogBlockIndex()).thenReturn(mockBlockIndex);
 
         reader = new BufferedLogStreamReader();
     }

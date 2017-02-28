@@ -12,18 +12,6 @@
  */
 package org.camunda.tngp.logstreams.fs.log;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Random;
-
 import org.camunda.tngp.dispatcher.impl.PositionUtil;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
@@ -35,6 +23,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Random;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
 
 public class FsLogStorageTest
 {
@@ -65,7 +66,6 @@ public class FsLogStorageTest
 
         fsLogStorage = new FsLogStorage(fsStorageConfig);
     }
-
     @Test
     public void shouldGetConfig()
     {

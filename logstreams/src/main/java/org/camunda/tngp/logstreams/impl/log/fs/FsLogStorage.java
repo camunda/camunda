@@ -1,10 +1,11 @@
 package org.camunda.tngp.logstreams.impl.log.fs;
 
-import static java.nio.file.StandardCopyOption.*;
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
-import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment.*;
-import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.*;
-import static org.camunda.tngp.util.FileUtil.*;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
+import org.camunda.tngp.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,11 +20,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.spi.LogStorage;
-import org.camunda.tngp.util.FileUtil;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.*;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
+import static org.camunda.tngp.util.FileUtil.moveFile;
 
 public class FsLogStorage implements LogStorage
 {
@@ -33,7 +36,9 @@ public class FsLogStorage implements LogStorage
 
     protected final FsLogStorageConfiguration config;
 
-    /** Readable log segments */
+    /**
+     * Readable log segments
+     */
     protected FsLogSegments logSegments;
 
     protected FsLogSegment currentSegment;
@@ -189,8 +194,16 @@ public class FsLogStorage implements LogStorage
         }
     }
 
+    ReadResultProcessor readResultProcessor = (buffer, readResult) -> readResult;
+
     @Override
     public long read(ByteBuffer readBuffer, long addr)
+    {
+        return read(readBuffer, addr, readResultProcessor);
+    }
+
+    @Override
+    public long read(ByteBuffer readBuffer, long addr, ReadResultProcessor processor)
     {
         ensureOpenedStorage();
 
@@ -207,13 +220,17 @@ public class FsLogStorage implements LogStorage
 
             if (readResult >= 0)
             {
-                opStatus = position(segmentId, segementOffset + readResult);
+                //processing
+                final int processingResult = processor.process(readBuffer, readResult);
+                opStatus = processingResult < 0 ? processingResult
+                                                : position(segmentId, segementOffset + processingResult);
+
             }
             else if (readResult == END_OF_SEGMENT)
             {
                 final long nextAddr = position(segmentId + 1, METADATA_LENGTH);
                 // move to next segment
-                return read(readBuffer, nextAddr);
+                return read(readBuffer, nextAddr, processor);
             }
             else if (readResult == NO_DATA)
             {
@@ -377,8 +394,8 @@ public class FsLogStorage implements LogStorage
         else if (existingSegments > 0)
         {
             final File lastSegment = segments.stream()
-                    .max((s1, s2) -> Integer.compare(getSegmentId(s1), getSegmentId(s2)))
-                    .get();
+                .max((s1, s2) -> Integer.compare(getSegmentId(s1), getSegmentId(s2)))
+                .get();
 
             final int lastSegmentId = getSegmentId(lastSegment);
 

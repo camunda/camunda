@@ -59,8 +59,10 @@ public interface LogStorage
     void truncate(long addr);
 
     /**
-     * Reads bytes into the read buffer starting at addr. Returns an operation result status code
-     * which is either
+     * Naive implementation of the {@link #read(ByteBuffer, long, ReadResultProcessor)} method. Does not
+     * process the bytes which are read.
+     *
+     * Returns an operation result status code which is either
      * <ul>
      * <li>positive long representing the next address at which the next block of data can be read</li>
      * <li>{@link #OP_RESULT_INVALID_ADDR}: in case the provided address does not exist</li>
@@ -79,6 +81,31 @@ public interface LogStorage
      * @return the next address from which bytes can be read or error status code.
      */
     long read(ByteBuffer readBuffer, long addr);
+
+
+    /**
+     * Reads bytes into the read buffer starting at addr and process the read bytes with the help of the processor.
+     *
+     * Returns an operation result status code which is either
+     * <ul>
+     * <li>positive long representing the next address at which the next block of data can be read</li>
+     * <li>{@link #OP_RESULT_INVALID_ADDR}: in case the provided address does not exist</li>
+     * <li>{@link #OP_RESULT_NO_DATA}: in case no data is (yet) available at that address</li>
+     * <li>{@link #OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY}: in case the storage is block addressable and the provided
+     * buffer does not have sufficient capacity to read a whole block</li>
+     * </ul>
+     *
+     * If this method returns with a positive status code, bytes will be available between the
+     * readbuffer's {@link ByteBuffer#position()} and {@link ByteBuffer#limit()}.
+     *
+     * This method is invoked concurrently by consumer threads of the log.
+     *
+     * @param readBuffer the buffer to read into
+     * @param addr the address in the underlying storage from which bytes should be read
+     * @param processor the processor to process the buffer and the read result
+     * @return the next address from which bytes can be read or error status code.
+     */
+    long read(ByteBuffer readBuffer, long addr, ReadResultProcessor processor);
 
     /**
      * @return true if the storage is byte addressable (each byte managed in the underlying storage can be uniquely

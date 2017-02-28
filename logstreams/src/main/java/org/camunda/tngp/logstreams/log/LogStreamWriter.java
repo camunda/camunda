@@ -47,10 +47,8 @@ public class LogStreamWriter
 
     public void wrap(LogStream log)
     {
-        final StreamContext logContext = log.getContext();
-
-        this.logWriteBuffer = logContext.getWriteBuffer();
-        this.logId = logContext.getLogId();
+        this.logWriteBuffer = log.getWriteBuffer();
+        this.logId = log.getId();
 
         reset();
     }

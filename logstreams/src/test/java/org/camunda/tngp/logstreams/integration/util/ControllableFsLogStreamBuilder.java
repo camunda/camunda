@@ -12,12 +12,11 @@
  */
 package org.camunda.tngp.logstreams.integration.util;
 
-import java.io.File;
-
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
-import org.camunda.tngp.logstreams.log.StreamContext;
+
+import java.io.File;
 
 public class ControllableFsLogStreamBuilder extends FsLogStreamBuilder
 {
@@ -28,26 +27,25 @@ public class ControllableFsLogStreamBuilder extends FsLogStreamBuilder
     }
 
     @Override
-    protected void initLogStorage(StreamContext ctx)
+    public void initLogStorage()
     {
         if (logDirectory == null)
         {
-            logDirectory = logRootPath + File.separatorChar + name + File.separatorChar;
+            logDirectory = logRootPath + File.separatorChar + logName + File.separatorChar;
         }
 
         final File file = new File(logDirectory);
         file.mkdirs();
 
         final FsLogStorageConfiguration storageConfig = new FsLogStorageConfiguration(logSegmentSize,
-                logDirectory,
-                initialLogSegmentId,
-                deleteOnClose);
+            logDirectory,
+            initialLogSegmentId,
+            deleteOnClose);
 
         final FsLogStorage storage = new ControllableFsLogStorage(storageConfig);
 
         storage.open();
-
-        ctx.setLogStorage(storage);
+        logStorage = storage;
     }
 
 }

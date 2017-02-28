@@ -1,21 +1,17 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.util.concurrent.ExecutionException;
-
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.util.concurrent.ExecutionException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DeleteOnCloseTest
 {
@@ -42,10 +38,10 @@ public class DeleteOnCloseTest
         final File logFolder = tempFolder.getRoot();
 
         final LogStream log = LogStreams.createFsLogStream("foo", 0)
-                .logRootPath(logFolder.getAbsolutePath())
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logFolder.getAbsolutePath())
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 
@@ -63,11 +59,11 @@ public class DeleteOnCloseTest
         final File logFolder = tempFolder.getRoot();
 
         final LogStream log = LogStreams.createFsLogStream("foo", 0)
-                .logRootPath(logFolder.getAbsolutePath())
-                .deleteOnClose(true)
-                .agentRunnerService(agentRunnerService)
-                .writeBufferAgentRunnerService(agentRunnerService)
-                .build();
+            .logRootPath(logFolder.getAbsolutePath())
+            .deleteOnClose(true)
+            .agentRunnerService(agentRunnerService)
+            .writeBufferAgentRunnerService(agentRunnerService)
+            .build();
 
         log.open();
 

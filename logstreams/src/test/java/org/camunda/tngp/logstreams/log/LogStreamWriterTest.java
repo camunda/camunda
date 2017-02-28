@@ -12,13 +12,6 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.agrona.BitUtil.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
-
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -31,6 +24,15 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class LogStreamWriterTest
 {
@@ -64,11 +66,8 @@ public class LogStreamWriterTest
     {
         MockitoAnnotations.initMocks(this);
 
-        final StreamContext streamContext = new StreamContext();
-        streamContext.setLogId(LOG_ID);
-        streamContext.setWriteBuffer(mockWriteBuffer);
-
-        when(mockLog.getContext()).thenReturn(streamContext);
+        when(mockLog.getWriteBuffer()).thenReturn(mockWriteBuffer);
+        when(mockLog.getId()).thenReturn(LOG_ID);
 
         writer = new LogStreamWriter(mockLog);
 
@@ -106,7 +105,7 @@ public class LogStreamWriterTest
 
         final byte[] valueBuffer = new byte[2];
         writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0), valueBuffer);
-        assertThat(valueBuffer).isEqualTo(new byte[] { EVENT_VALUE[1], EVENT_VALUE[2] });
+        assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_VALUE[1], EVENT_VALUE[2]});
     }
 
     @Test
@@ -136,7 +135,7 @@ public class LogStreamWriterTest
 
         final byte[] valueBuffer = new byte[2];
         writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET, SIZE_OF_LONG), valueBuffer);
-        assertThat(valueBuffer).isEqualTo(new byte[] { EVENT_METADATA[3], EVENT_METADATA[4] });
+        assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_METADATA[3], EVENT_METADATA[4]});
     }
 
     @Test

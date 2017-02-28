@@ -12,46 +12,35 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
-import org.camunda.tngp.logstreams.spi.LogStorage;
-import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
-import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
-import org.camunda.tngp.logstreams.spi.SnapshotStorage;
-import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.logstreams.spi.SnapshotWriter;
+import org.camunda.tngp.logstreams.spi.*;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
 public class LogStreamControllerTest
 {
@@ -102,24 +91,24 @@ public class LogStreamControllerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        final StreamContext streamContext = new StreamContext();
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
 
-        streamContext.setAgentRunnerService(mockAgentRunnerService);
-        streamContext.setWriteBufferAgentRunnerService(mockConductorAgentRunnerService);
-        streamContext.setWriteBuffer(mockWriteBuffer);
-        streamContext.setLogStorage(mockLogStorage);
-        streamContext.setSnapshotStorage(mockSnapshotStorage);
-        streamContext.setSnapshotPolicy(mockSnapshotPolicy);
-        streamContext.setBlockIndex(mockBlockIndex);
-        streamContext.setMaxAppendBlockSize(MAX_APPEND_BLOCK_SIZE);
-        streamContext.setIndexBlockSize(INDEX_BLOCK_SIZE);
+        builder.agentRunnerService(mockAgentRunnerService)
+            .writeBufferAgentRunnerService(mockConductorAgentRunnerService)
+            .writeBuffer(mockWriteBuffer)
+            .logStorage(mockLogStorage)
+            .snapshotStorage(mockSnapshotStorage)
+            .snapshotPolicy(mockSnapshotPolicy)
+            .logBlockIndex(mockBlockIndex)
+            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE);
 
+        when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
         when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
         when(mockWriteBuffer.getConductorAgent()).thenReturn(mockWriteBufferConductorAgent);
-
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
-        controller = new LogStreamController(LOG_NAME, streamContext);
+        controller = new LogStreamController(builder);
 
         controller.registerFailureListener(mockFailureListener);
 
@@ -168,29 +157,30 @@ public class LogStreamControllerTest
         verify(mockConductorAgentRunnerService, times(1)).run(mockWriteBufferConductorAgent);
     }
 
-    @Test
-    public void shouldClose()
-    {
-        controller.openAsync();
-        controller.doWork();
-
-        assertThat(controller.isClosed()).isFalse();
-
-        final CompletableFuture<Void> future = controller.closeAsync();
-
-        // -> closing
-        controller.doWork();
-        // -> closed
-        controller.doWork();
-
-        assertThat(future).isCompleted();
-        assertThat(controller.isClosed()).isTrue();
-
-        verify(mockAgentRunnerService).remove(any(Agent.class));
-        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
-
-        verify(mockLogStorage).close();
-    }
+    // should not close anymore
+//    @Test
+//    public void shouldClose()
+//    {
+//        controller.openAsync();
+//        controller.doWork();
+//
+//        assertThat(controller.isClosed()).isFalse();
+//
+//        final CompletableFuture<Void> future = controller.closeAsync();
+//
+//        // -> closing
+//        controller.doWork();
+//        // -> closed
+//        controller.doWork();
+//
+//        assertThat(future).isCompleted();
+//        assertThat(controller.isClosed()).isTrue();
+//
+//        verify(mockAgentRunnerService).remove(any(Agent.class));
+//        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
+//
+//        verify(mockLogStorage).close();
+//    }
 
     @Test
     public void shouldNotCloseIfNotOpen()
@@ -204,79 +194,6 @@ public class LogStreamControllerTest
 
         assertThat(future).isCompletedExceptionally();
         assertThat(controller.isClosed()).isTrue();
-    }
-
-    @Test
-    public void shouldRecoverBlockIndexFromLogStorageWhileOpening() throws Exception
-    {
-        when(mockSnapshotStorage.getLastSnapshot(LOG_NAME)).thenReturn(null);
-
-        final CompletableFuture<Void> future = controller.openAsync();
-
-        controller.doWork();
-
-        assertThat(future).isCompleted();
-
-        verify(mockBlockIndex).recover(mockLogStorage, INDEX_BLOCK_SIZE);
-    }
-
-    @Test
-    public void shouldRecoverBlockIndexFromSnapshotWhileOpening() throws Exception
-    {
-        when(mockSnapshotStorage.getLastSnapshot(LOG_NAME)).thenReturn(mockSnapshot);
-        when(mockSnapshot.getPosition()).thenReturn(100L);
-
-        final CompletableFuture<Void> future = controller.openAsync();
-
-        controller.doWork();
-
-        assertThat(future).isCompleted();
-
-        verify(mockSnapshot).recoverFromSnapshot(mockBlockIndex);
-
-        verify(mockBlockIndex).recover(mockLogStorage, 100L, INDEX_BLOCK_SIZE);
-    }
-
-    @Test
-    public void shouldNotOpenIfFailToRecoverBlockIndexFromSnapshot() throws Exception
-    {
-        when(mockSnapshotStorage.getLastSnapshot(LOG_NAME)).thenReturn(mockSnapshot);
-        when(mockSnapshot.getPosition()).thenReturn(100L);
-
-        doThrow(new RuntimeException()).when(mockSnapshot).recoverFromSnapshot(any(SnapshotSupport.class));
-
-        final CompletableFuture<Void> future = controller.openAsync();
-
-        controller.doWork();
-
-        assertThat(future).isCompletedExceptionally();
-        assertThat(controller.isOpen()).isFalse();
-    }
-
-    @Test
-    public void shouldCreateSnapshot() throws Exception
-    {
-        when(mockWriteBufferSubscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean())).thenAnswer(peekBlock(LOG_POSITION, 64));
-        when(mockWriteBufferSubscription.getPosition()).thenReturn(LOG_POSITION);
-        when(mockLogStorage.append(any(ByteBuffer.class))).thenReturn(LOG_ADDRESS);
-
-        when(mockSnapshotPolicy.apply(LOG_POSITION)).thenReturn(true);
-
-        controller.openAsync();
-        // -> opening
-        controller.doWork();
-        // -> open
-        controller.doWork();
-        // -> snapshotting
-        controller.doWork();
-
-        assertThat(controller.isOpen()).isTrue();
-
-        verify(mockLogStorage).flush();
-
-        verify(mockSnapshotStorage).createSnapshot(LOG_NAME, LOG_POSITION);
-        verify(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
-        verify(mockSnapshotWriter).commit();
     }
 
     @Test
@@ -302,33 +219,6 @@ public class LogStreamControllerTest
     }
 
     @Test
-    public void shouldRefuseSnapshotAndInvokeFailureListenerIfFailToWriteSnapshot() throws Exception
-    {
-        when(mockWriteBufferSubscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean())).thenAnswer(peekBlock(LOG_POSITION, 64));
-        when(mockLogStorage.append(any(ByteBuffer.class))).thenReturn(LOG_ADDRESS);
-
-        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-
-        doThrow(new RuntimeException("expected exception")).when(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
-
-        controller.openAsync();
-        // -> opening
-        controller.doWork();
-        // -> open
-        controller.doWork();
-        // -> snapshotting
-        controller.doWork();
-        // -> failing
-        controller.doWork();
-
-        assertThat(controller.isFailed()).isTrue();
-
-        verify(mockSnapshotWriter).abort();
-
-        verify(mockFailureListener).onFailed(LOG_POSITION);
-    }
-
-    @Test
     public void shouldWriteBlockFromBufferToLogStorage() throws Exception
     {
         when(mockWriteBufferSubscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean())).thenAnswer(peekBlock(LOG_POSITION, 64));
@@ -343,45 +233,6 @@ public class LogStreamControllerTest
         assertThat(result).isEqualTo(1);
 
         verify(mockLogStorage).append(writeBuffer);
-    }
-
-    @Test
-    public void shouldAddBlockToIndexIfLimitIsReached() throws Exception
-    {
-        when(mockWriteBufferSubscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean())).thenAnswer(peekBlock(LOG_POSITION, INDEX_BLOCK_SIZE));
-        when(mockLogStorage.append(any(ByteBuffer.class))).thenReturn(LOG_ADDRESS);
-
-        controller.openAsync();
-        // -> opening
-        controller.doWork();
-        // -> open
-        controller.doWork();
-
-        verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
-    }
-
-    @Test
-    public void shouldNotAddBlockToIndexIfLimitIsNotReached() throws Exception
-    {
-        when(mockWriteBufferSubscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean()))
-            .thenAnswer(peekBlock(LOG_POSITION, INDEX_BLOCK_SIZE / 2))
-            .thenAnswer(peekBlock(LOG_POSITION + 1, INDEX_BLOCK_SIZE / 2))
-            .thenAnswer(peekBlock(LOG_POSITION + 2, INDEX_BLOCK_SIZE / 2));
-
-        when(mockLogStorage.append(any(ByteBuffer.class))).thenReturn(LOG_ADDRESS, LOG_ADDRESS + 1, LOG_ADDRESS + 2);
-
-        controller.openAsync();
-        controller.doWork();
-        // peek 1. block
-        controller.doWork();
-        // peek 2. block
-        controller.doWork();
-        // peek 3. block
-        controller.doWork();
-
-        verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
-        verify(mockBlockIndex).addBlock(LOG_POSITION + 2, LOG_ADDRESS + 2);
-        verify(mockBlockIndex, never()).addBlock(LOG_POSITION + 1, LOG_ADDRESS + 1);
     }
 
     @Test

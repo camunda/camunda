@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader.LoggedEventImpl;
+import org.camunda.tngp.logstreams.log.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.util.StreamUtil;
