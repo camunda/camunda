@@ -13,8 +13,7 @@ public class TopicSubscription extends UnpackedObject
 
     public TopicSubscription()
     {
-        objectValue
-            .declareProperty(idProp)
+        this.declareProperty(idProp)
             .declareProperty(topicIdProp);
     }
 

@@ -1,121 +1,28 @@
 package org.camunda.tngp.broker.clustering.raft.entry;
 
-import static org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder.*;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
-import org.camunda.tngp.broker.clustering.raft.Member;
-import org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder;
-import org.camunda.tngp.clustering.raft.ConfigurationEntryDecoder.MembersDecoder;
-import org.camunda.tngp.clustering.raft.ConfigurationEntryEncoder;
-import org.camunda.tngp.clustering.raft.ConfigurationEntryEncoder.MembersEncoder;
-import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
-import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.util.buffer.BufferReader;
-import org.camunda.tngp.util.buffer.BufferWriter;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.ArrayProperty;
+import org.camunda.tngp.broker.util.msgpack.value.ArrayValue;
+import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
+import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
-public class ConfigurationEntry implements BufferReader, BufferWriter
+public class ConfigurationEntry extends UnpackedObject
 {
-    protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final ConfigurationEntryDecoder bodyDecoder = new ConfigurationEntryDecoder();
+    protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final ConfigurationEntryEncoder bodyEncoder = new ConfigurationEntryEncoder();
+    protected ArrayProperty<ConfiguredMember> membersProp = new ArrayProperty<>("members",
+            new ArrayValue<>(new ConfiguredMember()),
+            new ArrayValue<>(new ConfiguredMember(), EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()));
 
-    protected List<Member> members = new CopyOnWriteArrayList<>();
-
-    public List<Member> members()
+    public ConfigurationEntry()
     {
-        return members;
+        declareProperty(membersProp);
     }
 
-    public ConfigurationEntry members(final List<Member> members)
+    public ArrayValueIterator<ConfiguredMember> members()
     {
-        this.members.clear();
-        this.members.addAll(members);
-        return this;
+        return membersProp;
     }
-
-    @Override
-    public int getLength()
-    {
-        final int size = members != null ? members.size() : 0;
-
-        int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
-        length += sbeHeaderSize() + (sbeBlockLength() + hostHeaderLength()) * size;
-
-        for (int i = 0; i < size; i++)
-        {
-            final Member member = members.get(i);
-            length += member.endpoint().hostLength();
-        }
-
-        return length;
-    }
-
-    @Override
-    public void write(MutableDirectBuffer buffer, int offset)
-    {
-        headerEncoder.wrap(buffer, offset)
-            .blockLength(bodyEncoder.sbeBlockLength())
-            .templateId(bodyEncoder.sbeTemplateId())
-            .schemaId(bodyEncoder.sbeSchemaId())
-            .version(bodyEncoder.sbeSchemaVersion());
-
-        offset += headerEncoder.encodedLength();
-
-        bodyEncoder.wrap(buffer, offset);
-
-        final int size = members != null ? members.size() : 0;
-
-        final MembersEncoder encoder = bodyEncoder.membersCount(size);
-        for (int i = 0; i < size; i++)
-        {
-            final Member member = members.get(i);
-            final Endpoint endpoint = member.endpoint();
-
-            encoder.next()
-                .port(endpoint.port())
-                .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
-        }
-    }
-
-    @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
-    {
-        headerDecoder.wrap(buffer, offset);
-        offset += headerDecoder.encodedLength();
-
-        bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-
-        members.clear();
-
-        final Iterator<MembersDecoder> iterator = bodyDecoder.members().iterator();
-        while (iterator.hasNext())
-        {
-            final MembersDecoder decoder = iterator.next();
-
-            final Member member = new Member();
-
-            member.endpoint().port(decoder.port());
-
-            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
-            final int hostLength = decoder.hostLength();
-            member.endpoint().hostLength(hostLength);
-            decoder.getHost(endpointBuffer, 0, hostLength);
-
-            members.add(member);
-        }
-    }
-
-    public void reset()
-    {
-        members.clear();
-    }
-
 }

@@ -9,12 +9,17 @@ public class MinimalPOJO extends UnpackedObject
 
     public MinimalPOJO()
     {
-        objectValue.declareProperty(longProp);
+        this.declareProperty(longProp);
     }
 
     public long getLongProp()
     {
         return longProp.getValue();
+    }
+
+    public void setLongProp(final long value)
+    {
+        this.longProp.setValue(value);
     }
 
 }

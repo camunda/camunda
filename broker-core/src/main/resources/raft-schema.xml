@@ -107,16 +107,4 @@
         <data name="host" id="5" type="varDataEncoding"/>
     </sbe:message>
 
-    <!-- ENTRY DESCRIPTOR: 200 - ... -->
-
-    <sbe:message name="InitializeEntry" id="200">
-    </sbe:message>
-
-    <sbe:message name="ConfigurationEntry" id="201">
-        <group name="members" id="0" dimensionType="groupSizeEncoding">
-            <field name="port" id="2" type="uint16"/>
-            <data name="host" id="3" type="varDataEncoding"/>
-        </group>
-    </sbe:message>
-
 </sbe:messageSchema>

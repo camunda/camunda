@@ -8,12 +8,10 @@ import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-public class UnpackedObject implements Recyclable, BufferReader, BufferWriter
+public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter
 {
     protected final MsgPackReader reader = new MsgPackReader();
     protected final MsgPackWriter writer = new MsgPackWriter();
-
-    protected final ObjectValue objectValue = new ObjectValue();
 
     public void wrap(DirectBuffer buff)
     {
@@ -25,7 +23,7 @@ public class UnpackedObject implements Recyclable, BufferReader, BufferWriter
         reader.wrap(buff, offset, length);
         try
         {
-            objectValue.read(reader);
+            read(reader);
         }
         catch (Exception e)
         {
@@ -36,31 +34,14 @@ public class UnpackedObject implements Recyclable, BufferReader, BufferWriter
     @Override
     public int getLength()
     {
-        return objectValue.getEncodedLength();
+        return getEncodedLength();
     }
 
     @Override
     public void write(MutableDirectBuffer buffer, int offset)
     {
         writer.wrap(buffer, offset);
-        objectValue.write(writer);
-    }
-
-    @Override
-    public void reset()
-    {
-        objectValue.reset();
-    }
-
-    public ObjectValue getObjectValue()
-    {
-        return objectValue;
-    }
-
-    @Override
-    public String toString()
-    {
-        return objectValue.toString();
+        write(writer);
     }
 
 }

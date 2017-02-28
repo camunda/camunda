@@ -27,6 +27,25 @@ public class MsgPackUtil
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    public static String toString(Object[] arr)
+    {
+        final StringBuilder buf = new StringBuilder("[");
+
+        if (arr.length > 0)
+        {
+            buf.append(arr[0].toString());
+            for (int i = 1; i < arr.length; i++)
+            {
+                buf.append(", ");
+                buf.append(arr[i].toString());
+            }
+        }
+
+        buf.append("]");
+
+        return buf.toString();
+    }
+
     public static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
@@ -73,6 +92,14 @@ public class MsgPackUtil
                     valueMap.put(key, value);
                 }
                 return valueMap;
+            case ARRAY:
+                final int size = token.getSize();
+                final Object[] arr = new Object[size];
+                for (int i = 0; i < size; i++)
+                {
+                    arr[i] = deserializeElement(reader);
+                }
+                return toString(arr);
             default:
                 throw new RuntimeException("Not implemented yet");
         }

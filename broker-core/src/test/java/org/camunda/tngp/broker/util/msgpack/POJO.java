@@ -20,7 +20,7 @@ public class POJO extends UnpackedObject
 
     public POJO()
     {
-        objectValue.declareProperty(enumProp)
+        this.declareProperty(enumProp)
             .declareProperty(longProp)
             .declareProperty(intProp)
             .declareProperty(stringProp)

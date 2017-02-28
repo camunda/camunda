@@ -25,7 +25,7 @@ public class TaskEvent extends UnpackedObject
 
     public TaskEvent()
     {
-        objectValue.declareProperty(eventProp)
+        this.declareProperty(eventProp)
             .declareProperty(lockTimeProp)
             .declareProperty(lockOwnerProp)
             .declareProperty(typeProp)

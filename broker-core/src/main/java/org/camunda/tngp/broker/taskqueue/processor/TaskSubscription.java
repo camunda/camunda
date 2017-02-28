@@ -35,8 +35,7 @@ public class TaskSubscription extends UnpackedObject
 
     public TaskSubscription()
     {
-        objectValue
-            .declareProperty(idProp)
+        this.declareProperty(idProp)
             .declareProperty(topicIdProp)
             .declareProperty(taskTypeProp)
             .declareProperty(lockDurationProp)
