@@ -50,7 +50,8 @@ public class ReplicationController
     public ReplicationController(final RaftContext raftContext, final Member member)
     {
         this.replicationStateMachine = new StateMachineAgent<>(StateMachine
-                .<ReplicationContext> builder(s -> {
+                .<ReplicationContext> builder(s ->
+                {
                     replicationContext = new ReplicationContext(s, raftContext, member);
                     return replicationContext;
                 })

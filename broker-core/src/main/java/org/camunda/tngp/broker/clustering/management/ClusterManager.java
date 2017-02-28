@@ -1,8 +1,17 @@
 package org.camunda.tngp.broker.clustering.management;
 
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.clientChannelManagerName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftContextServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.subscriptionServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.transportConnectionPoolName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,7 +120,8 @@ public class ClusterManager implements Agent
     {
         final Peer copy = new Peer();
         copy.wrap(peer);
-        managementCmdQueue.add(() -> {
+        managementCmdQueue.add(() ->
+        {
 
             for (int i = 0; i < rafts.size(); i++)
             {

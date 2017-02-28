@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.RAFT_EVENT;
 
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
@@ -71,7 +71,8 @@ public class AppendController
     public AppendController(final RaftContext raftContext)
     {
         this.appendStateMachine = new StateMachineAgent<>(StateMachine
-                .<AppendContext> builder(s -> {
+                .<AppendContext> builder(s ->
+                {
                     appendContext = new AppendContext(s, raftContext);
                     return appendContext;
                 })
