@@ -1,7 +1,7 @@
 import {DESTROY_EVENT} from './events';
 
-export function createReferenceComponent(target) {
-  return ({name}) => {
+export function createReferenceComponent(target = {}) {
+  const Reference =  ({name}) => {
     return (node, eventsBus) => {
       target[name] = node;
 
@@ -12,4 +12,8 @@ export function createReferenceComponent(target) {
       return [];
     };
   };
+
+  Reference.getNode = (name) => target[name];
+
+  return Reference;
 }

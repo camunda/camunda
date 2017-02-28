@@ -1,36 +1,231 @@
 import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
+import {mountTemplate, createMockComponent, triggerEvent, selectByText} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {CreateFilter, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/CreateFilter';
 
 describe('<CreateFilter>', () => {
   let node;
+  let update;
   let Dropdown;
   let Modal;
   let createModal;
+  let Socket;
+  let DropdownItem;
+  let createStartDateFilter;
+  let onNextUpdate;
+  let onFilterAdded;
 
   beforeEach(() => {
-    Dropdown = createMockComponent('Dropdown');
+    Dropdown = createMockComponent('Dropdown', true);
     __set__('Dropdown', Dropdown);
 
-    Modal = createMockComponent('Modal');
+    Modal = createMockComponent('Modal', true);
+    Modal.open = sinon.spy();
+    Modal.close = sinon.spy();
     createModal = sinon.stub().returns(Modal);
     __set__('createModal', createModal);
 
-    ({node} = mountTemplate(<CreateFilter />));
+    Socket = createMockComponent('Socket', true);
+    __set__('Socket', Socket);
+
+    DropdownItem = createMockComponent('DropdownItem', true);
+    __set__('DropdownItem', DropdownItem);
+
+    createStartDateFilter = sinon.spy();
+    __set__('createStartDateFilter', createStartDateFilter);
+
+    onNextUpdate = sinon.stub().callsArg(0);
+    __set__('onNextUpdate', onNextUpdate);
+
+    onFilterAdded = sinon.spy();
+
+    ({node, update} = mountTemplate(<CreateFilter onFilterAdded={onFilterAdded}/>));
   });
 
   afterEach(() => {
     __ResetDependency__('Dropdown');
     __ResetDependency__('createModal');
+    __ResetDependency__('Socket');
+    __ResetDependency__('DropdownItem');
+    __ResetDependency__('createStartDateFilter');
+    __ResetDependency__('onNextUpdate');
   });
 
-  it('should contain a dropdown', () => {
-    expect(node.textContent).to.contain('Dropdown');
+  describe('Dropdown', () => {
+    it('should be included', () => {
+      expect(node.textContent).to.contain(Dropdown.text);
+    });
+
+    it('should contain label socket', () => {
+      const labelNode = Socket.getChildrenNode({name: 'label'});
+
+      expect(
+        Dropdown.getChildTemplate({attributes: {name: 'label'}, text: 'Socket'})
+      ).to.exist;
+      expect(labelNode).to.contain.text('+');
+      expect(labelNode.querySelector('.caret')).to.exist;
+    });
+
+    it('should contain list socket', () => {
+      const listNode = Socket.getChildrenNode({name: 'list'});
+
+      expect(
+        Dropdown.getChildTemplate({attributes: {name: 'list'}, text: 'Socket'})
+      ).to.exist;
+      expect(listNode).to.contain.text('Start Date');
+    });
+
+    it('should contain DropdownItem that opens modal', () => {
+      expect(DropdownItem.getAttribute('listener')).to.equal(Modal.open);
+    });
   });
 
-  it('should contain a modal', () => {
-    expect(node.textContent).to.contain('Modal');
+  describe('Modal', () => {
+    it('should be included', () => {
+      expect(node.textContent).to.contain(Modal.text);
+    });
+
+    describe('head socket', () => {
+      let headNode;
+
+      beforeEach(() => {
+        headNode = Socket.getChildrenNode({name: 'head'});
+      });
+
+      it('should be included', () => {
+        expect(
+          Modal.getChildTemplate({attributes: {name: 'head'}, text: 'Socket'})
+        ).to.exist;
+      });
+
+      it('should contain button that closes modal', () => {
+        const button = headNode.querySelector('button.close');
+
+        expect(button).to.exist;
+
+        triggerEvent({
+          node: button,
+          eventName: 'click'
+        });
+
+        expect(Modal.close.calledOnce).to.eql(true);
+      });
+
+      it('should contain title', () => {
+        expect(headNode.querySelector('h4.modal-title')).to.exist;
+      });
+    });
+
+    describe('body socket', () => {
+      let bodyNode;
+      let startDate;
+      let endDate;
+
+      beforeEach(() => {
+        bodyNode = Socket.getChildrenNode({name: 'body'});
+        startDate = bodyNode.querySelector('input[type="text"].form-control.start');
+        endDate = bodyNode.querySelector('input[type="text"].form-control.end');
+
+        update({});
+      });
+
+      it('should be included', () => {
+        expect(
+          Modal.getChildTemplate({attributes: {name: 'body'}, text: 'Socket'})
+        ).to.exist;
+      });
+
+      it('should contain start date field', () => {
+        expect(startDate).to.exist;
+      });
+
+      it('should contain end date field', () => {
+        expect(endDate).to.exist;
+      });
+
+      it('should be able to use date button to set values of date fields',  () => {
+        startDate.value = '2015-04-25';
+        endDate.value = '2025-04-25';
+
+        const todayButton = selectByText(
+          bodyNode.querySelectorAll('button'),
+          'Today'
+        )[0];
+        const today = new Date();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+        const todayStr = `${today.getFullYear()}-${month < 10 ? '0' + month :  month}-${day < 10 ? '0' + day : day}`;
+
+        triggerEvent({
+          node: todayButton,
+          eventName: 'click'
+        });
+
+        expect(startDate.value).to.eql(todayStr);
+        expect(endDate.value).to.eql(todayStr);
+      });
+    });
+
+    describe('foot socket', () => {
+      let footNode;
+
+      beforeEach(() => {
+        footNode = Socket.getChildrenNode({name: 'foot'});
+      });
+
+      it('should be included', () => {
+        expect(
+          Modal.getChildTemplate({attributes: {name: 'foot'}, text: 'Socket'})
+        ).to.exist;
+      });
+
+      it('should have close button that closes modal', () => {
+        const closeBtn = selectByText(
+          footNode.querySelectorAll('button'),
+          'Abort'
+        )[0];
+
+        triggerEvent({
+          node: closeBtn,
+          eventName: 'click'
+        });
+
+        expect(closeBtn).to.exist;
+        expect(Modal.close.calledOnce).to.eql(true, 'expected modal to be closed');
+      });
+
+      it('should have close button that closes modal', () => {
+        const closeBtn = selectByText(
+          footNode.querySelectorAll('button'),
+          'Abort'
+        )[0];
+
+        triggerEvent({
+          node: closeBtn,
+          eventName: 'click'
+        });
+
+        expect(closeBtn).to.exist;
+        expect(Modal.close.calledOnce).to.eql(true, 'expected modal to be closed');
+      });
+
+      it('should have create filter button that closes modal', () => {
+        const createBtn = selectByText(
+          footNode.querySelectorAll('button'),
+          'Create Filter'
+        )[0];
+
+        triggerEvent({
+          node: createBtn,
+          eventName: 'click'
+        });
+
+        expect(createBtn).to.exist;
+        expect(Modal.close.calledOnce).to.eql(true, 'expected modal to be closed');
+        expect(createStartDateFilter.calledOnce).to.eql(true, 'expected date filter to be created');
+        expect(onFilterAdded.calledOnce).to.eql(true, 'expected onFilterAdded callback to be called');
+      });
+    });
   });
 });
