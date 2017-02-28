@@ -1,7 +1,10 @@
 package org.camunda.optimize.dto.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Date;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HistoricProcessInstanceDto implements EngineDto {
 
   private String id;
