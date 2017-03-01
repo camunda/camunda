@@ -1,6 +1,6 @@
 const {expect} = require('chai');
 
-describe.only('Gateway Analysis', () => {
+describe('Gateway Analysis', () => {
   afterEach(() => {
     browser.localStorage('DELETE');
   });
