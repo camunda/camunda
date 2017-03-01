@@ -29,7 +29,7 @@ describe('<Statistics>', () => {
   });
 
   it('should have the open class when endEvent and gateway are set', () => {
-    update({endEvent: 'a', gateway: 'b'});
+    update({selection: {endEvent: 'a', gateway: 'b'}});
 
     const container = node.querySelector('.statisticsContainer');
 

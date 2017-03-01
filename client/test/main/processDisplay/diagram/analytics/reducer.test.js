@@ -22,7 +22,7 @@ describe('Analytics reducer', () => {
   });
 
   it('should set the element id', () => {
-    const {gateway} = reducer(undefined, createSetElementAction(elementId, elementType));
+    const {selection: {gateway}} = reducer(undefined, createSetElementAction(elementId, elementType));
 
     expect(gateway).to.eql(elementId);
   });
@@ -34,14 +34,14 @@ describe('Analytics reducer', () => {
   });
 
   it('should leave the mode and unset selected elements when the process definition is switched', () => {
-    const {mode, gateway, endEvent} = reducer({
+    const {mode, selection: {gateway, endEvent}} = reducer({
       mode: GATEWAY_ANALYSIS_MODE,
       gateway: 'g1',
       endEvent: 'e2'
     }, {type: SELECT_PROCESS_DEFINITION});
 
     expect(mode).to.be.null;
-    expect(gateway).to.be.null;
-    expect(endEvent).to.be.null;
+    expect(gateway).to.be.undefined;
+    expect(endEvent).to.be.undefined;
   });
 });

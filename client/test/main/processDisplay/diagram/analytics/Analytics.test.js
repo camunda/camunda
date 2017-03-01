@@ -51,7 +51,8 @@ describe('<Analytics>', () => {
           act3: 3
         }
       },
-      mode: null
+      mode: null,
+      selection: {}
     }, diagramRendered: true};
 
     gatewayAnalysisState = {state: {
@@ -63,7 +64,9 @@ describe('<Analytics>', () => {
         }
       },
       mode: GATEWAY_ANALYSIS_MODE,
-      endEvent: 'act1'
+      selection: {
+        endEvent: 'act1'
+      }
     }, diagramRendered: true};
 
     $document = {
@@ -166,13 +169,13 @@ describe('<Analytics>', () => {
 
   it('should leave gateway analysis mode when esc is pressed', () => {
     update(gatewayAnalysisState);
-    $document.addEventListener.lastCall.args[1]({keyCode: 27});
+    $document.addEventListener.lastCall.args[1]({key: 'Escape'});
 
     expect(leaveGatewayAnalysisMode.called).to.eql(true);
   });
 
   it('should not leave gateway analysis mode when a gateway is already selected', () => {
-    gatewayAnalysisState.state.gateway = 'act3';
+    gatewayAnalysisState.state.selection.gateway = 'act3';
     update(gatewayAnalysisState);
     $document.addEventListener.lastCall.args[1]({keyCode: 27});
 
@@ -194,7 +197,7 @@ describe('<Analytics>', () => {
   });
 
   it('should highlight the selected elements with a different class', () => {
-    gatewayAnalysisState.state.gateway = 'act3';
+    gatewayAnalysisState.state.selection.gateway = 'act3';
     update(gatewayAnalysisState);
 
     expect(viewer.addMarker.calledWith('act3', 'highlight_selected')).to.eql(true);
