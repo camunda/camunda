@@ -89,9 +89,9 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
   });
 
   const keydownListener = ({key}) => {
-    const {mode, gateway} = State.getState();
+    const {mode, selection} = State.getState();
 
-    if (key === 'Escape' && mode === GATEWAY_ANALYSIS_MODE && !gateway) {
+    if (key === 'Escape' && mode === GATEWAY_ANALYSIS_MODE && !selection.gateway) {
       leaveGatewayAnalysisMode();
     }
   };
