@@ -11,10 +11,10 @@ export const reducer = (state = {}, action) => {
       mode: GATEWAY_ANALYSIS_MODE
     };
   } else if (action.type === SET_ELEMENT) {
-    const newState = {
-      ...state,
-      [action.elementType]: action.id
-    };
+    const newState = {...state};
+
+    newState.selection = {...state.selection};
+    newState.selection[action.elementType] = action.id;
 
     if (!action.id) {
       // is anything is unset, we need to leave the gateway analysis mode
@@ -25,8 +25,7 @@ export const reducer = (state = {}, action) => {
     return {
       ...state,
       mode: null,
-      gateway: null,
-      endEvent: null
+      selection: {}
     };
   }
   return state;

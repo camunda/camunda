@@ -130,8 +130,9 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
         }
       });
 
-      highlight(state.endEvent, 'highlight_selected');
-      highlight(state.gateway, 'highlight_selected');
+      Object.values(state.selection).forEach(element => {
+        highlight(element, 'highlight_selected');
+      });
     }
 
     runUpdate(templateUpdate, state);

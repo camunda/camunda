@@ -10,7 +10,7 @@ export const Statistics = withSelector(() => {
     </button>
   </div>;
 
-  function isSelectionComplete({endEvent, gateway}) {
-    return endEvent && gateway;
+  function isSelectionComplete({selection}) {
+    return selection && selection.endEvent && selection.gateway;
   }
 });
