@@ -11,7 +11,7 @@
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.2.3.v20140905</jetty.version>
+    <jetty.version>9.2.21.v20170120</jetty.version>
     <jersy.version>2.25</jersy.version>
   </properties>
 
