@@ -104,7 +104,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     cleanAndVerify();
   }
 
-  private void cleanAndVerify() {
+  public void cleanAndVerify() {
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
   }

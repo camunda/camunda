@@ -1,10 +1,6 @@
 package org.camunda.optimize.service.es.schema;
 
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.service.es.schema.type.EventType;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
-import org.camunda.optimize.service.es.schema.type.UsersType;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -13,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,26 +26,10 @@ public class ElasticSearchSchemaManager {
   @Autowired
   private ConfigurationService configurationService;
 
-  @Autowired
-  private EventType eventType;
+  private List<TypeMappingCreator> mappings = new LinkedList<>();
 
-  @Autowired
-  private ProcessDefinitionType processDefinitionType;
-
-  @Autowired
-  private ProcessDefinitionXmlType processDefinitionXmlType;
-
-  @Autowired
-  private UsersType usersType;
-
-  List<TypeMappingCreator> mappings = new LinkedList<>();
-
-  @PostConstruct
-  public void init() {
-    mappings.add(eventType);
-    mappings.add(processDefinitionType);
-    mappings.add(processDefinitionXmlType);
-    mappings.add(usersType);
+  public void addMapping(TypeMappingCreator mapping) {
+    mappings.add(mapping);
   }
 
   public boolean schemaAlreadyExists() {
@@ -62,7 +41,7 @@ public class ElasticSearchSchemaManager {
     return response.isExists();
   }
 
-  public void createMappings() {
+  public void updateMappings() {
     for (TypeMappingCreator mapping : mappings) {
       createSingleSchema(mapping.getType(), mapping.getSource());
     }
