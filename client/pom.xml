@@ -11,6 +11,9 @@
   <artifactId>client</artifactId>
   <packaging>pom</packaging>
 
+  <properties>
+    <skip.fe.build>false</skip.fe.build>
+  </properties>
 
   <build>
     <plugins>
@@ -36,6 +39,13 @@
 
   <profiles>
     <profile>
+      <id>skip.fe.build</id>
+      <properties>
+        <skip.fe.build>true</skip.fe.build>
+      </properties>
+    </profile>
+    
+    <profile>
       <id>platform-linux</id>
       <activation>
         <os>
@@ -57,6 +67,7 @@
                       <arg value="${project.basedir}" />
                     </exec>
                   </tasks>
+                  <skip>${skip.fe.build}</skip>
                 </configuration>
                 <goals>
                   <goal>run</goal>
