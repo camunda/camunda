@@ -14,7 +14,6 @@ package org.camunda.tngp.broker.system.executor;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +29,6 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
     protected static final String NAME = "scheduled-executor";
 
     protected final List<ScheduledCommandImpl> scheduledCommands = new ArrayList<>();
-    protected final List<ScheduledCommandImpl> reScheduledCommands = new ArrayList<>();
 
     protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected final Consumer<Runnable> cmdConsumer = Runnable::run;
@@ -85,28 +83,32 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
 
         final long now = ClockUtil.getCurrentTimeInMillis();
 
-        final Iterator<ScheduledCommandImpl> iterator = scheduledCommands.iterator();
-        while (iterator.hasNext() && isRunning.get())
+        int i = 0;
+
+        while (i < scheduledCommands.size() && isRunning.get())
         {
-            final ScheduledCommandImpl scheduledCommand = iterator.next();
+            final ScheduledCommandImpl scheduledCommand = scheduledCommands.get(i);
 
             if (scheduledCommand.getDueDate() <= now)
             {
                 workCount += 1;
 
-                iterator.remove();
-
                 final boolean reSchedule = executeCommand(scheduledCommand);
 
                 if (reSchedule)
                 {
-                    reScheduledCommands.add(scheduledCommand);
+                    i += 1;
+                }
+                else
+                {
+                    scheduledCommands.remove(i);
                 }
             }
+            else
+            {
+                i++;
+            }
         }
-
-        scheduledCommands.addAll(reScheduledCommands);
-        reScheduledCommands.clear();
 
         return workCount;
     }
