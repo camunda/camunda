@@ -133,7 +133,7 @@ public class ImportIT extends AbstractJerseyTest {
         .path(configurationService.getProcessDefinitionEndpoint() + "/" + definitions.get(0).getId() + "/" + "heatmap")
         .request()
         .get(HeatMapResponseDto.class);
-    assertThat(heatmap.getPiCount(), is(1));
+    assertThat(heatmap.getPiCount(), is(1L));
   }
 
   private void deployAndStartSimpleServiceTask() {
