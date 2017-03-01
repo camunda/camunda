@@ -1,7 +1,12 @@
 package org.camunda.optimize.service.importing;
 
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -17,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.core.GenericType;
+import java.util.List;
 import java.util.Map.Entry;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -28,6 +35,8 @@ import static org.hamcrest.Matchers.greaterThan;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
 public class ImportIT extends AbstractJerseyTest {
+  public static final String SUB_PROCESS_ID = "testProcess";
+  public static final String CALL_ACTIVITY = "callActivity";
 
   @Autowired
   @Rule
@@ -83,6 +92,48 @@ public class ImportIT extends AbstractJerseyTest {
 
     //then
     allEntriesInElasticsearchHaveAllData(configurationService.getEventType());
+  }
+
+  @Test
+  public void importWithMi() throws Exception {
+    String key = "testMIProcess";
+    BpmnModelInstance subProcess = Bpmn.createExecutableProcess(SUB_PROCESS_ID)
+        .startEvent()
+          .serviceTask()
+            .camundaExpression("${true}")
+        .endEvent()
+        .done();
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    engineRule.deployProcess(subProcess, client);
+
+    BpmnModelInstance model = Bpmn.createExecutableProcess(key)
+        .name("MultiInstance")
+          .startEvent()
+          .parallelGateway()
+            .endEvent("end1")
+          .moveToLastGateway()
+            .callActivity(CALL_ACTIVITY)
+            .calledElement(SUB_PROCESS_ID)
+            .multiInstance()
+              .cardinality("2")
+            .multiInstanceDone()
+          .endEvent("miEnd")
+        .done();
+    engineRule.deployAndStartProcess(model);
+
+    importScheduler.scheduleProcessEngineImport();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    List<ProcessDefinitionOptimizeDto> definitions = target()
+        .path(configurationService.getProcessDefinitionEndpoint())
+        .request()
+        .get(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
+    assertThat(definitions.size(),is(2));
+    HeatMapResponseDto heatmap = target()
+        .path(configurationService.getProcessDefinitionEndpoint() + "/" + definitions.get(0).getId() + "/" + "heatmap")
+        .request()
+        .get(HeatMapResponseDto.class);
+    assertThat(heatmap.getPiCount(), is(1));
   }
 
   private void deployAndStartSimpleServiceTask() {

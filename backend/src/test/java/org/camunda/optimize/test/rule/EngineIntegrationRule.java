@@ -98,7 +98,7 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
-  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
+  public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process);
     DeploymentDto deployment = new DeploymentDto();
