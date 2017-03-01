@@ -173,16 +173,6 @@ public class ClientApiMessageHandler
                 .tryWrite();
 
             isHandled = eventPosition >= 0;
-
-            if (!isHandled)
-            {
-                isHandled = errorResponseWriter
-                        .metadata(eventMetadata)
-                        .errorCode(ErrorCode.REQUEST_WRITE_FAILURE)
-                        .errorMessage("Failed to write execute command request.")
-                        .failedRequest(buffer, messageOffset, messageLength)
-                        .tryWriteResponseOrLogFailure();
-            }
         }
         else
         {
@@ -227,15 +217,6 @@ public class ClientApiMessageHandler
             isHandled = true;
         }
 
-        if (!isHandled)
-        {
-            isHandled = errorResponseWriter
-                .metadata(eventMetadata)
-                .errorCode(ErrorCode.REQUEST_WRITE_FAILURE)
-                .errorMessage("Failed to write control message request.")
-                .failedRequest(buffer, messageOffset, messageLength)
-                .tryWriteResponseOrLogFailure();
-        }
         return isHandled;
     }
 
