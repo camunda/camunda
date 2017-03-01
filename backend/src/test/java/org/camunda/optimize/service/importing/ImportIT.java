@@ -15,6 +15,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -95,6 +96,7 @@ public class ImportIT extends AbstractJerseyTest {
   }
 
   @Test
+  @Ignore
   public void importWithMi() throws Exception {
     String key = "testMIProcess";
     BpmnModelInstance subProcess = Bpmn.createExecutableProcess(SUB_PROCESS_ID)
