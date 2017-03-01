@@ -2,12 +2,19 @@ import {getHeatmap, hoverElement,
         removeHeatmapOverlay, addHeatmapOverlay} from './service';
 import {withSelector, jsx} from 'view-utils';
 import {isLoaded} from 'utils/loading';
-import {Diagram} from 'widgets/Diagram';
+import {createDiagram} from 'widgets/Diagram';
 import {createAnalyticsRenderer} from './analytics';
 
-export const HeatmapDiagram = withSelector(() =>
-  <Diagram createOverlaysRenderer={[createHeatmapRenderer, createAnalyticsRenderer]} />
-);
+export const createHeatmapDiagram = () => {
+  const Diagram = createDiagram();
+  const HeatmapDiagram = withSelector(() =>
+    <Diagram createOverlaysRenderer={[createHeatmapRenderer, createAnalyticsRenderer]} />
+  );
+
+  HeatmapDiagram.getViewer = Diagram.getViewer;
+
+  return HeatmapDiagram;
+};
 
 function createHeatmapRenderer({viewer}) {
   let heatmap;

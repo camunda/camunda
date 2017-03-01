@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {Diagram, __set__, __ResetDependency__} from 'widgets/Diagram';
+import {createDiagram, __set__, __ResetDependency__} from 'widgets/Diagram';
 
 describe('<Diagram>', () => {
   const diagramXml = 'diagram-xml';
@@ -17,6 +17,7 @@ describe('<Diagram>', () => {
   let update;
   let renderOverlays;
   let createOverlaysRenderer;
+  let Diagram;
 
   beforeEach(() => {
     initialState = {
@@ -71,6 +72,8 @@ describe('<Diagram>', () => {
     renderOverlays = sinon.spy();
     createOverlaysRenderer = sinon.stub().returns(renderOverlays);
 
+    Diagram = createDiagram();
+
     ({update} = mountTemplate(
       <Diagram selector="display" createOverlaysRenderer={createOverlaysRenderer} />
     ));
@@ -78,6 +81,11 @@ describe('<Diagram>', () => {
 
   afterEach(() => {
     __ResetDependency__('Viewer');
+  });
+
+  it('should provide access to the bpmn-viewer instance', () => {
+    expect(Diagram.getViewer()).to.exist;
+    expect(Diagram.getViewer().constructor.name).to.eql('Viewer');
   });
 
   describe('overlays', () => {
@@ -103,6 +111,8 @@ describe('<Diagram>', () => {
       const createOverlaysRenderer1 = sinon.stub().returns(renderOverlays1);
       const renderOverlays2 = sinon.spy();
       const createOverlaysRenderer2 = sinon.stub().returns(renderOverlays2);
+
+      const Diagram = createDiagram();
 
       ({update} = mountTemplate(
         <Diagram selector="display" createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} />

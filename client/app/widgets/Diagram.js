@@ -2,61 +2,78 @@ import {jsx, updateOnlyWhenStateChanges} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
 
-export function Diagram({createOverlaysRenderer}) {
-  return <div className="diagram__holder">
-    <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />
-  </div>;
+export function createDiagram() {
+  const BpmnViewer = createBpmnViewer();
+  const Diagram = ({createOverlaysRenderer}) => {
+    return <div className="diagram__holder">
+      <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />
+    </div>;
+  };
+
+  Diagram.getViewer = BpmnViewer.getViewer;
+
+  return Diagram;
 }
 
-function BpmnViewer({createOverlaysRenderer}) {
-  return (node, eventsBus) => {
-    const viewer = new Viewer({
-      container: node
-    });
+function createBpmnViewer() {
+  let viewer;
 
-    if (typeof createOverlaysRenderer === 'function') {
-      createOverlaysRenderer = [createOverlaysRenderer];
-    }
+  const BpmnViewer = ({createOverlaysRenderer}) => {
+    return (node, eventsBus) => {
+      viewer = new Viewer({
+        container: node
+      });
 
-    const renderOverlays = createOverlaysRenderer.map(createFct => createFct({
-      viewer,
-      node,
-      eventsBus
-    }));
-    let diagramRendered = false;
-
-    const update = (display) => {
-      if (isLoaded(display.diagram)) {
-        renderDiagram(display);
-      } else {
-        diagramRendered = false;
+      if (typeof createOverlaysRenderer === 'function') {
+        createOverlaysRenderer = [createOverlaysRenderer];
       }
 
-      renderOverlays.forEach(fct => fct({
-        state: display,
-        diagramRendered
+      const renderOverlays = createOverlaysRenderer.map(createFct => createFct({
+        viewer,
+        node,
+        eventsBus
       }));
-    };
+      let diagramRendered = false;
 
-    function renderDiagram(display) {
-      if (!diagramRendered) {
-        viewer.importXML(display.diagram.data, (err) => {
-          if (err) {
-            node.innerHTML = `Could not load diagram, got error ${err}`;
-          }
-          diagramRendered = true;
-          resetZoom(viewer);
+      const update = (display) => {
+        if (isLoaded(display.diagram)) {
+          renderDiagram(display);
+        } else {
+          diagramRendered = false;
+        }
 
-          renderOverlays.forEach(fct => fct({
-            state: display,
-            diagramRendered
-          }));
-        });
+        renderOverlays.forEach(fct => fct({
+          state: display,
+          diagramRendered
+        }));
+      };
+
+      function renderDiagram(display) {
+        if (!diagramRendered) {
+          viewer.importXML(display.diagram.data, (err) => {
+            if (err) {
+              node.innerHTML = `Could not load diagram, got error ${err}`;
+            }
+            diagramRendered = true;
+            resetZoom(viewer);
+
+            renderOverlays.forEach(fct => fct({
+              state: display,
+              diagramRendered
+            }));
+          });
+        }
       }
-    }
 
-    return updateOnlyWhenStateChanges(update);
+      return updateOnlyWhenStateChanges(update);
+    };
   };
+
+  BpmnViewer.getViewer = () => {
+    return viewer;
+  };
+
+  return BpmnViewer;
 }
 
 function resetZoom(viewer) {

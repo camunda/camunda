@@ -1,5 +1,5 @@
 import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
+import {mountTemplate, triggerEvent, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {Statistics, __set__, __ResetDependency__} from 'main/processDisplay/statistics/Statistics';
@@ -8,8 +8,35 @@ describe('<Statistics>', () => {
   let node;
   let update;
   let leaveGatewayAnalysisMode;
+  let unopenedState;
+  let openedState;
+  let StatisticChart;
 
   beforeEach(() => {
+    unopenedState = {
+      display: {
+        selection: {}
+      },
+      statistics: {
+        correlation: {}
+      }
+    };
+
+    openedState = {
+      display: {
+        selection: {
+          endEvent: 'a',
+          gateway: 'b'
+        }
+      },
+      statistics: {
+        correlation: {}
+      }
+    };
+
+    StatisticChart = createMockComponent('StatisticChart');
+    __set__('StatisticChart', StatisticChart);
+
     leaveGatewayAnalysisMode = sinon.spy();
     __set__('leaveGatewayAnalysisMode', leaveGatewayAnalysisMode);
 
@@ -18,10 +45,11 @@ describe('<Statistics>', () => {
 
   afterEach(() => {
     __ResetDependency__('leaveGatewayAnalysisMode');
+    __ResetDependency__('StatisticChart');
   });
 
   it('should not have the open class if gateway is not set', () => {
-    update({});
+    update(unopenedState);
 
     const container = node.querySelector('.statisticsContainer');
 
@@ -29,7 +57,7 @@ describe('<Statistics>', () => {
   });
 
   it('should have the open class when endEvent and gateway are set', () => {
-    update({selection: {endEvent: 'a', gateway: 'b'}});
+    update(openedState);
 
     const container = node.querySelector('.statisticsContainer');
 
@@ -37,7 +65,7 @@ describe('<Statistics>', () => {
   });
 
   it('should leave gateway analysis mode when close button is clicked', () => {
-    update({});
+    update(openedState);
 
     triggerEvent({
       node: node,
@@ -46,5 +74,11 @@ describe('<Statistics>', () => {
     });
 
     expect(leaveGatewayAnalysisMode.called).to.eql(true);
+  });
+
+  it('should contain StatisticCharts', () => {
+    update(openedState);
+
+    expect(node.textContent).to.contain('StatisticChart');
   });
 });

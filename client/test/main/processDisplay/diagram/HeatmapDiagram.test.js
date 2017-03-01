@@ -2,7 +2,7 @@ import {jsx} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {HeatmapDiagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/HeatmapDiagram';
+import {createHeatmapDiagram, __set__, __ResetDependency__} from 'main/processDisplay/diagram/HeatmapDiagram';
 
 describe('<HeatmapDiagram>', () => {
   const diagramXml = 'diagram-xml';
@@ -18,7 +18,9 @@ describe('<HeatmapDiagram>', () => {
   let canvas;
   let eventBus;
   let update;
+  let createDiagram;
   let Diagram;
+  let HeatmapDiagram;
 
   beforeEach(() => {
     loadedDiagramState = {
@@ -76,7 +78,11 @@ describe('<HeatmapDiagram>', () => {
     };
 
     Diagram = createMockComponent('Diagram');
-    __set__('Diagram', Diagram);
+    Diagram.getViewer = sinon.spy();
+    createDiagram = sinon.stub().returns(Diagram);
+    __set__('createDiagram', createDiagram);
+
+    HeatmapDiagram = createHeatmapDiagram();
 
     mountTemplate(<HeatmapDiagram selector="display" />);
 
@@ -88,6 +94,7 @@ describe('<HeatmapDiagram>', () => {
     __ResetDependency__('removeHeatmapOverlay');
     __ResetDependency__('addHeatmapOverlay');
     __ResetDependency__('Diagram');
+    __ResetDependency__('createDiagram');
   });
 
   describe('heatmap processing', () => {
@@ -116,6 +123,12 @@ describe('<HeatmapDiagram>', () => {
       });
 
       expect(getHeatmap.called).to.eql(false);
+    });
+
+    it('should give access to the viewer instance from the Diagram', () => {
+      HeatmapDiagram.getViewer();
+
+      expect(Diagram.getViewer.calledOnce).to.eql(true);
     });
   });
 

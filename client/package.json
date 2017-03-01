@@ -75,6 +75,8 @@
     "babel-polyfill": "^6.20.0",
     "bootstrap": "3.3.6",
     "bpmn-js": "^0.18.3",
+    "d3": "^4.7.0",
+    "d3-tip": "^0.7.1",
     "heatmap.js": "^2.0.5",
     "jquery": "2.2.4",
     "lodash.isequal": "^4.4.0",

@@ -11,6 +11,7 @@ describe('<Analytics>', () => {
   let update;
   let setEndEvent;
   let setGateway;
+  let resetStatisticData;
   let leaveGatewayAnalysisMode;
   let createReferenceComponent;
   let $document;
@@ -25,23 +26,23 @@ describe('<Analytics>', () => {
   const GATEWAY_ANALYSIS_MODE = 'GATEWAY_ANALYSIS_MODE';
 
   beforeEach(() => {
-    diagramElement = {
+    diagramElement = {businessObject: {
       type: 'bpmn:Task',
       name: 'Some Task',
       id: 'act2'
-    };
+    }};
 
-    endEvent = {
+    endEvent = {businessObject: {
       type: 'bpmn:EndEvent',
       name: 'Some End Event',
       id: 'act1'
-    };
+    }};
 
-    gateway = {
+    gateway = {businessObject: {
       type: 'bpmn:Gateway',
       name: 'Some Gateway',
       id: 'act3'
-    };
+    }};
 
     initialState = {state: {
       heatmap: {
@@ -89,6 +90,9 @@ describe('<Analytics>', () => {
     setGateway = sinon.spy();
     __set__('setGateway', setGateway);
 
+    resetStatisticData = sinon.spy();
+    __set__('resetStatisticData', resetStatisticData);
+
     leaveGatewayAnalysisMode = sinon.spy();
     __set__('leaveGatewayAnalysisMode', leaveGatewayAnalysisMode);
 
@@ -129,6 +133,7 @@ describe('<Analytics>', () => {
     __ResetDependency__('GATEWAY_ANALYSIS_MODE');
     __ResetDependency__('$document');
     __ResetDependency__('createReferenceComponent');
+    __ResetDependency__('resetStatisticData');
   });
 
   it('should do nothing when a non end event is clicked', () => {
@@ -158,6 +163,13 @@ describe('<Analytics>', () => {
     viewer.on.lastCall.args[1]({element: gateway});
 
     expect(setGateway.calledWith(gateway)).to.eql(true);
+  });
+
+  it('should reset potentially existing statistics data when a gateway is selected', () => {
+    update(gatewayAnalysisState);
+    viewer.on.lastCall.args[1]({element: gateway});
+
+    expect(resetStatisticData.called).to.eql(true);
   });
 
   it('should not set a gateway outside of gateway analysis mode', () => {

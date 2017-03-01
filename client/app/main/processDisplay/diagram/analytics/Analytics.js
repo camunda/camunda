@@ -3,6 +3,7 @@ import {createModal} from 'widgets';
 import {enterGatewayAnalysisMode, setEndEvent, unsetEndEvent, setGateway, leaveGatewayAnalysisMode} from './service';
 import {GATEWAY_ANALYSIS_MODE} from './reducer';
 import {isBpmnType} from 'utils';
+import {resetStatisticData} from 'main/processDisplay/statistics';
 
 export function createAnalyticsRenderer({viewer, node, eventsBus}) {
   const canvas = viewer.get('canvas');
@@ -80,7 +81,7 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
       if (isBpmnType(element, 'EndEvent')) {
         setEndEvent(element);
 
-        updateModalContent(element, data);
+        updateModalContent(element.businessObject, data);
         Modal.open();
       }
     }
@@ -91,6 +92,7 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
 
     if (mode === GATEWAY_ANALYSIS_MODE) {
       if (isBpmnType(element, 'Gateway')) {
+        resetStatisticData();
         setGateway(element);
       }
     }

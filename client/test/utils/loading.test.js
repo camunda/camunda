@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {addLoading, createLoadingActionFunction, createResultActionFunction,
+import {addLoading, createLoadingActionFunction, createResultActionFunction, createResetActionFunction,
         INITIAL_STATE, LOADING_STATE, LOADED_STATE} from 'utils/loading';
 import sinon from 'sinon';
 
@@ -37,6 +37,13 @@ describe('loading', () => {
     expect(action.result).to.eql(DATA);
   });
 
+  it('creates a function to create a reset action', () => {
+    const fct = createResetActionFunction(LOADING_PROPERTY);
+    const action = fct(DATA);
+
+    expect(action.type).to.be.defined;
+  });
+
   it('updates the state when processing a loading action', () => {
     const state = reducer(undefined, createLoadingActionFunction(LOADING_PROPERTY)());
 
@@ -48,6 +55,12 @@ describe('loading', () => {
 
     expect(state[LOADING_PROPERTY].state).to.eql(LOADED_STATE);
     expect(state[LOADING_PROPERTY].data).to.eql(DATA);
+  });
+
+  it('updates the state when processing a reset action', () => {
+    const state = reducer({[LOADING_PROPERTY]: {state: LOADED_STATE, data: 'ABC'}}, createResetActionFunction(LOADING_PROPERTY)());
+
+    expect(state[LOADING_PROPERTY].state).to.eql(INITIAL_STATE);
   });
 
   it('calls the original reducer', () => {

@@ -2,9 +2,13 @@ import {dispatchAction} from 'view-utils';
 import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
+import {getFilterQuery} from 'utils';
 
-export function loadData(criteria) {
-  const params = getParams(criteria);
+export function loadData({definition, query}) {
+  const params = {
+    processDefinitionId: definition,
+    filter: getFilterQuery(query)
+  };
 
   if (areParamsValid(params)) {
     loadDiagram(params);
@@ -14,34 +18,6 @@ export function loadData(criteria) {
 
 function areParamsValid({processDefinitionId}) {
   return !!processDefinitionId;
-}
-
-function getParams({definition, query}) {
-  const dates = query.reduce((dates, entry) => {
-    return dates.concat([
-      {
-        type: 'start_date',
-        operator: '>=',
-        value : entry.data.start,
-        lowerBoundary : true,
-        upperBoundary : true
-      },
-      {
-        type: 'start_date',
-        operator: '<=',
-        value : entry.data.end,
-        lowerBoundary : true,
-        upperBoundary : true
-      }
-    ]);
-  }, []);
-
-  return {
-    processDefinitionId: definition,
-    filter: {
-      dates
-    }
-  };
 }
 
 export function loadHeatmap(filter) {

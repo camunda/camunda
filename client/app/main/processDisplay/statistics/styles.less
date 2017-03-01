@@ -1,13 +1,74 @@
 .statisticsContainer {
   height: 0;
-  transition: height 0.5s;
 
   &.open {
-    height: 300px;
+    height: 350px;
     border-top-style: double;
+
+    .chart-container {
+      display: inline-block;
+    }
   }
 
   .close {
     outline: none;
+  }
+
+  .chart-container {
+    display: none;
+    width: 600px;
+    height: 100%;
+    vertical-align: top;
+
+    .chart-header {
+      height: 50px;
+      line-height: 50px;
+      text-align: center;
+    }
+
+    .chart {
+      height: ~"calc(100% - 50px)";
+
+      .bar {
+        fill: steelblue;
+      }
+
+      .axis-x path {
+        display: none;
+      }
+
+      .axis-y .tick line {
+        stroke: rgba(0,0,0,0.2);
+      }
+    }
+  }
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+  z-index: 3;
+
+  /* Creates a small triangle extender for the tooltip */
+  &:after {
+    box-sizing: border-box;
+    display: inline;
+    font-size: 10px;
+    width: 100%;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.8);
+    content: "\25BC";
+    position: absolute;
+    text-align: center;
+  }
+
+  &.n:after {
+    margin: -1px 0 0 0;
+    top: 100%;
+    left: 0;
   }
 }

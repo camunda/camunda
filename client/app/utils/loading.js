@@ -5,10 +5,12 @@ export const LOADED_STATE = 'LOADED';
 export function addLoading(next, ...properties) {
   const loadTypes = getLoadTypes(properties);
   const loadedTypes = getLoadedTypes(properties);
+  const resetTypes = getResetTypes(properties);
 
   return (state = {}, action) => {
     const loadIdx = loadTypes.indexOf(action.type);
     const loadedIdx = loadedTypes.indexOf(action.type);
+    const resetIdx = resetTypes.indexOf(action.type);
 
     const newState = {...state};
 
@@ -33,6 +35,13 @@ export function addLoading(next, ...properties) {
           data: action.result
         }
       };
+    } else if (resetIdx !== -1) {
+      return {
+        ...newState,
+        [properties[resetIdx]]: {
+          state: INITIAL_STATE
+        }
+      };
     }
 
     return next(newState, action);
@@ -42,8 +51,19 @@ export function addLoading(next, ...properties) {
 function getLoadTypes(properties) {
   return properties.map(prop => 'LOAD_' + prop.toUpperCase());
 }
+function getResetTypes(properties) {
+  return properties.map(prop => 'RESET_' + prop.toUpperCase());
+}
 function getLoadedTypes(properties) {
   return properties.map(prop => 'LOADED_' + prop.toUpperCase());
+}
+
+export function createResetActionFunction(name) {
+  return () => {
+    return {
+      type: 'RESET_' + name.toUpperCase()
+    };
+  };
 }
 
 export function createLoadingActionFunction(name) {

@@ -7,6 +7,7 @@ import {INITIAL_STATE, LOADED_STATE, LOADING_STATE} from 'utils/loading';
 describe('<ProcessDisplay>', () => {
   let Controls;
   let Diagram;
+  let Statistics;
   let loadData;
   let node;
   let update;
@@ -18,6 +19,9 @@ describe('<ProcessDisplay>', () => {
     Diagram = createMockComponent('Diagram');
     __set__('HeatmapDiagram', Diagram);
 
+    Statistics = createMockComponent('Statistics');
+    __set__('Statistics', Statistics);
+
     loadData = 'load-data';
     __set__('loadData', loadData);
 
@@ -26,6 +30,7 @@ describe('<ProcessDisplay>', () => {
 
   afterEach(() => {
     __ResetDependency__('Controls');
+    __ResetDependency__('Statistics');
     __ResetDependency__('HeatmapDiagram');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');
