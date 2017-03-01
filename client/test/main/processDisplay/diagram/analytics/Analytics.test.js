@@ -177,7 +177,7 @@ describe('<Analytics>', () => {
   it('should not leave gateway analysis mode when a gateway is already selected', () => {
     gatewayAnalysisState.state.selection.gateway = 'act3';
     update(gatewayAnalysisState);
-    $document.addEventListener.lastCall.args[1]({keyCode: 27});
+    $document.addEventListener.lastCall.args[1]({key: 'Escape'});
 
     expect(leaveGatewayAnalysisMode.called).to.eql(false);
   });
