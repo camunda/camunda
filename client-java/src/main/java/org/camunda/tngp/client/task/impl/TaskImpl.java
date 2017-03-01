@@ -17,6 +17,7 @@ public class TaskImpl implements Task
     protected final String type;
     protected final long lockExpirationTime;
     protected final int lockOwner;
+    protected final int retries;
     protected final MsgPackField payload = new MsgPackField();
     protected Map<String, String> headers;
 
@@ -37,6 +38,7 @@ public class TaskImpl implements Task
         this.type = taskEvent.getType();
         this.lockExpirationTime = taskEvent.getLockTime();
         this.lockOwner = subscription.getLockOwner();
+        this.retries = taskEvent.getRetries();
         this.headers = taskEvent.getHeaders();
         this.payload.setMsgPack(taskEvent.getPayload());
 
@@ -65,6 +67,7 @@ public class TaskImpl implements Task
             .taskKey(key)
             .taskType(type)
             .lockOwner(lockOwner)
+            .retries(retries - 1)
             .payload(payload.getAsJson())
             .headers(headers)
             .failure(e)

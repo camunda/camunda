@@ -55,6 +55,7 @@ public class TaskTopicSubscriptionTest
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
+                .retries(2)
                 .execute();
 
         final RecordingTaskPOJOEventHandler handler = new RecordingTaskPOJOEventHandler();
@@ -72,6 +73,7 @@ public class TaskTopicSubscriptionTest
         assertThat(event1.getHeaders()).containsExactly(entry("key", "value"));
         assertThat(event1.getLockExpirationTime()).isNotNull(); // => https://github.com/camunda-tngp/camunda-tngp/issues/158
         assertThat(event1.getLockOwner()).isNotNull();
+        assertThat(event1.getRetries()).isEqualTo(2);
         assertThat(event1.getType()).isEqualTo("foo");
         assertThat(event1.getPayload()).isEqualTo("{}");
 

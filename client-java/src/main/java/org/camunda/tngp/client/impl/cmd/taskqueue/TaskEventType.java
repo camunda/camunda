@@ -31,6 +31,10 @@ public enum TaskEventType
 
     FAIL,
     FAILED,
-    FAIL_REJECTED;
+    FAIL_REJECTED,
+
+    UPDATE_RETRIES,
+    RETRIES_UPDATED,
+    UPDATE_RETRIES_REJECTED;
 
 }

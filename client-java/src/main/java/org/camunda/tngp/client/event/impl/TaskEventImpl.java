@@ -13,6 +13,7 @@ public class TaskEventImpl implements TaskEvent
     protected Map<String, String> headers;
     protected Long lockTime;
     protected Integer lockOwner;
+    protected Integer retries;
     protected String type;
     protected final MsgPackField payload = new MsgPackField();
 
@@ -87,6 +88,16 @@ public class TaskEventImpl implements TaskEvent
     public void setPayload(byte[] msgPack)
     {
         this.payload.setMsgPack(msgPack);
+    }
+
+    public Integer getRetries()
+    {
+        return retries;
+    }
+
+    public void setRetries(Integer retries)
+    {
+        this.retries = retries;
     }
 
 }

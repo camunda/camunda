@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
-import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
+import org.camunda.tngp.client.cmd.CreateTaskCmd;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
@@ -61,7 +61,7 @@ public class NonBlockingTaskCreator
 
                     if (inFlightRequests.size() < maxConcurrentRequests)
                     {
-                        final CreateAsyncTaskCmd cmd = asyncTaskService
+                        final CreateTaskCmd cmd = asyncTaskService
                                 .create()
                                 .taskType("greeting")
                                 .payload(payload);

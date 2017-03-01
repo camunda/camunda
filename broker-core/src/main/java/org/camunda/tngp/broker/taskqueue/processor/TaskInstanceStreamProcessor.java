@@ -43,6 +43,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final CompleteTaskProcessor completeTaskProcessor = new CompleteTaskProcessor();
     protected final FailTaskProcessor failTaskProcessor = new FailTaskProcessor();
     protected final ExpireLockTaskProcessor expireLockTaskProcessor = new ExpireLockTaskProcessor();
+    protected final UpdateRetriesTaskProcessor updateRetriesTaskProcessor = new UpdateRetriesTaskProcessor();
 
     protected final Long2BytesHashIndex taskIndex;
     protected final HashIndexSnapshotSupport<Long2BytesHashIndex> indexSnapshotSupport;
@@ -114,6 +115,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                 break;
             case EXPIRE_LOCK:
                 eventProcessor = expireLockTaskProcessor;
+                break;
+            case UPDATE_RETRIES:
+                eventProcessor = updateRetriesTaskProcessor;
                 break;
 
             default:
@@ -383,6 +387,37 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
                 indexWriter.write(eventKey, TaskEventType.LOCK_EXPIRED, lockOwner, -1);
             }
+        }
+    }
+
+    class UpdateRetriesTaskProcessor implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            indexAccessor.wrapIndexKey(eventKey);
+            final int typeId = indexAccessor.getTypeId();
+
+            if (typeId == TaskEventType.FAILED.id())
+            {
+                taskEvent.setEventType(TaskEventType.RETRIES_UPDATED);
+            }
+            else
+            {
+                taskEvent.setEventType(TaskEventType.UPDATE_RETRIES_REJECTED);
+            }
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            return writeResponse();
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeEventToLogStream(writer);
         }
     }
 

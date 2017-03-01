@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.mockito.Mockito.mock;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,9 +23,9 @@ import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
-import org.camunda.tngp.client.impl.cmd.taskqueue.FailTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
+import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateTaskRetriesCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
@@ -42,7 +41,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class FailTaskCmdTest
+public class UpdateTaskRetriesCmdTest
 {
     protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
@@ -54,7 +53,7 @@ public class FailTaskCmdTest
 
     private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
 
-    private FailTaskCmdImpl failTaskCommand;
+    private UpdateTaskRetriesCmdImpl command;
     private ObjectMapper objectMapper;
 
     @Rule
@@ -67,7 +66,7 @@ public class FailTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        failTaskCommand = new FailTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
+        command = new UpdateTaskRetriesCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -76,15 +75,18 @@ public class FailTaskCmdTest
     public void shouldWriteRequest() throws JsonParseException, JsonMappingException, IOException
     {
         // given
-        failTaskCommand
+        final Map<String, String> headers = new HashMap<>();
+        headers.put("a", "b");
+        headers.put("c", "d");
+
+        command
             .taskType("foo")
             .retries(2)
-            .addHeader("a", "b")
-            .addHeader("c", "d")
+            .headers(headers)
             .payload("{ \"bar\" : 4 }");
 
         // when
-        failTaskCommand.getRequestWriter().write(writeBuffer, 0);
+        command.getRequestWriter().write(writeBuffer, 0);
 
         // then
         headerDecoder.wrap(writeBuffer, 0);
@@ -104,7 +106,7 @@ public class FailTaskCmdTest
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
-        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.FAIL);
+        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.UPDATE_RETRIES);
         assertThat(taskEvent.getType()).isEqualTo("foo");
         assertThat(taskEvent.getRetries()).isEqualTo(2);
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
@@ -112,40 +114,9 @@ public class FailTaskCmdTest
     }
 
     @Test
-    public void shouldWriteRequestWithPayloadAsStream() throws JsonParseException, JsonMappingException, IOException
-    {
-        // given
-        final byte[] payload = "{ \"bar\" : 4 }".getBytes();
-
-        final Map<String, String> headers = new HashMap<>();
-        headers.put("a", "b");
-        headers.put("c", "d");
-
-        failTaskCommand
-            .taskType("foo")
-            .retries(2)
-            .headers(headers)
-            .payload(new ByteArrayInputStream(payload));
-
-        // when
-        failTaskCommand.getRequestWriter().write(writeBuffer, 0);
-
-        // then
-        requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
-
-        final byte[] command = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(command, 0, command.length);
-
-        final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
-
-        assertThat(taskEvent.getHeaders()).hasSize(2).containsAllEntriesOf(headers);
-        assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack(new ByteArrayInputStream(payload)));
-    }
-
-    @Test
     public void shouldReadSuccessfulResponse() throws JsonProcessingException
     {
-        final ClientResponseHandler<Long> responseHandler = failTaskCommand.getResponseHandler();
+        final ClientResponseHandler<Long> responseHandler = command.getResponseHandler();
 
         assertThat(responseHandler.getResponseSchemaId()).isEqualTo(responseEncoder.sbeSchemaId());
         assertThat(responseHandler.getResponseTemplateId()).isEqualTo(responseEncoder.sbeTemplateId());
@@ -154,7 +125,7 @@ public class FailTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.FAILED);
+        taskEvent.setEvent(TaskEventType.RETRIES_UPDATED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -173,7 +144,7 @@ public class FailTaskCmdTest
     @Test
     public void shouldReadFailedResponse() throws JsonProcessingException
     {
-        final ClientResponseHandler<Long> responseHandler = failTaskCommand.getResponseHandler();
+        final ClientResponseHandler<Long> responseHandler = command.getResponseHandler();
 
         assertThat(responseHandler.getResponseSchemaId()).isEqualTo(responseEncoder.sbeSchemaId());
         assertThat(responseHandler.getResponseTemplateId()).isEqualTo(responseEncoder.sbeTemplateId());
@@ -182,7 +153,7 @@ public class FailTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.FAIL_REJECTED);
+        taskEvent.setEvent(TaskEventType.UPDATE_RETRIES_REJECTED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -201,57 +172,40 @@ public class FailTaskCmdTest
     @Test
     public void shouldBeNotValidIfTaskKeyIsNotSet()
     {
-        failTaskCommand
+        command
             .taskType("foo")
-            .lockOwner(3)
             .retries(2);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task key must be greater than or equal to 0");
 
-        failTaskCommand.validate();
-    }
-
-    @Test
-    public void shouldBeNotValidIfLockOwnerIsNotSet()
-    {
-        failTaskCommand
-            .taskKey(2L)
-            .taskType("foo")
-            .retries(2);
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("lock owner must be greater than or equal to 0");
-
-        failTaskCommand.validate();
+        command.validate();
     }
 
     @Test
     public void shouldBeNotValidIfTaskTypeIsNotSet()
     {
-        failTaskCommand
+        command
             .taskKey(2L)
-            .lockOwner(3)
             .retries(2);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task type must not be null");
 
-        failTaskCommand.validate();
+        command.validate();
     }
 
     @Test
     public void shouldBeNotValidIRetriesAreNotSet()
     {
-        failTaskCommand
+        command
             .taskKey(2L)
-            .lockOwner(3)
             .taskType("foo");
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("retries must be greater than or equal to 0");
 
-        failTaskCommand.validate();
+        command.validate();
     }
 
 }

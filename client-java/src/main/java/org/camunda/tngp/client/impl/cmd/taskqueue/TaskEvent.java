@@ -19,6 +19,7 @@ public class TaskEvent
     private TaskEventType event;
     private long lockTime;
     private int lockOwner;
+    private int retries;
     private String type;
     private Map<String, String> headers;
     private byte[] payload;
@@ -88,9 +89,20 @@ public class TaskEvent
         event = null;
         lockTime = -1L;
         lockOwner = -1;
+        retries = -1;
         type = null;
         headers = null;
         payload = null;
+    }
+
+    public int getRetries()
+    {
+        return retries;
+    }
+
+    public void setRetries(int retries)
+    {
+        this.retries = retries;
     }
 
 }

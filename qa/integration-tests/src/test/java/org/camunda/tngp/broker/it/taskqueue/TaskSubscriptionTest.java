@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
+import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.retries;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
@@ -14,9 +16,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
@@ -44,10 +48,13 @@ public class TaskSubscriptionTest
         return properties;
     });
 
+    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule, 0);
+
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
-        .around(clientRule);
+        .around(clientRule)
+        .around(recordingTaskEventHandler);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -125,6 +132,7 @@ public class TaskSubscriptionTest
 
         // then
         assertThat(result).isEqualTo(taskKey);
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
     }
 
     @Test
@@ -206,9 +214,10 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .execute();
 
-        Thread.sleep(1000L);
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
 
         assertThat(taskHandler.handledTasks).isEmpty();
+        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK))).isFalse();
     }
 
     @Test
@@ -217,7 +226,7 @@ public class TaskSubscriptionTest
         // given
         final TngpClient client = clientRule.getClient();
 
-        final int numTasks = 100;
+        final int numTasks = 50;
         for (int i = 0; i < numTasks; i++)
         {
             client.taskTopic(0).create()
@@ -243,7 +252,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldMarkTaskAsFailedAsRetryIfHandlerThrowsException()
+    public void shouldMarkTaskAsFailedAndRetryIfHandlerThrowsException()
     {
         // given
         final TngpClient client = clientRule.getClient();
@@ -273,6 +282,82 @@ public class TaskSubscriptionTest
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
 
         assertThat(taskHandler.getHandledTasks()).extracting("key").contains(taskKey, taskKey);
+        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED))).isTrue();
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+    }
+
+    @Test
+    public void shouldNotLockTaskIfRetriesAreExhausted()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final TaskTopicClient topicClient = client.taskTopic(0);
+
+        topicClient.create()
+            .taskType("foo")
+            .retries(1)
+            .execute();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(
+            t ->
+            {
+                throw new RuntimeException("expected failure");
+            });
+
+        // when
+        topicClient.newTaskSubscription()
+            .handler(taskHandler)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(1)
+            .open();
+
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED).and(retries(0))));
+
+        assertThat(taskHandler.getHandledTasks()).hasSize(1);
+    }
+
+    @Test
+    public void shouldUpdateTaskRetries()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final TaskTopicClient topicClient = client.taskTopic(0);
+
+        final Long taskKey = topicClient.create()
+            .taskType("foo")
+            .retries(1)
+            .execute();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(
+            t ->
+            {
+                throw new RuntimeException("expected failure");
+            },
+            Task::complete);
+
+        topicClient.newTaskSubscription()
+            .handler(taskHandler)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(1)
+            .open();
+
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.FAILED).and(retries(0))));
+
+        // when
+        final Long result = topicClient.updateRetries()
+            .taskKey(taskKey)
+            .taskType("foo")
+            .retries(2)
+            .execute();
+
+        // then
+        assertThat(result).isEqualTo(taskKey);
+
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
     }
 
     @Test
@@ -309,6 +394,8 @@ public class TaskSubscriptionTest
         assertThat(taskHandler.handledTasks)
             .hasSize(2)
             .extracting("key").contains(taskKey, taskKey);
+
+        assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK_EXPIRED))).isTrue();
     }
 
 

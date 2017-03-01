@@ -30,6 +30,11 @@ public interface TaskEvent
     Integer getLockOwner();
 
     /**
+     * @return remaining retries
+     */
+    Integer getRetries();
+
+    /**
      * @return the time until when the task is locked
      *   and can be exclusively processed by this client.
      */

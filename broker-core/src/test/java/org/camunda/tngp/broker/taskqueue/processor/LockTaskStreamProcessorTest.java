@@ -49,7 +49,7 @@ public class LockTaskStreamProcessorTest
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(TaskEvent.class, TASK_EVENT);
+    public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(TaskEvent.class, event -> event.setRetries(3), TASK_EVENT, 1L);
 
     @Before
     public void setup() throws InterruptedException, ExecutionException
@@ -145,6 +145,7 @@ public class LockTaskStreamProcessorTest
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAILED)
+                .setRetries(2)
                 .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
 
         // then
@@ -158,6 +159,48 @@ public class LockTaskStreamProcessorTest
         assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+    }
+
+    @Test
+    public void shouldLockTaskWithUpdatedRetries()
+    {
+        // given
+        streamProcessor.addSubscription(subscription);
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.RETRIES_UPDATED)
+                .setRetries(3)
+                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+
+        // then
+        final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
+
+        final TaskEvent taskEvent = lastWrittenEvent.getValue();
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.LOCK);
+        assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
+        assertThat(taskEvent.getRetries()).isEqualTo(3);
+
+        final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
+        assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
+        assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
+    }
+
+    @Test
+    public void shouldIgnoreFailedTaskWithNoRetries()
+    {
+        // given
+        streamProcessor.addSubscription(subscription);
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.FAILED)
+                .setRetries(0)
+                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+
+        // then
+        assertThat(mockController.getWrittenEvents()).hasSize(0);
     }
 
     @Test

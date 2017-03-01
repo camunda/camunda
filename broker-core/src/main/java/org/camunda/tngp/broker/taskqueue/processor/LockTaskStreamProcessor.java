@@ -234,6 +234,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
                 case CREATED:
                 case LOCK_EXPIRED:
                 case FAILED:
+                case RETRIES_UPDATED:
                     eventProcessor = this;
                     break;
 
@@ -249,17 +250,20 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         hasLockedTask = false;
 
-        lockSubscription = getNextAvailableSubscription();
-        if (lockSubscription != null)
+        if (taskEvent.getRetries() > 0)
         {
-            final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockDuration();
+            lockSubscription = getNextAvailableSubscription();
+            if (lockSubscription != null)
+            {
+                final long lockTimeout = ClockUtil.getCurrentTimeInMillis() + lockSubscription.getLockDuration();
 
-            taskEvent
-                .setEventType(TaskEventType.LOCK)
-                .setLockTime(lockTimeout)
-                .setLockOwner(lockSubscription.getLockOwner());
+                taskEvent
+                    .setEventType(TaskEventType.LOCK)
+                    .setLockTime(lockTimeout)
+                    .setLockOwner(lockSubscription.getLockOwner());
 
-            hasLockedTask = true;
+                hasLockedTask = true;
+            }
         }
     }
 

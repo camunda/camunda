@@ -208,6 +208,7 @@ public class TaskStreamProcessorIntegrationTest
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
+            .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(PAYLOAD));
 
@@ -254,6 +255,7 @@ public class TaskStreamProcessorIntegrationTest
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
+            .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(PAYLOAD));
 
@@ -308,6 +310,7 @@ public class TaskStreamProcessorIntegrationTest
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
+            .setRetries(3)
             .setPayload(new UnsafeBuffer(PAYLOAD));
 
         long position = logStreamWriter
@@ -323,7 +326,8 @@ public class TaskStreamProcessorIntegrationTest
         // when
         taskEvent
             .setEventType(TaskEventType.FAIL)
-            .setLockOwner(3);
+            .setLockOwner(3)
+            .setRetries(2);
 
         position = logStreamWriter
             .key(2L)
@@ -360,6 +364,7 @@ public class TaskStreamProcessorIntegrationTest
 
         final TaskEvent taskEvent = new TaskEvent()
             .setEventType(TaskEventType.CREATE)
+            .setRetries(3)
             .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
             .setPayload(new UnsafeBuffer(PAYLOAD));
 
@@ -393,6 +398,70 @@ public class TaskStreamProcessorIntegrationTest
 
         verify(mockResponseWriter, times(1)).tryWriteResponse();
         verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
+    }
+
+    @Test
+    public void shouldUpdateTaskRetries() throws InterruptedException, ExecutionException
+    {
+        // given
+        final TaskSubscription subscription = new TaskSubscription()
+                .setId(1L)
+                .setChannelId(11)
+                .setTaskType(TASK_TYPE_BUFFER)
+                .setLockDuration(Duration.ofMinutes(5).toMillis())
+                .setLockOwner(3)
+                .setCredits(10);
+
+        lockTaskStreamProcessor.addSubscription(subscription);
+
+        final TaskEvent taskEvent = new TaskEvent()
+            .setEventType(TaskEventType.CREATE)
+            .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity())
+            .setRetries(1)
+            .setPayload(new UnsafeBuffer(PAYLOAD));
+
+        long position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+
+        taskEvent
+            .setEventType(TaskEventType.FAIL)
+            .setLockOwner(3)
+            .setRetries(0);
+
+        position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        event = assertThatEventIsFollowedBy(position, TaskEventType.FAILED);
+
+        // when
+        taskEvent
+            .setEventType(TaskEventType.UPDATE_RETRIES)
+            .setRetries(2);
+
+        position = logStreamWriter
+            .key(2L)
+            .metadataWriter(defaultBrokerEventMetadata)
+            .valueWriter(taskEvent)
+            .tryWrite();
+
+        // then
+        event = assertThatEventIsFollowedBy(position, TaskEventType.RETRIES_UPDATED);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+
+        verify(mockResponseWriter, times(3)).tryWriteResponse();
+
+        assertThat(followUpTaskEvent.getRetries()).isEqualTo(2);
     }
 
     private LoggedEvent assertThatEventIsFollowedBy(LoggedEvent event, TaskEventType eventType)

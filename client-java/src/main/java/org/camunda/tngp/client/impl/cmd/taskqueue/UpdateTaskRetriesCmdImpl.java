@@ -8,92 +8,69 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.tngp.client.cmd.FailTaskCmd;
+import org.camunda.tngp.client.cmd.UpdateTaskRetriesCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements FailTaskCmd
+public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements UpdateTaskRetriesCmd
 {
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected long taskKey = -1L;
-    protected int lockOwner = -1;
     protected int retries = -1;
     protected String taskType;
     protected byte[] payload;
     protected Map<String, String> headers = new HashMap<>();
-    protected Exception failure;
 
-    public FailTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
+    public UpdateTaskRetriesCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
     {
         super(clientCmdExecutor, objectMapper, TaskEvent.class, topicId, TASK_EVENT);
     }
 
     @Override
-    public FailTaskCmd taskKey(long taskKey)
+    public UpdateTaskRetriesCmd taskKey(long taskKey)
     {
         this.taskKey = taskKey;
         return this;
     }
 
     @Override
-    public FailTaskCmd lockOwner(int lockOwner)
-    {
-        this.lockOwner = lockOwner;
-        return this;
-    }
-
-    @Override
-    public FailTaskCmd retries(int retries)
+    public UpdateTaskRetriesCmd retries(int retries)
     {
         this.retries = retries;
         return this;
     }
 
     @Override
-    public FailTaskCmd taskType(final String taskType)
+    public UpdateTaskRetriesCmd taskType(final String taskType)
     {
         this.taskType = taskType;
         return this;
     }
 
     @Override
-    public FailTaskCmd payload(String payload)
+    public UpdateTaskRetriesCmd payload(String payload)
     {
         this.payload = msgPackConverter.convertToMsgPack(payload);
         return this;
     }
 
     @Override
-    public FailTaskCmd payload(InputStream payload)
+    public UpdateTaskRetriesCmd payload(InputStream payload)
     {
         this.payload = msgPackConverter.convertToMsgPack(payload);
         return this;
     }
 
     @Override
-    public FailTaskCmd addHeader(String key, String value)
-    {
-        headers.put(key, value);
-        return this;
-    }
-
-    @Override
-    public FailTaskCmd headers(Map<String, String> newHeaders)
+    public UpdateTaskRetriesCmd headers(Map<String, String> newHeaders)
     {
         headers.clear();
         headers.putAll(newHeaders);
-        return this;
-    }
-
-    @Override
-    public FailTaskCmd failure(Exception e)
-    {
-        this.failure = e;
         return this;
     }
 
@@ -108,7 +85,6 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     {
         ensureGreaterThanOrEqual("task key", taskKey, 0);
         ensureGreaterThanOrEqual("topic id", topicId, 0);
-        ensureGreaterThanOrEqual("lock owner", lockOwner, 0);
         ensureGreaterThanOrEqual("retries", retries, 0);
         ensureNotNullOrEmpty("task type", taskType);
     }
@@ -116,9 +92,8 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     @Override
     protected Object writeCommand()
     {
-        taskEvent.setEvent(TaskEventType.FAIL);
+        taskEvent.setEvent(TaskEventType.UPDATE_RETRIES);
         taskEvent.setType(taskType);
-        taskEvent.setLockOwner(lockOwner);
         taskEvent.setRetries(retries);
         taskEvent.setHeaders(headers);
         taskEvent.setPayload(payload);
@@ -130,12 +105,10 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     protected void reset()
     {
         taskKey = -1L;
-        lockOwner = -1;
         retries = -1;
         taskType = null;
         payload = null;
         headers.clear();
-        failure = null;
 
         taskEvent.reset();
     }
@@ -145,7 +118,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     {
         long result = -1;
 
-        if (event.getEvent() == TaskEventType.FAILED)
+        if (event.getEvent() == TaskEventType.RETRIES_UPDATED)
         {
             result = key;
         }

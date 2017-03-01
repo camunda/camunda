@@ -19,6 +19,7 @@ public class TaskEvent extends UnpackedObject
     private final EnumProperty<TaskEventType> eventProp = new EnumProperty<>("event", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime", -1L);
     private final IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
+    private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");
     private final PackedProperty headersProp = new PackedProperty("headers", EMPTY_MAP);
     private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
@@ -28,6 +29,7 @@ public class TaskEvent extends UnpackedObject
         this.declareProperty(eventProp)
             .declareProperty(lockTimeProp)
             .declareProperty(lockOwnerProp)
+            .declareProperty(retriesProp)
             .declareProperty(typeProp)
             .declareProperty(headersProp)
             .declareProperty(payloadProp);
@@ -63,6 +65,17 @@ public class TaskEvent extends UnpackedObject
     public TaskEvent setLockOwner(int lockOwer)
     {
         lockOwnerProp.setValue(lockOwer);
+        return this;
+    }
+
+    public int getRetries()
+    {
+        return retriesProp.getValue();
+    }
+
+    public TaskEvent setRetries(int retries)
+    {
+        retriesProp.setValue(retries);
         return this;
     }
 

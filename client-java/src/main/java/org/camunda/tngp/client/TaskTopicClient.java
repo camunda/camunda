@@ -1,22 +1,25 @@
 package org.camunda.tngp.client;
 
-import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
-import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
-import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
+import org.camunda.tngp.client.cmd.CompleteTaskCmd;
+import org.camunda.tngp.client.cmd.CreateTaskCmd;
+import org.camunda.tngp.client.cmd.FailTaskCmd;
 import org.camunda.tngp.client.cmd.PollAndLockAsyncTasksCmd;
+import org.camunda.tngp.client.cmd.UpdateTaskRetriesCmd;
 import org.camunda.tngp.client.event.TaskTopicSubscriptionBuilder;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 
 public interface TaskTopicClient
 {
-    CreateAsyncTaskCmd create();
+    CreateTaskCmd create();
 
     PollAndLockAsyncTasksCmd pollAndLock();
 
-    CompleteAsyncTaskCmd complete();
+    CompleteTaskCmd complete();
 
-    FailAsyncTaskCmd fail();
+    FailTaskCmd fail();
+
+    UpdateTaskRetriesCmd updateRetries();
 
     TaskSubscriptionBuilder newTaskSubscription();
 

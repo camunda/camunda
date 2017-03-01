@@ -29,8 +29,8 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
-import org.camunda.tngp.client.cmd.FailAsyncTaskCmd;
+import org.camunda.tngp.client.cmd.CompleteTaskCmd;
+import org.camunda.tngp.client.cmd.FailTaskCmd;
 import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.TopicEventImpl;
@@ -84,10 +84,10 @@ public class TaskSubscriptionTest
     protected UpdateSubscriptionCreditsCmdImpl updateCreditsCmd;
 
     @FluentMock
-    protected CompleteAsyncTaskCmd completeCmd;
+    protected CompleteTaskCmd completeCmd;
 
     @FluentMock
-    protected FailAsyncTaskCmd failCmd;
+    protected FailTaskCmd failCmd;
 
     @Mock
     protected TaskHandler taskHandler;

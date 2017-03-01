@@ -294,6 +294,35 @@ public class TaskInstanceStreamProcessorTest
     }
 
     @Test
+    public void shouldUpdateRetries() throws InterruptedException, ExecutionException
+    {
+        // given
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATE)
+                .setRetries(1));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.FAIL)
+                .setLockOwner(3)
+                .setRetries(0));
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.UPDATE_RETRIES)
+                .setLockOwner(2));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.RETRIES_UPDATED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(3)).tryWriteResponse();
+    }
+
+    @Test
     public void shouldRejectLockTaskIfLockTimeIsNegative()
     {
         // given
@@ -682,6 +711,71 @@ public class TaskInstanceStreamProcessorTest
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_EXPIRATION_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(2)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectUpdateRetriesIfNotExists()
+    {
+        // when
+        mockController.processEvent(4L, event -> event
+                .setEventType(TaskEventType.UPDATE_RETRIES)
+                .setRetries(3));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(1)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectUpdateRetriesIfCompleted()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.COMPLETE)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.UPDATE_RETRIES));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
+        assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
+
+        verify(mockResponseWriter, times(3)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldRejectUpdateRetriesIfLocked()
+    {
+        // given
+        mockController.processEvent(2L, event ->
+            event.setEventType(TaskEventType.CREATE));
+
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3));
+
+        // when
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.UPDATE_RETRIES));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES_REJECTED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();

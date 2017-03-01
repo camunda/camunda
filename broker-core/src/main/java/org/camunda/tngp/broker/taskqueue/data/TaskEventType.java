@@ -19,7 +19,11 @@ public enum TaskEventType
 
     FAIL(11),
     FAILED(12),
-    FAIL_REJECTED(13);
+    FAIL_REJECTED(13),
+
+    UPDATE_RETRIES(14),
+    RETRIES_UPDATED(15),
+    UPDATE_RETRIES_REJECTED(16);
 
     // don't change the ids because the task stream processor use them for the index
     private final int id;

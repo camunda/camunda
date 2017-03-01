@@ -78,6 +78,7 @@ public class CreateTaskCmdTest
         // given
         createTaskCommand
             .taskType("foo")
+            .retries(4)
             .addHeader("a", "b")
             .addHeader("c", "d")
             .payload("{ \"bar\" : 4 }");
@@ -105,6 +106,7 @@ public class CreateTaskCmdTest
 
         assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.CREATE);
         assertThat(taskEvent.getType()).isEqualTo("foo");
+        assertThat(taskEvent.getRetries()).isEqualTo(4);
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
         assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));
     }
@@ -137,6 +139,27 @@ public class CreateTaskCmdTest
 
         assertThat(taskEvent.getHeaders()).hasSize(2).containsAllEntriesOf(headers);
         assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack(new ByteArrayInputStream(payload)));
+    }
+
+    @Test
+    public void shouldWriteRequestWithDefaultRetries() throws JsonParseException, JsonMappingException, IOException
+    {
+        // given
+        createTaskCommand
+            .taskType("foo");
+
+        // when
+        createTaskCommand.getRequestWriter().write(writeBuffer, 0);
+
+        // then
+        requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
+
+        final byte[] command = new byte[requestDecoder.commandLength()];
+        requestDecoder.getCommand(command, 0, command.length);
+
+        final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
+
+        assertThat(taskEvent.getRetries()).isEqualTo(3);
     }
 
     @Test
@@ -196,6 +219,19 @@ public class CreateTaskCmdTest
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("task type must not be empty");
+
+        createTaskCommand.validate();
+    }
+
+    @Test
+    public void shouldBeNotValidIfRetriesLessThanZero()
+    {
+        createTaskCommand
+            .taskType("foo")
+            .retries(-1);
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("retries must be greater than or equal to 0");
 
         createTaskCommand.validate();
     }

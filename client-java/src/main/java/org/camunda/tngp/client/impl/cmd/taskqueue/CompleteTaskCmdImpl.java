@@ -8,14 +8,14 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.tngp.client.cmd.CompleteAsyncTaskCmd;
+import org.camunda.tngp.client.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CompleteAsyncTaskCmd
+public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CompleteTaskCmd
 {
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
@@ -32,49 +32,49 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     }
 
     @Override
-    public CompleteAsyncTaskCmd taskKey(long taskKey)
+    public CompleteTaskCmd taskKey(long taskKey)
     {
         this.taskKey = taskKey;
         return this;
     }
 
     @Override
-    public CompleteAsyncTaskCmd lockOwner(int lockOwner)
+    public CompleteTaskCmd lockOwner(int lockOwner)
     {
         this.lockOwner = lockOwner;
         return this;
     }
 
     @Override
-    public CompleteAsyncTaskCmd taskType(final String taskType)
+    public CompleteTaskCmd taskType(final String taskType)
     {
         this.taskType = taskType;
         return this;
     }
 
     @Override
-    public CompleteAsyncTaskCmd payload(String payload)
+    public CompleteTaskCmd payload(String payload)
     {
         this.payload = msgPackConverter.convertToMsgPack(payload);
         return this;
     }
 
     @Override
-    public CompleteAsyncTaskCmd payload(InputStream payload)
+    public CompleteTaskCmd payload(InputStream payload)
     {
         this.payload = msgPackConverter.convertToMsgPack(payload);
         return this;
     }
 
     @Override
-    public CompleteAsyncTaskCmd addHeader(String key, String value)
+    public CompleteTaskCmd addHeader(String key, String value)
     {
         headers.put(key, value);
         return this;
     }
 
     @Override
-    public CompleteAsyncTaskCmd headers(Map<String, String> newHeaders)
+    public CompleteTaskCmd headers(Map<String, String> newHeaders)
     {
         headers.clear();
         headers.putAll(newHeaders);

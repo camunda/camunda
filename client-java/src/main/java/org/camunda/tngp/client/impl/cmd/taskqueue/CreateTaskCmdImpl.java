@@ -1,25 +1,29 @@
 package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.camunda.tngp.client.cmd.CreateAsyncTaskCmd;
+import org.camunda.tngp.client.cmd.CreateTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
-import org.camunda.tngp.util.EnsureUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CreateAsyncTaskCmd
+public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CreateTaskCmd
 {
+    protected static final int DEFAULT_RETRIES = 3;
+
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     protected String taskType;
+    protected int retries = DEFAULT_RETRIES;
     protected byte[] payload;
     protected Map<String, String> headers = new HashMap<>();
 
@@ -29,35 +33,42 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    public CreateAsyncTaskCmd taskType(final String taskType)
+    public CreateTaskCmd taskType(final String taskType)
     {
         this.taskType = taskType;
         return this;
     }
 
     @Override
-    public CreateAsyncTaskCmd payload(String payload)
+    public CreateTaskCmd retries(int retries)
+    {
+        this.retries = retries;
+        return this;
+    }
+
+    @Override
+    public CreateTaskCmd payload(String payload)
     {
         this.payload = msgPackConverter.convertToMsgPack(payload);
         return this;
     }
 
     @Override
-    public CreateAsyncTaskCmd payload(InputStream payload)
+    public CreateTaskCmd payload(InputStream payload)
     {
         this.payload = msgPackConverter.convertToMsgPack(payload);
         return this;
     }
 
     @Override
-    public CreateAsyncTaskCmd addHeader(String key, String value)
+    public CreateTaskCmd addHeader(String key, String value)
     {
         headers.put(key, value);
         return this;
     }
 
     @Override
-    public CreateAsyncTaskCmd setHeaders(Map<String, String> headers)
+    public CreateTaskCmd setHeaders(Map<String, String> headers)
     {
         this.headers.clear();
         this.headers.putAll(headers);
@@ -73,8 +84,9 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     @Override
     public void validate()
     {
-        EnsureUtil.ensureGreaterThanOrEqual("topic id", topicId, 0);
-        EnsureUtil.ensureNotNullOrEmpty("task type", taskType);
+        ensureGreaterThanOrEqual("topic id", topicId, 0);
+        ensureNotNullOrEmpty("task type", taskType);
+        ensureGreaterThanOrEqual("retries", retries, 0);
     }
 
     @Override
@@ -82,6 +94,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     {
         taskEvent.setEvent(TaskEventType.CREATE);
         taskEvent.setType(taskType);
+        taskEvent.setRetries(retries);
         taskEvent.setHeaders(headers);
         taskEvent.setPayload(payload);
 
@@ -91,6 +104,8 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     @Override
     protected void reset()
     {
+        retries = DEFAULT_RETRIES;
+
         taskType = null;
         payload = null;
         headers.clear();
