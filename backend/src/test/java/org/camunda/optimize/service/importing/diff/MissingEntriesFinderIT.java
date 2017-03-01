@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.importing.diff;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
@@ -21,6 +23,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -106,6 +109,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
       .setSize(100)
       .get();
 
+    assertThat(idsResp.getHits().getTotalHits(), greaterThan(0L));
     for (SearchHit searchHitFields : idsResp.getHits().getHits()) {
       assertThat(searchHitFields.getVersion(), is(1L));
     }
@@ -113,13 +117,24 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
 
   private void deployImportAndDeployAgainProcess() throws InterruptedException {
 
-    engineRule.deployServiceTaskProcess();
+    deployAndStartSimpleServiceTask();
     importScheduler.scheduleProcessEngineImport();
 
     // refresh so it is possible to retrieve the index
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    engineRule.deployServiceTaskProcess();
+    deployAndStartSimpleServiceTask();
+  }
+
+  private void deployAndStartSimpleServiceTask() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+        .startEvent()
+        .serviceTask()
+          .camundaExpression("${true}")
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
   }
 
   @Override

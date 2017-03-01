@@ -1,5 +1,7 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -34,10 +36,16 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
   @Rule
   public ElasticSearchIntegrationTestRule elasticSearchRule;
 
+  private static final String PROCESS_ID = "aProcessId";
+
   @Test
   public void importDataFromEngine() throws Exception {
     //given
-    engineRule.deployServiceTaskProcess();
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
 
     //when
     Response response = target("import")
@@ -61,6 +69,7 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     assertThat(definitions,is(notNullValue()));
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(),is(notNullValue()));
+    assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
   }
 
   @Override

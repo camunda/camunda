@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -21,6 +23,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
@@ -46,7 +49,7 @@ public class ImportIT extends AbstractJerseyTest {
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws Exception {
     //given
-    engineRule.deployServiceTaskProcess();
+    deployAndStartSimpleServiceTask();
 
     //when
     importScheduler.scheduleProcessEngineImport();
@@ -59,7 +62,7 @@ public class ImportIT extends AbstractJerseyTest {
   @Test
   public void allProcessDefinitionXmlFieldDataOfImportIsAvailable() throws Exception {
     //given
-    engineRule.deployServiceTaskProcess();
+    deployAndStartSimpleServiceTask();
 
     //when
     importScheduler.scheduleProcessEngineImport();
@@ -72,7 +75,7 @@ public class ImportIT extends AbstractJerseyTest {
   @Test
   public void allEventFieldDataOfImportIsAvailable() throws Exception {
     //given
-    engineRule.deployServiceTaskProcess();
+    deployAndStartSimpleServiceTask();
 
     //when
     importScheduler.scheduleProcessEngineImport();
@@ -80,6 +83,17 @@ public class ImportIT extends AbstractJerseyTest {
 
     //then
     allEntriesInElasticsearchHaveAllData(configurationService.getEventType());
+  }
+
+  private void deployAndStartSimpleServiceTask() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+        .startEvent()
+        .serviceTask()
+          .camundaExpression("${true}")
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {
@@ -91,10 +105,11 @@ public class ImportIT extends AbstractJerseyTest {
       .setSize(100)
       .get();
 
+    assertThat(idsResp.getHits().getTotalHits(), greaterThan(0L));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       for (Entry searchHitField : searchHit.getSource().entrySet()) {
-        String errorMessage = "\"Something went wrong during fetching of field: \" + searchHitField.getKey() +\n" +
-          "            \". Should actually have a value!\"";
+        String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
+          ". Should actually have a value!";
         assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
         if (searchHitField.getValue() instanceof String) {
           String value = (String) searchHitField.getValue();
