@@ -57,9 +57,7 @@ public class TopicSubscriptionManager implements Agent
                     logStreamServiceName,
                     TopicSubscriptionNames.subscriptionServiceName(logStreamServiceName.getName(), subscriptionId),
                     (int) subscriptionId, // TODO: should this be a constant value as in tasksubscriptionmanager
-                    streamProcessor,
-                    TopicSubscriptionProcessor.eventFilter()
-                    )
+                    streamProcessor)
                 .thenAccept((v) -> subscriptionProcessors.put(subscriptionId, streamProcessor))
                 .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
         });

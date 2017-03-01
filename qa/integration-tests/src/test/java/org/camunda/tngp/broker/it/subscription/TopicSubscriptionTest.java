@@ -96,9 +96,9 @@ public class TopicSubscriptionTest
             .execute();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
-        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(2);
+        assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
 
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
         recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
@@ -120,9 +120,9 @@ public class TopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
 
-        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(2);
+        assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
 
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
         recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
@@ -149,7 +149,7 @@ public class TopicSubscriptionTest
             .execute();
 
         Thread.sleep(1000L);
-        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(0);
+        assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(0);
     }
 
     @Test
@@ -173,8 +173,8 @@ public class TopicSubscriptionTest
             .open();
 
         // when
-        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() == 2);
-        TestUtil.waitUntil(() -> secondEventHandler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+        TestUtil.waitUntil(() -> secondEventHandler.numRecordedTaskEvents() == 2);
 
         // then
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
@@ -224,10 +224,10 @@ public class TopicSubscriptionTest
             .open();
 
         // when
-        TestUtil.doRepeatedly(() -> subscription.poll(recordingHandler)).until((i) -> recordingHandler.numRecordedEvents() == 2);
+        TestUtil.doRepeatedly(() -> subscription.poll(recordingHandler)).until((i) -> recordingHandler.numRecordedTaskEvents() == 2);
 
         // then
-        assertThat(recordingHandler.numRecordedEvents()).isEqualTo(2);
+        assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
 
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
         recordingHandler.assertTaskEvent(1, taskKey, "CREATED");

@@ -100,7 +100,7 @@ public class TaskTopicSubscriptionTest
             .open();
 
         // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() == 2);
+        TestUtil.waitUntil(() -> handler.numRecordedTaskEvents() == 2);
 
         handler.assertTaskEvent(0, taskKey, "CREATE");
         handler.assertTaskEvent(1, taskKey, "CREATED");

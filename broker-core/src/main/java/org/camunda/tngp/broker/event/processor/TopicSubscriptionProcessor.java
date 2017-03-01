@@ -1,14 +1,12 @@
 package org.camunda.tngp.broker.event.processor;
 
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
-import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 
 public class TopicSubscriptionProcessor implements StreamProcessor, EventProcessor
@@ -80,11 +78,5 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     public SubscribedEventWriter getChannelWriter()
     {
         return channelWriter;
-    }
-
-    public static MetadataFilter eventFilter()
-    {
-        // ignoring raft events, as they are not related to any client API concept and are sbe encoded
-        return (m) -> m.getEventType() != EventType.RAFT_EVENT;
     }
 }
