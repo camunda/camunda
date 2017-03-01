@@ -112,6 +112,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
+    @SuppressWarnings("unchecked")
     public CompletableFuture<Void> openAsync()
     {
         if (state.compareAndSet(STATE_NEW, STATE_OPENING))
@@ -139,7 +140,8 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     public abstract int poll();
 
-    public int pollEvents(CheckedConsumer<TopicEventImpl> pollHandler)
+    @SuppressWarnings("unchecked")
+    protected int pollEvents(CheckedConsumer<TopicEventImpl> pollHandler)
     {
         final int currentlyAvailableEvents = size();
         int handledEvents = 0;

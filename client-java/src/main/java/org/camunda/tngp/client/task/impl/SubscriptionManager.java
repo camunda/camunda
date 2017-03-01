@@ -21,14 +21,11 @@ import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SubscriptionManager
 {
 
-    protected final EventAcquisition<TaskSubscriptionImpl> taskAcqusition;
+    protected final EventAcquisition<TaskSubscriptionImpl> taskAcquisition;
     protected final EventAcquisition<TopicSubscriptionImpl> topicSubscriptionAcquisition;
     protected final SubscribedEventCollector taskCollector;
     protected final MsgPackMapper msgPackMapper;
@@ -53,15 +50,13 @@ public class SubscriptionManager
         this.taskSubscriptions = new EventSubscriptions<>();
         this.topicSubscriptions = new EventSubscriptions<>();
 
-        this.taskCollector = new SubscribedEventCollector(receiveBufferSubscription);
-        this.taskAcqusition = new EventAcquisition<>("task-acquisition", taskSubscriptions);
+        this.taskAcquisition = new EventAcquisition<>("task-acquisition", taskSubscriptions);
         this.topicSubscriptionAcquisition = new EventAcquisition<>("topic-event-acquisition", topicSubscriptions);
-        taskCollector.setTaskHandler(taskAcqusition);
-        taskCollector.setTopicEventHandler(topicSubscriptionAcquisition);
+        this.taskCollector = new SubscribedEventCollector(receiveBufferSubscription, taskAcquisition, topicSubscriptionAcquisition);
 
         this.numExecutionThreads = numExecutionThreads;
         this.autoCompleteTasks = autoCompleteTasks;
-        this.msgPackMapper = new MsgPackMapper(new ObjectMapper(new MessagePackFactory()));
+        this.msgPackMapper = new MsgPackMapper(client.getObjectMapper());
     }
 
     public void start()
@@ -80,7 +75,7 @@ public class SubscriptionManager
     {
         if (acquisitionRunner == null)
         {
-            acquisitionRunner = newAgentRunner(new CompositeAgent(taskCollector, taskAcqusition, topicSubscriptionAcquisition));
+            acquisitionRunner = newAgentRunner(new CompositeAgent(taskCollector, taskAcquisition, topicSubscriptionAcquisition));
         }
 
         AgentRunner.startOnThread(acquisitionRunner);
@@ -135,12 +130,12 @@ public class SubscriptionManager
 
     public TaskSubscriptionBuilder newTaskSubscription(TaskTopicClientImpl client)
     {
-        return new TaskSubscriptionBuilderImpl(client, taskAcqusition, autoCompleteTasks, msgPackMapper);
+        return new TaskSubscriptionBuilderImpl(client, taskAcquisition, autoCompleteTasks, msgPackMapper);
     }
 
     public PollableTaskSubscriptionBuilder newPollableTaskSubscription(TaskTopicClientImpl client)
     {
-        return new PollableTaskSubscriptionBuilderImpl(client, taskAcqusition, autoCompleteTasks, msgPackMapper);
+        return new PollableTaskSubscriptionBuilderImpl(client, taskAcquisition, autoCompleteTasks, msgPackMapper);
     }
 
     public TopicSubscriptionBuilder newTopicSubscription(TopicClientImpl client)

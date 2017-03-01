@@ -1,5 +1,6 @@
 package org.camunda.tngp.client.event;
 
+@FunctionalInterface
 public interface TaskEventHandler
 {
 

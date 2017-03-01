@@ -14,7 +14,7 @@ import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.slf4j.Logger;
 
-public class SubscribedEventCollector implements Agent
+public class SubscribedEventCollector implements Agent, FragmentHandler
 {
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
     protected static final String NAME = "event-collector";
@@ -25,29 +25,23 @@ public class SubscribedEventCollector implements Agent
 
     protected final Subscription receiveBufferSubscription;
 
-    protected SubscribedEventHandler taskSubscriptionHandler;
-    protected SubscribedEventHandler topicSubscriptionHandler;
-    protected DataFrameHandler fragmentHandler = new DataFrameHandler();
+    protected final SubscribedEventHandler taskSubscriptionHandler;
+    protected final SubscribedEventHandler topicSubscriptionHandler;
 
-    public SubscribedEventCollector(Subscription receiveBufferSubscription)
+    public SubscribedEventCollector(
+            Subscription receiveBufferSubscription,
+            SubscribedEventHandler taskSubscriptionHandler,
+            SubscribedEventHandler topicSubscriptionHandler)
     {
         this.receiveBufferSubscription = receiveBufferSubscription;
-    }
-
-    public void setTaskHandler(SubscribedEventHandler taskSubscriptionHandler)
-    {
         this.taskSubscriptionHandler = taskSubscriptionHandler;
-    }
-
-    public void setTopicEventHandler(SubscribedEventHandler topicSubscriptionHandler)
-    {
         this.topicSubscriptionHandler = topicSubscriptionHandler;
     }
 
     @Override
     public int doWork()
     {
-        return receiveBufferSubscription.poll(fragmentHandler, Integer.MAX_VALUE);
+        return receiveBufferSubscription.poll(this, Integer.MAX_VALUE);
     }
 
     @Override
@@ -56,54 +50,51 @@ public class SubscribedEventCollector implements Agent
         return NAME;
     }
 
-    public class DataFrameHandler implements FragmentHandler
+
+    @Override
+    public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
     {
+        transportHeaderDescriptor.wrap(buffer, offset);
 
-        @Override
-        public int onFragment(DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed)
+        offset += TransportHeaderDescriptor.HEADER_LENGTH;
+
+        messageHeaderDecoder.wrap(buffer, offset);
+
+        offset += MessageHeaderDecoder.ENCODED_LENGTH;
+
+        final int protocolId = transportHeaderDescriptor.protocolId();
+        final int templateId = messageHeaderDecoder.templateId();
+
+        if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE && templateId == SubscribedEventDecoder.TEMPLATE_ID)
         {
-            transportHeaderDescriptor.wrap(buffer, offset);
+            subscribedEventDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
-            offset += TransportHeaderDescriptor.HEADER_LENGTH;
+            final SubscriptionType subscriptionType = subscribedEventDecoder.subscriptionType();
+            final SubscribedEventHandler eventHandler = getHandlerForEvent(subscriptionType);
 
-            messageHeaderDecoder.wrap(buffer, offset);
-
-            offset += MessageHeaderDecoder.ENCODED_LENGTH;
-
-            final int protocolId = transportHeaderDescriptor.protocolId();
-            final int templateId = messageHeaderDecoder.templateId();
-
-            if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE && templateId == SubscribedEventDecoder.TEMPLATE_ID)
+            if (eventHandler != null)
             {
-                subscribedEventDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+                final long key = subscribedEventDecoder.longKey();
+                final long subscriptionId = subscribedEventDecoder.subscriptionId();
+                final long position = subscribedEventDecoder.position();
+                final byte[] eventBuffer = new byte[subscribedEventDecoder.eventLength()];
+                subscribedEventDecoder.getEvent(eventBuffer, 0, eventBuffer.length);
 
-                final SubscriptionType subscriptionType = subscribedEventDecoder.subscriptionType();
-                final SubscribedEventHandler eventHandler = getHandlerForEvent(subscriptionType);
+                final TopicEventImpl event = new TopicEventImpl(
+                        key,
+                        position,
+                        EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
+                        eventBuffer);
 
-                if (eventHandler != null)
-                {
-                    final long key = subscribedEventDecoder.longKey();
-                    final long subscriptionId = subscribedEventDecoder.subscriptionId();
-                    final long position = subscribedEventDecoder.position();
-                    final byte[] eventBuffer = new byte[subscribedEventDecoder.eventLength()];
-                    subscribedEventDecoder.getEvent(eventBuffer, 0, eventBuffer.length);
-
-                    final TopicEventImpl event = new TopicEventImpl(
-                            key,
-                            position,
-                            EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
-                            eventBuffer);
-
-                    eventHandler.onEvent(subscriptionId, event);
-                }
-                else
-                {
-                    LOGGER.info("Ignoring event for unknown subscription type " + subscriptionType.toString());
-                }
+                eventHandler.onEvent(subscriptionId, event);
             }
-
-            return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+            else
+            {
+                LOGGER.info("Ignoring event for unknown subscription type " + subscriptionType.toString());
+            }
         }
+
+        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
 
     protected SubscribedEventHandler getHandlerForEvent(SubscriptionType subscriptionType)
@@ -120,11 +111,6 @@ public class SubscribedEventCollector implements Agent
         {
             return null;
         }
-    }
-
-    public interface SubscribedEventHandler
-    {
-        void onEvent(long subscriptionId, TopicEventImpl event);
     }
 
 }
