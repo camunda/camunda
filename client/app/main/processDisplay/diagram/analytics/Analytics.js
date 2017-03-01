@@ -88,10 +88,10 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
     }
   });
 
-  const keydownListener = ({keyCode}) => {
+  const keydownListener = ({key}) => {
     const {mode, gateway} = State.getState();
 
-    if (keyCode === 27 && mode === GATEWAY_ANALYSIS_MODE && !gateway) {
+    if (key === 'Escape' && mode === GATEWAY_ANALYSIS_MODE && !gateway) {
       leaveGatewayAnalysisMode();
     }
   };
