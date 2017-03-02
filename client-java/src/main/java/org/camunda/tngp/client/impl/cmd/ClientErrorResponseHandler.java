@@ -8,9 +8,9 @@ public class ClientErrorResponseHandler
 {
     protected ErrorResponseDecoder errorResponseDecoder = new ErrorResponseDecoder();
 
-    public Throwable createException(final DirectBuffer responseBuffer, final int offset, final int length)
+    public Throwable createException(final DirectBuffer responseBuffer, final int offset, final int blockLength, final int version)
     {
-        errorResponseDecoder.wrap(responseBuffer, offset, errorResponseDecoder.sbeBlockLength(), errorResponseDecoder.sbeSchemaVersion());
+        errorResponseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
         final short errorCode = errorResponseDecoder.errorCode().value();
         final String errorData = errorResponseDecoder.errorData();

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.client.TaskTopicClient;
@@ -58,6 +59,11 @@ public class RecordingTaskEventHandler extends ExternalResource
     public boolean hasTaskEvent(Predicate<TaskEvent> matcher)
     {
         return taskEvents.stream().anyMatch(matcher);
+    }
+
+    public List<TaskEvent> getTaskEvents(Predicate<TaskEvent> matcher)
+    {
+        return taskEvents.stream().filter(matcher).collect(Collectors.toList());
     }
 
     public static Predicate<TaskEvent> eventType(TaskEventType type)

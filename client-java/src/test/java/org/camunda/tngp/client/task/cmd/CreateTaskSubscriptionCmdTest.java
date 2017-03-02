@@ -122,7 +122,7 @@ public class CreateTaskSubscriptionCmdTest
         responseEncoder.putData(jsonData, 0, jsonData.length);
 
         // when
-        final Long subscriptionId = responseHandler.readResponse(writeBuffer, 0, responseEncoder.encodedLength());
+        final Long subscriptionId = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(subscriptionId).isEqualTo(3L);

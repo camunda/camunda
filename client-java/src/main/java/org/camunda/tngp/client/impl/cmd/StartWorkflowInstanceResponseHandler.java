@@ -19,7 +19,7 @@ public class StartWorkflowInstanceResponseHandler implements ClientResponseHandl
     }
 
     @Override
-    public WorkflowInstance readResponse(DirectBuffer responseBuffer, int offset, int length)
+    public WorkflowInstance readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         return null;
     }

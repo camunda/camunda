@@ -135,7 +135,7 @@ public class UpdateTaskRetriesCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.encodedLength());
+        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(taskKey).isEqualTo(2L);
@@ -163,7 +163,7 @@ public class UpdateTaskRetriesCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.encodedLength());
+        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(taskKey).isEqualTo(-1L);

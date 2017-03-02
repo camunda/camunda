@@ -24,8 +24,6 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageRequestEncoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
-import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
-import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -75,10 +73,9 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
     {
         ensureCommandInitialized();
 
-        return TransportHeaderDescriptor.headerLength() +
-                RequestResponseProtocolHeaderDescriptor.headerLength() +
-                headerEncoder.encodedLength() +
+        return headerEncoder.encodedLength() +
                 requestEncoder.sbeBlockLength() +
+                ControlMessageRequestEncoder.dataHeaderLength() +
                 serializedCommand.length;
     }
 
@@ -143,13 +140,13 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
     }
 
     @Override
-    public R readResponse(DirectBuffer responseBuffer, int offset, int length)
+    public R readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         R result = null;
 
         if (responseHandler != null)
         {
-            responseDecoder.wrap(responseBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
+            responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
             final byte[] dataBuffer = new byte[responseDecoder.dataLength()];
             responseDecoder.getData(dataBuffer, 0, dataBuffer.length);

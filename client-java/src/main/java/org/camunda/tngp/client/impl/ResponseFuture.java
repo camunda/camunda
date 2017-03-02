@@ -56,23 +56,23 @@ public class ResponseFuture<R> implements Future<R>
             if (responseAvailable)
             {
                 final DirectBuffer responseBuffer = request.getResponseBuffer();
-                final int responseLength = request.getResponseLength();
 
                 messageHeaderDecoder.wrap(responseBuffer, 0);
 
                 final int schemaId = messageHeaderDecoder.schemaId();
                 final int templateId = messageHeaderDecoder.templateId();
+                final int blockLength = messageHeaderDecoder.blockLength();
+                final int version = messageHeaderDecoder.version();
 
                 final int responseMessageOffset = messageHeaderDecoder.encodedLength();
-                final int responseMessageLength = responseLength - responseMessageOffset;
 
                 if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
                 {
-                    responseObject = responseHandler.readResponse(responseBuffer, responseMessageOffset, responseMessageLength);
+                    responseObject = responseHandler.readResponse(responseBuffer, responseMessageOffset, blockLength, version);
                 }
                 else
                 {
-                    final Throwable exception = errorResponseHandler.createException(responseBuffer, responseMessageOffset, responseMessageLength);
+                    final Throwable exception = errorResponseHandler.createException(responseBuffer, responseMessageOffset, blockLength, version);
 
                     throw new ExecutionException(exception);
                 }

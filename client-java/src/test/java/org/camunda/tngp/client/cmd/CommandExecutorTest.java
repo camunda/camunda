@@ -15,14 +15,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.ClientCommand;
 import org.camunda.tngp.client.impl.ClientChannelResolver;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
+import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
+import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -54,9 +57,6 @@ public class CommandExecutorTest
     protected MutableDirectBuffer requestBuffer;
 
     @Mock
-    protected DirectBuffer responseBuffer;
-
-    @Mock
     protected PooledTransportRequest request;
 
     @Mock
@@ -70,6 +70,10 @@ public class CommandExecutorTest
 
     @Mock
     protected ClientChannelResolver clientChannelResolver;
+
+    protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+
+    protected final MutableDirectBuffer responseBuffer = new UnsafeBuffer(new byte[1024]);
 
     protected ClientCmdExecutor commandExecutor;
 
@@ -89,6 +93,15 @@ public class CommandExecutorTest
         when(requestWriter.getLength()).thenReturn(REQUEST_LENGTH);
 
         when(clientChannelResolver.getChannelIdForCmd(any(AbstractCmdImpl.class))).thenReturn(73);
+
+        when(responseHandler.getResponseSchemaId()).thenReturn(ExecuteCommandResponseEncoder.SCHEMA_ID);
+        when(responseHandler.getResponseTemplateId()).thenReturn(ExecuteCommandResponseEncoder.TEMPLATE_ID);
+
+        messageHeaderEncoder.wrap(responseBuffer, 0)
+            .schemaId(ExecuteCommandResponseEncoder.SCHEMA_ID)
+            .templateId(ExecuteCommandResponseEncoder.TEMPLATE_ID)
+            .blockLength(ExecuteCommandResponseEncoder.BLOCK_LENGTH)
+            .version(ExecuteCommandResponseEncoder.SCHEMA_VERSION);
 
         commandExecutor = new ClientCmdExecutor(mock(TransportConnectionPool.class), mock(DataFramePool.class), clientChannelResolver);
     }
@@ -124,7 +137,7 @@ public class CommandExecutorTest
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
-        when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
+        when(responseHandler.readResponse(any(), anyInt(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         final Future<Object> asyncResult = cmd.executeAsync(connection);
 
@@ -136,7 +149,7 @@ public class CommandExecutorTest
 
         final InOrder inOrder = Mockito.inOrder(request, responseHandler);
         inOrder.verify(request).awaitResponse(12345L, TimeUnit.MILLISECONDS);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, ExecuteCommandResponseDecoder.BLOCK_LENGTH, ExecuteCommandResponseDecoder.SCHEMA_VERSION);
         inOrder.verify(request).close();
     }
 
@@ -148,7 +161,7 @@ public class CommandExecutorTest
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
-        when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
+        when(responseHandler.readResponse(any(), anyInt(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         final Future<Object> asyncResult = cmd.executeAsync(connection);
 
@@ -160,7 +173,7 @@ public class CommandExecutorTest
 
         final InOrder inOrder = Mockito.inOrder(request, responseHandler);
         inOrder.verify(request).awaitResponse(1234, TimeUnit.MINUTES);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, ExecuteCommandResponseDecoder.BLOCK_LENGTH, ExecuteCommandResponseDecoder.SCHEMA_VERSION);
         inOrder.verify(request).close();
     }
 
@@ -172,7 +185,7 @@ public class CommandExecutorTest
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
-        when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
+        when(responseHandler.readResponse(any(), anyInt(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         // when
         final Object returnedResult = cmd.execute(connection);
@@ -189,7 +202,7 @@ public class CommandExecutorTest
         inOrder.verify(request).commit();
 
         inOrder.verify(request).awaitResponse(12345L, TimeUnit.MILLISECONDS);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, ExecuteCommandResponseDecoder.BLOCK_LENGTH, ExecuteCommandResponseDecoder.SCHEMA_VERSION);
         inOrder.verify(request).close();
     }
 
@@ -201,7 +214,7 @@ public class CommandExecutorTest
         final WorkflowDefinition expectedResult = mock(WorkflowDefinition.class);
 
         when(request.awaitResponse(anyLong(), any())).thenReturn(true);
-        when(responseHandler.readResponse(any(), anyInt(), anyInt())).thenReturn(expectedResult);
+        when(responseHandler.readResponse(any(), anyInt(), anyInt(), anyInt())).thenReturn(expectedResult);
 
         final Future<Object> asyncResult = cmd.executeAsync(connection);
 
@@ -212,7 +225,7 @@ public class CommandExecutorTest
         assertThat(returnedResult).isSameAs(expectedResult);
 
         final InOrder inOrder = Mockito.inOrder(request, responseHandler);
-        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, 99 - MessageHeaderDecoder.ENCODED_LENGTH);
+        inOrder.verify(responseHandler).readResponse(responseBuffer, MessageHeaderDecoder.ENCODED_LENGTH, ExecuteCommandResponseDecoder.BLOCK_LENGTH, ExecuteCommandResponseDecoder.SCHEMA_VERSION);
         inOrder.verify(request).close();
     }
 

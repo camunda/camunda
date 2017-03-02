@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.retries;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
@@ -12,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
@@ -20,6 +20,7 @@ import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
@@ -149,30 +150,16 @@ public class TaskSubscriptionTest
             .execute();
 
         // when
-        final AtomicBoolean taskCompleted = new AtomicBoolean(false);
-
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task ->
         {
-            assertThat(task.getKey()).isEqualTo(taskKey);
-            assertThat(task.getType()).isEqualTo("foo");
-            assertThat(task.getWorkflowInstanceId()).isNull();
-            assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
-
-            final String payload = task.getPayload();
             final Map<String, String> headers = task.getHeaders();
-
-            assertThat(payload).isEqualTo("{\"a\":1}");
-            assertThat(headers).hasSize(1).containsEntry("b", "2");
-
-            task.setPayload("{\"a\":3}");
-
             headers.put("b", "4");
             headers.put("c", "5");
+
             task.setHeaders(headers);
+            task.setPayload("{\"a\":3}");
 
             task.complete();
-
-            taskCompleted.set(true);
         });
 
         topicClient.newTaskSubscription()
@@ -187,7 +174,17 @@ public class TaskSubscriptionTest
 
         assertThat(taskHandler.handledTasks).hasSize(1);
 
-        assertThat(taskCompleted.get()).isTrue();
+        final Task task = taskHandler.getHandledTasks().get(0);
+        assertThat(task.getKey()).isEqualTo(taskKey);
+        assertThat(task.getType()).isEqualTo("foo");
+        assertThat(task.getWorkflowInstanceId()).isNull();
+        assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
+
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+
+        final TaskEvent taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.COMPLETED)).get(0);
+        assertThat(taskEvent.getPayload()).isEqualTo("{\"a\":3}");
+        assertThat(task.getHeaders()).hasSize(2).contains(entry("b", "4"), entry("c", "5"));
     }
 
     @Test

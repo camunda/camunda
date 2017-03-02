@@ -153,9 +153,9 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     }
 
     @Override
-    public R readResponse(DirectBuffer responseBuffer, int offset, int length)
+    public R readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
-        responseDecoder.wrap(responseBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
+        responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
         final long key = responseDecoder.longKey();
 

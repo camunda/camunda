@@ -20,7 +20,7 @@ public class DeployBpmnResourceAckResponseHandler implements ClientResponseHandl
     }
 
     @Override
-    public WorkflowDefinition readResponse(DirectBuffer responseBuffer, int offset, int length)
+    public WorkflowDefinition readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         return null;
     }
