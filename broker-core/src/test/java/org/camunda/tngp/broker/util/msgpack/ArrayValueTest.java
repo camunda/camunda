@@ -8,6 +8,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
+import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -46,7 +47,7 @@ public class ArrayValueTest
         assertThat(msgPackMap).contains(
                 entry("simpleArray", "[{longProp=123}, {longProp=456}, {longProp=789}]"),
                 entry("emptyDefaultArray", "[{longProp=753}]"),
-                entry("notEmptyDefaultArray", "[{longProp=357}, {longProp=951}]"));
+                entry("notEmptyDefaultArray", "[{longProp=357}, {longProp=951}, {longProp=123}, {longProp=456}, {longProp=789}]"));
     }
 
     @Test
@@ -81,29 +82,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(5);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(555L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(777L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -136,29 +115,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(5);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(555L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(777L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -192,29 +149,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(5);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(555L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(777L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -246,33 +181,10 @@ public class ArrayValueTest
     {
         // given
         final POJOArray pojo = new POJOArray();
-
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(5);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(555L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(777L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -306,21 +218,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(3);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(3);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
+            encodeSimpleArrayProp(w);
 
             w.writeString(utf8("emptyDefaultArray"));
             w.writeArrayHeader(1);
@@ -344,6 +242,10 @@ public class ArrayValueTest
         assertThat(iterator1.next().getLongProp()).isEqualTo(456L);
         assertThat(iterator1.hasNext()).isTrue();
         assertThat(iterator1.next().getLongProp()).isEqualTo(789L);
+        assertThat(iterator1.hasNext()).isTrue();
+        assertThat(iterator1.next().getLongProp()).isEqualTo(555L);
+        assertThat(iterator1.hasNext()).isTrue();
+        assertThat(iterator1.next().getLongProp()).isEqualTo(777L);
         assertThat(iterator1.hasNext()).isFalse();
 
         final ArrayValueIterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray();
@@ -364,21 +266,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(3);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
+            encodeSimpleArrayProp(w);
         });
 
         // when
@@ -392,6 +280,10 @@ public class ArrayValueTest
         assertThat(iterator1.next().getLongProp()).isEqualTo(456L);
         assertThat(iterator1.hasNext()).isTrue();
         assertThat(iterator1.next().getLongProp()).isEqualTo(789L);
+        assertThat(iterator1.hasNext()).isTrue();
+        assertThat(iterator1.next().getLongProp()).isEqualTo(555L);
+        assertThat(iterator1.hasNext()).isTrue();
+        assertThat(iterator1.next().getLongProp()).isEqualTo(777L);
         assertThat(iterator1.hasNext()).isFalse();
 
         final ArrayValueIterator<MinimalPOJO> iterator2 = pojo.emptyDefaultArray();
@@ -476,21 +368,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(3);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -512,21 +390,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(3);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -550,21 +414,7 @@ public class ArrayValueTest
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
-
-            w.writeString(utf8("simpleArray"));
-            w.writeArrayHeader(3);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(123L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(456L);
-
-            w.writeMapHeader(1);
-            w.writeString(utf8("longProp"));
-            w.writeInteger(789L);
+            encodeSimpleArrayProp(w);
         });
 
         pojo.wrap(buffer);
@@ -647,7 +497,7 @@ public class ArrayValueTest
         assertThat(msgPackMap).contains(
                 entry("simpleArray", "[{longProp=123}]"),
                 entry("emptyDefaultArray", "[]"),
-                entry("notEmptyDefaultArray", "[{longProp=741}]"));
+                entry("notEmptyDefaultArray", "[{longProp=741}, {longProp=123}, {longProp=456}, {longProp=789}]"));
     }
 
     @Test
@@ -700,7 +550,7 @@ public class ArrayValueTest
         assertThat(msgPackMap).contains(
                 entry("simpleArray", "[{longProp=123}]"),
                 entry("emptyDefaultArray", "[]"),
-                entry("notEmptyDefaultArray", "[]"));
+                entry("notEmptyDefaultArray", "[{longProp=456}, {longProp=789}]"));
     }
 
     @Test
@@ -726,7 +576,81 @@ public class ArrayValueTest
         assertThat(msgPackMap).contains(
                 entry("simpleArray", "[{longProp=123}]"),
                 entry("emptyDefaultArray", "[]"),
-                entry("notEmptyDefaultArray", "[{longProp=123}]"));
+                entry("notEmptyDefaultArray", "[{longProp=123}, {longProp=789}]"));
     }
 
+    @Test
+    public void shouldWriteUpdatedDefaultValue()
+    {
+        // given
+        final POJOArray pojo = new POJOArray();
+        pojo.simpleArray().add().setLongProp(123L);
+        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+
+        iterator.next().setLongProp(Long.MAX_VALUE);
+
+        // when
+        final int length = pojo.getLength();
+        final UnsafeBuffer resultBuffer = new UnsafeBuffer(new byte[length]);
+        pojo.write(resultBuffer, 0);
+
+        // then
+        final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer, 0, resultBuffer.capacity());
+        assertThat(msgPackMap).hasSize(3);
+        assertThat(msgPackMap).contains(
+                entry("simpleArray", "[{longProp=123}]"),
+                entry("emptyDefaultArray", "[]"),
+                entry("notEmptyDefaultArray", "[{longProp=9223372036854775807}, {longProp=456}, {longProp=789}]"));
+    }
+
+    @Test
+    public void shouldWriteUpdatedDefaultValueAndAddedValue()
+    {
+        // given
+        final POJOArray pojo = new POJOArray();
+        pojo.simpleArray().add().setLongProp(123L);
+        final ArrayValueIterator<MinimalPOJO> iterator = pojo.notEmptyDefaultArray();
+
+        iterator.next().setLongProp(Long.MAX_VALUE);
+        iterator.add().setLongProp(1L);
+
+        // when
+        final int length = pojo.getLength();
+        final UnsafeBuffer resultBuffer = new UnsafeBuffer(new byte[length]);
+        pojo.write(resultBuffer, 0);
+
+        // then
+        final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer, 0, resultBuffer.capacity());
+        assertThat(msgPackMap).hasSize(3);
+        assertThat(msgPackMap).contains(
+                entry("simpleArray", "[{longProp=123}]"),
+                entry("emptyDefaultArray", "[]"),
+                entry("notEmptyDefaultArray", "[{longProp=9223372036854775807}, {longProp=1}, {longProp=456}, {longProp=789}]"));
+    }
+
+    protected void encodeSimpleArrayProp(MsgPackWriter writer)
+    {
+        writer.writeString(utf8("simpleArray"));
+        writer.writeArrayHeader(5);
+
+        writer.writeMapHeader(1);
+        writer.writeString(utf8("longProp"));
+        writer.writeInteger(123L);
+
+        writer.writeMapHeader(1);
+        writer.writeString(utf8("longProp"));
+        writer.writeInteger(456L);
+
+        writer.writeMapHeader(1);
+        writer.writeString(utf8("longProp"));
+        writer.writeInteger(789L);
+
+        writer.writeMapHeader(1);
+        writer.writeString(utf8("longProp"));
+        writer.writeInteger(555L);
+
+        writer.writeMapHeader(1);
+        writer.writeString(utf8("longProp"));
+        writer.writeInteger(777L);
+    }
 }

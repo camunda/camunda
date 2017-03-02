@@ -12,9 +12,11 @@ public class ConfigurationEntry extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
+    protected ConfiguredMember configuredMember = new ConfiguredMember();
     protected ArrayProperty<ConfiguredMember> membersProp = new ArrayProperty<>("members",
-            new ArrayValue<>(new ConfiguredMember()),
-            new ArrayValue<>(new ConfiguredMember(), EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()));
+            new ArrayValue<>(),
+            new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()),
+            configuredMember);
 
     public ConfigurationEntry()
     {

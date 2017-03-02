@@ -10,7 +10,6 @@ import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayValueIterator<T>
 {
     protected MsgPackReader elementReader = new MsgPackReader();
-    protected MsgPackReader defaultElementReader = new MsgPackReader();
     protected MsgPackWriter elementWriter = new MsgPackWriter();
 
     protected UnsafeBuffer writeBuffer = new UnsafeBuffer(new byte[1024]);
@@ -24,24 +23,34 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
     protected int lastReturned;
     protected boolean skipLastReturned = false;
 
-    public ArrayValue(T innerValue)
+    public ArrayValue()
     {
-        this.innerValue = innerValue;
         reset();
     }
 
-    public ArrayValue(T innerValue, DirectBuffer defaultValue, int offset, int length)
+    public ArrayValue(DirectBuffer defaultValue, int offset, int length)
     {
-        this(innerValue);
-        defaultElementReader.wrap(defaultValue, offset, length);
-        read(defaultElementReader);
+        this();
+
+        final MsgPackReader headerReader = new MsgPackReader();
+        headerReader.wrap(defaultValue, offset, length);
+
+        this.size = headerReader.readArrayHeader();
+
+        offset = headerReader.getOffset() - offset;
+        length = length - offset;
+
+        if (length > 0)
+        {
+            elementReader.wrap(defaultValue, offset, length);
+        }
+
+        this.length = length;
     }
 
     @Override
     public void reset()
     {
-        innerValue.reset();
-
         length = 0;
         size = 0;
 
@@ -54,29 +63,44 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
         writeBuffer.setMemory(0, writeBuffer.capacity(), (byte) 0);
         elementWriter.wrap(writeBuffer, 0);
 
+        if (innerValue != null)
+        {
+            innerValue.reset();
+        }
     }
 
-    public void wrapReadValues(ArrayValue<T> from)
+    public void wrapArrayValue(ArrayValue<T> from)
     {
-        reset();
+        size = from.size;
 
-        size = from.cursor;
         cursor = from.cursor;
         lastReturned = from.lastReturned;
         skipLastReturned = from.skipLastReturned;
 
-        final UnsafeBuffer fromWriteBuffer = from.writeBuffer;
-        final int fromWriteBufferOffset = from.elementWriter.getOffset();
-        elementWriter.writeRaw(fromWriteBuffer, 0, fromWriteBufferOffset);
+        final int writeBufferCapacity = writeBuffer.capacity();
+        final int requiredWriteBufferLength = from.elementWriter.getOffset();
 
-        final MsgPackReader fromElementReader = from.elementReader;
-        length = fromElementReader.getOffset();
-
-        if (length > 0)
+        if (requiredWriteBufferLength > writeBufferCapacity)
         {
-            final int innerValueLength = from.innerValue.getEncodedLength();
-            elementReader.wrap(fromElementReader.getBuffer(), length - innerValueLength, innerValueLength);
-            innerValue.read(elementReader);
+            resizeWriteBuffer(requiredWriteBufferLength);
+        }
+
+        writeBuffer.setMemory(0, writeBuffer.capacity(), (byte) 0);
+        elementWriter.writeRaw(from.writeBuffer, 0, requiredWriteBufferLength);
+
+        if (from.hasNext())
+        {
+            final MsgPackReader fromElementReader = from.elementReader;
+            final DirectBuffer buffer = fromElementReader.getBuffer();
+            final int offset = fromElementReader.getOffset();
+
+            length = from.length - offset;
+            elementReader.wrap(buffer, offset, length);
+        }
+        else
+        {
+            length = 0;
+            elementReader.wrap(elementReader.getBuffer(), 0, 0);
         }
     }
 
@@ -231,23 +255,39 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
         {
             final int offset = elementWriter.getOffset();
             final int capacity = writeBuffer.capacity();
-            final int length = innerValue.getEncodedLength() + offset;
+            final int requiredLength = innerValue.getEncodedLength() + offset;
 
-            if (length > capacity)
+            if (requiredLength > capacity)
             {
-                final UnsafeBuffer newWriteBuffer = new UnsafeBuffer(new byte[length]);
-                newWriteBuffer.putBytes(0, writeBuffer, 0, offset);
-                writeBuffer = newWriteBuffer;
-                elementWriter.wrap(newWriteBuffer, offset);
+                resizeWriteBuffer(requiredLength);
             }
 
             innerValue.write(elementWriter);
         }
     }
 
+    protected void resizeWriteBuffer(final int newLength)
+    {
+        final int offset = elementWriter.getOffset();
+        final byte[] byteArr = new byte[newLength];
+
+        writeBuffer.getBytes(0, byteArr, 0, offset);
+        writeBuffer.wrap(byteArr, 0, newLength);
+    }
+
     public int size()
     {
         return size;
+    }
+
+    public T getInnerValue()
+    {
+        return innerValue;
+    }
+
+    public void setInnerValue(T innerValue)
+    {
+        this.innerValue = innerValue;
     }
 
 }

@@ -6,14 +6,17 @@ import org.camunda.tngp.broker.util.msgpack.value.BaseValue;
 
 public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>> implements ArrayValueIterator<T>
 {
-    public ArrayProperty(String keyString, ArrayValue<T> value)
+    public ArrayProperty(String keyString, ArrayValue<T> value, T innerValue)
     {
         super(keyString, value);
+        value.setInnerValue(innerValue);
     }
 
-    public ArrayProperty(String key, ArrayValue<T> value, ArrayValue<T> defaultValue)
+    public ArrayProperty(String key, ArrayValue<T> value, ArrayValue<T> defaultValue, T innerValue)
     {
         super(key, value, defaultValue);
+        value.setInnerValue(innerValue);
+        defaultValue.setInnerValue(innerValue);
     }
 
     @Override
@@ -37,7 +40,7 @@ public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<
 
             if (defaultValue != null)
             {
-                value.wrapReadValues(defaultValue);
+                value.wrapArrayValue(defaultValue);
             }
         }
 
@@ -53,7 +56,7 @@ public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<
 
             if (defaultValue != null)
             {
-                value.wrapReadValues(defaultValue);
+                value.wrapArrayValue(defaultValue);
             }
         }
 

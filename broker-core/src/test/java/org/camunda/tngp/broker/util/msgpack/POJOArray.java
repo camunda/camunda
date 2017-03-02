@@ -16,7 +16,8 @@ public class POJOArray extends UnpackedObject
 
     static
     {
-        final ArrayValue<MinimalPOJO> values = new ArrayValue<>(new MinimalPOJO());
+        final ArrayValue<MinimalPOJO> values = new ArrayValue<>();
+        values.setInnerValue(new MinimalPOJO());
 
         values.add().setLongProp(123L);
         values.add().setLongProp(456L);
@@ -38,15 +39,17 @@ public class POJOArray extends UnpackedObject
 
     public POJOArray()
     {
-        this.simpleArrayProp = new ArrayProperty<>("simpleArray", new ArrayValue<>(new MinimalPOJO()));
+        this.simpleArrayProp = new ArrayProperty<>("simpleArray", new ArrayValue<>(), new MinimalPOJO());
 
         this.emptyDefaultArrayProp = new ArrayProperty<>("emptyDefaultArray",
-                new ArrayValue<>(new MinimalPOJO()),
-                new ArrayValue<>(new MinimalPOJO(), EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()));
+                new ArrayValue<>(),
+                new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()),
+                new MinimalPOJO());
 
         this.notEmptyDefaultArrayProp = new ArrayProperty<>("notEmptyDefaultArray",
-                new ArrayValue<>(new MinimalPOJO()),
-                new ArrayValue<>(new MinimalPOJO(), NOT_EMPTY_ARRAY, 0, NOT_EMPTY_ARRAY.capacity()));
+                new ArrayValue<>(),
+                new ArrayValue<>(NOT_EMPTY_ARRAY, 0, NOT_EMPTY_ARRAY.capacity()),
+                new MinimalPOJO());
 
         this.declareProperty(simpleArrayProp)
             .declareProperty(emptyDefaultArrayProp)
