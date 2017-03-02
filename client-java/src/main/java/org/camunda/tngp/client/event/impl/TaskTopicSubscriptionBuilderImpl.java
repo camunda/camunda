@@ -67,4 +67,25 @@ public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBu
             LOGGER.info("Ignoring event at position " + event.getEventPosition());
         }
     }
+
+    @Override
+    public TaskTopicSubscriptionBuilder startAtPosition(long position)
+    {
+        innerBuilder.startAtPosition(position);
+        return this;
+    }
+
+    @Override
+    public TaskTopicSubscriptionBuilder startAtTailOfTopic()
+    {
+        innerBuilder.startAtTailOfTopic();
+        return this;
+    }
+
+    @Override
+    public TaskTopicSubscriptionBuilder startAtHeadOfTopic()
+    {
+        innerBuilder.startAtHeadOfTopic();
+        return this;
+    }
 }

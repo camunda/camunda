@@ -62,6 +62,7 @@ public class TaskTopicSubscriptionTest
 
         // when
         client.taskTopic(0).newSubscription()
+            .startAtHeadOfTopic()
             .taskEventHandler(handler)
             .open();
 
@@ -96,6 +97,7 @@ public class TaskTopicSubscriptionTest
 
         // when no POJO handler is registered
         client.taskTopic(0).newSubscription()
+            .startAtHeadOfTopic()
             .defaultHandler(handler)
             .open();
 

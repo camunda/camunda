@@ -57,6 +57,7 @@ public class TopicSubscriptionRaftEventTest
     {
         // given
         client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
             .handler(recordingHandler)
             .open();
 

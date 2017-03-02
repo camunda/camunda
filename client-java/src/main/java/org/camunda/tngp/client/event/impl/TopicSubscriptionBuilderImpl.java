@@ -39,4 +39,25 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
         return subscription;
     }
 
+    @Override
+    public TopicSubscriptionBuilder startAtPosition(long position)
+    {
+        implBuilder.startPosition(position);
+        return this;
+    }
+
+    @Override
+    public TopicSubscriptionBuilder startAtTailOfTopic()
+    {
+        implBuilder.startAtTailOfTopic();
+        return this;
+    }
+
+    @Override
+    public TopicSubscriptionBuilder startAtHeadOfTopic()
+    {
+        implBuilder.startAtHeadOfTopic();
+        return this;
+    }
+
 }

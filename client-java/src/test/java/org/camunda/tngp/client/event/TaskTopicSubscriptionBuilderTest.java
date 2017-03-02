@@ -1,6 +1,7 @@
 package org.camunda.tngp.client.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalMatchers.lt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,4 +95,61 @@ public class TaskTopicSubscriptionBuilderTest
         // when
         builder.open();
     }
+
+
+    @Test
+    public void shouldBuildManagedSubscriptionAtHeadOfTopic()
+    {
+        // given
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+                .defaultHandler(noOpHandler)
+                .taskEventHandler(noOpTaskHandler)
+                .startAtHeadOfTopic();
+
+        // when
+        builder.open();
+
+        // then
+        verify(client).createTopicSubscription();
+        verify(openSubscriptionCmd).startPosition(0L);
+        verify(openSubscriptionCmd).execute();
+    }
+
+    @Test
+    public void shouldBuildManagedSubscriptionAtTailOfTopic()
+    {
+        // given
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+                .defaultHandler(noOpHandler)
+                .taskEventHandler(noOpTaskHandler)
+                .startAtTailOfTopic();
+
+        // when
+        builder.open();
+
+        // then
+        verify(client).createTopicSubscription();
+        verify(openSubscriptionCmd).startPosition(lt(0L));
+        verify(openSubscriptionCmd).execute();
+    }
+
+    @Test
+    public void shouldBuildManagedSubscriptionAtPosition()
+    {
+        // given
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+                .defaultHandler(noOpHandler)
+                .taskEventHandler(noOpTaskHandler)
+                .startAtPosition(123L);
+
+        // when
+        builder.open();
+
+        // then
+        verify(client).createTopicSubscription();
+        verify(openSubscriptionCmd).startPosition(123L);
+        verify(openSubscriptionCmd).execute();
+    }
+
+
 }

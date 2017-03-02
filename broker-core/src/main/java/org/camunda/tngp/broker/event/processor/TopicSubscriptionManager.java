@@ -36,6 +36,7 @@ public class TopicSubscriptionManager implements Agent
         Objects.requireNonNull(subscription);
         final int topicId = subscription.getTopicId();
         final int channelId = subscription.getChannelId();
+        final long startPosition = subscription.getStartPosition();
 
         return asyncContext.runAsync((future) ->
         {
@@ -51,6 +52,7 @@ public class TopicSubscriptionManager implements Agent
                     channelId,
                     topicId,
                     subscriptionId,
+                    startPosition,
                     eventWriterFactory.get());
 
             streamProcessorManager.createStreamProcessorService(

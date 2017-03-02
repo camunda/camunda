@@ -22,6 +22,12 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<To
         EnsureUtil.ensureGreaterThanOrEqual("topicId", subscription.getTopicId(), 0);
     }
 
+    public CreateTopicSubscriptionCmdImpl startPosition(long startPosition)
+    {
+        this.subscription.setStartPosition(startPosition);
+        return this;
+    }
+
     @Override
     protected Object writeCommand()
     {

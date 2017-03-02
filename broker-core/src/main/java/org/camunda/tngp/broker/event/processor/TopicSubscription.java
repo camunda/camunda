@@ -8,13 +8,16 @@ public class TopicSubscription extends UnpackedObject
 {
     protected LongProperty idProp = new LongProperty("id", -1L);
     protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
+    // negative value for end of log
+    protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
 
     protected int channelId;
 
     public TopicSubscription()
     {
         this.declareProperty(idProp)
-            .declareProperty(topicIdProp);
+            .declareProperty(topicIdProp)
+            .declareProperty(startPositionProp);
     }
 
     public long getId()
@@ -48,6 +51,17 @@ public class TopicSubscription extends UnpackedObject
     {
         this.channelId = channelId;
         return this;
+    }
+
+    public TopicSubscription startPosition(long startPosition)
+    {
+        this.startPositionProp.setValue(startPosition);
+        return this;
+    }
+
+    public long getStartPosition()
+    {
+        return startPositionProp.getValue();
     }
 
 }

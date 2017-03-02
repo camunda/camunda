@@ -5,6 +5,7 @@ public class TopicSubscription
 
     protected long id;
     protected int topicId;
+    protected long startPosition;
 
     public TopicSubscription()
     {
@@ -31,9 +32,20 @@ public class TopicSubscription
         this.topicId = topicId;
     }
 
+    public long getStartPosition()
+    {
+        return startPosition;
+    }
+
+    public void setStartPosition(long startPosition)
+    {
+        this.startPosition = startPosition;
+    }
+
     public void reset()
     {
         this.id = -1L;
         this.topicId = -1;
+        this.startPosition = -1L;
     }
 }

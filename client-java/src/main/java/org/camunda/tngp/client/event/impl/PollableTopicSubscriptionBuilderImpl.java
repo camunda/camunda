@@ -20,4 +20,25 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
         return subscription;
     }
 
+    @Override
+    public PollableTopicSubscriptionBuilder startAtPosition(long position)
+    {
+        implBuilder.startPosition(position);
+        return this;
+    }
+
+    @Override
+    public PollableTopicSubscriptionBuilder startAtTailOfTopic()
+    {
+        implBuilder.startAtTailOfTopic();
+        return this;
+    }
+
+    @Override
+    public PollableTopicSubscriptionBuilder startAtHeadOfTopic()
+    {
+        implBuilder.startAtHeadOfTopic();
+        return this;
+    }
+
 }

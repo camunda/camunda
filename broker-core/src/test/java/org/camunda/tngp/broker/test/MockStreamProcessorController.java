@@ -30,6 +30,7 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
@@ -162,6 +163,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
         context.setStreamProcessorCmdQueue(cmdQueue);
         context.setLogStreamWriter(mockLogStreamWriter);
+        context.setSourceLogStreamReader(mock(LogStreamReader.class));
 
         streamProcessor.onOpen(context);
     }

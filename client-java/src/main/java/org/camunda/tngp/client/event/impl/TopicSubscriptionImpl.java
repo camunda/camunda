@@ -16,16 +16,19 @@ public class TopicSubscriptionImpl
     protected final TopicClientImpl client;
 
     protected AtomicBoolean processingFlag = new AtomicBoolean(false);
+    protected long startPosition;
 
     public TopicSubscriptionImpl(
             TopicClientImpl client,
             CheckedConsumer<TopicEventImpl> handler,
             EventAcquisition<TopicSubscriptionImpl> eventAcquisition,
-            int prefetchSize)
+            int prefetchSize,
+            long startPosition)
     {
         super(eventAcquisition, prefetchSize);
         this.client = client;
         this.handler = handler;
+        this.startPosition = startPosition;
     }
 
     @Override
@@ -75,7 +78,9 @@ public class TopicSubscriptionImpl
     @Override
     protected Long requestNewSubscription()
     {
-        return client.createTopicSubscription().execute();
+        return client.createTopicSubscription()
+                .startPosition(startPosition)
+                .execute();
     }
 
     @Override

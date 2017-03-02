@@ -3,9 +3,11 @@ package org.camunda.tngp.broker.event.processor;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
+import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 
@@ -19,18 +21,40 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     protected final int channelId;
     protected final int logStreamId;
     protected final long subscriptionId;
+    protected final long startPosition;
 
     protected final SubscribedEventWriter channelWriter;
 
-    public TopicSubscriptionProcessor(int channelId, int logStreamId, long subscriptionId, SubscribedEventWriter channelWriter)
+    public TopicSubscriptionProcessor(int channelId, int logStreamId, long subscriptionId, long startPosition, SubscribedEventWriter channelWriter)
     {
         this.channelWriter = channelWriter;
         this.channelId = channelId;
         this.logStreamId = logStreamId;
         this.subscriptionId = subscriptionId;
+        this.startPosition = startPosition;
     }
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
+
+    @Override
+    public void onOpen(StreamProcessorContext context)
+    {
+        final LogStreamReader logReader = context.getSourceLogStreamReader();
+
+        if (startPosition >= 0)
+        {
+            logReader.seek(startPosition);
+        }
+        else
+        {
+            logReader.seekToLastEvent();
+
+            if (logReader.hasNext())
+            {
+                logReader.next();
+            }
+        }
+    }
 
     @Override
     public SnapshotSupport getStateResource()

@@ -8,18 +8,36 @@ public class TopicSubscriptionImplBuilder
 
     protected final TopicClientImpl client;
     protected CheckedConsumer<TopicEventImpl> handler;
+    protected long startPosition;
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
 
     public TopicSubscriptionImplBuilder(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
     {
         this.client = client;
         this.acquisition = acquisition;
+        startAtTailOfTopic();
     }
 
     public TopicSubscriptionImplBuilder handler(CheckedConsumer<TopicEventImpl> handler)
     {
         this.handler = handler;
         return this;
+    }
+
+    public TopicSubscriptionImplBuilder startPosition(long startPosition)
+    {
+        this.startPosition = startPosition;
+        return this;
+    }
+
+    public TopicSubscriptionImplBuilder startAtTailOfTopic()
+    {
+        return startPosition(-1L);
+    }
+
+    public TopicSubscriptionImplBuilder startAtHeadOfTopic()
+    {
+        return startPosition(0L);
     }
 
     public CheckedConsumer<TopicEventImpl> getHandler()
@@ -33,6 +51,7 @@ public class TopicSubscriptionImplBuilder
             client,
             handler,
             acquisition,
-            PREFETCH_SIZE);
+            PREFETCH_SIZE,
+            startPosition);
     }
 }

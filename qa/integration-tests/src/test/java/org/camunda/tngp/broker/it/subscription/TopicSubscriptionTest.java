@@ -16,16 +16,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.it.subscription.RecordingEventHandler.RecordedEvent;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.PollableTopicSubscription;
 import org.camunda.tngp.client.event.TopicEvent;
 import org.camunda.tngp.client.event.TopicEventHandler;
+import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
@@ -53,7 +57,7 @@ public class TopicSubscriptionTest
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(10);
+    public Timeout timeout = Timeout.seconds(10 * 100);
 
     protected TngpClient client;
     protected RecordingEventHandler recordingHandler;
@@ -117,6 +121,7 @@ public class TopicSubscriptionTest
         // when
         client.topic(0).newSubscription()
             .handler(recordingHandler)
+            .startAtHeadOfTopic()
             .open();
 
         // then
@@ -126,6 +131,101 @@ public class TopicSubscriptionTest
 
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
         recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
+    }
+
+    @Test
+    public void shouldReceiveEventsFromTailOfLog() throws IOException
+    {
+        // given
+        client.taskTopic(0).create()
+                .addHeader("key", "value")
+                .payload("{}")
+                .taskType("foo")
+                .execute();
+
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .startAtTailOfTopic()
+            .open();
+
+        // when
+        final Long task2Key = client.taskTopic(0).create()
+                .addHeader("key", "value")
+                .payload("{}")
+                .taskType("foo")
+                .execute();
+
+        // then
+
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
+
+        assertThat(recordingHandler.numRecordedTaskEvents()).isEqualTo(2);
+
+        // task 1 has not been received
+        recordingHandler.assertTaskEvent(0, task2Key, "CREATE");
+        recordingHandler.assertTaskEvent(1, task2Key, "CREATED");
+    }
+
+    @Test
+    public void shouldReceiveEventsFromPosition() throws IOException
+    {
+        // given
+        client.taskTopic(0).create()
+                .addHeader("key", "value")
+                .payload("{}")
+                .taskType("foo")
+                .execute();
+
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .startAtHeadOfTopic()
+            .open();
+
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+
+        final List<RecordedEvent> recordedTaskEvents = recordingHandler.getRecordedEvents().stream()
+                .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
+                .collect(Collectors.toList());
+
+        final RecordingEventHandler subscription2Handler = new RecordingEventHandler();
+        final long secondTaskEventPosition = recordedTaskEvents.get(1).getMetadata().getEventPosition();
+
+        // when
+        client.topic(0).newSubscription()
+            .handler(subscription2Handler)
+            .startAtPosition(secondTaskEventPosition)
+            .open();
+
+        // then
+        TestUtil.waitUntil(() -> subscription2Handler.numRecordedEvents() > 0);
+
+        // only the second event is pushed to the second subscription
+        final RecordedEvent firstEvent = subscription2Handler.getRecordedEvents().get(0);
+        assertThat(firstEvent.getMetadata().getEventPosition()).isEqualTo(secondTaskEventPosition);
+
+    }
+
+    @Test
+    public void shouldReceiveEventsFromPositionBeyondTail()
+    {
+        // given
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .startAtPosition(Long.MAX_VALUE)
+            .open();
+
+        // when
+        client.taskTopic(0).create()
+            .addHeader("key", "value")
+            .payload("{}")
+            .taskType("foo")
+            .execute();
+
+        // then
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+
+        // the events are nevertheless received, although they have a lower position
+        assertThat(recordingHandler.numRecordedTaskEvents() == 2);
     }
 
     @Test
@@ -163,12 +263,14 @@ public class TopicSubscriptionTest
             .execute();
 
         client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
             .handler(recordingHandler)
             .open();
 
 
         final RecordingEventHandler secondEventHandler = new RecordingEventHandler();
         client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
             .handler(secondEventHandler)
             .open();
 
@@ -198,6 +300,7 @@ public class TopicSubscriptionTest
 
         // when
         client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
             .handler(handler)
             .open();
 
@@ -221,6 +324,7 @@ public class TopicSubscriptionTest
 
         final PollableTopicSubscription subscription = client.topic(0)
             .newPollableSubscription()
+            .startAtHeadOfTopic()
             .open();
 
         // when
