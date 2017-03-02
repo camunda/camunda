@@ -33,6 +33,8 @@ public class ConfigurationService {
   private String elasticSearchHost;
   @Value("${camunda.optimize.es.port}")
   private Integer elasticSearchPort;
+  @Value(("${camunda.optimize.es.timeout.ms}"))
+  private int elasticsearchTimeoutInSec;
 
   @Value("${camunda.optimize.es.correlation.init}")
   private String correlationInitScriptPath;
@@ -224,5 +226,9 @@ public class ConfigurationService {
 
   public double getImportResetInterval() {
     return importResetInterval;
+  }
+
+  public int getElasticsearchTimeout() {
+    return elasticsearchTimeoutInSec;
   }
 }

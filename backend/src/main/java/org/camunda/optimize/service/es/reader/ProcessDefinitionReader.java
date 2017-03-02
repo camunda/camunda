@@ -6,6 +6,7 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -36,25 +37,38 @@ public class ProcessDefinitionReader {
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
 
-    SearchResponse sr = esclient
+    SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex())
       .setTypes(configurationService.getProcessDefinitionType())
+      .setScroll(new TimeValue(configurationService.getElasticsearchTimeout()))
       .setQuery(query)
+      .setSize(100)
       .get();
 
-    int numberOfProcessDefinitions = (int) sr.getHits().totalHits();
-    List<ProcessDefinitionOptimizeDto> list = new ArrayList<>(numberOfProcessDefinitions);
-    for (SearchHit hit : sr.getHits().getHits()) {
-      String content = hit.getSourceAsString();
-      ProcessDefinitionOptimizeDto processDefinition = null;
-      try {
-        processDefinition = objectMapper.readValue(content, ProcessDefinitionOptimizeDto.class);
-      } catch (IOException e) {
-        logger.error("Error while reading process definition from elastic search!", e);
+    List<ProcessDefinitionOptimizeDto> list = new ArrayList<>();
+    do {
+      for (SearchHit hit : scrollResp.getHits().getHits()) {
+
+        addSearchHitToList(hit, list);
       }
-      list.add(processDefinition);
-    }
+      scrollResp = esclient
+        .prepareSearchScroll(scrollResp.getScrollId())
+        .setScroll(new TimeValue(configurationService.getElasticsearchTimeout()))
+        .get();
+    } while (scrollResp.getHits().getHits().length != 0);
+
     return list;
+  }
+
+  private void addSearchHitToList(SearchHit hit, List<ProcessDefinitionOptimizeDto> list) {
+    String content = hit.getSourceAsString();
+    ProcessDefinitionOptimizeDto processDefinition = null;
+    try {
+      processDefinition = objectMapper.readValue(content, ProcessDefinitionOptimizeDto.class);
+    } catch (IOException e) {
+      logger.error("Error while reading process definition from elastic search!", e);
+    }
+    list.add(processDefinition);
   }
 
   public String getProcessDefinitionXml(String processDefinitionId) {

@@ -38,7 +38,6 @@ public class ProcessDefinitionReaderIT {
   private ConfigurationService configurationService;
 
   @Test
-  @Ignore
   public void getProcessDefinitionsWithMoreThenTen() throws Exception {
     for (int i = 0; i < 11; i++) {
       // given
