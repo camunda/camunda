@@ -48,6 +48,15 @@ pipeline {
         }
       }
     }
+    stage('Linting') {
+      steps {
+        sh '''
+          cd ./client
+          yarn
+          yarn run eslint
+        '''
+      }
+    }
     stage('IT') {
       steps {
         sh 'mvn -s settings.xml -Pit  -f ' + backendModuleName + '/pom.xml clean verify'

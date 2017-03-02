@@ -3,7 +3,7 @@ var bpmn = require('./bpmn');
 
 // Possible states that activity can be in
 var states = ['COMPLETED', 'CREATED'];
-var eventsFactor = 10;
+var eventsFactor = 50;
 var processInstanceFactor = 4;
 var isCI = process.env.NODE_ENV === 'ci';
 
@@ -14,7 +14,7 @@ module.exports = {
 function getData() {
   return bpmn
     .getBpmnEntries()
-    .then(function(bpmnEntries) {  
+    .then(function(bpmnEntries) {
       var processDefinitions = createProcessDefinitions(bpmnEntries);
 
       return {
