@@ -20,7 +20,7 @@ describe('<Analytics>', () => {
   let gateway;
   let initialState;
   let gatewayAnalysisState;
-  let is;
+  let isBpmnType;
 
   const GATEWAY_ANALYSIS_MODE = 'GATEWAY_ANALYSIS_MODE';
 
@@ -99,10 +99,10 @@ describe('<Analytics>', () => {
     createModal = sinon.stub().returns(Modal);
     __set__('createModal', createModal);
 
-    is = sinon.stub().returns(false);
-    is.withArgs(endEvent, 'EndEvent').returns(true);
-    is.withArgs(gateway, 'Gateway').returns(true);
-    __set__('is', is);
+    isBpmnType = sinon.stub().returns(false);
+    isBpmnType.withArgs(endEvent, 'EndEvent').returns(true);
+    isBpmnType.withArgs(gateway, 'Gateway').returns(true);
+    __set__('isBpmnType', isBpmnType);
 
     viewer = {
       get: sinon.stub().returnsThis(),
@@ -122,7 +122,7 @@ describe('<Analytics>', () => {
 
   afterEach(() => {
     __ResetDependency__('createModal');
-    __ResetDependency__('is');
+    __ResetDependency__('isBpmnType');
     __ResetDependency__('setEndEvent');
     __ResetDependency__('setGateway');
     __ResetDependency__('leaveGatewayAnalysisMode');
@@ -133,14 +133,14 @@ describe('<Analytics>', () => {
 
   it('should do nothing when a non end event is clicked', () => {
     update(initialState);
-    viewer.on.lastCall.args[1]({element: diagramElement});
+    viewer.on.firstCall.args[1]({element: diagramElement});
 
     expect(Modal.open.called).to.eql(false);
   });
 
   it('should set the end event and open modal when an end event is clicked', () => {
     update(initialState);
-    viewer.on.lastCall.args[1]({element: endEvent});
+    viewer.on.firstCall.args[1]({element: endEvent});
 
     expect(setEndEvent.calledWith(endEvent)).to.eql(true);
     expect(Modal.open.called).to.eql(true);
@@ -162,7 +162,7 @@ describe('<Analytics>', () => {
 
   it('should not set a gateway outside of gateway analysis mode', () => {
     update(initialState);
-    viewer.on.lastCall.args[1]({element: gateway});
+    viewer.on.firstCall.args[1]({element: gateway});
 
     expect(setGateway.called).to.eql(false);
   });

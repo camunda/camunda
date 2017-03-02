@@ -2,7 +2,7 @@ import {jsx, Socket, OnEvent, createReferenceComponent, DESTROY_EVENT, createSta
 import {createModal} from 'widgets';
 import {enterGatewayAnalysisMode, setEndEvent, unsetEndEvent, setGateway, leaveGatewayAnalysisMode} from './service';
 import {GATEWAY_ANALYSIS_MODE} from './reducer';
-import {is} from 'utils';
+import {isBpmnType} from 'utils';
 
 export function createAnalyticsRenderer({viewer, node, eventsBus}) {
   const canvas = viewer.get('canvas');
@@ -76,23 +76,33 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
   viewer.get('eventBus').on('element.click', ({element}) => {
     const {mode, heatmap: {data}} = State.getState();
 
+    if (mode !== GATEWAY_ANALYSIS_MODE) {
+      if (isBpmnType(element, 'EndEvent')) {
+        setEndEvent(element);
+
+        updateModalContent(element, data);
+        Modal.open();
+      }
+    }
+  });
+
+  viewer.get('eventBus').on('element.click', ({element}) => {
+    const {mode} = State.getState();
+
     if (mode === GATEWAY_ANALYSIS_MODE) {
-      if (is(element, 'Gateway')) {
+      if (isBpmnType(element, 'Gateway')) {
         setGateway(element);
       }
-    } else if (is(element, 'EndEvent')) {
-      setEndEvent(element);
-
-      updateModalContent(element, data);
-      Modal.open();
     }
   });
 
   const keydownListener = ({key}) => {
     const {mode, selection} = State.getState();
 
-    if (key === 'Escape' && mode === GATEWAY_ANALYSIS_MODE && !selection.gateway) {
-      leaveGatewayAnalysisMode();
+    if (mode === GATEWAY_ANALYSIS_MODE) {
+      if (key === 'Escape' && !selection.gateway) {
+        leaveGatewayAnalysisMode();
+      }
     }
   };
 
@@ -102,8 +112,8 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
   });
 
   function needsHighlight(element, mode) {
-    return mode === GATEWAY_ANALYSIS_MODE && is(element, 'Gateway') ||
-           mode !== GATEWAY_ANALYSIS_MODE && is(element, 'EndEvent');
+    return mode === GATEWAY_ANALYSIS_MODE && isBpmnType(element, 'Gateway') ||
+           mode !== GATEWAY_ANALYSIS_MODE && isBpmnType(element, 'EndEvent');
   }
 
   function removeHighlight(element) {

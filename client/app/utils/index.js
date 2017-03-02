@@ -5,4 +5,4 @@ export {
   isInitial, isLoading, isLoaded
 } from './loading';
 export {onNextUpdate} from './onNextUpdate';
-export {is} from './bpmn-utils';
+export {isBpmnType} from './bpmn-utils';
