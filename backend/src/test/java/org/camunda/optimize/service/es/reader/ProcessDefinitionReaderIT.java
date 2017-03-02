@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,6 +36,24 @@ public class ProcessDefinitionReaderIT {
 
   @Autowired
   private ConfigurationService configurationService;
+
+  @Test
+  @Ignore
+  public void getProcessDefinitionsWithMoreThenTen() throws Exception {
+    for (int i = 0; i < 11; i++) {
+      // given
+      String index = String.valueOf(1 + i);
+      ProcessDefinitionEngineDto procDef = new ProcessDefinitionEngineDto();
+      procDef.setId(index);
+      procDef.setKey("testDefinition");
+      rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), index, procDef);
+    }
+
+    // when
+    List<ProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
+
+    assertThat(testDefinition.size(), is(11));
+  }
 
   @Test
   public void getProcessDefinitions() throws Exception {
