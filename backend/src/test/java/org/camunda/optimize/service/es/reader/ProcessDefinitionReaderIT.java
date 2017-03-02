@@ -43,7 +43,7 @@ public class ProcessDefinitionReaderIT {
     for (int i = 0; i < 11; i++) {
       // given
       String index = String.valueOf(1 + i);
-      ProcessDefinitionEngineDto procDef = new ProcessDefinitionEngineDto();
+      ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
       procDef.setId(index);
       procDef.setKey("testDefinition");
       rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), index, procDef);
