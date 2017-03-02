@@ -44,6 +44,32 @@ public interface TopicSubscriptionBuilder
      */
     TopicSubscriptionBuilder startAtHeadOfTopic();
 
+    /**
+     * <p>Sets the name of a subscription. The name is used by the broker to record and persist the
+     * subscription's position. When a subscription is reopened, this state is used to resume
+     * the subscription at the previous position. In this case, methods like {@link #startAtPosition(long)}
+     * have no effect (the subscription has already started before).
+     *
+     * <p>Example:
+     * <pre>
+     * TopicSubscriptionBuilder builder = ...;
+     * builder
+     *   .startAtPosition(0)
+     *   .name("app1")
+     *   ...
+     *   .open();
+     * </pre>
+     * When executed the first time, this snippet creates a new subscription beginning at position 0.
+     * When executed a second time, this snippet creates a new subscription beginning at the position
+     * at which the first subscription left off.
+     *
+     * <p>This parameter is required.
+     *
+     * @param name the name of the subscription. must be unique for the addressed topic
+     * @return this builder
+     */
+    TopicSubscriptionBuilder name(String name);
+
 
     /**
      * Opens a new topic subscription with the defined parameters.

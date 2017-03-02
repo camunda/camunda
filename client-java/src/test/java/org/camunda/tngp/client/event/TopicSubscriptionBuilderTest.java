@@ -64,7 +64,9 @@ public class TopicSubscriptionBuilderTest
                 .handler(noOpHandler);
 
         // when
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder.open();
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder
+                .name("foo")
+                .open();
 
         // then
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscription);
@@ -73,6 +75,7 @@ public class TopicSubscriptionBuilderTest
 
         verify(client).createTopicSubscription();
         verify(openSubscriptionCmd).startPosition(lt(0L)); //default is tail of topic
+        verify(openSubscriptionCmd).name("foo");
         verify(openSubscriptionCmd).execute();
     }
 
@@ -85,7 +88,9 @@ public class TopicSubscriptionBuilderTest
                 .startAtHeadOfTopic();
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -102,7 +107,9 @@ public class TopicSubscriptionBuilderTest
                 .startAtTailOfTopic();
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -119,7 +126,9 @@ public class TopicSubscriptionBuilderTest
                 .startAtPosition(123L);
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -135,7 +144,9 @@ public class TopicSubscriptionBuilderTest
         final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition);
 
         // when
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder.open();
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder
+                .name("foo")
+                .open();
 
         // then
         assertThat(subscriptions.getPollableSubscriptions()).contains(subscription);
@@ -144,6 +155,7 @@ public class TopicSubscriptionBuilderTest
 
         verify(client).createTopicSubscription();
         verify(openSubscriptionCmd).startPosition(lt(0L));
+        verify(openSubscriptionCmd).name("foo");
         verify(openSubscriptionCmd).execute();
     }
 
@@ -156,7 +168,9 @@ public class TopicSubscriptionBuilderTest
                 .startAtHeadOfTopic();
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -172,7 +186,9 @@ public class TopicSubscriptionBuilderTest
                 .startAtTailOfTopic();
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -188,7 +204,9 @@ public class TopicSubscriptionBuilderTest
                 .startAtPosition(123L);
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -210,4 +228,33 @@ public class TopicSubscriptionBuilderTest
         builder.open();
     }
 
+    @Test
+    public void shouldValidateNameForManagedSubscription()
+    {
+        // given
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
+                .handler(noOpHandler);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("name must not be null");
+
+        // when
+        builder.open();
+    }
+
+
+    @Test
+    public void shouldValidateNameForPollableSubscription()
+    {
+        // given
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition);
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("name must not be null");
+
+        // when
+        builder.open();
+    }
 }

@@ -9,8 +9,13 @@ public class TopicSubscriptionNames
 
     public static final ServiceName<TopicSubscriptionManager> TOPIC_SUBSCRIPTION_MANAGER = ServiceName.newServiceName("log.subscription.manager", TopicSubscriptionManager.class);;
 
-    public static ServiceName<StreamProcessorController> subscriptionServiceName(String logStreamName, long id)
+    public static ServiceName<StreamProcessorController> subscriptionServiceName(String logStreamName, String subscriptionName)
     {
-        return ServiceName.newServiceName(String.format("log.%s.subscription.%d", logStreamName, id), StreamProcessorController.class);
+        return ServiceName.newServiceName(String.format("log.%s.subscription.processor.%s", logStreamName, subscriptionName), StreamProcessorController.class);
+    }
+
+    public static ServiceName<StreamProcessorController> ackServiceName(String logStreamName)
+    {
+        return ServiceName.newServiceName(String.format("log.%s.subscription.ack", logStreamName), StreamProcessorController.class);
     }
 }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TopicSubscriptionRaftEventTest
 {
+    public static final String SUBSCRIPTION_NAME = "subscription";
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -59,6 +60,7 @@ public class TopicSubscriptionRaftEventTest
         client.topic(0).newSubscription()
             .startAtHeadOfTopic()
             .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // when

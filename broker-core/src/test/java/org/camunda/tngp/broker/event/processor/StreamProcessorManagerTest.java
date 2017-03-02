@@ -20,7 +20,7 @@ import org.camunda.tngp.servicecontainer.ServiceBuilder;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.test.util.FluentMock;
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,7 +40,7 @@ public class StreamProcessorManagerTest
     protected FuturePool serviceInstallFutures = new FuturePool();
     protected FuturePool serviceRemoveFutures = new FuturePool();
 
-    protected AsyncContext asyncContext;
+    protected DeferredCommandContext asyncContext;
 
     @Mock
     protected StreamProcessor streamProcessor;
@@ -51,7 +51,7 @@ public class StreamProcessorManagerTest
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
-        asyncContext = new AsyncContext();
+        asyncContext = new DeferredCommandContext();
         when(serviceContext.createService(any(), any())).thenReturn(serviceBuilder);
         when(serviceBuilder.install()).thenAnswer((invocation) -> serviceInstallFutures.next());
         when(serviceContext.removeService(any())).thenAnswer((invocation) -> serviceRemoveFutures.next());

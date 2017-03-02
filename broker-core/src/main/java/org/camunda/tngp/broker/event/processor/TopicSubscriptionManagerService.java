@@ -10,7 +10,7 @@ import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class TopicSubscriptionManagerService implements Service<TopicSubscriptionManager>
@@ -23,8 +23,8 @@ public class TopicSubscriptionManagerService implements Service<TopicSubscriptio
     protected StreamProcessorManager streamProcessorManager;
 
     protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-        .onAdd((name, stream) -> streamProcessorManager.addLogStream(name, stream))
-        .onRemove((name, stream) -> streamProcessorManager.removeLogStream(stream))
+        .onAdd((name, stream) -> subscriptionManager.onStreamAdded(name, stream))
+        .onRemove((name, stream) -> subscriptionManager.onStreamRemoved(stream))
         .build();
 
     @Override
@@ -32,7 +32,7 @@ public class TopicSubscriptionManagerService implements Service<TopicSubscriptio
     {
         agentRunnerService = agentRunnerServicesInjector.getValue().conductorAgentRunnerService();
 
-        final AsyncContext asyncContext = new AsyncContext();
+        final DeferredCommandContext asyncContext = new DeferredCommandContext();
         streamProcessorManager = new StreamProcessorManager(startContext, asyncContext);
 
         subscriptionManager = new TopicSubscriptionManager(

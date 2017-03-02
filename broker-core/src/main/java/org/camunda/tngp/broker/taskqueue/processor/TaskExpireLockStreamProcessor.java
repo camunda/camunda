@@ -17,7 +17,6 @@ import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.util.HashMap;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
@@ -28,11 +27,11 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.snapshot.SerializableWrapper;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.time.ClockUtil;
 
 public class TaskExpireLockStreamProcessor implements StreamProcessor
@@ -43,13 +42,13 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     protected final EventProcessor unlockEventProcessor = new UnlockEventProcessor();
     protected final EventProcessor expireLockEventProcessor = new ExpireLockEventProcessor();
 
-    protected final StreamProcessorCommand checkLockExpirationCmd = new CheckLockExpirationCmd();
+    protected final Runnable checkLockExpirationCmd = new CheckLockExpirationCmd();
 
     // TODO #161 - replace the index by a more efficient one
     protected HashMap<Long, ExpirationTimeBucket> index = new HashMap<>();
     protected SnapshotSupport indexSnapshot = new SerializableWrapper<>(index);
 
-    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
+    protected DeferredCommandContext cmdQueue;
 
     protected LogStreamReader targetLogStreamReader;
     protected LogStreamWriter targetLogStreamWriter;
@@ -171,14 +170,14 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
     public void checkLockExpirationAsync()
     {
-        cmdQueue.add(checkLockExpirationCmd);
+        cmdQueue.runAsync(checkLockExpirationCmd);
     }
 
-    class CheckLockExpirationCmd implements StreamProcessorCommand
+    class CheckLockExpirationCmd implements Runnable
     {
 
         @Override
-        public void execute()
+        public void run()
         {
             if (index.size() > 0)
             {

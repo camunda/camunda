@@ -28,6 +28,12 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<To
         return this;
     }
 
+    public CreateTopicSubscriptionCmdImpl name(String name)
+    {
+        this.subscription.setName(name);
+        return this;
+    }
+
     @Override
     protected Object writeCommand()
     {

@@ -72,6 +72,11 @@ public class RecordingEventHandler implements TopicEventHandler
         assertThat(event.get("event").asText()).isEqualTo(eventType);
     }
 
+    public void reset()
+    {
+        this.events.clear();
+    }
+
     public static class RecordedEvent
     {
         protected EventMetadata metadata;

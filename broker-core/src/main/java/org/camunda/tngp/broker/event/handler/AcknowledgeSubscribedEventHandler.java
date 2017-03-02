@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.event.handler;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.event.processor.TopicSubscription;
+import org.camunda.tngp.broker.event.processor.SubscriptionAcknowledgement;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -12,16 +12,15 @@ import org.camunda.tngp.broker.transport.controlmessage.ControlMessageResponseWr
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 
-public class AddTopicSubscriptionHandler implements ControlMessageHandler
+public class AcknowledgeSubscribedEventHandler implements ControlMessageHandler
 {
-
-    protected final TopicSubscription subscription = new TopicSubscription();
+    protected final SubscriptionAcknowledgement ack = new SubscriptionAcknowledgement();
 
     protected final TopicSubscriptionManager subscriptionManager;
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public AddTopicSubscriptionHandler(
+    public AcknowledgeSubscribedEventHandler(
             TopicSubscriptionManager subscriptionManager,
             ControlMessageResponseWriter responseWriter,
             ErrorResponseWriter errorResponseWriter)
@@ -34,17 +33,16 @@ public class AddTopicSubscriptionHandler implements ControlMessageHandler
     @Override
     public ControlMessageType getMessageType()
     {
-        return ControlMessageType.ADD_TOPIC_SUBSCRIPTION;
+        return ControlMessageType.ACKNOWLEDGE_TOPIC_EVENT;
     }
 
     @Override
     public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata metadata)
     {
-        subscription.reset();
-        subscription.wrap(buffer);
-        subscription.setChannelId(metadata.getReqChannelId());
+        ack.reset();
+        ack.wrap(buffer);
 
-        final CompletableFuture<Void> future = subscriptionManager.addSubscription(subscription);
+        final CompletableFuture<Void> future = subscriptionManager.submitAcknowledgedPosition(ack.getSubscriptionId(), ack.getAcknowledgedPosition());
 
         return future.handle((v, failure) ->
         {
@@ -52,25 +50,20 @@ public class AddTopicSubscriptionHandler implements ControlMessageHandler
             {
                 responseWriter
                     .brokerEventMetadata(metadata)
-                    .dataWriter(subscription)
+                    .dataWriter(ack)
                     .tryWriteResponse();
             }
             else
             {
-                sendError(buffer, metadata, "Cannot add topic subscription. %s", failure.getMessage());
+                errorResponseWriter
+                    .metadata(metadata)
+                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+                    .errorMessage("Cannot acknowledge last processed event. %s", failure.getMessage())
+                    .failedRequest(buffer, 0, buffer.capacity())
+                    .tryWriteResponseOrLogFailure();
             }
             return null;
         });
-    }
-
-    protected void sendError(DirectBuffer request, BrokerEventMetadata metadata, String message, Object... args)
-    {
-        errorResponseWriter
-            .metadata(metadata)
-            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-            .errorMessage(message, args)
-            .failedRequest(request, 0, request.capacity())
-            .tryWriteResponseOrLogFailure();
     }
 
 }

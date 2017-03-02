@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.event.processor.TopicSubscription;
+import org.camunda.tngp.broker.event.processor.CloseSubscriptionRequest;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -37,7 +37,7 @@ public class RemoveTopicSubscriptionHandlerTest
     @FluentMock
     protected ErrorResponseWriter errorWriter;
 
-    protected ArgumentCaptor<TopicSubscription> subscriptionCaptor;
+    protected ArgumentCaptor<CloseSubscriptionRequest> requestCaptor;
 
     @Before
     public void setUp()
@@ -45,7 +45,7 @@ public class RemoveTopicSubscriptionHandlerTest
         MockitoAnnotations.initMocks(this);
         futurePool = new FuturePool();
         when(subscriptionManager.removeSubscription(anyInt())).thenAnswer((invocation) -> futurePool.next());
-        subscriptionCaptor = ArgumentCaptor.forClass(TopicSubscription.class);
+        requestCaptor = ArgumentCaptor.forClass(CloseSubscriptionRequest.class);
     }
 
     @Test
@@ -59,9 +59,11 @@ public class RemoveTopicSubscriptionHandlerTest
 
         final BrokerEventMetadata metadata = new BrokerEventMetadata();
         metadata.reqChannelId(14);
+        final DirectBuffer encodedSubscription =
+                encode(new CloseSubscriptionRequest().subscriptionId(6));
 
         // when
-        handler.handle(encode(new TopicSubscription().setId(6).setTopicId(3)), metadata);
+        handler.handle(encodedSubscription, metadata);
 
         // then
         verify(subscriptionManager).removeSubscription(6);
@@ -80,22 +82,21 @@ public class RemoveTopicSubscriptionHandlerTest
         final BrokerEventMetadata metadata = new BrokerEventMetadata();
         metadata.reqChannelId(14);
 
-        handler.handle(encode(new TopicSubscription().setId(5).setTopicId(3)), metadata);
+        handler.handle(encode(new CloseSubscriptionRequest().subscriptionId(5)), metadata);
 
         // when
         futurePool.at(0).complete(null);
 
         // then
         verify(responseWriter).brokerEventMetadata(metadata);
-        verify(responseWriter).dataWriter(subscriptionCaptor.capture());
+        verify(responseWriter).dataWriter(requestCaptor.capture());
         verify(responseWriter).tryWriteResponse();
         verify(responseWriter).tryWriteResponse();
         verify(errorWriter, never()).tryWriteResponse();
         verify(errorWriter, never()).tryWriteResponseOrLogFailure();
 
-        final TopicSubscription subscription = subscriptionCaptor.getValue();
-        assertThat(subscription.getId()).isEqualTo(5);
-        assertThat(subscription.getTopicId()).isEqualTo(3);
+        final CloseSubscriptionRequest request = requestCaptor.getValue();
+        assertThat(request.getSubscriptionId()).isEqualTo(5);
     }
 
     @Test
@@ -110,7 +111,7 @@ public class RemoveTopicSubscriptionHandlerTest
         final BrokerEventMetadata metadata = new BrokerEventMetadata();
         metadata.reqChannelId(14);
 
-        final DirectBuffer request = encode(new TopicSubscription().setTopicId(3));
+        final DirectBuffer request = encode(new CloseSubscriptionRequest().subscriptionId(5L));
         handler.handle(request, metadata);
 
         // when

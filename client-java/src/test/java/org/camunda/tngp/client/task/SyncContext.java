@@ -3,9 +3,9 @@ package org.camunda.tngp.client.task;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 
-public class SyncContext extends AsyncContext
+public class SyncContext extends DeferredCommandContext
 {
 
     /**

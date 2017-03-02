@@ -15,6 +15,7 @@ package org.camunda.tngp.broker.transport.controlmessage;
 import java.util.Arrays;
 import java.util.List;
 
+import org.camunda.tngp.broker.event.handler.AcknowledgeSubscribedEventHandler;
 import org.camunda.tngp.broker.event.handler.AddTopicSubscriptionHandler;
 import org.camunda.tngp.broker.event.handler.RemoveTopicSubscriptionHandler;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
@@ -64,7 +65,8 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
             new IncreaseTaskSubscriptionCreditsHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new RemoveTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new AddTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new RemoveTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter)
+            new RemoveTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
+            new AcknowledgeSubscribedEventHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter)
         );
 
         service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, agentRunnerService, controlMessageHandlers);

@@ -44,6 +44,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class TopicSubscriptionTest
 {
 
+    public static final String SUBSCRIPTION_NAME = "foo";
+
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule();
@@ -77,6 +79,7 @@ public class TopicSubscriptionTest
         // when
         final TopicSubscription subscription = client.topic(0).newSubscription()
             .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // then
@@ -90,6 +93,7 @@ public class TopicSubscriptionTest
         // given
         client.topic(0).newSubscription()
             .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
@@ -122,6 +126,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .handler(recordingHandler)
             .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // then
@@ -146,6 +151,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .handler(recordingHandler)
             .startAtTailOfTopic()
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
@@ -179,6 +185,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .handler(recordingHandler)
             .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
@@ -194,6 +201,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .handler(subscription2Handler)
             .startAtPosition(secondTaskEventPosition)
+            .name("another" + SUBSCRIPTION_NAME)
             .open();
 
         // then
@@ -212,6 +220,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .handler(recordingHandler)
             .startAtPosition(Long.MAX_VALUE)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
@@ -234,6 +243,7 @@ public class TopicSubscriptionTest
         // given
         final TopicSubscription subscription = client.topic(0).newSubscription()
             .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
@@ -265,6 +275,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .startAtHeadOfTopic()
             .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
 
@@ -272,6 +283,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .startAtHeadOfTopic()
             .handler(secondEventHandler)
+            .name("another" + SUBSCRIPTION_NAME)
             .open();
 
         // when
@@ -302,6 +314,7 @@ public class TopicSubscriptionTest
         client.topic(0).newSubscription()
             .startAtHeadOfTopic()
             .handler(handler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // then
@@ -325,6 +338,7 @@ public class TopicSubscriptionTest
         final PollableTopicSubscription subscription = client.topic(0)
             .newPollableSubscription()
             .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
@@ -335,6 +349,63 @@ public class TopicSubscriptionTest
 
         recordingHandler.assertTaskEvent(0, taskKey, "CREATE");
         recordingHandler.assertTaskEvent(1, taskKey, "CREATED");
+    }
+
+    @Test
+    public void shouldResumeSubscription()
+    {
+        // given a first task
+        client.taskTopic(0).create()
+                .addHeader("key", "value")
+                .payload("{}")
+                .taskType("foo")
+                .execute();
+
+        final String subscriptionName = "foo";
+
+        final TopicSubscription subscription = client.topic(0)
+            .newSubscription()
+            .handler(recordingHandler)
+            .name(subscriptionName)
+            .startAtHeadOfTopic()
+            .open();
+
+        // that was received by the subscription
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+
+        subscription.close();
+
+        final long lastEventPosition = recordingHandler.getRecordedEvents()
+                .get(recordingHandler.numRecordedEvents() - 1)
+                .getMetadata()
+                .getEventPosition();
+
+        recordingHandler.reset();
+
+        // and a second not-yet-received task
+        client.taskTopic(0).create()
+            .addHeader("key", "value")
+            .payload("{}")
+            .taskType("bar")
+            .execute();
+
+        // when
+        client.topic(0)
+                .newSubscription()
+                .handler(recordingHandler)
+                .name(subscriptionName)
+                .startAtHeadOfTopic()
+                .open();
+
+        // then
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() > 0);
+
+        final long firstEventPositionAfterReopen = recordingHandler.getRecordedEvents()
+                .get(0)
+                .getMetadata()
+                .getEventPosition();
+
+        assertThat(firstEventPositionAfterReopen).isGreaterThan(lastEventPosition);
     }
 
     protected static class ParallelismDetectionHandler implements TopicEventHandler
@@ -395,6 +466,73 @@ public class TopicSubscriptionTest
 
         // when
         client.topic(-1);
+    }
+
+    @Test
+    public void testNameUniqueness()
+    {
+        // given
+        client.topic(0).newSubscription()
+                .handler(recordingHandler)
+                .name(SUBSCRIPTION_NAME)
+                .open();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Exception while opening subscription");
+
+        // when
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+    }
+
+    @Test
+    public void testSubscriptionsWithSameNameOnDifferentTopic()
+    {
+        // given
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        final TopicSubscription topic2Subscription = client.topic(1).newSubscription()
+            .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        assertThat(topic2Subscription.isOpen()).isTrue();
+
+    }
+
+    /**
+     * E.g. subscription ACKs should not be pushed to the client
+     */
+    @Test
+    public void shouldNotPushAnySubscriptionEvents()
+    {
+        // given
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        client.taskTopic(0).create()
+            .addHeader("key", "value")
+            .payload("{}")
+            .taskType("foo")
+            .execute();
+
+        // then
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() == 2);
+
+        assertThat(recordingHandler.getRecordedEvents())
+            .filteredOn((re) -> re.getMetadata().getEventType() == TopicEventType.UNKNOWN)
+            .isEmpty();
     }
 
 }

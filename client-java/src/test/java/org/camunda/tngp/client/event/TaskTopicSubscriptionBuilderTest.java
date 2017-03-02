@@ -71,7 +71,9 @@ public class TaskTopicSubscriptionBuilderTest
                 .defaultHandler(noOpHandler).taskEventHandler(noOpTaskHandler);
 
         // when
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder.open();
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder
+                .name("foo")
+                .open();
 
         // then
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscription);
@@ -79,6 +81,7 @@ public class TaskTopicSubscriptionBuilderTest
         assertThat(subscription.getHandler()).isNotNull();
 
         verify(client).createTopicSubscription();
+        verify(openSubscriptionCmd).name("foo");
         verify(openSubscriptionCmd).execute();
     }
 
@@ -107,7 +110,9 @@ public class TaskTopicSubscriptionBuilderTest
                 .startAtHeadOfTopic();
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -125,7 +130,9 @@ public class TaskTopicSubscriptionBuilderTest
                 .startAtTailOfTopic();
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();
@@ -143,7 +150,9 @@ public class TaskTopicSubscriptionBuilderTest
                 .startAtPosition(123L);
 
         // when
-        builder.open();
+        builder
+            .name("foo")
+            .open();
 
         // then
         verify(client).createTopicSubscription();

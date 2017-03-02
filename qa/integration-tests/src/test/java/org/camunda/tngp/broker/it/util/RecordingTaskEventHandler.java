@@ -27,6 +27,8 @@ import org.junit.rules.ExternalResource;
 
 public class RecordingTaskEventHandler extends ExternalResource
 {
+    protected String subscriptionName = "recording-handler";
+
     protected final List<TaskEvent> taskEvents = Collections.synchronizedList(new ArrayList<>());
 
     protected final ClientRule clientRule;
@@ -46,6 +48,7 @@ public class RecordingTaskEventHandler extends ExternalResource
         final TaskTopicClient client = clientRule.getClient().taskTopic(topicId);
 
         subscription = client.newSubscription()
+            .name(subscriptionName)
             .taskEventHandler((metadata, taskEvent) -> taskEvents.add(taskEvent))
             .open();
     }

@@ -37,7 +37,7 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.buffer.BufferUtil;
 
 public class TaskSubscriptionManager implements Agent
@@ -50,7 +50,7 @@ public class TaskSubscriptionManager implements Agent
     protected final Long2ObjectHashMap<LogStreamBucket> logStreamBucketById = new Long2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
-    protected final AsyncContext asyncContext = new AsyncContext(1_000);
+    protected final DeferredCommandContext asyncContext = new DeferredCommandContext(1_000);
 
     protected long nextSubscriptionId = 0;
 

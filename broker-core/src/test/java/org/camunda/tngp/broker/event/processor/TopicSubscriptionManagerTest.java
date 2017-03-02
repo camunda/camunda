@@ -17,7 +17,7 @@ import org.camunda.tngp.broker.event.handler.FuturePool;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +29,7 @@ public class TopicSubscriptionManagerTest
 
     protected static final ServiceName<LogStream> EXAMPLE_LOG_STREAM_NAME = ServiceName.newServiceName("foo", LogStream.class);
     protected static final int LOG_STREAM_ID = 2;
+    protected static final String SUBSCRIPTION_NAME = "sub";
 
     @Mock
     protected StreamProcessorManager streamProcessorManager;
@@ -50,12 +51,15 @@ public class TopicSubscriptionManagerTest
         creationFutures = new FuturePool();
         removalFutures = new FuturePool();
         when(streamProcessorManager.getServiceName(LOG_STREAM_ID)).thenReturn(EXAMPLE_LOG_STREAM_NAME);
-        when(streamProcessorManager.createStreamProcessorService(any(), any(), anyInt(), any())).thenAnswer((invocation) -> creationFutures.next());
-        when(streamProcessorManager.removeStreamProcessorService(any())).thenAnswer((invocation) -> removalFutures.next());
+        when(streamProcessorManager.createStreamProcessorService(any(), any(), anyInt(), any(), any(), any(), any()))
+            .thenAnswer((invocation) -> creationFutures.next());
+        when(streamProcessorManager.removeStreamProcessorService(any()))
+            .thenAnswer((invocation) -> removalFutures.next());
 
         subscription = new TopicSubscription()
                 .setChannelId(1)
-                .setTopicId(LOG_STREAM_ID);
+                .setTopicId(LOG_STREAM_ID)
+                .setName(SUBSCRIPTION_NAME);
     }
 
     @Test
@@ -65,7 +69,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         // when
@@ -83,7 +87,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         final CompletableFuture<Void> future = manager.addSubscription(subscription);
@@ -93,7 +97,14 @@ public class TopicSubscriptionManagerTest
 
         // then
         assertThat(future).isNotDone();
-        verify(streamProcessorManager).createStreamProcessorService(same(EXAMPLE_LOG_STREAM_NAME), any(), anyInt(), processorCaptor.capture());
+        verify(streamProcessorManager).createStreamProcessorService(
+                same(EXAMPLE_LOG_STREAM_NAME),
+                any(),
+                anyInt(),
+                processorCaptor.capture(),
+                any(),
+                any(),
+                any());
 
         final TopicSubscriptionProcessor processor = processorCaptor.getValue();
         assertThat(processor.getLogStreamId()).isEqualTo(LOG_STREAM_ID);
@@ -107,7 +118,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         final CompletableFuture<Void> future = manager.addSubscription(subscription);
@@ -127,7 +138,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         final CompletableFuture<Void> future = manager.addSubscription(subscription);
@@ -146,7 +157,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         manager.addSubscription(subscription);
@@ -169,7 +180,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         manager.addSubscription(subscription);
@@ -185,7 +196,7 @@ public class TopicSubscriptionManagerTest
         assertThat(future).isNotNull();
         assertThat(future).isNotDone();
         verify(streamProcessorManager).removeStreamProcessorService(
-                TopicSubscriptionNames.subscriptionServiceName(EXAMPLE_LOG_STREAM_NAME.getName(), subscription.getId()));
+                TopicSubscriptionNames.subscriptionServiceName(EXAMPLE_LOG_STREAM_NAME.getName(), subscription.getName()));
     }
 
     @Test
@@ -194,7 +205,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         manager.addSubscription(subscription);
@@ -217,7 +228,7 @@ public class TopicSubscriptionManagerTest
         // given
         final TopicSubscriptionManager manager = new TopicSubscriptionManager(
                 streamProcessorManager,
-                new AsyncContext(),
+                new DeferredCommandContext(),
                 returnInOrder(eventWriter));
 
         manager.addSubscription(subscription);

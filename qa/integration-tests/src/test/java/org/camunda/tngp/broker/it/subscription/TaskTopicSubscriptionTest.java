@@ -23,6 +23,7 @@ import org.junit.rules.Timeout;
 
 public class TaskTopicSubscriptionTest
 {
+    public static final String SUBSCRIPTION_NAME = "subscription";
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -64,6 +65,7 @@ public class TaskTopicSubscriptionTest
         client.taskTopic(0).newSubscription()
             .startAtHeadOfTopic()
             .taskEventHandler(handler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // then
@@ -99,6 +101,7 @@ public class TaskTopicSubscriptionTest
         client.taskTopic(0).newSubscription()
             .startAtHeadOfTopic()
             .defaultHandler(handler)
+            .name(SUBSCRIPTION_NAME)
             .open();
 
         // then

@@ -196,4 +196,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected abstract void onEventsPolled(int numEvents);
 
+    protected abstract int performMaintenance();
+
 }

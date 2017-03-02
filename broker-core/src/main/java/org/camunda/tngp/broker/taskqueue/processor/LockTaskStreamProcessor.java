@@ -19,11 +19,9 @@ import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
@@ -35,10 +33,10 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.buffer.BufferUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 
@@ -47,7 +45,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
-    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
+    protected DeferredCommandContext cmdQueue;
 
     protected final Long2ObjectHashMap<TaskSubscription> subscriptionsById = new Long2ObjectHashMap<>();
     protected Iterator<TaskSubscription> subscriptionIterator;
@@ -103,25 +101,6 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         logStreamId = context.getSourceStream().getId();
     }
 
-    protected <T> CompletableFuture<T> addCommand(Consumer<CompletableFuture<T>> action)
-    {
-        final CompletableFuture<T> future = new CompletableFuture<>();
-
-        cmdQueue.add(() ->
-        {
-            try
-            {
-                action.accept(future);
-            }
-            catch (Exception e)
-            {
-                future.completeExceptionally(e);
-            }
-        });
-
-        return future;
-    }
-
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
     {
         ensureNotNull("subscription", subscription);
@@ -136,7 +115,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             throw new RuntimeException(errorMessage);
         }
 
-        return addCommand(future ->
+        return cmdQueue.runAsync(future ->
         {
             subscriptionsById.put(subscription.getId(), subscription);
 
@@ -150,7 +129,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     public CompletableFuture<Boolean> removeSubscription(long subscriptionId)
     {
-        return addCommand(future ->
+        return cmdQueue.runAsync(future ->
         {
             final TaskSubscription subscription = subscriptionsById.remove(subscriptionId);
             if (subscription != null)
@@ -172,7 +151,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         ensureGreaterThan("subscription credits", credits, 0);
 
-        return addCommand(future ->
+        return cmdQueue.runAsync(future ->
         {
             final TaskSubscription subscription = subscriptionsById.get(subscriptionId);
             if (subscription != null)

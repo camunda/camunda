@@ -1,8 +1,10 @@
 package org.camunda.tngp.broker.event.processor;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
+import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class TopicSubscription extends UnpackedObject
 {
@@ -10,6 +12,7 @@ public class TopicSubscription extends UnpackedObject
     protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
     // negative value for end of log
     protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
+    protected StringProperty nameProp = new StringProperty("name");
 
     protected int channelId;
 
@@ -17,7 +20,8 @@ public class TopicSubscription extends UnpackedObject
     {
         this.declareProperty(idProp)
             .declareProperty(topicIdProp)
-            .declareProperty(startPositionProp);
+            .declareProperty(startPositionProp)
+            .declareProperty(nameProp);
     }
 
     public long getId()
@@ -62,6 +66,18 @@ public class TopicSubscription extends UnpackedObject
     public long getStartPosition()
     {
         return startPositionProp.getValue();
+    }
+
+    public String getName()
+    {
+        final DirectBuffer stringBuffer = nameProp.getValue();
+        return stringBuffer.getStringWithoutLengthUtf8(0, stringBuffer.capacity());
+    }
+
+    public TopicSubscription setName(String name)
+    {
+        nameProp.setValue(name);
+        return this;
     }
 
 }

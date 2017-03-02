@@ -9,6 +9,7 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
+import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -41,6 +42,8 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return true;
     };
 
+    protected SnapshotPositionProvider snapshotPositionProvider;
+
     private StreamProcessorController streamProcessorController;
 
     public StreamProcessorService(String name, int id, StreamProcessor streamProcessor)
@@ -59,6 +62,12 @@ public class StreamProcessorService implements Service<StreamProcessorController
     public StreamProcessorService reprocessingEventFilter(EventFilter reprocessingEventFilter)
     {
         this.customReprocessingEventFilter = reprocessingEventFilter;
+        return this;
+    }
+
+    public StreamProcessorService snapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
+    {
+        this.snapshotPositionProvider = snapshotPositionProvider;
         return this;
     }
 
@@ -89,6 +98,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
             .sourceStream(sourceStream)
             .targetStream(targetStream)
             .snapshotStorage(snapshotStorage)
+            .snapshotPositionProvider(snapshotPositionProvider)
             .agentRunnerService(agentRunnerService)
             .eventFilter(eventFilter)
             .reprocessingEventFilter(reprocessingEventFilter)

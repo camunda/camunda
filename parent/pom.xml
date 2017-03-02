@@ -12,7 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <utils.version>1.0.0-alpha3</utils.version>
+    <util.version>1.0.0-SNAPSHOT</util.version>
     <msgpack.version>0.8.11</msgpack.version>
     <sbe.version>1.5.6</sbe.version>
     <agrona.version>0.9.2</agrona.version>
@@ -52,7 +52,7 @@
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>log</artifactId>
-        <version>1.0.0-alpha2</version>
+        <version>1.0.0-SNAPSHOT</version>
       </dependency>
 
       <dependency>
@@ -70,19 +70,19 @@
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>hash-index</artifactId>
-        <version>${utils.version}</version>
+        <version>${util.version}</version>
       </dependency>
       
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>test-util</artifactId>
-        <version>${utils.version}</version>
+        <version>${util.version}</version>
       </dependency>
       
       <dependency>
         <groupId>org.camunda.tngp</groupId>
-        <artifactId>utils</artifactId>
-        <version>${utils.version}</version>
+        <artifactId>util</artifactId>
+        <version>${util.version}</version>
       </dependency>
       
       <dependency>

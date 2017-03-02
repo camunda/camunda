@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
@@ -35,10 +34,10 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.util.FluentAnswer;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.junit.rules.ExternalResource;
@@ -48,7 +47,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
     protected LogStreamWriter mockLogStreamWriter;
     protected LogStreamReader mockSourceStreamReader;
 
-    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
+    protected DeferredCommandContext cmdQueue;
 
     protected StreamProcessor streamProcessor;
     protected long position;
@@ -137,7 +136,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
             return 1L;
         }).when(mockLogStreamWriter).tryWrite();
 
-        cmdQueue = new ManyToOneConcurrentArrayQueue<>(10);
+        cmdQueue = new DeferredCommandContext(10);
     }
 
     protected void populate(BufferWriter writer, BufferReader reader)
@@ -238,7 +237,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
     public void drainCommandQueue()
     {
-        cmdQueue.drain(cmd -> cmd.execute());
+        cmdQueue.doWork();
     }
 
     protected void simulateStreamProcessorController(final LoggedEvent loggedEvent)

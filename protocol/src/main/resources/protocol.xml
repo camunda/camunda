@@ -29,6 +29,7 @@
     <enum name="EventType" encodingType="uint8" description="The type of an event">
         <validValue name="TASK_EVENT">0</validValue>
         <validValue name="RAFT_EVENT">1</validValue>
+        <validValue name="SUBSCRIPTION_EVENT">2</validValue>
     </enum>
     
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
@@ -37,6 +38,7 @@
         <validValue name="INCREASE_TASK_SUBSCRIPTION_CREDITS">2</validValue>
         <validValue name="ADD_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">4</validValue>
+        <validValue name="ACKNOWLEDGE_TOPIC_EVENT">5</validValue>
     </enum>
     
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">

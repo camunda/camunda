@@ -6,25 +6,25 @@ import org.camunda.tngp.util.EnsureUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CloseTopicSubscriptionCmdImpl extends AbstractControlMessageWithoutResponseCmd<TopicSubscription>
+public class CloseTopicSubscriptionCmdImpl extends AbstractControlMessageWithoutResponseCmd<CloseSubscriptionRequest>
 {
 
-    protected TopicSubscription subscription = new TopicSubscription();
+    protected CloseSubscriptionRequest subscription = new CloseSubscriptionRequest();
 
     public CloseTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper)
     {
-        super(cmdExecutor, objectMapper, TopicSubscription.class, ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION);
+        super(cmdExecutor, objectMapper, CloseSubscriptionRequest.class, ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION);
     }
 
     @Override
     public void validate()
     {
-        EnsureUtil.ensureGreaterThanOrEqual("id", subscription.getId(), 0);
+        EnsureUtil.ensureGreaterThanOrEqual("id", subscription.getSubscriptionId(), 0);
     }
 
     public CloseTopicSubscriptionCmdImpl id(long id)
     {
-        this.subscription.setId(id);
+        this.subscription.setSubscriptionId(id);
         return this;
     }
 

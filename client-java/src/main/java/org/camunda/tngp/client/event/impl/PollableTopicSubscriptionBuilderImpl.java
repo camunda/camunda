@@ -2,6 +2,7 @@ package org.camunda.tngp.client.event.impl;
 
 import org.camunda.tngp.client.event.PollableTopicSubscription;
 import org.camunda.tngp.client.event.PollableTopicSubscriptionBuilder;
+import org.camunda.tngp.util.EnsureUtil;
 
 public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscriptionBuilder
 {
@@ -15,6 +16,8 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
     @Override
     public PollableTopicSubscription open()
     {
+        EnsureUtil.ensureNotNull("name", implBuilder.getName());
+
         final TopicSubscriptionImpl subscription = implBuilder.build();
         subscription.open();
         return subscription;
@@ -38,6 +41,13 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
     public PollableTopicSubscriptionBuilder startAtHeadOfTopic()
     {
         implBuilder.startAtHeadOfTopic();
+        return this;
+    }
+
+    @Override
+    public PollableTopicSubscriptionBuilder name(String subscriptionName)
+    {
+        implBuilder.name(subscriptionName);
         return this;
     }
 

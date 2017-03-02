@@ -10,6 +10,7 @@ public class TopicSubscriptionImplBuilder
     protected CheckedConsumer<TopicEventImpl> handler;
     protected long startPosition;
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
+    protected String name;
 
     public TopicSubscriptionImplBuilder(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
     {
@@ -40,9 +41,20 @@ public class TopicSubscriptionImplBuilder
         return startPosition(0L);
     }
 
+    public TopicSubscriptionImplBuilder name(String name)
+    {
+        this.name = name;
+        return this;
+    }
+
     public CheckedConsumer<TopicEventImpl> getHandler()
     {
         return handler;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 
     public TopicSubscriptionImpl build()
@@ -52,6 +64,7 @@ public class TopicSubscriptionImplBuilder
             handler,
             acquisition,
             PREFETCH_SIZE,
-            startPosition);
+            startPosition,
+            name);
     }
 }

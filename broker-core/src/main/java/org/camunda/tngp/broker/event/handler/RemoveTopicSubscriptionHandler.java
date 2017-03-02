@@ -3,7 +3,7 @@ package org.camunda.tngp.broker.event.handler;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.event.processor.TopicSubscription;
+import org.camunda.tngp.broker.event.processor.CloseSubscriptionRequest;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -15,7 +15,7 @@ import org.camunda.tngp.protocol.clientapi.ErrorCode;
 public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
 {
 
-    protected final TopicSubscription subscription = new TopicSubscription();
+    protected final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
     protected final TopicSubscriptionManager subscriptionManager;
     protected final ControlMessageResponseWriter responseWriter;
@@ -40,10 +40,10 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
     @Override
     public CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata metadata)
     {
-        subscription.reset();
-        subscription.wrap(buffer);
+        request.reset();
+        request.wrap(buffer);
 
-        final CompletableFuture<Void> future = subscriptionManager.removeSubscription(subscription.getId());
+        final CompletableFuture<Void> future = subscriptionManager.removeSubscription(request.getSubscriptionId());
 
         return future.handle((v, failure) ->
         {
@@ -51,7 +51,7 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
             {
                 responseWriter
                     .brokerEventMetadata(metadata)
-                    .dataWriter(subscription)
+                    .dataWriter(request)
                     .tryWriteResponse();
             }
             else

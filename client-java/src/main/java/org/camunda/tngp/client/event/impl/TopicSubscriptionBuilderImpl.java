@@ -33,6 +33,7 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     public TopicSubscription open()
     {
         EnsureUtil.ensureNotNull("handler", implBuilder.getHandler());
+        EnsureUtil.ensureNotNull("name", implBuilder.getName());
 
         final TopicSubscriptionImpl subscription = implBuilder.build();
         subscription.open();
@@ -57,6 +58,13 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
     public TopicSubscriptionBuilder startAtHeadOfTopic()
     {
         implBuilder.startAtHeadOfTopic();
+        return this;
+    }
+
+    @Override
+    public TopicSubscriptionBuilder name(String name)
+    {
+        implBuilder.name(name);
         return this;
     }
 

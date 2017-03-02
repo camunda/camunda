@@ -4,14 +4,25 @@
 
 [network]
 hostname = "0.0.0.0"
-sendBufferSize = 64
+sendBufferSize = 128
 
 [network.clientApi]
 port = 51015
 receiveBufferSize = 16
+controlMessageRequestTimeoutInMillis = 10000
 
-[network.management]
+[network.managementApi]
+host = "localhost"
 port = 51016
+receiveBufferSize = 16
+
+[network.replicationApi]
+host = "localhost"
+port = 51017
+receiveBufferSize = 16
+
+[network.gossip]
+useTempFile = true
 
 # System Configuration --------------------------------
 
@@ -34,9 +45,8 @@ logDirectories = [ "${brokerFolder}/persistent-broker/logs/" ]
 name = "default-task-queue-log"
 id = 0
 
-[[log]]
-name = "default-wf-instance-log"
-id = 1
+[snapshot]
+snapshotDirectory = "${brokerFolder}/persistent-broker/snapshots/"
 
 # Task Queues ------------------------------------------
 
@@ -45,23 +55,5 @@ numberOfWorkers = 1
 perWorkerResponsePoolCapacity = 32
 
 [[task-queue]]
-name = "default"
-id = 0
 logName = "default-task-queue-log"
-
-# Workflow ---------------------------------------------
-
-[workflow]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
-[[workflow-repository]]
-name = "default"
-id = 0
-logName = "default-wf-definition-log"
-
-[[workflow-runtime]]
-name = "default"
-id = 0
-repositoryName = "default" 
-logName = "default-wf-instance-log"
+indexFile = "${brokerFolder}/persistent-broker/task-logs/default-task-queue-log"

@@ -9,11 +9,13 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
+import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 
 public class StreamProcessorManager
 {
@@ -21,9 +23,9 @@ public class StreamProcessorManager
     protected final ServiceStartContext serviceContext;
     protected final Int2ObjectHashMap<LogStreamContext> logStreamById;
 
-    protected final AsyncContext asyncContext;
+    protected final DeferredCommandContext asyncContext;
 
-    public StreamProcessorManager(ServiceStartContext serviceContext, AsyncContext asyncContext)
+    public StreamProcessorManager(ServiceStartContext serviceContext, DeferredCommandContext asyncContext)
     {
         this.serviceContext = serviceContext;
         this.logStreamById = new Int2ObjectHashMap<>();
@@ -36,7 +38,7 @@ public class StreamProcessorManager
             int processorId,
             T streamProcessor)
     {
-        return createStreamProcessorService(logStreamName, processorName, processorId, streamProcessor, null);
+        return createStreamProcessorService(logStreamName, processorName, processorId, streamProcessor, null, null, null);
     }
 
     public <T extends StreamProcessor> CompletableFuture<StreamProcessorService> createStreamProcessorService(
@@ -44,7 +46,9 @@ public class StreamProcessorManager
             ServiceName<StreamProcessorController> processorName,
             int processorId,
             T streamProcessor,
-            MetadataFilter eventFilter)
+            MetadataFilter eventFilter,
+            EventFilter reprocessingFilter,
+            SnapshotPositionProvider snapshotPositionProvider)
     {
         final CompletableFuture<StreamProcessorService> future = new CompletableFuture<>();
 
@@ -57,6 +61,14 @@ public class StreamProcessorManager
         {
             streamProcessorService.eventFilter(eventFilter);
         }
+        if (reprocessingFilter != null)
+        {
+            streamProcessorService.reprocessingEventFilter(reprocessingFilter);
+        }
+        if (snapshotPositionProvider != null)
+        {
+            streamProcessorService.snapshotPositionProvider(snapshotPositionProvider);
+        }
 
         serviceContext.createService(processorName, streamProcessorService)
             .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
@@ -64,7 +76,7 @@ public class StreamProcessorManager
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(AGENT_RUNNER_SERVICE, streamProcessorService.getAgentRunnerInjector())
             .install()
-            .thenApply(v -> future.complete(streamProcessorService));
+            .handle((r, t) -> t == null ? future.complete(streamProcessorService) : future.completeExceptionally(t));
 
         return future;
     }

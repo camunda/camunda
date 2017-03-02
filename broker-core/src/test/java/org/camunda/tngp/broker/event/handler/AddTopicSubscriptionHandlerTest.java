@@ -61,7 +61,7 @@ public class AddTopicSubscriptionHandlerTest
         metadata.reqChannelId(14);
 
         // when
-        handler.handle(encode(new TopicSubscription().setTopicId(3)), metadata);
+        handler.handle(encode(new TopicSubscription().setTopicId(3).setName("sub")), metadata);
 
         // then
         verify(subscriptionManager).addSubscription(subscriptionCaptor.capture());
@@ -69,6 +69,7 @@ public class AddTopicSubscriptionHandlerTest
         final TopicSubscription subscription = subscriptionCaptor.getValue();
         assertThat(subscription.getTopicId()).isEqualTo(3);
         assertThat(subscription.getChannelId()).isEqualTo(14);
+        assertThat(subscription.getName()).isEqualTo("sub");
 
         verifyZeroInteractions(responseWriter, errorWriter);
     }
@@ -85,7 +86,7 @@ public class AddTopicSubscriptionHandlerTest
         final BrokerEventMetadata metadata = new BrokerEventMetadata();
         metadata.reqChannelId(14);
 
-        handler.handle(encode(new TopicSubscription().setTopicId(3)), metadata);
+        handler.handle(encode(new TopicSubscription().setTopicId(3).setName("sub")), metadata);
 
         // when
         futurePool.at(0).complete(null);
@@ -114,7 +115,7 @@ public class AddTopicSubscriptionHandlerTest
         final BrokerEventMetadata metadata = new BrokerEventMetadata();
         metadata.reqChannelId(14);
 
-        final DirectBuffer request = encode(new TopicSubscription().setTopicId(3));
+        final DirectBuffer request = encode(new TopicSubscription().setTopicId(3).setName("sub"));
         handler.handle(request, metadata);
 
         // when

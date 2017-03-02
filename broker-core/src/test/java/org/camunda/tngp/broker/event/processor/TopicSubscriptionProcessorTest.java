@@ -38,7 +38,7 @@ public class TopicSubscriptionProcessorTest
     {
         // given
         final TopicSubscriptionProcessor processor =
-                new TopicSubscriptionProcessor(1, 2, 3, 0, eventWriter);
+                new TopicSubscriptionProcessor(1, 2, 3, 0, "sub", eventWriter);
 
         controller.initStreamProcessor(processor);
         final LoggedEvent event = controller.buildLoggedEvent(14L, (e) -> e.setId(4));

@@ -7,7 +7,7 @@ import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.SubscribedEventHandler;
-import org.camunda.tngp.util.AsyncContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.slf4j.Logger;
 
 public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Agent
@@ -16,14 +16,14 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     protected final EventSubscriptions<T> subscriptions;
-    protected AsyncContext asyncContext;
+    protected DeferredCommandContext asyncContext;
     protected String name;
 
 
     public EventAcquisition(String name, EventSubscriptions<T> subscriptions)
     {
         this.name = name;
-        this.asyncContext = new AsyncContext();
+        this.asyncContext = new DeferredCommandContext();
         this.subscriptions = subscriptions;
     }
 
@@ -106,8 +106,11 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
 
         for (T subscription : subscriptions)
         {
-            if (subscription.isClosing() && !subscription.hasPendingEvents())
+            workCount += subscription.performMaintenance();
+
+            if (subscription.isClosing())
             {
+                // TODO: this leads to concurrent modification of subscriptions
                 closeSubscription(subscription);
                 workCount++;
             }

@@ -88,4 +88,11 @@ public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBu
         innerBuilder.startAtHeadOfTopic();
         return this;
     }
+
+    @Override
+    public TaskTopicSubscriptionBuilder name(String subscriptionName)
+    {
+        innerBuilder.name(subscriptionName);
+        return this;
+    }
 }
