@@ -51,6 +51,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 {
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
+    protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
 
@@ -96,8 +97,9 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
         final SubscribedEventWriter subscribedEventWriter = new SubscribedEventWriter(new SingleMessageWriter(sendBuffer));
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
+        final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
 
-        final TaskInstanceStreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(responseWriter, subscribedEventWriter, indexStore);
+        final TaskInstanceStreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(responseWriter, subscribedEventWriter, indexStore, taskSubscriptionManager);
         final StreamProcessorService taskInstanceStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 TASK_QUEUE_STREAM_PROCESSOR_ID,
@@ -177,6 +179,11 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     public Injector<ScheduledExecutor> getExecutorInjector()
     {
         return executorInjector;
+    }
+
+    public Injector<TaskSubscriptionManager> getTaskSubscriptionManagerInjector()
+    {
+        return taskSubscriptionManagerInjector;
     }
 
 }

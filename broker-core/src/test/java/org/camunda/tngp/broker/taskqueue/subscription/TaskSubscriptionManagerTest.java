@@ -106,7 +106,7 @@ public class TaskSubscriptionManagerTest
         when(mockStreamProcessor.getSubscriptedTaskType()).thenReturn(taskTypeBuffer);
 
         when(mockStreamProcessor.addSubscription(any())).thenReturn(CompletableFuture.completedFuture(null));
-        when(mockStreamProcessor.updateSubscriptionCredits(anyLong(), anyInt())).thenReturn(CompletableFuture.completedFuture(null));
+        when(mockStreamProcessor.increaseSubscriptionCredits(anyLong(), anyInt())).thenReturn(CompletableFuture.completedFuture(null));
         when(mockStreamProcessor.removeSubscription(anyLong())).thenReturn(CompletableFuture.completedFuture(false));
 
         return mockStreamProcessor;
@@ -233,7 +233,7 @@ public class TaskSubscriptionManagerTest
     }
 
     @Test
-    public void shouldUpdateSubscriptionCredits() throws Exception
+    public void shouldIncreateSubscriptionCredits() throws Exception
     {
         // given
         subscription.setCredits(2);
@@ -242,14 +242,14 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Void> future = manager.updateSubscriptionCredits(subscription.setCredits(5));
+        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(0L, 5);
 
         manager.doWork();
 
         // then
         assertThat(future).isCompleted();
 
-        verify(mockStreamProcessor).updateSubscriptionCredits(0L, 5);
+        verify(mockStreamProcessor).increaseSubscriptionCredits(0L, 5);
     }
 
     @Test
@@ -388,16 +388,13 @@ public class TaskSubscriptionManagerTest
     }
 
     @Test
-    public void shouldFailToUpdateSubscriptionCreditsIfProcessorNotExistForLogStream() throws Exception
+    public void shouldFailToIncreaseSubscriptionCreditsIfNotExist() throws Exception
     {
         // given
-        subscription.setId(3L);
-
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(ANOTHER_LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
-        manager.addSubscription(anotherSubscription);
+        manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Void> future = manager.updateSubscriptionCredits(subscription);
+        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(3L, 2);
         manager.doWork();
 
         // then
@@ -405,32 +402,11 @@ public class TaskSubscriptionManagerTest
             .isInstanceOf(RuntimeException.class)
             .hasMessage("Subscription with id '3' not found.");
 
-        verify(mockStreamProcessor, never()).updateSubscriptionCredits(anyLong(), anyInt());
+        verify(mockStreamProcessor, never()).increaseSubscriptionCredits(anyLong(), anyInt());
     }
 
     @Test
-    public void shouldFailToUpdateSubscriptionCreditsIfProcessorNotExistForTaskType() throws Exception
-    {
-        // given
-        subscription.setId(3L);
-
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(ANOTHER_TASK_TYPE_BUFFER);
-        manager.addSubscription(anotherSubscription);
-
-        // when
-        final CompletableFuture<Void> future = manager.updateSubscriptionCredits(subscription);
-        manager.doWork();
-
-        // then
-        assertThat(future).hasFailedWithThrowableThat()
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("Subscription with id '3' not found.");
-
-        verify(mockStreamProcessor, never()).updateSubscriptionCredits(anyLong(), anyInt());
-    }
-
-    @Test
-    public void shouldFailToUpdateSubscriptionCreditsIfLogStreamIsRemoved() throws Exception
+    public void shouldFailToIncreaseSubscriptionCreditsIfLogStreamIsRemoved() throws Exception
     {
         // given
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
@@ -439,7 +415,7 @@ public class TaskSubscriptionManagerTest
         manager.removeStream(mockLogStream);
 
         // when
-        final CompletableFuture<Void> future = manager.updateSubscriptionCredits(subscription.setCredits(5));
+        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(0L, 5);
         manager.doWork();
 
         // then
@@ -447,20 +423,20 @@ public class TaskSubscriptionManagerTest
             .isInstanceOf(RuntimeException.class)
             .hasMessage("Subscription with id '0' not found.");
 
-        verify(mockStreamProcessor, never()).updateSubscriptionCredits(anyLong(), anyInt());
+        verify(mockStreamProcessor, never()).increaseSubscriptionCredits(anyLong(), anyInt());
     }
 
     @Test
-    public void shouldPropagateFailureWhileUpdateSubscriptionCredits() throws Exception
+    public void shouldPropagateFailureWhileIncreaseSubscriptionCredits() throws Exception
     {
         // given
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addSubscription(subscription);
 
-        when(mockStreamProcessor.updateSubscriptionCredits(anyLong(), anyInt())).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
+        when(mockStreamProcessor.increaseSubscriptionCredits(anyLong(), anyInt())).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
 
         // when
-        final CompletableFuture<Void> future = manager.updateSubscriptionCredits(subscription);
+        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(0L, 5);
         manager.doWork();
 
         // then

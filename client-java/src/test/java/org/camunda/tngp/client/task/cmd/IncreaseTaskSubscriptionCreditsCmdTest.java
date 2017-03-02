@@ -19,8 +19,8 @@ import java.io.IOException;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.impl.cmd.taskqueue.IncreaseTaskSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
-import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
@@ -34,7 +34,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class UpdateTaskSubscriptionCreditsCmdTest
+public class IncreaseTaskSubscriptionCreditsCmdTest
 {
     protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
@@ -44,7 +44,7 @@ public class UpdateTaskSubscriptionCreditsCmdTest
 
     private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
 
-    private UpdateSubscriptionCreditsCmdImpl command;
+    private IncreaseTaskSubscriptionCreditsCmdImpl command;
     private ObjectMapper objectMapper;
 
     @Rule
@@ -57,7 +57,7 @@ public class UpdateTaskSubscriptionCreditsCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new UpdateSubscriptionCreditsCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
+        command = new IncreaseTaskSubscriptionCreditsCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -84,7 +84,7 @@ public class UpdateTaskSubscriptionCreditsCmdTest
 
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
-        assertThat(requestDecoder.messageType()).isEqualTo(ControlMessageType.UPDATE_TASK_SUBSCRIPTION);
+        assertThat(requestDecoder.messageType()).isEqualTo(ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
 
         final byte[] data = new byte[requestDecoder.dataLength()];
         requestDecoder.getData(data, 0, data.length);

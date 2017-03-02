@@ -37,8 +37,8 @@ import org.camunda.tngp.client.event.impl.TopicEventImpl;
 import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.IncreaseTaskSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
-import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
@@ -81,7 +81,7 @@ public class TaskSubscriptionTest
     protected CloseTaskSubscriptionCmdImpl closeSubscriptionCmd;
 
     @FluentMock
-    protected UpdateSubscriptionCreditsCmdImpl updateCreditsCmd;
+    protected IncreaseTaskSubscriptionCreditsCmdImpl updateCreditsCmd;
 
     @FluentMock
     protected CompleteTaskCmd completeCmd;
@@ -105,7 +105,7 @@ public class TaskSubscriptionTest
         when(client.brokerTaskSubscription()).thenReturn(createSubscriptionCmd);
         when(createSubscriptionCmd.execute()).thenReturn(SUBSCRIPTION_ID);
         when(client.closeBrokerTaskSubscription()).thenReturn(closeSubscriptionCmd);
-        when(client.updateSubscriptionCredits()).thenReturn(updateCreditsCmd);
+        when(client.increaseSubscriptionCredits()).thenReturn(updateCreditsCmd);
         when(client.complete()).thenReturn(completeCmd);
         when(client.fail()).thenReturn(failCmd);
 
@@ -384,7 +384,7 @@ public class TaskSubscriptionTest
     }
 
     @Test
-    public void shouldAddCredits() throws Exception
+    public void shouldIncreaseCredits() throws Exception
     {
         // given
         final TaskSubscriptionImpl subscription = newDefaultSubscription();
@@ -402,7 +402,7 @@ public class TaskSubscriptionTest
         acquisition.doWork();
 
         // then
-        verify(client, times(1)).updateSubscriptionCredits();
+        verify(client, times(1)).increaseSubscriptionCredits();
         verify(updateCreditsCmd).subscriptionId(subscription.getId());
         verify(updateCreditsCmd).taskType(TASK_TYPE);
         verify(updateCreditsCmd).credits(4);

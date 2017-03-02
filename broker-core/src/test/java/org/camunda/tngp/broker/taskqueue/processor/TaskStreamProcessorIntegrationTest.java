@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
@@ -40,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TaskStreamProcessorIntegrationTest
@@ -74,6 +76,9 @@ public class TaskStreamProcessorIntegrationTest
 
     @FluentMock
     private SubscribedEventWriter mockSubscribedEventWriter;
+
+    @Mock
+    private TaskSubscriptionManager mockTaskSubscriptionManager;
 
     private LogStreamWriter logStreamWriter;
 
@@ -116,7 +121,7 @@ public class TaskStreamProcessorIntegrationTest
         final SnapshotStorage snapshotStorage = LogStreams.createFsSnapshotStore(rootPath).build();
         final FileChannelIndexStore indexStore = FileChannelIndexStore.tempFileIndexStore();
 
-        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, indexStore);
+        final StreamProcessor taskInstanceStreamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, indexStore, mockTaskSubscriptionManager);
         taskInstanceStreamProcessorController = LogStreams.createStreamProcessor("task-instance", 0, taskInstanceStreamProcessor)
             .sourceStream(logStream)
             .targetStream(logStream)

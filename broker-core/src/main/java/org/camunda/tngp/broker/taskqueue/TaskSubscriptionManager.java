@@ -20,6 +20,8 @@ import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -46,6 +48,7 @@ public class TaskSubscriptionManager implements Agent
     protected final Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorSupplier;
 
     protected final Long2ObjectHashMap<LogStreamBucket> logStreamBucketById = new Long2ObjectHashMap<>();
+    protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
     protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
@@ -119,6 +122,8 @@ public class TaskSubscriptionManager implements Agent
             final LockTaskStreamProcessor streamProcessor = logStreamBucket.getStreamProcessorByTaskType(taskType);
             if (streamProcessor != null)
             {
+                streamProcessorBySubscriptionId.put(subscriptionId, streamProcessor);
+
                 streamProcessor
                     .addSubscription(subscription)
                     .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
@@ -128,6 +133,8 @@ public class TaskSubscriptionManager implements Agent
                 createStreamProcessorService(logStreamBucket, taskType)
                     .thenCompose(processor ->
                     {
+                        streamProcessorBySubscriptionId.put(subscriptionId, processor);
+
                         logStreamBucket.addStreamProcessor(processor);
 
                         return processor.addSubscription(subscription);
@@ -177,6 +184,8 @@ public class TaskSubscriptionManager implements Agent
 
             ensureNotNull("lock task type", taskType);
 
+            streamProcessorBySubscriptionId.remove(subscription.getId());
+
             final LogStreamBucket logStreamBucket = logStreamBucketById.get(logStreamId);
             if (logStreamBucket != null)
             {
@@ -207,36 +216,20 @@ public class TaskSubscriptionManager implements Agent
         return serviceContext.removeService(streamProcessorServiceName);
     }
 
-    public CompletableFuture<Void> updateSubscriptionCredits(TaskSubscription subscription)
+    public CompletableFuture<Void> increaseSubscriptionCredits(long subscriptionId, int credits)
     {
         return runAsync(future ->
         {
-            boolean isUpdated = false;
-
-            ensureNotNull("subscription", subscription);
-
-            final long logStreamId = subscription.getTopicId();
-            final DirectBuffer taskType = subscription.getLockTaskType();
-
-            ensureNotNull("lock task type", taskType);
-
-            final LogStreamBucket logStreamBucket = logStreamBucketById.get(logStreamId);
-            if (logStreamBucket != null)
+            final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.get(subscriptionId);
+            if (streamProcessor != null)
             {
-                final LockTaskStreamProcessor streamProcessor = logStreamBucket.getStreamProcessorByTaskType(taskType);
-                if (streamProcessor != null)
-                {
-                    streamProcessor
-                        .updateSubscriptionCredits(subscription.getId(), subscription.getCredits())
-                        .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
-
-                    isUpdated = true;
-                }
+                streamProcessor
+                    .increaseSubscriptionCredits(subscriptionId, credits)
+                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
-
-            if (!isUpdated)
+            else
             {
-                final String errorMessage = String.format("Subscription with id '%s' not found.", subscription.getId());
+                final String errorMessage = String.format("Subscription with id '%s' not found.", subscriptionId);
                 future.completeExceptionally(new RuntimeException(errorMessage));
             }
         });
@@ -256,7 +249,21 @@ public class TaskSubscriptionManager implements Agent
         runAsync(future ->
         {
             final int logStreamId = logStream.getId();
-            logStreamBucketById.remove(logStreamId);
+
+            // TODO be more efficient #128
+            final LogStreamBucket removedBucket = logStreamBucketById.remove(logStreamId);
+            if (removedBucket != null)
+            {
+                final Set<Entry<Long, LockTaskStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
+                for (Entry<Long, LockTaskStreamProcessor> entry : entrySet)
+                {
+                    final LockTaskStreamProcessor streamProcessor = entry.getValue();
+                    if (removedBucket.streamProcessors.contains(streamProcessor))
+                    {
+                        entrySet.remove(entry);
+                    }
+                }
+            }
         });
     }
 

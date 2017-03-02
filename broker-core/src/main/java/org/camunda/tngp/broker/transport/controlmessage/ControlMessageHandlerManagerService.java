@@ -61,7 +61,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
 
         final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
             new AddTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new UpdateTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
+            new IncreaseTaskSubscriptionCreditsHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new RemoveTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new AddTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new RemoveTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter)

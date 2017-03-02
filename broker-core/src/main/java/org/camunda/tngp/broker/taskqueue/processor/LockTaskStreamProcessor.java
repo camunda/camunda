@@ -159,7 +159,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         });
     }
 
-    public CompletableFuture<Void> updateSubscriptionCredits(long subscriptionId, int credits)
+    public CompletableFuture<Void> increaseSubscriptionCredits(long subscriptionId, int credits)
     {
         ensureGreaterThan("subscription credits", credits, 0);
 
@@ -168,8 +168,8 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
             final TaskSubscription subscription = subscriptionsById.get(subscriptionId);
             if (subscription != null)
             {
-                availableSubscriptionCredits += credits - subscription.getCredits();
-                subscription.setCredits(credits);
+                availableSubscriptionCredits += credits;
+                subscription.setCredits(subscription.getCredits() + credits);
 
                 isSuspended = false;
 

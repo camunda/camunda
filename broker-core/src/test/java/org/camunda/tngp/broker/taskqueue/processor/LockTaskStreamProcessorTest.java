@@ -255,7 +255,7 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
-    public void shouldLockTasksUnitSubscriptionHasNoMoreCredits()
+    public void shouldLockTasksUntilSubscriptionHasNoMoreCredits()
     {
         // given
         streamProcessor.addSubscription(subscription);
@@ -279,29 +279,31 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
-    public void shouldUpdateSubscriptionCredits()
+    public void shouldIncreaseSubscriptionCredits()
     {
-        // given
+        // given subscription with 3 credits
         streamProcessor.addSubscription(subscription);
 
-        // process as much events as available credits
-        Stream.of(1, 2, 3).forEach(key ->
+        Stream.of(1, 2).forEach(key ->
         {
             mockController.processEvent(key, event -> event
                     .setEventType(TaskEventType.CREATED)
                     .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
-
-            assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK);
         });
 
-        // when
-        streamProcessor.updateSubscriptionCredits(subscription.getId(), 1);
+        // when increase credits by 1
+        streamProcessor.increaseSubscriptionCredits(subscription.getId(), 1);
 
-        mockController.processEvent(4L, event -> event
-                .setEventType(TaskEventType.CREATED)
-                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+        Stream.of(3, 4, 5).forEach(key ->
+        {
+            mockController.processEvent(key, event -> event
+                    .setEventType(TaskEventType.CREATED)
+                    .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+        });
 
         // then
+        assertThat(mockController.getWrittenEvents()).hasSize(4);
+
         final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
         assertThat(lastWrittenEvent.getKey()).isEqualTo(4L);
         assertThat(lastWrittenEvent.getValue().getEventType()).isEqualTo(TaskEventType.LOCK);
@@ -342,7 +344,7 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
-    public void shouldContinueProcessingIfUpdateSubscriptionCredits()
+    public void shouldContinueProcessingIfIncreaseSubscriptionCredits()
     {
         // given
         streamProcessor.addSubscription(subscription);
@@ -358,7 +360,7 @@ public class LockTaskStreamProcessorTest
         assertThat(streamProcessor.isSuspended()).isTrue();
 
         // when
-        streamProcessor.updateSubscriptionCredits(subscription.getId(), 2);
+        streamProcessor.increaseSubscriptionCredits(subscription.getId(), 2);
 
         // then
         mockController.processEvent(4L, event -> event
@@ -445,7 +447,7 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
-    public void shouldFailToUpdateSubscriptionCreditsIfZero()
+    public void shouldFailToIncreaseSubscriptionCreditsIfZero()
     {
         // given
         streamProcessor.addSubscription(subscription);
@@ -454,14 +456,14 @@ public class LockTaskStreamProcessorTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("subscription credits must be greater than 0");
 
-        streamProcessor.updateSubscriptionCredits(subscription.getId(), 0);
+        streamProcessor.increaseSubscriptionCredits(subscription.getId(), 0);
     }
 
     @Test
-    public void shouldFailToUpdateSubscriptionCreditsIfNotExist()
+    public void shouldFailToIncreaseSubscriptionCreditsIfNotExist()
     {
         // when
-        final CompletableFuture<Void> future = streamProcessor.updateSubscriptionCredits(123L, 5);
+        final CompletableFuture<Void> future = streamProcessor.increaseSubscriptionCredits(123L, 5);
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.CREATED)

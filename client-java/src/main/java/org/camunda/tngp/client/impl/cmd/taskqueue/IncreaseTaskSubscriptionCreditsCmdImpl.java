@@ -11,7 +11,7 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
+public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
@@ -21,25 +21,25 @@ public class UpdateSubscriptionCreditsCmdImpl extends AbstractControlMessageWith
     private String taskType;
     private int credits = 0;
 
-    public UpdateSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
     {
-        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.UPDATE_TASK_SUBSCRIPTION);
+        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
         this.topicId = topicId;
     }
 
-    public UpdateSubscriptionCreditsCmdImpl subscriptionId(long subscriptionId)
+    public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(long subscriptionId)
     {
         this.subscriptionId = subscriptionId;
         return this;
     }
 
-    public UpdateSubscriptionCreditsCmdImpl taskType(String taskType)
+    public IncreaseTaskSubscriptionCreditsCmdImpl taskType(String taskType)
     {
         this.taskType = taskType;
         return this;
     }
 
-    public UpdateSubscriptionCreditsCmdImpl credits(int credits)
+    public IncreaseTaskSubscriptionCreditsCmdImpl credits(int credits)
     {
         this.credits = credits;
         return this;

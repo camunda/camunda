@@ -22,7 +22,7 @@ import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 
-public class UpdateTaskSubscriptionHandler implements ControlMessageHandler
+public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHandler
 {
     protected final TaskSubscription subscription = new TaskSubscription();
 
@@ -31,7 +31,7 @@ public class UpdateTaskSubscriptionHandler implements ControlMessageHandler
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
-    public UpdateTaskSubscriptionHandler(TaskSubscriptionManager manager, ControlMessageResponseWriter responseWriter, ErrorResponseWriter errorResponseWriter)
+    public IncreaseTaskSubscriptionCreditsHandler(TaskSubscriptionManager manager, ControlMessageResponseWriter responseWriter, ErrorResponseWriter errorResponseWriter)
     {
         this.manager = manager;
         this.responseWriter = responseWriter;
@@ -41,7 +41,7 @@ public class UpdateTaskSubscriptionHandler implements ControlMessageHandler
     @Override
     public ControlMessageType getMessageType()
     {
-        return ControlMessageType.UPDATE_TASK_SUBSCRIPTION;
+        return ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class UpdateTaskSubscriptionHandler implements ControlMessageHandler
 
         subscription.wrap(buffer);
 
-        final CompletableFuture<Void> future = manager.updateSubscriptionCredits(subscription);
+        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(subscription.getId(), subscription.getCredits());
 
         return future.handle((v, failure) ->
         {
@@ -67,7 +67,7 @@ public class UpdateTaskSubscriptionHandler implements ControlMessageHandler
                 errorResponseWriter
                     .metadata(eventMetada)
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot update task subscription. %s", failure.getMessage())
+                    .errorMessage("Cannot increase task subscription credits. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
                     .tryWriteResponseOrLogFailure();
             }

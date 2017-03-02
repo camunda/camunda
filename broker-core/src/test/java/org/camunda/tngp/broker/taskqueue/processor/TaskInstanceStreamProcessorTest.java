@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
@@ -46,6 +47,9 @@ public class TaskInstanceStreamProcessorTest
     @FluentMock
     private SubscribedEventWriter mockSubscribedEventWriter;
 
+    @Mock
+    private TaskSubscriptionManager mockTaskSubscriptionManager;
+
     @Rule
     public MockStreamProcessorController<TaskEvent> mockController = new MockStreamProcessorController<>(
         TaskEvent.class,
@@ -60,7 +64,7 @@ public class TaskInstanceStreamProcessorTest
 
         when(mockLogStream.getId()).thenReturn(1);
 
-        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockIndexStore);
+        streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockIndexStore, mockTaskSubscriptionManager);
 
         final StreamProcessorContext context = new StreamProcessorContext();
         context.setSourceStream(mockLogStream);
@@ -320,6 +324,37 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter, times(3)).tryWriteResponse();
+    }
+
+    @Test
+    public void shouldCompensateLockRejection()
+    {
+        // given
+        mockController.processEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATE)
+                .setRetries(1));
+
+        mockController.processEvent(2L,
+            event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(3),
+            metadata -> metadata
+                .subscriptionId(1L));
+
+        // when
+        mockController.processEvent(2L,
+            event -> event
+                .setEventType(TaskEventType.LOCK)
+                .setLockTime(123)
+                .setLockOwner(4),
+            metadata -> metadata
+                .subscriptionId(2L));
+
+        // then
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
+
+        verify(mockTaskSubscriptionManager, times(1)).increaseSubscriptionCredits(2L, 1);
     }
 
     @Test

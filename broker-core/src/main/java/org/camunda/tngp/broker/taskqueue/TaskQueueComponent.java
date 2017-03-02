@@ -21,17 +21,19 @@ public class TaskQueueComponent implements Component
         final ServiceContainer serviceContainer = context.getServiceContainer();
         final ConfigurationManager configurationManager = context.getConfigurationManager();
 
-        final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService(configurationManager);
-        serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
-            .dependency(TRANSPORT_SEND_BUFFER, taskQueueManagerService.getSendBufferInjector())
-            .dependency(EXECUTOR_SERVICE, taskQueueManagerService.getExecutorInjector())
-            .install();
-
         final TaskSubscriptionManagerService taskSubscriptionManagerService = new TaskSubscriptionManagerService();
         serviceContainer.createService(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskSubscriptionManagerService)
             .dependency(AGENT_RUNNER_SERVICE, taskSubscriptionManagerService.getAgentRunnerServicesInjector())
             .groupReference(LOG_STREAM_SERVICE_GROUP, taskSubscriptionManagerService.getLogStreamsGroupReference())
             .install();
+
+        final TaskQueueManagerService taskQueueManagerService = new TaskQueueManagerService(configurationManager);
+        serviceContainer.createService(TASK_QUEUE_MANAGER, taskQueueManagerService)
+            .dependency(TRANSPORT_SEND_BUFFER, taskQueueManagerService.getSendBufferInjector())
+            .dependency(EXECUTOR_SERVICE, taskQueueManagerService.getExecutorInjector())
+            .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskQueueManagerService.getTaskSubscriptionManagerInjector())
+            .install();
+
     }
 
 }

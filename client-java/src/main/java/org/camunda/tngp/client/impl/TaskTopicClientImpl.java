@@ -13,7 +13,7 @@ import org.camunda.tngp.client.impl.cmd.taskqueue.CompleteTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.FailTaskCmdImpl;
-import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateSubscriptionCreditsCmdImpl;
+import org.camunda.tngp.client.impl.cmd.taskqueue.IncreaseTaskSubscriptionCreditsCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.UpdateTaskRetriesCmdImpl;
 import org.camunda.tngp.client.task.PollableTaskSubscriptionBuilder;
 import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
@@ -88,9 +88,9 @@ public class TaskTopicClientImpl implements TaskTopicClient
         return new CloseTaskSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
     }
 
-    public UpdateSubscriptionCreditsCmdImpl updateSubscriptionCredits()
+    public IncreaseTaskSubscriptionCreditsCmdImpl increaseSubscriptionCredits()
     {
-        return new UpdateSubscriptionCreditsCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
     }
 
 

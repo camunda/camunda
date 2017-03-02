@@ -67,6 +67,7 @@ public class TaskSubscriptionImpl
     }
 
 
+    @Override
     public int poll()
     {
         return poll(taskHandler);
@@ -101,6 +102,7 @@ public class TaskSubscriptionImpl
         return polledEvents;
     }
 
+    @Override
     public boolean isManagedSubscription()
     {
         return taskHandler != null;
@@ -145,7 +147,7 @@ public class TaskSubscriptionImpl
 
             if (credits > 0)
             {
-                taskClient.updateSubscriptionCredits()
+                taskClient.increaseSubscriptionCredits()
                     .subscriptionId(id)
                     .taskType(taskType)
                     .credits(credits)

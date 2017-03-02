@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
@@ -68,6 +69,9 @@ public class IntegrationTest
     @FluentMock
     private SubscribedEventWriter mockSubscribedEventWriter;
 
+    @Mock
+    private TaskSubscriptionManager mockTaskSubscriptionManager;
+
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -98,7 +102,7 @@ public class IntegrationTest
         when(mockCommandResponseWriter.tryWriteResponse()).thenReturn(true);
         when(mockSubscribedEventWriter.tryWriteMessage()).thenReturn(true);
 
-        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(mockCommandResponseWriter, mockSubscribedEventWriter, indexStore))
+        streamProcessorController = LogStreams.createStreamProcessor("task-test", 0, new TaskInstanceStreamProcessor(mockCommandResponseWriter, mockSubscribedEventWriter, indexStore, mockTaskSubscriptionManager))
             .sourceStream(logStream)
             .targetStream(logStream)
             .snapshotStorage(snapshotStorage)
