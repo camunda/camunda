@@ -101,6 +101,7 @@ public class HeatMapReader {
     SearchResponse sr = srb
         .addAggregation(AggregationBuilders
             .terms("activities")
+            .size(Integer.MAX_VALUE)
             .field("activityId")
         )
         .addAggregation(AggregationBuilders

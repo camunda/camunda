@@ -89,6 +89,26 @@ public class HeatMapReaderIT {
   }
 
   @Test
+  public void getHeatMapWithMoreThenTenEvents() throws Exception {
+    // given
+    for (int i = 0; i < 11; i++) {
+      EventDto event = new EventDto();
+      event.setActivityId(TEST_ACTIVITY + i);
+      event.setProcessDefinitionId(TEST_DEFINITION);
+      event.setProcessInstanceId(PROCESS_INSTANCE_ID);
+      int index = 5 + i;
+
+      rule.addEntryToElasticsearch(configurationService.getEventType(), String.valueOf(index), event);
+    }
+
+    // when
+    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+
+    // then
+    assertResults(testDefinition, 11,1L);
+  }
+
+  @Test
   public void getHeatMapMultipleEventsWithMultipleProcesses() throws Exception {
 
     // given
