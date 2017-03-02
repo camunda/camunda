@@ -64,8 +64,11 @@ public class ElasticSearchSchemaManager {
   }
 
   private Settings buildSettings() throws IOException {
-    return Settings.builder().loadFromSource(jsonBuilder()
+    return Settings.builder()
+      .put("index.mapper.dynamic", false)
+      .loadFromSource(jsonBuilder()
       .startObject()
+        .field("index.mapper.dynamic", false)
         .startObject("analysis")
           .startObject("analyzer")
             .startObject(configurationService.getAnalyzerName())
@@ -75,7 +78,9 @@ public class ElasticSearchSchemaManager {
             .endObject()
         . endObject()
         .endObject()
-      .endObject().string()).build();
+      .endObject()
+      .string())
+    .build();
   }
 
   private void createSingleSchema(String type, String content) {

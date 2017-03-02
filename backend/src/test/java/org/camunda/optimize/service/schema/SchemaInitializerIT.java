@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.schema;
 
+import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
@@ -9,11 +10,17 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsRespon
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.index.mapper.StrictDynamicMappingException;
+import org.elasticsearch.indices.TypeMissingException;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,6 +39,9 @@ public class SchemaInitializerIT {
   private ElasticSearchSchemaManager manager;
   @Autowired
   private TransportClient transportClient;
+
+  @Rule
+public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void schemaIsNotInitializedTwice() {
@@ -114,6 +124,34 @@ public class SchemaInitializerIT {
       );
 
     assertThat(fieldEntry.isNull(), is(false));
+  }
+
+  @Test
+  public void newTypeIsNotAddedDynamically() throws IOException {
+    // given schema is created
+    rule.cleanAndVerify();
+    schemaInitializer.initializeSchema();
+
+    // then an exception is thrown
+    thrown.expect(TypeMissingException.class);
+
+    // when I add a document to an unknown type
+    EventDto eventDto = new EventDto();
+    rule.addEntryToElasticsearch("myAwesomeNewType", "12312412", eventDto);
+  }
+
+  @Test
+  public void onlyAcceptDocumentsThatComplyWithTheSchema() {
+    // given schema is created
+    rule.cleanAndVerify();
+    schemaInitializer.initializeSchema();
+
+    // then
+    thrown.expect(StrictDynamicMappingException.class);
+
+    // when we add an event with an undefined type in schema
+    ExtendedEventDto extendedEventDto = new ExtendedEventDto();
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "12312412", extendedEventDto);
   }
 
 }

@@ -1,9 +1,8 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Rule;
@@ -17,10 +16,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,7 +40,7 @@ public class ProcessDefinitionReaderIT {
   public void getProcessDefinitions() throws Exception {
 
     // given
-    ProcessDefinitionEngineDto procDef = new ProcessDefinitionEngineDto();
+    ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
     procDef.setId("123");
     procDef.setKey("testDefinition");
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
@@ -63,7 +58,7 @@ public class ProcessDefinitionReaderIT {
   public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() {
 
     // given
-    ProcessDefinitionEngineDto procDef = new ProcessDefinitionEngineDto();
+    ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
     procDef.setId("123");
     procDef.setKey("testDefinition");
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
@@ -93,7 +88,7 @@ public class ProcessDefinitionReaderIT {
   public void getProcessDefinitionXml() throws Exception {
 
     // given
-    ProcessDefinitionXmlEngineDto xmlDto = new ProcessDefinitionXmlEngineDto();
+    ProcessDefinitionXmlOptimizeDto xmlDto = new ProcessDefinitionXmlOptimizeDto();
     xmlDto.setId("123");
     String leadXml = readDiagram();
     xmlDto.setBpmn20Xml(leadXml);

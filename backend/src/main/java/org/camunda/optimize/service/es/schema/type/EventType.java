@@ -1,28 +1,18 @@
 package org.camunda.optimize.service.es.schema.type;
 
-import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
 @Component
-public class EventType implements TypeMappingCreator{
+public class EventType extends StrictTypeMappingCreator {
 
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String PROCESS_INSTANCE_START_DATE = "processInstanceStartDate";
   public static final String PROCESS_INSTANCE_END_DATE = "processInstanceEndDate";
-  private Logger logger = LoggerFactory.getLogger(EventType.class);
-
-  @Autowired
-  ConfigurationService configurationService;
 
   @Override
   public String getType() {
@@ -30,12 +20,8 @@ public class EventType implements TypeMappingCreator{
   }
 
   @Override
-  public String getSource() {
-    String source = null;
-    try {
-      XContentBuilder content = jsonBuilder()
-        .startObject()
-          .startObject("properties")
+  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+    return builder
             .startObject("id")
               .field("type", "keyword")
             .endObject()
@@ -75,15 +61,6 @@ public class EventType implements TypeMappingCreator{
             .startObject(PROCESS_INSTANCE_END_DATE)
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
-            .endObject()
-          .endObject()
-        .endObject();
-      source = content.string();
-    } catch (IOException e) {
-      String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex() +
-        "' , type '" + getType() + "'!";
-      logger.error(message, e);
-    }
-    return source;
+            .endObject();
   }
 }
