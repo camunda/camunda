@@ -2,14 +2,11 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.mock.AuthenticationHelper;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHits;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -26,7 +23,7 @@ import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Askar Akhmerov
@@ -103,6 +100,26 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
     //then
     assertThat(logoutResponse.getStatus(),is(200));
     String responseEntity = logoutResponse.readEntity(String.class);
+    assertThat(responseEntity,is("OK"));
+  }
+
+  @Test
+  public void securingRestApiWorksWithProxy() throws Exception {
+    setUpEngineClientFailingAuthenticationMocks();
+    //given
+    Response response = authenticateAdmin();
+    String token = response.readEntity(String.class);
+
+    //when
+    Response testResponse = target("authentication/test")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
+        .header(AuthenticationUtil.PROXY_OPTIMIZE_AUTHORIZATION_HEADER,"Bearer " + token)
+        .get();
+
+    //then
+    assertThat(testResponse.getStatus(),is(200));
+    String responseEntity = testResponse.readEntity(String.class);
     assertThat(responseEntity,is("OK"));
   }
 
