@@ -41,7 +41,7 @@ public class SchemaInitializerIT {
   private TransportClient transportClient;
 
   @Rule
-public ExpectedException thrown = ExpectedException.none();
+  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void schemaIsNotInitializedTwice() {
@@ -83,12 +83,12 @@ public ExpectedException thrown = ExpectedException.none();
 
   private void assertTypeExists(String type) {
     GetMappingsResponse response = transportClient.admin().indices()
-      .prepareGetMappings(configurationService.getOptimizeIndex())
-      .get();
+        .prepareGetMappings(configurationService.getOptimizeIndex())
+        .get();
 
     boolean containsType = response.mappings()
-      .get(configurationService.getOptimizeIndex())
-      .containsKey(type);
+        .get(configurationService.getOptimizeIndex())
+        .containsKey(type);
     assertThat(containsType, is(true));
   }
 
@@ -111,17 +111,17 @@ public ExpectedException thrown = ExpectedException.none();
 
   private void assertThatNewFieldExists() {
     GetFieldMappingsResponse response = transportClient.admin().indices()
-      .prepareGetFieldMappings(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getEventType())
-      .setFields(MyUpdatedEventType.MY_NEW_FIELD)
-      .get();
+        .prepareGetFieldMappings(configurationService.getOptimizeIndex())
+        .setTypes(configurationService.getEventType())
+        .setFields(MyUpdatedEventType.MY_NEW_FIELD)
+        .get();
 
     FieldMappingMetaData fieldEntry =
-      response.fieldMappings(
-        configurationService.getOptimizeIndex(),
-        configurationService.getEventType(),
-        MyUpdatedEventType.MY_NEW_FIELD
-      );
+        response.fieldMappings(
+            configurationService.getOptimizeIndex(),
+            configurationService.getEventType(),
+            MyUpdatedEventType.MY_NEW_FIELD
+        );
 
     assertThat(fieldEntry.isNull(), is(false));
   }
