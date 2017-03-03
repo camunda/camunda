@@ -57,7 +57,7 @@ public class TopicSubscriptionTest
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(10 * 100);
+    public Timeout timeout = Timeout.seconds(10);
 
     protected TngpClient client;
     protected RecordingEventHandler recordingHandler;
