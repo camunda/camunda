@@ -2,9 +2,10 @@ var xml2js = require('xml2js');
 var fs = require('fs');
 var path = require('path');
 var ignoredActivities = ['$', 'bpmn:sequenceFlow'];
+var utils =  require('./utils');
 
-var parseXmlString = promisify(xml2js.parseString, xml2js);
-var readdir = promisify(fs.readdir, fs);
+var readdir = utils.readdir;
+var parseXmlString = utils.promisify(xml2js.parseString, xml2js);
 
 module.exports = {
   getBpmnEntries: getBpmnEntries
@@ -59,23 +60,4 @@ function describeBpmn(text) {
         activities: activities
       };
     });
-}
-
-function promisify(original, thisArg) {
-  return function() {
-    var args = Array.prototype.slice.call(arguments);
-
-    return new Promise(function(resolve, reject) {
-      original.apply(
-        thisArg,
-        args.concat([function(error, result) {
-          if (error) {
-            reject(error);
-          }
-
-          resolve(result);
-        }])
-      );
-    });
-  };
 }
