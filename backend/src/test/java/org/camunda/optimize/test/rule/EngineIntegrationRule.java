@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
@@ -47,6 +48,7 @@ import java.util.Properties;
 @Component
 public class EngineIntegrationRule extends TestWatcher {
 
+  private static final int MAX_WAIT = 10;
   @Autowired
   ConfigurationService configurationService;
 
@@ -161,4 +163,34 @@ public class EngineIntegrationRule extends TestWatcher {
     response.getEntity().getContent().close();
   }
 
+
+  public void waitForAllProcessesToFinish() throws Exception {
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    boolean done = false;
+    HttpRequestBase get = new HttpGet(configurationService.getEngineRestApiEndpointOfCustomEngine() + "/history/process-instance/count");
+    URI uri = null;
+    try {
+      uri = new URIBuilder(get.getURI())
+          .addParameter("unfinished", "true")
+          .build();
+    } catch (URISyntaxException e) {
+      logger.error("Could not build uri!");
+      e.printStackTrace();
+    }
+    get.setURI(uri);
+    int iterations = 0;
+    Thread.sleep(1000);
+    while (!done && iterations < MAX_WAIT) {
+      CloseableHttpResponse response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      HashMap<String,Object> parsed = new ObjectMapper().readValue(responseString, new TypeReference<HashMap<String,Object>>() {});
+      if (!parsed.containsKey("count")) throw new RuntimeException("Engine could not count PIs");
+      if (Integer.valueOf(parsed.get("count").toString()) != 0) {
+        Thread.sleep(1000);
+      } else {
+        done = true;
+      }
+    }
+
+  }
 }

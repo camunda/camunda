@@ -20,6 +20,8 @@ public class EventDto implements Serializable,OptimizeDto {
   private Date endDate;
   private Date processInstanceStartDate;
   private Date processInstanceEndDate;
+  private Long duration;
+  private String activityType;
 
   public String getId() {
     return id;
@@ -116,5 +118,21 @@ public class EventDto implements Serializable,OptimizeDto {
 
   public void setProcessInstanceEndDate(Date processInstanceEndDate) {
     this.processInstanceEndDate = processInstanceEndDate;
+  }
+
+  public Long getDuration() {
+    return duration;
+  }
+
+  public void setDuration(Long duration) {
+    this.duration = duration;
+  }
+
+  public String getActivityType() {
+    return activityType;
+  }
+
+  public void setActivityType(String activityType) {
+    this.activityType = activityType;
   }
 }

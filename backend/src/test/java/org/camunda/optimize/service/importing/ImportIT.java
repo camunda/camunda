@@ -101,7 +101,7 @@ public class ImportIT extends AbstractJerseyTest {
     String key = "testMIProcess";
     BpmnModelInstance subProcess = Bpmn.createExecutableProcess(SUB_PROCESS_ID)
         .startEvent()
-          .serviceTask()
+          .serviceTask("MI-Body-Task")
             .camundaExpression("${true}")
         .endEvent()
         .done();
@@ -110,7 +110,7 @@ public class ImportIT extends AbstractJerseyTest {
 
     BpmnModelInstance model = Bpmn.createExecutableProcess(key)
         .name("MultiInstance")
-          .startEvent()
+          .startEvent("miStart")
           .parallelGateway()
             .endEvent("end1")
           .moveToLastGateway()
@@ -123,6 +123,7 @@ public class ImportIT extends AbstractJerseyTest {
         .done();
     engineRule.deployAndStartProcess(model);
 
+    engineRule.waitForAllProcessesToFinish();
     importScheduler.scheduleProcessEngineImport();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -136,6 +137,7 @@ public class ImportIT extends AbstractJerseyTest {
         .request()
         .get(HeatMapResponseDto.class);
     assertThat(heatmap.getPiCount(), is(1L));
+    assertThat(heatmap.getFlowNodes().size(), is(5));
   }
 
   private void deployAndStartSimpleServiceTask() {

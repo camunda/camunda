@@ -61,6 +61,12 @@ public class EventType extends StrictTypeMappingCreator {
             .startObject(PROCESS_INSTANCE_END_DATE)
               .field("type", "date")
               .field("format",configurationService.getDateFormat())
+            .endObject()
+            .startObject("activityType")
+              .field("type", "keyword")
+            .endObject()
+            .startObject("duration")
+              .field("type", "long")
             .endObject();
   }
 }

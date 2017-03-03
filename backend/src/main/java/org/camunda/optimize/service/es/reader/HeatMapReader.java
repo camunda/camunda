@@ -26,6 +26,7 @@ import java.util.Map;
 @Component
 public class HeatMapReader {
   public static final String PI_COUNT = "piCount";
+  public static final String MI_BODY = "multiInstanceBody";
   @Autowired
   private TransportClient esclient;
   @Autowired
@@ -61,7 +62,8 @@ public class HeatMapReader {
   private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
     BoolQueryBuilder query;
     query = QueryBuilders.boolQuery()
-        .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId));
+        .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId))
+        .mustNot(QueryBuilders.matchQuery("activityType", MI_BODY));
     return query;
   }
 

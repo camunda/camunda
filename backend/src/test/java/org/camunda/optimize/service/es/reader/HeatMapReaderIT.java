@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.reader.HeatMapReader.MI_BODY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -49,6 +50,30 @@ public class HeatMapReaderIT {
   @Autowired
   @Rule
   public ElasticSearchIntegrationTestRule rule;
+
+  @Test
+  public void getHeatMapWithMIBody() throws Exception {
+
+    // given
+    EventDto event = new EventDto();
+    event.setActivityId(TEST_ACTIVITY);
+    event.setProcessDefinitionId(TEST_DEFINITION);
+    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+
+    event.setActivityId(TEST_ACTIVITY + 2);
+    event.setActivityType(MI_BODY);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+
+    event.setActivityId(TEST_ACTIVITY + 3);
+    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
+
+    // when
+    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+
+    // then
+    assertResults(testDefinition, 1, TEST_ACTIVITY, 1L, 1L);
+  }
 
   @Test
   public void getHeatMap() throws Exception {
