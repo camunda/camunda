@@ -14,7 +14,7 @@ export function createMockComponent(text, applyChildren) {
   });
 
   const constructedTemplates = [];
-  const constructor = observeFunction(
+  const constructoringFn = observeFunction(
     (attributes) => {
       const Reference = createReferenceComponent();
       const childrenTemplate = <div>
@@ -42,32 +42,32 @@ export function createMockComponent(text, applyChildren) {
     }
   );
 
-  constructor.set('template', template);
-  constructor.set('update', update);
+  constructoringFn.set('template', template);
+  constructoringFn.set('update', update);
 
-  constructor.getEventsBus = (index) => {
+  constructoringFn.getEventsBus = (index) => {
     return template.calls[index][1];
   };
 
-  constructor.getAttribute = withIndex(2, (attribute, index = 0) => {
-    return constructor.calls[index][0][attribute];
+  constructoringFn.getAttribute = withIndex(2, (attribute, index = 0) => {
+    return constructoringFn.calls[index][0][attribute];
   });
 
-  constructor.getChildTemplate = withIndex(2, (predicate, index = 0) => {
-    return constructor
+  constructoringFn.getChildTemplate = withIndex(2, (predicate, index = 0) => {
+    return constructoringFn
       .getAttribute('children', index)
       .filter(
         buildPredicateFunction(predicate)
       );
   });
 
-  constructor.getChildrenNode = withIndex(1, (index = 0) => {
+  constructoringFn.getChildrenNode = withIndex(1, (index = 0) => {
     return constructedTemplates[index].getChildrenNode();
   });
 
-  constructor.text = text;
+  constructoringFn.text = text;
 
-  return constructor;
+  return constructoringFn;
 
   function withIndex(arity, method) {
     return (...args) => {
@@ -86,8 +86,8 @@ export function createMockComponent(text, applyChildren) {
   function findIndex(predicate) {
     const predicateFn = buildPredicateFunction(predicate);
 
-    for (let i = 0; i < constructor.calls.length; i++) {
-      const attributes = constructor.calls[i][0];
+    for (let i = 0; i < constructoringFn.calls.length; i++) {
+      const attributes = constructoringFn.calls[i][0];
 
       if (predicateFn(attributes)) {
         return i;
