@@ -21,9 +21,8 @@ public class ProcessDefinitionXmlType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject("bpmn20Xml")
-        .field("type", "string")
+        .field("type", "text")
         .field("index", "not_analyzed")
-        .field("ignore_above", 256)
       .endObject();
   }
 
