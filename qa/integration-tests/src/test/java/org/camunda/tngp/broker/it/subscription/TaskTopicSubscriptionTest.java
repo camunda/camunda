@@ -72,8 +72,8 @@ public class TaskTopicSubscriptionTest
         final TaskEvent event1 = handler.getEvent(0);
         assertThat(event1.getEvent()).isEqualTo("CREATE");
         assertThat(event1.getHeaders()).containsExactly(entry("key", "value"));
-        assertThat(event1.getLockExpirationTime()).isNotNull(); // => https://github.com/camunda-tngp/camunda-tngp/issues/158
-        assertThat(event1.getLockOwner()).isNotNull();
+        assertThat(event1.getLockExpirationTime()).isNull();
+        assertThat(event1.getLockOwner()).isNull();
         assertThat(event1.getRetries()).isEqualTo(2);
         assertThat(event1.getType()).isEqualTo("foo");
         assertThat(event1.getPayload()).isEqualTo("{}");

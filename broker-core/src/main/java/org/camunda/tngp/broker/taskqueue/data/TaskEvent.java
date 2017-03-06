@@ -10,6 +10,7 @@ import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
+import org.camunda.tngp.protocol.Protocol;
 
 public class TaskEvent extends UnpackedObject
 {
@@ -17,7 +18,7 @@ public class TaskEvent extends UnpackedObject
     protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     private final EnumProperty<TaskEventType> eventProp = new EnumProperty<>("event", TaskEventType.class);
-    private final LongProperty lockTimeProp = new LongProperty("lockTime", -1L);
+    private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
     private final IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");

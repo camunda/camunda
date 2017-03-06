@@ -134,6 +134,18 @@ public class TaskSubscriptionTest
         // then
         assertThat(result).isEqualTo(taskKey);
         waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+
+        TaskEvent taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.CREATE)).get(0);
+        assertThat(taskEvent.getLockExpirationTime()).isNull();
+        assertThat(taskEvent.getLockOwner()).isNull();
+
+        taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.CREATED)).get(0);
+        assertThat(taskEvent.getLockExpirationTime()).isNull();
+        assertThat(taskEvent.getLockOwner()).isEqualTo(-1);
+
+        taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.LOCKED)).get(0);
+        assertThat(taskEvent.getLockExpirationTime()).isNotNull();
+        assertThat(taskEvent.getLockOwner()).isEqualTo(5);
     }
 
     @Test

@@ -1,7 +1,9 @@
 package org.camunda.tngp.broker.util.msgpack;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.utf8;
 
 import java.util.Map;
 
@@ -307,7 +309,7 @@ public class ArrayValueTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Property has no valid value");
+        exception.expectMessage("Property 'simpleArray' has no valid value");
 
         // when
         pojo.getLength();
@@ -338,7 +340,7 @@ public class ArrayValueTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Property has no valid value");
+        exception.expectMessage("Property 'simpleArray' has no valid value");
 
         // when
         iterator.hasNext();
@@ -353,7 +355,7 @@ public class ArrayValueTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Property has no valid value");
+        exception.expectMessage("Property 'simpleArray' has no valid value");
 
         // when
         iterator.next();

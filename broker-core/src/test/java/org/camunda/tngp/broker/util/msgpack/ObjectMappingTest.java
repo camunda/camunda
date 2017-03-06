@@ -188,7 +188,7 @@ public class ObjectMappingTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Property has no valid value");
+        exception.expectMessage("Property 'longProp' has no valid value");
 
         // when
         pojo.getLong();
@@ -277,7 +277,7 @@ public class ObjectMappingTest
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Property has no valid value");
+        exception.expectMessage("Property 'enumProp' has no valid value");
 
         // when
         pojo.getLength();

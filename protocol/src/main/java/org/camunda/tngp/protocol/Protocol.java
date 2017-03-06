@@ -11,4 +11,9 @@ public class Protocol
      */
     public static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
+    /**
+     * The null value of an instant property which indicates that it is not set.
+     */
+    public static final long INSTANT_NULL_VALUE = Long.MIN_VALUE;
+
 }

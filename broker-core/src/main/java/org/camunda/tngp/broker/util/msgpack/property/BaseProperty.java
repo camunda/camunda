@@ -70,7 +70,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable
         }
         else
         {
-            throw new RuntimeException("Property has no valid value");
+            throw new RuntimeException(String.format("Property '%s' has no valid value", key));
         }
     }
 

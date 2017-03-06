@@ -439,6 +439,7 @@ public class TaskSubscriptionTest
         taskEvent.put("event", TaskEventType.LOCKED.toString());
         taskEvent.put("lockTime", LOCK_TIME);
         taskEvent.put("lockOwner", LOCK_OWNER);
+        taskEvent.put("retries", 3);
         taskEvent.put("payload", msgPackConverter.convertToMsgPack("{}"));
         taskEvent.put("headers", new HashMap<>());
         taskEvent.put("type", TASK_TYPE);

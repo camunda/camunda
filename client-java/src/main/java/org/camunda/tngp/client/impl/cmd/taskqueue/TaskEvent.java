@@ -17,9 +17,9 @@ import java.util.Map;
 public class TaskEvent
 {
     private TaskEventType event;
-    private long lockTime;
-    private int lockOwner;
-    private int retries;
+    private Long lockTime;
+    private Integer lockOwner;
+    private Integer retries;
     private String type;
     private Map<String, String> headers;
     private byte[] payload;
@@ -74,7 +74,7 @@ public class TaskEvent
         this.payload = payload;
     }
 
-    public int getLockOwner()
+    public Integer getLockOwner()
     {
         return lockOwner;
     }
@@ -87,15 +87,15 @@ public class TaskEvent
     public void reset()
     {
         event = null;
-        lockTime = -1L;
-        lockOwner = -1;
-        retries = -1;
+        lockTime = null;
+        lockOwner = null;
+        retries = null;
         type = null;
         headers = null;
         payload = null;
     }
 
-    public int getRetries()
+    public Integer getRetries()
     {
         return retries;
     }

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.task.impl.MsgPackField;
+import org.camunda.tngp.protocol.Protocol;
 
 public class TaskEventImpl implements TaskEvent
 {
@@ -31,7 +32,7 @@ public class TaskEventImpl implements TaskEvent
     @Override
     public Instant getLockExpirationTime()
     {
-        if (lockTime != null)
+        if (lockTime != null && !lockTime.equals(Protocol.INSTANT_NULL_VALUE))
         {
             return Instant.ofEpochMilli(lockTime);
         }
