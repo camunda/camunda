@@ -107,6 +107,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(654L)
+            .lockOwner(2)
             .taskType("fooo");
 
         // when
@@ -121,6 +122,12 @@ public class TaskSubscriptionBuilderTest
         assertThat(subscriptionImpl.getTaskType()).isEqualTo("fooo");
 
         assertThat(subscriptions.getPollableSubscriptions()).contains(subscriptionImpl);
+
+        verify(client).brokerTaskSubscription();
+        verify(openSubscriptionCmd).lockOwner(2);
+        verify(openSubscriptionCmd).lockDuration(654L);
+        verify(openSubscriptionCmd).taskType("fooo");
+        verify(openSubscriptionCmd).execute();
     }
 
     @Test
@@ -209,6 +216,7 @@ public class TaskSubscriptionBuilderTest
 
         builder
             .lockTime(Duration.ofDays(10))
+            .lockOwner(2)
             .taskType("fooo");
 
         // when

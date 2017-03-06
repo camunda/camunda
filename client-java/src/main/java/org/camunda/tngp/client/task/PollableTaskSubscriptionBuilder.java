@@ -30,6 +30,20 @@ public interface PollableTaskSubscriptionBuilder
     PollableTaskSubscriptionBuilder lockTime(Duration lockDuration);
 
     /**
+     * Sets the owner for which subscripted tasks will be exclusively locked.
+     *
+     * @param lockOwner owner of which tasks are being locked
+     */
+    PollableTaskSubscriptionBuilder lockOwner(int lockOwner);
+
+    /**
+     * Sets the number of tasks which will be locked at the same time.
+     *
+     * @param numTasks number of locked tasks
+     */
+    PollableTaskSubscriptionBuilder taskFetchSize(int numTasks);
+
+    /**
      * Opens a new {@link PollableTaskSubscription}. Begins receiving
      * tasks from that point on.
      */

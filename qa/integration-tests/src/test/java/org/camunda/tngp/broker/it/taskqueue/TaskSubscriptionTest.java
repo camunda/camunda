@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.retries;
+import static org.camunda.tngp.test.util.TestUtil.doRepeatedly;
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
@@ -26,10 +27,8 @@ import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
-import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -407,34 +406,6 @@ public class TaskSubscriptionTest
         assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK_EXPIRED))).isTrue();
     }
 
-
-    @Ignore
-    @Test
-    public void testPollableSubscription()
-    {
-        // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
-
-        final PollableTaskSubscription subscription = topicClient.newPollableTaskSubscription()
-            .lockTime(123L)
-            .taskType("foo")
-            .open();
-
-        final Long taskId = topicClient.create()
-            .taskType("foo")
-            .execute();
-
-        // when
-        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
-
-        TestUtil.doRepeatedly(() -> subscription.poll(taskHandler))
-            .until((workCount) -> workCount == 1);
-
-        assertThat(taskHandler.handledTasks).hasSize(1);
-        assertThat(taskHandler.handledTasks.get(0).getKey()).isEqualTo(taskId);
-    }
-
     @Test
     public void shouldOpenSubscriptionAfterClientReconnect()
     {
@@ -497,6 +468,43 @@ public class TaskSubscriptionTest
 
         // then
         assertThat(taskHandler.handledTasks).hasSize(1);
+    }
+
+    @Test
+    public void shouldPollTasks()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final TaskTopicClient topicClient = client.taskTopic(0);
+
+        final PollableTaskSubscription subscription = topicClient.newPollableTaskSubscription()
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(3)
+            .open();
+
+        final Long taskKey = topicClient.create()
+            .taskType("foo")
+            .payload("{ \"a\" : 1 }")
+            .addHeader("b", "2")
+            .execute();
+
+        // when
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler(Task::complete);
+
+        doRepeatedly(() -> subscription.poll(taskHandler))
+            .until((workCount) -> workCount == 1);
+
+        assertThat(taskHandler.handledTasks).hasSize(1);
+
+        final Task task = taskHandler.getHandledTasks().get(0);
+        assertThat(task.getKey()).isEqualTo(taskKey);
+        assertThat(task.getType()).isEqualTo("foo");
+        assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
+        assertThat(task.getPayload()).isEqualTo("{\"a\":1}");
+        assertThat(task.getHeaders()).containsEntry("b", "2");
+
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
     }
 
     public static class RecordingTaskHandler implements TaskHandler

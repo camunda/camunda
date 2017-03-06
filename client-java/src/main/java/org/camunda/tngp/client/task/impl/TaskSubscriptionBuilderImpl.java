@@ -1,7 +1,6 @@
 package org.camunda.tngp.client.task.impl;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.impl.TaskTopicClientImpl;
@@ -15,7 +14,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     public static final int DEFAULT_TASK_FETCH_SIZE = 32;
 
     protected String taskType;
-    protected long lockTime = TimeUnit.MINUTES.toMillis(1);
+    protected long lockTime = Duration.ofMinutes(1).toMillis();
     protected int lockOwner = -1;
     protected TaskHandler taskHandler;
     protected int taskFetchSize = DEFAULT_TASK_FETCH_SIZE;
@@ -82,7 +81,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
     public TaskSubscriptionImpl open()
     {
         EnsureUtil.ensureNotNull("taskHandler", taskHandler);
-        EnsureUtil.ensureNotNull("taskType", taskType);
+        EnsureUtil.ensureNotNullOrEmpty("taskType", taskType);
         EnsureUtil.ensureGreaterThan("lockTime", lockTime, 0L);
         EnsureUtil.ensureGreaterThanOrEqual("lockOwner", lockOwner, 0);
         EnsureUtil.ensureGreaterThan("taskFetchSize", taskFetchSize, 0);
@@ -98,6 +97,7 @@ public class TaskSubscriptionBuilderImpl implements TaskSubscriptionBuilder
                         taskAcquisition,
                         msgPackMapper,
                         autoCompleteTasks);
+
         subscription.open();
         return subscription;
     }
