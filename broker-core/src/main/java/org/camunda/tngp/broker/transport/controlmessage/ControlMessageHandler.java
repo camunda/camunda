@@ -29,14 +29,16 @@ public interface ControlMessageHandler
     ControlMessageType getMessageType();
 
     /**
-     * Handle the given control message asynchronously.
+     * Handle the given control message asynchronously. An implementation may
+     * copy the buffer if the data is used beyond the invocation.
      *
      * @param buffer
      *            the buffer which contains the control message as MsgPack-JSON
      * @param metadata
      *            the metadata (channel id, connection id, request id) of the
      *            request
-     * @return a future which indicates when the control message is handled completely
+     * @return a future which indicates when the control message is handled
+     *         completely
      */
     CompletableFuture<Void> handle(DirectBuffer buffer, BrokerEventMetadata metadata);
 }

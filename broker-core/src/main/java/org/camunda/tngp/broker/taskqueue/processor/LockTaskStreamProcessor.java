@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
@@ -52,6 +53,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     protected Iterator<TaskSubscription> subscriptionIterator;
 
     protected final DirectBuffer subscriptedTaskType;
+    protected long logStreamId;
 
     protected int availableSubscriptionCredits = 0;
 
@@ -64,9 +66,12 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     // activate the processor while adding the first subscription
     protected boolean isSuspended = true;
 
-    public LockTaskStreamProcessor(DirectBuffer subscriptedTaskType)
+    public LockTaskStreamProcessor(DirectBuffer taskType)
     {
-        this.subscriptedTaskType = subscriptedTaskType;
+        final byte[] buffer = new byte[taskType.capacity()];
+        taskType.getBytes(0, buffer);
+
+        this.subscriptedTaskType = new UnsafeBuffer(buffer);
         this.subscriptionIterator = subscriptionsById.values().iterator();
     }
 
@@ -88,10 +93,17 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         return subscriptedTaskType;
     }
 
+    public long getLogStreamId()
+    {
+        return logStreamId;
+    }
+
     @Override
     public void onOpen(StreamProcessorContext context)
     {
         cmdQueue = context.getStreamProcessorCmdQueue();
+
+        logStreamId = context.getSourceStream().getId();
     }
 
     protected <T> CompletableFuture<T> addCommand(Consumer<CompletableFuture<T>> action)

@@ -7,6 +7,7 @@ import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.Loggers;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.SubscribedEventHandler;
+import org.camunda.tngp.util.AsyncContext;
 import org.slf4j.Logger;
 
 public class EventAcquisition<T extends EventSubscription<T>> implements SubscribedEventHandler, Agent

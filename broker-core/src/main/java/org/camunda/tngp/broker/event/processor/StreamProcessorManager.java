@@ -13,6 +13,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.util.AsyncContext;
 
 public class StreamProcessorManager
 {

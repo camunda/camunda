@@ -2,7 +2,6 @@ package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
@@ -18,7 +17,6 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
 
     private final int topicId;
     private long subscriptionId = -1L;
-    private String taskType;
     private int credits = 0;
 
     public IncreaseTaskSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
@@ -33,12 +31,6 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
         return this;
     }
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl taskType(String taskType)
-    {
-        this.taskType = taskType;
-        return this;
-    }
-
     public IncreaseTaskSubscriptionCreditsCmdImpl credits(int credits)
     {
         this.credits = credits;
@@ -50,7 +42,6 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     {
         ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);
         ensureGreaterThanOrEqual("topic id", topicId, 0);
-        ensureNotNull("task type", taskType);
         ensureGreaterThan("credits", credits, 0);
     }
 
@@ -58,7 +49,6 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     public void reset()
     {
         subscriptionId = -1L;
-        taskType = null;
         credits = 0;
     }
 
@@ -67,7 +57,6 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     {
         subscription.setId(subscriptionId);
         subscription.setTopicId(topicId);
-        subscription.setTaskType(taskType);
         subscription.setCredits(credits);
 
         return subscription;

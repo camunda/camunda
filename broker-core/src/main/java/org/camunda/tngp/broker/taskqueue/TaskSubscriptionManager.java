@@ -24,13 +24,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
@@ -38,6 +36,7 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
+import org.camunda.tngp.util.AsyncContext;
 import org.camunda.tngp.util.buffer.BufferUtil;
 
 public class TaskSubscriptionManager implements Agent
@@ -50,8 +49,7 @@ public class TaskSubscriptionManager implements Agent
     protected final Long2ObjectHashMap<LogStreamBucket> logStreamBucketById = new Long2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
-    protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
-    protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
+    protected final AsyncContext asyncContext = new AsyncContext(1_000);
 
     protected long nextSubscriptionId = 0;
 
@@ -77,30 +75,12 @@ public class TaskSubscriptionManager implements Agent
     @Override
     public int doWork() throws Exception
     {
-        return cmdQueue.drain(cmdConsumer);
-    }
-
-    protected <T> CompletableFuture<T> runAsync(Consumer<CompletableFuture<T>> action)
-    {
-        final CompletableFuture<T> future = new CompletableFuture<>();
-
-        cmdQueue.add(() ->
-        {
-            try
-            {
-                action.accept(future);
-            }
-            catch (Exception e)
-            {
-                future.completeExceptionally(e);
-            }
-        });
-        return future;
+        return asyncContext.doWork();
     }
 
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
     {
-        return runAsync(future ->
+        return asyncContext.runAsync(future ->
         {
             ensureNotNull("subscription", subscription);
 
@@ -171,54 +151,41 @@ public class TaskSubscriptionManager implements Agent
         return future;
     }
 
-    public CompletableFuture<Void> removeSubscription(TaskSubscription subscription)
+    public CompletableFuture<Void> removeSubscription(long subscriptionId)
     {
-        return runAsync(future ->
+        return asyncContext.runAsync(future ->
         {
-            boolean isScheduled = false;
-
-            ensureNotNull("subscription", subscription);
-
-            final long logStreamId = subscription.getTopicId();
-            final DirectBuffer taskType = subscription.getLockTaskType();
-
-            ensureNotNull("lock task type", taskType);
-
-            streamProcessorBySubscriptionId.remove(subscription.getId());
-
-            final LogStreamBucket logStreamBucket = logStreamBucketById.get(logStreamId);
-            if (logStreamBucket != null)
+            final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.remove(subscriptionId);
+            if (streamProcessor != null)
             {
-                final LockTaskStreamProcessor streamProcessor = logStreamBucket.getStreamProcessorByTaskType(taskType);
-                if (streamProcessor != null)
-                {
-                    streamProcessor
-                        .removeSubscription(subscription.getId())
-                        .thenCompose(hasSubscriptions -> !hasSubscriptions ? removeStreamProcessorService(logStreamBucket, taskType) : CompletableFuture.completedFuture(null))
-                        .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
-
-                    isScheduled = true;
-                }
+                streamProcessor
+                    .removeSubscription(subscriptionId)
+                    .thenCompose(hasSubscriptions -> !hasSubscriptions ? removeStreamProcessorService(streamProcessor) : CompletableFuture.completedFuture(null))
+                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
-
-            if (!isScheduled)
+            else
             {
                 future.complete(null);
             }
         });
     }
 
-    protected CompletionStage<Void> removeStreamProcessorService(final LogStreamBucket logStreamBucket, final DirectBuffer taskType)
+    protected CompletionStage<Void> removeStreamProcessorService(final LockTaskStreamProcessor streamProcessor)
     {
+        final LogStreamBucket logStreamBucket = logStreamBucketById.get(streamProcessor.getLogStreamId());
+
+        logStreamBucket.removeStreamProcessor(streamProcessor);
+
         final String logName = logStreamBucket.getLogStreamName();
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueLockStreamProcessorServiceName(logName, BufferUtil.bufferAsString(taskType));
+        final String taskType = BufferUtil.bufferAsString(streamProcessor.getSubscriptedTaskType());
+        final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueLockStreamProcessorServiceName(logName, taskType);
 
         return serviceContext.removeService(streamProcessorServiceName);
     }
 
     public CompletableFuture<Void> increaseSubscriptionCredits(long subscriptionId, int credits)
     {
-        return runAsync(future ->
+        return asyncContext.runAsync(future ->
         {
             final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.get(subscriptionId);
             if (streamProcessor != null)
@@ -237,7 +204,7 @@ public class TaskSubscriptionManager implements Agent
 
     public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
     {
-        runAsync(future ->
+        asyncContext.runAsync(future ->
         {
             final int logStreamId = logStream.getId();
             logStreamBucketById.put(logStreamId, new LogStreamBucket(logStream, logStreamServiceName));
@@ -246,25 +213,26 @@ public class TaskSubscriptionManager implements Agent
 
     public void removeStream(LogStream logStream)
     {
-        runAsync(future ->
+        asyncContext.runAsync(future ->
         {
             final int logStreamId = logStream.getId();
 
-            // TODO be more efficient #128
-            final LogStreamBucket removedBucket = logStreamBucketById.remove(logStreamId);
-            if (removedBucket != null)
-            {
-                final Set<Entry<Long, LockTaskStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
-                for (Entry<Long, LockTaskStreamProcessor> entry : entrySet)
-                {
-                    final LockTaskStreamProcessor streamProcessor = entry.getValue();
-                    if (removedBucket.streamProcessors.contains(streamProcessor))
-                    {
-                        entrySet.remove(entry);
-                    }
-                }
-            }
+            logStreamBucketById.remove(logStreamId);
+            removeSubscriptionsForLogStream(logStreamId);
         });
+    }
+
+    protected void removeSubscriptionsForLogStream(long logStreamId)
+    {
+        final Set<Entry<Long, LockTaskStreamProcessor>> entrySet = streamProcessorBySubscriptionId.entrySet();
+        for (Entry<Long, LockTaskStreamProcessor> entry : entrySet)
+        {
+            final LockTaskStreamProcessor streamProcessor = entry.getValue();
+            if (streamProcessor.getLogStreamId() == logStreamId)
+            {
+                entrySet.remove(entry);
+            }
+        }
     }
 
     class LogStreamBucket

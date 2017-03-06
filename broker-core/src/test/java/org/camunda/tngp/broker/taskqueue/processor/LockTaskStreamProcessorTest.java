@@ -19,7 +19,9 @@ import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.test.WrittenEvent;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -44,6 +46,9 @@ public class LockTaskStreamProcessorTest
 
     @Mock
     private LoggedEvent mockLoggedEvent;
+
+    @Mock
+    private LogStream mockLogStream;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -77,7 +82,10 @@ public class LockTaskStreamProcessorTest
                 .setLockOwner(2)
                 .setCredits(2);
 
-        mockController.initStreamProcessor(streamProcessor);
+        final StreamProcessorContext context = new StreamProcessorContext();
+        context.setSourceStream(mockLogStream);
+
+        mockController.initStreamProcessor(streamProcessor, context);
     }
 
     @After

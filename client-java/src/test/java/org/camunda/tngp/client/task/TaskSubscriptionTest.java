@@ -168,7 +168,6 @@ public class TaskSubscriptionTest
 
         verify(client).closeBrokerTaskSubscription();
         verify(closeSubscriptionCmd).subscriptionId(SUBSCRIPTION_ID);
-        verify(closeSubscriptionCmd).taskType(TASK_TYPE);
         verify(closeSubscriptionCmd).execute();
     }
 
@@ -404,7 +403,6 @@ public class TaskSubscriptionTest
         // then
         verify(client, times(1)).increaseSubscriptionCredits();
         verify(updateCreditsCmd).subscriptionId(subscription.getId());
-        verify(updateCreditsCmd).taskType(TASK_TYPE);
         verify(updateCreditsCmd).credits(4);
         verify(updateCreditsCmd, times(1)).execute();
     }

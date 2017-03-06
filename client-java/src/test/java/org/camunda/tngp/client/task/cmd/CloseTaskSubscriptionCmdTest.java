@@ -67,8 +67,7 @@ public class CloseTaskSubscriptionCmdTest
     {
         // given
         command
-            .subscriptionId(2)
-            .taskType("foo");
+            .subscriptionId(2);
 
         // when
         command.getRequestWriter().write(writeBuffer, 0);
@@ -92,31 +91,14 @@ public class CloseTaskSubscriptionCmdTest
 
         assertThat(taskSubscription.getId()).isEqualTo(2L);
         assertThat(taskSubscription.getTopicId()).isEqualTo(TOPIC_ID);
-        assertThat(taskSubscription.getTaskType()).isEqualTo("foo");
     }
 
     @Test
     public void shouldBeNotValidIfSubscriptionIdIsNotSet()
     {
-        command
-            .taskType("foo");
-
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("subscription id must be greater than or equal to 0");
 
         command.validate();
     }
-
-    @Test
-    public void shouldBeNotValidIfTaskTypeIsNotSet()
-    {
-        command
-            .subscriptionId(2);
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("task type must not be null");
-
-        command.validate();
-    }
-
 }

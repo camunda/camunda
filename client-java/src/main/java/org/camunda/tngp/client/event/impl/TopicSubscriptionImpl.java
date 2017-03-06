@@ -37,6 +37,7 @@ public class TopicSubscriptionImpl
         return handler != null;
     }
 
+    @Override
     public int poll()
     {
         return pollEvents(handler);

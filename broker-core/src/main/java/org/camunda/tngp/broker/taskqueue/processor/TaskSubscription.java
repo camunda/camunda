@@ -23,7 +23,7 @@ public class TaskSubscription extends UnpackedObject
     protected LongProperty idProp = new LongProperty("id", -1);
 
     protected LongProperty topicIdProp = new LongProperty("topicId");
-    protected StringProperty taskTypeProp = new StringProperty("taskType");
+    protected StringProperty taskTypeProp = new StringProperty("taskType", "");
 
     protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
     protected IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);

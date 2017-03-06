@@ -91,18 +91,19 @@ public class TaskSubscriptionManagerTest
         when(mockServiceContext.createService(any(), any())).thenReturn(mockServiceBuilder);
         when(mockServiceContext.removeService(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        mockStreamProcessor = createMockStreamProcessor(TASK_TYPE_BUFFER);
+        mockStreamProcessor = createMockStreamProcessor(LOG_STREAM_ID, TASK_TYPE_BUFFER);
 
         manager = new TaskSubscriptionManager(mockServiceContext, mockStreamProcessorBuilder);
 
         subscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
     }
 
-    private LockTaskStreamProcessor createMockStreamProcessor(DirectBuffer taskTypeBuffer)
+    private LockTaskStreamProcessor createMockStreamProcessor(long logStreamId, DirectBuffer taskTypeBuffer)
     {
         final LockTaskStreamProcessor mockStreamProcessor = mock(LockTaskStreamProcessor.class);
 
         when(mockStreamProcessorBuilder.apply(taskTypeBuffer)).thenReturn(mockStreamProcessor);
+        when(mockStreamProcessor.getLogStreamId()).thenReturn(logStreamId);
         when(mockStreamProcessor.getSubscriptedTaskType()).thenReturn(taskTypeBuffer);
 
         when(mockStreamProcessor.addSubscription(any())).thenReturn(CompletableFuture.completedFuture(null));
@@ -208,7 +209,7 @@ public class TaskSubscriptionManagerTest
         // given
         final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(ANOTHER_TASK_TYPE_BUFFER);
 
-        final LockTaskStreamProcessor anotherMockStreamProcessor = createMockStreamProcessor(ANOTHER_TASK_TYPE_BUFFER);
+        final LockTaskStreamProcessor anotherMockStreamProcessor = createMockStreamProcessor(LOG_STREAM_ID, ANOTHER_TASK_TYPE_BUFFER);
 
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addSubscription(subscription);
@@ -262,7 +263,7 @@ public class TaskSubscriptionManagerTest
         when(mockStreamProcessor.removeSubscription(anyLong())).thenReturn(CompletableFuture.completedFuture(false));
 
         // when
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription);
+        final CompletableFuture<Void> future = manager.removeSubscription(0L);
 
         manager.doWork();
 
@@ -284,7 +285,7 @@ public class TaskSubscriptionManagerTest
         when(mockStreamProcessor.removeSubscription(anyLong())).thenReturn(CompletableFuture.completedFuture(true));
 
         // when
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription);
+        final CompletableFuture<Void> future = manager.removeSubscription(0L);
 
         manager.doWork();
 
@@ -297,7 +298,7 @@ public class TaskSubscriptionManagerTest
     }
 
     @Test
-    public void shouldIgnoreRemoveSubscriptionIfProcessorNotExistForLogStream() throws Exception
+    public void shouldIgnoreRemoveSubscriptionIfNotExist() throws Exception
     {
         // given
         final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(ANOTHER_LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
@@ -305,24 +306,7 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(anotherSubscription);
 
         // when
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription);
-
-        manager.doWork();
-
-        // then
-        assertThat(future).isCompleted();
-    }
-
-    @Test
-    public void shouldIgnoreRemoveSubscriptionIfProcessorNotExistForTaskType() throws Exception
-    {
-        // given
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(ANOTHER_TASK_TYPE_BUFFER);
-
-        manager.addSubscription(anotherSubscription);
-
-        // when
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription);
+        final CompletableFuture<Void> future = manager.removeSubscription(3L);
 
         manager.doWork();
 
@@ -452,11 +436,11 @@ public class TaskSubscriptionManagerTest
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addSubscription(subscription);
 
-        when(mockServiceContext.removeService(any())).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
         when(mockStreamProcessor.removeSubscription(anyLong())).thenReturn(CompletableFuture.completedFuture(false));
+        when(mockServiceContext.removeService(any())).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
 
         // when
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription);
+        final CompletableFuture<Void> future = manager.removeSubscription(0L);
         manager.doWork();
 
         // then

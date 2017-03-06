@@ -68,7 +68,6 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
         // given
         command
             .subscriptionId(2)
-            .taskType("foo")
             .credits(5);
 
         // when
@@ -93,7 +92,6 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
 
         assertThat(taskSubscription.getId()).isEqualTo(2L);
         assertThat(taskSubscription.getTopicId()).isEqualTo(TOPIC_ID);
-        assertThat(taskSubscription.getTaskType()).isEqualTo("foo");
         assertThat(taskSubscription.getCredits()).isEqualTo(5);
     }
 
@@ -101,7 +99,6 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
     public void shouldBeNotValidIfSubscriptionIdIsNotSet()
     {
         command
-            .taskType("foo")
             .credits(5);
 
         thrown.expect(RuntimeException.class);
@@ -111,24 +108,10 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
     }
 
     @Test
-    public void shouldBeNotValidIfTaskTypeIsNotSet()
-    {
-        command
-            .subscriptionId(2)
-            .credits(5);
-
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("task type must not be null");
-
-        command.validate();
-    }
-
-    @Test
     public void shouldBeNotValidICreditsAreNotSet()
     {
         command
-            .subscriptionId(2)
-            .taskType("foo");
+            .subscriptionId(2);
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("credits must be greater than 0");

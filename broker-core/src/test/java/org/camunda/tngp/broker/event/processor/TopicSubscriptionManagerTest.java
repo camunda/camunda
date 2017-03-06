@@ -17,6 +17,7 @@ import org.camunda.tngp.broker.event.handler.FuturePool;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.util.AsyncContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;

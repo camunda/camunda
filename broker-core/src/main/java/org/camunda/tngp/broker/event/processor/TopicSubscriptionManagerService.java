@@ -10,6 +10,7 @@ import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.util.AsyncContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class TopicSubscriptionManagerService implements Service<TopicSubscriptionManager>

@@ -133,7 +133,6 @@ public class TaskSubscriptionImpl
     {
         taskClient.closeBrokerTaskSubscription()
             .subscriptionId(id)
-            .taskType(taskType)
             .execute();
 
     }
@@ -149,7 +148,6 @@ public class TaskSubscriptionImpl
             {
                 taskClient.increaseSubscriptionCredits()
                     .subscriptionId(id)
-                    .taskType(taskType)
                     .credits(credits)
                     .execute();
             }
