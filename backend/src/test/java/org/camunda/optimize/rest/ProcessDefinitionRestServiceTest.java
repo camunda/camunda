@@ -1,38 +1,41 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.DateFilterDto;
-import org.camunda.optimize.dto.optimize.FilterMapDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.reader.CorrelationReader;
+import org.camunda.optimize.service.es.reader.HeatMapReader;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.security.AuthenticationProvider;
+import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
-import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatcher;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Askar Akhmerov
@@ -42,117 +45,215 @@ import static org.junit.Assert.assertThat;
 public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
 
   @Autowired
-  private TransportClient esClientMock;
+  private ProcessDefinitionReader processDefinitionReader;
 
   @Autowired
-  private ConfigurationService configurationService;
+  private HeatMapReader heatMapReader;
 
-  /**
-   * Make sure that serialization\deserialization is working properly for REST
-   * services communication
-   *
-   * @throws Exception
-   */
+  @Autowired
+  private CorrelationReader correlationReader;
+
+  @InjectMocks
+  @Autowired
+  private AuthenticationService authenticationService;
+
+  @Mock
+  private AuthenticationProvider engineAuthenticationProvider;
+
+  @Before
+  public void init() {
+    MockitoAnnotations.initMocks(this);
+    Mockito.when(engineAuthenticationProvider.authenticate(Mockito.any())).thenReturn(true);
+  }
+
   @Test
-  public void getHeatMap() throws Exception {
-    //given
-    Date targetDate = new Date();
-    SimpleDateFormat format = new SimpleDateFormat(configurationService.getDateFormat());
-    HeatMapQueryDto dto = prepareDto(targetDate);
-    setUpElasticSearchMock(format.format(targetDate));
+  public void getProcessDefinitionsWithoutAuthentication() throws IOException {
+    // when
+    Response response =
+      target("process-definition")
+        .request()
+        .get();
 
-    //when
-    Response response = target("process-definition")
-        .path("heatmap")
-        .request(MediaType.APPLICATION_JSON)
-        .header("Content-Type", MediaType.APPLICATION_JSON)
-        .post(Entity.json(dto));
-
-    //then
-    HeatMapResponseDto deserializedResult = response.readEntity(HeatMapResponseDto.class);
-    assertThat(deserializedResult.getFlowNodes().size(),is(1));
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
   }
 
-  private void setUpElasticSearchMock(String expectedDate) {
-    SearchRequestBuilder searchRequestMock = Mockito.mock(SearchRequestBuilder.class);
-    Mockito
-        .when(searchRequestMock.setQuery(queryContainsDate(expectedDate)))
-        .thenReturn(searchRequestMock);
+  @Test
+  public void getProcessDefinitions() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
+    String expectedProcessDefinitionId = "123";
+    expected.setId(expectedProcessDefinitionId);
+    Mockito.when(processDefinitionReader.getProcessDefinitions()).thenReturn(Collections.singletonList(expected));
 
-    Mockito
-        .when(searchRequestMock.addAggregation(Mockito.any(AggregationBuilder.class)))
-        .thenReturn(searchRequestMock);
+    // when
+    Response response =
+      target("process-definition")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .get();
 
-    ListenableActionFuture<SearchResponse> futureResponse = setUpResponseObject();
-
-    Mockito.when(searchRequestMock.execute()).thenReturn(futureResponse);
-
-    Mockito.when(
-        this.esClientMock.prepareSearch(configurationService.getOptimizeIndex())
-            .setTypes(configurationService.getEventType())
-    ).thenReturn(searchRequestMock);
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    List<ProcessDefinitionEngineDto> definitions =
+      response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>(){});
+    assertThat(definitions,is(notNullValue()));
+    assertThat(definitions.get(0).getId(), is(expectedProcessDefinitionId));
   }
 
-  private ListenableActionFuture<SearchResponse> setUpResponseObject() {
-    ListenableActionFuture<SearchResponse> futureResponse = Mockito.mock(ListenableActionFuture.class);
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    Aggregations aggregations = Mockito.mock(Aggregations.class);
-    Terms mockTerms = Mockito.mock(Terms.class);
-    List<Terms.Bucket> mockBuckets = new ArrayList<>();
-    Terms.Bucket mockBucket = Mockito.mock(Terms.Bucket.class);
-    Mockito.when(mockBucket.getKeyAsString()).thenReturn("test");
-    Mockito.when(mockBucket.getDocCount()).thenReturn(1L);
-    mockBuckets.add(mockBucket);
-    Mockito.when(mockTerms.getBuckets()).thenReturn(mockBuckets);
-    Mockito.when(aggregations.get(Mockito.eq("activities"))).thenReturn(mockTerms);
+  @Test
+  public void getProcessDefinitionXmlWithoutAuthentication() throws IOException {
+    // when
+    Response response =
+      target("process-definition/123/xml")
+      .request()
+      .get();
 
-    Cardinality mockCardinality = Mockito.mock(Cardinality.class);
-    Mockito.when(mockCardinality.getValue()).thenReturn(1L);
-    Mockito.when(aggregations.get(Mockito.eq("pi"))).thenReturn(mockCardinality);
-
-    Mockito.when(mockResponse.getAggregations()).thenReturn(aggregations);
-    Mockito.when(futureResponse.actionGet()).thenReturn(mockResponse);
-    return futureResponse;
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
   }
 
-  private HeatMapQueryDto prepareDto(Date targetDate) {
-    HeatMapQueryDto dto = new HeatMapQueryDto();
-    dto.setProcessDefinitionId("test");
-    FilterMapDto filter = new FilterMapDto();
-    List<DateFilterDto> dates = new ArrayList<>();
-    DateFilterDto date = new DateFilterDto();
-    date.setOperator(">");
-    date.setValue(targetDate);
-    date.setType("start_date");
-    dates.add(date);
-    filter.setDates(dates);
-    dto.setFilter(filter);
-    return dto;
+  @Test
+  public void getProcessDefinitionXml() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    String expectedXml = "ProcessModelXml";
+    Mockito.when(processDefinitionReader.getProcessDefinitionXml("123")).thenReturn(expectedXml);
+
+    // when
+    Response response =
+      target("process-definition/123/xml")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    String actualXml =
+      response.readEntity(String.class);
+    assertThat(actualXml, is(expectedXml));
   }
 
-  /**
-   * Custom matcher for verifying actual and expected ValueObjects match.
-   */
-  static class BoolQueryBuilderMatcher implements ArgumentMatcher<BoolQueryBuilder> {
+  @Test
+  public void getHeatMapWithoutAuthentication() throws IOException {
+    // when
+    Response response =
+      target("process-definition/123/heatmap")
+      .request()
+      .get();
 
-    private String expectedDate;
-
-    public BoolQueryBuilderMatcher(String expectedDate) {
-      this.expectedDate = expectedDate;
-    }
-
-    @Override
-    public boolean matches(BoolQueryBuilder actual) {
-      // could improve with null checks
-      return actual.toString().contains(expectedDate);
-    }
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
   }
 
-  /**
-   * Convenience factory method for using the custom ValueObject matcher.
-   */
-  static BoolQueryBuilder queryContainsDate(String expected) {
-    return Mockito.argThat(new BoolQueryBuilderMatcher(expected));
+  @Test
+  public void getHeatMap() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    HeatMapResponseDto expected = new HeatMapResponseDto();
+    expected.setPiCount(10L);
+    Mockito.when(heatMapReader.getHeatMap(Mockito.anyString())).thenReturn(expected);
+
+    // when
+    Response response =
+      target("process-definition/123/heatmap")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    HeatMapResponseDto actual =
+      response.readEntity(HeatMapResponseDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getPiCount(), is(expected.getPiCount()));
+  }
+
+  @Test
+  public void getHeatMapPostWithoutAuthentication() throws IOException {
+    // when
+    Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
+    Response response =
+      target("process-definition/heatmap")
+      .request()
+      .post(entity);
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void getHeatPostMap() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    HeatMapResponseDto expected = new HeatMapResponseDto();
+    expected.setPiCount(10L);
+    Mockito.when(heatMapReader.getHeatMap(Mockito.any(HeatMapQueryDto.class))).thenReturn(expected);
+
+    // when
+    Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
+    Response response =
+      target("process-definition/heatmap")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .post(entity);
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    HeatMapResponseDto actual =
+      response.readEntity(HeatMapResponseDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getPiCount(), is(expected.getPiCount()));
+  }
+
+  @Test
+  public void getCorrelationWithoutAuthentication() throws IOException {
+    // when
+    Entity<CorrelationQueryDto> entity = Entity.entity(new CorrelationQueryDto(), MediaType.APPLICATION_JSON);
+    Response response =
+      target("process-definition/correlation")
+      .request()
+      .post(entity);
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void getCorrelation() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    GatewaySplitDto expected = new GatewaySplitDto();
+    expected.setTotal(10L);
+    Mockito.when(correlationReader.activityCorrelation(Mockito.any(CorrelationQueryDto.class))).thenReturn(expected);
+
+    // when
+    Entity<CorrelationQueryDto> entity = Entity.entity(new CorrelationQueryDto(), MediaType.APPLICATION_JSON);
+    Response response =
+      target("process-definition/correlation")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .post(entity);
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    GatewaySplitDto actual =
+      response.readEntity(GatewaySplitDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getTotal(), is(expected.getTotal()));
+  }
+
+  private String authenticateAdmin() {
+    CredentialsDto entity = new CredentialsDto();
+    entity.setUsername("admin");
+    entity.setPassword("admin");
+
+    Response tokenResponse =  target("authentication")
+        .request()
+        .post(Entity.json(entity));
+
+    return tokenResponse.readEntity(String.class);
   }
 
 }

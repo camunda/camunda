@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.CorrelationReader;
 import org.camunda.optimize.service.es.reader.HeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -16,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 
+@Secured
 @Path("/process-definition")
 @Component
 public class ProcessDefinitionRestService {

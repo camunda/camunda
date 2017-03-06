@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
@@ -13,7 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
@@ -57,9 +60,13 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
 
     //given
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    String token = authenticateAdmin();
+
     //when
     response = target("process-definition")
-        .request().get();
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get();
 
     //then
     assertThat(response.getStatus(),is(200));
@@ -70,6 +77,18 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(),is(notNullValue()));
     assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
+  }
+
+  private String authenticateAdmin() {
+    CredentialsDto entity = new CredentialsDto();
+    entity.setUsername("admin");
+    entity.setPassword("admin");
+
+    Response tokenResponse =  target("authentication")
+        .request()
+        .post(Entity.json(entity));
+
+    return tokenResponse.readEntity(String.class);
   }
 
   @Override
