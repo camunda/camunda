@@ -15,6 +15,7 @@ package org.camunda.tngp.broker.taskqueue.processor;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -49,8 +50,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     protected HashMap<Long, Bucket> index = new HashMap<>();
     protected SnapshotSupport indexSnapshot = new SerializableWrapper<>(index);
 
-    class Bucket
+    class Bucket implements Serializable
     {
+        private static final long serialVersionUID = 1L;
+
         public long eventPosition;
         public long expirationTime;
     }
