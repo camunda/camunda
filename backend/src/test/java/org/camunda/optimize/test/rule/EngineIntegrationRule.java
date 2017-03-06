@@ -14,10 +14,12 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.camunda.bpm.engine.impl.util.json.JSONObject;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.rules.TestWatcher;
@@ -35,6 +37,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Rule that performs clean up of engine on integration test startup and
@@ -88,19 +93,17 @@ public class EngineIntegrationRule extends TestWatcher {
   public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     DeploymentDto deployment = deployProcess(bpmnModelInstance, client);
-    String processDefinitionId = "";
+    String processInstanceId = "";
     try {
       List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
-      for (ProcessDefinitionEngineDto procDef : procDefs) {
-        startProcessInstance(procDef.getId(), client);
-        processDefinitionId = procDef.getId();
-      }
+      assertThat(procDefs.size(), is(1));
+      processInstanceId = startProcessInstance(procDefs.get(0).getId(), client);
       client.close();
     } catch (IOException e) {
       logger.error("Could not start the given process model!");
       e.printStackTrace();
     }
-    return processDefinitionId;
+    return processInstanceId;
   }
 
   public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
@@ -152,7 +155,7 @@ public class EngineIntegrationRule extends TestWatcher {
     return objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
   }
 
-  public void startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
+  public String startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
     HttpPost post = new HttpPost(configurationService.getEngineRestApiEndpointOfCustomEngine() +
       "/process-definition/" + procDefId + "/start");
     post.addHeader("content-type", "application/json");
@@ -162,8 +165,10 @@ public class EngineIntegrationRule extends TestWatcher {
       throw new RuntimeException("Could not start the process definition " + procDefId +
       ". Reason: " + response.getStatusLine().getReasonPhrase());
     }
-    // we need to release the connection so no error is thrown
-    response.getEntity().getContent().close();
+    String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+    ProcessInstanceDto instanceDto = objectMapper.readValue(responseString, ProcessInstanceDto.class);
+    return instanceDto.getId();
+
   }
 
 
