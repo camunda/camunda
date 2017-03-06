@@ -114,7 +114,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
     Response testResponse = target("authentication/test")
         .request()
         .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-        .header(AuthenticationUtil.PROXY_OPTIMIZE_AUTHORIZATION_HEADER,"Bearer " + token)
+        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION_HEADER,"Bearer " + token)
         .get();
 
     //then
