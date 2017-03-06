@@ -52,6 +52,7 @@ resource "aws_instance" "optimize" {
   ami = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.medium" # or maybe t2.large
   key_name = "${data.terraform_remote_state.global.jenkins_aws_key_id}"
+  iam_instance_profile = "${aws_iam_instance_profile.optimize_s3_iam_instance_profile.name}"
   vpc_security_group_ids = ["${aws_security_group.optimize.id}"]
 
   associate_public_ip_address = true
@@ -62,6 +63,71 @@ resource "aws_instance" "optimize" {
     Managed = "terraform"
   }
 }
+
+#
+# S3 bucket access IAM roles etc. for Optimize instance
+#
+resource "aws_iam_role" "optimize_s3_role" {
+    name = "optimize_s3_role"
+    assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Principal": {
+               "Service": "ec2.amazonaws.com"
+            },
+            "Effect": "Allow",
+            "Sid": ""
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_instance_profile" "optimize_s3_iam_instance_profile" {
+    name = "optimize_s3_iam_instance_profile"
+    roles = ["${aws_iam_role.optimize_s3_role.name}"]
+}
+
+resource "aws_iam_role_policy" "optimize_s3_role_policy" {
+    name = "optimize_s3_role_policy"
+    role = "${aws_iam_role.optimize_s3_role.id}"
+    policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1488533493102",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion",
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:s3:::camunda-optimize-terraform/caddy",
+        "arn:aws:s3:::camunda-optimize-terraform/caddy/*"
+      ]
+    },
+    {
+      "Sid": "Stmt1488545442681",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::camunda-optimize-terraform"
+    }
+  ]
+}
+EOF
+}
+
+
 
 # Assign EIP for Optimize instance
 resource "aws_eip_association" "camunda_optimize_eip" {
@@ -83,12 +149,19 @@ resource "aws_security_group" "optimize" {
   }
 }
 
-module "optimize_security_in" {
+module "optimize_security_in_hq" {
   source = "../modules/security_rule_global"
   group  = "${aws_security_group.optimize.id}"
   type   = "ingress"
-  ports  = [22, 8090]
+  ports  = [22]
   cidr_blocks = ["178.19.212.50/32"]
+}
+
+module "optimize_security_in_public" {
+  source = "../modules/security_rule_global"
+  group  = "${aws_security_group.optimize.id}"
+  type   = "ingress"
+  ports  = [80,443]
 }
 
 module "optimize_security_out" {
