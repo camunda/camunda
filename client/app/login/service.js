@@ -36,7 +36,7 @@ function saveLogin(user, token) {
 
 function checkToken(token) {
   const headers = !token ? {} : {
-    Authorization: `Bearer ${token}`
+    'X-Optimize-Authorization' : `Bearer ${token}`
   };
 
   return get('/api/authentication/test', null, {

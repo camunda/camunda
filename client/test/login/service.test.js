@@ -109,7 +109,7 @@ describe('Login service', () => {
       const [, , {headers}] = get.firstCall.args;
 
       expect(headers).to.eql({
-        Authorization: `Bearer ${token}`
+        'X-Optimize-Authorization' : `Bearer ${token}`
       });
     });
   });

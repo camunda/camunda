@@ -139,7 +139,7 @@ describe('http service', () => {
         method
       });
 
-      const {headers: {Authorization}} = $fetch.firstCall.args[1];
+      const Authorization = $fetch.firstCall.args[1].headers['X-Optimize-Authorization'];
 
       expect(Authorization).to.eql(`Bearer ${token}`);
     });
@@ -154,7 +154,7 @@ describe('http service', () => {
 
       const {headers} = $fetch.firstCall.args[1];
 
-      expect(headers).to.not.include.keys('Authorization');
+      expect(headers).to.not.include.keys('X-Optimize-Authorization');
     });
   });
 

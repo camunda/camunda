@@ -64,7 +64,7 @@ function createAuthorizationHeader() {
 
   if (login && login.token) {
     return {
-      Authorization: `Bearer ${login.token}`
+      'X-Optimize-Authorization' : `Bearer ${login.token}`
     };
   }
 
