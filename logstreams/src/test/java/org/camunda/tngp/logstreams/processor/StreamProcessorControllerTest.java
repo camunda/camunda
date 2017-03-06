@@ -220,6 +220,8 @@ public class StreamProcessorControllerTest
 
         final CompletableFuture<Void> future = controller.closeAsync();
 
+        // -> closingSnapshotting
+        controller.doWork();
         // -> closing
         controller.doWork();
         // -> closed
@@ -251,6 +253,8 @@ public class StreamProcessorControllerTest
 
         final CompletableFuture<Void> future = controller.closeAsync();
 
+        // -> closingSnapshotting
+        controller.doWork();
         // -> closing
         controller.doWork();
         // -> closed
@@ -262,6 +266,41 @@ public class StreamProcessorControllerTest
 
     @Test
     public void shouldCloseWhileSnapshotting()
+    {
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+        // -> snapshotting
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closingSnapshotting
+        controller.doWork();
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        assertThat(future).isCompleted();
+        assertThat(controller.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldCloseWhileSnapshottingAndWaitForLogAppender()
     {
         mockSourceLogStreamReader.addEvent(mockSourceEvent);
 
@@ -283,6 +322,21 @@ public class StreamProcessorControllerTest
         assertThat(controller.isOpen()).isTrue();
 
         final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closingSnapshotting
+        controller.doWork();
+
+        assertThat(controller.isClosing()).isTrue();
+
+        // -> closingSnapshotting
+        controller.doWork();
+
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
+
+        // -> closingSnapshotting
+        controller.doWork();
+
+        assertThat(controller.isClosing()).isTrue();
 
         // -> closing
         controller.doWork();
@@ -793,6 +847,10 @@ public class StreamProcessorControllerTest
         open();
 
         controller.closeAsync();
+
+        // -> closingSnapshotting
+        controller.doWork();
+        // -> closing
         controller.doWork();
 
         verify(mockTargetLogStream, times(1)).registerFailureListener(targetLogStreamFailureListener);
@@ -1130,6 +1188,156 @@ public class StreamProcessorControllerTest
         controller.doWork();
 
         verify(mockStreamProcessor).onEvent(mockSourceEvent);
+    }
+
+    @Test
+    public void shouldWriteSnapshotOnClose() throws Exception
+    {
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        // when
+        controller.closeAsync();
+
+        // then
+        // closing snapshotting
+        controller.doWork();
+
+        verify(mockSnapshotStorage).createSnapshot(STREAM_PROCESSOR_NAME, 2L);
+        verify(mockSnapshotWriter).writeSnapshot(mockStateResource);
+        verify(mockSnapshotWriter).commit();
+    }
+
+    @Test
+    public void shouldCancelSnapshottingOnCloseInCaseOfLogFailure() throws Exception
+    {
+
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        final CompletableFuture<Void> closeFuture = controller.closeAsync();
+
+        // -> closing snapshotting
+        controller.doWork(); // does not write snapshot as appender hasn't caught up yet
+
+        // when
+        targetLogStreamFailureListener.onFailed(2L);
+
+        // then
+        // -> closing
+        controller.doWork();
+
+        // -> closed
+        controller.doWork();
+
+        assertThat(controller.isClosed());
+        assertThat(closeFuture).isCompleted();
+        verify(mockSnapshotWriter, never()).writeSnapshot(mockStateResource);
+    }
+
+    @Test
+    public void shouldWriteSnapshotOnCloseIfNewEventsWrittenSinceLastSnapshot() throws Exception
+    {
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+        final LoggedEvent secondEvent = mock(LoggedEvent.class);
+        when(secondEvent.getPosition()).thenReturn(1L);
+        mockSourceLogStreamReader.addEvent(secondEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L, 3L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+        // -> snapshotting
+        controller.doWork();
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+
+        // when
+        controller.closeAsync();
+
+        // then
+        // -> closing snapshotting
+        controller.doWork();
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        verify(mockSnapshotWriter, times(2)).writeSnapshot(mockStateResource);
+        assertThat(controller.isClosed());
+    }
+
+    @Test
+    public void shouldSkipSnapshotOnCloseIfNoNewEventsWrittenSinceLastSnapshot() throws Exception
+    {
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
+        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
+
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
+        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
+
+        open();
+
+        // -> open
+        controller.doWork();
+        // -> processing
+        controller.doWork();
+        // -> snapshotting
+        controller.doWork();
+
+        // when
+        controller.closeAsync();
+
+        // then
+        // -> closing snapshotting
+        controller.doWork();
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        verify(mockSnapshotWriter, times(1)).writeSnapshot(mockStateResource);
+        assertThat(controller.isClosed());
     }
 
     protected void open()

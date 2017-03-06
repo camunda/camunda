@@ -55,6 +55,7 @@ public class StreamProcessorController implements Agent
     protected final State<Context> snapshottingState = new SnapshottingState();
     protected final State<Context> recoveringState = new RecoveringState();
     protected final State<Context> reprocessingState = new ReprocessingState();
+    protected final State<Context> closingSnapshottingState = new ClosingSnapshottingState();
     protected final State<Context> closingState = new ClosingState();
     protected final State<Context> closedState = new ClosedState();
     protected final State<Context> failedState = new FailedState();
@@ -68,18 +69,20 @@ public class StreamProcessorController implements Agent
             .from(reprocessingState).take(TRANSITION_DEFAULT).to(openedState)
             .from(reprocessingState).take(TRANSITION_FAIL).to(failedState)
             .from(openedState).take(TRANSITION_PROCESS).to(processState)
-            .from(openedState).take(TRANSITION_CLOSE).to(closingState)
+            .from(openedState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
             .from(openedState).take(TRANSITION_FAIL).to(failedState)
             .from(processState).take(TRANSITION_DEFAULT).to(openedState)
             .from(processState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
             .from(processState).take(TRANSITION_FAIL).to(failedState)
-            .from(processState).take(TRANSITION_CLOSE).to(closingState)
+            .from(processState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
             .from(snapshottingState).take(TRANSITION_DEFAULT).to(openedState)
             .from(snapshottingState).take(TRANSITION_FAIL).to(failedState)
-            .from(snapshottingState).take(TRANSITION_CLOSE).to(closingState)
+            .from(snapshottingState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
             .from(failedState).take(TRANSITION_CLOSE).to(closedState)
             .from(failedState).take(TRANSITION_OPEN).to(openedState)
             .from(failedState).take(TRANSITION_RECOVER).to(recoveringState)
+            .from(closingSnapshottingState).take(TRANSITION_DEFAULT).to(closingState)
+            .from(closingSnapshottingState).take(TRANSITION_FAIL).to(closingState)
             .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
             .from(closedState).take(TRANSITION_OPEN).to(openingState)
             .build());
@@ -187,6 +190,12 @@ public class StreamProcessorController implements Agent
         return stateMachineAgent.getCurrentState() == openedState
                 || stateMachineAgent.getCurrentState() == processState
                 || stateMachineAgent.getCurrentState() == snapshottingState;
+    }
+
+    public boolean isClosing()
+    {
+        return stateMachineAgent.getCurrentState() == closingState
+                || stateMachineAgent.getCurrentState() == closingSnapshottingState;
     }
 
     public boolean isClosed()
@@ -347,6 +356,62 @@ public class StreamProcessorController implements Agent
         }
     }
 
+    /**
+     * @param context
+     * @return true if successful
+     */
+    protected boolean ensureSnapshotWritten(Context context)
+    {
+        final long sourceEventPosition = context.getEvent().getPosition();
+        final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
+        final long appenderPosition = streamProcessorContext.getTargetStream().getCurrentAppenderPosition();
+
+        final long snapshotPosition = isSourceStreamWriter() ? sourceEventPosition : lastWrittenEventPosition;
+        final boolean snapshotAlreadyPresent = snapshotPosition <= context.getSnapshotPosition();
+
+        if (!snapshotAlreadyPresent)
+        {
+            final boolean appenderCaughtUp = appenderPosition >= lastWrittenEventPosition;
+
+            if (appenderCaughtUp)
+            {
+                writeSnapshot(context, snapshotPosition);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return true;
+        }
+
+    }
+
+    protected void writeSnapshot(final Context context, final long eventPosition)
+    {
+        SnapshotWriter snapshotWriter = null;
+        try
+        {
+            snapshotWriter = snapshotStorage.createSnapshot(streamProcessorContext.getName(), eventPosition);
+
+            snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
+            snapshotWriter.commit();
+            context.setSnapshotPosition(eventPosition);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+
+            if (snapshotWriter != null)
+            {
+                snapshotWriter.abort();
+            }
+        }
+    }
+
     private class SnapshottingState implements State<Context>
     {
         @Override
@@ -354,43 +419,18 @@ public class StreamProcessorController implements Agent
         {
             int workCount = 0;
 
-            final long sourceEventPosition = context.getEvent().getPosition();
-            final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
-            final long appenderPosition = streamProcessorContext.getTargetStream().getCurrentAppenderPosition();
+            final boolean snapshotWritten = ensureSnapshotWritten(context);
 
-            if (appenderPosition >= lastWrittenEventPosition)
+            if (snapshotWritten)
             {
-                final long snapshotPosition = isSourceStreamWriter() ? sourceEventPosition : lastWrittenEventPosition;
-                writeSnapshot(snapshotPosition);
-
                 context.take(TRANSITION_DEFAULT);
-
                 workCount += 1;
             }
 
             return workCount;
         }
 
-        protected void writeSnapshot(final long eventPosition)
-        {
-            SnapshotWriter snapshotWriter = null;
-            try
-            {
-                snapshotWriter = snapshotStorage.createSnapshot(streamProcessorContext.getName(), eventPosition);
 
-                snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
-                snapshotWriter.commit();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-
-                if (snapshotWriter != null)
-                {
-                    snapshotWriter.abort();
-                }
-            }
-        }
     }
 
     private class RecoveringState implements TransitionState<Context>
@@ -504,16 +544,49 @@ public class StreamProcessorController implements Agent
         }
     }
 
-    private class ClosingState implements TransitionState<Context>
+    private class ClosingSnapshottingState implements State<Context>
+    {
+
+        @Override
+        public int doWork(Context context) throws Exception
+        {
+            final boolean hasProcessedAnyEvent = context.getEvent() != null;
+
+            if (hasProcessedAnyEvent)
+            {
+                final boolean snapshotWritten = ensureSnapshotWritten(context);
+
+                if (snapshotWritten)
+                {
+                    context.take(TRANSITION_DEFAULT);
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                context.take(TRANSITION_DEFAULT);
+                return 1;
+            }
+
+
+        }
+    }
+
+    private class ClosingState implements State<Context>
     {
         @Override
-        public void work(Context context)
+        public int doWork(Context context)
         {
             streamProcessor.onClose();
 
             streamProcessorContext.getTargetStream().removeFailureListener(targetLogStreamFailureListener);
 
             context.take(TRANSITION_DEFAULT);
+            return 1;
         }
     }
 
