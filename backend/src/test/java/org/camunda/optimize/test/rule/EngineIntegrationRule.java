@@ -85,19 +85,22 @@ public class EngineIntegrationRule extends TestWatcher {
 
   }
 
-  public void deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
+  public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     DeploymentDto deployment = deployProcess(bpmnModelInstance, client);
+    String processDefinitionId = "";
     try {
       List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
       for (ProcessDefinitionEngineDto procDef : procDefs) {
         startProcessInstance(procDef.getId(), client);
+        processDefinitionId = procDef.getId();
       }
       client.close();
     } catch (IOException e) {
       logger.error("Could not start the given process model!");
       e.printStackTrace();
     }
+    return processDefinitionId;
   }
 
   public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
@@ -149,7 +152,7 @@ public class EngineIntegrationRule extends TestWatcher {
     return objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
   }
 
-  private void startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
+  public void startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
     HttpPost post = new HttpPost(configurationService.getEngineRestApiEndpointOfCustomEngine() +
       "/process-definition/" + procDefId + "/start");
     post.addHeader("content-type", "application/json");
