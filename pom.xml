@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.camunda.tngp.dispatcher</groupId>
   <artifactId>dispatcher-root</artifactId>
-  <version>1.0.0-alpha2</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -84,7 +84,7 @@
     <url>https://github.com/camunda-tngp/dispatcher</url>
     <connection>scm:git:git@github.com:camunda-tngp/dispatcher.git</connection>
     <developerConnection>scm:git:git@github.com:camunda-tngp/dispatcher.git</developerConnection>
-    <tag>1.0.0-alpha2</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>
