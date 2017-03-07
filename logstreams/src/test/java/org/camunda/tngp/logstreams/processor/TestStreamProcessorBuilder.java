@@ -15,6 +15,7 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
         super(id, name, streamProcessor);
     }
 
+    @Override
     protected void initContext()
     {
         // do nothing
@@ -61,6 +62,12 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     public TestStreamProcessorBuilder eventFilter(EventFilter eventFilter)
     {
         return (TestStreamProcessorBuilder) super.eventFilter(eventFilter);
+    }
+
+    @Override
+    public TestStreamProcessorBuilder reprocessingEventFilter(EventFilter eventFilter)
+    {
+        return (TestStreamProcessorBuilder) super.reprocessingEventFilter(eventFilter);
     }
 
     public TestStreamProcessorBuilder sourceLogStreamReader(LogStreamReader sourceLogStreamReader)

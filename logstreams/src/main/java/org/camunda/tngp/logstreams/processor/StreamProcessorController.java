@@ -106,6 +106,7 @@ public class StreamProcessorController implements Agent
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     protected final EventFilter eventFilter;
+    protected final EventFilter reprocessingEventFilter;
 
     public StreamProcessorController(StreamProcessorContext context)
     {
@@ -119,6 +120,7 @@ public class StreamProcessorController implements Agent
         this.snapshotStorage = context.getSnapshotStorage();
         this.streamProcessorCmdQueue = context.getStreamProcessorCmdQueue();
         this.eventFilter = context.getEventFilter();
+        this.reprocessingEventFilter = context.getReprocessingEventFilter();
     }
 
     @Override
@@ -216,6 +218,11 @@ public class StreamProcessorController implements Agent
     public EventFilter getEventFilter()
     {
         return eventFilter;
+    }
+
+    public EventFilter getReprocessingEventFilter()
+    {
+        return reprocessingEventFilter;
     }
 
     protected final BiConsumer<Context, Exception> stateFailureHandler = (context, e) ->
@@ -502,7 +509,7 @@ public class StreamProcessorController implements Agent
         protected void processEvent(Context context, final LoggedEvent targetEvent)
         {
             // ignore events from other producers
-            if (targetEvent.getProducerId() == streamProcessorContext.getId())
+            if (targetEvent.getProducerId() == streamProcessorContext.getId() && (reprocessingEventFilter == null || reprocessingEventFilter.applies(targetEvent)))
             {
                 final long sourceEventPosition = targetEvent.getSourceEventPosition();
 

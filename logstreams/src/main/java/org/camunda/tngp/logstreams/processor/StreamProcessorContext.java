@@ -28,6 +28,7 @@ public class StreamProcessorContext
     protected AgentRunnerService agentRunnerService;
 
     protected EventFilter eventFilter;
+    protected EventFilter reprocessingEventFilter;
 
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
 
@@ -159,6 +160,16 @@ public class StreamProcessorContext
     public EventFilter getEventFilter()
     {
         return eventFilter;
+    }
+
+    public void setReprocessingEventFilter(EventFilter reprocessingEventFilter)
+    {
+        this.reprocessingEventFilter = reprocessingEventFilter;
+    }
+
+    public EventFilter getReprocessingEventFilter()
+    {
+        return reprocessingEventFilter;
     }
 
 }

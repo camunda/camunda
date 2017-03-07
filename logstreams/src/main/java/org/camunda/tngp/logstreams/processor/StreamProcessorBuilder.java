@@ -43,7 +43,9 @@ public class StreamProcessorBuilder
     protected LogStreamReader sourceLogStreamReader;
     protected LogStreamReader targetLogStreamReader;
     protected LogStreamWriter logStreamWriter;
+
     protected EventFilter eventFilter;
+    protected EventFilter reprocessingEventFilter;
 
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
 
@@ -92,11 +94,19 @@ public class StreamProcessorBuilder
 
     /**
      * @param eventFilter may be null to accept all events
-     * @return this
      */
     public StreamProcessorBuilder eventFilter(EventFilter eventFilter)
     {
         this.eventFilter = eventFilter;
+        return this;
+    }
+
+    /**
+     * @param reprocessingEventFilter may be null to re-process all events
+     */
+    public StreamProcessorBuilder reprocessingEventFilter(EventFilter reprocessingEventFilter)
+    {
+        this.reprocessingEventFilter = reprocessingEventFilter;
         return this;
     }
 
@@ -147,7 +157,9 @@ public class StreamProcessorBuilder
 
         ctx.setSnapshotPolicy(snapshotPolicy);
         ctx.setSnapshotStorage(snapshotStorage);
+
         ctx.setEventFilter(eventFilter);
+        ctx.setReprocessingEventFilter(reprocessingEventFilter);
 
         return new StreamProcessorController(ctx);
     }

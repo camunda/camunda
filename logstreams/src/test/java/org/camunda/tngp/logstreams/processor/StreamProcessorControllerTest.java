@@ -105,6 +105,7 @@ public class StreamProcessorControllerTest
     private LogStreamFailureListener targetLogStreamFailureListener;
 
     protected ControllableEventFilter eventFilter;
+    protected ControllableEventFilter reprocessingEventFilter;
 
     private final ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
 
@@ -115,7 +116,9 @@ public class StreamProcessorControllerTest
     {
 
         MockitoAnnotations.initMocks(this);
+
         eventFilter = new ControllableEventFilter();
+        reprocessingEventFilter = new ControllableEventFilter();
 
         mockSourceLogStreamReader = new MockLogStreamReader();
         builder = new TestStreamProcessorBuilder(STREAM_PROCESSOR_ID, STREAM_PROCESSOR_NAME, mockStreamProcessor)
@@ -128,7 +131,8 @@ public class StreamProcessorControllerTest
                 .snapshotPolicy(mockSnapshotPolicy)
                 .snapshotStorage(mockSnapshotStorage)
                 .streamProcessorCmdQueue(streamProcessorCmdQueue)
-                .eventFilter(eventFilter);
+                .eventFilter(eventFilter)
+                .reprocessingEventFilter(reprocessingEventFilter);
 
         when(mockStreamProcessor.onEvent(any(LoggedEvent.class))).thenReturn(mockEventProcessor);
 
@@ -921,6 +925,8 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldReprocessEventsOnRecovery() throws Exception
     {
+        reprocessingEventFilter.doFilter = true;
+
         when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
         when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
 
@@ -1021,6 +1027,65 @@ public class StreamProcessorControllerTest
         verify(mockEventProcessor, times(1)).updateState();
         verify(mockStreamProcessor, times(1)).afterEvent();
         verify(mockStreamProcessor, times(1)).onOpen(any(StreamProcessorContext.class));
+    }
+
+    @Test
+    public void shouldSkipEventOnRecoveryIfFilterReject() throws Exception
+    {
+        reprocessingEventFilter.doFilter = false;
+
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        when(mockSourceEvent.getPosition()).thenReturn(3L);
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        open();
+        // -> recovery - re-process event
+        controller.doWork();
+        // -> recovery - no more events
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockTargetLogStreamReader, times(2)).hasNext();
+        verify(mockTargetLogStreamReader, times(1)).next();
+
+        verify(mockStreamProcessor, never()).onEvent(mockSourceEvent);
+        verify(mockStreamProcessor, times(1)).onOpen(any(StreamProcessorContext.class));
+    }
+
+    @Test
+    public void shouldReprocessAllEventsOnRecoveryIfFilterIsNull() throws Exception
+    {
+        controller = builder.reprocessingEventFilter(null).build();
+
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockTargetEvent);
+
+        when(mockTargetEvent.getProducerId()).thenReturn(STREAM_PROCESSOR_ID);
+        when(mockTargetEvent.getSourceEventPosition()).thenReturn(3L);
+
+        when(mockSourceEvent.getPosition()).thenReturn(3L);
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        open();
+        // -> recovery - re-process event
+        controller.doWork();
+        // -> recovery - no more events
+        controller.doWork();
+
+        assertThat(controller.isOpen()).isTrue();
+
+        verify(mockTargetLogStreamReader, times(2)).hasNext();
+        verify(mockTargetLogStreamReader, times(1)).next();
+
+        verify(mockStreamProcessor).onEvent(mockSourceEvent);
+        verify(mockEventProcessor).processEvent();
+        verify(mockStreamProcessor).onOpen(any(StreamProcessorContext.class));
     }
 
     @Test
