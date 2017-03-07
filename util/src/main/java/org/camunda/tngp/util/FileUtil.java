@@ -94,6 +94,7 @@ public class FileUtil
             {
                 if (create)
                 {
+                    file.getParentFile().mkdirs();
                     file.createNewFile();
                 }
                 else
