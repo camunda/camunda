@@ -125,7 +125,7 @@
       <dependency>
         <groupId>org.camunda.bpm.model</groupId>
         <artifactId>camunda-bpmn-model</artifactId>
-        <version>7.6.0-SNAPSHOT</version>
+        <version>7.6.0</version>
       </dependency>
       
       <dependency>
