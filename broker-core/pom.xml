@@ -33,12 +33,7 @@
       <groupId>org.camunda.tngp</groupId>
       <artifactId>hash-index</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>compact-graph-bpmn</artifactId>
-    </dependency>
-
+    
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>service-container</artifactId>
