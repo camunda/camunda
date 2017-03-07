@@ -1,12 +1,9 @@
 package org.camunda.tngp.msgpack.benchmark;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.client.impl.data.DocumentConverter;
-import org.camunda.tngp.client.impl.data.JacksonDocumentConverter;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
 import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
@@ -17,8 +14,8 @@ import org.msgpack.core.MessageUnpacker;
 public class JsonConversionMsgPackJsonPathProcessor implements JsonPathProcessor
 {
 
+    protected MsgPackConverter converter = new MsgPackConverter();
     protected JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-    protected DocumentConverter documentConverter = JacksonDocumentConverter.newDefaultConverter();
     protected MsgPackTraverser traverser = new MsgPackTraverser();
     protected MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
     protected UnsafeBuffer msgPackBuffer = new UnsafeBuffer(0, 0);
@@ -27,10 +24,8 @@ public class JsonConversionMsgPackJsonPathProcessor implements JsonPathProcessor
     public String evaluateJsonPath(byte[] json, String jsonPath) throws Exception
     {
         final InputStream jsonStream = new ByteArrayInputStream(json);
-        final ByteArrayOutputStream msgPackStream = new ByteArrayOutputStream();
-        documentConverter.convertToMsgPack(jsonStream, msgPackStream);
 
-        final byte[] msgPack = msgPackStream.toByteArray();
+        final byte[] msgPack = converter.convertToMsgPack(jsonStream);
 
         msgPackBuffer.wrap(msgPack);
 

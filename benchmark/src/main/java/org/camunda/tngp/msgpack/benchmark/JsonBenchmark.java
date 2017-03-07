@@ -4,9 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Random;
 
-import org.camunda.tngp.client.impl.data.DocumentConverter;
-import org.camunda.tngp.client.impl.data.JacksonDocumentConverter;
-
 import com.jayway.jsonpath.spi.cache.CacheProvider;
 import com.jayway.jsonpath.spi.cache.NOOPCache;
 
@@ -28,7 +25,7 @@ public class JsonBenchmark
         new MsgPackJsonPathProcessor(),
     };
 
-    protected static DocumentConverter converter = JacksonDocumentConverter.newDefaultConverter();
+    protected static MsgPackConverter converter = new MsgPackConverter();
 
     public static void main(String[] args) throws Exception
     {
@@ -53,10 +50,7 @@ public class JsonBenchmark
 
         final long[] jsonBasedResults = runBenchmark(json, jsonPathExpression, JSON_PATH_JSON_PROCESSORS);
 
-
-        final ByteArrayOutputStream msgPackOutStream = new ByteArrayOutputStream();
-        converter.convertToMsgPack(new ByteArrayInputStream(json), msgPackOutStream);
-        final byte[] msgPack = msgPackOutStream.toByteArray();
+        final byte[] msgPack = converter.convertToMsgPack(new ByteArrayInputStream(json));
 
         final long[] msgPackBasedResults = runBenchmark(msgPack, jsonPathExpression, JSON_PATH_MSGPACK_PROCESSORS);
 

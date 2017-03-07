@@ -11,16 +11,15 @@
   </parent>
 
   <dependencies>
+  
     <dependency>
       <groupId>org.camunda.tngp.msgpack</groupId>
       <artifactId>msgpack-json-path</artifactId>
     </dependency>
     
-    <!-- for json to msgpack conversion -->
     <dependency>
-      <groupId>org.camunda.tngp</groupId>
-      <artifactId>tngp-client-java</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <groupId>org.msgpack</groupId>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
     </dependency>
     
     <dependency>

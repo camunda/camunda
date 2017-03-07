@@ -1,8 +1,16 @@
 package org.camunda.tngp.msgpack.spec;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.ARRAY;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.BINARY;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.BOOLEAN;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.FLOAT;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.INTEGER;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.MAP;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.NIL;
+import static org.camunda.tngp.msgpack.spec.MsgPackType.STRING;
 import static org.camunda.tngp.msgpack.spec.MsgPackUtil.toByte;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -14,8 +22,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.camunda.tngp.msgpack.spec.MsgPackType.*;
 
 @RunWith(Parameterized.class)
 public class MsgPackReadTokenTest
@@ -103,7 +109,7 @@ public class MsgPackReadTokenTest
                 "float 32",
                 given((b) -> b.add(0xca).add(toByte(123123.12f))),
                 FLOAT,
-                doAssert((t) -> assertThat(t.getFloatValue()).isEqualTo((double) 123123.12f))
+                doAssert((t) -> assertThat(t.getFloatValue()).isEqualTo(123123.12f))
             },
             {
                 "float 64",
