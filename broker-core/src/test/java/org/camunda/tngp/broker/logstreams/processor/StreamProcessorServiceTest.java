@@ -92,6 +92,69 @@ public class StreamProcessorServiceTest
         assertThat(eventFilter.applies(event)).isTrue();
     }
 
+    @Test
+    public void shouldRegisterReprocessingVersionFilter()
+    {
+        // given
+        final StreamProcessorService streamProcessorService = new StreamProcessorService("foo", 1, mock(StreamProcessor.class));
+        injectMocks(streamProcessorService);
+
+        streamProcessorService.start(mock(ServiceStartContext.class));
+
+        final StreamProcessorController controller = streamProcessorService.getStreamProcessorController();
+        final EventFilter reprocessingEventFilter = controller.getReprocessingEventFilter();
+
+        final LoggedEvent event = mockController.buildLoggedEvent(1L, (e) ->
+        { }, (m) -> m.protocolVersion(Integer.MAX_VALUE));
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Cannot handle event with version newer than what is implemented by broker");
+
+        // when
+        reprocessingEventFilter.applies(event);
+    }
+
+    @Test
+    public void shouldRegisterCustomReprocessingAcceptingFilter()
+    {
+        // given
+        final StreamProcessorService streamProcessorService = new StreamProcessorService("foo", 1, mock(StreamProcessor.class));
+        injectMocks(streamProcessorService);
+        streamProcessorService.reprocessingEventFilter(e -> true);
+
+        streamProcessorService.start(mock(ServiceStartContext.class));
+
+        final StreamProcessorController controller = streamProcessorService.getStreamProcessorController();
+        final EventFilter reprocessingEventFilter = controller.getReprocessingEventFilter();
+
+        final LoggedEvent event = mockController.buildLoggedEvent(1L, (e) ->
+        { });
+
+        // when/then
+        assertThat(reprocessingEventFilter.applies(event)).isTrue();
+    }
+
+    @Test
+    public void shouldRegisterCustomReprocessingRejectingFilter()
+    {
+        // given
+        final StreamProcessorService streamProcessorService = new StreamProcessorService("foo", 1, mock(StreamProcessor.class));
+        injectMocks(streamProcessorService);
+        streamProcessorService.reprocessingEventFilter(e -> false);
+
+        streamProcessorService.start(mock(ServiceStartContext.class));
+
+        final StreamProcessorController controller = streamProcessorService.getStreamProcessorController();
+        final EventFilter reprocessingEventFilter = controller.getReprocessingEventFilter();
+
+        final LoggedEvent event = mockController.buildLoggedEvent(1L, (e) ->
+        { });
+
+        // when/then
+        assertThat(reprocessingEventFilter.applies(event)).isFalse();
+    }
+
     protected void injectMocks(StreamProcessorService streamProcessorService)
     {
         final AgentRunnerServices agentRunnerServices = mock(AgentRunnerServices.class);

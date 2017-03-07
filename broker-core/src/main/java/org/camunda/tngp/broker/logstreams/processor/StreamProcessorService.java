@@ -27,7 +27,9 @@ public class StreamProcessorService implements Service<StreamProcessorController
     private final int id;
     private final StreamProcessor streamProcessor;
 
-    protected MetadataFilter customFilter;
+    protected MetadataFilter customEventFilter;
+    protected EventFilter customReprocessingEventFilter;
+
     protected MetadataFilter versionFilter = (m) ->
     {
         if (m.getProtocolVersion() > Constants.PROTOCOL_VERSION)
@@ -50,7 +52,13 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
     public StreamProcessorService eventFilter(MetadataFilter eventFilter)
     {
-        this.customFilter = eventFilter;
+        this.customEventFilter = eventFilter;
+        return this;
+    }
+
+    public StreamProcessorService reprocessingEventFilter(EventFilter reprocessingEventFilter)
+    {
+        this.customReprocessingEventFilter = reprocessingEventFilter;
         return this;
     }
 
@@ -64,10 +72,17 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
         final AgentRunnerService agentRunnerService = agentRunnerServiceInjector.getValue().logStreamProcessorAgentRunnerService();
 
-        MetadataFilter eventFilter = versionFilter;
-        if (customFilter != null)
+        MetadataFilter metadataFilter = versionFilter;
+        if (customEventFilter != null)
         {
-            eventFilter = eventFilter.and(customFilter);
+            metadataFilter = metadataFilter.and(customEventFilter);
+        }
+        final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
+
+        EventFilter reprocessingEventFilter = new MetadataEventFilter(versionFilter);
+        if (customReprocessingEventFilter != null)
+        {
+            reprocessingEventFilter = reprocessingEventFilter.and(customReprocessingEventFilter);
         }
 
         streamProcessorController = LogStreams.createStreamProcessor(name, id, streamProcessor)
@@ -75,7 +90,8 @@ public class StreamProcessorService implements Service<StreamProcessorController
             .targetStream(targetStream)
             .snapshotStorage(snapshotStorage)
             .agentRunnerService(agentRunnerService)
-            .eventFilter(new MetadataEventFilter(eventFilter))
+            .eventFilter(eventFilter)
+            .reprocessingEventFilter(reprocessingEventFilter)
             .build();
 
         ctx.async(streamProcessorController.openAsync());

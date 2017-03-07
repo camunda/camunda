@@ -507,6 +507,40 @@ public class TaskSubscriptionTest
         waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
     }
 
+    @Test
+    public void shouldSubscribeToMultipleTypes() throws InterruptedException
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+        final TaskTopicClient topicClient = client.taskTopic(0);
+
+        topicClient.create()
+            .taskType("foo")
+            .execute();
+
+        topicClient.create()
+            .taskType("bar")
+            .execute();
+
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        topicClient.newTaskSubscription()
+            .handler(taskHandler)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(5)
+            .open();
+
+        topicClient.newTaskSubscription()
+            .handler(taskHandler)
+            .taskType("bar")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(5)
+            .open();
+
+        waitUntil(() -> taskHandler.handledTasks.size() == 2);
+    }
+
     public static class RecordingTaskHandler implements TaskHandler
     {
         protected List<Task> handledTasks = Collections.synchronizedList(new ArrayList<>());

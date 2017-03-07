@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
@@ -133,12 +134,18 @@ public class TaskSubscriptionManager implements Agent
         final ServiceName<StreamProcessorController> streamProcessorServiceName = taskQueueLockStreamProcessorServiceName(logStreamBucket.getLogStreamName(), BufferUtil.bufferAsString(taskType));
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final LockTaskStreamProcessor streamProcessor = streamProcessorSupplier.apply(taskType);
+        // need to copy the type buffer because it is not durable
+        final byte[] buffer = new byte[taskType.capacity()];
+        taskType.getBytes(0, buffer);
+        final DirectBuffer newTaskTypeBuffer = new UnsafeBuffer(buffer);
+
+        final LockTaskStreamProcessor streamProcessor = streamProcessorSupplier.apply(newTaskTypeBuffer);
         final StreamProcessorService streamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 TASK_LOCK_STREAM_PROCESSOR_ID,
                 streamProcessor)
-            .eventFilter(LockTaskStreamProcessor.eventFilter());
+            .eventFilter(LockTaskStreamProcessor.eventFilter())
+            .reprocessingEventFilter(LockTaskStreamProcessor.reprocessingEventFilter(newTaskTypeBuffer));
 
         serviceContext.createService(streamProcessorServiceName, streamProcessorService)
             .dependency(logStreamServiceName, streamProcessorService.getSourceStreamInjector())

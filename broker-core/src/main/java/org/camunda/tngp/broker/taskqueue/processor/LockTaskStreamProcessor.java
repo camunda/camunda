@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
@@ -33,6 +32,7 @@ import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorCommand;
@@ -68,10 +68,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     public LockTaskStreamProcessor(DirectBuffer taskType)
     {
-        final byte[] buffer = new byte[taskType.capacity()];
-        taskType.getBytes(0, buffer);
-
-        this.subscriptedTaskType = new UnsafeBuffer(buffer);
+        this.subscriptedTaskType = taskType;
         this.subscriptionIterator = subscriptionsById.values().iterator();
     }
 
@@ -226,7 +223,20 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     public static MetadataFilter eventFilter()
     {
-        return (m) -> m.getEventType() == EventType.TASK_EVENT;
+        return m -> m.getEventType() == EventType.TASK_EVENT;
+    }
+
+    public static final EventFilter reprocessingEventFilter(final DirectBuffer taskType)
+    {
+        final TaskEvent taskEvent = new TaskEvent();
+
+        return event ->
+        {
+            taskEvent.reset();
+            event.readValue(taskEvent);
+
+            return BufferUtil.equals(taskEvent.getType(), taskType);
+        };
     }
 
     @Override

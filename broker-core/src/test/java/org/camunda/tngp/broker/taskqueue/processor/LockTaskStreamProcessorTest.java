@@ -21,6 +21,7 @@ import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.test.WrittenEvent;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
@@ -481,6 +482,30 @@ public class LockTaskStreamProcessorTest
         assertThat(future).hasFailedWithThrowableThat()
             .isInstanceOf(RuntimeException.class)
             .hasMessage("Subscription with id '123' not found.");
+    }
+
+    @Test
+    public void shouldAcceptEventForReprocessingWithSubscribedType()
+    {
+        final LoggedEvent loggedEvent = mockController.buildLoggedEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATED)
+                .setType(TASK_TYPE_BUFFER));
+
+        final EventFilter eventFilter = LockTaskStreamProcessor.reprocessingEventFilter(TASK_TYPE_BUFFER);
+
+        assertThat(eventFilter.applies(loggedEvent)).isTrue();
+    }
+
+    @Test
+    public void shouldRejectEventForReprocessingWithDifferentType()
+    {
+        final LoggedEvent loggedEvent = mockController.buildLoggedEvent(2L, event -> event
+                .setEventType(TaskEventType.CREATED)
+                .setType(ANOTHER_TASK_TYPE_BUFFER));
+
+        final EventFilter eventFilter = LockTaskStreamProcessor.reprocessingEventFilter(TASK_TYPE_BUFFER);
+
+        assertThat(eventFilter.applies(loggedEvent)).isFalse();
     }
 
     protected long lockTimeOf(TaskSubscription subscription)
