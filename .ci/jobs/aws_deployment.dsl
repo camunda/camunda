@@ -146,6 +146,19 @@ def static createJobWithCommonProperties(dslFactory, name) {
       }
     }
 
+    publishers {
+      extendedEmail {
+        recipientList('optimize@camunda.com')
+        triggers {
+          statusChanged {
+            sendTo {
+              requester()
+            }
+          }
+        }
+      }
+    }
+
   }
 
   job

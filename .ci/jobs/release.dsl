@@ -53,6 +53,19 @@ freeStyleJob('camunda-optimize-release') {
     }
   }
 
+  publishers {
+    extendedEmail {
+      recipientList('optimize@camunda.com')
+      triggers {
+        statusChanged {
+          sendTo {
+            requester()
+          }
+        }
+      }
+    }
+  }
+
   blockOnUpstreamProjects()
   logRotator(-1, 5, -1, 1)
 
