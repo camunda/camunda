@@ -24,6 +24,7 @@
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <version.msgpack>0.8.11</version.msgpack>
+    <version.util>1.0.0-alpha3</version.util>
   </properties>
 
   <dependencyManagement>
@@ -47,7 +48,7 @@
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>hash-index</artifactId>
-        <version>1.0.0-alpha1</version>
+        <version>${version.util}</version>
       </dependency>
       <dependency>
         <groupId>org.msgpack</groupId>
@@ -68,7 +69,7 @@
        <groupId>org.camunda.tngp</groupId>
        <artifactId>test-util</artifactId>
        <scope>test</scope>
-       <version>1.0.0-alpha1</version>
+       <version>${version.util}</version>
      </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
