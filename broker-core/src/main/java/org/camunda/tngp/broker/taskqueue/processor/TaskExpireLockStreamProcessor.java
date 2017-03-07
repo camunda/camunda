@@ -15,7 +15,6 @@ package org.camunda.tngp.broker.taskqueue.processor;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
-import java.io.Serializable;
 import java.util.HashMap;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
@@ -47,16 +46,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     protected final StreamProcessorCommand checkLockExpirationCmd = new CheckLockExpirationCmd();
 
     // TODO #161 - replace the index by a more efficient one
-    protected HashMap<Long, Bucket> index = new HashMap<>();
+    protected HashMap<Long, ExpirationTimeBucket> index = new HashMap<>();
     protected SnapshotSupport indexSnapshot = new SerializableWrapper<>(index);
-
-    class Bucket implements Serializable
-    {
-        private static final long serialVersionUID = 1L;
-
-        public long eventPosition;
-        public long expirationTime;
-    }
 
     protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> cmdQueue;
 
@@ -137,11 +128,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            final Bucket bucket = new Bucket();
-            bucket.eventPosition = eventPosition;
-            bucket.expirationTime = taskEvent.getLockTime();
-
-            index.put(eventKey, bucket);
+            final ExpirationTimeBucket expirationTimeBucket = new ExpirationTimeBucket(eventPosition, taskEvent.getLockTime());
+            index.put(eventKey, expirationTimeBucket);
         }
 
     }
@@ -196,10 +184,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
             {
                 for (long eventKey : index.keySet())
                 {
-                    final Bucket bucket = index.get(eventKey);
+                    final ExpirationTimeBucket expirationTimeBucket = index.get(eventKey);
 
-                    final long eventPosition = bucket.eventPosition;
-                    final long lockExpirationTime = bucket.expirationTime;
+                    final long eventPosition = expirationTimeBucket.getEventPosition();
+                    final long lockExpirationTime = expirationTimeBucket.getExpirationTime();
 
                     checkLockExpirationTime(eventKey, eventPosition, lockExpirationTime);
                 }
