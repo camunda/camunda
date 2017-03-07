@@ -85,6 +85,12 @@
         <artifactId>utils</artifactId>
         <version>${utils.version}</version>
       </dependency>
+      
+      <dependency>
+        <groupId>org.camunda.tngp.msgpack</groupId>
+        <artifactId>msgpack-json-path</artifactId>
+        <version>1.0.0-alpha1</version>
+      </dependency>
 
       <dependency>
         <groupId>com.moandjiezana.toml</groupId>
