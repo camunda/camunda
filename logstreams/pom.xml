@@ -20,6 +20,7 @@
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <additionalparam>-Xdoclint:none</additionalparam>
+    <version.util>1.0.0-alpha3</version.util>
   </properties>
 
   <dependencies>
@@ -27,19 +28,19 @@
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>dispatcher</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>1.0.0-alpha2</version>
     </dependency>
 
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>util</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>${version.util}</version>
     </dependency>
     
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>hash-index</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>${version.util}</version>
     </dependency>
 
     <dependency>
