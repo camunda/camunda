@@ -1,6 +1,6 @@
 package org.camunda.optimize.test.factory;
 
-import org.camunda.optimize.service.es.reader.HeatMapReader;
+import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 
@@ -8,15 +8,15 @@ import org.springframework.beans.factory.FactoryBean;
  * Heat map reader factory used in unit tests in order to allow mocking
  * fetching data from elasticsearch.
  */
-public class MockHeatMapReaderFactory implements FactoryBean<HeatMapReader> {
+public class MockFrequencyHeatMapReaderFactory implements FactoryBean<FrequencyHeatMapReader> {
   @Override
-  public HeatMapReader getObject() throws Exception {
-    return Mockito.mock(HeatMapReader.class);
+  public FrequencyHeatMapReader getObject() throws Exception {
+    return Mockito.mock(FrequencyHeatMapReader.class);
   }
 
   @Override
   public Class<?> getObjectType() {
-    return HeatMapReader.class;
+    return FrequencyHeatMapReader.class;
   }
 
   @Override

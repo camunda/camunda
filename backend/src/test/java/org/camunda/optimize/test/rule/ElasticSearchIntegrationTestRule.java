@@ -99,11 +99,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  @Override
-  protected void finished(Description description) {
-    cleanAndVerify();
-  }
-
   public void cleanAndVerify() {
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
@@ -116,7 +111,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
         .getMetaData().indices();
 
     for (ObjectCursor<IndexMetaData> indexMeta : indices.values()) {
-
       DeleteIndexResponse delete = esclient
           .admin().indices()
           .delete(new DeleteIndexRequest(indexMeta.value.getIndex().getName()))

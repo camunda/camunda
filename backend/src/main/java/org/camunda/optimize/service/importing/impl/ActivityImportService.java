@@ -88,7 +88,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
     createEvent.setStartDate(dto.getStartTime());
     createEvent.setEndDate(dto.getEndTime());
     createEvent.setActivityType(dto.getActivityType());
-    createEvent.setDuration(dto.getDurationInMillis());
+    createEvent.setDurationInMs(dto.getDurationInMillis());
   }
 
 }

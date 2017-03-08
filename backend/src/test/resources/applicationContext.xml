@@ -34,7 +34,8 @@
   <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
   <bean id="processDefinitionReader" class="org.camunda.optimize.test.factory.MockProcessDefinitionReaderFactory"/>
-  <bean id="heatMapReader" class="org.camunda.optimize.test.factory.MockHeatMapReaderFactory"/>
+  <bean id="frequencyHeatMapReader" class="org.camunda.optimize.test.factory.MockFrequencyHeatMapReaderFactory"/>
+  <bean id="durationHeatMapReader" class="org.camunda.optimize.test.factory.MockDurationHeatMapReaderFactory"/>
   <bean id="correlationReader" class="org.camunda.optimize.test.factory.MockCorrelationReaderFactory"/>
 
 </beans>

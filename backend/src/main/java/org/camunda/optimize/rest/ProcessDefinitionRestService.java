@@ -7,7 +7,8 @@ import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.CorrelationReader;
-import org.camunda.optimize.service.es.reader.HeatMapReader;
+import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
+import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
-import java.util.Map;
 
 @Secured
 @Path("/process-definition")
@@ -23,7 +23,10 @@ import java.util.Map;
 public class ProcessDefinitionRestService {
 
   @Autowired
-  private HeatMapReader heatMapReader;
+  private FrequencyHeatMapReader heatMapReader;
+
+  @Autowired
+  private DurationHeatMapReader durationHeatMapReader;
 
   @Autowired
   private CorrelationReader correlationReader;
@@ -44,18 +47,33 @@ public class ProcessDefinitionRestService {
   }
 
   @GET
-  @Path("/{id}/heatmap")
+  @Path("/{id}/heatmap/frequency")
   @Produces(MediaType.APPLICATION_JSON)
   public HeatMapResponseDto getHeatMap(@PathParam("id") String processDefinitionId) {
     return heatMapReader.getHeatMap(processDefinitionId);
   }
 
   @POST
-  @Path("/heatmap")
+  @Path("/heatmap/frequency")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public HeatMapResponseDto getHeatMap(HeatMapQueryDto to) {
     return heatMapReader.getHeatMap(to);
+  }
+
+  @GET
+  @Path("/{id}/heatmap/duration")
+  @Produces(MediaType.APPLICATION_JSON)
+  public HeatMapResponseDto getDurationHeatMap(@PathParam("id") String processDefinitionId) {
+    return durationHeatMapReader.getHeatMap(processDefinitionId);
+  }
+
+  @POST
+  @Path("/heatmap/duration")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public HeatMapResponseDto getDurationHeatMap(HeatMapQueryDto to) {
+    return durationHeatMapReader.getHeatMap(to);
   }
 
   @POST

@@ -160,7 +160,7 @@ describe('ProcessDisplay service', () => {
     });
 
     it('calls backend with specified filter', () => {
-      expect(post.calledWith('/api/process-definition/heatmap', filter)).to.eql(true);
+      expect(post.calledWith('/api/process-definition/heatmap/frequency', filter)).to.eql(true);
     });
 
     it('dispatches stop loading action', () => {

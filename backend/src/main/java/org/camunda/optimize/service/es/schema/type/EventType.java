@@ -65,7 +65,7 @@ public class EventType extends StrictTypeMappingCreator {
             .startObject("activityType")
               .field("type", "keyword")
             .endObject()
-            .startObject("duration")
+            .startObject("durationInMs")
               .field("type", "long")
             .endObject();
   }

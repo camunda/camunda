@@ -46,7 +46,7 @@ function getParams({definition, query}) {
 
 export function loadHeatmap(filter) {
   dispatchAction(createLoadingHeatmapAction());
-  post('/api/process-definition/heatmap', filter)
+  post('/api/process-definition/heatmap/frequency', filter)
     .then(response => response.json())
     .then(result => {
       dispatchAction(createLoadingHeatmapResultAction(result.flowNodes));

@@ -8,7 +8,8 @@ import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.CorrelationReader;
-import org.camunda.optimize.service.es.reader.HeatMapReader;
+import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
+import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.security.AuthenticationService;
@@ -48,7 +49,10 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   private ProcessDefinitionReader processDefinitionReader;
 
   @Autowired
-  private HeatMapReader heatMapReader;
+  private FrequencyHeatMapReader frequencyHeatMapReader;
+
+  @Autowired
+  private DurationHeatMapReader durationHeatMapReader;
 
   @Autowired
   private CorrelationReader correlationReader;
@@ -136,10 +140,10 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   }
 
   @Test
-  public void getHeatMapWithoutAuthentication() throws IOException {
+  public void getFrequencyHeatMapWithoutAuthentication() throws IOException {
     // when
     Response response =
-      target("process-definition/123/heatmap")
+      target("process-definition/123/heatmap/frequency")
       .request()
       .get();
 
@@ -148,16 +152,16 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   }
 
   @Test
-  public void getHeatMap() throws IOException {
+  public void getFrequencyHeatMap() throws IOException {
     // given some mocks
     String token = authenticateAdmin();
     HeatMapResponseDto expected = new HeatMapResponseDto();
     expected.setPiCount(10L);
-    Mockito.when(heatMapReader.getHeatMap(Mockito.anyString())).thenReturn(expected);
+    Mockito.when(frequencyHeatMapReader.getHeatMap(Mockito.anyString())).thenReturn(expected);
 
     // when
     Response response =
-      target("process-definition/123/heatmap")
+      target("process-definition/123/heatmap/frequency")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .get();
@@ -171,11 +175,11 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   }
 
   @Test
-  public void getHeatMapPostWithoutAuthentication() throws IOException {
+  public void getFrequencyHeatMapPostWithoutAuthentication() throws IOException {
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/heatmap")
+      target("process-definition/heatmap/frequency")
       .request()
       .post(entity);
 
@@ -184,17 +188,89 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   }
 
   @Test
-  public void getHeatPostMap() throws IOException {
+  public void getFrequencyHeatPostMap() throws IOException {
     // given some mocks
     String token = authenticateAdmin();
     HeatMapResponseDto expected = new HeatMapResponseDto();
     expected.setPiCount(10L);
-    Mockito.when(heatMapReader.getHeatMap(Mockito.any(HeatMapQueryDto.class))).thenReturn(expected);
+    Mockito.when(frequencyHeatMapReader.getHeatMap(Mockito.any(HeatMapQueryDto.class))).thenReturn(expected);
 
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/heatmap")
+      target("process-definition/heatmap/frequency")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .post(entity);
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    HeatMapResponseDto actual =
+      response.readEntity(HeatMapResponseDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getPiCount(), is(expected.getPiCount()));
+  }
+
+  @Test
+  public void getDurationHeatMapWithoutAuthentication() throws IOException {
+    // when
+    Response response =
+      target("process-definition/123/heatmap/duration")
+      .request()
+      .get();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void getDurationHeatMap() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    HeatMapResponseDto expected = new HeatMapResponseDto();
+    expected.setPiCount(10L);
+    Mockito.when(durationHeatMapReader.getHeatMap(Mockito.anyString())).thenReturn(expected);
+
+    // when
+    Response response =
+      target("process-definition/123/heatmap/duration")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    HeatMapResponseDto actual =
+      response.readEntity(HeatMapResponseDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getPiCount(), is(expected.getPiCount()));
+  }
+
+  @Test
+  public void getDurationHeatMapPostWithoutAuthentication() throws IOException {
+    // when
+    Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
+    Response response =
+      target("process-definition/heatmap/duration")
+      .request()
+      .post(entity);
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void getDurationHeatMapAsPost() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    HeatMapResponseDto expected = new HeatMapResponseDto();
+    expected.setPiCount(10L);
+    Mockito.when(durationHeatMapReader.getHeatMap(Mockito.any(HeatMapQueryDto.class))).thenReturn(expected);
+
+    // when
+    Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
+    Response response =
+      target("process-definition/heatmap/duration")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .post(entity);
