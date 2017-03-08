@@ -15,7 +15,6 @@ package org.camunda.tngp.logstreams.processor;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -23,6 +22,7 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorBuilder
@@ -47,7 +47,7 @@ public class StreamProcessorBuilder
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
 
-    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
+    protected DeferredCommandContext streamProcessorCmdQueue;
 
     public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
     {
@@ -86,7 +86,7 @@ public class StreamProcessorBuilder
         return this;
     }
 
-    public StreamProcessorBuilder streamProcessorCmdQueue(ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue)
+    public StreamProcessorBuilder streamProcessorCmdQueue(DeferredCommandContext streamProcessorCmdQueue)
     {
         this.streamProcessorCmdQueue = streamProcessorCmdQueue;
         return this;
@@ -120,7 +120,7 @@ public class StreamProcessorBuilder
 
         if (streamProcessorCmdQueue == null)
         {
-            streamProcessorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
+            streamProcessorCmdQueue = new DeferredCommandContext(100);
         }
 
         if (snapshotPolicy == null)

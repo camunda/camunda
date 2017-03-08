@@ -1,11 +1,11 @@
 package org.camunda.tngp.logstreams.processor;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class StreamProcessorContext
@@ -30,7 +30,7 @@ public class StreamProcessorContext
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
 
-    protected ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
+    protected DeferredCommandContext streamProcessorCmdContext;
 
     public LogStream getSourceStream()
     {
@@ -142,14 +142,14 @@ public class StreamProcessorContext
         this.targetLogStreamReader = targetLogStreamReader;
     }
 
-    public ManyToOneConcurrentArrayQueue<StreamProcessorCommand> getStreamProcessorCmdQueue()
+    public DeferredCommandContext getStreamProcessorCmdQueue()
     {
-        return streamProcessorCmdQueue;
+        return streamProcessorCmdContext;
     }
 
-    public void setStreamProcessorCmdQueue(ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue)
+    public void setStreamProcessorCmdQueue(DeferredCommandContext streamProcessorCmdQueue)
     {
-        this.streamProcessorCmdQueue = streamProcessorCmdQueue;
+        this.streamProcessorCmdContext = streamProcessorCmdQueue;
     }
 
     public void setEventFilter(EventFilter eventFilter)

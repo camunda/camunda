@@ -17,10 +17,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -30,6 +28,7 @@ import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.ComposedState;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
@@ -90,8 +89,7 @@ public class StreamProcessorController implements Agent
     protected final StreamProcessor streamProcessor;
     protected final StreamProcessorContext streamProcessorContext;
 
-    protected final ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue;
-    protected final Consumer<StreamProcessorCommand> streamProcessorCmdConsumer = cmd -> cmd.execute();
+    protected final DeferredCommandContext streamProcessorCmdQueue;
 
     protected final LogStreamReader sourceLogStreamReader;
     protected final LogStreamReader targetLogStreamReader;
@@ -264,7 +262,7 @@ public class StreamProcessorController implements Agent
         {
             int workCount = 0;
 
-            workCount += streamProcessorCmdQueue.drain(streamProcessorCmdConsumer);
+            workCount += streamProcessorCmdQueue.doWork();
 
             if (!streamProcessor.isSuspended() && sourceLogStreamReader.hasNext())
             {
@@ -509,7 +507,8 @@ public class StreamProcessorController implements Agent
         protected void processEvent(Context context, final LoggedEvent targetEvent)
         {
             // ignore events from other producers
-            if (targetEvent.getProducerId() == streamProcessorContext.getId() && (reprocessingEventFilter == null || reprocessingEventFilter.applies(targetEvent)))
+            if (targetEvent.getProducerId() == streamProcessorContext.getId() &&
+                    (reprocessingEventFilter == null || reprocessingEventFilter.applies(targetEvent)))
             {
                 final long sourceEventPosition = targetEvent.getSourceEventPosition();
 
