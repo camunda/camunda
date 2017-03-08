@@ -14,6 +14,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,6 +53,16 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
 
   @Autowired
   private TransportClient esclient;
+
+  @Before
+  public void init() {
+    // the id of deleted indices is always stored
+    // and the version increment when a document with the
+    // same id is added. Therefore, we need to delete the whole
+    // index before each test to be sure that all document ids
+    // are wiped out.
+    elasticSearchRule.deleteAndInitializeOptimizeIndex();
+  }
 
   @Autowired
   private ConfigurationService configurationService;

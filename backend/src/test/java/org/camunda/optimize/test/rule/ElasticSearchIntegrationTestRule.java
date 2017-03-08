@@ -1,18 +1,14 @@
 package org.camunda.optimize.test.rule;
 
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.metadata.IndexMetaData;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.index.reindex.BulkIndexByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -24,6 +20,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Component
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
@@ -47,16 +47,22 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   @Override
   protected void starting(Description description) {
-    logger.info("Initializing elastic search schema...");
+    logger.info("Cleaning elasticsearch...");
     this.cleanAndVerify();
-    schemaInitializer.initializeSchema();
-    logger.info("Schema has been successfully initialized!");
+    logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
   }
 
   public void refreshOptimizeIndexInElasticsearch() {
     esclient.admin().indices()
         .prepareRefresh(configurationService.getOptimizeIndex())
         .get();
+  }
+
+  public void deleteAndInitializeOptimizeIndex() {
+    esclient.admin().indices()
+      .prepareDelete(configurationService.getOptimizeIndex())
+      .get();
+    schemaInitializer.initializeSchema();
   }
 
   /**
@@ -105,33 +111,18 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    ImmutableOpenMap<String, IndexMetaData> indices = esclient.admin().cluster()
-        .prepareState().execute()
-        .actionGet().getState()
-        .getMetaData().indices();
-
-    for (ObjectCursor<IndexMetaData> indexMeta : indices.values()) {
-      DeleteIndexResponse delete = esclient
-          .admin().indices()
-          .delete(new DeleteIndexRequest(indexMeta.value.getIndex().getName()))
-          .actionGet();
-      if (!delete.isAcknowledged()) {
-        logger.error("Index wasn't deleted");
-      }
-    }
-    esclient.admin().indices().prepareRefresh().get();
+    DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+        .refresh(true)
+        .filter(matchAllQuery())
+        .source("optimize")
+        .get();
   }
 
   private void assureElasticsearchIsClean() {
-    IndicesExistsResponse response = esclient
-      .admin()
-      .indices()
-      .prepareExists(configurationService.getOptimizeIndex())
+    SearchResponse response = esclient.prepareSearch(configurationService.getOptimizeIndex())
+      .setQuery(matchAllQuery())
       .get();
-    if(response.isExists()){
-      throw new OptimizeIntegrationTestException("Elasticsearch indices should be clean!");
-    } else {
-      logger.info("Optimize index is not found, as expected. Elasticsearch is clean and ready for next test!");
-    }
+    Long hits = response.getHits().getTotalHits();
+    assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
   }
 }
