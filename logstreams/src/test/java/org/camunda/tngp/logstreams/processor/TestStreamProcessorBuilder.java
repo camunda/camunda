@@ -1,11 +1,12 @@
 package org.camunda.tngp.logstreams.processor;
 
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
 public class TestStreamProcessorBuilder extends StreamProcessorBuilder
@@ -52,8 +53,13 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
     }
 
     @Override
-    public TestStreamProcessorBuilder streamProcessorCmdQueue(
-            ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue)
+    public TestStreamProcessorBuilder snapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
+    {
+        return (TestStreamProcessorBuilder) super.snapshotPositionProvider(snapshotPositionProvider);
+    }
+
+    @Override
+    public TestStreamProcessorBuilder streamProcessorCmdQueue(DeferredCommandContext streamProcessorCmdQueue)
     {
         return (TestStreamProcessorBuilder) super.streamProcessorCmdQueue(streamProcessorCmdQueue);
     }

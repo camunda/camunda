@@ -30,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
@@ -38,9 +37,11 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,6 +89,9 @@ public class StreamProcessorControllerTest
     private SnapshotStorage mockSnapshotStorage;
 
     @Mock
+    private SnapshotPositionProvider mockSnapshotPositionProvider;
+
+    @Mock
     private SnapshotWriter mockSnapshotWriter;
 
     @Mock
@@ -107,7 +111,7 @@ public class StreamProcessorControllerTest
     protected ControllableEventFilter eventFilter;
     protected ControllableEventFilter reprocessingEventFilter;
 
-    private final ManyToOneConcurrentArrayQueue<StreamProcessorCommand> streamProcessorCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
+    private final DeferredCommandContext streamProcessorCmdQueue = new DeferredCommandContext(100);
 
     protected TestStreamProcessorBuilder builder;
 
@@ -130,6 +134,7 @@ public class StreamProcessorControllerTest
                 .logStreamWriter(mockLogStreamWriter)
                 .snapshotPolicy(mockSnapshotPolicy)
                 .snapshotStorage(mockSnapshotStorage)
+                .snapshotPositionProvider(mockSnapshotPositionProvider)
                 .streamProcessorCmdQueue(streamProcessorCmdQueue)
                 .eventFilter(eventFilter)
                 .reprocessingEventFilter(reprocessingEventFilter);
@@ -388,7 +393,7 @@ public class StreamProcessorControllerTest
     public void shouldDrainStreamProcessorCmdQueueWhenOpen()
     {
         final AtomicBoolean isExecuted = new AtomicBoolean(false);
-        streamProcessorCmdQueue.add(() -> isExecuted.set(true));
+        streamProcessorCmdQueue.runAsync(() -> isExecuted.set(true));
 
         open();
 
@@ -432,7 +437,7 @@ public class StreamProcessorControllerTest
     public void shouldNotPollEventsIfSuspended()
     {
         final AtomicBoolean isExecuted = new AtomicBoolean(false);
-        streamProcessorCmdQueue.add(() -> isExecuted.set(true));
+        streamProcessorCmdQueue.runAsync(() -> isExecuted.set(true));
 
         when(mockStreamProcessor.isSuspended()).thenReturn(true);
 
@@ -556,7 +561,7 @@ public class StreamProcessorControllerTest
     }
 
     @Test
-    public void shouldCreateSnapshot() throws Exception
+    public void shouldCreateSnapshotAtProvidedPosition() throws Exception
     {
         mockSourceLogStreamReader.addEvent(mockSourceEvent);
 
@@ -565,6 +570,8 @@ public class StreamProcessorControllerTest
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
+
+        when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(5L);
 
         open();
 
@@ -577,37 +584,7 @@ public class StreamProcessorControllerTest
 
         assertThat(controller.isOpen()).isTrue();
 
-        verify(mockSnapshotStorage).createSnapshot(STREAM_PROCESSOR_NAME, 2L);
-        verify(mockSnapshotWriter).writeSnapshot(mockStateResource);
-        verify(mockSnapshotWriter).commit();
-    }
-
-    @Test
-    public void shouldCreateSnapshotIfSourceEqualsTargetStream() throws Exception
-    {
-        when(mockTargetLogStream.getId()).thenReturn(SOURCE_LOG_STREAM_ID);
-
-        when(mockSourceEvent.getPosition()).thenReturn(1L);
-        mockSourceLogStreamReader.addEvent(mockSourceEvent);
-
-        when(mockEventProcessor.executeSideEffects()).thenReturn(true);
-        when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
-
-        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
-
-        open();
-
-        // -> open
-        controller.doWork();
-        // -> processing
-        controller.doWork();
-        // -> snapshotting
-        controller.doWork();
-
-        assertThat(controller.isOpen()).isTrue();
-
-        verify(mockSnapshotStorage).createSnapshot(STREAM_PROCESSOR_NAME, 1L);
+        verify(mockSnapshotStorage).createSnapshot(STREAM_PROCESSOR_NAME, 5L);
         verify(mockSnapshotWriter).writeSnapshot(mockStateResource);
         verify(mockSnapshotWriter).commit();
     }
@@ -672,6 +649,8 @@ public class StreamProcessorControllerTest
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L, 2L);
+
+        when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(2L);
 
         open();
 
@@ -1183,7 +1162,7 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldFailToExecuteCommands() throws Exception
     {
-        streamProcessorCmdQueue.add(() ->
+        streamProcessorCmdQueue.runAsync(() ->
         {
             throw new RuntimeException("expected failure");
         });
@@ -1265,6 +1244,8 @@ public class StreamProcessorControllerTest
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+
+        when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(2L);
 
         open();
 
@@ -1353,6 +1334,7 @@ public class StreamProcessorControllerTest
         controller.doWork();
 
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+        when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(3L);
 
         // when
         controller.closeAsync();

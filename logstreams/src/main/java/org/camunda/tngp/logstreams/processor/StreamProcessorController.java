@@ -26,6 +26,7 @@ import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.spi.ReadableSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.DeferredCommandContext;
@@ -97,6 +98,7 @@ public class StreamProcessorController implements Agent
 
     protected final SnapshotPolicy snapshotPolicy;
     protected final SnapshotStorage snapshotStorage;
+    protected final SnapshotPositionProvider snapshotPositionProvider;
 
     protected final LogStreamFailureListener targetLogStreamFailureListener = new TargetLogStreamFailureListener();
 
@@ -116,6 +118,7 @@ public class StreamProcessorController implements Agent
         this.logStreamWriter = context.getLogStreamWriter();
         this.snapshotPolicy = context.getSnapshotPolicy();
         this.snapshotStorage = context.getSnapshotStorage();
+        this.snapshotPositionProvider = context.getSnapshotPositionProvider();
         this.streamProcessorCmdQueue = context.getStreamProcessorCmdQueue();
         this.eventFilter = context.getEventFilter();
         this.reprocessingEventFilter = context.getReprocessingEventFilter();
@@ -367,11 +370,10 @@ public class StreamProcessorController implements Agent
      */
     protected boolean ensureSnapshotWritten(Context context)
     {
-        final long sourceEventPosition = context.getEvent().getPosition();
         final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
         final long appenderPosition = streamProcessorContext.getTargetStream().getCurrentAppenderPosition();
 
-        final long snapshotPosition = isSourceStreamWriter() ? sourceEventPosition : lastWrittenEventPosition;
+        final long snapshotPosition = snapshotPositionProvider.getSnapshotPosition(context.getEvent(), lastWrittenEventPosition);
         final boolean snapshotAlreadyPresent = snapshotPosition <= context.getSnapshotPosition();
 
         if (!snapshotAlreadyPresent)

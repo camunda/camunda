@@ -21,6 +21,7 @@ import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
@@ -39,6 +40,7 @@ public class StreamProcessorBuilder
 
     protected SnapshotPolicy snapshotPolicy;
     protected SnapshotStorage snapshotStorage;
+    protected SnapshotPositionProvider snapshotPositionProvider;
 
     protected LogStreamReader sourceLogStreamReader;
     protected LogStreamReader targetLogStreamReader;
@@ -83,6 +85,12 @@ public class StreamProcessorBuilder
     public StreamProcessorBuilder snapshotStorage(SnapshotStorage snapshotStorage)
     {
         this.snapshotStorage = snapshotStorage;
+        return this;
+    }
+
+    public StreamProcessorBuilder snapshotPositionProvider(SnapshotPositionProvider snapshotPositionProvider)
+    {
+        this.snapshotPositionProvider = snapshotPositionProvider;
         return this;
     }
 
@@ -157,6 +165,21 @@ public class StreamProcessorBuilder
 
         ctx.setSnapshotPolicy(snapshotPolicy);
         ctx.setSnapshotStorage(snapshotStorage);
+
+        SnapshotPositionProvider snapshotPositionProvider = this.snapshotPositionProvider;
+        if (snapshotPositionProvider == null)
+        {
+            if (sourceStream.getId() == targetStream.getId())
+            {
+                snapshotPositionProvider = new LastProcessedEventPositionProvider();
+            }
+            else
+            {
+                snapshotPositionProvider = new LastWrittenEventPositionProvider();
+            }
+        }
+
+        ctx.setSnapshotPositionProvider(snapshotPositionProvider);
 
         ctx.setEventFilter(eventFilter);
         ctx.setReprocessingEventFilter(reprocessingEventFilter);
