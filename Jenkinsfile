@@ -27,7 +27,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr:'10'))
     // "wrapper" steps that should wrap the entire build execution
     timestamps()
-    timeout(time: 10, unit: 'MINUTES')
+    timeout(time: 30, unit: 'MINUTES')
   }
 
   stages {
