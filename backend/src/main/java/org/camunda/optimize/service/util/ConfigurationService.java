@@ -34,7 +34,7 @@ public class ConfigurationService {
   @Value("${camunda.optimize.es.port}")
   private Integer elasticSearchPort;
   @Value(("${camunda.optimize.es.timeout.ms}"))
-  private int elasticsearchTimeoutInSec;
+  private int elasticsearchTimeout;
 
   @Value("${camunda.optimize.es.correlation.init}")
   private String correlationInitScriptPath;
@@ -55,6 +55,10 @@ public class ConfigurationService {
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
+  @Value(("${camunda.optimize.engine.connect.timeout.ms}"))
+  private int engineConnectTimeout;
+  @Value(("${camunda.optimize.engine.read.timeout.ms}"))
+  private int engineReadTimeout;
   @Value("${camunda.optimize.engine.hai.endpoint}")
   private String historicActivityInstanceEndpoint;
   @Value("${camunda.optimize.engine.hai.count.endpoint}")
@@ -229,6 +233,14 @@ public class ConfigurationService {
   }
 
   public int getElasticsearchTimeout() {
-    return elasticsearchTimeoutInSec;
+    return elasticsearchTimeout;
+  }
+
+  public int getEngineConnectTimeout() {
+    return engineConnectTimeout;
+  }
+
+  public int getEngineReadTimeout() {
+    return engineReadTimeout;
   }
 }

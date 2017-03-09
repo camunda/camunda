@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,6 +28,8 @@ public class EngineClientFactory implements FactoryBean<Client> {
 
   private Client newClient() {
     Client client = ClientBuilder.newClient();
+    client.property(ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
+    client.property(ClientProperties.READ_TIMEOUT,    configurationService.getEngineReadTimeout());
     if(configurationService.isEngineAuthenticationEnabled()) {
       client.register(basicAccessAuthenticationFilter);
     }
