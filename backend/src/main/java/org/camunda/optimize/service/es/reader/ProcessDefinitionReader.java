@@ -40,7 +40,7 @@ public class ProcessDefinitionReader {
     SearchResponse scrollResp = esclient
       .prepareSearch(configurationService.getOptimizeIndex())
       .setTypes(configurationService.getProcessDefinitionType())
-      .setScroll(new TimeValue(configurationService.getElasticsearchTimeout()))
+      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .setSize(100)
       .get();
@@ -53,7 +53,7 @@ public class ProcessDefinitionReader {
       }
       scrollResp = esclient
         .prepareSearchScroll(scrollResp.getScrollId())
-        .setScroll(new TimeValue(configurationService.getElasticsearchTimeout()))
+        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .get();
     } while (scrollResp.getHits().getHits().length != 0);
 

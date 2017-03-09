@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Askar Akhmerov
@@ -26,15 +27,21 @@ public class TransportClientFactory implements FactoryBean <TransportClient> {
   @Override
   public TransportClient getObject() throws Exception {
     if (instance == null) {
+      logger.info("Starting Elasticsearch client...");
       try {
-        instance = new PreBuiltTransportClient(Settings.EMPTY)
+        instance =
+          new PreBuiltTransportClient(
+            Settings.builder()
+              .put("client.transport.ping_timeout", configurationService.getElasticsearchConnectionTimeout(), TimeUnit.MILLISECONDS)
+              .build())
             .addTransportAddress(new InetSocketTransportAddress(
                 InetAddress.getByName(configurationService.getElasticSearchHost()),
                 configurationService.getElasticSearchPort()
                 ));
       } catch (UnknownHostException e) {
-        logger.error("cant connect to elasticsearch", e);
+        logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
       }
+      logger.info("Elasticsearch client has successfully been started");
     }
     return instance;
   }
