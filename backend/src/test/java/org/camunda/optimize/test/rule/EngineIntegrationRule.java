@@ -194,6 +194,7 @@ public class EngineIntegrationRule extends TestWatcher {
       if (!parsed.containsKey("count")) throw new RuntimeException("Engine could not count PIs");
       if (Integer.valueOf(parsed.get("count").toString()) != 0) {
         Thread.sleep(1000);
+        iterations = iterations + 1;
       } else {
         done = true;
       }

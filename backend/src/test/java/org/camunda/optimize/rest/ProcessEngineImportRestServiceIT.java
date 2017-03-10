@@ -79,18 +79,6 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
   }
 
-  private String authenticateAdmin() {
-    CredentialsDto entity = new CredentialsDto();
-    entity.setUsername("admin");
-    entity.setPassword("admin");
-
-    Response tokenResponse =  target("authentication")
-        .request()
-        .post(Entity.json(entity));
-
-    return tokenResponse.readEntity(String.class);
-  }
-
   @Override
   protected String getContextLocation() {
     return "classpath:it-applicationContext.xml";

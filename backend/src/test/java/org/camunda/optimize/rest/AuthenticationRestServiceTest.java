@@ -64,7 +64,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
   public void authenticateUserUsingES() throws Exception {
     setUpEngineClientFailingAuthenticationMocks();
     //when
-    Response response = authenticateAdmin();
+    Response response = authenticateAdminPlain();
 
     //then
     assertThat(response.getStatus(),is(200));
@@ -72,7 +72,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
     assertThat(responseEntity,is(notNullValue()));
   }
 
-  private Response authenticateAdmin() {
+  protected Response authenticateAdminPlain() {
     CredentialsDto entity = new CredentialsDto();
     entity.setUsername("admin");
     entity.setPassword("admin");
@@ -88,7 +88,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
   public void logout() throws Exception {
     setUpEngineClientFailingAuthenticationMocks();
     //given
-    Response response = authenticateAdmin();
+    Response response = authenticateAdminPlain();
     String token = response.readEntity(String.class);
 
     //when
@@ -107,7 +107,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
   public void securingRestApiWorksWithProxy() throws Exception {
     setUpEngineClientFailingAuthenticationMocks();
     //given
-    Response response = authenticateAdmin();
+    Response response = authenticateAdminPlain();
     String token = response.readEntity(String.class);
 
     //when
@@ -140,7 +140,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
   public void testAuthenticateUserUsingEngine () {
     setUpEngineClientPassingAuthenticationMocks();
     //when
-    Response response = authenticateAdmin();
+    Response response = authenticateAdminPlain();
 
     //then
     assertThat(response.getStatus(),is(200));

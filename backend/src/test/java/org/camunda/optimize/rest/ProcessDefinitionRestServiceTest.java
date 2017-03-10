@@ -320,16 +320,4 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     assertThat(actual.getTotal(), is(expected.getTotal()));
   }
 
-  private String authenticateAdmin() {
-    CredentialsDto entity = new CredentialsDto();
-    entity.setUsername("admin");
-    entity.setPassword("admin");
-
-    Response tokenResponse =  target("authentication")
-        .request()
-        .post(Entity.json(entity));
-
-    return tokenResponse.readEntity(String.class);
-  }
-
 }

@@ -6,7 +6,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -15,7 +14,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +22,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -38,6 +37,7 @@ import static org.hamcrest.Matchers.greaterThan;
 public class ImportIT extends AbstractJerseyTest {
   public static final String SUB_PROCESS_ID = "testProcess";
   public static final String CALL_ACTIVITY = "callActivity";
+  public static final String TEST_MIPROCESS = "testMIProcess";
 
   @Autowired
   @Rule
@@ -96,9 +96,8 @@ public class ImportIT extends AbstractJerseyTest {
   }
 
   @Test
-  @Ignore
   public void importWithMi() throws Exception {
-    String key = "testMIProcess";
+    //given
     BpmnModelInstance subProcess = Bpmn.createExecutableProcess(SUB_PROCESS_ID)
         .startEvent()
           .serviceTask("MI-Body-Task")
@@ -108,7 +107,7 @@ public class ImportIT extends AbstractJerseyTest {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     engineRule.deployProcess(subProcess, client);
 
-    BpmnModelInstance model = Bpmn.createExecutableProcess(key)
+    BpmnModelInstance model = Bpmn.createExecutableProcess(TEST_MIPROCESS)
         .name("MultiInstance")
           .startEvent("miStart")
           .parallelGateway()
@@ -127,17 +126,33 @@ public class ImportIT extends AbstractJerseyTest {
     importScheduler.scheduleProcessEngineImport();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
+    String token = authenticateAdmin();
     List<ProcessDefinitionOptimizeDto> definitions = target()
         .path(configurationService.getProcessDefinitionEndpoint())
         .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
     assertThat(definitions.size(),is(2));
-    HeatMapResponseDto heatmap = target()
-        .path(configurationService.getProcessDefinitionEndpoint() + "/" + definitions.get(0).getId() + "/" + "heatmap")
+
+    String id = null;
+    for (ProcessDefinitionOptimizeDto dto : definitions) {
+      if (TEST_MIPROCESS.equals(dto.getKey())) {
+        id = dto.getId();
+      }
+    }
+    assertThat(id, is(notNullValue()));
+
+
+    //when
+    HeatMapResponseDto heatMap = target()
+        .path(configurationService.getProcessDefinitionEndpoint() + "/" + id + "/" + "heatmap/frequency")
         .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get(HeatMapResponseDto.class);
-    assertThat(heatmap.getPiCount(), is(1L));
-    assertThat(heatmap.getFlowNodes().size(), is(5));
+
+    //then
+    assertThat(heatMap.getPiCount(), is(1L));
+    assertThat(heatMap.getFlowNodes().size(), is(5));
   }
 
   private void deployAndStartSimpleServiceTask() {

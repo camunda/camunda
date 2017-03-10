@@ -1,5 +1,6 @@
 package org.camunda.optimize.test;
 
+import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spring.SpringLifecycleListener;
@@ -7,7 +8,9 @@ import org.glassfish.jersey.server.spring.scope.RequestContextFilter;
 import org.glassfish.jersey.test.JerseyTest;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Response;
 
 /**
  * Abstract class that configures Jersey Application to use spring
@@ -44,4 +47,19 @@ public abstract class AbstractJerseyTest extends JerseyTest {
   protected String getContextLocation() {
     return "classpath:applicationContext.xml";
   }
+
+
+  protected String authenticateAdmin() {
+    CredentialsDto entity = new CredentialsDto();
+    entity.setUsername("admin");
+    entity.setPassword("admin");
+
+    Response tokenResponse =  target("authentication")
+        .request()
+        .post(Entity.json(entity));
+
+    return tokenResponse.readEntity(String.class);
+  }
+
+
 }

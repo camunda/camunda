@@ -61,7 +61,7 @@ public class FrequencyHeatMapReaderIT {
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
 
-    event.setActivityId(TEST_ACTIVITY + 2);
+    event.setActivityId(TEST_ACTIVITY);
     event.setActivityType(MI_BODY);
     rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
 
