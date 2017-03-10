@@ -37,5 +37,6 @@
   <bean id="frequencyHeatMapReader" class="org.camunda.optimize.test.factory.MockFrequencyHeatMapReaderFactory"/>
   <bean id="durationHeatMapReader" class="org.camunda.optimize.test.factory.MockDurationHeatMapReaderFactory"/>
   <bean id="correlationReader" class="org.camunda.optimize.test.factory.MockCorrelationReaderFactory"/>
+  <bean id="statusCheckingService" class="org.camunda.optimize.test.factory.MockStatusCheckingServiceFactory"/>
 
 </beans>
