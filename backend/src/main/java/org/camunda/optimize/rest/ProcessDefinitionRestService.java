@@ -23,7 +23,7 @@ import java.util.List;
 public class ProcessDefinitionRestService {
 
   @Autowired
-  private FrequencyHeatMapReader heatMapReader;
+  private FrequencyHeatMapReader frequencyHeatMapReader;
 
   @Autowired
   private DurationHeatMapReader durationHeatMapReader;
@@ -49,16 +49,16 @@ public class ProcessDefinitionRestService {
   @GET
   @Path("/{id}/heatmap/frequency")
   @Produces(MediaType.APPLICATION_JSON)
-  public HeatMapResponseDto getHeatMap(@PathParam("id") String processDefinitionId) {
-    return heatMapReader.getHeatMap(processDefinitionId);
+  public HeatMapResponseDto getFrequencyHeatMap(@PathParam("id") String processDefinitionId) {
+    return frequencyHeatMapReader.getHeatMap(processDefinitionId);
   }
 
   @POST
   @Path("/heatmap/frequency")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public HeatMapResponseDto getHeatMap(HeatMapQueryDto to) {
-    return heatMapReader.getHeatMap(to);
+  public HeatMapResponseDto getFrequencyHeatMap(HeatMapQueryDto to) {
+    return frequencyHeatMapReader.getHeatMap(to);
   }
 
   @GET
