@@ -6,7 +6,7 @@ export function Text({property}) {
 
     node.appendChild(textNode);
     return ({[property] : value}) => {
-      if (value ) {
+      if (value !== null) {
         textNode.data = value.toString();
       }
     };
