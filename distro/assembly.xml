@@ -51,6 +51,10 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
+      <source>src/curl.exe</source>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
       <source>src/start-optimize.sh</source>
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
