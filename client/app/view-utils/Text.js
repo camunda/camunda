@@ -5,9 +5,10 @@ export function Text({property}) {
     const textNode = $document.createTextNode('');
 
     node.appendChild(textNode);
-
     return ({[property] : value}) => {
-      textNode.data = value.toString();
+      if (value ) {
+        textNode.data = value.toString();
+      }
     };
   };
 }
