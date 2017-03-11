@@ -68,7 +68,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         this.indexStore = indexStore;
         this.taskSubscriptionManager = taskSubscriptionManager;
 
-        taskIndex = new Long2BytesHashIndex(indexStore, 32_768, 128, INDEX_VALUE_LENGTH);
+        taskIndex = new Long2BytesHashIndex(indexStore, Short.MAX_VALUE, 256, INDEX_VALUE_LENGTH);
         indexSnapshotSupport = new HashIndexSnapshotSupport<>(taskIndex, indexStore);
     }
 
@@ -475,6 +475,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             }
             return typeId;
         }
+
     }
 
     class IndexWriter

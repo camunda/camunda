@@ -47,7 +47,7 @@ public class HashIndexSnapshotSupportTest
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         snapshotSupport.writeSnapshot(outputStream);
 
-        snapshotSupport.reset();
+        hashIndex.clear();
 
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
         snapshotSupport.recoverFromSnapshot(inputStream);

@@ -81,7 +81,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
         final String indexFile = taskQueueCfg.indexFile;
         if (taskQueueCfg.useTempIndexFile)
         {
-            indexStore = FileChannelIndexStore.tempFileIndexStore(streamProcessorName);
+            indexStore = FileChannelIndexStore.tempFileIndexStore();
         }
         else if (indexFile != null && !indexFile.isEmpty())
         {

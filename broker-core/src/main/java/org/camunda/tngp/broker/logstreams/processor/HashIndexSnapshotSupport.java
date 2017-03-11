@@ -48,6 +48,8 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
     @Override
     public void writeSnapshot(OutputStream outputStream) throws Exception
     {
+        hashIndex.flush();
+
         int read = -1;
         int offset = 0;
 
@@ -77,14 +79,14 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
 
             if (read > 0)
             {
-                indexStore.write(WRITE_BUFFER_VIEW, offset);
+                indexStore.writeFully(WRITE_BUFFER_VIEW, offset);
 
                 offset += read;
             }
         }
         while (read > 0);
 
-        hashIndex.reset();
+        hashIndex.reInit();
     }
 
     @Override

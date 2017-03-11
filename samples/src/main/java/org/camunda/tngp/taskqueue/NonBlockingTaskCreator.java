@@ -20,7 +20,6 @@ import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool
 public class NonBlockingTaskCreator
 {
     private static final String SAMPLE_MAX_CONCURRENT_REQUESTS = "sample.maxConcurrentRequests";
-    private static final String SAMPLE_PAYLOAD_SIZE = "sample.payloadSize";
     private static final String SAMPLE_NUMBER_OF_REQUESTS = "sample.numberOfRequests";
 
     public static void main(String[] args)
@@ -30,13 +29,11 @@ public class NonBlockingTaskCreator
         ClientProperties.setDefaults(properties);
 
         properties.putIfAbsent(SAMPLE_NUMBER_OF_REQUESTS, "1000000");
-        properties.putIfAbsent(SAMPLE_PAYLOAD_SIZE, "512");
         properties.putIfAbsent(SAMPLE_MAX_CONCURRENT_REQUESTS, "64");
 
         printProperties(properties);
 
         final int numOfRequets = Integer.parseInt(properties.getProperty(SAMPLE_NUMBER_OF_REQUESTS));
-        final int payloadSize = Integer.parseInt(properties.getProperty(SAMPLE_PAYLOAD_SIZE));
         final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(SAMPLE_MAX_CONCURRENT_REQUESTS));
 
         try (final TngpClient client = TngpClient.create(properties))
@@ -64,6 +61,7 @@ public class NonBlockingTaskCreator
                         final CreateTaskCmd cmd = asyncTaskService
                                 .create()
                                 .taskType("greeting")
+                                .addHeader("some", "value")
                                 .payload(payload);
 
                         inFlightRequests.add(cmd.executeAsync(connection));
