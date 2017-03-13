@@ -38,5 +38,6 @@
   <bean id="durationHeatMapReader" class="org.camunda.optimize.test.factory.MockDurationHeatMapReaderFactory"/>
   <bean id="correlationReader" class="org.camunda.optimize.test.factory.MockCorrelationReaderFactory"/>
   <bean id="statusCheckingService" class="org.camunda.optimize.test.factory.MockStatusCheckingServiceFactory"/>
+  <bean id="importProgressReporter" class="org.camunda.optimize.test.factory.MockImportProgressReporterFactory"/>
 
 </beans>

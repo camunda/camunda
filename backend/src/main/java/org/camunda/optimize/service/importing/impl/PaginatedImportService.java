@@ -47,6 +47,10 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
     return pagesWithData;
   }
 
+  public int getImportStartIndex() {
+    return this.indexOfFirstResult;
+  }
+
   public void resetImportStartIndex() {
     this.indexOfFirstResult = 0;
   }

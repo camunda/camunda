@@ -1,6 +1,8 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.ConnectionStatusDto;
+import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.junit.Before;
@@ -25,10 +27,8 @@ public class StatusRestServiceTest extends AbstractJerseyTest{
   @Autowired
   private StatusCheckingService mockedStatusCheckingService;
 
-  @Before
-  public void init() {
-    MockitoAnnotations.initMocks(this);
-  }
+  @Autowired
+  private ImportProgressReporter importProgressReporter;
 
   @Test
   public void getConnectionStatus() {
@@ -51,6 +51,26 @@ public class StatusRestServiceTest extends AbstractJerseyTest{
     assertThat(actual, is(notNullValue()));
     assertThat(actual.isConnectedToElasticsearch(), is(expected.isConnectedToElasticsearch()));
     assertThat(actual.isConnectedToEngine(), is(expected.isConnectedToEngine()));
+  }
+
+  @Test
+  public void getImportProgressStatus() {
+    // given
+    int expectedCount = 80;
+    Mockito.when(importProgressReporter.computeImportProgress()).thenReturn(expectedCount);
+
+    // when
+    Response response =
+      target("status/import-progress")
+      .request()
+      .get();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    CountDto actual =
+      response.readEntity(CountDto.class);
+    assertThat(actual, is(notNullValue()));
+    assertThat(actual.getCount(), is(expectedCount));
   }
 
 }

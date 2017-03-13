@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -58,6 +59,22 @@ public class EngineEntityFetcher {
     return entries;
   }
 
+  public Integer fetchHistoricActivityInstanceCount() {
+    CountDto count;
+    try {
+      count = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getHistoricActivityInstanceCountEndpoint())
+        .request()
+        .get(CountDto.class);
+    } catch (RuntimeException e) {
+      logger.error("Could not fetch historic activity instance count from engine. Please check the connection!");
+      count = new CountDto();
+    }
+
+    return count.getCount();
+  }
+
   public List<ProcessDefinitionXmlEngineDto> fetchProcessDefinitionXmls(int indexOfFirstResult, int maxPageSize) {
     List<ProcessDefinitionEngineDto> entries = fetchProcessDefinitions(indexOfFirstResult, maxPageSize);
     return fetchAllXmls(entries);
@@ -102,6 +119,22 @@ public class EngineEntityFetcher {
     }
 
     return entries;
+  }
+
+  public Integer fetchProcessDefinitionCount() {
+    CountDto count;
+    try {
+      count = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getProcessDefinitionCountEndpoint())
+        .request()
+        .get(CountDto.class);
+    } catch (RuntimeException e) {
+      logger.error("Could not fetch process definition count from engine. Please check the connection!");
+      count = new CountDto();
+    }
+
+    return count.getCount();
   }
 
   public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {

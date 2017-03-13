@@ -6,6 +6,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -56,6 +57,9 @@ public class ImportIT extends AbstractJerseyTest {
   @Autowired
   private ConfigurationService configurationService;
 
+  @Autowired
+  private ImportProgressReporter importProgressReporter;
+
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws Exception {
     //given
@@ -93,6 +97,22 @@ public class ImportIT extends AbstractJerseyTest {
 
     //then
     allEntriesInElasticsearchHaveAllData(configurationService.getEventType());
+  }
+
+  @Test
+  public void importProgressReporter() {
+    // when
+    deployAndStartSimpleServiceTask();
+
+    // then
+    assertThat(importProgressReporter.computeImportProgress(), is(0));
+
+    // when
+    importScheduler.scheduleProcessEngineImport();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    assertThat(importProgressReporter.computeImportProgress(), is(100));
   }
 
   @Test

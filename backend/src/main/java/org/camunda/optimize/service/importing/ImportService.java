@@ -16,7 +16,19 @@ public interface ImportService {
   int executeImport();
 
   /**
-   * reset starting point of importing.
+   * Showing the progress of the import and where it
+   * starts to continue fetching engine entities.
+   * @return the current start index from the import showing
+   */
+  int getImportStartIndex();
+
+  /**
+   * reset starting point of importing. Can be used to
+   * set the import starting point to the beginning.
+   * Thus, this will cause the import to fetch all
+   * engine entries again.
+   * Can be used to make sure that entities that
+   * have been missed are imported as well.
    */
   void resetImportStartIndex();
 }
