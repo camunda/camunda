@@ -11,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class ImportScheduler extends Thread {
   protected static final long STARTING_BACKOFF = 0;
+  public static final String SCHEDULER_NAME = "ImportScheduler-Thread";
   private final Logger logger = LoggerFactory.getLogger(ImportScheduler.class);
 
   protected final LinkedBlockingQueue<ImportScheduleJob> importScheduleJobs = new LinkedBlockingQueue<>();
@@ -60,7 +61,10 @@ public class ImportScheduler extends Thread {
   public void start() {
     logger.info("starting import scheduler thread");
     super.start();
+    this.setName(SCHEDULER_NAME);
   }
+
+
 
   protected void executeJob() {
     logger.debug("executing import round");
