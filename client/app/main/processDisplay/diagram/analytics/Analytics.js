@@ -65,13 +65,11 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
     enterGatewayAnalysisMode();
   }
 
-  function updateModalContent(element, data) {
-    const instancesCount = getMax(data);
-
+  function updateModalContent(element, {flowNodes, piCount}) {
     nodes.name.textContent = element.name || element.id;
-    nodes.counterAll.textContent = instancesCount || 0;
-    nodes.counterReached.textContent = data[element.id] || 0;
-    nodes.counterReachedPercentage.textContent = Math.round(data[element.id] / instancesCount * 1000) / 10 || 0;
+    nodes.counterAll.textContent = piCount || 0;
+    nodes.counterReached.textContent = flowNodes[element.id] || 0;
+    nodes.counterReachedPercentage.textContent = Math.round(flowNodes[element.id] / piCount * 1000) / 10 || 0;
   }
 
   viewer.get('eventBus').on('element.click', ({element}) => {
@@ -149,8 +147,4 @@ export function createAnalyticsRenderer({viewer, node, eventsBus}) {
 
     runUpdate(templateUpdate, state);
   };
-}
-
-function getMax(allValues) {
-  return Math.max.apply(null, Object.values(allValues));
 }

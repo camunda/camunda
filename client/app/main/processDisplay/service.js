@@ -25,7 +25,7 @@ export function loadHeatmap(filter) {
   post('/api/process-definition/heatmap/frequency', filter)
     .then(response => response.json())
     .then(result => {
-      dispatchAction(createLoadingHeatmapResultAction(result.flowNodes));
+      dispatchAction(createLoadingHeatmapResultAction(result));
     })
     .catch(err => {
       //TODO: Add error handling with notifications

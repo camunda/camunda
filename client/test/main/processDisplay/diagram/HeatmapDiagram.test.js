@@ -6,7 +6,9 @@ import {createHeatmapDiagram, __set__, __ResetDependency__} from 'main/processDi
 
 describe('<HeatmapDiagram>', () => {
   const diagramXml = 'diagram-xml';
-  const heatmapData = {a: 1};
+  const flowNodes = {a: 1};
+  const piCount = 7;
+  const heatmapData = {flowNodes, piCount};
   const heatmapNode = document.createElement('img');
 
   let loadedDiagramState;
@@ -106,8 +108,8 @@ describe('<HeatmapDiagram>', () => {
     });
 
     it('should construct a heatmap', () => {
-      expect(getHeatmap.calledWith(viewer, heatmapData))
-        .to.eql(true, 'expected getHeatmap to be called with the viewer instance and heatmap data');
+      expect(getHeatmap.calledWith(viewer, flowNodes))
+        .to.eql(true, 'expected getHeatmap to be called with the viewer instance and flownode data');
     });
 
     it('should add a heatmap', () => {
@@ -157,7 +159,7 @@ describe('<HeatmapDiagram>', () => {
         diagramRendered: true
       });
 
-      expect(addHeatmapOverlay.calledWith(viewer, heatmapData)).to.eql(true);
+      expect(addHeatmapOverlay.calledWith(viewer, flowNodes)).to.eql(true);
     });
 
     it('should only render heatmap once', () => {

@@ -172,7 +172,7 @@ describe('ProcessDisplay service', () => {
     it('creates action with returned heatmap data', () => {
       Promise.runAll();
 
-      expect(createLoadingHeatmapResultAction.calledWith(heatmapData.flowNodes)).to.eql(true);
+      expect(createLoadingHeatmapResultAction.calledWith(heatmapData)).to.eql(true);
     });
   });
 

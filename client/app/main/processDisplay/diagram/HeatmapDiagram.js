@@ -34,18 +34,18 @@ function createHeatmapRenderer({viewer}) {
     }
   };
 
-  function renderHeatmap({heatmap: {data}}) {
+  function renderHeatmap({heatmap: {data: {flowNodes}}}) {
     // add heatmap
     if (!heatmapRendered) {
       removeHeatmap(viewer);
-      heatmap = getHeatmap(viewer, data);
+      heatmap = getHeatmap(viewer, flowNodes);
       viewer.get('canvas')._viewport.appendChild(heatmap);
       heatmapRendered = true;
     }
 
     // add heatmap overlays
     removeHeatmapOverlay(viewer);
-    addHeatmapOverlay(viewer, data);
+    addHeatmapOverlay(viewer, flowNodes);
   }
 
   function removeHeatmap() {

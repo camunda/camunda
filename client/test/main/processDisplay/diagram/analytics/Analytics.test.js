@@ -13,7 +13,6 @@ describe('<Analytics>', () => {
   let setGateway;
   let resetStatisticData;
   let leaveGatewayAnalysisMode;
-  let createReferenceComponent;
   let $document;
 
   let diagramElement;
@@ -22,10 +21,20 @@ describe('<Analytics>', () => {
   let initialState;
   let gatewayAnalysisState;
   let isBpmnType;
+  let Socket;
 
   const GATEWAY_ANALYSIS_MODE = 'GATEWAY_ANALYSIS_MODE';
 
   beforeEach(() => {
+    const heatmapData = {
+      piCount: 7,
+      flowNodes: {
+        act1: 1,
+        act2: 2,
+        act3: 3
+      }
+    };
+
     diagramElement = {businessObject: {
       type: 'bpmn:Task',
       name: 'Some Task',
@@ -46,11 +55,7 @@ describe('<Analytics>', () => {
 
     initialState = {state: {
       heatmap: {
-        data: {
-          act1: 1,
-          act2: 2,
-          act3: 3
-        }
+        data: heatmapData
       },
       mode: null,
       selection: {}
@@ -58,11 +63,7 @@ describe('<Analytics>', () => {
 
     gatewayAnalysisState = {state: {
       heatmap: {
-        data: {
-          act1: 1,
-          act2: 2,
-          act3: 3
-        }
+        data: heatmapData
       },
       mode: GATEWAY_ANALYSIS_MODE,
       selection: {
@@ -75,14 +76,6 @@ describe('<Analytics>', () => {
       removeEventListener: sinon.spy()
     };
     __set__('$document', $document);
-
-    createReferenceComponent = (nodes) => {
-      nodes.name = {textContent: ''};
-      nodes.counterAll = {textContent: ''};
-      nodes.counterReached = {textContent: ''};
-      nodes.counterReachedPercentage = {textContent: ''};
-    };
-    __set__('createReferenceComponent', createReferenceComponent);
 
     setEndEvent = sinon.spy();
     __set__('setEndEvent', setEndEvent);
@@ -98,10 +91,13 @@ describe('<Analytics>', () => {
 
     __set__('GATEWAY_ANALYSIS_MODE', GATEWAY_ANALYSIS_MODE);
 
-    Modal = createMockComponent('Modal');
+    Modal = createMockComponent('Modal', true);
     Modal.open = sinon.spy();
     createModal = sinon.stub().returns(Modal);
     __set__('createModal', createModal);
+
+    Socket = createMockComponent('Socket', true);
+    __set__('Socket', Socket);
 
     isBpmnType = sinon.stub().returns(false);
     isBpmnType.withArgs(endEvent, 'EndEvent').returns(true);
@@ -132,8 +128,8 @@ describe('<Analytics>', () => {
     __ResetDependency__('leaveGatewayAnalysisMode');
     __ResetDependency__('GATEWAY_ANALYSIS_MODE');
     __ResetDependency__('$document');
-    __ResetDependency__('createReferenceComponent');
     __ResetDependency__('resetStatisticData');
+    __ResetDependency__('Socket');
   });
 
   it('should do nothing when a non end event is clicked', () => {
@@ -149,6 +145,15 @@ describe('<Analytics>', () => {
 
     expect(setEndEvent.calledWith(endEvent)).to.eql(true);
     expect(Modal.open.called).to.eql(true);
+  });
+
+  it('should set the piCount property to the counterAll node', () => {
+    update(initialState);
+    viewer.on.firstCall.args[1]({element: endEvent});
+
+    const counterAll = Socket.getChildrenNode({name: 'body'}).querySelector('td');
+
+    expect(counterAll.textContent).to.eql('7');
   });
 
   it('should not set an end event in gateway analysis mode', () => {
