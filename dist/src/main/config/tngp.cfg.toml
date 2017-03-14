@@ -4,65 +4,56 @@
 
 [network]
 hostname = "0.0.0.0"
-sendBufferSize = 64
+sendBufferSize = 128
 
 [network.clientApi]
 port = 51015
 receiveBufferSize = 16
+controlMessageRequestTimeoutInMillis = 10000
+
+[network.managementApi]
+host = "localhost"
+port = 51016
+receiveBufferSize = 16
+
+[network.replicationApi]
+host = "localhost"
+port = 51017
+receiveBufferSize = 16
+
+[network.gossip]
+useTempFile = true
 
 # System Configuration --------------------------------
 
 [threading]
 numberOfThreads = 2
-maxIdleTimeMs = 200
+maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
 [metrics]
-countersFileName = "../status/counters.raw"
+useTempCountersFile = true
 
 # Log Configuration -----------------------------------
 
 [logs]
-logWriteBufferSize = 64
+logWriteBufferSize = 256
 defaultLogSegmentSize = 512
-logDirectories = [ "../data/" ]
 
 [[log]]
 name = "default-task-queue-log"
 id = 0
+useTempLogDirectory = true
 
-[[log]]
-name = "default-wf-definition-log"
-id = 1
-
-[[log]]
-name = "default-wf-instance-log"
-id = 2
+[snapshot]
+useTempSnapshotDirectory = true
 
 # Task Queues ------------------------------------------
 
 [task-queues]
 numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 512
+perWorkerResponsePoolCapacity = 32
 
 [[task-queue]]
-name = "default"
-id = 0
 logName = "default-task-queue-log"
-
-# Workflow ---------------------------------------------
-
-[workflow]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 512
-
-[[workflow-repository]]
-name = "default"
-id = 0
-logName = "default-wf-definition-log"
-
-[[workflow-runtime]]
-name = "default"
-id = 0
-repositoryName = "default" 
-logName = "default-wf-instance-log"
+useTempIndexFile = true
