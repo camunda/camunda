@@ -1,15 +1,12 @@
 package org.camunda.tngp.broker.event.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
+
+import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
-import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
-import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,7 +22,7 @@ public class TopicSubscriptionProcessorTest
     protected SubscribedEventWriter eventWriter;
 
     @Rule
-    public MockStreamProcessorController<DummyEvent> controller = new MockStreamProcessorController<>(DummyEvent.class, EventType.RAFT_EVENT, INITIAL_LOG_POSITION);
+    public MockStreamProcessorController<TopicSubscriptionAck> controller = new MockStreamProcessorController<>(TopicSubscriptionAck.class, EventType.RAFT_EVENT, INITIAL_LOG_POSITION);
 
     @Before
     public void setUp()
@@ -34,43 +31,31 @@ public class TopicSubscriptionProcessorTest
     }
 
     @Test
-    public void shouldWriteEvent()
+    public void shouldNotAckMoreThanOneEventConcurrently()
     {
         // given
         final TopicSubscriptionProcessor processor =
                 new TopicSubscriptionProcessor(1, 2, 3, 0, "sub", eventWriter);
 
         controller.initStreamProcessor(processor);
-        final LoggedEvent event = controller.buildLoggedEvent(14L, (e) -> e.setId(4));
+
+        // an ongoing ack; waiting to be confirmed
+        final CompletableFuture<Void> firstAckFuture = processor.acknowledgeEventPosition(123L);
+        controller.drainCommandQueue();
 
         // when
-        controller.processEvent(event);
+        final CompletableFuture<Void> secondAckFuture = processor.acknowledgeEventPosition(456L);
+        controller.drainCommandQueue();
 
         // then
-        assertThat(controller.getWrittenEvents()).isEmpty();
-        verify(eventWriter).channelId(1);
-        verify(eventWriter).event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-        verify(eventWriter).eventType(EventType.RAFT_EVENT);
-        verify(eventWriter).longKey(14L);
-        verify(eventWriter).subscriptionId(3);
-        verify(eventWriter).subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
-        verify(eventWriter).position(INITIAL_LOG_POSITION);
-        verify(eventWriter).tryWriteMessage();
+        assertThat(firstAckFuture).isNotDone();
+        assertThat(secondAckFuture).isCompletedExceptionally();
+        assertThat(secondAckFuture).hasFailedWithThrowableThat()
+            .isInstanceOf(RuntimeException.class)
+            .hasMessageContaining("Cannot acknowledge; acknowledgement currently in progress");
+
+        assertThat(controller.getWrittenEvents()).hasSize(1);
+        assertThat(controller.getLastWrittenEventValue().getAckPosition()).isEqualByComparingTo(123L);
     }
 
-    public static class DummyEvent extends UnpackedObject
-    {
-        protected IntegerProperty idProperty = new IntegerProperty("id");
-
-        public void setId(int id)
-        {
-            this.idProperty.setValue(id);
-        }
-
-        public int getId()
-        {
-            return idProperty.getValue();
-        }
-
-    }
 }

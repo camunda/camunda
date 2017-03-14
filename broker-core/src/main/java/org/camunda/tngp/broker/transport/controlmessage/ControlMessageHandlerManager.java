@@ -73,9 +73,7 @@ public class ControlMessageHandlerManager implements Agent
     protected final ControlMessageRequestHeaderDescriptor requestHeaderDescriptor = new ControlMessageRequestHeaderDescriptor();
     protected final ControlMessageRequestDecoder requestDecoder = new ControlMessageRequestDecoder();
 
-    protected byte[] requestRawBuffer = new byte[1024 * 32];
-    protected int requestBufferLength = requestRawBuffer.length;
-    protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(requestRawBuffer);
+    protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(new byte[1024 * 32]);
 
     protected final Dispatcher controlMessageDispatcher;
     protected Subscription subscription;
@@ -257,16 +255,18 @@ public class ControlMessageHandlerManager implements Agent
 
         protected void ensureBufferCapacity(int length)
         {
-            requestBufferLength = length;
+            byte[] raw = requestBuffer.byteArray();
 
-            if (length <= requestRawBuffer.length)
+            if (length <= raw.length)
             {
-                Arrays.fill(requestRawBuffer, (byte) 0);
+                Arrays.fill(raw, (byte) 0);
             }
             else
             {
-                requestRawBuffer = new byte[length];
+                raw = new byte[length];
             }
+
+            requestBuffer.wrap(raw, 0, length);
         }
     }
 
@@ -287,7 +287,7 @@ public class ControlMessageHandlerManager implements Agent
                 errorResponseWriter
                     .errorCode(ErrorCode.REQUEST_TIMEOUT)
                     .errorMessage("Timeout while handle control message.")
-                    .failedRequest(requestBuffer, 0, requestBufferLength)
+                    .failedRequest(requestBuffer, 0, requestBuffer.capacity())
                     .metadata(eventMetada)
                     .tryWriteResponseOrLogFailure();
 
@@ -309,7 +309,7 @@ public class ControlMessageHandlerManager implements Agent
             errorResponseWriter
                 .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
                 .errorMessage("Cannot handle control message with type '%s'.", context.getLastRequestMessageType().name())
-                .failedRequest(requestBuffer, 0, requestBufferLength)
+                .failedRequest(requestBuffer, 0, requestBuffer.capacity())
                 .metadata(eventMetada)
                 .tryWriteResponseOrLogFailure();
 

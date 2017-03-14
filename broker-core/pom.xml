@@ -57,6 +57,12 @@
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>broker-core-test-client</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.camunda.tngp</groupId>
@@ -98,7 +104,6 @@
       <artifactId>msgpack-core</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>

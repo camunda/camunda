@@ -186,7 +186,6 @@ public class CreateTaskCmdTest
 
         responseEncoder
             .longKey(2L)
-            .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when

@@ -100,8 +100,6 @@ public class CommandResponseWriterTest
         responseDecoder.wrap(sendBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
         assertThat(responseDecoder.topicId()).isEqualTo(1);
         assertThat(responseDecoder.longKey()).isEqualTo(2L);
-        assertThat(responseDecoder.bytesKeyLength()).isEqualTo(0);
-        assertThat(responseDecoder.bytesKey()).isEmpty();
 
         assertThat(responseDecoder.eventLength()).isEqualTo(EVENT.length);
 

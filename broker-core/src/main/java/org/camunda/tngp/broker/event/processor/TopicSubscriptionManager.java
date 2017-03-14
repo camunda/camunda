@@ -112,6 +112,10 @@ public class TopicSubscriptionManager implements Agent
             {
                 subscriptionProcessor.acknowledgeEventPosition(acknowledgedPosition);
             }
+            else
+            {
+                throw new RuntimeException("Subscription with id " + subscriptionId + " is not open");
+            }
 
             future.complete(null);
         });

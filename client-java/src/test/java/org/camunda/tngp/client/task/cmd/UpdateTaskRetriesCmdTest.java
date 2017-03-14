@@ -131,7 +131,6 @@ public class UpdateTaskRetriesCmdTest
 
         responseEncoder
             .longKey(2L)
-            .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
@@ -159,7 +158,6 @@ public class UpdateTaskRetriesCmdTest
 
         responseEncoder
             .longKey(2L)
-            .bytesKey("")
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when

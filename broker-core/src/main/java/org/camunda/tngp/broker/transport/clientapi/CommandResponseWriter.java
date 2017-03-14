@@ -2,9 +2,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 
 import java.util.Objects;
 
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.protocol.Protocol;
@@ -19,8 +17,6 @@ public class CommandResponseWriter implements BufferWriter
 
     protected int topicId;
     protected long longKey;
-
-    protected final UnsafeBuffer bytesKey = new UnsafeBuffer(0, 0);
 
     protected BufferWriter eventWriter;
     protected BrokerEventMetadata metadata;
@@ -40,12 +36,6 @@ public class CommandResponseWriter implements BufferWriter
     public CommandResponseWriter longKey(long key)
     {
         this.longKey = key;
-        return this;
-    }
-
-    public CommandResponseWriter bytesKey(DirectBuffer buffer)
-    {
-        bytesKey.wrap(buffer, 0, buffer.capacity());
         return this;
     }
 
@@ -97,12 +87,9 @@ public class CommandResponseWriter implements BufferWriter
         responseEncoder
             .wrap(buffer, offset)
             .topicId(topicId)
-            .longKey(longKey)
-            .putBytesKey(bytesKey, 0, bytesKey.capacity());
+            .longKey(longKey);
 
         offset += ExecuteCommandResponseEncoder.BLOCK_LENGTH;
-        offset += ExecuteCommandResponseEncoder.bytesKeyHeaderLength();
-        offset += bytesKey.capacity();
 
         final int eventLength = eventWriter.getLength();
         buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
@@ -116,8 +103,6 @@ public class CommandResponseWriter implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                ExecuteCommandResponseEncoder.bytesKeyHeaderLength() +
-                bytesKey.capacity() +
                 ExecuteCommandResponseEncoder.eventHeaderLength() +
                 eventWriter.getLength();
     }
@@ -126,7 +111,6 @@ public class CommandResponseWriter implements BufferWriter
     {
         topicId = ExecuteCommandResponseEncoder.topicIdNullValue();
         longKey = ExecuteCommandResponseEncoder.longKeyNullValue();
-        bytesKey.wrap(0, 0);
         eventWriter = null;
         metadata = null;
     }
