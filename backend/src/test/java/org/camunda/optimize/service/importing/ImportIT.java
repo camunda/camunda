@@ -99,7 +99,7 @@ public class ImportIT extends AbstractJerseyTest {
   }
 
   @Test
-  public void importProgressReporter() {
+  public void importProgressReporterStartAndEndImportState() {
     // when
     deployAndStartSimpleServiceTask();
 
@@ -112,6 +112,20 @@ public class ImportIT extends AbstractJerseyTest {
 
     // then
     assertThat(importProgressReporter.computeImportProgress(), is(100));
+  }
+
+  @Test
+  public void importProgressReporterItermediateImportState() {
+    // given
+    deployAndStartSimpleServiceTask();
+    importScheduler.scheduleProcessEngineImport();
+    deployAndStartSimpleServiceTask();
+
+    // when
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    assertThat(importProgressReporter.computeImportProgress(), is(50));
   }
 
   @Test
