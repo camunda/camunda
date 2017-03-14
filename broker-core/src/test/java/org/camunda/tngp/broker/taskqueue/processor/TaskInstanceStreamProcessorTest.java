@@ -7,6 +7,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
@@ -23,6 +25,8 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.util.FluentMock;
+import org.camunda.tngp.util.time.ClockUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +38,9 @@ public class TaskInstanceStreamProcessorTest
     public static final DirectBuffer TASK_TYPE = MsgPackUtil.utf8("foo");
 
     private TaskInstanceStreamProcessor streamProcessor;
+
+    private final Instant now = Instant.now();
+    private final long lockTime = now.plus(Duration.ofMinutes(5)).toEpochMilli();
 
     @Mock
     private IndexStore mockIndexStore;
@@ -70,6 +77,14 @@ public class TaskInstanceStreamProcessorTest
         context.setSourceStream(mockLogStream);
 
         mockController.initStreamProcessor(streamProcessor, context);
+
+        ClockUtil.setCurrentTime(now);
+    }
+
+    @After
+    public void cleanUp()
+    {
+        ClockUtil.reset();
     }
 
     @Test
@@ -98,7 +113,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(4)
@@ -126,7 +141,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(4)
@@ -140,7 +155,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(6)
@@ -167,7 +182,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(4)
@@ -181,7 +196,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(6)
@@ -207,7 +222,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         // when
@@ -231,7 +246,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -259,7 +274,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         // when
@@ -283,10 +298,12 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         // when
+        ClockUtil.setCurrentTime(lockTime);
+
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.EXPIRE_LOCK));
 
@@ -307,7 +324,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -337,7 +354,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
                 .subscriptionId(1L));
@@ -346,7 +363,7 @@ public class TaskInstanceStreamProcessorTest
         mockController.processEvent(2L,
             event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(4),
             metadata -> metadata
                 .subscriptionId(2L));
@@ -358,7 +375,7 @@ public class TaskInstanceStreamProcessorTest
     }
 
     @Test
-    public void shouldRejectLockTaskIfLockTimeIsNegative()
+    public void shouldRejectLockTaskIfLockTimeIsNotInFuture()
     {
         // given
         mockController.processEvent(2L, event ->
@@ -368,7 +385,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(-1));
+                .setLockTime(now.toEpochMilli()));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
@@ -406,7 +423,7 @@ public class TaskInstanceStreamProcessorTest
         // when
         mockController.processEvent(4L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123));
+                .setLockTime(lockTime));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
@@ -424,12 +441,12 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123));
+                .setLockTime(lockTime));
 
         // when
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123));
+                .setLockTime(lockTime));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
@@ -462,7 +479,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -509,7 +526,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         // when
@@ -548,7 +565,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -595,7 +612,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -623,7 +640,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         // when
@@ -661,7 +678,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -706,7 +723,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -733,7 +750,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -775,7 +792,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         mockController.processEvent(2L, event -> event
@@ -802,7 +819,7 @@ public class TaskInstanceStreamProcessorTest
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.LOCK)
-                .setLockTime(123)
+                .setLockTime(lockTime)
                 .setLockOwner(3));
 
         // when

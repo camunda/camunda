@@ -372,6 +372,24 @@ public class TaskSubscriptionManagerTest
     }
 
     @Test
+    public void shouldPropagateFailureWhileAddSubscriptionIfFailToCreateService() throws Exception
+    {
+        // given
+        when(mockServiceBuilder.install()).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
+
+        manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
+
+        // when
+        final CompletableFuture<Void> future = manager.addSubscription(subscription);
+        manager.doWork();
+
+        // then
+        assertThat(future).hasFailedWithThrowableThat()
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("foo");
+    }
+
+    @Test
     public void shouldFailToIncreaseSubscriptionCreditsIfNotExist() throws Exception
     {
         // given

@@ -17,8 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CreateTaskCmd
 {
-    protected static final int DEFAULT_RETRIES = 3;
-
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 

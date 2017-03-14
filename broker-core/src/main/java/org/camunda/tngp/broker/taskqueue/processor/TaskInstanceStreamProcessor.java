@@ -25,6 +25,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
+import org.camunda.tngp.util.time.ClockUtil;
 
 public class TaskInstanceStreamProcessor implements StreamProcessor
 {
@@ -205,7 +206,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
             final boolean isLockable = typeId == TaskEventType.CREATED.id() || typeId == TaskEventType.FAILED.id() || typeId == TaskEventType.LOCK_EXPIRED.id();
 
-            if (isLockable && taskEvent.getLockTime() > 0)
+            if (isLockable && taskEvent.getLockTime() > ClockUtil.getCurrentTimeInMillis())
             {
                 taskEvent.setEventType(TaskEventType.LOCKED);
                 isLocked = true;

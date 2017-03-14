@@ -153,7 +153,7 @@ public class TaskSubscriptionManager implements Agent
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(AGENT_RUNNER_SERVICE, streamProcessorService.getAgentRunnerInjector())
             .install()
-            .thenApply(Void -> future.complete(streamProcessor));
+            .handle((r, t) -> t == null ? future.complete(streamProcessor) : future.completeExceptionally(t));
 
         return future;
     }

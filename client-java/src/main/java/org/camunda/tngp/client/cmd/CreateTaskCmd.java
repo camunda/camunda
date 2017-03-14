@@ -4,6 +4,7 @@ import java.util.Map;
 
 public interface CreateTaskCmd extends SetPayloadCmd<Long, CreateTaskCmd>
 {
+    int DEFAULT_RETRIES = 3;
 
     /**
      * Set the type of the task.
@@ -21,7 +22,7 @@ public interface CreateTaskCmd extends SetPayloadCmd<Long, CreateTaskCmd>
     CreateTaskCmd setHeaders(Map<String, String> headers);
 
     /**
-     * Sets the initial retries of the task.
+     * Sets the initial retries of the task. Default is {@value #DEFAULT_RETRIES}.
      */
     CreateTaskCmd retries(int retries);
 
