@@ -1316,7 +1316,6 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L, 3L);
 
-        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
@@ -1359,7 +1358,6 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
-        when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
         when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 

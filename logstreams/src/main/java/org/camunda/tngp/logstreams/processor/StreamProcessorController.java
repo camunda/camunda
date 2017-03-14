@@ -370,6 +370,8 @@ public class StreamProcessorController implements Agent
      */
     protected boolean ensureSnapshotWritten(Context context)
     {
+        boolean isSnapshotWritten = false;
+
         final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
         final long appenderPosition = streamProcessorContext.getTargetStream().getCurrentAppenderPosition();
 
@@ -383,18 +385,16 @@ public class StreamProcessorController implements Agent
             if (appenderCaughtUp)
             {
                 writeSnapshot(context, snapshotPosition);
-                return true;
-            }
-            else
-            {
-                return false;
+
+                isSnapshotWritten = true;
             }
         }
         else
         {
-            return true;
+            isSnapshotWritten = true;
         }
 
+        return isSnapshotWritten;
     }
 
     protected void writeSnapshot(final Context context, final long eventPosition)
@@ -436,8 +436,6 @@ public class StreamProcessorController implements Agent
 
             return workCount;
         }
-
-
     }
 
     private class RecoveringState implements TransitionState<Context>
@@ -554,10 +552,11 @@ public class StreamProcessorController implements Agent
 
     private class ClosingSnapshottingState implements State<Context>
     {
-
         @Override
         public int doWork(Context context) throws Exception
         {
+            int workCount = 0;
+
             final boolean hasProcessedAnyEvent = context.getEvent() != null;
 
             if (hasProcessedAnyEvent)
@@ -567,34 +566,29 @@ public class StreamProcessorController implements Agent
                 if (snapshotWritten)
                 {
                     context.take(TRANSITION_DEFAULT);
-                    return 1;
-                }
-                else
-                {
-                    return 0;
+                    workCount += 1;
                 }
             }
             else
             {
                 context.take(TRANSITION_DEFAULT);
-                return 1;
+                workCount += 1;
             }
 
-
+            return workCount;
         }
     }
 
-    private class ClosingState implements State<Context>
+    private class ClosingState implements TransitionState<Context>
     {
         @Override
-        public int doWork(Context context)
+        public void work(Context context)
         {
             streamProcessor.onClose();
 
             streamProcessorContext.getTargetStream().removeFailureListener(targetLogStreamFailureListener);
 
             context.take(TRANSITION_DEFAULT);
-            return 1;
         }
     }
 
