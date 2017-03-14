@@ -153,6 +153,7 @@ def static createJobWithCommonProperties(dslFactory, name) {
           statusChanged {
             sendTo {
               requester()
+              recipientList()
             }
           }
         }
