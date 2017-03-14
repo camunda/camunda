@@ -104,6 +104,12 @@
       <artifactId>msgpack-core</artifactId>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-bpmn-model</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
