@@ -254,7 +254,7 @@ public class TaskSubscriptionManager implements Agent
         {
             this.logStream = logStream;
             this.logStreamServiceName = logStreamServiceName;
-            this.logStreamName = logStream.getContext().getLogName();
+            this.logStreamName = logStream.getLogName();
         }
 
         public String getLogStreamName()

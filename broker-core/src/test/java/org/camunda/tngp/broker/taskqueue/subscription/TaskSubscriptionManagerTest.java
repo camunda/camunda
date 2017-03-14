@@ -12,29 +12,12 @@
  */
 package org.camunda.tngp.broker.taskqueue.subscription;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
 import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.StreamContext;
 import org.camunda.tngp.servicecontainer.ServiceBuilder;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
@@ -45,6 +28,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 public class TaskSubscriptionManagerTest
 {
@@ -117,10 +112,7 @@ public class TaskSubscriptionManagerTest
     {
         final LogStream mockLogStream = mock(LogStream.class);
 
-        final StreamContext streamContext = new StreamContext();
-        streamContext.setLogName(logStreamName);
-
-        when(mockLogStream.getContext()).thenReturn(streamContext);
+        when(mockLogStream.getLogName()).thenReturn(logStreamName);
         when(mockLogStream.getId()).thenReturn(logStreamId);
 
         return mockLogStream;

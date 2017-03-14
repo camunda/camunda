@@ -145,7 +145,7 @@ public class TopicSubscriptionManager implements Agent
 
             streamProcessorManager.createStreamProcessorService(
                     logStreamServiceName,
-                    TopicSubscriptionNames.ackServiceName(logStream.getContext().getLogName()),
+                    TopicSubscriptionNames.ackServiceName(logStream.getLogName()),
                     StreamProcessorIds.TOPIC_SUBSCRIPTION_ACK_PROCESSOR_ID,
                     ackProcessor,
                     TopicSubscriptionAckProcessor.filter(),
@@ -163,7 +163,7 @@ public class TopicSubscriptionManager implements Agent
         asyncContext.runAsync(() ->
         {
             final ServiceName<StreamProcessorController> ackService =
-                    TopicSubscriptionNames.ackServiceName(logStream.getContext().getLogName());
+                    TopicSubscriptionNames.ackServiceName(logStream.getLogName());
 
             streamProcessorManager.removeStreamProcessorService(ackService);
         });

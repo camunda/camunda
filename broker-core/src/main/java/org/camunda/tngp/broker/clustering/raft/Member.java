@@ -9,7 +9,6 @@ import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.log.StreamContext;
 
 /**
  * A member is a reference to another node involved in the raft protocol.
@@ -95,8 +94,7 @@ public class Member
 
             final Raft raft = this.raft;
             final LogStream stream = raft.stream();
-            final StreamContext context = stream.getContext();
-            final LogBlockIndex blockIndex = context.getBlockIndex();
+            final LogBlockIndex blockIndex = stream.getLogBlockIndex();
 
             long blockPosition = blockIndex.lookupBlockPosition(position);
             if (blockPosition == position)

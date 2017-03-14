@@ -1,7 +1,5 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
-import static org.camunda.tngp.protocol.clientapi.EventType.RAFT_EVENT;
-
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -9,15 +7,10 @@ import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.StreamContext;
 import org.camunda.tngp.util.buffer.BufferWriter;
-import org.camunda.tngp.util.state.SimpleStateMachineContext;
-import org.camunda.tngp.util.state.State;
-import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
-import org.camunda.tngp.util.state.StateMachineCommand;
-import org.camunda.tngp.util.state.TransitionState;
-import org.camunda.tngp.util.state.WaitState;
+import org.camunda.tngp.util.state.*;
+
+import static org.camunda.tngp.protocol.clientapi.EventType.RAFT_EVENT;
 
 public class AppendController
 {
@@ -202,8 +195,7 @@ public class AppendController
             final LogStreamListener listener = context.listener;
 
             final LogStream stream = raft.stream();
-            final StreamContext streamContext = stream.getContext();
-            final LogStreamController logStreamController = streamContext.getLogStreamController();
+            final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
 
             int workcount = 0;
 
@@ -297,8 +289,7 @@ public class AppendController
         {
             final Raft raft = context.raft;
             final LogStream stream = raft.stream();
-            final StreamContext streamContext = stream.getContext();
-            final LogStreamController logStreamController = streamContext.getLogStreamController();
+            final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
             final LogStreamListener listener = context.listener;
 
             logStreamController.removeFailureListener(listener);

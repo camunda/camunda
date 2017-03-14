@@ -9,18 +9,12 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader.LoggedEventImpl;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.log.StreamContext;
+import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 
 public class LogStreamState
 {
     protected final LogStream stream;
-    protected final StreamContext context;
     protected final LogStorage logStorage;
     protected final LogBlockIndex blockIndex;
 
@@ -47,9 +41,8 @@ public class LogStreamState
     {
         this.stream = stream;
 
-        this.context = stream.getContext();
-        this.logStorage = context.getLogStorage();
-        this.blockIndex = context.getBlockIndex();
+        this.logStorage = stream.getLogStorage();
+        this.blockIndex = stream.getLogBlockIndex();
 
         this.reader = new BufferedLogStreamReader();
         this.reader.wrap(stream);
@@ -206,7 +199,7 @@ public class LogStreamState
 
     protected void onBlockWritten(long position, long addr, int blockLength)
     {
-        final int indexBlockSize = context.getIndexBlockSize();
+        final int indexBlockSize = stream.getIndexBlockSize();
 
         if (currentBlockSize == 0)
         {
@@ -287,7 +280,6 @@ public class LogStreamState
     class LoggedEntryAddressSupplier
     {
         protected final LogStream logStream;
-        protected final StreamContext context;
         protected final LogBlockIndex blockIndex;
         protected final LogStorage logStorage;
 
@@ -303,9 +295,8 @@ public class LogStreamState
         LoggedEntryAddressSupplier(final LogStream logStream)
         {
             this.logStream = logStream;
-            this.context = logStream.getContext();
-            this.blockIndex = context.getBlockIndex();
-            this.logStorage = context.getLogStorage();
+            this.blockIndex = stream.getLogBlockIndex();
+            this.logStorage = stream.getLogStorage();
 
             buffer.wrap(ioBuffer);
         }

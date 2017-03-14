@@ -1,7 +1,5 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.raft.AppendRequestDecoder.*;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.clustering.raft.Member;
@@ -9,10 +7,13 @@ import org.camunda.tngp.clustering.raft.AppendRequestDecoder;
 import org.camunda.tngp.clustering.raft.AppendRequestEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader.LoggedEventImpl;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.LoggedEventImpl;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
+
+import static org.camunda.tngp.clustering.raft.AppendRequestDecoder.dataHeaderLength;
+import static org.camunda.tngp.clustering.raft.AppendRequestDecoder.hostHeaderLength;
 
 public class AppendRequest implements BufferReader, BufferWriter
 {
