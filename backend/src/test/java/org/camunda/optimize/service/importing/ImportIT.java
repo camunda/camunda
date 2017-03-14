@@ -99,6 +99,26 @@ public class ImportIT extends AbstractJerseyTest {
   }
 
   @Test
+  public void importOnlyFinishedHistoricActivityInstances() throws Exception {
+    //given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+        .startEvent()
+        .userTask()
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+
+    //when
+    importScheduler.scheduleProcessEngineImport();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then only the start event should be imported as the user task is not finished yet
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(configurationService.getEventType());
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+  }
+
+  @Test
   public void importProgressReporterStartAndEndImportState() {
     // when
     deployAndStartSimpleServiceTask();
@@ -200,13 +220,7 @@ public class ImportIT extends AbstractJerseyTest {
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, long responseCount) {
-    QueryBuilder qb = matchAllQuery();
-
-    SearchResponse idsResp = esclient.prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(elasticsearchType)
-      .setQuery(qb)
-      .setSize(100)
-      .get();
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
 
     assertThat(idsResp.getHits().getTotalHits(), is(responseCount));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
@@ -220,6 +234,16 @@ public class ImportIT extends AbstractJerseyTest {
         }
       }
     }
+  }
+
+  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) {
+    QueryBuilder qb = matchAllQuery();
+
+    return esclient.prepareSearch(configurationService.getOptimizeIndex())
+      .setTypes(elasticsearchType)
+      .setQuery(qb)
+      .setSize(100)
+      .get();
   }
 
   @Override
