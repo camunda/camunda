@@ -5,7 +5,7 @@ export function Text({property}) {
     const textNode = $document.createTextNode('');
 
     node.appendChild(textNode);
-    return ({[property] : value}) => {
+    return ({[property] : value = ''}) => {
       if (value !== null) {
         textNode.data = value.toString();
       }
