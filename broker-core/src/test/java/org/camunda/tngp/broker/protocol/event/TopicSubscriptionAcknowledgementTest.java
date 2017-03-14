@@ -121,7 +121,7 @@ public class TopicSubscriptionAcknowledgementTest
     }
 
     @Test
-    @Ignore("https://github.com/camunda-tngp/logstreams/issues/55")
+    @Ignore("https://github.com/camunda-tngp/camunda-tngp/issues/174")
     public void shouldResumeAtTailOnLongMaxAckPosition()
     {
         // given
