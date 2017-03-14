@@ -26,6 +26,7 @@
     <module>broker-core</module>
     <module>qa</module>
     <module>client-java</module>
+    <module>broker-core-test-client</module>
     <module>protocol</module>
     <module>samples</module>
     <module>dist</module>

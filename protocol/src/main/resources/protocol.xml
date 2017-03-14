@@ -69,14 +69,12 @@
     <field name="topicId" id="1" type="int32" />
     <field name="longKey" id="2" type="uint64" />
     <field name="eventType" id="3" type="EventType" />
-    <data name="bytesKey" id="4" type="varDataEncoding" />
     <data name="command" id="5" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">
     <field name="topicId" id="1" type="int32" />
     <field name="longKey" id="2" type="uint64" />
-    <data name="bytesKey" id="3" type="varDataEncoding" />
     <data name="event" id="4" type="varDataEncoding" />
   </sbe:message>
   

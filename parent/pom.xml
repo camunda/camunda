@@ -42,6 +42,12 @@
         <artifactId>tngp-broker-core</artifactId>
         <version>${project.version}</version>
       </dependency>
+      
+      <dependency>
+        <groupId>org.camunda.tngp</groupId>
+        <artifactId>broker-core-test-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.camunda.tngp</groupId>
@@ -151,7 +157,6 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.12</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>

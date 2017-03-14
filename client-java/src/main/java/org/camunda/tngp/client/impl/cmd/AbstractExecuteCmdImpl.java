@@ -159,9 +159,6 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         final long key = responseDecoder.longKey();
 
-        // must read byte key - however, it's currently not used
-        responseDecoder.bytesKey();
-
         final byte[] eventBuffer = new byte[responseDecoder.eventLength()];
         responseDecoder.getEvent(eventBuffer, 0, eventBuffer.length);
 
