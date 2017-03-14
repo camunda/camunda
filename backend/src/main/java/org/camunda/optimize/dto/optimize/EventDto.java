@@ -10,7 +10,6 @@ public class EventDto implements Serializable,OptimizeDto {
 
   private String id;
   private String activityId;
-  private String state;
   private String activityInstanceId;
   private Date timestamp;
   private String processDefinitionKey;
@@ -37,14 +36,6 @@ public class EventDto implements Serializable,OptimizeDto {
 
   public void setActivityId(String activityId) {
     this.activityId = activityId;
-  }
-
-  public String getState() {
-    return state;
-  }
-
-  public void setState(String state) {
-    this.state = state;
   }
 
   public String getActivityInstanceId() {

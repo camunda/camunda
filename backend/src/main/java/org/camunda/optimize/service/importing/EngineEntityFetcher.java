@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_BY;
@@ -26,6 +27,7 @@ import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_ID;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_START_TIME;
+import static org.camunda.optimize.service.util.EngineConstantsUtil.TRUE;
 
 @Component
 public class EngineEntityFetcher {
@@ -48,6 +50,7 @@ public class EngineEntityFetcher {
         .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
         .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
         .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+        .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
         .request(MediaType.APPLICATION_JSON)
         .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
         });

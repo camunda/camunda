@@ -31,14 +31,13 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
 public class ImportIT extends AbstractJerseyTest {
-  public static final String SUB_PROCESS_ID = "testProcess";
-  public static final String CALL_ACTIVITY = "callActivity";
-  public static final String TEST_MIPROCESS = "testMIProcess";
+  private static final String SUB_PROCESS_ID = "testProcess";
+  private static final String CALL_ACTIVITY = "callActivity";
+  private static final String TEST_MIPROCESS = "testMIProcess";
 
   @Autowired
   @Rule
@@ -70,7 +69,7 @@ public class ImportIT extends AbstractJerseyTest {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionType());
+    allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionType(), 1L);
   }
 
   @Test
@@ -83,7 +82,7 @@ public class ImportIT extends AbstractJerseyTest {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionXmlType());
+    allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionXmlType(), 1L);
   }
 
   @Test
@@ -96,7 +95,7 @@ public class ImportIT extends AbstractJerseyTest {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(configurationService.getEventType());
+    allEntriesInElasticsearchHaveAllData(configurationService.getEventType(), 3L);
   }
 
   @Test
@@ -186,7 +185,7 @@ public class ImportIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(processModel);
   }
 
-  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {
+  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, long responseCount) {
     QueryBuilder qb = matchAllQuery();
 
     SearchResponse idsResp = esclient.prepareSearch(configurationService.getOptimizeIndex())
@@ -195,7 +194,7 @@ public class ImportIT extends AbstractJerseyTest {
       .setSize(100)
       .get();
 
-    assertThat(idsResp.getHits().getTotalHits(), greaterThan(0L));
+    assertThat(idsResp.getHits().getTotalHits(), is(responseCount));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       for (Entry searchHitField : searchHit.getSource().entrySet()) {
         String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +

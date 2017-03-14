@@ -20,8 +20,6 @@ import java.util.List;
 @Component
 public class ActivityImportService extends PaginatedImportService<HistoricActivityInstanceEngineDto, EventDto> {
 
-  private static final String STATE_COMPLETED = "COMPLETED";
-  private static final String STATE_CREATED = "CREATED";
   private final Logger logger = LoggerFactory.getLogger(ActivityImportService.class);
 
   @Autowired
@@ -55,26 +53,11 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
     List<EventDto> result = new ArrayList<>(entries.size());
     for (HistoricActivityInstanceEngineDto entry : entries) {
       final EventDto createEvent = new EventDto();
-      createEvent.setState(STATE_CREATED);
       mapDefaults(entry, createEvent);
-
       result.add(createEvent);
 
-      if (entry.getEndTime() != null) {
-        final EventDto completeEvent = new EventDto();
-        completeEvent.setState(STATE_COMPLETED);
-        mapDefaults(entry, completeEvent);
-        setActivityInstanceIdForCompleteEvent(completeEvent);
-        result.add(completeEvent);
-      }
     }
-
     return result;
-  }
-
-  private void setActivityInstanceIdForCompleteEvent(EventDto completeEvent) {
-    String newId = completeEvent.getId() +  "_" + STATE_COMPLETED;
-    completeEvent.setId(newId);
   }
 
   private void mapDefaults(HistoricActivityInstanceEngineDto dto, EventDto createEvent) {
