@@ -51,19 +51,11 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    Response response = target("import")
-        .request()
-        .get();
-
-    //then
-    assertThat(response.getStatus(),is(200));
-
-    //given
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
     String token = authenticateAdmin();
 
     //when
-    response = target("process-definition")
+    Response response = target("process-definition")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get();

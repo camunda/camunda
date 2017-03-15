@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -20,7 +19,7 @@ public class ImportJobExecutor {
 
   private Logger logger = LoggerFactory.getLogger(ImportJobExecutor.class);
 
-  private ExecutorService importExecutor;
+  private ThreadPoolExecutor importExecutor;
 
   private int queueSize = 100;
   private int corePoolSize = 2;
@@ -32,6 +31,10 @@ public class ImportJobExecutor {
     corePoolSize = configurationService.getImportExecutorThreadCount();
     maxPoolSize = configurationService.getImportExecutorThreadCount();
     startExecutingImportJobs();
+  }
+
+  boolean isActive() {
+    return importExecutor.getActiveCount() > 0;
   }
 
   public void executeImportJob(ImportJob importJob) throws InterruptedException {

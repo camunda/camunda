@@ -3,6 +3,10 @@ package org.camunda.optimize.test.rule;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
+import org.camunda.optimize.service.importing.ImportJobExecutor;
+import org.camunda.optimize.service.importing.ImportScheduleJob;
+import org.camunda.optimize.service.importing.ImportService;
+import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -42,6 +46,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   @Autowired
   private ElasticSearchSchemaInitializer schemaInitializer;
 
+  @Autowired
+  private ImportJobExecutor importJobExecutor;
+
+  @Autowired
+  private ImportServiceProvider importServiceProvider;
+
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
@@ -63,6 +73,17 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .prepareDelete(configurationService.getOptimizeIndex())
       .get();
     schemaInitializer.initializeSchema();
+  }
+
+  public void importEngineEntities() {
+    importJobExecutor.startExecutingImportJobs();
+    for (ImportService importService : importServiceProvider.getServices()) {
+      ImportScheduleJob job = new ImportScheduleJob();
+      job.setImportService(importService);
+      job.execute();
+    }
+    importJobExecutor.stopExecutingImportJobs();
+    refreshOptimizeIndexInElasticsearch();
   }
 
   /**

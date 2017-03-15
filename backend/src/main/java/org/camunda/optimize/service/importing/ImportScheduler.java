@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,9 @@ public class ImportScheduler extends Thread {
 
   @Autowired
   protected ImportJobExecutor importJobExecutor;
+
+  @Autowired
+  protected ImportProgressReporter importProgressReporter;
 
   protected long backoffCounter = STARTING_BACKOFF;
 
@@ -50,11 +54,16 @@ public class ImportScheduler extends Thread {
   protected void checkAndResetImportIndexing() {
     long castToLong = Double.valueOf(configurationService.getImportResetInterval()).longValue();
     LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
-    if (LocalDateTime.now().isAfter(resetDueDate)) {
+    if (LocalDateTime.now().isAfter(resetDueDate) || importMissedEngineEntities()) {
       for (ImportService importService : importServiceProvider.getServices()) {
         importService.resetImportStartIndex();
       }
+      lastReset = LocalDateTime.now();
     }
+  }
+
+  private boolean importMissedEngineEntities() {
+    return !importJobExecutor.isActive() && !importProgressReporter.allEntitiesAreImported();
   }
 
   @Override
@@ -123,6 +132,10 @@ public class ImportScheduler extends Thread {
 
   protected void resetBackoffCounter() {
     this.backoffCounter = STARTING_BACKOFF;
+  }
+
+  public LocalDateTime getLastReset() {
+    return lastReset;
   }
 
   public boolean isEnabled() {

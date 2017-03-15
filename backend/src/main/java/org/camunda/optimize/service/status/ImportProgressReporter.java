@@ -15,6 +15,10 @@ public class ImportProgressReporter {
   @Autowired
   private ImportServiceProvider importServiceProvider;
 
+  public boolean allEntitiesAreImported() {
+    return computeImportProgress() == 100;
+  }
+
   /**
    * @return an integer representing the progress of the import. The number states a
    * percentage value in range [0, 100] rounded to next whole number.
@@ -25,7 +29,7 @@ public class ImportProgressReporter {
         2 * engineEntityFetcher.fetchProcessDefinitionCount();
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
-      int tempResult = (int) (Math.round(alreadyImportedCount * 100. / totalEngineEntityCount));
+      int tempResult = (int) (Math.floor(alreadyImportedCount * 100. / totalEngineEntityCount));
       return Math.min(tempResult, 100);
     } else {
       return 0;

@@ -30,7 +30,8 @@
         factory-bean="objectMapperFactory"
   />
 
-  <bean id="importScheduler" class="org.camunda.optimize.test.factory.MockImportSchedulerFactory" />
+  <!-- provide a bean, but do not start it -->
+  <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
 
   <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
   <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>

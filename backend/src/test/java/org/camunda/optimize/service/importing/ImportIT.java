@@ -48,9 +48,6 @@ public class ImportIT extends AbstractJerseyTest {
   public ElasticSearchIntegrationTestRule elasticSearchRule;
 
   @Autowired
-  private ImportScheduler importScheduler;
-
-  @Autowired
   private TransportClient esclient;
 
   @Autowired
@@ -59,14 +56,19 @@ public class ImportIT extends AbstractJerseyTest {
   @Autowired
   private ImportProgressReporter importProgressReporter;
 
+  @Autowired
+  private ImportScheduler importScheduler;
+
+  @Autowired
+  private ImportServiceProvider importServiceProvider;
+
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws Exception {
     //given
     deployAndStartSimpleServiceTask();
 
     //when
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     //then
     allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionType(), 1L);
@@ -78,8 +80,7 @@ public class ImportIT extends AbstractJerseyTest {
     deployAndStartSimpleServiceTask();
 
     //when
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     //then
     allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionXmlType(), 1L);
@@ -91,8 +92,7 @@ public class ImportIT extends AbstractJerseyTest {
     deployAndStartSimpleServiceTask();
 
     //when
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     //then
     allEntriesInElasticsearchHaveAllData(configurationService.getEventType(), 3L);
@@ -110,8 +110,7 @@ public class ImportIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     //then only the start event should be imported as the user task is not finished yet
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(configurationService.getEventType());
@@ -127,8 +126,7 @@ public class ImportIT extends AbstractJerseyTest {
     assertThat(importProgressReporter.computeImportProgress(), is(0));
 
     // when
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     // then
     assertThat(importProgressReporter.computeImportProgress(), is(100));
@@ -138,14 +136,29 @@ public class ImportIT extends AbstractJerseyTest {
   public void importProgressReporterItermediateImportState() {
     // given
     deployAndStartSimpleServiceTask();
-    importScheduler.scheduleProcessEngineImport();
-    deployAndStartSimpleServiceTask();
+    elasticSearchRule.importEngineEntities();
 
     // when
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    deployAndStartSimpleServiceTask();
 
     // then
     assertThat(importProgressReporter.computeImportProgress(), is(50));
+  }
+
+  @Test
+  public void schedulerResetsStartIndexesIfEntitiesWereMissedDuringImport() {
+    // given
+    deployAndStartSimpleServiceTask();
+    elasticSearchRule.importEngineEntities();
+    deployAndStartSimpleServiceTask();
+
+    // when
+    importScheduler.checkAndResetImportIndexing();
+
+    // then
+    for (ImportService importService : importServiceProvider.getServices()) {
+      assertThat(importService.getImportStartIndex(), is(0));
+    }
   }
 
   @Test
@@ -176,8 +189,7 @@ public class ImportIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(model);
 
     engineRule.waitForAllProcessesToFinish();
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     String token = authenticateAdmin();
     List<ProcessDefinitionOptimizeDto> definitions = target()

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
+import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.After;
 import org.junit.Before;
@@ -37,6 +38,9 @@ public class ImportSchedulerTest {
 
   @Autowired
   private ConfigurationService configurationService;
+
+  @Autowired
+  private ImportProgressReporter importProgressReporter;
 
   private List<ImportService> services;
 
@@ -128,6 +132,7 @@ public class ImportSchedulerTest {
 
   @Test
   public void testResetAfterPeriod () throws Exception {
+    // given
     List<ImportService> services = mockImportServices();
     when(importServiceProvider.getServices()).thenReturn(services);
 
@@ -138,7 +143,27 @@ public class ImportSchedulerTest {
     Thread.currentThread().sleep(toSleep + 1);
     importScheduler.checkAndResetImportIndexing();
 
+    // then
     Mockito.verify(importServiceProvider.getServices().get(0),times(1)).resetImportStartIndex();
+    assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
+
+    //clean up mocks
+    Mockito.reset(services.toArray());
+  }
+
+  @Test
+  public void testResetIfEntitiesWereMissedDuringImport () throws Exception {
+    // given
+    List<ImportService> services = mockImportServices();
+    when(importServiceProvider.getServices()).thenReturn(services);
+    when(importProgressReporter.allEntitiesAreImported()).thenReturn(true);
+
+    //when
+    importScheduler.checkAndResetImportIndexing();
+
+    // then
+    Mockito.verify(importServiceProvider.getServices().get(0),times(1)).resetImportStartIndex();
+    assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks
     Mockito.reset(services.toArray());

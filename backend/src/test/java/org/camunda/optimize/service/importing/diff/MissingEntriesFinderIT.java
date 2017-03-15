@@ -2,7 +2,6 @@ package org.camunda.optimize.service.importing.diff;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
@@ -49,9 +48,6 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
   private ProcessDefinitionXmlImportService processDefinitionXmlImportService;
 
   @Autowired
-  private ImportScheduler importScheduler;
-
-  @Autowired
   private TransportClient esclient;
 
   @Before
@@ -75,8 +71,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
     processDefinitionImportService.resetImportStartIndex();
 
     // when I trigger the import a second time
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     // then only the new entities are imported
     allDocumentsInElasticsearchAreNew();
@@ -89,8 +84,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
     activityImportService.resetImportStartIndex();
 
     // when I trigger the import a second time
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     // then only the new entities are imported
     allDocumentsInElasticsearchAreNew();
@@ -103,8 +97,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
     processDefinitionXmlImportService.resetImportStartIndex();
 
     // when I trigger the import a second time
-    importScheduler.scheduleProcessEngineImport();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.importEngineEntities();
 
     // then only the new entities are imported
     allDocumentsInElasticsearchAreNew();
@@ -129,11 +122,7 @@ public class MissingEntriesFinderIT extends AbstractJerseyTest {
   private void deployImportAndDeployAgainProcess() throws InterruptedException {
 
     deployAndStartSimpleServiceTask();
-    importScheduler.scheduleProcessEngineImport();
-
-    // refresh so it is possible to retrieve the index
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
+    elasticSearchRule.importEngineEntities();
     deployAndStartSimpleServiceTask();
   }
 
