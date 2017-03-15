@@ -38,7 +38,7 @@ public class TransportClientFactory implements FactoryBean <TransportClient> {
                 InetAddress.getByName(configurationService.getElasticSearchHost()),
                 configurationService.getElasticSearchPort()
                 ));
-      } catch (UnknownHostException e) {
+      } catch (Exception e) {
         logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
       }
       logger.info("Elasticsearch client has successfully been started");
