@@ -5,13 +5,14 @@ import {Dropdown, DropdownItem, createModal} from 'widgets';
 import {DateButton, TODAY, YESTERDAY, PAST7, PAST30,
         LAST_WEEK, LAST_MONTH, LAST_YEAR,
         THIS_WEEK, THIS_MONTH, THIS_YEAR} from './DateButton';
+import $ from 'jquery';
 
 export function CreateFilter({onFilterAdded}) {
   const nodes = {};
   const Reference = createReferenceComponent(nodes);
   const Modal = createModal();
 
-  return <td>
+  const template = <td>
     <Dropdown>
       <Socket name="label">
         + <span className="caret"></span>
@@ -35,6 +36,7 @@ export function CreateFilter({onFilterAdded}) {
           <span className="label">Start Date Filter:</span>
           <center>
             <div className="input-group input-daterange">
+              <Reference name="dateRange" />
               <input type="text" className="form-control start" value={currentDate()}>
                 <Reference name="startDate" />
               </input>
@@ -79,6 +81,14 @@ export function CreateFilter({onFilterAdded}) {
       </Socket>
     </Modal>
   </td>;
+
+  return (parentNode, eventsBus) => {
+    const templateUpdate = template(parentNode, eventsBus);
+
+    $(nodes.dateRange).datepicker({weekStart: 1, format: 'yyyy-mm-dd'});
+
+    return templateUpdate;
+  };
 
   function getDateNodes() {
     return {

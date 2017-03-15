@@ -15,10 +15,16 @@ describe('<CreateFilter>', () => {
   let createStartDateFilter;
   let onNextUpdate;
   let onFilterAdded;
+  let $;
+  let datepickerFct;
+  let DateButton;
 
   beforeEach(() => {
     Dropdown = createMockComponent('Dropdown', true);
     __set__('Dropdown', Dropdown);
+
+    DateButton = createMockComponent('DateButton');
+    __set__('DateButton', DateButton);
 
     Modal = createMockComponent('Modal', true);
     Modal.open = sinon.spy();
@@ -40,16 +46,28 @@ describe('<CreateFilter>', () => {
 
     onFilterAdded = sinon.spy();
 
+    datepickerFct = sinon.spy();
+    $ = sinon.stub().returns({
+      datepicker: datepickerFct
+    });
+    __set__('$', $);
+
     ({node, update} = mountTemplate(<CreateFilter onFilterAdded={onFilterAdded}/>));
   });
 
   afterEach(() => {
     __ResetDependency__('Dropdown');
+    __ResetDependency__('DateButton');
     __ResetDependency__('createModal');
     __ResetDependency__('Socket');
     __ResetDependency__('DropdownItem');
     __ResetDependency__('createStartDateFilter');
     __ResetDependency__('onNextUpdate');
+    __ResetDependency__('$');
+  });
+
+  it('should initialize the datepicker', () => {
+    expect(datepickerFct.calledOnce).to.eql(true);
   });
 
   describe('Dropdown', () => {
@@ -144,26 +162,8 @@ describe('<CreateFilter>', () => {
         expect(endDate).to.exist;
       });
 
-      it('should be able to use date button to set values of date fields',  () => {
-        startDate.value = '2015-04-25';
-        endDate.value = '2025-04-25';
-
-        const todayButton = selectByText(
-          bodyNode.querySelectorAll('button'),
-          'Today'
-        )[0];
-        const today = new Date();
-        const month = today.getMonth() + 1;
-        const day = today.getDate();
-        const todayStr = `${today.getFullYear()}-${month < 10 ? '0' + month :  month}-${day < 10 ? '0' + day : day}`;
-
-        triggerEvent({
-          node: todayButton,
-          eventName: 'click'
-        });
-
-        expect(startDate.value).to.eql(todayStr);
-        expect(endDate.value).to.eql(todayStr);
+      it('should contain date buttons', () => {
+        expect(bodyNode.textContent).to.include('DateButton');
       });
     });
 

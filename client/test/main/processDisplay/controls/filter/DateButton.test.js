@@ -10,10 +10,18 @@ describe('<DateButton>', () => {
   let formatDate;
   let start;
   let end;
+  let datepickerFct;
+  let $;
 
   beforeEach(() => {
     formatDate = sinon.stub().returnsArg(0);
     __set__('formatDate', formatDate);
+
+    datepickerFct = sinon.spy();
+    $ = sinon.stub().returns({
+      datepicker: datepickerFct
+    });
+    __set__('$', $);
 
     start = {};
     end = {};
@@ -30,6 +38,7 @@ describe('<DateButton>', () => {
 
   afterEach(() => {
     __ResetDependency__('formatDate');
+    __ResetDependency__('$');
   });
 
   it('should contain a button', () => {
@@ -37,8 +46,7 @@ describe('<DateButton>', () => {
   });
 
   it('should set the value of start and end date fields', () => {
-    expect(start.value).to.exist;
-    expect(end.value).to.exist;
+    expect(datepickerFct.calledWith('setDate')).to.eql(true);
   });
 
   it('should store the formatted date', () => {
@@ -57,7 +65,7 @@ describe('<DateButton>', () => {
       eventName: 'click'
     });
 
-    expect(start.value).to.not.eql(secondStart.value);
-    expect(end.value).to.not.eql(secondEnd.value);
+    expect(datepickerFct.args[0][1]).to.not.eql(datepickerFct.args[2][1]);
+    expect(datepickerFct.args[1][1]).to.not.eql(datepickerFct.args[3][1]);
   });
 });

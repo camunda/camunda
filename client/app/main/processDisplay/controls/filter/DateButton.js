@@ -1,5 +1,6 @@
 import {jsx, OnEvent} from 'view-utils';
 import {formatDate} from './service';
+import $ from 'jquery';
 
 export const TODAY = 'Today';
 export const YESTERDAY = 'Yesterday';
@@ -21,8 +22,8 @@ export function DateButton({dateLabel}) {
   </button>;
 
   function setDate({state: {start, end}}) {
-    start.value = formatDate(range.start);
-    end.value = formatDate(range.end);
+    $(start).datepicker('setDate', formatDate(range.start));
+    $(end).datepicker('setDate', formatDate(range.end));
   }
 }
 
