@@ -1,14 +1,14 @@
-import {jsx, updateOnlyWhenStateChanges} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
 
 export function createDiagram() {
   const BpmnViewer = createBpmnViewer();
-  const Diagram = ({createOverlaysRenderer}) => {
+  const Diagram = withSelector(({createOverlaysRenderer}) => {
     return <div className="diagram__holder">
       <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />
     </div>;
-  };
+  });
 
   Diagram.getViewer = BpmnViewer.getViewer;
 
@@ -18,7 +18,7 @@ export function createDiagram() {
 function createBpmnViewer() {
   let viewer;
 
-  const BpmnViewer = ({createOverlaysRenderer}) => {
+  const BpmnViewer = ({createOverlaysRenderer = []}) => {
     return (node, eventsBus) => {
       viewer = new Viewer({
         container: node

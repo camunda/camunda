@@ -75,7 +75,7 @@ describe('<Diagram>', () => {
     Diagram = createDiagram();
 
     ({update} = mountTemplate(
-      <Diagram selector="display" createOverlaysRenderer={createOverlaysRenderer} />
+      <Diagram createOverlaysRenderer={createOverlaysRenderer} />
     ));
   });
 
@@ -115,7 +115,7 @@ describe('<Diagram>', () => {
       const Diagram = createDiagram();
 
       ({update} = mountTemplate(
-        <Diagram selector="display" createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} />
+        <Diagram createOverlaysRenderer={[createOverlaysRenderer1, createOverlaysRenderer2]} />
       ));
 
       update(loadedDiagramState);

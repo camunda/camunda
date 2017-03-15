@@ -4,11 +4,12 @@ import {Controls, areControlsLoadingSomething, isDataEmpty, getDefinitionId} fro
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
 import {loadData} from './service';
-import {LoadingIndicator} from 'widgets';
+import {LoadingIndicator, createDiagram} from 'widgets';
 
 export const ProcessDisplay = withSelector(Process);
 
 function Process() {
+  const Diagram = createDiagram();
   const HeatmapDiagram = createHeatmapDiagram();
 
   const template = <div className="process-display">
@@ -33,14 +34,21 @@ function Process() {
               </div>
             </div>
           </Case>
+          <Case predicate={shouldDisplayHeatmap}>
+            <HeatmapDiagram selector="display" />
+          </Case>
           <Default>
-            <HeatmapDiagram selector="display"/>
+            <Diagram selector="display" />
           </Default>
         </Match>
       </LoadingIndicator>
     </div>
     <Statistics getBpmnViewer={HeatmapDiagram.getViewer} />
   </div>;
+
+  function shouldDisplayHeatmap({controls: {view}}) {
+    return view === 'frequency';
+  }
 
   function isLoadingSomething({display: {diagram, heatmap}, controls}) {
     return isLoading(diagram) || isLoading(heatmap) || areControlsLoadingSomething(controls);
