@@ -4,21 +4,19 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.service.status.ImportProgressReporter;
-import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -34,33 +32,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it-applicationContext.xml"})
-public class ImportIT extends AbstractJerseyTest {
+public class ImportIT  {
   private static final String SUB_PROCESS_ID = "testProcess";
   private static final String CALL_ACTIVITY = "callActivity";
-  private static final String TEST_MIPROCESS = "testMIProcess";
+  private static final String TEST_MI_PROCESS = "testMIProcess";
 
-  @Autowired
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
   @Rule
-  public EngineIntegrationRule engineRule;
-
-  @Autowired
-  @Rule
-  public ElasticSearchIntegrationTestRule elasticSearchRule;
-
-  @Autowired
-  private TransportClient esclient;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private ImportProgressReporter importProgressReporter;
-
-  @Autowired
-  private ImportScheduler importScheduler;
-
-  @Autowired
-  private ImportServiceProvider importServiceProvider;
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws Exception {
@@ -68,10 +51,46 @@ public class ImportIT extends AbstractJerseyTest {
     deployAndStartSimpleServiceTask();
 
     //when
-    elasticSearchRule.importEngineEntities();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionType(), 1L);
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessDefinitionType(), 1L);
+  }
+
+  @Test
+  public void importProgressReporterStartAndEndImportState() {
+    // when
+    deployAndStartSimpleServiceTask();
+
+    // then
+    assertThat(getProgressValue(), is(0));
+
+    // when
+    embeddedOptimizeRule.importEngineEntities();
+
+    // then
+    assertThat(getProgressValue(), is(100));
+  }
+
+  @Test
+  public void importProgressReporterItermediateImportState() {
+    // given
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.importEngineEntities();
+
+    // when
+    deployAndStartSimpleServiceTask();
+
+    // then
+    assertThat(getProgressValue(), is(50));
+  }
+
+  private int getProgressValue() {
+    return embeddedOptimizeRule.target()
+        .path("status/import-progress")
+        .request()
+        .get(CountDto.class).getCount();
   }
 
   @Test
@@ -80,10 +99,11 @@ public class ImportIT extends AbstractJerseyTest {
     deployAndStartSimpleServiceTask();
 
     //when
-    elasticSearchRule.importEngineEntities();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(configurationService.getProcessDefinitionXmlType(), 1L);
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessDefinitionXmlType(), 1L);
   }
 
   @Test
@@ -92,10 +112,11 @@ public class ImportIT extends AbstractJerseyTest {
     deployAndStartSimpleServiceTask();
 
     //when
-    elasticSearchRule.importEngineEntities();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(configurationService.getEventType(), 3L);
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getEventType(), 3L);
   }
 
   @Test
@@ -110,55 +131,12 @@ public class ImportIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    elasticSearchRule.importEngineEntities();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then only the start event should be imported as the user task is not finished yet
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(configurationService.getEventType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getEventType());
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
-  }
-
-  @Test
-  public void importProgressReporterStartAndEndImportState() {
-    // when
-    deployAndStartSimpleServiceTask();
-
-    // then
-    assertThat(importProgressReporter.computeImportProgress(), is(0));
-
-    // when
-    elasticSearchRule.importEngineEntities();
-
-    // then
-    assertThat(importProgressReporter.computeImportProgress(), is(100));
-  }
-
-  @Test
-  public void importProgressReporterItermediateImportState() {
-    // given
-    deployAndStartSimpleServiceTask();
-    elasticSearchRule.importEngineEntities();
-
-    // when
-    deployAndStartSimpleServiceTask();
-
-    // then
-    assertThat(importProgressReporter.computeImportProgress(), is(50));
-  }
-
-  @Test
-  public void schedulerResetsStartIndexesIfEntitiesWereMissedDuringImport() {
-    // given
-    deployAndStartSimpleServiceTask();
-    elasticSearchRule.importEngineEntities();
-    deployAndStartSimpleServiceTask();
-
-    // when
-    importScheduler.checkAndResetImportIndexing();
-
-    // then
-    for (ImportService importService : importServiceProvider.getServices()) {
-      assertThat(importService.getImportStartIndex(), is(0));
-    }
   }
 
   @Test
@@ -173,7 +151,7 @@ public class ImportIT extends AbstractJerseyTest {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     engineRule.deployProcess(subProcess, client);
 
-    BpmnModelInstance model = Bpmn.createExecutableProcess(TEST_MIPROCESS)
+    BpmnModelInstance model = Bpmn.createExecutableProcess(TEST_MI_PROCESS)
         .name("MultiInstance")
           .startEvent("miStart")
           .parallelGateway()
@@ -189,11 +167,12 @@ public class ImportIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(model);
 
     engineRule.waitForAllProcessesToFinish();
-    elasticSearchRule.importEngineEntities();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String token = authenticateAdmin();
-    List<ProcessDefinitionOptimizeDto> definitions = target()
-        .path(configurationService.getProcessDefinitionEndpoint())
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
@@ -201,7 +180,7 @@ public class ImportIT extends AbstractJerseyTest {
 
     String id = null;
     for (ProcessDefinitionOptimizeDto dto : definitions) {
-      if (TEST_MIPROCESS.equals(dto.getKey())) {
+      if (TEST_MI_PROCESS.equals(dto.getKey())) {
         id = dto.getId();
       }
     }
@@ -209,8 +188,8 @@ public class ImportIT extends AbstractJerseyTest {
 
 
     //when
-    HeatMapResponseDto heatMap = target()
-        .path(configurationService.getProcessDefinitionEndpoint() + "/" + id + "/" + "heatmap/frequency")
+    HeatMapResponseDto heatMap = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + id + "/" + "heatmap/frequency")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get(HeatMapResponseDto.class);
@@ -251,16 +230,11 @@ public class ImportIT extends AbstractJerseyTest {
   private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) {
     QueryBuilder qb = matchAllQuery();
 
-    return esclient.prepareSearch(configurationService.getOptimizeIndex())
+    return elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
       .setTypes(elasticsearchType)
       .setQuery(qb)
       .setSize(100)
       .get();
-  }
-
-  @Override
-  protected String getContextLocation() {
-    return "classpath:it-applicationContext.xml";
   }
 
 }

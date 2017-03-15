@@ -1,6 +1,10 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.*;
+import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
+import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -14,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.management.openmbean.OpenDataException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,8 +33,8 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it-applicationContext.xml"})
-public class CorrelationReaderIT {
+@ContextConfiguration(locations = {"/es-it-applicationContext.xml"})
+public class CorrelationReaderES_IT {
   public static final String PROCESS_DEFINITION_ID = "123";
   public static final String END_ACTIVITY = "endActivity";
   public static final String GATEWAY_ACTIVITY = "gw_1";
@@ -41,9 +44,8 @@ public class CorrelationReaderIT {
   public static final String TASK = "task_1";
   public static final String TASK_2 = "task_2";
 
-  @Autowired
   @Rule
-  public ElasticSearchIntegrationTestRule rule;
+  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
 
   @Rule
   public final ExpectedException exception = ExpectedException.none();

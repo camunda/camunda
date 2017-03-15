@@ -24,12 +24,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it-applicationContext.xml"})
-public class ProcessDefinitionReaderIT {
+@ContextConfiguration(locations = {"/es-it-applicationContext.xml"})
+public class ProcessDefinitionReaderES_IT {
 
-  @Autowired
   @Rule
-  public ElasticSearchIntegrationTestRule rule;
+  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
 
   @Autowired
   private ProcessDefinitionReader procDefReader;

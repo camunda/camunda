@@ -26,11 +26,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/it-applicationContext.xml"})
-public class SchemaInitializerIT {
+@ContextConfiguration(locations = {"/es-it-applicationContext.xml"})
+public class SchemaInitializerES_IT {
 
-  @Autowired
-  public ElasticSearchIntegrationTestRule rule;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
@@ -42,6 +40,8 @@ public class SchemaInitializerIT {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
+  @Rule
+  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
 
   @Test
   public void schemaIsNotInitializedTwice() {

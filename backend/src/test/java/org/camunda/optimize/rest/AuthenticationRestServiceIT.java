@@ -6,10 +6,16 @@ import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.AbstractJerseyTest;
+import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
@@ -22,26 +28,25 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Askar Akhmerov
  */
-
-public class AuthenticationRestServiceIT extends AbstractJerseyTest {
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = { "/it-applicationContext.xml" })
+public class AuthenticationRestServiceIT {
   private static final String USERNAME_PASSWORD = "demo";
 
-  @Autowired
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
   @Rule
-  public EngineIntegrationRule rule;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private Client engineClient;
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void authenticateUser() throws Exception {
     //given
     UserDto userDto = constructDemoUserDto();
 
-    Response res = engineClient.target(configurationService.getEngineRestApiEndpoint())
+    Response res = engineRule.target()
         .path("/user/create")
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.json(userDto));
@@ -52,7 +57,7 @@ public class AuthenticationRestServiceIT extends AbstractJerseyTest {
     entity.setPassword(USERNAME_PASSWORD);
 
     //when
-    Response response = target("authentication")
+    Response response = embeddedOptimizeRule.target("authentication")
         .request()
         .post(Entity.json(entity));
 
@@ -72,8 +77,4 @@ public class AuthenticationRestServiceIT extends AbstractJerseyTest {
     return userDto;
   }
 
-  @Override
-  protected String getContextLocation() {
-    return "classpath:it-applicationContext.xml";
-  }
 }

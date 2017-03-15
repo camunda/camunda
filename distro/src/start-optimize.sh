@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 echo "starting Camunda Optimize with Elasticsearch";
 
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 PROGRAM="optimize"
 BASEDIR=$(dirname "$0")
 
@@ -11,7 +12,7 @@ mkdir -p $BASEDIR/run
 LOG_FILE=$BASEDIR/log/$PROGRAM.log
 PID_FILE=$BASEDIR/run/$PROGRAM.pid
 
-/bin/sh "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" --daemonize
+exec /bin/sh "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
 
 RETRIES=6
 SLEEP_TIME=10

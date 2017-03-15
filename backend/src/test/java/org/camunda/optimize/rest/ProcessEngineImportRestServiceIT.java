@@ -6,9 +6,11 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -28,16 +30,16 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/it-applicationContext.xml" })
-public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
+@ContextConfiguration(locations = { "/es-it-applicationContext.xml" })
+public class ProcessEngineImportRestServiceIT {
 
-  @Autowired
-  @Rule
-  public EngineIntegrationRule engineRule;
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  @Autowired
   @Rule
-  public ElasticSearchIntegrationTestRule elasticSearchRule;
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   private static final String PROCESS_ID = "aProcessId";
 
@@ -51,11 +53,12 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    elasticSearchRule.importEngineEntities();
-    String token = authenticateAdmin();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    Response response = target("process-definition")
+    Response response = embeddedOptimizeRule.target("process-definition")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get();
@@ -69,11 +72,6 @@ public class ProcessEngineImportRestServiceIT extends AbstractJerseyTest {
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(),is(notNullValue()));
     assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
-  }
-
-  @Override
-  protected String getContextLocation() {
-    return "classpath:it-applicationContext.xml";
   }
 
 }

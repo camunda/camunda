@@ -42,7 +42,14 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider 
       }
 
     } catch (Exception e) {
-      logger.warn("Connection to engine cannot be established", e);
+      logger.warn("Connection to engine cannot be established", e.getMessage());
+      if (logger.isDebugEnabled()) {
+        logger.debug("Engine endpoint: ["
+            + configurationService.getEngineRestApiEndpoint()
+            + "] with path ["
+            + configurationService.getUserValidationEndpoint()
+            + "]", e);
+      }
     }
 
     return authenticated;

@@ -2,89 +2,96 @@ package org.camunda.optimize.test.rule;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.ImportScheduleJob;
-import org.camunda.optimize.service.importing.ImportService;
-import org.camunda.optimize.service.importing.ImportServiceProvider;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.reindex.BulkIndexByScrollResponse;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Component
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
-
-  @Autowired
+  private ObjectMapper objectMapper;
+  private Properties properties;
   private TransportClient esclient;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private ElasticSearchSchemaInitializer schemaInitializer;
-
-  @Autowired
-  private ImportJobExecutor importJobExecutor;
-
-  @Autowired
-  private ImportServiceProvider importServiceProvider;
+  private boolean dropIndex;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
-  @Override
+  public ElasticSearchIntegrationTestRule(boolean dropIndex) {
+    this.dropIndex = dropIndex;
+  }
+
+  public ElasticSearchIntegrationTestRule() {
+    this(false);
+  }
+
+  public void init() {
+    properties = PropertyUtil.loadProperties("it-test.properties");
+    initObjectMapper();
+    initTransport();
+  }
+
+  private void initObjectMapper() {
+    objectMapper = new ObjectMapper();
+    objectMapper.setDateFormat(new SimpleDateFormat(properties.getProperty("camunda.optimize.serialization.date.format")));
+  }
+
+  private void initTransport() {
+    try {
+      esclient =
+          new PreBuiltTransportClient(Settings.EMPTY)
+              .addTransportAddress(new InetSocketTransportAddress(
+                  InetAddress.getByName(properties.getProperty("camunda.optimize.es.host")),
+                  Integer.parseInt(properties.getProperty("camunda.optimize.es.port"))
+              ));
+    } catch (Exception e) {
+      logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
+    }
+  }
+
   protected void starting(Description description) {
+    if (esclient == null) {
+      this.init();
+    }
     logger.info("Cleaning elasticsearch...");
     this.cleanAndVerify();
     logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
   }
 
+  @Override
+  protected void finished(Description description) {
+    this.cleanUpElasticSearch();
+  }
+
   public void refreshOptimizeIndexInElasticsearch() {
     esclient.admin().indices()
-        .prepareRefresh(configurationService.getOptimizeIndex())
+        .prepareRefresh(this.getOptimizeIndex())
         .get();
   }
 
-  public void deleteAndInitializeOptimizeIndex() {
-    esclient.admin().indices()
-      .prepareDelete(configurationService.getOptimizeIndex())
-      .get();
-    schemaInitializer.initializeSchema();
-  }
-
-  public void importEngineEntities() {
-    importJobExecutor.startExecutingImportJobs();
-    for (ImportService importService : importServiceProvider.getServices()) {
-      ImportScheduleJob job = new ImportScheduleJob();
-      job.setImportService(importService);
-      job.execute();
-    }
-    importJobExecutor.stopExecutingImportJobs();
-    refreshOptimizeIndexInElasticsearch();
-  }
 
   /**
    * parsed to json and then later
@@ -108,7 +115,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     } catch (JsonProcessingException e) {
       logger.error("Unable to add an entry to elasticsearch", e);
     }
-    esclient.prepareIndex(configurationService.getOptimizeIndex(), type, id)
+    esclient.prepareIndex(this.getOptimizeIndex(), type, id)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // necessary because otherwise I can't search for the entry immediately
       .setSource(json).get();
     addEntryToTracker(type, id);
@@ -127,6 +134,9 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void cleanAndVerify() {
+    if (this.dropIndex) {
+      this.deleteOptimizeIndex();
+    }
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
   }
@@ -139,11 +149,38 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
         .get();
   }
 
+  public void deleteOptimizeIndex() {
+    esclient.admin().indices()
+        .prepareDelete(this.getOptimizeIndex())
+        .get();
+  }
+
   private void assureElasticsearchIsClean() {
-    SearchResponse response = esclient.prepareSearch(configurationService.getOptimizeIndex())
+    SearchResponse response = esclient.prepareSearch(this.getOptimizeIndex())
       .setQuery(matchAllQuery())
       .get();
     Long hits = response.getHits().getTotalHits();
     assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
   }
+
+  public Client getClient() {
+    return esclient;
+  }
+
+  public String getOptimizeIndex() {
+    return properties.getProperty("camunda.optimize.es.index");
+  }
+
+  public String getProcessDefinitionType() {
+    return properties.getProperty("camunda.optimize.es.procdef.type");
+  }
+
+  public String getProcessDefinitionXmlType() {
+    return properties.getProperty("camunda.optimize.es.procdef.xml.type");
+  }
+
+  public String getEventType() {
+    return properties.getProperty("camunda.optimize.es.event.type");
+  }
+
 }

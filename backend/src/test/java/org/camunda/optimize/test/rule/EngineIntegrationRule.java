@@ -1,6 +1,7 @@
 package org.camunda.optimize.test.rule;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -19,16 +20,17 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceDto;
-import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,26 +51,32 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  * @author Askar Akhmerov
  */
-@Component
 public class EngineIntegrationRule extends TestWatcher {
 
   private static final int MAX_WAIT = 10;
-  @Autowired
-  ConfigurationService configurationService;
+  public static final String COUNT = "count";
 
   private Properties properties;
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
 
-  @Autowired
   private ObjectMapper objectMapper;
 
-  @PostConstruct
   public void init() {
-    properties = PropertyUtil.loadProperties("service-it.properties");
+    properties = PropertyUtil.loadProperties("it-test.properties");
     cleanEngine();
+    setupObjectMapper();
   }
 
-  @Override
+  private void setupObjectMapper() {
+    objectMapper = new ObjectMapper();
+    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+  }
+
+  protected void starting(Description description) {
+    this.init();
+  }
+
   protected void finished(Description description) {
     cleanEngine();
   }
@@ -125,7 +133,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private HttpPost createDeploymentRequest(String process) {
-    HttpPost post = new HttpPost(configurationService.getEngineRestApiEndpointOfCustomEngine() + "/deployment/create");
+    HttpPost post = new HttpPost(getDeploymentUri());
     HttpEntity entity = MultipartEntityBuilder
       .create()
       .addTextBody("deployment-name", "deployment")
@@ -137,8 +145,29 @@ public class EngineIntegrationRule extends TestWatcher {
     return post;
   }
 
+  private String getDeploymentUri() {
+    return getEngineUrl() + "/deployment/create";
+  }
+
+  private String getStartProcessInstanceUri(String procDefId) {
+    return getEngineUrl() +  "/process-definition/" + procDefId + "/start";
+  }
+
+  private String getProcessDefinitionUri() {
+    return getEngineUrl() + "/process-definition";
+  }
+
+  private String getCountHistoryUri() {
+    return getEngineUrl() + "/history/process-instance/count";
+  }
+
+  private String getEngineUrl() {
+    return properties.get("camunda.optimize.engine.rest").toString() +
+        properties.get("camunda.optimize.engine.name").toString();
+  }
+
   private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
-    HttpRequestBase get = new HttpGet(configurationService.getEngineRestApiEndpointOfCustomEngine() + "/process-definition");
+    HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     URI uri = null;
     try {
       uri = new URIBuilder(get.getURI())
@@ -155,8 +184,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
-    HttpPost post = new HttpPost(configurationService.getEngineRestApiEndpointOfCustomEngine() +
-      "/process-definition/" + procDefId + "/start");
+    HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("content-type", "application/json");
     post.setEntity(new StringEntity("{}"));
     CloseableHttpResponse response = client.execute(post);
@@ -170,11 +198,10 @@ public class EngineIntegrationRule extends TestWatcher {
 
   }
 
-
   public void waitForAllProcessesToFinish() throws Exception {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     boolean done = false;
-    HttpRequestBase get = new HttpGet(configurationService.getEngineRestApiEndpointOfCustomEngine() + "/history/process-instance/count");
+    HttpRequestBase get = new HttpGet(getCountHistoryUri());
     URI uri = null;
     try {
       uri = new URIBuilder(get.getURI())
@@ -190,9 +217,9 @@ public class EngineIntegrationRule extends TestWatcher {
     while (!done && iterations < MAX_WAIT) {
       CloseableHttpResponse response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      HashMap<String,Object> parsed = new ObjectMapper().readValue(responseString, new TypeReference<HashMap<String,Object>>() {});
-      if (!parsed.containsKey("count")) throw new RuntimeException("Engine could not count PIs");
-      if (Integer.valueOf(parsed.get("count").toString()) != 0) {
+      HashMap<String,Object> parsed = objectMapper.readValue(responseString, new TypeReference<HashMap<String,Object>>() {});
+      if (!parsed.containsKey(COUNT)) throw new RuntimeException("Engine could not count PIs");
+      if (Integer.valueOf(parsed.get(COUNT).toString()) != 0) {
         Thread.sleep(1000);
         iterations = iterations + 1;
       } else {
@@ -200,5 +227,21 @@ public class EngineIntegrationRule extends TestWatcher {
       }
     }
 
+  }
+
+  public final WebTarget target() {
+    return this.client().target(getBaseUri());
+  }
+
+  private String getBaseUri() {
+    return properties.getProperty("camunda.optimize.engine.rest");
+  }
+
+  public final Client client() {
+    return this.getClient();
+  }
+
+  private Client getClient() {
+    return ClientBuilder.newClient();
   }
 }
