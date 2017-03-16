@@ -9,7 +9,6 @@ describe('<Controls>', () => {
   let CreateFilter;
   let ProcessDefinition;
   let getDefinitionId;
-  let Result;
   let View;
   let onCriteriaChanged;
   let node;
@@ -19,14 +18,12 @@ describe('<Controls>', () => {
     Filter = createMockComponent('Filter');
     CreateFilter = createMockComponent('CreateFilter');
     ProcessDefinition = createMockComponent('ProcessDefinition');
-    Result = createMockComponent('Result');
     View = createMockComponent('View');
     getDefinitionId = sinon.stub().returnsArg(0);
 
     __set__('Filter', Filter);
     __set__('CreateFilter', CreateFilter);
     __set__('ProcessDefinition', ProcessDefinition);
-    __set__('Result', Result);
     __set__('View', View);
     __set__('getDefinitionId', getDefinitionId);
 
@@ -39,7 +36,6 @@ describe('<Controls>', () => {
     __ResetDependency__('Filter');
     __ResetDependency__('CreateFilter');
     __ResetDependency__('ProcessDefinition');
-    __ResetDependency__('Result');
     __ResetDependency__('View');
     __ResetDependency__('getDefinitionId');
   });
@@ -66,10 +62,6 @@ describe('<Controls>', () => {
 
   it('should pass onProcessDefinitionSelected to ProcessDefinition', () => {
     expect(ProcessDefinition.getAttribute('onProcessDefinitionSelected')).to.be.ok;
-  });
-
-  it('should display Result', () => {
-    expect(node).to.contain.text(Result.text);
   });
 
   it('should display View', () => {
