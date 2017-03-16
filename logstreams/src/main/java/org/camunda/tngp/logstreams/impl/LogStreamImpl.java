@@ -22,6 +22,7 @@ import static org.camunda.tngp.logstreams.impl.LogStreamImpl.LogStreamBuilder.in
  */
 public final class LogStreamImpl implements LogStream
 {
+    public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
     private final BiConsumer<Void, Throwable> removeWriteBufferReference = (((aVoid, throwable) -> this.writeBuffer = null));
 
     private final BiConsumer<Void, Throwable> removeLogStreamControllerReference = ((aVoid, throwable) ->
@@ -276,6 +277,16 @@ public final class LogStreamImpl implements LogStream
     public Dispatcher getWriteBuffer()
     {
         return writeBuffer;
+    }
+
+    @Override
+    public CompletableFuture<Void> truncate(long position)
+    {
+        if (logStreamController != null)
+        {
+            throw new IllegalStateException(EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
+        }
+        return logBlockIndexController.truncate(position);
     }
 
     private final class LogStreamControlBuilder implements LogStreamController.LogStreamControllerBuilder

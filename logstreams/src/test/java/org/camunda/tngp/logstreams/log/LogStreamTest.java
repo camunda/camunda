@@ -12,7 +12,9 @@ import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -63,6 +65,9 @@ public class LogStreamTest
     private SnapshotWriter mockSnapshotWriter;
     @Mock
     private SnapshotPolicy mockSnapshotPolicy;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void init() throws Exception
@@ -454,5 +459,21 @@ public class LogStreamTest
         assertTrue(logBlockIndexController.isRunning());
     }
 
+    @Test
+    public void shouldThrowExceptionForTruncationWithLogStreamController()
+    {
+        // given open log stream
+        logStream.openAsync();
+        final LogController logBlockIndexController = logStream.getLogBlockIndexController();
+        logBlockIndexController.doWork();
+        final LogController logStreamController = logStream.getLogStreamController();
+        logStreamController.doWork();
 
+        // expect exception
+        thrown.expect(IllegalStateException.class);
+        thrown.expectMessage(LogStreamImpl.EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
+
+        // when truncate is called
+        logStream.truncate(0);
+    }
 }

@@ -9,6 +9,7 @@ import org.camunda.tngp.util.state.StateMachineAgent;
 import org.camunda.tngp.util.state.TransitionState;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.tngp.logstreams.spi.LogStorage.*;
 
@@ -18,6 +19,7 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.*;
 public class LogBlockIndexController extends LogController
 {
     protected static final int TRANSITION_SNAPSHOT = 3;
+    protected static final int TRANSITION_TRUNCATE = 4;
 
     // STATES /////////////////////////////////////////////////////////
 
@@ -26,6 +28,7 @@ public class LogBlockIndexController extends LogController
     protected final SnapshottingState snapshottingState = new SnapshottingState();
     protected final ClosingState closingState = new ClosingState();
     protected final ClosedState closedState = new ClosedState();
+    protected final TruncateState truncateState = new TruncateState();
 
     protected final StateMachineAgent<Context> stateMachine = new StateMachineAgent<>(
         StateMachine.<Context>builder(s -> new Context(s))
@@ -33,6 +36,9 @@ public class LogBlockIndexController extends LogController
             .from(openingState).take(TRANSITION_DEFAULT).to(openState)
             .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
             .from(openState).take(TRANSITION_CLOSE).to(closingState)
+            .from(openState).take(TRANSITION_TRUNCATE).to(truncateState)
+            .from(truncateState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+            .from(truncateState).take(TRANSITION_DEFAULT).to(openState)
             .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
             .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
             .from(closedState).take(TRANSITION_OPEN).to(openingState)
@@ -52,6 +58,7 @@ public class LogBlockIndexController extends LogController
     protected long nextAddress = -1;
     protected int bufferSize;
     protected ByteBuffer ioBuffer;
+    protected CompletableFuture<Void> truncateFuture;
 
     public LogBlockIndexController(LogBlockIndexControllerBuilder logBlockIndexControllerBuilder)
     {
@@ -80,10 +87,10 @@ public class LogBlockIndexController extends LogController
     }
 
 
-    protected class OpeningState implements TransitionState<LogController.Context>
+    protected class OpeningState implements TransitionState<Context>
     {
         @Override
-        public void work(LogController.Context context)
+        public void work(Context context)
         {
             try
             {
@@ -123,7 +130,7 @@ public class LogBlockIndexController extends LogController
 
     }
 
-    protected class OpenState implements State<LogStreamController.Context>
+    protected class OpenState implements State<Context>
     {
 
         @Override
@@ -245,7 +252,7 @@ public class LogBlockIndexController extends LogController
         }
     }
 
-    protected class ClosingState implements TransitionState<LogStreamController.Context>
+    protected class ClosingState implements TransitionState<Context>
     {
         @Override
         public void work(Context context)
@@ -309,5 +316,120 @@ public class LogBlockIndexController extends LogController
     public int getIndexBlockSize()
     {
         return indexBlockSize;
+    }
+
+
+    protected long truncatePosition;
+
+    public CompletableFuture<Void> truncate(long position)
+    {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        getStateMachine().addCommand(context ->
+        {
+
+            final boolean possibleToTakeTransition = context.tryTake(TRANSITION_TRUNCATE);
+            if (possibleToTakeTransition)
+            {
+                truncatePosition = position;
+                truncateFuture = future;
+            }
+            else
+            {
+                future.completeExceptionally(new IllegalStateException("Cannot truncate log stream. State is not open."));
+            }
+        });
+
+        return future;
+    }
+
+    private class TruncateState implements State<Context>
+    {
+
+        public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
+
+        @Override
+        public int doWork(Context context) throws Exception
+        {
+            context.reset();
+            int transition = TRANSITION_DEFAULT;
+            try
+            {
+                long truncateAddress = blockIndex.size() > 0
+                    ? blockIndex.lookupBlockAddress(truncatePosition)
+                    : logStorage.getFirstBlockAddress();
+
+                // find event with given position to calculate address
+                ioBuffer.clear();
+                logStorage.read(ioBuffer, truncateAddress);
+                truncateAddress = findAddressForTruncateEvent(truncateAddress);
+
+                // truncate
+                transition = truncate(context, transition, truncateAddress);
+            }
+            finally
+            {
+                truncatePosition = 0;
+                truncateFuture.complete(null);
+                truncateFuture = null;
+                context.take(transition);
+            }
+            return 0;
+        }
+
+        private int truncate(Context context, int transition, long truncateAddress)
+        {
+            if (truncateAddress != -1)
+            {
+                blockIndex.truncate(truncatePosition);
+                logStorage.truncate(truncateAddress);
+
+                // write new snapshot
+                final int lastIdx = blockIndex.size() - 1;
+                if (lastIdx >= 0)
+                {
+                    final long lastBlockPosition = blockIndex.getLogPosition(lastIdx);
+
+                    context.setLastPosition(lastBlockPosition);
+                    transition = TRANSITION_SNAPSHOT;
+                }
+                else
+                {
+                    // if all blocks are deleted we need to clean up the snapshots as well
+                    snapshotStorage.purgeSnapshot(name);
+                }
+            }
+            else
+            {
+                truncateFuture.completeExceptionally(new IllegalArgumentException(String.format(EXCEPTION_MSG_TRUNCATE_FAILED, truncatePosition)));
+            }
+            return transition;
+        }
+
+        private long findAddressForTruncateEvent(long truncateAddress)
+        {
+            buffer.wrap(ioBuffer);
+            final LoggedEventImpl event = new LoggedEventImpl();
+
+            int offset = 0;
+            boolean foundAddress = false;
+            while (!foundAddress)
+            {
+                if (offset >= buffer.capacity())
+                {
+                    return -1;
+                }
+                event.wrap(buffer, offset);
+                if (event.getPosition() == truncatePosition)
+                {
+                    foundAddress = true;
+                }
+                else
+                {
+                    offset += event.getFragmentLength();
+                }
+            }
+            return truncateAddress + offset;
+        }
     }
 }

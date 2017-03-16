@@ -51,6 +51,28 @@ public class FsSnapshotStorage implements SnapshotStorage
         return snapshot;
     }
 
+    public boolean purgeSnapshot(String name)
+    {
+        final File rootFile = new File(cfg.getRootPath());
+        final List<File> snapshotFiles = Arrays.asList(rootFile.listFiles(file -> cfg.matchesSnapshotFileNamePattern(file, name)));
+
+        boolean deletionSuccessful = false;
+        if (snapshotFiles.size() > 0)
+        {
+            for (File snapshotFile : snapshotFiles)
+            {
+                final long logPosition = position(snapshotFile, name);
+                final String checksumFileName = cfg.checksumFileName(name, logPosition);
+                final File checksumFile = new File(checksumFileName);
+
+                checksumFile.delete();
+                snapshotFile.delete();
+            }
+            deletionSuccessful = true;
+        }
+        return deletionSuccessful;
+    }
+
     protected long position(File file, String snapshotName)
     {
         return cfg.getPositionOfSnapshotFile(file, snapshotName);

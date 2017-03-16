@@ -30,4 +30,12 @@ public interface SnapshotStorage
      */
     SnapshotWriter createSnapshot(String name, long logPosition) throws Exception;
 
+    /**
+     * Deletes all existing snapshot and checksum files.
+     *
+     * @param name the name of the snapshot
+     * @return true if the purging was successful otherwise false
+     */
+    boolean purgeSnapshot(String name);
+
 }

@@ -185,6 +185,12 @@ public abstract class LogController implements Agent
         {
             this.currentBlockAddress = currentBlockAddress;
         }
+
+        public void reset()
+        {
+            this.lastPosition = 0;
+            this.currentBlockAddress = 0;
+        }
     }
 
     class ClosedState implements WaitState<Context>

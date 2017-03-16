@@ -147,4 +147,14 @@ public interface LogStream extends AutoCloseable
      * @return returns the future for the log stream controller opening
      */
     CompletableFuture<Void> startLogStreaming(AgentRunnerService writeBufferAgentRunnerService, int maxAppendBlockSize);
+
+    /**
+     * Truncates the log stream from the given position to the end of the stream.
+     * This method will truncated the log storage and block index.
+     *
+     *
+     * @param position the position to start the truncation
+     * @return the future which is completed if the truncation was successful
+     */
+    CompletableFuture<Void> truncate(long position);
 }

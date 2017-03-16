@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -40,6 +40,8 @@ public class LogBlockIndexControllerTest
     private static final long LOG_ADDRESS = 456L;
 
     private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
+    private static final long TRUNCATE_ADDRESS = 12345L;
+    private static final long TRUNCATE_POSITION = 101L;
 
     private LogBlockIndexController blockIdxController;
 
@@ -127,7 +129,7 @@ public class LogBlockIndexControllerTest
     }
 
     @Test
-    public void shouldNotOpenIfFailToRecoverBlockIndexFromSnapshot() throws Exception
+    public void shouldOpenIfFailToRecoverBlockIndexFromSnapshot() throws Exception
     {
         when(mockSnapshotStorage.getLastSnapshot(LOG_NAME)).thenReturn(mockSnapshot);
         when(mockSnapshot.getPosition()).thenReturn(100L);
@@ -234,6 +236,164 @@ public class LogBlockIndexControllerTest
         verify(mockBlockIndex, never()).addBlock(LOG_POSITION, INDEX_BLOCK_SIZE + LOG_ADDRESS);
     }
 
+    @Test
+    public void shouldTruncateLogStorageFromStart()
+    {
+        // read block which should be truncated
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS)))
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+        when(mockLogStorage.getFirstBlockAddress()).thenReturn(LOG_ADDRESS);
+
+        // given open block index controller and empty block index
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+
+        // when truncate is called
+        final CompletableFuture<Void> truncateFuture = blockIdxController.truncate(TRUNCATE_POSITION);
+
+        // truncate state
+        blockIdxController.doWork();
+
+        // then truncate was successful
+        assertThat(truncateFuture.isDone()).isTrue();
+        // and controller is again in open state
+        assertThat(blockIdxController.isOpen()).isTrue();
+
+        // at first, address is looked up and correct address is resolved
+        verify(mockLogStorage, atLeast(2)).getFirstBlockAddress();
+
+        // at second, block index and log storage from resolved address is truncated
+        verify(mockBlockIndex).truncate(TRUNCATE_POSITION);
+        verify(mockLogStorage).truncate(LOG_ADDRESS + alignedLength((911)));
+
+        // snapshot is deleted if exist, since no block index exist anymore
+        verify(mockSnapshotStorage).purgeSnapshot(LOG_NAME);
+    }
+
+    @Test
+    public void shouldTruncateBlockIndexAndLogStorage()
+    {
+        // read block which should be truncated
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_ADDRESS);
+        when(mockBlockIndex.size()).thenReturn(1, 0);
+
+        // given open block index controller and block index
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+
+        // when truncate is called
+        final CompletableFuture<Void> truncateFuture = blockIdxController.truncate(TRUNCATE_POSITION);
+
+        // truncate state
+        blockIdxController.doWork();
+
+        // then truncate was successful
+        assertThat(truncateFuture.isDone()).isTrue();
+        // and controller is again in open state
+        assertThat(blockIdxController.isOpen()).isTrue();
+
+        // at first, address is looked up and correct address is resolved
+        verify(mockBlockIndex).lookupBlockAddress(TRUNCATE_POSITION);
+
+        // at second, block index and log storage from resolved address is truncated
+        verify(mockBlockIndex).truncate(TRUNCATE_POSITION);
+        verify(mockLogStorage).truncate(TRUNCATE_ADDRESS + alignedLength((911)));
+
+        // snapshot is deleted if exist, since no block index exist anymore
+        verify(mockSnapshotStorage).purgeSnapshot(LOG_NAME);
+    }
+
+    @Test
+    public void shouldTruncateAndWriteSnapshot() throws Exception
+    {
+        when(mockBlockIndex.size()).thenReturn(2, 1);
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_ADDRESS);
+
+        // given open block index controller with written block index
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+
+        blockIdxController.truncate(TRUNCATE_POSITION);
+
+        // truncate state
+        blockIdxController.doWork();
+
+        // when next doWork is called (snapshotting)
+        assertThat(blockIdxController.isOpen()).isFalse();
+        blockIdxController.doWork();
+
+        // then snapshot is created and controller is again in open state
+        assertThat(blockIdxController.isOpen()).isTrue();
+
+        verify(mockSnapshotStorage).createSnapshot(LOG_NAME, 0);
+        verify(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
+        verify(mockSnapshotWriter).commit();
+    }
+
+    @Test
+    public void shouldNotTruncateIfNotInOpenState() throws Exception
+    {
+        // given not open block index controller
+        assertThat(blockIdxController.isOpen()).isFalse();
+
+        // when truncate is called
+        final CompletableFuture<Void> truncateFuture = blockIdxController.truncate(LOG_POSITION);
+        // -> try to truncate
+        blockIdxController.doWork();
+
+        // then future is completed exceptionally and controller is not open
+        assertThat(truncateFuture.isCompletedExceptionally()).isTrue();
+        assertThat(blockIdxController.isOpen()).isFalse();
+    }
+
+    @Test
+    public void shouldNotTruncateIfPositionWasNotFound()
+    {
+        // given custom log block index controller
+        // which ioBuffer can only contain two event's
+        final int alignedLength = alignedLength(911);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        builder.agentRunnerService(mockAgentRunnerService)
+            .withoutLogStreamController(true)
+            .logStorage(mockLogStorage)
+            .snapshotStorage(mockSnapshotStorage)
+            .snapshotPolicy(mockSnapshotPolicy)
+            .logBlockIndex(mockBlockIndex)
+            .indexBlockSize(2 * alignedLength);
+
+        final LogBlockIndexController controller = new LogBlockIndexController(builder);
+
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
+            .thenAnswer(readAndProcessLog(2 * alignedLength, 2 * alignedLength));
+        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION + 1)).thenReturn(TRUNCATE_ADDRESS);
+        when(mockBlockIndex.size()).thenReturn(1);
+
+        // given open custom block index controller
+        controller.openAsync();
+        // -> opening
+        controller.doWork();
+
+        // when truncate is called
+        final CompletableFuture<Void> truncateFuture = controller.truncate(TRUNCATE_POSITION + 1);
+
+        // truncate state
+        controller.doWork();
+
+        // then truncate was completed exceptionally
+        assertThat(truncateFuture.isCompletedExceptionally()).isTrue();
+        assertThat(truncateFuture).hasFailedWithThrowableThat().hasMessage("Truncation failed! Position 102 was not found.");
+
+        // and controller is again in open state
+        assertThat(controller.isOpen()).isTrue();
+    }
+
     private Answer<Object> readAndProcessLog(long nextAddr, int blockSize)
     {
         return (InvocationOnMock invocationOnMock) ->
@@ -241,8 +401,16 @@ public class LogBlockIndexControllerTest
             final ByteBuffer argBuffer = (ByteBuffer) invocationOnMock.getArguments()[0];
             final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
             unsafeBuffer.wrap(argBuffer);
+
             // set position
+            // first event
+            unsafeBuffer.putLong(lengthOffset(0), 911);
             unsafeBuffer.putLong(positionOffset(messageOffset(0)), LOG_POSITION);
+
+            // second event
+            final int alignedLength = alignedLength(911);
+            unsafeBuffer.putLong(lengthOffset(alignedLength), 911);
+            unsafeBuffer.putLong(positionOffset(messageOffset(alignedLength)), TRUNCATE_POSITION);
 
             argBuffer.position(blockSize);
             return nextAddr;
