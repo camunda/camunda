@@ -106,8 +106,6 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
 
         for (T subscription : subscriptions)
         {
-            workCount += subscription.performMaintenance();
-
             if (subscription.isClosing())
             {
                 // TODO: this leads to concurrent modification of subscriptions

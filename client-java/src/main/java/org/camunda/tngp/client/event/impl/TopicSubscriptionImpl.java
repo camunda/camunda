@@ -12,7 +12,8 @@ public class TopicSubscriptionImpl
     implements TopicSubscription, PollableTopicSubscription
 {
 
-    protected InnerHandler innerHandler = new InnerHandler();
+    protected static final int MAX_HANDLING_RETRIES = 2;
+
     protected CheckedConsumer<TopicEventImpl> handler;
     protected final TopicClientImpl client;
 
@@ -33,7 +34,14 @@ public class TopicSubscriptionImpl
     {
         super(eventAcquisition, prefetchSize);
         this.client = client;
-        this.handler = handler;
+        if (handler != null)
+        {
+            // default behavior for managed subscriptions
+            this.handler = handler
+                    .andThen(this::recordProcessedEvent)
+                    .andOnExceptionRetry(MAX_HANDLING_RETRIES, this::logRetry)
+                    .andOnException(this::logExceptionAndClose);
+        }
         this.startPosition = startPosition;
         this.name = name;
         this.lastProcessedEventPosition = startPosition;
@@ -55,7 +63,10 @@ public class TopicSubscriptionImpl
     @Override
     public int poll(TopicEventHandler taskHandler)
     {
-        return pollEvents((e) -> taskHandler.handle(e, e));
+        final CheckedConsumer<TopicEventImpl> consumer = (e) -> taskHandler.handle(e, e);
+        return pollEvents(consumer
+                .andThen(this::recordProcessedEvent)
+                .andOnException(this::logExceptionAndPropagate));
     }
 
     @Override
@@ -66,14 +77,12 @@ public class TopicSubscriptionImpl
         // topic subscriptions
         if (processingFlag.compareAndSet(false, true))
         {
-            innerHandler.wrap(pollHandler);
             try
             {
-                return super.pollEvents(innerHandler);
+                return super.pollEvents(pollHandler);
             }
             finally
             {
-                innerHandler.wrap(null);
                 processingFlag.set(false);
             }
         }
@@ -81,6 +90,23 @@ public class TopicSubscriptionImpl
         {
             return 0;
         }
+    }
+
+    protected void logExceptionAndClose(TopicEventImpl event, Exception e)
+    {
+        logEventHandlingError(e, event, "Closing subscription.");
+        this.closeAsync();
+    }
+
+    protected void logExceptionAndPropagate(TopicEventImpl event, Exception e)
+    {
+        logEventHandlingError(e, event, "Propagating exception to caller.");
+        throw new RuntimeException(e);
+    }
+
+    protected void logRetry(TopicEventImpl event, Exception e)
+    {
+        logEventHandlingError(e, event, "Retrying.");
     }
 
     public CheckedConsumer<TopicEventImpl> getHandler()
@@ -100,6 +126,8 @@ public class TopicSubscriptionImpl
     @Override
     protected void requestSubscriptionClose()
     {
+        acknowledgeLastProcessedEvent();
+
         client.closeTopicSubscription()
             .id(id)
             .execute();
@@ -108,12 +136,15 @@ public class TopicSubscriptionImpl
     @Override
     protected void onEventsPolled(int numEvents)
     {
+        if (isOpen())
+        {
+            acknowledgeLastProcessedEvent();
+        }
     }
 
-    @Override
-    protected int performMaintenance()
+    protected void acknowledgeLastProcessedEvent()
     {
-        if (!isClosed() && lastProcessedEventPosition > lastAcknowledgedPosition)
+        if (lastProcessedEventPosition > lastAcknowledgedPosition)
         {
             client.acknowledgeEvent()
                 .subscriptionId(id)
@@ -121,36 +152,23 @@ public class TopicSubscriptionImpl
                 .execute();
 
             lastAcknowledgedPosition = lastProcessedEventPosition;
-            return 1;
-        }
-        else
-        {
-            return 0;
         }
     }
 
-    protected class InnerHandler implements CheckedConsumer<TopicEventImpl>
+    protected void recordProcessedEvent(TopicEventImpl event)
     {
+        this.lastProcessedEventPosition = event.getEventPosition();
+    }
 
-        protected CheckedConsumer<TopicEventImpl> wrappedHandler;
+    protected void logEventHandlingError(Exception e, TopicEventImpl event, String resolution)
+    {
+        LOGGER.error("Topic subscription " + name + ": Unhandled exception during handling of event " +
+                formatEvent(event) + ". " + resolution, e);
+    }
 
-        public void wrap(CheckedConsumer<TopicEventImpl> wrappedHandler)
-        {
-            this.wrappedHandler = wrappedHandler;
-        }
-
-        @Override
-        public void accept(TopicEventImpl t) throws Exception
-        {
-            try
-            {
-                wrappedHandler.accept(t);
-            }
-            finally
-            {
-                lastProcessedEventPosition = t.getEventPosition();
-            }
-        }
+    protected String formatEvent(TopicEventImpl event)
+    {
+        return String.format("[position=%s, key=%s, type=%s, content=%s]", event.getEventPosition(), event.getEventKey(), event.getEventType(), event.getJson());
     }
 
 }

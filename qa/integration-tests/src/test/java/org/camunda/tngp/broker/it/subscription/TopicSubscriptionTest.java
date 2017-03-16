@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class TopicSubscriptionTest
 {
 
+    public static final int EXPECTED_HANDLER_INVOCATIONS = 3;
     public static final String SUBSCRIPTION_NAME = "foo";
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();

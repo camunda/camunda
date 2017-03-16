@@ -153,10 +153,4 @@ public class TaskSubscriptionImpl
             }
         }
     }
-
-    @Override
-    protected int performMaintenance()
-    {
-        return 0;
-    }
 }

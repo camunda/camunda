@@ -150,7 +150,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
         // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
         // in case the broker continuously produces new tasks
-        while (handledEvents < currentlyAvailableEvents)
+        while (handledEvents < currentlyAvailableEvents && isOpen())
         {
             event = pendingEvents.poll();
             if (event == null)
@@ -166,7 +166,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             }
             catch (Exception e)
             {
-                onEventHandlingException(event, e);
+                onUnhandledEventHandlingException(event, e);
             }
         }
 
@@ -178,10 +178,9 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         return handledEvents;
     }
 
-    protected void onEventHandlingException(TopicEventImpl event, Exception e)
+    protected void onUnhandledEventHandlingException(TopicEventImpl event, Exception e)
     {
-        // could become configurable in the future (e.g. unlock task or report an error via API)
-        LOGGER.error("Exception during handling of event " + event.getEventKey(), e);
+        throw new RuntimeException("Exception during handling of event " + event.getEventKey(), e);
     }
 
     public void onClose()
@@ -195,7 +194,5 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected abstract void requestSubscriptionClose();
 
     protected abstract void onEventsPolled(int numEvents);
-
-    protected abstract int performMaintenance();
 
 }

@@ -8,6 +8,8 @@ package org.camunda.tngp.client.event;
  * builder allows registering specific handlers for task events with a higher level API.
  *
  * <p>By default, a subscription starts at the current tail of the topic (see {@link #startAtTailOfTopic()}).
+ *
+ * <p>When an event handler invocation fails, invoking it is retried two times before the subscription is closed.
  */
 public interface TaskTopicSubscriptionBuilder
 {

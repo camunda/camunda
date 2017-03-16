@@ -5,6 +5,8 @@ package org.camunda.tngp.client.event;
  * i.e. where a supplied event handler is invoked whenever events are received.
  *
  * <p>By default, a subscription starts at the current tail of the topic (see {@link #startAtTailOfTopic()}).
+ *
+ * <p>When an event handler invocation fails, invoking it is retried two times before the subscription is closed.
  */
 public interface TopicSubscriptionBuilder
 {
