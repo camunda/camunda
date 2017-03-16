@@ -34,6 +34,12 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<To
         return this;
     }
 
+    public CreateTopicSubscriptionCmdImpl prefetchCapacity(int prefetchCapacity)
+    {
+        this.subscription.setPrefetchCapacity(prefetchCapacity);
+        return this;
+    }
+
     @Override
     protected Object writeCommand()
     {

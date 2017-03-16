@@ -7,7 +7,7 @@ public class TopicSubscription
     protected int topicId;
     protected long startPosition;
     protected String name;
-    protected long lastAcknowledgedPosition;
+    protected int prefetchCapacity;
 
     public TopicSubscription()
     {
@@ -54,14 +54,14 @@ public class TopicSubscription
         return name;
     }
 
-    public long getLastAcknowledgedPosition()
+    public void setPrefetchCapacity(int prefetchCapacity)
     {
-        return lastAcknowledgedPosition;
+        this.prefetchCapacity = prefetchCapacity;
     }
 
-    public void setLastAcknowledgedPosition(long lastAcknowledgedPosition)
+    public int getPrefetchCapacity()
     {
-        this.lastAcknowledgedPosition = lastAcknowledgedPosition;
+        return prefetchCapacity;
     }
 
     public void reset()
@@ -69,6 +69,6 @@ public class TopicSubscription
         this.id = -1L;
         this.topicId = -1;
         this.startPosition = -1L;
-        this.lastAcknowledgedPosition = -1L;
+        this.prefetchCapacity = -1;
     }
 }

@@ -23,16 +23,18 @@ public class TopicSubscriptionImpl
 
     protected final long startPosition;
     protected final String name;
+    protected final int prefetchCapacity;
 
     public TopicSubscriptionImpl(
             TopicClientImpl client,
             CheckedConsumer<TopicEventImpl> handler,
             EventAcquisition<TopicSubscriptionImpl> eventAcquisition,
-            int prefetchSize,
+            int prefetchCapacity,
             long startPosition,
             String name)
     {
-        super(eventAcquisition, prefetchSize);
+        super(eventAcquisition, prefetchCapacity);
+        this.prefetchCapacity = prefetchCapacity;
         this.client = client;
         if (handler != null)
         {
@@ -119,6 +121,7 @@ public class TopicSubscriptionImpl
     {
         return client.createTopicSubscription()
                 .startPosition(startPosition)
+                .prefetchCapacity(prefetchCapacity)
                 .name(name)
                 .execute();
     }

@@ -23,6 +23,7 @@ import org.mockito.MockitoAnnotations;
 
 public class TopicSubscriptionBuilderTest
 {
+    protected static final int PREFETCH_CAPACITY = 4;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -60,7 +61,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .handler(noOpHandler);
 
         // when
@@ -76,6 +77,7 @@ public class TopicSubscriptionBuilderTest
         verify(client).createTopicSubscription();
         verify(openSubscriptionCmd).startPosition(lt(0L)); //default is tail of topic
         verify(openSubscriptionCmd).name("foo");
+        verify(openSubscriptionCmd).prefetchCapacity(PREFETCH_CAPACITY);
         verify(openSubscriptionCmd).execute();
     }
 
@@ -83,7 +85,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtHeadOfTopic()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .handler(noOpHandler)
                 .startAtHeadOfTopic();
 
@@ -102,7 +104,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtTailOfTopic()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .handler(noOpHandler)
                 .startAtTailOfTopic();
 
@@ -121,7 +123,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtPosition()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .handler(noOpHandler)
                 .startAtPosition(123L);
 
@@ -141,7 +143,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildPollableSubscription()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition);
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY);
 
         // when
         final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) builder
@@ -155,6 +157,7 @@ public class TopicSubscriptionBuilderTest
 
         verify(client).createTopicSubscription();
         verify(openSubscriptionCmd).startPosition(lt(0L));
+        verify(openSubscriptionCmd).prefetchCapacity(PREFETCH_CAPACITY);
         verify(openSubscriptionCmd).name("foo");
         verify(openSubscriptionCmd).execute();
     }
@@ -164,7 +167,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildPollableSubscriptionAtHeadOfTopic()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition)
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .startAtHeadOfTopic();
 
         // when
@@ -182,7 +185,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildPollableSubscriptionAtTailOfTopic()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition)
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .startAtTailOfTopic();
 
         // when
@@ -200,7 +203,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldBuildPollableSubscriptionAtPosition()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition)
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .startAtPosition(123L);
 
         // when
@@ -218,7 +221,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldValidateEventHandlerForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition);
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY);
 
         // then
         exception.expect(RuntimeException.class);
@@ -232,7 +235,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldValidateNameForManagedSubscription()
     {
         // given
-        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition)
+        final TopicSubscriptionBuilder builder = new TopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY)
                 .handler(noOpHandler);
 
         // then
@@ -248,7 +251,7 @@ public class TopicSubscriptionBuilderTest
     public void shouldValidateNameForPollableSubscription()
     {
         // given
-        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition);
+        final PollableTopicSubscriptionBuilder builder = new PollableTopicSubscriptionBuilderImpl(client, acquisition, PREFETCH_CAPACITY);
 
         // then
         exception.expect(RuntimeException.class);

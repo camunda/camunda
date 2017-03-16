@@ -22,9 +22,10 @@ public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBu
     public TaskTopicSubscriptionBuilderImpl(
             TopicClientImpl client,
             EventAcquisition<TopicSubscriptionImpl> acquisition,
-            MsgPackMapper msgPackMapper)
+            MsgPackMapper msgPackMapper,
+            int prefetchCapacity)
     {
-        innerBuilder = new TopicSubscriptionBuilderImpl(client, acquisition);
+        innerBuilder = new TopicSubscriptionBuilderImpl(client, acquisition, prefetchCapacity);
         this.msgPackMapper = msgPackMapper;
     }
 

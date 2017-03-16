@@ -35,7 +35,7 @@ public class TopicSubscriptionProcessorTest
     {
         // given
         final TopicSubscriptionProcessor processor =
-                new TopicSubscriptionProcessor(1, 2, 3, 0, "sub", eventWriter);
+                new TopicSubscriptionProcessor(1, 2, 3, 0, "sub", 5, eventWriter);
 
         controller.initStreamProcessor(processor);
 

@@ -48,6 +48,12 @@ public class ClientProperties
      */
     public static final String CLIENT_TASK_EXECUTION_AUTOCOMPLETE = "tngp.client.tasks.execution.autocomplete";
 
+    /**
+     * Determines the maximum amount of topic events are prefetched and buffered at a time
+     * before they are handled to the event handler. Default value is 32.
+     */
+    public static final String CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY = "tngp.client.event.prefetch";
+
     public static void setDefaults(Properties properties)
     {
         properties.putIfAbsent(BROKER_CONTACTPOINT, "127.0.0.1:51015");
@@ -57,5 +63,6 @@ public class ClientProperties
         properties.putIfAbsent(CLIENT_THREADINGMODE, "SHARED");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "2");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_AUTOCOMPLETE, "true");
+        properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "32");
     }
 }

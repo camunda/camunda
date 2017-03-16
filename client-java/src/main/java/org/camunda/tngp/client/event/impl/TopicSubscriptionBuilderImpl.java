@@ -11,9 +11,12 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
 
     protected TopicSubscriptionImplBuilder implBuilder;
 
-    public TopicSubscriptionBuilderImpl(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
+    public TopicSubscriptionBuilderImpl(
+            TopicClientImpl client,
+            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition);
+        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition, prefetchCapacity);
     }
 
     @Override

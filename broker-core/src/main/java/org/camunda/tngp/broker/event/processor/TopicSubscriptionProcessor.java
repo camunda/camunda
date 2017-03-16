@@ -22,6 +22,7 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.buffer.BufferUtil;
+import org.camunda.tngp.util.collection.LongRingBuffer;
 
 public class TopicSubscriptionProcessor implements StreamProcessor, EventProcessor, SnapshotPositionProvider
 {
@@ -46,6 +47,7 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     protected long lastAck;
     protected long pendingAck;
 
+    protected LongRingBuffer pendingEvents;
 
     public TopicSubscriptionProcessor(
             int channelId,
@@ -53,6 +55,7 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
             long subscriptionId,
             long startPosition,
             String name,
+            int prefetchCapacity,
             SubscribedEventWriter channelWriter)
     {
         this.channelWriter = channelWriter;
@@ -62,6 +65,11 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
         this.startPosition = startPosition;
         this.name = name;
         this.nameBuffer = new UnsafeBuffer(name.getBytes(StandardCharsets.UTF_8));
+
+        if (prefetchCapacity > 0)
+        {
+            this.pendingEvents = new LongRingBuffer(prefetchCapacity);
+        }
     }
 
     protected final RecordingSnapshotSupport recoveryListener = new RecordingSnapshotSupport();
@@ -135,7 +143,8 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     public boolean executeSideEffects()
     {
         event.readMetadata(metadata);
-        return channelWriter.channelId(channelId)
+
+        final boolean success = channelWriter.channelId(channelId)
             .eventType(metadata.getEventType())
             .longKey(event.getLongKey())
             .position(event.getPosition())
@@ -144,6 +153,19 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage();
+
+        if (success && recordsPendingEvents())
+        {
+            pendingEvents.addElementToHead(event.getPosition());
+        }
+
+        return success;
+    }
+
+    @Override
+    public boolean isSuspended()
+    {
+        return recordsPendingEvents() && pendingEvents.isSaturated();
     }
 
     public int getLogStreamId()
@@ -192,11 +214,17 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
                 .valueWriter(ack)
                 .tryWrite();
 
+
             ackFuture = future;
         })
         .thenAccept((v) ->
         {
             lastAck = eventPosition;
+
+            if (recordsPendingEvents())
+            {
+                pendingEvents.consumeUntilInclusive(lastAck);
+            }
         });
     }
 
@@ -227,6 +255,14 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     public long getSnapshotPosition(LoggedEvent lastProcessedEvent, long lastWrittenEventPosition)
     {
         return lastAck;
+    }
+
+    /**
+     * @return true if this subscription requires throttling
+     */
+    protected boolean recordsPendingEvents()
+    {
+        return pendingEvents != null;
     }
 
     public static MetadataFilter eventFilter()

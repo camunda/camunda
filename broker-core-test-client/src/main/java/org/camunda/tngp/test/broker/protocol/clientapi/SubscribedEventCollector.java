@@ -1,5 +1,6 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.agrona.BitUtil;
@@ -15,6 +16,7 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
     protected final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     protected int readOffset = 0;
     protected int writeOffset = 0;
+    protected AtomicInteger pendingEvents = new AtomicInteger(0);
 
     protected Object monitor = new Object();
     protected static final long MAX_WAIT = 10 * 1000L;
@@ -22,7 +24,7 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
     @Override
     public SubscribedEvent get()
     {
-        if (readOffset >= writeOffset)
+        if (pendingEvents.get() == 0)
         {
             // block haven't got enough events yet
             try
@@ -38,7 +40,7 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
             }
         }
 
-        if (readOffset >= writeOffset)
+        if (pendingEvents.get() == 0)
         {
             // if still not available
             throw new RuntimeException("no more events available");
@@ -51,6 +53,8 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
 
         event.wrap(buffer, readOffset, eventLength);
         readOffset += eventLength;
+
+        pendingEvents.decrementAndGet();
 
         return event;
     }
@@ -80,6 +84,7 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
         this.buffer.putBytes(writeOffset, buffer, offset + TransportHeaderDescriptor.HEADER_LENGTH, eventLength);
         writeOffset += eventLength;
 
+        pendingEvents.incrementAndGet();
         synchronized (monitor)
         {
             monitor.notifyAll();
@@ -96,7 +101,13 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
 
     public void moveToTail()
     {
+        this.pendingEvents.set(0);
         this.readOffset = writeOffset;
+    }
+
+    public int getPendingEvents()
+    {
+        return pendingEvents.get();
     }
 
 }

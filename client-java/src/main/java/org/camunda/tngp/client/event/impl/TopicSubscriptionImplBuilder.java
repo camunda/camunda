@@ -4,18 +4,21 @@ import org.camunda.tngp.util.CheckedConsumer;
 
 public class TopicSubscriptionImplBuilder
 {
-    protected static final int PREFETCH_SIZE = 32;
-
     protected final TopicClientImpl client;
     protected CheckedConsumer<TopicEventImpl> handler;
     protected long startPosition;
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
     protected String name;
+    protected final int prefetchCapacity;
 
-    public TopicSubscriptionImplBuilder(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
+    public TopicSubscriptionImplBuilder(
+            TopicClientImpl client,
+            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            int prefetchCapacity)
     {
         this.client = client;
         this.acquisition = acquisition;
+        this.prefetchCapacity = prefetchCapacity;
         startAtTailOfTopic();
     }
 
@@ -63,7 +66,7 @@ public class TopicSubscriptionImplBuilder
             client,
             handler,
             acquisition,
-            PREFETCH_SIZE,
+            prefetchCapacity,
             startPosition,
             name);
     }

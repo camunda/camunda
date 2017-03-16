@@ -24,6 +24,8 @@ import org.mockito.MockitoAnnotations;
 public class TaskTopicSubscriptionBuilderTest
 {
 
+    protected static final int PREFETCH_CAPACITY = 4;
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -67,7 +69,8 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscription()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(
+                client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .defaultHandler(noOpHandler).taskEventHandler(noOpTaskHandler);
 
         // when
@@ -82,6 +85,7 @@ public class TaskTopicSubscriptionBuilderTest
 
         verify(client).createTopicSubscription();
         verify(openSubscriptionCmd).name("foo");
+        verify(openSubscriptionCmd).prefetchCapacity(PREFETCH_CAPACITY);
         verify(openSubscriptionCmd).execute();
     }
 
@@ -89,7 +93,11 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldValidateAtLeastOneEventHandlerForManagedSubscription()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper);
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(
+                client,
+                acquisition,
+                msgPackMapper,
+                PREFETCH_CAPACITY);
 
         // then
         exception.expect(RuntimeException.class);
@@ -104,7 +112,8 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtHeadOfTopic()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(
+                client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .defaultHandler(noOpHandler)
                 .taskEventHandler(noOpTaskHandler)
                 .startAtHeadOfTopic();
@@ -124,7 +133,8 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtTailOfTopic()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(
+                client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .defaultHandler(noOpHandler)
                 .taskEventHandler(noOpTaskHandler)
                 .startAtTailOfTopic();
@@ -144,7 +154,8 @@ public class TaskTopicSubscriptionBuilderTest
     public void shouldBuildManagedSubscriptionAtPosition()
     {
         // given
-        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(client, acquisition, msgPackMapper)
+        final TaskTopicSubscriptionBuilder builder = new TaskTopicSubscriptionBuilderImpl(
+                client, acquisition, msgPackMapper, PREFETCH_CAPACITY)
                 .defaultHandler(noOpHandler)
                 .taskEventHandler(noOpTaskHandler)
                 .startAtPosition(123L);

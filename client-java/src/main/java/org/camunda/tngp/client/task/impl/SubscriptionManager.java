@@ -38,12 +38,17 @@ public class SubscriptionManager
     protected final EventSubscriptions<TaskSubscriptionImpl> taskSubscriptions;
     protected final EventSubscriptions<TopicSubscriptionImpl> topicSubscriptions;
 
+    // task-subscription-specific config
     protected final boolean autoCompleteTasks;
+
+    // topic-subscription specific config
+    protected final int topicSubscriptionPrefetchCapacity;
 
     public SubscriptionManager(
             TngpClientImpl client,
             int numExecutionThreads,
             boolean autoCompleteTasks,
+            int topicSubscriptionPrefetchCapacity,
             Subscription receiveBufferSubscription)
     {
         this.client = client;
@@ -57,6 +62,8 @@ public class SubscriptionManager
         this.numExecutionThreads = numExecutionThreads;
         this.autoCompleteTasks = autoCompleteTasks;
         this.msgPackMapper = new MsgPackMapper(client.getObjectMapper());
+
+        this.topicSubscriptionPrefetchCapacity = topicSubscriptionPrefetchCapacity;
     }
 
     public void start()
@@ -140,17 +147,17 @@ public class SubscriptionManager
 
     public TopicSubscriptionBuilder newTopicSubscription(TopicClientImpl client)
     {
-        return new TopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition);
+        return new TopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
     }
 
     public PollableTopicSubscriptionBuilder newPollableTopicSubscription(TopicClientImpl client)
     {
-        return new PollableTopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition);
+        return new PollableTopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
     }
 
     public TaskTopicSubscriptionBuilder newTaskTopicSubscription(int topicId)
     {
-        return new TaskTopicSubscriptionBuilderImpl(client.topic(topicId), topicSubscriptionAcquisition, msgPackMapper);
+        return new TaskTopicSubscriptionBuilderImpl(client.topic(topicId), topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
     }
 
 }

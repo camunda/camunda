@@ -40,6 +40,7 @@ public class TopicSubscriptionManager implements Agent
         final int channelId = subscription.getChannelId();
         final long startPosition = subscription.getStartPosition();
         final String name = subscription.getName();
+        final int prefetchCapacity = subscription.getPrefetchCapacity();
 
         return asyncContext.runAsync((future) ->
         {
@@ -57,6 +58,7 @@ public class TopicSubscriptionManager implements Agent
                     subscriptionId,
                     startPosition,
                     name,
+                    prefetchCapacity,
                     eventWriterFactory.get());
 
             streamProcessorManager.createStreamProcessorService(

@@ -194,4 +194,29 @@ public class TopicSubscriptionTest
 
         assertThat(handledEventPositions).containsExactly(1L, 1L, 1L, 2L);
     }
+
+    @Test
+    public void shouldSendPrefetchCapacityAsDefinedInClientProperties()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        // when
+        client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .handler((m, e) ->
+            {
+
+            })
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        final ControlMessageRequest addSubscriptionRequest = brokerRule.getReceivedControlMessageRequests().stream()
+            .filter((r) -> r.messageType() == ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
+            .findFirst()
+            .get();
+
+        assertThat(addSubscriptionRequest.getData()).containsEntry("prefetchCapacity", 32);
+    }
 }

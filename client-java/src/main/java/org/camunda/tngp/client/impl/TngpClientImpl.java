@@ -110,8 +110,13 @@ public class TngpClientImpl implements TngpClient, WorkflowTopicClient
         final int numExecutionThreads = Integer.parseInt(properties.getProperty(CLIENT_TASK_EXECUTION_THREADS));
         final Boolean autoCompleteTasks = Boolean.parseBoolean(properties.getProperty(CLIENT_TASK_EXECUTION_AUTOCOMPLETE));
 
-        subscriptionManager = new SubscriptionManager(this, numExecutionThreads, autoCompleteTasks, dataFrameReceiveBuffer.openSubscription("task-acquisition"));
-
+        final int prefetchCapacity = Integer.parseInt(properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
+        subscriptionManager = new SubscriptionManager(
+                this,
+                numExecutionThreads,
+                autoCompleteTasks,
+                prefetchCapacity,
+                dataFrameReceiveBuffer.openSubscription("task-acquisition"));
     }
 
     @Override

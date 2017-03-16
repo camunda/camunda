@@ -8,9 +8,12 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
 {
     protected TopicSubscriptionImplBuilder implBuilder;
 
-    public PollableTopicSubscriptionBuilderImpl(TopicClientImpl client, EventAcquisition<TopicSubscriptionImpl> acquisition)
+    public PollableTopicSubscriptionBuilderImpl(
+            TopicClientImpl client,
+            EventAcquisition<TopicSubscriptionImpl> acquisition,
+            int prefetchCapacity)
     {
-        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition);
+        implBuilder = new TopicSubscriptionImplBuilder(client, acquisition, prefetchCapacity);
     }
 
     @Override

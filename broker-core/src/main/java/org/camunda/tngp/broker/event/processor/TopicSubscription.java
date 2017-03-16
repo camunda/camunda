@@ -12,6 +12,7 @@ public class TopicSubscription extends UnpackedObject
     protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
     // negative value for end of log
     protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
+    protected IntegerProperty prefetchCapacityProp = new IntegerProperty("prefetchCapacity", -1);
     protected StringProperty nameProp = new StringProperty("name");
 
     protected int channelId;
@@ -21,7 +22,8 @@ public class TopicSubscription extends UnpackedObject
         this.declareProperty(idProp)
             .declareProperty(topicIdProp)
             .declareProperty(startPositionProp)
-            .declareProperty(nameProp);
+            .declareProperty(nameProp)
+            .declareProperty(prefetchCapacityProp);
     }
 
     public long getId()
@@ -66,6 +68,17 @@ public class TopicSubscription extends UnpackedObject
     public long getStartPosition()
     {
         return startPositionProp.getValue();
+    }
+
+    public TopicSubscription prefetchCapacity(int prefetchCapacity)
+    {
+        this.prefetchCapacityProp.setValue(prefetchCapacity);
+        return this;
+    }
+
+    public int getPrefetchCapacity()
+    {
+        return prefetchCapacityProp.getValue();
     }
 
     public String getName()

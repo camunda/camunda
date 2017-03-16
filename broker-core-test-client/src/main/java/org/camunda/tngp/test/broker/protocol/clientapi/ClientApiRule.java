@@ -85,4 +85,9 @@ public class ClientApiRule extends ExternalResource
         subscribedEventCollector.moveToTail();
     }
 
+    public int numSubscribedEventsAvailable()
+    {
+        return subscribedEventCollector.getPendingEvents();
+    }
+
 }
