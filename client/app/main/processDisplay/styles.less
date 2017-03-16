@@ -33,6 +33,17 @@
   .diagram {
     flex: 1 1 auto;
     position: relative;
+
+    .no-data-indicator {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(212,212,212,0.7);
+      pointer-events: none;
+      padding-top: 4em;
+      text-align: center;
+      font-size: 4em;
+    }
   }
 
   .overlay {

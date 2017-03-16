@@ -1,4 +1,4 @@
-import {jsx, withSelector, Match, Case, Default} from 'view-utils';
+import {jsx, withSelector, Match, Case, Default, Scope} from 'view-utils';
 import {createHeatmapDiagram} from './diagram';
 import {Controls, areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
 import {Statistics} from './statistics';
@@ -35,7 +35,19 @@ function Process() {
             </div>
           </Case>
           <Case predicate={shouldDisplayHeatmap}>
-            <HeatmapDiagram selector="display" />
+            <Scope selector="display">
+              <Match>
+                <Case predicate={hasHeatmapData}>
+                  <HeatmapDiagram />
+                </Case>
+                <Default>
+                  <Diagram />
+                  <div className="no-data-indicator">
+                    No Data
+                  </div>
+                </Default>
+              </Match>
+            </Scope>
           </Case>
           <Default>
             <Diagram selector="display" />
@@ -45,6 +57,10 @@ function Process() {
     </div>
     <Statistics getBpmnViewer={HeatmapDiagram.getViewer} />
   </div>;
+
+  function hasHeatmapData({heatmap:{data:{piCount}}}) {
+    return piCount > 0;
+  }
 
   function shouldDisplayHeatmap({controls: {view}}) {
     return view === 'frequency';

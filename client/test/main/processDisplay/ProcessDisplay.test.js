@@ -31,7 +31,9 @@ describe('<ProcessDisplay>', () => {
       },
       display: {
         diagram: {state: LOADED_STATE},
-        heatmap: {state: LOADED_STATE}
+        heatmap: {state: LOADED_STATE, data: {
+          piCount: 33
+        }},
       }, filter: {
         query: []
       }
@@ -101,6 +103,21 @@ describe('<ProcessDisplay>', () => {
     update(state);
 
     expect(node.textContent).to.contain('HeatmapDiagram');
+  });
+
+  it('should display a no data indicator if the heatmap data contains no process instances', () => {
+    state.controls.view = 'frequency';
+    state.display.heatmap.data.piCount = 0;
+    update(state);
+
+    expect(node.querySelector('.no-data-indicator')).to.exist;
+  });
+
+  it('should not display a no data indicator outside the frequency heatmap mode', () => {
+    state.display.heatmap.data.piCount = 0;
+    update(state);
+
+    expect(node.querySelector('.no-data-indicator')).to.not.exist;
   });
 
   it('should display the normal bpmn diagram when the "none" view mode is selected', () => {
