@@ -3,6 +3,7 @@ package org.camunda.tngp.test.broker.protocol.clientapi;
 import java.util.Map;
 
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.test.util.collection.MapBuilder;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ControlMessageRequestBuilder
