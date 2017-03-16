@@ -13,6 +13,7 @@
 
     <modules>
         <module>engine-purge</module>
+        <module>performance-tests</module>
     </modules>
 
 
