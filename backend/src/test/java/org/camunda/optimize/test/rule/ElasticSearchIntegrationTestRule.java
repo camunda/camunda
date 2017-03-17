@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -71,6 +70,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     } catch (Exception e) {
       logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
     }
+    esclient
+      .admin()
+      .cluster()
+      .prepareHealth(properties.getProperty("camunda.optimize.es.index"))
+      .setWaitForYellowStatus()
+      .get();
   }
 
   protected void starting(Description description) {
@@ -177,7 +182,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  public Client getClient() {
+  public TransportClient getClient() {
     return esclient;
   }
 
