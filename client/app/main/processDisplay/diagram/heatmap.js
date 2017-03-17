@@ -6,20 +6,30 @@ const SEQUENCEFLOW_VALUE_MODIFIER = 0.2;
 const ACTIVITY_DENSITY = 20;
 const ACTIVITY_RADIUS = 60;
 const ACTIVITY_VALUE_MODIFIER = 0.125;
-const COOLNESS = 0.4;
+const VALUE_SHIFT = 0.17;
+const COOLNESS = 2.5;
 const EDGE_BUFFER = 75;
 const RESOLUTION = 4;
 
 export default function generateHeatmap(viewer, data) {
   const dimensions = getDimensions(viewer);
-  const heatmapData = generateData(data, viewer, dimensions);
+  let heatmapData = generateData(data, viewer, dimensions);
 
-  const max = Math.max.apply(null, Object.values(data));
   const map = createMap(dimensions);
+  const heatmapDataValueMax = Math.max.apply(this, heatmapData.map(el => el.value));
+
+  heatmapData = heatmapData.map(({x, y, value, radius}) => {
+    return {
+      x,
+      y,
+      radius,
+      value: (VALUE_SHIFT + value / heatmapDataValueMax * (1 - VALUE_SHIFT)) / COOLNESS
+    };
+  });
 
   map.setData({
     min: 0,
-    max: max * COOLNESS,
+    max: 1,
     data: heatmapData
   });
 
