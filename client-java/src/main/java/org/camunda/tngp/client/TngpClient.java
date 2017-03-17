@@ -15,7 +15,7 @@ public interface TngpClient extends AutoCloseable
     /**
      * Provides APIs specific to topics of type <code>workflow</code>.
      */
-    WorkflowTopicClient workflowTopic();
+    WorkflowTopicClient workflowTopic(int id);
 
     /**
      * Provides general purpose APIs for any kind of topic.

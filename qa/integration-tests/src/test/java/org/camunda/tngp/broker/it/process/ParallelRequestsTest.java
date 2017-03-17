@@ -12,8 +12,8 @@ import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
+import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -25,13 +25,11 @@ import org.junit.rules.RuleChain;
 public class ParallelRequestsTest
 {
     private static final BpmnModelInstance MODEL =
-            Bpmn.createExecutableProcess("anId").startEvent().endEvent().done();
+            Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientRule clientRule = new ClientRule();
-
-    protected WorkflowDefinition workflowDefinition;
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -42,9 +40,9 @@ public class ParallelRequestsTest
     public void deployModelInstance()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
-        workflowDefinition = workflowService.deploy()
+        workflowService.deploy()
             .bpmnModelInstance(MODEL)
             .execute();
     }
@@ -59,21 +57,21 @@ public class ParallelRequestsTest
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowsClient = client.workflowTopic();
+        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
 
         final SilentFuture<WorkflowInstance> instantiationFuture =
                 parallelRequests.submitRequest(
                     () ->
                     TestUtil.doRepeatedly(() ->
-                        client.workflowTopic()
+                        client.workflowTopic(0)
                             .start()
-                            .workflowDefinitionId(workflowDefinition.getId())
+                            .workflowDefinitionId(0)
                             .execute())
                         .until(
                             (wfInstance) -> wfInstance != null,
                             (exception) -> !exception.getMessage().contains("(1-3)")));
 
-        final SilentFuture<WorkflowDefinition> deploymentFuture =
+        final SilentFuture<DeploymentResult> deploymentFuture =
                 parallelRequests.submitRequest(
                     () ->
                     {

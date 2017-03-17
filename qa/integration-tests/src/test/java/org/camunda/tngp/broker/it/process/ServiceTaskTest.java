@@ -11,7 +11,6 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Ignore;
@@ -50,15 +49,15 @@ public class ServiceTaskTest
     public void shouldStartProcessWithServiceTask()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
-        final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
+        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
 
         // when
         final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -71,15 +70,15 @@ public class ServiceTaskTest
     public void shouldPollAndLockServiceTask() throws InterruptedException
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
-        final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
+        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
 
         // given
         final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -107,16 +106,16 @@ public class ServiceTaskTest
     public void shouldNotLockServiceTaskOfDifferentType()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // given
-        final WorkflowDefinition workflow1 = clientRule.deployProcess(oneTaskProcess("foo"));
-        final WorkflowDefinition workflow2 = clientRule.deployProcess(oneTaskProcess("bar"));
+        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
+        workflowService.deploy().bpmnModelInstance(oneTaskProcess("bar")).execute();
 
         TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow1.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -125,7 +124,7 @@ public class ServiceTaskTest
         TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow2.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -152,15 +151,15 @@ public class ServiceTaskTest
     public void shouldCompleteServiceTask()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // given
-        final WorkflowDefinition workflow = clientRule.deployProcess(oneTaskProcess("foo"));
+        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
 
         TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -191,15 +190,15 @@ public class ServiceTaskTest
     public void shouldExecuteSequenceOfServiceTasks()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // given
-        final WorkflowDefinition workflow = clientRule.deployProcess(ProcessModels.TWO_TASKS_PROCESS);
+        workflowService.deploy().bpmnModelInstance(ProcessModels.TWO_TASKS_PROCESS).execute();
 
         TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -253,17 +252,16 @@ public class ServiceTaskTest
     public void shouldExecuteServiceTaskWithoutOutgoingFlow()
     {
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
-        final WorkflowDefinition workflow = clientRule.deployProcess(
-                wrap(oneTaskProcess("foo"))
-                    .removeFlowNode("endEvent"));
+        workflowService.deploy().bpmnModelInstance(wrap(oneTaskProcess("foo"))
+                .removeFlowNode("endEvent")).execute();
 
         // given
         TestUtil.doRepeatedly(() ->
             workflowService
                 .start()
-                .workflowDefinitionId(workflow.getId())
+                .workflowDefinitionId(0)
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,

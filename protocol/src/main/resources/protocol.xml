@@ -30,6 +30,7 @@
         <validValue name="TASK_EVENT">0</validValue>
         <validValue name="RAFT_EVENT">1</validValue>
         <validValue name="SUBSCRIPTION_EVENT">2</validValue>
+        <validValue name="DEPLOYMENT_EVENT">3</validValue>
     </enum>
     
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">

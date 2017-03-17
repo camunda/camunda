@@ -9,6 +9,8 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.ExecutableProcessRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessIdRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessStartEventRule;
 
 public class BpmnTransformer
 {
@@ -18,6 +20,8 @@ public class BpmnTransformer
     {
         BPMN_VALIDATORS = new ArrayList<>();
         BPMN_VALIDATORS.add(new ExecutableProcessRule());
+        BPMN_VALIDATORS.add(new ProcessIdRule());
+        BPMN_VALIDATORS.add(new ProcessStartEventRule());
     }
 
     public ValidationResults validate(BpmnModelInstance modelInstnace)

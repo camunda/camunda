@@ -2,9 +2,6 @@ package org.camunda.tngp.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static org.hamcrest.CoreMatchers.containsString;
-
-import java.nio.charset.StandardCharsets;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -14,15 +11,12 @@ import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.cmd.BrokerRequestException;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
-import org.junit.Ignore;
+import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
+import org.camunda.tngp.client.workflow.cmd.WorkflowDefinition;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-@Ignore
 public class DeployBpmnResourceTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -34,20 +28,28 @@ public class DeployBpmnResourceTest
         .outerRule(brokerRule)
         .around(clientRule);
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
     public void shouldDeployModelInstance()
     {
+        // given
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
-        final WorkflowDefinition wfDefinition = workflowService.deploy()
-            .bpmnModelInstance(Bpmn.createExecutableProcess("anId").startEvent().done())
+        // when
+        final DeploymentResult result = workflowService.deploy()
+            .bpmnModelInstance(Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .done())
             .execute();
 
-        assertThat(wfDefinition.getId()).isGreaterThanOrEqualTo(0);
+        // then
+        assertThat(result.isDeployed()).isTrue();
+        assertThat(result.getKey()).isGreaterThan(0);
+        assertThat(result.getDeployedWorkflows()).hasSize(1);
+
+        final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
+        assertThat(deployedWorkflow.getProcessId()).isEqualTo("process");
+        assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
     }
 
     @Test
@@ -55,17 +57,17 @@ public class DeployBpmnResourceTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
-
-        // then
-        exception.expect(BrokerRequestException.class);
-        exception.expectMessage("Failed request (1-2): Cannot deploy Bpmn Resource");
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // when
-        workflowService.deploy()
-            .resourceBytes("Foooo".getBytes(StandardCharsets.UTF_8))
-            .execute();
+        final DeploymentResult result = workflowService.deploy()
+                .resourceString("Foooo")
+                .execute();
+
+        // then
+        assertThat(result.isDeployed()).isFalse();
+        assertThat(result.getDeployedWorkflows()).hasSize(0);
+        assertThat(result.getErrorMessage()).contains("Failed to read BPMN model");
     }
 
     @Test
@@ -73,17 +75,17 @@ public class DeployBpmnResourceTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
-
-        // then
-        exception.expect(BrokerRequestException.class);
-        exception.expectMessage(containsString("ERROR 201"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // when
-        workflowService.deploy()
-            .bpmnModelInstance(Bpmn.createExecutableProcess().done()) // does not have a start event
+        final DeploymentResult result = workflowService.deploy()
+            .bpmnModelInstance(Bpmn.createExecutableProcess("no-start-event").done()) // does not have a start event
             .execute();
+
+        // then
+        assertThat(result.isDeployed()).isFalse();
+        assertThat(result.getDeployedWorkflows()).hasSize(0);
+        assertThat(result.getErrorMessage()).contains("no-start-event").contains("The process must contain at least one start event.");
     }
 
     @Test
@@ -91,25 +93,25 @@ public class DeployBpmnResourceTest
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
-
-        // then
-        exception.expect(BrokerRequestException.class);
-        exception.expectMessage(containsString("ERROR 203"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // when
-        workflowService.deploy()
+        final DeploymentResult result = workflowService.deploy()
             .bpmnModelInstance(Bpmn.createProcess().startEvent().endEvent().done())
             .execute();
+
+        // then
+        assertThat(result.isDeployed()).isFalse();
+        assertThat(result.getDeployedWorkflows()).hasSize(0);
+        assertThat(result.getErrorMessage()).contains("BPMN model must contain at least one executable process");
     }
 
     @Test
-    public void shouldNotDeployTwoProcesses()
+    public void shouldNotDeployTwoProcessesInsideOneDiagram()
     {
         // given
         final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         final BpmnModelInstance modelInstance = Bpmn.createEmptyModel();
         final Definitions definitions = modelInstance.newInstance(Definitions.class);
@@ -119,22 +121,23 @@ public class DeployBpmnResourceTest
         final Process process1 = modelInstance.newInstance(Process.class);
         definitions.addChildElement(process1);
         process1.setExecutable(true);
+        process1.setId("process1");
         process1.builder().startEvent().endEvent();
 
         final Process process2 = modelInstance.newInstance(Process.class);
         definitions.addChildElement(process2);
         process2.setExecutable(true);
+        process2.setId("process2");
         process2.builder().startEvent().endEvent();
 
-        // then
-        exception.expect(BrokerRequestException.class);
-        exception.expectMessage(containsString("ERROR 204"));
-        exception.expect(BrokerRequestExceptionMatcher.brokerException(2));
-
         // when
-        workflowService.deploy()
+        final DeploymentResult result = workflowService.deploy()
             .bpmnModelInstance(modelInstance)
             .execute();
+
+        // then
+        assertThat(result.isDeployed()).isFalse();
+        assertThat(result.getErrorMessage()).contains("BPMN model must not contain more than one executable process");
     }
 
 }

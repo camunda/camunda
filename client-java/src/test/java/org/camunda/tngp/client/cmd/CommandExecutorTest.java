@@ -22,6 +22,7 @@ import org.camunda.tngp.client.impl.ClientChannelResolver;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractCmdImpl;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
+import org.camunda.tngp.client.workflow.cmd.WorkflowDefinition;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;

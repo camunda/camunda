@@ -1,5 +1,6 @@
 package org.camunda.tngp.broker.workflow.graph.transformer.validator;
 
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.MORE_THAN_ONE_EXECUTABLE_PROCESS;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.NO_EXECUTABLE_PROCESS;
 
 import java.util.Collection;
@@ -23,16 +24,23 @@ public class ExecutableProcessRule implements ModelElementValidator<Definitions>
     {
         final Collection<Process> processes = definitionsElement.getChildElementsByType(Process.class);
 
-        boolean hasExecutableProcess = false;
+        int executableProcesses = 0;
 
         for (Process process : processes)
         {
-            hasExecutableProcess |= process.isExecutable();
+            if (process.isExecutable())
+            {
+                executableProcesses += 1;
+            }
         }
 
-        if (!hasExecutableProcess)
+        if (executableProcesses == 0)
         {
-            resultCollector.addError(NO_EXECUTABLE_PROCESS, "Deployed BPMN model must contain at least one executable process.");
+            resultCollector.addError(NO_EXECUTABLE_PROCESS, "BPMN model must contain at least one executable process.");
+        }
+        else if (executableProcesses > 1)
+        {
+            resultCollector.addError(MORE_THAN_ONE_EXECUTABLE_PROCESS, "BPMN model must not contain more than one executable process.");
         }
     }
 

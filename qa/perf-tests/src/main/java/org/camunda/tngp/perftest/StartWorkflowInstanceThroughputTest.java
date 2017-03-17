@@ -10,20 +10,18 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.perftest.helper.MaxRateThroughputTest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 
 public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
 {
-    protected long wfDefinitionId;
 
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
-        final WorkflowTopicClient workflowsClient = client.workflowTopic();
+        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
 
-        final BpmnModelInstance processModel = Bpmn.createExecutableProcess()
+        final BpmnModelInstance processModel = Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .serviceTask("serviceTask")
                 .endEvent()
@@ -32,12 +30,10 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
         wrap(processModel).taskAttributes("serviceTask", "foo", 0);
 
         // create deployment
-        final WorkflowDefinition deployedWorkflow = workflowsClient
+        workflowsClient
                 .deploy()
                 .bpmnModelInstance(processModel)
                 .execute();
-
-        this.wfDefinitionId = deployedWorkflow.getId();
 
         try
         {
@@ -53,12 +49,12 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final WorkflowTopicClient workflows = client.workflowTopic();
+        final WorkflowTopicClient workflows = client.workflowTopic(0);
 
         return () ->
         {
             return workflows.start()
-                .workflowDefinitionId(wfDefinitionId)
+                .workflowDefinitionKey("process")
                 .executeAsync(connection);
         };
     }

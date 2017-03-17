@@ -62,7 +62,7 @@ public class BrokerRestartTest
         client = clientRule.getClient();
 
         clientRule.getClient()
-            .workflowTopic()
+            .workflowTopic(0)
             .deploy()
             .bpmnModelInstance(ServiceTaskTest.oneTaskProcess("foo"))
             .execute();
@@ -74,7 +74,7 @@ public class BrokerRestartTest
 
         // given
         TestUtil.doRepeatedly(() ->
-            client.workflowTopic()
+            client.workflowTopic(0)
                 .start()
                 .workflowDefinitionKey("anId")
                 .execute())
@@ -110,7 +110,7 @@ public class BrokerRestartTest
     public void shouldCompleteTaskAfterRestart()
     {
         // given
-        client.workflowTopic()
+        client.workflowTopic(0)
             .start()
             .workflowDefinitionKey("anId")
             .execute();
@@ -143,7 +143,7 @@ public class BrokerRestartTest
         restartBroker();
 
         // then
-        final WorkflowInstance wfInstance = client.workflowTopic()
+        final WorkflowInstance wfInstance = client.workflowTopic(0)
             .start()
             .workflowDefinitionKey("anId")
             .execute();
@@ -155,7 +155,7 @@ public class BrokerRestartTest
     public void shouldContinueAscendingWfRuntimeIdGenerationAfterRestart()
     {
         // given
-        final WorkflowInstance wfInstance = client.workflowTopic()
+        final WorkflowInstance wfInstance = client.workflowTopic(0)
             .start()
             .workflowDefinitionKey("anId")
             .execute();
@@ -163,7 +163,7 @@ public class BrokerRestartTest
         restartBroker();
 
         // when
-        final WorkflowInstance wfInstance2 = client.workflowTopic()
+        final WorkflowInstance wfInstance2 = client.workflowTopic(0)
             .start()
             .workflowDefinitionKey("anId")
             .execute();

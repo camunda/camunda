@@ -106,13 +106,37 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements ArrayV
 
     public ArrayValueIterator<T> iterator()
     {
+        // reset the iterator
+        cursor = 0;
+        lastReturned = -1;
+        skipLastReturned = false;
+
+        final DirectBuffer buffer = elementReader.getBuffer();
+        elementReader.wrap(buffer, 0, buffer.capacity());
+
+        innerValue.reset();
+
         return this;
     }
 
     @Override
     public void writeJSON(StringBuilder builder)
     {
-        builder.append("[ size: " + size() + " ]");
+        builder.append("[");
+
+        iterator();
+
+        for (int i = 0; i < size; i++)
+        {
+            if (i > 0)
+            {
+                builder.append(",");
+            }
+
+            next().writeJSON(builder);
+        }
+
+        builder.append("]");
     }
 
     @Override

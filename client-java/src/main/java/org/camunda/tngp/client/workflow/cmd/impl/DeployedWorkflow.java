@@ -10,21 +10,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.logstreams.processor;
+package org.camunda.tngp.client.workflow.cmd.impl;
 
-public class StreamProcessorIds
+public class DeployedWorkflow
 {
-    // a stream processor id should be unique to distinguish event producers
+    private String processId;
+    private Integer version;
 
-    public static final int TASK_QUEUE_STREAM_PROCESSOR_ID = 10;
+    public String getProcessId()
+    {
+        return processId;
+    }
 
-    public static final int TASK_LOCK_STREAM_PROCESSOR_ID = 20;
+    public void setProcessId(String processId)
+    {
+        this.processId = processId;
+    }
 
-    public static final int TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID = 30;
+    public Integer getVersion()
+    {
+        return version;
+    }
 
-    public static final int TOPIC_SUBSCRIPTION_PROCESSOR_ID = 40;
+    public void setVersion(Integer version)
+    {
+        this.version = version;
+    }
 
-    public static final int TOPIC_SUBSCRIPTION_ACK_PROCESSOR_ID = 50;
-
-    public static final int DEPLOYMENT_PROCESSOR_ID = 60;
+    public void reset()
+    {
+        processId = null;
+        version = null;
+    }
 }

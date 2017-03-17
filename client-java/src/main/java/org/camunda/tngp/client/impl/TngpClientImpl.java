@@ -14,12 +14,8 @@ import java.util.Properties;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.cmd.DeployBpmnResourceCmd;
-import org.camunda.tngp.client.cmd.StartWorkflowInstanceCmd;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
-import org.camunda.tngp.client.impl.cmd.StartWorkflowInstanceCmdImpl;
-import org.camunda.tngp.client.impl.cmd.wf.deploy.DeployBpmnResourceCmdImpl;
 import org.camunda.tngp.client.task.impl.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -38,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class TngpClientImpl implements TngpClient, WorkflowTopicClient
+public class TngpClientImpl implements TngpClient
 {
     public static final int DEFAULT_RESOURCE_ID = 0;
     public static final int DEFAULT_SHARD_ID = 0;
@@ -206,10 +202,10 @@ public class TngpClientImpl implements TngpClient, WorkflowTopicClient
     }
 
     @Override
-    public WorkflowTopicClient workflowTopic()
+    public WorkflowTopicClient workflowTopic(int id)
     {
-        // Note: when implementing this, make sure to structure the API like for task topics
-        throw new RuntimeException("not implemented");
+        EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
+        return new WorkflowTopicClientImpl(this, id);
     }
 
     @Override
@@ -217,18 +213,6 @@ public class TngpClientImpl implements TngpClient, WorkflowTopicClient
     {
         EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
         return new TopicClientImpl(this, id);
-    }
-
-    @Override
-    public DeployBpmnResourceCmd deploy()
-    {
-        return new DeployBpmnResourceCmdImpl(cmdExecutor);
-    }
-
-    @Override
-    public StartWorkflowInstanceCmd start()
-    {
-        return new StartWorkflowInstanceCmdImpl(cmdExecutor);
     }
 
     public ClientCmdExecutor getCmdExecutor()

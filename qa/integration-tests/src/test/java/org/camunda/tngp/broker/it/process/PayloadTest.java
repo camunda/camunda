@@ -10,7 +10,6 @@ import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.cmd.WorkflowDefinition;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.test.util.TestUtil;
@@ -37,15 +36,15 @@ public class PayloadTest
         // given
         final TngpClient client = clientRule.getClient();
         final TaskTopicClient taskService = client.taskTopic(0);
-        final WorkflowTopicClient workflowsClient = client.workflowTopic();
+        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
 
-        final WorkflowDefinition workflowDefinition = workflowsClient.deploy()
+        workflowsClient.deploy()
             .bpmnModelInstance(ProcessModels.TWO_TASKS_PROCESS)
             .execute();
 
         workflowsClient
             .start()
-            .workflowDefinitionId(workflowDefinition.getId())
+            .workflowDefinitionId(0)
             .payload("foo")
             .execute();
 
