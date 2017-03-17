@@ -9,6 +9,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
@@ -84,12 +85,17 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   @Override
   protected void finished(Description description) {
     this.cleanUpElasticSearch();
+    this.refreshOptimizeIndexInElasticsearch();
   }
 
   public void refreshOptimizeIndexInElasticsearch() {
-    esclient.admin().indices()
-        .prepareRefresh(this.getOptimizeIndex())
-        .get();
+    try {
+      esclient.admin().indices()
+          .prepareRefresh(this.getOptimizeIndex())
+          .get();
+    } catch (IndexNotFoundException e) {
+      //nothing to do
+    }
   }
 
 
@@ -142,11 +148,15 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-        .refresh(true)
-        .filter(matchAllQuery())
-        .source("optimize")
-        .get();
+    try {
+      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+          .refresh(true)
+          .filter(matchAllQuery())
+          .source("optimize")
+          .get();
+    } catch (IndexNotFoundException e) {
+      //nothing to do
+    }
   }
 
   public void deleteOptimizeIndex() {
@@ -156,11 +166,15 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void assureElasticsearchIsClean() {
-    SearchResponse response = esclient.prepareSearch(this.getOptimizeIndex())
-      .setQuery(matchAllQuery())
-      .get();
-    Long hits = response.getHits().getTotalHits();
-    assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
+    try {
+      SearchResponse response = esclient.prepareSearch(this.getOptimizeIndex())
+          .setQuery(matchAllQuery())
+          .get();
+      Long hits = response.getHits().getTotalHits();
+      assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
+    } catch (IndexNotFoundException e) {
+      //nothing to do
+    }
   }
 
   public Client getClient() {

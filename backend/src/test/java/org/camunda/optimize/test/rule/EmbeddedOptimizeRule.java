@@ -70,6 +70,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   protected void finished(Description description) {
     try {
       camundaOptimize.destroy();
+      camundaOptimize = null;
     } catch (Exception e) {
       logger.error("Failed to stop Optimize", e);
     }
