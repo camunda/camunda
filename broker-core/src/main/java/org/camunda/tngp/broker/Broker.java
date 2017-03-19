@@ -44,4 +44,9 @@ public class Broker implements AutoCloseable
         brokerContext.close();
         System.out.println("Broker closed.");
     }
+
+    public SystemContext getBrokerContext()
+    {
+        return brokerContext;
+    }
 }
