@@ -1,6 +1,10 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.EngineEntityFetcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +20,7 @@ import java.util.List;
  */
 public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
 
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
   /**
@@ -24,8 +29,17 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
    */
   @Override
   public void run() {
-    getAbsentAggregateInformation();
-    executeImport();
+    try {
+      getAbsentAggregateInformation();
+      executeImport();
+    } catch (OptimizeException e) {
+      if (logger.isDebugEnabled()) {
+        logger.error("error during import", e);
+      } else {
+        logger.warn(e.getMessage());
+      }
+    }
+
   }
 
   public List<OPT> getEntitiesToImport() {
@@ -47,7 +61,7 @@ public abstract class ImportJob<OPT extends OptimizeDto> implements Runnable {
    * given entities from {@link #setEntitiesToImport(List)} with
    * the remaining information to fully represent the entity type.
    */
-  protected  abstract void getAbsentAggregateInformation();
+  protected  abstract void getAbsentAggregateInformation() throws OptimizeException;
 
   /**
    * This executes the import and adds all the given entities

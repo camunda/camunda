@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.rule;
 
+import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
@@ -121,4 +122,16 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void initializeSchema() {
     camundaOptimize.initializeIndex();
   }
+
+  public int getProgressValue() {
+    return this.target()
+        .path("status/import-progress")
+        .request()
+        .get(CountDto.class).getCount();
+  }
+
+  public void startImportScheduler() {
+    camundaOptimize.startImportScheduler();
+  }
+
 }

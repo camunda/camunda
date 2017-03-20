@@ -9,5 +9,10 @@ import org.camunda.optimize.service.importing.ImportServiceProvider;
 public interface CamundaOptimize {
 
   ImportJobExecutor getImportJobExecutor();
+
   ImportServiceProvider getImportServiceProvider();
+
+  void startImportScheduler();
+
+  void disableImportScheduler();
 }

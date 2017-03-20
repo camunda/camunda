@@ -12,10 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -142,18 +145,23 @@ public class EngineEntityFetcher {
 
   public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {
     List<HistoricProcessInstanceDto> entries;
-    String processInstanceIdsAsCommaSeparatedString = String.join(",", processInstanceIds);
+    HashMap pids = new HashMap();
+    pids.put("processInstanceIds", processInstanceIds);
     try {
-      entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricProcessInstanceEndpoint())
-        .queryParam("processInstanceIds", processInstanceIdsAsCommaSeparatedString)
+      WebTarget baseRequest = client
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getHistoricProcessInstanceEndpoint());
+      entries = baseRequest
         .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<HistoricProcessInstanceDto>>() {
-        });
+        .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
+        .readEntity(new GenericType<List<HistoricProcessInstanceDto>>(){});
       return entries;
     } catch (RuntimeException e) {
-      logger.error("Could not fetch historic process instances from engine. Please check the connection!");
+      if (logger.isDebugEnabled()) {
+        logger.error("Could not fetch historic process instances from engine. Please check the connection!", e);
+      } else {
+        logger.error("Could not fetch historic process instances from engine. Please check the connection!");
+      }
       entries = Collections.emptyList();
     }
     return entries;

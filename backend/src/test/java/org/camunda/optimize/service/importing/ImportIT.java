@@ -64,13 +64,13 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     // then
-    assertThat(getProgressValue(), is(0));
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(0));
 
     // when
     embeddedOptimizeRule.importEngineEntities();
 
     // then
-    assertThat(getProgressValue(), is(100));
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(100));
   }
 
   @Test
@@ -83,14 +83,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     // then
-    assertThat(getProgressValue(), is(50));
-  }
-
-  private int getProgressValue() {
-    return embeddedOptimizeRule.target()
-        .path("status/import-progress")
-        .request()
-        .get(CountDto.class).getCount();
+    assertThat(embeddedOptimizeRule.getProgressValue(), is(50));
   }
 
   @Test

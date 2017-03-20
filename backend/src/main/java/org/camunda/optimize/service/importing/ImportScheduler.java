@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 
 public class ImportScheduler extends Thread {
   protected static final long STARTING_BACKOFF = 0;
@@ -54,7 +55,7 @@ public class ImportScheduler extends Thread {
   protected void checkAndResetImportIndexing() {
     long castToLong = Double.valueOf(configurationService.getImportResetInterval()).longValue();
     LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
-    if (LocalDateTime.now().isAfter(resetDueDate) || importMissedEngineEntities()) {
+    if (LocalDateTime.now().isAfter(resetDueDate)) {
       for (ImportService importService : importServiceProvider.getServices()) {
         importService.resetImportStartIndex();
       }
@@ -69,6 +70,7 @@ public class ImportScheduler extends Thread {
   @Override
   public void start() {
     logger.info("starting import scheduler thread");
+    this.scheduleProcessEngineImport();
     super.start();
     this.setName(SCHEDULER_NAME);
   }
@@ -81,7 +83,19 @@ public class ImportScheduler extends Thread {
 
     if (!importScheduleJobs.isEmpty()) {
       ImportScheduleJob toExecute = importScheduleJobs.poll();
-      pagesPassed = toExecute.execute();
+      try {
+        pagesPassed = toExecute.execute();
+      } catch (RejectedExecutionException e) {
+        //nothing bad happened, we just have a lot of data to import
+        //next step is sleep
+        if (logger.isDebugEnabled()) {
+          logger.debug("import jobs capacity exceeded");
+        }
+      } catch (Exception e) {
+        if (logger.isDebugEnabled()) {
+          logger.debug("error while executing import job", e);
+        }
+      }
       if (pagesPassed > 0) {
         logger.debug("Processed [" + pagesPassed + "] pages during data import run, scheduling one more run");
         importScheduleJobs.add(toExecute);
@@ -140,5 +154,9 @@ public class ImportScheduler extends Thread {
 
   public boolean isEnabled() {
     return enabled;
+  }
+
+  public void disable () {
+    this.enabled = false;
   }
 }

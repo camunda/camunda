@@ -21,10 +21,8 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceDto;
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,14 +53,30 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private static final int MAX_WAIT = 10;
   public static final String COUNT = "count";
+  public static final String DEFAULT_PROPERTIES_PATH = "it-test.properties";
+  private String propertiesPath;
+  private boolean cleanEngine = true;
 
   private Properties properties;
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
 
   private ObjectMapper objectMapper;
 
+  public EngineIntegrationRule(String properties) {
+    this(properties, true);
+  }
+
+  public EngineIntegrationRule () {
+    this(DEFAULT_PROPERTIES_PATH);
+  }
+
+  public EngineIntegrationRule(String properties, boolean cleanEngine) {
+    this.propertiesPath = properties;
+    this.cleanEngine = cleanEngine;
+  }
+
   public void init() {
-    properties = PropertyUtil.loadProperties("it-test.properties");
+    properties = PropertyUtil.loadProperties(propertiesPath);
     cleanEngine();
     setupObjectMapper();
   }
@@ -82,19 +96,20 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void cleanEngine() {
-    CloseableHttpClient client = HttpClientBuilder.create().build();
-    HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
-    try {
-      CloseableHttpResponse response = client.execute(getRequest);
-      if (response.getStatusLine().getStatusCode() != 200) {
-        throw new RuntimeException("Something really bad happened during purge, " +
-          "please check tomcat logs of engine-purge servlet");
+    if (cleanEngine) {
+      CloseableHttpClient client = HttpClientBuilder.create().build();
+      HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
+      try {
+        CloseableHttpResponse response = client.execute(getRequest);
+        if (response.getStatusLine().getStatusCode() != 200) {
+          throw new RuntimeException("Something really bad happened during purge, " +
+              "please check tomcat logs of engine-purge servlet");
+        }
+        client.close();
+      } catch (IOException e) {
+        logger.error("Error during purge request", e);
       }
-      client.close();
-    } catch (IOException e) {
-      logger.error("Error during purge request", e);
     }
-
   }
 
   public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
@@ -166,7 +181,7 @@ public class EngineIntegrationRule extends TestWatcher {
         properties.get("camunda.optimize.engine.name").toString();
   }
 
-  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
+  public List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) throws IOException {
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     URI uri = null;
     try {

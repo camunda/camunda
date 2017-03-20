@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.job.impl;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.job.ImportJob;
 import org.slf4j.Logger;
@@ -25,7 +26,7 @@ public class EventImportJob extends ImportJob<EventDto>{
     this.eventsWriter = eventsWriter;
   }
   @Override
-  protected void getAbsentAggregateInformation() {
+  protected void getAbsentAggregateInformation() throws OptimizeException {
     List<HistoricProcessInstanceDto> processInstances = getHistoricProcessInstancesFromNewEntities();
     Map<String, HistoricProcessInstanceDto> processInstanceMap = createHistoricProcessInstanceMap(processInstances);
     addMissingAggregateInformationToNewEntities(processInstanceMap);
@@ -45,14 +46,14 @@ public class EventImportJob extends ImportJob<EventDto>{
     return processInstanceMap;
   }
 
-  private void addMissingAggregateInformationToNewEntities(Map<String, HistoricProcessInstanceDto> processInstanceMap) {
+  private void addMissingAggregateInformationToNewEntities(Map<String, HistoricProcessInstanceDto> processInstanceMap) throws OptimizeException {
     for (EventDto optimizeEntity : newOptimizeEntities) {
       if(processInstanceMap.containsKey(optimizeEntity.getProcessInstanceId())) {
         HistoricProcessInstanceDto procInst = processInstanceMap.get(optimizeEntity.getProcessInstanceId());
         optimizeEntity.setProcessInstanceStartDate(procInst.getStartTime());
         optimizeEntity.setProcessInstanceEndDate(procInst.getEndTime());
       } else {
-        logger.warn("Could not add missing aggregate data to event during import!");
+        throw new OptimizeException("Data for aggregation is not fetched properly");
       }
     }
   }

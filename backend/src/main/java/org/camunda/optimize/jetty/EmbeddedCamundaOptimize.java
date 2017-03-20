@@ -3,6 +3,7 @@ package org.camunda.optimize.jetty;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
+import org.camunda.optimize.service.importing.ImportScheduler;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -140,6 +141,20 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   public ImportServiceProvider getImportServiceProvider() {
     return jerseyCamundaOptimize.getApplicationContext().getBean(ImportServiceProvider.class);
+  }
+
+  @Override
+  public void startImportScheduler() {
+    getImportScheduler().start();
+  }
+
+  private ImportScheduler getImportScheduler() {
+    return jerseyCamundaOptimize.getApplicationContext().getBean(ImportScheduler.class);
+  }
+
+  @Override
+  public void disableImportScheduler() {
+    getImportScheduler().disable();
   }
 
   public void initializeIndex() {

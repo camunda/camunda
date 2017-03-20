@@ -36,16 +36,22 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private TransportClient esclient;
 
   private boolean dropIndex;
+  private boolean cleanUp = true;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
-  public ElasticSearchIntegrationTestRule(boolean dropIndex) {
-    this.dropIndex = dropIndex;
-  }
-
   public ElasticSearchIntegrationTestRule() {
     this(false);
+  }
+
+  public ElasticSearchIntegrationTestRule(boolean dropIndex) {
+    this(dropIndex, true);
+  }
+
+  public ElasticSearchIntegrationTestRule(boolean dropIndex, boolean cleanUp) {
+    this.dropIndex = dropIndex;
+    this.cleanUp = cleanUp;
   }
 
   public void init() {
@@ -153,14 +159,16 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    try {
-      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-          .refresh(true)
-          .filter(matchAllQuery())
-          .source("optimize")
-          .get();
-    } catch (IndexNotFoundException e) {
-      //nothing to do
+    if (cleanUp) {
+      try {
+        DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+            .refresh(true)
+            .filter(matchAllQuery())
+            .source("optimize")
+            .get();
+      } catch (IndexNotFoundException e) {
+        //nothing to do
+      }
     }
   }
 
