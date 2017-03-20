@@ -1,6 +1,5 @@
 package org.camunda.optimize.qa.performance.steps;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Process;
@@ -31,15 +30,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-public class DataGenerationStep extends PerfTestStep {
+public abstract class DataGenerationStep extends PerfTestStep {
   
   private Logger logger = LoggerFactory.getLogger(DataGenerationStep.class);
 
   private final int MAX_BULK_SIZE = 50_000;
-  private TransportClient client = null;
+  protected TransportClient client = null;
+  protected PerfTestContext context;
   private Integer dataGenerationSize;
   private Integer numberOfThreads;
-  private PerfTestContext context;
   private SimpleDateFormat sdf;
 
   @Override
@@ -50,6 +49,7 @@ public class DataGenerationStep extends PerfTestStep {
 
     if (!wasDataAlreadyGenerated()) {
       BpmnModelInstance modelInstance = createBpmnModel();
+      addModelToElasticsearch(modelInstance);
       addBulkOfDataToElasticsearch(modelInstance, dataGenerationSize);
     }
 
@@ -75,7 +75,10 @@ public class DataGenerationStep extends PerfTestStep {
     return response.getHits().getTotalHits() >= dataGenerationSize;
   }
 
+  protected void addModelToElasticsearch(BpmnModelInstance instance) {
+  }
 
+  protected abstract BpmnModelInstance createBpmnModel();
 
   private List<Integer> createBulkSizes(int totalAmountOfEntitiesToAdd) {
     List<Integer> bulkSizes = new LinkedList<>();
@@ -102,13 +105,6 @@ public class DataGenerationStep extends PerfTestStep {
       result = process.getId();
     }
     return result;
-  }
-
-  private BpmnModelInstance createBpmnModel() {
-    return Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .endEvent()
-      .done();
   }
 
   private void addBulkOfDataToElasticsearch(BpmnModelInstance modelInstance, int totalAmountOfEntitiesToAdd) {
@@ -141,18 +137,31 @@ public class DataGenerationStep extends PerfTestStep {
 
   private int addGeneratedData(BulkRequestBuilder bulkRequest, BpmnModelInstance modelInstance, String processDefinitionKey) {
 
-    Collection<FlowNode> flowNodes = modelInstance.getModelElementsByType(FlowNode.class);
+    Collection<FlowNode> flowNodes = extractFlowNodes(modelInstance);
     String processInstanceId = "processInstance:" + IdGenerator.getNextId();
     for (FlowNode flowNode : flowNodes) {
       String id = IdGenerator.getNextId();
-      XContentBuilder source = generateSource(id, flowNode.getId(), processDefinitionKey, processInstanceId);
+      XContentBuilder source = generateSource(
+          id,
+          flowNode.getId(),
+          processDefinitionKey,
+          processInstanceId
+      );
       bulkRequest
         .add(client
-          .prepareIndex(context.getConfiguration().getOptimizeIndex(), context.getConfiguration().getEventType(), id)
+          .prepareIndex(
+              context.getConfiguration().getOptimizeIndex(),
+              context.getConfiguration().getEventType(),
+              id
+          )
           .setSource(source)
         );
     }
     return flowNodes.size();
+  }
+
+  protected Collection<FlowNode> extractFlowNodes(BpmnModelInstance instance) {
+    return instance.getModelElementsByType(FlowNode.class);
   }
 
   private XContentBuilder generateSource(String id, String activityId, String processDefinitionKey, String processInstanceId) {

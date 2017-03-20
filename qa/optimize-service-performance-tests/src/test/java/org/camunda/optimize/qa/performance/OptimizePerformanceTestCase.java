@@ -42,7 +42,6 @@ public abstract class OptimizePerformanceTestCase {
     elasticSearchRule.init();
     client = elasticSearchRule.getClient();
     configuration.setClient(client);
-    prepareOptimizeIndex();
   }
 
   private static void authenticate(PerfTestConfiguration configuration) {
@@ -54,34 +53,6 @@ public abstract class OptimizePerformanceTestCase {
   public static void tearDown() {
     elasticSearchRule.deleteOptimizeIndex();
     client.close();
-  }
-
-  private static void prepareOptimizeIndex() throws IOException {
-    IndicesExistsResponse response = client.admin().indices().prepareExists(configuration.getOptimizeIndex()).get();
-    if (response.isExists()) {
-      client.admin().indices().prepareDelete(configuration.getOptimizeIndex()).get();
-    }
-    client.admin().indices().prepareCreate(configuration.getOptimizeIndex())
-      // dynamic mapping should map strings to keyword and not to text
-      .addMapping(configuration.getEventType(), jsonBuilder()
-        .startObject()
-          .startObject(configuration.getEventType())
-            .startArray("dynamic_templates")
-              .startObject()
-                .startObject("strings")
-                  .field("match_mapping_type", "string")
-                  .startObject("mapping")
-                    .field("type", "keyword")
-                    .field("ignore_above", 256)
-                  .endObject()
-                .endObject()
-              .endObject()
-            .endArray()
-          .endObject()
-        .endObject()
-      )
-      .get();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
   }
 
   private static Properties loadConfigurationProperties() {

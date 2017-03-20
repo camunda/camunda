@@ -6,7 +6,7 @@ import java.util.Properties;
 
 public class PerfTestConfiguration {
 
-  private long maxGetHeatMapDuration;
+  private long maxServiceExecutionDuration;
   private int numberOfThreads;
   private int dataGenerationSize;
 
@@ -20,7 +20,7 @@ public class PerfTestConfiguration {
   private String authorizationToken;
 
   public PerfTestConfiguration(Properties properties) {
-    maxGetHeatMapDuration = Long.parseLong(properties.getProperty("test.heatmap.max.duration.ms", "1000"));
+    maxServiceExecutionDuration = Long.parseLong(properties.getProperty("test.heatmap.max.duration.ms", "1000"));
     numberOfThreads = Integer.parseInt(properties.getProperty("data.generation.numberOfThreads", "2"));
     dataGenerationSize = Integer.parseInt(properties.getProperty("data.generation.size", "1000000"));
 
@@ -77,7 +77,7 @@ public class PerfTestConfiguration {
     return durationHeatMapEndpoint;
   }
 
-  public long getMaxGetHeatMapDuration() {
-    return maxGetHeatMapDuration;
+  public long getMaxServiceExecutionDuration() {
+    return maxServiceExecutionDuration;
   }
 }

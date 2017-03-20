@@ -145,6 +145,7 @@
               <clusterName>elasticsearch</clusterName>
               <tcpPort>9300</tcpPort>
               <httpPort>9200</httpPort>
+              <pathScripts>${project.basedir}/../../backend/src/main/scripts</pathScripts>
             </configuration>
             <executions>
               <!--

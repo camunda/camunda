@@ -20,13 +20,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-abstract class HeatMapStep extends PerfTestStep {
+abstract class GetHeatMapStep extends PerfTestStep {
 
   private FilterMapDto filter;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  HeatMapStep(FilterMapDto filter) {
+  GetHeatMapStep(FilterMapDto filter) {
     this.filter = filter;
   }
 
@@ -41,7 +41,7 @@ abstract class HeatMapStep extends PerfTestStep {
       try {
         client.close();
       } catch (IOException e) {
-        Logger logger = LoggerFactory.getLogger(GetFrequencyHeatMapStep.class);
+        Logger logger = LoggerFactory.getLogger(GetFrequencyGetHeatMapStep.class);
         logger.error("Could not close http client!", e);
       }
     }

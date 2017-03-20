@@ -1,14 +1,13 @@
-package org.camunda.optimize.qa.performance.heatmap;
+package org.camunda.optimize.qa.performance;
 
 import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.qa.performance.OptimizePerformanceTestCase;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
-import org.camunda.optimize.qa.performance.steps.DataGenerationStep;
-import org.camunda.optimize.qa.performance.steps.GetDurationHeatMapStep;
-import org.camunda.optimize.qa.performance.steps.GetFrequencyHeatMapStep;
+import org.camunda.optimize.qa.performance.steps.GetDurationGetHeatMapStep;
+import org.camunda.optimize.qa.performance.steps.GetFrequencyGetHeatMapStep;
+import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGenerationStep;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -29,17 +28,17 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
 
     PerfTest test =
       createPerformanceTest()
-        .step(new DataGenerationStep())
-        .step(new GetFrequencyHeatMapStep(filter))
+        .step(new HeatMapDataGenerationStep())
+        .step(new GetFrequencyGetHeatMapStep(filter))
         .done();
 
     // when
     PerfTestResult testResult = test.run();
     PerfTestStepResult stepResult =
-      testResult.getResult(GetFrequencyHeatMapStep.class);
+      testResult.getResult(GetFrequencyGetHeatMapStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxGetHeatMapDuration())));
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
   }
 
   @Test
@@ -59,17 +58,17 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
 
     PerfTest test =
       createPerformanceTest()
-        .step(new DataGenerationStep())
-        .step(new GetFrequencyHeatMapStep(filter))
+        .step(new HeatMapDataGenerationStep())
+        .step(new GetFrequencyGetHeatMapStep(filter))
         .done();
 
     // when
     PerfTestResult testResult = test.run();
     PerfTestStepResult stepResult =
-      testResult.getResult(GetFrequencyHeatMapStep.class);
+      testResult.getResult(GetFrequencyGetHeatMapStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxGetHeatMapDuration())));
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
   }
 
   @Test
@@ -81,17 +80,17 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
 
     PerfTest test =
       createPerformanceTest()
-        .step(new DataGenerationStep())
-        .step(new GetDurationHeatMapStep(filter))
+        .step(new HeatMapDataGenerationStep())
+        .step(new GetDurationGetHeatMapStep(filter))
         .done();
 
     // when
     PerfTestResult testResult = test.run();
     PerfTestStepResult stepResult =
-      testResult.getResult(GetDurationHeatMapStep.class);
+      testResult.getResult(GetDurationGetHeatMapStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxGetHeatMapDuration())));
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
   }
 
   @Test
@@ -111,16 +110,16 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
 
     PerfTest test =
       createPerformanceTest()
-        .step(new DataGenerationStep())
-        .step(new GetDurationHeatMapStep(filter))
+        .step(new HeatMapDataGenerationStep())
+        .step(new GetDurationGetHeatMapStep(filter))
         .done();
 
     // when
     PerfTestResult testResult = test.run();
     PerfTestStepResult stepResult =
-      testResult.getResult(GetDurationHeatMapStep.class);
+      testResult.getResult(GetDurationGetHeatMapStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxGetHeatMapDuration())));
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
   }
 }
