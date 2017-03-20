@@ -81,10 +81,15 @@ public class TopicSubscription extends UnpackedObject
         return prefetchCapacityProp.getValue();
     }
 
-    public String getName()
+    public String getNameAsString()
     {
         final DirectBuffer stringBuffer = nameProp.getValue();
         return stringBuffer.getStringWithoutLengthUtf8(0, stringBuffer.capacity());
+    }
+
+    public DirectBuffer getName()
+    {
+        return nameProp.getValue();
     }
 
     public TopicSubscription setName(String name)

@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.event.processor.CloseSubscriptionRequest;
-import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
+import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.broker.transport.controlmessage.ControlMessageHandler;
@@ -17,16 +17,16 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
 
     protected final CloseSubscriptionRequest request = new CloseSubscriptionRequest();
 
-    protected final TopicSubscriptionManager subscriptionManager;
+    protected final TopicSubscriptionService subscriptionService;
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
     public RemoveTopicSubscriptionHandler(
-            TopicSubscriptionManager subscriptionManager,
+            TopicSubscriptionService subscriptionService,
             ControlMessageResponseWriter responseWriter,
             ErrorResponseWriter errorResponseWriter)
     {
-        this.subscriptionManager = subscriptionManager;
+        this.subscriptionService = subscriptionService;
         this.responseWriter = responseWriter;
         this.errorResponseWriter = errorResponseWriter;
     }
@@ -43,7 +43,7 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
         request.reset();
         request.wrap(buffer);
 
-        final CompletableFuture<Void> future = subscriptionManager.removeSubscription(request.getSubscriptionId());
+        final CompletableFuture<Void> future = subscriptionService.closeSubscriptionAsync(request.getTopicId(), request.getSubscriptionId());
 
         return future.handle((v, failure) ->
         {
@@ -59,7 +59,7 @@ public class RemoveTopicSubscriptionHandler implements ControlMessageHandler
                 errorResponseWriter
                     .metadata(metadata)
                     .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot remove topic subscription. %s", failure.getMessage())
+                    .errorMessage("Cannot close topic subscription. %s", failure.getMessage())
                     .failedRequest(buffer, 0, buffer.capacity())
                     .tryWriteResponseOrLogFailure();
             }

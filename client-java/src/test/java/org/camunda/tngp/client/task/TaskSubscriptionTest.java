@@ -59,6 +59,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class TaskSubscriptionTest
 {
 
+    public static final int TOPIC_ID = 0;
     public static final long SUBSCRIPTION_ID = 123L;
     private static final String TASK_TYPE = "foo";
     private static final int LOCK_OWNER = 1;
@@ -181,8 +182,8 @@ public class TaskSubscriptionTest
         acquisition.doWork();
 
         // two subscribed tasks
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 2L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 2L));
 
         // when
         final int workCount = subscription.poll();
@@ -205,7 +206,7 @@ public class TaskSubscriptionTest
         acquisition.doWork();
 
         final TopicEventImpl event = task(1L, 1L);
-        acquisition.onEvent(SUBSCRIPTION_ID, event);
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, event);
 
         // when
         subscription.poll();
@@ -230,7 +231,7 @@ public class TaskSubscriptionTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
 
         // when
         subscription.poll();
@@ -253,7 +254,7 @@ public class TaskSubscriptionTest
 
         final TopicEventImpl event = task(1L, 1L);
 
-        acquisition.onEvent(SUBSCRIPTION_ID, event);
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, event);
 
         // when
         try
@@ -289,9 +290,9 @@ public class TaskSubscriptionTest
         acquisition.doWork();
 
         // when
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(3L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(3L, 1L));
 
         // then
         assertThat(subscription.size()).isEqualTo(3);
@@ -309,7 +310,7 @@ public class TaskSubscriptionTest
         acquisition.doWork();
 
         // when
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
 
         // then
         assertThat(subscription1.size() + subscription2.size()).isEqualTo(1);
@@ -334,7 +335,7 @@ public class TaskSubscriptionTest
         exception.expectMessage("Cannot add any more events. Event queue saturated.");
 
         // when
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
     }
 
     @Test
@@ -363,8 +364,8 @@ public class TaskSubscriptionTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 2L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 2L));
 
         // when
         int workCount = subscription.poll(taskHandler);
@@ -391,10 +392,10 @@ public class TaskSubscriptionTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(3L, 1L));
-        acquisition.onEvent(SUBSCRIPTION_ID, task(4L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(3L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(4L, 1L));
 
         // when
         subscription.poll(taskHandler);
@@ -416,7 +417,7 @@ public class TaskSubscriptionTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
 
         // when
         subscription.poll(taskHandler);
@@ -454,7 +455,7 @@ public class TaskSubscriptionTest
             throw new RuntimeException(e);
         }
 
-        return new TopicEventImpl(key, position, TopicEventType.TASK, encodedEvent);
+        return new TopicEventImpl(TOPIC_ID, key, position, TopicEventType.TASK, encodedEvent);
     }
 
     protected static ArgumentMatcher<Task> hasKey(final long taskKey)

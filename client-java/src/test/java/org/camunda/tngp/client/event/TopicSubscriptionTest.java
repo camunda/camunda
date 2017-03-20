@@ -13,6 +13,7 @@ import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ControlMessageRequest;
+import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
@@ -108,24 +109,27 @@ public class TopicSubscriptionTest
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());
 
-        final List<ControlMessageRequest> controlMessageRequests = brokerRule.getReceivedControlMessageRequests();
+        final List<ExecuteCommandRequest> commandRequests = brokerRule.getReceivedCommandRequests();
 
-        final List<ControlMessageRequest> acknowledgements = controlMessageRequests.stream()
-                .filter((c) -> c.messageType() == ControlMessageType.ACKNOWLEDGE_TOPIC_EVENT)
+        final List<ExecuteCommandRequest> acknowledgements = commandRequests.stream()
+                .filter((c) -> c.eventType() == EventType.SUBSCRIPTION_EVENT)
+                .filter((c) -> "ACKNOWLEDGE".equals(c.getCommand().get("event")))
                 .collect(Collectors.toList());
 
         assertThat(acknowledgements).isNotEmpty();
 
-        final ControlMessageRequest lastAck = acknowledgements.get(acknowledgements.size() - 1);
-        assertThat(lastAck.getData().get("subscriptionId")).isEqualTo(123);
-        assertThat(lastAck.getData().get("acknowledgedPosition")).isEqualTo(1);
+        final ExecuteCommandRequest lastAck = acknowledgements.get(acknowledgements.size() - 1);
+        assertThat(lastAck.getCommand().get("subscriptionName")).isEqualTo(SUBSCRIPTION_NAME);
+        assertThat(lastAck.getCommand().get("ackPosition")).isEqualTo(1);
 
-        final ControlMessageRequest removeRequest = controlMessageRequests.stream()
+        final ControlMessageRequest removeRequest = brokerRule.getReceivedControlMessageRequests().stream()
                 .filter((c) -> c.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
                 .findFirst()
                 .get();
 
-        assertThat(controlMessageRequests.indexOf(lastAck)).isLessThan(controlMessageRequests.indexOf(removeRequest));
+        final List<Object> requests = brokerRule.getAllReceivedRequests();
+        assertThat(requests.contains(lastAck));
+        assertThat(requests.indexOf(lastAck)).isLessThan(requests.indexOf(removeRequest));
     }
 
     @Test

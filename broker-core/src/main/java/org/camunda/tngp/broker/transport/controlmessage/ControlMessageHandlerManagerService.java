@@ -15,10 +15,9 @@ package org.camunda.tngp.broker.transport.controlmessage;
 import java.util.Arrays;
 import java.util.List;
 
-import org.camunda.tngp.broker.event.handler.AcknowledgeSubscribedEventHandler;
 import org.camunda.tngp.broker.event.handler.AddTopicSubscriptionHandler;
 import org.camunda.tngp.broker.event.handler.RemoveTopicSubscriptionHandler;
-import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
+import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -35,7 +34,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     protected final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
     protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
-    protected final Injector<TopicSubscriptionManager> topicSubscriptionManagerInjector = new Injector<>();
+    protected final Injector<TopicSubscriptionService> topicSubscriptionServiceInjector = new Injector<>();
 
     protected final long controlMessageRequestTimeoutInMillis;
 
@@ -58,15 +57,14 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         final AgentRunnerService agentRunnerService = agentRunnerServicesInjector.getValue().conductorAgentRunnerService();
 
         final TaskSubscriptionManager taskSubscriptionManager = taskSubscriptionManagerInjector.getValue();
-        final TopicSubscriptionManager topicSubscriptionManager = topicSubscriptionManagerInjector.getValue();
+        final TopicSubscriptionService topicSubscriptionService = topicSubscriptionServiceInjector.getValue();
 
         final List<ControlMessageHandler> controlMessageHandlers = Arrays.asList(
             new AddTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new IncreaseTaskSubscriptionCreditsHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
             new RemoveTaskSubscriptionHandler(taskSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new AddTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new RemoveTopicSubscriptionHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter),
-            new AcknowledgeSubscribedEventHandler(topicSubscriptionManager, controlMessageResponseWriter, errorResponseWriter)
+            new AddTopicSubscriptionHandler(topicSubscriptionService, controlMessageResponseWriter, errorResponseWriter),
+            new RemoveTopicSubscriptionHandler(topicSubscriptionService, controlMessageResponseWriter, errorResponseWriter)
         );
 
         service = new ControlMessageHandlerManager(controlMessageBuffer, errorResponseWriter, controlMessageRequestTimeoutInMillis, agentRunnerService, controlMessageHandlers);
@@ -106,9 +104,9 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
         return taskSubscriptionManagerInjector;
     }
 
-    public Injector<TopicSubscriptionManager> getTopicSubscriptionManagerInjector()
+    public Injector<TopicSubscriptionService> getTopicSubscriptionServiceInjector()
     {
-        return topicSubscriptionManagerInjector;
+        return topicSubscriptionServiceInjector;
     }
 
 }

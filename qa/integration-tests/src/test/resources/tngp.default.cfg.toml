@@ -72,3 +72,8 @@ useTempIndexFile = true
 [[workflow-queue]]
 logName = "default-task-queue-log"
 useTempIndexFile = true
+
+# Topic Subscriptions ------------------------------------------
+
+[subscriptions]
+useTempSnapshotFile = true

@@ -150,8 +150,8 @@ public class TopicSubscriptionImpl
         if (lastProcessedEventPosition > lastAcknowledgedPosition)
         {
             client.acknowledgeEvent()
-                .subscriptionId(id)
-                .eventPosition(lastProcessedEventPosition)
+                .subscriptionName(name)
+                .ackPosition(lastProcessedEventPosition)
                 .execute();
 
             lastAcknowledgedPosition = lastProcessedEventPosition;
@@ -172,6 +172,12 @@ public class TopicSubscriptionImpl
     protected String formatEvent(TopicEventImpl event)
     {
         return String.format("[position=%s, key=%s, type=%s, content=%s]", event.getEventPosition(), event.getEventKey(), event.getEventType(), event.getJson());
+    }
+
+    @Override
+    public int getTopicId()
+    {
+        return client.getTopicId();
     }
 
 }

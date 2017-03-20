@@ -30,15 +30,27 @@ public class ExecuteCommandResponseBuilder
 
     public ExecuteCommandResponseBuilder topicId(int i)
     {
-        stub.setTopicIdFunction((r) -> i);
+        return topicId((r) -> i);
+    }
+
+
+    public ExecuteCommandResponseBuilder topicId(Function<ExecuteCommandRequest, Integer> topicIdFunction)
+    {
+        stub.setTopicIdFunction(topicIdFunction);
         return this;
     }
 
     public ExecuteCommandResponseBuilder longKey(long l)
     {
-        stub.setKeyFunction((r) -> l);
+        return longKey((r) -> l);
+    }
+
+    public ExecuteCommandResponseBuilder longKey(Function<ExecuteCommandRequest, Long> keyFunction)
+    {
+        stub.setKeyFunction(keyFunction);
         return this;
     }
+
 
     public ExecuteCommandResponseBuilder event(Map<String, Object> map)
     {

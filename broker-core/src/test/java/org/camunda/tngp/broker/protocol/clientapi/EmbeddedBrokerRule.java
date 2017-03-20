@@ -9,7 +9,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.camunda.tngp.broker.Broker;
-import org.camunda.tngp.broker.logstreams.LogStreamServiceNames;
+import org.camunda.tngp.broker.event.TopicSubscriptionNames;
 import org.camunda.tngp.broker.transport.TransportServiceNames;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
@@ -73,7 +73,7 @@ public class EmbeddedBrokerRule extends ExternalResource
             // Hack: block until default task queue log has been installed
             // How to make it better: https://github.com/camunda-tngp/camunda-tngp/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
-                .dependency(LogStreamServiceNames.logStreamServiceName("default-task-queue-log"))
+                .dependency(TopicSubscriptionNames.subscriptionManagementServiceName("default-task-queue-log"))
                 .dependency(TransportServiceNames.serverSocketBindingReceiveBufferName(TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME))
                 .dependency(taskQueueInstanceStreamProcessorServiceName("default-task-queue-log"))
                 .install()

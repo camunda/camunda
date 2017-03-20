@@ -50,12 +50,17 @@ public class TopicClientImpl implements TopicClient
 
     public CloseTopicSubscriptionCmdImpl closeTopicSubscription()
     {
-        return new CloseTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper());
+        return new CloseTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
     }
 
     public AcknowledgeSubscribedEventCmdImpl acknowledgeEvent()
     {
-        return new AcknowledgeSubscribedEventCmdImpl(client.getCmdExecutor(), client.getObjectMapper());
+        return new AcknowledgeSubscribedEventCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+    }
+
+    public int getTopicId()
+    {
+        return topicId;
     }
 
 }

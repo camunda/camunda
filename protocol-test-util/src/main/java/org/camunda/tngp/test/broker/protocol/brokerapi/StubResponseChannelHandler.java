@@ -34,7 +34,9 @@ public class StubResponseChannelHandler implements TransportChannelHandler
     protected final MsgPackHelper msgPackHelper;
 
     // can also be used for verification
+    protected final List<Object> allRequests = new ArrayList<>();
     protected final List<ControlMessageRequest> controlMessageRequests = new ArrayList<>();
+    protected final List<ExecuteCommandRequest> commandRequests = new ArrayList<>();
 
 
     public StubResponseChannelHandler(Dispatcher sendBuffer, MsgPackHelper msgPackHelper)
@@ -83,6 +85,8 @@ public class StubResponseChannelHandler implements TransportChannelHandler
             {
                 final ExecuteCommandRequest request = new ExecuteCommandRequest(msgPackHelper);
                 request.wrap(copy, requestResponseMessageOffset, requestResponseMessageLength);
+                commandRequests.add(request);
+                allRequests.add(request);
 
                 requestHandled = handleRequest(request, cmdRequestStubs, transportChannel.getId());
 
@@ -92,6 +96,7 @@ public class StubResponseChannelHandler implements TransportChannelHandler
                 final ControlMessageRequest request = new ControlMessageRequest(transportChannel.getId(), msgPackHelper);
                 request.wrap(copy, requestResponseMessageOffset, requestResponseMessageLength);
                 controlMessageRequests.add(request);
+                allRequests.add(request);
 
                 requestHandled = handleRequest(request, controlMessageStubs, transportChannel.getId());
             }
@@ -176,5 +181,15 @@ public class StubResponseChannelHandler implements TransportChannelHandler
     public List<ControlMessageRequest> getReceivedControlMessageRequests()
     {
         return controlMessageRequests;
+    }
+
+    public List<ExecuteCommandRequest> getReceivedCommandRequests()
+    {
+        return commandRequests;
+    }
+
+    public List<Object> getAllReceivedRequests()
+    {
+        return allRequests;
     }
 }

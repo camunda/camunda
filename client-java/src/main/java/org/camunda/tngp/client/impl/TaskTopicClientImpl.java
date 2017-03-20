@@ -93,5 +93,9 @@ public class TaskTopicClientImpl implements TaskTopicClient
         return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
     }
 
+    public int getTopicId()
+    {
+        return topicId;
+    }
 
 }

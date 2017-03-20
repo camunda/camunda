@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.event.processor.TopicSubscription;
-import org.camunda.tngp.broker.event.processor.TopicSubscriptionManager;
+import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.broker.transport.controlmessage.ControlMessageHandler;
@@ -17,16 +17,16 @@ public class AddTopicSubscriptionHandler implements ControlMessageHandler
 
     protected final TopicSubscription subscription = new TopicSubscription();
 
-    protected final TopicSubscriptionManager subscriptionManager;
+    protected final TopicSubscriptionService subscriptionService;
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
 
     public AddTopicSubscriptionHandler(
-            TopicSubscriptionManager subscriptionManager,
+            TopicSubscriptionService subscriptionService,
             ControlMessageResponseWriter responseWriter,
             ErrorResponseWriter errorResponseWriter)
     {
-        this.subscriptionManager = subscriptionManager;
+        this.subscriptionService = subscriptionService;
         this.responseWriter = responseWriter;
         this.errorResponseWriter = errorResponseWriter;
     }
@@ -44,7 +44,7 @@ public class AddTopicSubscriptionHandler implements ControlMessageHandler
         subscription.wrap(buffer);
         subscription.setChannelId(metadata.getReqChannelId());
 
-        final CompletableFuture<Void> future = subscriptionManager.addSubscription(subscription);
+        final CompletableFuture<Void> future = subscriptionService.createSubscriptionAsync(subscription);
 
         return future.handle((v, failure) ->
         {
@@ -57,7 +57,7 @@ public class AddTopicSubscriptionHandler implements ControlMessageHandler
             }
             else
             {
-                sendError(buffer, metadata, "Cannot add topic subscription. %s", failure.getMessage());
+                sendError(buffer, metadata, "Cannot open topic subscription. %s", failure.getMessage());
             }
             return null;
         });

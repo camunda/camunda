@@ -3,25 +3,31 @@ package org.camunda.tngp.client.task.impl;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.camunda.tngp.client.event.impl.EventSubscription;
 
 public class EventSubscriptions<T extends EventSubscription<T>>
 {
-    protected Long2ObjectHashMap<T> subscriptions = new Long2ObjectHashMap<>();
+    // topicId => subscriptionId => subscription (subscription ids are not guaranteed to be globally unique)
+    protected Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptions = new Int2ObjectHashMap<>();
 
     protected final List<T> pollableSubscriptions = new CopyOnWriteArrayList<>();
     protected final List<T> managedSubscriptions = new CopyOnWriteArrayList<>();
 
     protected void addPollableSubscription(T subscription)
     {
-        this.subscriptions.put(subscription.getId(), subscription);
+        this.subscriptions
+            .computeIfAbsent(subscription.getTopicId(), (i) -> new Long2ObjectHashMap<>())
+            .put(subscription.getId(), subscription);
         this.pollableSubscriptions.add(subscription);
     }
 
     protected void addManagedSubscription(T subscription)
     {
-        this.subscriptions.put(subscription.getId(), subscription);
+        this.subscriptions
+            .computeIfAbsent(subscription.getTopicId(), (i) -> new Long2ObjectHashMap<>())
+            .put(subscription.getId(), subscription);
         this.managedSubscriptions.add(subscription);
     }
 
@@ -62,14 +68,32 @@ public class EventSubscriptions<T extends EventSubscription<T>>
 
     public void removeSubscription(T subscription)
     {
-        subscriptions.remove(subscription.getId());
+        final Long2ObjectHashMap<T> subscriptionsForTopic = subscriptions.get(subscription.getTopicId());
+        if (subscriptionsForTopic != null)
+        {
+            subscriptionsForTopic.remove(subscription.getId());
+
+            if (subscriptionsForTopic.isEmpty())
+            {
+                subscriptions.remove(subscription.getTopicId());
+            }
+        }
+
         pollableSubscriptions.remove(subscription);
         managedSubscriptions.remove(subscription);
     }
 
-    public T getSubscription(long id)
+    public T getSubscription(int topicId, long id)
     {
-        return subscriptions.get(id);
+        final Long2ObjectHashMap<T> subscriptionsForTopic = subscriptions.get(topicId);
+        if (subscriptionsForTopic != null)
+        {
+            return subscriptionsForTopic.get(id);
+        }
+        else
+        {
+            return null;
+        }
     }
 
 

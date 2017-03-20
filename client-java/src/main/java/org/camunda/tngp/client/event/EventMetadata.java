@@ -4,6 +4,11 @@ public interface EventMetadata
 {
 
     /**
+     * @return the id of the topic this event was published on
+     */
+    int getTopicId();
+
+    /**
      * @return the unique position the event has in the topic. Events are ordered by position.
      */
     long getEventPosition();

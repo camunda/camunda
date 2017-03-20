@@ -76,9 +76,9 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     }
 
     @Override
-    public void onEvent(long subscriptionId, TopicEventImpl event)
+    public void onEvent(int topicId, long subscriptionId, TopicEventImpl event)
     {
-        final T subscription = subscriptions.getSubscription(subscriptionId);
+        final T subscription = subscriptions.getSubscription(topicId, subscriptionId);
 
         if (subscription != null && subscription.isOpen())
         {

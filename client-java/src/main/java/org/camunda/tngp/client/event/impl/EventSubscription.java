@@ -195,4 +195,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected abstract void onEventsPolled(int numEvents);
 
+    public abstract int getTopicId();
+
 }

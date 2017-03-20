@@ -1,36 +1,36 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.EnsureUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class AcknowledgeSubscribedEventCmdImpl extends AbstractControlMessageCmd<SubscriptionAcknowledgement, Long>
+public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<SubscriptionAcknowledgement, Long>
 {
     protected final SubscriptionAcknowledgement ack = new SubscriptionAcknowledgement();
 
-    public AcknowledgeSubscribedEventCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper)
+    public AcknowledgeSubscribedEventCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, final int topicId)
     {
-        super(cmdExecutor, objectMapper, SubscriptionAcknowledgement.class, ControlMessageType.ACKNOWLEDGE_TOPIC_EVENT, SubscriptionAcknowledgement::getSubscriptionId);
+        super(cmdExecutor, objectMapper, SubscriptionAcknowledgement.class, topicId, EventType.SUBSCRIPTION_EVENT);
     }
 
     @Override
     public void validate()
     {
-        EnsureUtil.ensureGreaterThanOrEqual("topicId", ack.getAcknowledgedPosition(), 0L);
-        EnsureUtil.ensureGreaterThanOrEqual("subscriptionId", ack.getSubscriptionId(), 0L);
+        EnsureUtil.ensureGreaterThanOrEqual("ackPosition", ack.getAckPosition(), 0L);
+        EnsureUtil.ensureNotNull("subscriptionName", ack.getSubscriptionName());
     }
 
-    public AcknowledgeSubscribedEventCmdImpl subscriptionId(long id)
+    public AcknowledgeSubscribedEventCmdImpl subscriptionName(String name)
     {
-        this.ack.setSubscriptionId(id);
+        this.ack.setSubscriptionName(name);
         return this;
     }
 
-    public AcknowledgeSubscribedEventCmdImpl eventPosition(long position)
+    public AcknowledgeSubscribedEventCmdImpl ackPosition(long position)
     {
-        this.ack.setAcknowledgedPosition(position);
+        this.ack.setAckPosition(position);
         return this;
     }
 
@@ -44,6 +44,18 @@ public class AcknowledgeSubscribedEventCmdImpl extends AbstractControlMessageCmd
     protected void reset()
     {
         ack.reset();
+    }
+
+    @Override
+    protected long getKey()
+    {
+        return -1L;
+    }
+
+    @Override
+    protected Long getResponseValue(long key, SubscriptionAcknowledgement event)
+    {
+        return key;
     }
 
 }

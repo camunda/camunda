@@ -153,4 +153,10 @@ public class TaskSubscriptionImpl
             }
         }
     }
+
+    @Override
+    public int getTopicId()
+    {
+        return taskClient.getTopicId();
+    }
 }

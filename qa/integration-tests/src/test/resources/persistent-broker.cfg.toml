@@ -57,3 +57,8 @@ perWorkerResponsePoolCapacity = 32
 [[task-queue]]
 logName = "default-task-queue-log"
 indexFile = "${brokerFolder}/persistent-broker/task-logs/default-task-queue-log"
+
+# Topic Subscriptions ------------------------------------------
+
+[subscriptions]
+snapshotDirectory = "${brokerFolder}/persistent-broker/subscription-snapshots/"

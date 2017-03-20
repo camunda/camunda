@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;
@@ -92,6 +93,16 @@ public class StubBrokerRule extends ExternalResource
         return channelHandler.getReceivedControlMessageRequests();
     }
 
+    public List<ExecuteCommandRequest> getReceivedCommandRequests()
+    {
+        return channelHandler.getReceivedCommandRequests();
+    }
+
+    public List<Object> getAllReceivedRequests()
+    {
+        return channelHandler.getAllReceivedRequests();
+    }
+
     public SubscribedEventBuilder newSubscribedEvent()
     {
         return new SubscribedEventBuilder(msgPackHelper, transport.getSendBuffer());
@@ -116,10 +127,15 @@ public class StubBrokerRule extends ExternalResource
                 .done()
             .register();
 
-        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ACKNOWLEDGE_TOPIC_EVENT)
+        final AtomicLong keyProvider = new AtomicLong(0);
+        onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT
+                && "ACKNOWLEDGE".equals(r.getCommand().get("event")))
             .respondWith()
-            .data()
-                .allOf((r) -> r.getData())
+            .longKey((r) -> keyProvider.incrementAndGet())
+            .topicId((r) -> r.topicId())
+            .event()
+                .allOf((r) -> r.getCommand())
+                .put("event", "ACKNOWLEDGED")
                 .done()
             .register();
     }

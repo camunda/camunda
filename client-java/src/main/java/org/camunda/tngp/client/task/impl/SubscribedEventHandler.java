@@ -5,5 +5,5 @@ import org.camunda.tngp.client.event.impl.TopicEventImpl;
 public interface SubscribedEventHandler
 {
 
-    void onEvent(long subscriptionId, TopicEventImpl event);
+    void onEvent(int topicId, long subscriptionId, TopicEventImpl event);
 }

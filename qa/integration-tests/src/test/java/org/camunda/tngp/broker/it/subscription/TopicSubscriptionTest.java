@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -506,7 +507,54 @@ public class TopicSubscriptionTest
 
         // then
         assertThat(topic2Subscription.isOpen()).isTrue();
+    }
 
+    @Test
+    public void testSubscriptionsWithSameNameOnDifferentTopicShouldReceiveRespectiveEvents()
+    {
+        // given
+        final TopicSubscription topic0subscription = client.topic(0).newSubscription()
+                .startAtHeadOfTopic()
+                .handler(recordingHandler)
+                .name(SUBSCRIPTION_NAME)
+                .open();
+
+        final RecordingEventHandler topic1Handler = new RecordingEventHandler();
+        final TopicSubscription topic1Subscription = client.topic(1).newSubscription()
+                .startAtHeadOfTopic()
+                .handler(topic1Handler)
+                .name(SUBSCRIPTION_NAME)
+                .open();
+
+
+        // when
+        client.taskTopic(0).create()
+            .taskType("foo")
+            .execute();
+
+        client.taskTopic(1).create()
+            .taskType("bar")
+            .execute();
+
+        // then
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
+        TestUtil.waitUntil(() -> topic1Handler.numRecordedTaskEvents() >= 2);
+
+        topic0subscription.close();
+        topic1Subscription.close();
+
+        final Set<Integer> receivedTopicIdsSubscription0 = recordingHandler.getRecordedEvents().stream()
+            .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
+            .map((re) -> re.getMetadata().getTopicId())
+            .collect(Collectors.toSet());
+
+        final Set<Integer> receivedTopicIdsSubscription1 = topic1Handler.getRecordedEvents().stream()
+            .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
+            .map((re) -> re.getMetadata().getTopicId())
+            .collect(Collectors.toSet());
+
+        assertThat(receivedTopicIdsSubscription0).containsExactly(0);
+        assertThat(receivedTopicIdsSubscription1).containsExactly(1);
     }
 
     /**

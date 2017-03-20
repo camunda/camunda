@@ -1,26 +1,40 @@
 package org.camunda.tngp.broker.event.processor;
 
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 
 public class CloseSubscriptionRequest extends UnpackedObject
 {
 
-    protected LongProperty idProp = new LongProperty("subscriptionId");
+    protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
+    protected LongProperty subscriptionIdProp = new LongProperty("subscriptionId");
 
     public CloseSubscriptionRequest()
     {
-        this.declareProperty(idProp);
+        this.declareProperty(subscriptionIdProp)
+            .declareProperty(topicIdProp);
     }
 
     public long getSubscriptionId()
     {
-        return idProp.getValue();
+        return subscriptionIdProp.getValue();
     }
 
     public CloseSubscriptionRequest subscriptionId(long subscriptionId)
     {
-        this.idProp.setValue(subscriptionId);
+        this.subscriptionIdProp.setValue(subscriptionId);
+        return this;
+    }
+
+    public int getTopicId()
+    {
+        return topicIdProp.getValue();
+    }
+
+    public CloseSubscriptionRequest topicId(int topicId)
+    {
+        this.topicIdProp.setValue(topicId);
         return this;
     }
 }

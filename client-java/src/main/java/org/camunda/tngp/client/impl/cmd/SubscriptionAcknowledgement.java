@@ -3,29 +3,38 @@ package org.camunda.tngp.client.impl.cmd;
 public class SubscriptionAcknowledgement
 {
 
-    protected long subscriptionId;
-    protected long acknowledgedPosition;
+    protected String subscriptionName;
+    protected final SubscriptionEventType event = SubscriptionEventType.ACKNOWLEDGE;
+    protected long ackPosition;
 
-    public long getSubscriptionId()
+    public String getSubscriptionName()
     {
-        return subscriptionId;
+        return subscriptionName;
     }
-    public void setSubscriptionId(long subscriptionId)
+
+    public void setSubscriptionName(String subscriptionName)
     {
-        this.subscriptionId = subscriptionId;
+        this.subscriptionName = subscriptionName;
     }
-    public long getAcknowledgedPosition()
+
+    public long getAckPosition()
     {
-        return acknowledgedPosition;
+        return ackPosition;
     }
-    public void setAcknowledgedPosition(long acknowledgedPosition)
+
+    public void setAckPosition(long ackPosition)
     {
-        this.acknowledgedPosition = acknowledgedPosition;
+        this.ackPosition = ackPosition;
+    }
+
+    public SubscriptionEventType getEvent()
+    {
+        return event;
     }
 
     public void reset()
     {
-        this.subscriptionId = -1L;
-        this.acknowledgedPosition = -1L;
+        this.subscriptionName = null;
+        this.ackPosition = -1L;
     }
 }

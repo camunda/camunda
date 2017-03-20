@@ -57,3 +57,8 @@ perWorkerResponsePoolCapacity = 32
 [[task-queue]]
 logName = "default-task-queue-log"
 useTempIndexFile = true
+
+# Topic Subscriptions ------------------------------------------
+
+[subscriptions]
+useTempSnapshotFile = true

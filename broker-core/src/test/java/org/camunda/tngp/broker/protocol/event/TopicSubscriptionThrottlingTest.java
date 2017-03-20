@@ -16,6 +16,7 @@ import org.junit.rules.RuleChain;
 
 public class TopicSubscriptionThrottlingTest
 {
+    protected static final String SUBSCRIPTION_NAME = "foo";
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("tngp.unit-test.cfg.toml");
     public ClientApiRule apiRule = new ClientApiRule();
@@ -32,7 +33,7 @@ public class TopicSubscriptionThrottlingTest
             .data()
                 .put("topicId", 0)
                 .put("startPosition", 0)
-                .put("name", "foo")
+                .put("name", SUBSCRIPTION_NAME)
                 .put("prefetchCapacity", prefetchCapacity)
                 .done()
             .sendAndAwait();
@@ -87,11 +88,13 @@ public class TopicSubscriptionThrottlingTest
         apiRule.moveSubscribedEventsStreamToTail();
 
         // when
-        apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.ACKNOWLEDGE_TOPIC_EVENT)
-                .data()
-                .put("subscriptionId", subscriptionId)
-                .put("acknowledgedPosition", eventPositions.get(1))
+        apiRule.createCmdRequest()
+            .topicId(0)
+            .eventTypeSubscription()
+            .command()
+                .put("subscriptionName", SUBSCRIPTION_NAME)
+                .put("event", "ACKNOWLEDGE")
+                .put("ackPosition", eventPositions.get(1))
                 .done()
             .sendAndAwait();
 

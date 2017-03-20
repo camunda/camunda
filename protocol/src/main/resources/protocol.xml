@@ -40,7 +40,6 @@
         <validValue name="INCREASE_TASK_SUBSCRIPTION_CREDITS">2</validValue>
         <validValue name="ADD_TOPIC_SUBSCRIPTION">3</validValue>
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">4</validValue>
-        <validValue name="ACKNOWLEDGE_TOPIC_EVENT">5</validValue>
     </enum>
 
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">

@@ -102,7 +102,7 @@ public class TransportComponent implements Component
             .dependency(TRANSPORT_SEND_BUFFER, controlMessageHandlerManagerService.getSendBufferInjector())
             .dependency(AGENT_RUNNER_SERVICE, controlMessageHandlerManagerService.getAgentRunnerServicesInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTaskSubscriptionManagerInjector())
-            .dependency(TOPIC_SUBSCRIPTION_MANAGER, controlMessageHandlerManagerService.getTopicSubscriptionManagerInjector())
+            .dependency(TOPIC_SUBSCRIPTION_SERVICE, controlMessageHandlerManagerService.getTopicSubscriptionServiceInjector())
             .install();
 
         // make sure that all services are installed

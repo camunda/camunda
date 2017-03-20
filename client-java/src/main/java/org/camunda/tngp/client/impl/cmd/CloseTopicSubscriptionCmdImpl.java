@@ -11,14 +11,16 @@ public class CloseTopicSubscriptionCmdImpl extends AbstractControlMessageWithout
 
     protected CloseSubscriptionRequest subscription = new CloseSubscriptionRequest();
 
-    public CloseTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper)
+    public CloseTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
     {
         super(cmdExecutor, objectMapper, CloseSubscriptionRequest.class, ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION);
+        subscription.setTopicId(topicId);
     }
 
     @Override
     public void validate()
     {
+        EnsureUtil.ensureGreaterThanOrEqual("topicId", subscription.getTopicId(), 0);
         EnsureUtil.ensureGreaterThanOrEqual("id", subscription.getSubscriptionId(), 0);
     }
 
