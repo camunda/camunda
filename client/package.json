@@ -75,7 +75,7 @@
     "babel-polyfill": "^6.20.0",
     "bootstrap": "3.3.6",
     "bootstrap-datepicker": "^1.6.4",
-    "bpmn-js": "^0.18.3",
+    "bpmn-js": "^0.20.4",
     "d3": "^4.7.0",
     "d3-tip": "^0.7.1",
     "heatmap.js": "^2.0.5",

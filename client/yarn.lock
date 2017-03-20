@@ -875,12 +875,12 @@ bootstrap@3.3.6:
   version "3.3.6"
   resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-3.3.6.tgz#8de8f749dc8a743f2ac5b510d988371e3daa6589"
 
-bpmn-js@^0.18.3:
-  version "0.18.4"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-0.18.4.tgz#77a8432d3de718ecda9e7c6353591926845d888b"
+bpmn-js@^0.20.4:
+  version "0.20.4"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-0.20.4.tgz#ffffb8c78cca27dc2c26fa9b48a70d2e89c3b23e"
   dependencies:
-    bpmn-moddle "^0.12.3"
-    diagram-js "^0.18.2"
+    bpmn-moddle "^0.14.0"
+    diagram-js "^0.19.2"
     diagram-js-direct-editing "^0.17.1"
     diagram-js-origin "^0.15.1"
     ids "^0.2.0"
@@ -890,13 +890,13 @@ bpmn-js@^0.18.3:
     object-refs "^0.1.1"
     tiny-svg "^0.1.1"
 
-bpmn-moddle@^0.12.3:
-  version "0.12.4"
-  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-0.12.4.tgz#39043703c3d127ec64b5256a73d96352497aeecf"
+bpmn-moddle@^0.14.0:
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-0.14.0.tgz#1ec579581083f0e20769fa0db845ccdd963739e2"
   dependencies:
     lodash "^3.0.0"
-    moddle "^0.8.0"
-    moddle-xml "^0.12.0"
+    moddle "^1.0.0"
+    moddle-xml "^1.0.0"
 
 brace-expansion@^1.0.0:
   version "1.1.6"
@@ -1816,9 +1816,9 @@ diagram-js-origin@^0.15.1:
   dependencies:
     tiny-svg "^0.1.0"
 
-diagram-js@^0.18.2:
-  version "0.18.4"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-0.18.4.tgz#9d8f6311d3ce2bce24a08d099e0879f5f7943893"
+diagram-js@^0.19.2:
+  version "0.19.2"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-0.19.2.tgz#386175e09180d7657ad32cbc91d05b5377a80ef0"
   dependencies:
     didi "^0.1.0"
     hammerjs "^2.0.1"
@@ -3503,18 +3503,18 @@ mocha@^3.1.2, mocha@^3.2.0:
     mkdirp "0.5.1"
     supports-color "3.1.2"
 
-moddle-xml@^0.12.0:
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-0.12.0.tgz#fc361ed113dad37d95e9e148c12d2e385e3bebdc"
+moddle-xml@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-1.0.0.tgz#7801e4401ebdc285952eb69b665aa2eeb6fc5e37"
   dependencies:
     lodash "^3.0.0"
-    moddle "^0.8.0"
+    moddle "^1.0.0"
     sax "~0.6.0"
     tiny-stack "^0.1.0"
 
-moddle@^0.8.0:
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/moddle/-/moddle-0.8.0.tgz#87d314f52f80b1f9a87ff69f70fe2dcfe11da84d"
+moddle@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/moddle/-/moddle-1.0.0.tgz#9034d9786087b67116932abd56c0f7c66ad12497"
   dependencies:
     lodash "^3.0.0"
 
