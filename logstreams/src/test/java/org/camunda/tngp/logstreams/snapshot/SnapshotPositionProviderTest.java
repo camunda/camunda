@@ -13,8 +13,7 @@ import org.mockito.MockitoAnnotations;
 
 public class SnapshotPositionProviderTest
 {
-
-    public static final long EVENT_POSITION = 3L;
+    private static final long EVENT_POSITION = 3L;
 
     @Mock
     protected LoggedEvent event;
@@ -37,9 +36,9 @@ public class SnapshotPositionProviderTest
 
         // then
         assertThat(snapshotPosition).isEqualTo(EVENT_POSITION);
-
     }
 
+    @Test
     public void testLastWrittenEventPositionProvider()
     {
         // given
@@ -50,6 +49,5 @@ public class SnapshotPositionProviderTest
 
         // then
         assertThat(snapshotPosition).isEqualTo(52L);
-
     }
 }

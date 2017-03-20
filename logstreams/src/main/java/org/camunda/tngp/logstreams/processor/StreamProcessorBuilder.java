@@ -136,6 +136,18 @@ public class StreamProcessorBuilder
             snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
         }
 
+        if (snapshotPositionProvider == null)
+        {
+            if (sourceStream.getId() == targetStream.getId())
+            {
+                snapshotPositionProvider = new LastProcessedEventPositionProvider();
+            }
+            else
+            {
+                snapshotPositionProvider = new LastWrittenEventPositionProvider();
+            }
+        }
+
         sourceLogStreamReader = new BufferedLogStreamReader();
         targetLogStreamReader = new BufferedLogStreamReader();
 
@@ -165,20 +177,6 @@ public class StreamProcessorBuilder
 
         ctx.setSnapshotPolicy(snapshotPolicy);
         ctx.setSnapshotStorage(snapshotStorage);
-
-        SnapshotPositionProvider snapshotPositionProvider = this.snapshotPositionProvider;
-        if (snapshotPositionProvider == null)
-        {
-            if (sourceStream.getId() == targetStream.getId())
-            {
-                snapshotPositionProvider = new LastProcessedEventPositionProvider();
-            }
-            else
-            {
-                snapshotPositionProvider = new LastWrittenEventPositionProvider();
-            }
-        }
-
         ctx.setSnapshotPositionProvider(snapshotPositionProvider);
 
         ctx.setEventFilter(eventFilter);
