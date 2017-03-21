@@ -7,10 +7,10 @@ import {LOADED_STATE, LOADING_STATE} from 'utils/loading';
 
 describe('<ProcessDisplay>', () => {
   let Controls;
-  let createHeatmapDiagram;
   let createDiagram;
+  let createHeatmapRenderer;
+  let createAnalyticsRenderer;
   let Diagram;
-  let HeatmapDiagram;
   let Statistics;
   let loadData;
   let node;
@@ -39,12 +39,14 @@ describe('<ProcessDisplay>', () => {
       }
     };
 
+    createHeatmapRenderer = sinon.spy();
+    __set__('createHeatmapRenderer', createHeatmapRenderer);
+
+    createAnalyticsRenderer = sinon.spy();
+    __set__('createAnalyticsRenderer', createAnalyticsRenderer);
+
     Controls = createMockComponent('Controls');
     __set__('Controls', Controls);
-
-    HeatmapDiagram = createMockComponent('HeatmapDiagram');
-    createHeatmapDiagram = sinon.stub().returns(HeatmapDiagram);
-    __set__('createHeatmapDiagram', createHeatmapDiagram);
 
     Diagram = createMockComponent('Diagram');
     createDiagram = sinon.stub().returns(Diagram);
@@ -64,6 +66,8 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('Statistics');
     __ResetDependency__('createHeatmapDiagram');
     __ResetDependency__('createDiagram');
+    __ResetDependency__('createHeatmapRenderer');
+    __ResetDependency__('createAnalyticsRenderer');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');
   });
@@ -98,11 +102,18 @@ describe('<ProcessDisplay>', () => {
     expect(node.querySelector('.loading_indicator')).to.not.be.null;
   });
 
-  it('should display the heatmap diagram when the frequency view mode is selected', () => {
+  it('should display a diagram when the frequency view mode is selected', () => {
     state.controls.view = 'frequency';
     update(state);
 
-    expect(node.textContent).to.contain('HeatmapDiagram');
+    expect(node.textContent).to.contain('Diagram');
+  });
+
+  it('should display a diagram when the branch analysis view mode is selected', () => {
+    state.controls.view = 'branch_analysis';
+    update(state);
+
+    expect(node.textContent).to.contain('Diagram');
   });
 
   it('should display a no data indicator if the heatmap data contains no process instances', () => {
@@ -113,17 +124,9 @@ describe('<ProcessDisplay>', () => {
     expect(node.querySelector('.no-data-indicator')).to.exist;
   });
 
-  it('should not display a no data indicator outside the frequency heatmap mode', () => {
-    state.display.heatmap.data.piCount = 0;
-    update(state);
-
-    expect(node.querySelector('.no-data-indicator')).to.not.exist;
-  });
-
   it('should display the normal bpmn diagram when the "none" view mode is selected', () => {
     update(state);
 
-    expect(node.textContent).to.not.contain('HeatmapDiagram');
     expect(node.textContent).to.contain('Diagram');
   });
 });

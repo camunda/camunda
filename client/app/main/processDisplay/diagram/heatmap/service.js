@@ -1,4 +1,4 @@
-import generateHeatmap from './heatmap';
+import generateHeatmap from './heatmap_generator';
 
 export const VALUE_OVERLAY = 'VALUE_OVERLAY';
 export function hoverElement(viewer, element) {

@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {enterGatewayAnalysisMode, setEndEvent, unsetEndEvent, setGateway, unsetGateway, leaveGatewayAnalysisMode,
+import {setEndEvent, unsetEndEvent, setGateway, unsetGateway, leaveGatewayAnalysisMode,
         __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/service';
 import sinon from 'sinon';
 
@@ -26,12 +26,6 @@ describe('Analytics service', () => {
     __ResetDependency__('dispatchAction');
     __ResetDependency__('createEnterGatewayAnalysisModeAction');
     __ResetDependency__('createSetElementAction');
-  });
-
-  it('should enter gateway analysis mode', () => {
-    enterGatewayAnalysisMode();
-
-    expect(dispatchAction.calledWith(ENTER_GATEWAY_ANALYSIS_MODE)).to.eql(true);
   });
 
   it('should set the end event', () => {

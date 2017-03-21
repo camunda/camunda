@@ -1,2 +1,3 @@
-export {reducer} from './reducer';
-export {createHeatmapDiagram} from './HeatmapDiagram';
+export {reducer} from './analytics/reducer';
+export {createHeatmapRenderer} from './heatmap';
+export {createAnalyticsRenderer} from './analytics';

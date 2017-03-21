@@ -1,0 +1,1 @@
+export {createHeatmapRenderer} from './Heatmap';

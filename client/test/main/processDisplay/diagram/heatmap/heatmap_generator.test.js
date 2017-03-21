@@ -1,8 +1,8 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import generateHeatmap from 'main/processDisplay/diagram/heatmap';
+import generateHeatmap from 'main/processDisplay/diagram/heatmap/heatmap_generator';
 
-describe('Heatmap', () => {
+describe('Heatmap Generator', () => {
   const BOUNDING_BOX = {
     x: 0,
     y: 0,

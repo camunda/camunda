@@ -1,5 +1,5 @@
-import {jsx, withSelector, Match, Case, Default, Scope} from 'view-utils';
-import {createHeatmapDiagram} from './diagram';
+import {jsx, withSelector, Match, Case, Default} from 'view-utils';
+import {createHeatmapRenderer, createAnalyticsRenderer} from './diagram';
 import {Controls, areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
@@ -10,7 +10,6 @@ export const ProcessDisplay = withSelector(Process);
 
 function Process() {
   const Diagram = createDiagram();
-  const HeatmapDiagram = createHeatmapDiagram();
 
   const template = <div className="process-display">
     <Controls selector="controls" onCriteriaChanged={loadData} />
@@ -34,20 +33,17 @@ function Process() {
               </div>
             </div>
           </Case>
-          <Case predicate={shouldDisplayHeatmap}>
-            <Scope selector="display">
-              <Match>
-                <Case predicate={hasHeatmapData}>
-                  <HeatmapDiagram />
-                </Case>
-                <Default>
-                  <Diagram />
-                  <div className="no-data-indicator">
-                    No Data
-                  </div>
-                </Default>
-              </Match>
-            </Scope>
+          <Case predicate={hasNoData}>
+            <Diagram selector="display" />
+            <div className="no-data-indicator">
+              No Data
+            </div>
+          </Case>
+          <Case predicate={shouldDisplay('frequency')}>
+            <Diagram selector="display" createOverlaysRenderer={[createHeatmapRenderer]} />
+          </Case>
+          <Case predicate={shouldDisplay('branch_analysis')}>
+            <Diagram selector="display" createOverlaysRenderer={[createAnalyticsRenderer]} />
           </Case>
           <Default>
             <Diagram selector="display" />
@@ -55,15 +51,17 @@ function Process() {
         </Match>
       </LoadingIndicator>
     </div>
-    <Statistics getBpmnViewer={HeatmapDiagram.getViewer} />
+    <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
 
-  function hasHeatmapData({heatmap:{data:{piCount}}}) {
-    return piCount > 0;
+  function hasNoData({display:{heatmap:{data}}}) {
+    return !data || !data.piCount;
   }
 
-  function shouldDisplayHeatmap({controls: {view}}) {
-    return view === 'frequency';
+  function shouldDisplay(targetView) {
+    return ({controls: {view}}) => {
+      return view === targetView;
+    };
   }
 
   function isLoadingSomething({display: {diagram, heatmap}, controls}) {

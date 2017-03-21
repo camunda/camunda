@@ -1,39 +1,25 @@
 import {SELECT_PROCESS_DEFINITION} from 'main/processDisplay/controls/processDefinition/reducer';
+import {SET_VIEW} from 'main/processDisplay/controls/view/reducer';
 
-export const ENTER_GATEWAY_ANALYSIS_MODE = 'ENTER_GATEWAY_ANALYSIS_MODE';
 export const SET_ELEMENT = 'SET_ELEMENT';
-export const GATEWAY_ANALYSIS_MODE = 'GATEWAY_ANALYSIS';
 
 export const reducer = (state = {}, action) => {
-  if (action.type === ENTER_GATEWAY_ANALYSIS_MODE) {
+  if (action.type === SET_ELEMENT) {
     return {
       ...state,
-      mode: GATEWAY_ANALYSIS_MODE
-    };
-  } else if (action.type === SET_ELEMENT) {
-    return {
-      ...state,
-      mode: action.id ? state.mode : null,
       selection: {
         ...state.selection,
         [action.elementType]: action.id
       }
     };
-  } else if (action.type === SELECT_PROCESS_DEFINITION) {
+  } else if (action.type === SELECT_PROCESS_DEFINITION || action.type === SET_VIEW) {
     return {
       ...state,
-      mode: null,
       selection: {}
     };
   }
   return state;
 };
-
-export function createEnterGatewayAnalysisModeAction() {
-  return {
-    type: ENTER_GATEWAY_ANALYSIS_MODE
-  };
-}
 
 export function createSetElementAction(id, elementType) {
   return {

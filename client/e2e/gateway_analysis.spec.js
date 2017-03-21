@@ -17,32 +17,17 @@ describe('Gateway Analysis', () => {
     browser.waitForExist('.processDefinitionSelect option[value]:not([value=""])');
 
     // SELECT VIEW
-    browser.selectByVisibleText('.view-select', 'Frequency');
+    browser.selectByVisibleText('.view-select', 'Branch Analysis');
 
     // SELECT PROCESS DEFINITION
     browser.selectByVisibleText('.processDefinitionSelect', 'Process_1');
-    const endEventSelector = '.djs-element.djs-shape.highlight';
+    const endEventSelector = '.djs-element.djs-shape.highlight[data-element-id*="EndEvent"]';
+    const gatewaySelector = '.djs-element.djs-shape.highlight[data-element-id*="Gateway"]';
 
     browser.waitForExist(endEventSelector);
 
-    // EXPECT A HEATMAP
-    expect(browser.isVisible('.viewport image')).to.eql(true);
-
-    // OPEN THE MODAL
+    // CLICK THE END EVENT AND THE GATEWAY
     browser.click(endEventSelector);
-    browser.waitForVisible('.startGatewayAnalysis');
-
-    // EXPECT STATISTICS
-    expect(browser.isVisible('.end-event-statistics')).to.eql(true);
-
-    // CLICK THE START GATEWAY ANALYSIS BUTTON
-    browser.click('.startGatewayAnalysis');
-
-    // CLICK THE gateway
-    browser.waitForVisible('.startGatewayAnalysis', 2000, true);
-    const gatewaySelector = '.djs-element.djs-shape.highlight';
-
-    browser.waitForVisible(gatewaySelector);
     browser.click(gatewaySelector);
 
     // EXPECT STATISTICS

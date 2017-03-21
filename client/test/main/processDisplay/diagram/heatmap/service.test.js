@@ -2,9 +2,9 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
 import {getHeatmap, hoverElement, removeHeatmapOverlay, addHeatmapOverlay,
-        VALUE_OVERLAY, __set__, __ResetDependency__} from 'main/processDisplay/diagram/service';
+        VALUE_OVERLAY, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/service';
 
-describe('Diagram service', () => {
+describe('Heatmap service', () => {
   const heatmap = {
     dimensions: {
       x: 0,

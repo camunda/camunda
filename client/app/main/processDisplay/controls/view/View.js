@@ -8,6 +8,7 @@ export function View() {
         <OnEvent event="change" listener={handleChange} />
         <option value="none" selected="selected">None</option>
         <option value="frequency">Frequency</option>
+        <option value="branch_analysis">Branch Analysis</option>
       </select>
     </div>
   </td>;

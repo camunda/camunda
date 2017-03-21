@@ -1,10 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {createEnterGatewayAnalysisModeAction,
-        createSetElementAction} from './reducer';
-
-export function enterGatewayAnalysisMode() {
-  dispatchAction(createEnterGatewayAnalysisModeAction());
-}
+import {createSetElementAction} from './reducer';
 
 export function setEndEvent({id}) {
   dispatchAction(createSetElementAction(id, 'endEvent'));
