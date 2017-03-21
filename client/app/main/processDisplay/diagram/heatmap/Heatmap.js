@@ -1,5 +1,5 @@
-import {getHeatmap, hoverElement,
-        removeHeatmapOverlay, addHeatmapOverlay} from './service';
+import {getHeatmap, hoverElement, addHeatmapOverlay} from './service';
+import {removeOverlays} from 'utils';
 import {isLoaded} from 'utils/loading';
 
 export function createHeatmapRenderer({viewer}) {
@@ -30,7 +30,7 @@ export function createHeatmapRenderer({viewer}) {
     }
 
     // add heatmap overlays
-    removeHeatmapOverlay(viewer);
+    removeOverlays(viewer);
     addHeatmapOverlay(viewer, flowNodes);
   }
 

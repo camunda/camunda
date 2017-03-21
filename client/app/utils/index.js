@@ -5,5 +5,5 @@ export {
   isInitial, isLoading, isLoaded
 } from './loading';
 export {onNextUpdate} from './onNextUpdate';
-export {isBpmnType} from './bpmn-utils';
+export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
 export {getFilterQuery} from './query';

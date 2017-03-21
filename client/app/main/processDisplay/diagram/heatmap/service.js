@@ -1,25 +1,10 @@
 import generateHeatmap from './heatmap_generator';
+import {updateOverlayVisibility} from 'utils';
 
 export const VALUE_OVERLAY = 'VALUE_OVERLAY';
+
 export function hoverElement(viewer, element) {
-  // hide all hovered elements
-  viewer
-    .get('overlays')
-    .get({type: VALUE_OVERLAY})
-    .forEach(({html}) => {
-      html.style.opacity = 0;
-    });
-
-  // display the new hovered element
-  const node = viewer.get('overlays').get({element, type: VALUE_OVERLAY})[0];
-
-  if (node) {
-    node.html.style.opacity = 1;
-  }
-}
-
-export function removeHeatmapOverlay(viewer) {
-  viewer.get('overlays').clear();
+  updateOverlayVisibility(viewer, element, VALUE_OVERLAY);
 }
 
 export function addHeatmapOverlay(viewer, data) {

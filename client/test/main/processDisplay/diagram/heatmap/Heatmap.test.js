@@ -12,11 +12,11 @@ describe('<Heatmap>', () => {
   let loadedDiagramState;
   let loadedHeatmapState;
   let getHeatmap;
-  let removeHeatmapOverlay;
   let addHeatmapOverlay;
   let viewer;
   let canvas;
   let eventBus;
+  let removeOverlays;
   let update;
 
   beforeEach(() => {
@@ -44,8 +44,8 @@ describe('<Heatmap>', () => {
     getHeatmap = sinon.stub().returns(heatmapNode);
     __set__('getHeatmap', getHeatmap);
 
-    removeHeatmapOverlay = sinon.spy();
-    __set__('removeHeatmapOverlay', removeHeatmapOverlay);
+    removeOverlays = sinon.spy();
+    __set__('removeOverlays', removeOverlays);
 
     addHeatmapOverlay = sinon.spy();
     __set__('addHeatmapOverlay', addHeatmapOverlay);
@@ -79,7 +79,7 @@ describe('<Heatmap>', () => {
 
   afterEach(() => {
     __ResetDependency__('getHeatmap');
-    __ResetDependency__('removeHeatmapOverlay');
+    __ResetDependency__('removeOverlays');
     __ResetDependency__('addHeatmapOverlay');
     __ResetDependency__('Diagram');
     __ResetDependency__('createDiagram');
@@ -130,7 +130,7 @@ describe('<Heatmap>', () => {
         diagramRendered: true
       });
 
-      expect(removeHeatmapOverlay.called).to.eql(true);
+      expect(removeOverlays.called).to.eql(true);
     });
 
     it('should add overlays with the loaded heatmap data', () => {

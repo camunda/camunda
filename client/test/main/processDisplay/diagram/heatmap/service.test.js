@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {getHeatmap, hoverElement, removeHeatmapOverlay, addHeatmapOverlay,
+import {getHeatmap, hoverElement, addHeatmapOverlay,
         VALUE_OVERLAY, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/service';
 
 describe('Heatmap service', () => {
@@ -98,12 +98,6 @@ describe('Heatmap service', () => {
   });
 
   describe('hover overlays', () => {
-    it('should remove overlays', () => {
-      removeHeatmapOverlay(viewer);
-
-      expect(clearFunction.calledOnce).to.eql(true);
-    });
-
     it('should add overlays on the elements', () => {
       addHeatmapOverlay(viewer, heatmapData);
 

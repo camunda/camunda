@@ -10,6 +10,7 @@ describe('<Analytics>', () => {
   let setGateway;
   let resetStatisticData;
   let leaveGatewayAnalysisMode;
+  let addBranchOverlay;
   let $document;
 
   let diagramElement;
@@ -69,6 +70,9 @@ describe('<Analytics>', () => {
     };
     __set__('$document', $document);
 
+    addBranchOverlay = sinon.spy();
+    __set__('addBranchOverlay', addBranchOverlay);
+
     setEndEvent = sinon.spy();
     __set__('setEndEvent', setEndEvent);
 
@@ -92,6 +96,7 @@ describe('<Analytics>', () => {
       addMarker: sinon.spy(),
       removeMarker: sinon.spy(),
       forEach: sinon.stub(),
+      clear: sinon.spy(),
       getGraphics: sinon.stub().returns({
         querySelector: sinon.stub().returns({
           setAttribute: sinon.spy()
@@ -105,6 +110,7 @@ describe('<Analytics>', () => {
   afterEach(() => {
     __ResetDependency__('createModal');
     __ResetDependency__('isBpmnType');
+    __ResetDependency__('addBranchOverlay');
     __ResetDependency__('setEndEvent');
     __ResetDependency__('setGateway');
     __ResetDependency__('leaveGatewayAnalysisMode');
@@ -115,7 +121,7 @@ describe('<Analytics>', () => {
 
   it('should do nothing when a non end event is clicked', () => {
     update(initialState);
-    viewer.on.firstCall.args[1]({element: diagramElement});
+    viewer.on.secondCall.args[1]({element: diagramElement});
 
     expect(setGateway.called).to.eql(false);
     expect(setEndEvent.called).to.eql(false);
@@ -123,28 +129,28 @@ describe('<Analytics>', () => {
 
   it('should set the end event when an end event is clicked', () => {
     update(initialState);
-    viewer.on.firstCall.args[1]({element: endEvent});
+    viewer.on.secondCall.args[1]({element: endEvent});
 
     expect(setEndEvent.calledWith(endEvent)).to.eql(true);
   });
 
   it('should set a gateway when a gateway is clicked', () => {
     update(gatewayAnalysisState);
-    viewer.on.lastCall.args[1]({element: gateway});
+    viewer.on.secondCall.args[1]({element: gateway});
 
     expect(setGateway.calledWith(gateway)).to.eql(true);
   });
 
   it('should reset potentially existing statistics data when a gateway is selected', () => {
     update(gatewayAnalysisState);
-    viewer.on.lastCall.args[1]({element: gateway});
+    viewer.on.secondCall.args[1]({element: gateway});
 
     expect(resetStatisticData.called).to.eql(true);
   });
 
   it('should reset potentially existing statistics data when an end event is selected', () => {
     update(gatewayAnalysisState);
-    viewer.on.lastCall.args[1]({element: endEvent});
+    viewer.on.secondCall.args[1]({element: endEvent});
 
     expect(resetStatisticData.called).to.eql(true);
   });

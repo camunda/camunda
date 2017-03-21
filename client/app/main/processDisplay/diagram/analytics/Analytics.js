@@ -1,10 +1,14 @@
-import {setEndEvent, setGateway} from './service';
-import {isBpmnType} from 'utils';
+import {setEndEvent, setGateway, hoverElement, addBranchOverlay} from './service';
+import {isBpmnType, removeOverlays} from 'utils';
 import {resetStatisticData} from 'main/processDisplay/statistics';
 
 export function createAnalyticsRenderer({viewer}) {
   const canvas = viewer.get('canvas');
   const elementRegistry = viewer.get('elementRegistry');
+
+  viewer.get('eventBus').on('element.hover', ({element}) => {
+    hoverElement(viewer, element);
+  });
 
   viewer.get('eventBus').on('element.click', ({element}) => {
     if (isBpmnType(element, 'EndEvent')) {
@@ -35,7 +39,7 @@ export function createAnalyticsRenderer({viewer}) {
     }
   }
 
-  return ({state: {selection}, diagramRendered}) => {
+  return ({state: {selection, heatmap: {data}}, diagramRendered}) => {
     if (diagramRendered) {
       elementRegistry.forEach((element) => {
         removeHighlight(element);
@@ -47,6 +51,9 @@ export function createAnalyticsRenderer({viewer}) {
       Object.values(selection).forEach(element => {
         highlight(element, 'highlight_selected');
       });
+
+      removeOverlays(viewer);
+      addBranchOverlay(viewer, data);
     }
   };
 }
