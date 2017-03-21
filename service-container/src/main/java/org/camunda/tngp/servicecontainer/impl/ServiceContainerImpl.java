@@ -110,6 +110,12 @@ public class ServiceContainerImpl implements Agent, ServiceContainer
     }
 
     @Override
+    public <S> boolean hasService(ServiceName<S> name)
+    {
+        return controllersByName.containsKey(name);
+    }
+
+    @Override
     public <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service)
     {
         return new ServiceBuilder<>(name, service, this);

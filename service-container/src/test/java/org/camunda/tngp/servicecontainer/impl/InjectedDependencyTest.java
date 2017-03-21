@@ -1,10 +1,8 @@
 package org.camunda.tngp.servicecontainer.impl;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -190,6 +188,33 @@ public class InjectedDependencyTest
         // then
         assertThat(injector.getValue()).isNull();
         assertThat(anotherInjector.getValue()).isNull();
+    }
+
+    @Test
+    public void shouldHaveService()
+    {
+        // given
+        final Injector<Object> injector = new Injector<>();
+        final Injector<Object> anotherInjector = new  Injector<>();
+        serviceContainer.createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .dependency(service2Name, anotherInjector)
+            .install();
+        serviceContainer.createService(service2Name, mockService2)
+            .install();
+        serviceContainer.doWorkUntilDone();
+
+        // when + then
+        assertThat(serviceContainer.hasService(service1Name)).isTrue();
+        assertThat(serviceContainer.hasService(service2Name)).isTrue();
+    }
+
+    @Test
+    public void shouldNotHaveService()
+    {
+        // when + then
+        assertThat(serviceContainer.hasService(service1Name)).isFalse();
+        assertThat(serviceContainer.hasService(service2Name)).isFalse();
     }
 
 }

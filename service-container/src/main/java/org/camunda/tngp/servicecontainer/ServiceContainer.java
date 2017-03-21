@@ -9,6 +9,8 @@ public interface ServiceContainer
 {
     void start();
 
+    <S> boolean hasService(ServiceName<S> name);
+
     <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
     CompletableFuture<Void> removeService(ServiceName<?> serviceName);
