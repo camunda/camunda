@@ -55,11 +55,12 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
 
         do
         {
+            READ_BUFFER_VIEW.position(0);
             read = indexStore.read(READ_BUFFER_VIEW, offset);
 
             if (read > 0)
             {
-                outputStream.write(READ_BUFFER, offset, read);
+                outputStream.write(READ_BUFFER, 0, read);
 
                 offset += read;
             }
@@ -75,10 +76,11 @@ public class HashIndexSnapshotSupport<T extends HashIndex<?, ?>> implements Snap
 
         do
         {
-            read = StreamUtil.read(inputStream, WRITE_BUFFER, offset);
+            read = StreamUtil.read(inputStream, WRITE_BUFFER, 0);
 
             if (read > 0)
             {
+                WRITE_BUFFER_VIEW.position(0);
                 indexStore.writeFully(WRITE_BUFFER_VIEW, offset);
 
                 offset += read;

@@ -33,14 +33,19 @@ public class HashIndexSnapshotSupportTest
     public void init()
     {
         indexStore = FileChannelIndexStore.tempFileIndexStore();
-        hashIndex = new Long2LongHashIndex(indexStore, 16, 1);
+    }
 
+    protected void initIndex(int indexSize, int blockLength)
+    {
+        hashIndex = new Long2LongHashIndex(indexStore, indexSize, blockLength);
         snapshotSupport = new HashIndexSnapshotSupport<>(hashIndex, indexStore);
     }
 
     @Test
     public void shouldRecover() throws Exception
     {
+        initIndex(16, 1);
+
         hashIndex.put(0, 10);
         hashIndex.put(1, 11);
 
@@ -59,6 +64,8 @@ public class HashIndexSnapshotSupportTest
     @Test
     public void shouldReset() throws Exception
     {
+        initIndex(16, 1);
+
         assertThat(hashIndex.blockCount()).isEqualTo(1);
 
         hashIndex.put(0, 10);
@@ -78,6 +85,8 @@ public class HashIndexSnapshotSupportTest
     @Test
     public void shouldRecoverAnEmptyIndex() throws Exception
     {
+        initIndex(16, 1);
+
         assertThat(hashIndex.blockCount()).isEqualTo(1);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -92,4 +101,35 @@ public class HashIndexSnapshotSupportTest
         assertThat(hashIndex.blockCount()).isEqualTo(1);
     }
 
+    @Test
+    public void shouldRecoverWhenIndexLargerThanSnapshotBuffer() throws Exception
+    {
+        // given
+        // note: this test uses an internal parameter for setup, which is of course not guaranteed to be
+        //   used for anything.
+        //   However, this is probably more focused than just testing with a "very large" index
+        final int snapshotBufferSize = HashIndexSnapshotSupport.BUFFER_SIZE;
+        final int numEntries = (snapshotBufferSize / 16) + 1;
+        initIndex(numEntries, numEntries);
+
+        for (int i = 0; i < numEntries; i++)
+        {
+            hashIndex.put(i, i);
+        }
+
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        // when
+        snapshotSupport.writeSnapshot(outputStream);
+        hashIndex.clear();
+
+        // then
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+        snapshotSupport.recoverFromSnapshot(inputStream);
+
+        for (int i = 0; i < numEntries; i++)
+        {
+            assertThat(hashIndex.get(i, -1)).isEqualTo(i);
+        }
+    }
 }
