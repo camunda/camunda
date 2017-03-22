@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.event.processor;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 
 import java.util.concurrent.CompletableFuture;
 

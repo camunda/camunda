@@ -43,7 +43,7 @@ public class AppendRequest implements BufferReader, BufferWriter
         return id;
     }
 
-    public AppendRequest log(final int id)
+    public AppendRequest id(final int id)
     {
         this.id = id;
         return this;

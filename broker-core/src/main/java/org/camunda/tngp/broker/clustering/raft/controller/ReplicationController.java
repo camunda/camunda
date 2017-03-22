@@ -64,7 +64,6 @@ public class ReplicationController
                 .from(prepareMessageState).take(TRANSITION_CLOSE).to(closeRequestState)
 
                 .from(openRequestState).take(TRANSITION_DEFAULT).to(openState)
-                .from(openRequestState).take(TRANSITION_FAILED).to(closeRequestState)
                 .from(openRequestState).take(TRANSITION_CLOSE).to(closeRequestState)
 
                 .from(openState).take(TRANSITION_DEFAULT).to(closeRequestState)
@@ -160,33 +159,32 @@ public class ReplicationController
         public void work(ReplicationContext context) throws Exception
         {
             final Raft raft = context.raft;
-            final int log = raft.id();
+            final int id = raft.id();
             final int term = raft.term();
             final Member self = raft.member();
 
             final Member member = context.member;
             final long previousEntryPosition = member.currentEntryPosition();
             final int previousEntryTerm = member.currentEntryTerm();
+            final long commitPosition = raft.commitPosition();
 
             final AppendRequest appendRequest = context.appendRequest;
 
             appendRequest.reset();
             appendRequest
+                .id(id)
                 .term(term)
-                .log(log)
                 .previousEntryPosition(previousEntryPosition)
                 .previousEntryTerm(previousEntryTerm)
+                .commitPosition(commitPosition)
                 .leader(self)
                 .entry(null);
 
-            System.out.println("\n");
-            System.out.println("previousEntryPosition: " + previousEntryPosition);
 
             if (!member.hasFailures() && member.hasNextEntry())
             {
                 final LoggedEvent nextEntry = member.nextEntry();
                 appendRequest.entry(nextEntry);
-                System.out.println("entryPosition: " + nextEntry.getPosition());
             }
 
             context.lastReplicationTime = System.currentTimeMillis();
@@ -287,13 +285,11 @@ public class ReplicationController
 
             if (!member.hasFailures() && member.hasNextEntry())
             {
-                System.out.println("has no failures and has next entry " + System.currentTimeMillis());
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }
             else if (System.currentTimeMillis() >= lastReplicationTime + replicationTimeout)
             {
-                System.out.println("next heartbeat " + System.currentTimeMillis());
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }

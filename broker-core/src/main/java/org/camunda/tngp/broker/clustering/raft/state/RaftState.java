@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
-import org.agrona.DirectBuffer;
+import java.util.concurrent.CompletableFuture;
+
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
@@ -12,9 +13,12 @@ import org.camunda.tngp.broker.clustering.raft.message.ConfigureRequest;
 import org.camunda.tngp.broker.clustering.raft.message.ConfigureResponse;
 import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
 import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
+import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
+import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.broker.clustering.util.MessageWriter;
 
 public abstract class RaftState
 {
@@ -22,39 +26,24 @@ public abstract class RaftState
     protected final Raft raft;
     protected final LogStreamState logStreamState;
 
-    protected final VoteRequest voteRequest;
+    protected final PollResponse pollResponse;
     protected final VoteResponse voteResponse;
-
-    protected final AppendRequest appendRequest;
     protected final AppendResponse appendResponse;
-
-    protected final JoinRequest joinRequest;
     protected final JoinResponse joinResponse;
-
-    protected final ConfigureRequest configureRequest;
+    protected final LeaveResponse leaveResponse;
     protected final ConfigureResponse configureResponse;
-
-    protected final MessageWriter messageWriter;
 
     public RaftState(final RaftContext context)
     {
         this.context = context;
         this.raft = context.getRaft();
         this.logStreamState = context.getLogStreamState();
-
-        this.voteRequest = new VoteRequest();
+        this.pollResponse = new PollResponse();
         this.voteResponse = new VoteResponse();
-
-        this.appendRequest = new AppendRequest();
         this.appendResponse = new AppendResponse();
-
-        this.joinRequest = new JoinRequest();
         this.joinResponse = new JoinResponse();
-
-        this.configureRequest = new ConfigureRequest();
+        this.leaveResponse = new LeaveResponse();
         this.configureResponse = new ConfigureResponse();
-
-        this.messageWriter = new MessageWriter(context.getSendBuffer());
     }
 
     protected boolean updateTermAndLeader(final int term, final Member leader)
@@ -82,14 +71,18 @@ public abstract class RaftState
 
     public abstract State state();
 
-    public abstract int onVoteRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connection, final long requestId);
+    public abstract PollResponse poll(final PollRequest pollRequest);
 
-    public abstract int onAppendRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId);
+    public abstract VoteResponse vote(final VoteRequest voteRequest);
 
-    public abstract int onAppendResponse(final DirectBuffer buffer, final int offset, final int length);
+    public abstract AppendResponse append(final AppendRequest appendRequest);
 
-    public abstract int onJoinRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId);
+    public abstract void appended(final AppendResponse appendResponse);
 
-    public abstract int onConfigureRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId);
+    public abstract ConfigureResponse configure(final ConfigureRequest configureRequest);
+
+    public abstract CompletableFuture<JoinResponse> join(final JoinRequest joinRequest);
+
+    public abstract CompletableFuture<LeaveResponse> leave(final LeaveRequest leaveRequest);
 
 }

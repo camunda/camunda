@@ -159,16 +159,7 @@ public class TopicSubscriptionManager implements Agent
 
     public void onStreamRemoved(LogStream logStream)
     {
-
         streamProcessorManager.removeLogStream(logStream);
-
-        asyncContext.runAsync(() ->
-        {
-            final ServiceName<StreamProcessorController> ackService =
-                    TopicSubscriptionNames.ackServiceName(logStream.getLogName());
-
-            streamProcessorManager.removeStreamProcessorService(ackService);
-        });
     }
 
     @Override

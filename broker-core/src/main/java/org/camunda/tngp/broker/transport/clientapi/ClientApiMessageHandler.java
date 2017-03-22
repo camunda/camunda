@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
-import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
+import static org.camunda.tngp.transport.protocol.Protocols.*;
 
 import java.util.function.Consumer;
 

@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.clustering.raft.service;
 import java.util.List;
 
 import org.camunda.tngp.broker.clustering.raft.Member;
+import org.camunda.tngp.broker.clustering.raft.MetaStore;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
@@ -21,11 +22,15 @@ public class RaftService implements Service<Raft>
     private Injector<RaftContext> raftContextInjector = new Injector<>();
 
     private Raft raft;
+    private MetaStore meta;
+    private boolean bootstrap;
 
-    public RaftService(final LogStream logStream, final List<Member> members)
+    public RaftService(final LogStream logStream, final MetaStore meta, final List<Member> members, boolean bootstrap)
     {
         this.logStream = logStream;
+        this.meta = meta;
         this.members = members;
+        this.bootstrap = bootstrap;
     }
 
     @Override
@@ -36,9 +41,9 @@ public class RaftService implements Service<Raft>
             final AgentRunnerServices agentRunnerServices = agentRunnerInjector.getValue();
             final RaftContext raftContext = raftContextInjector.getValue();
 
-            raft = new Raft(raftContext, logStream);
+            raft = new Raft(raftContext, logStream, meta);
 
-            if (members.isEmpty())
+            if (bootstrap)
             {
                 raft.bootstrap();
             }
@@ -52,12 +57,17 @@ public class RaftService implements Service<Raft>
     }
 
     @Override
-    public void stop(ServiceStopContext arg0)
+    public void stop(ServiceStopContext ctx)
     {
-        // TODO: close raft so that running state machine releases used resources
+        ctx.run(() ->
+        {
+            final AgentRunnerServices agentRunnerService = agentRunnerInjector.getValue();
+            agentRunnerService.raftAgentRunnerService().remove(raft);
 
-        final AgentRunnerServices agentRunnerService = agentRunnerInjector.getValue();
-        agentRunnerService.raftAgentRunnerService().remove(raft);
+            raft.close();
+
+            raft.stream().closeAsync();
+        });
     }
 
     @Override

@@ -1,11 +1,9 @@
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.system.SystemServiceNames.EXECUTOR_SERVICE;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_MANAGER;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_SUBSCRIPTION_MANAGER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -32,6 +30,8 @@ public class TaskQueueComponent implements Component
             .dependency(TRANSPORT_SEND_BUFFER, taskQueueManagerService.getSendBufferInjector())
             .dependency(EXECUTOR_SERVICE, taskQueueManagerService.getExecutorInjector())
             .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, taskQueueManagerService.getTaskSubscriptionManagerInjector())
+            .dependency(AGENT_RUNNER_SERVICE, taskQueueManagerService.getAgentRunnerServicesInjector())
+            .groupReference(LOG_STREAM_SERVICE_GROUP, taskQueueManagerService.getLogStreamsGroupReference())
             .install();
 
     }

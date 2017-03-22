@@ -1,15 +1,31 @@
 package org.camunda.tngp.broker.clustering.raft;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
 import org.camunda.tngp.broker.clustering.raft.controller.JoinController;
+import org.camunda.tngp.broker.clustering.raft.controller.LeaveController;
+import org.camunda.tngp.broker.clustering.raft.controller.PollController;
 import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
 import org.camunda.tngp.broker.clustering.raft.controller.VoteController;
-import org.camunda.tngp.broker.clustering.raft.handler.RaftFragmentHandler;
+import org.camunda.tngp.broker.clustering.raft.handler.RaftMessageHandler;
+import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
+import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
+import org.camunda.tngp.broker.clustering.raft.message.ConfigureRequest;
+import org.camunda.tngp.broker.clustering.raft.message.ConfigureResponse;
+import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
+import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
+import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
+import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
+import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
+import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.broker.clustering.raft.state.ActiveState;
 import org.camunda.tngp.broker.clustering.raft.state.CandidateState;
 import org.camunda.tngp.broker.clustering.raft.state.FollowerState;
@@ -23,6 +39,7 @@ public class Raft implements Agent
 {
     private final RaftContext context;
     private final LogStream stream;
+    private final MetaStore meta;
 
     private final InactiveState inactiveState;
     private final FollowerState followerState;
@@ -48,13 +65,17 @@ public class Raft implements Agent
     private Configuration configuration;
 
     private final JoinController joinController;
+    private final LeaveController leaveController;
 
-    private final RaftFragmentHandler fragmentHandler;
+    private final RaftMessageHandler fragmentHandler;
 
-    public Raft(final RaftContext context, final LogStream stream)
+    private final List<Consumer<Raft>> stateChangeListeners;
+
+    public Raft(final RaftContext context, final LogStream stream, final MetaStore meta)
     {
         this.context = context;
         this.stream = stream;
+        this.meta = meta;
 
         final LogStreamState logStreamState = new LogStreamState(stream);
 
@@ -77,9 +98,34 @@ public class Raft implements Agent
 
         this.state = inactiveState;
 
-        this.fragmentHandler = new RaftFragmentHandler(this, context.getSubscription());
+        this.fragmentHandler = new RaftMessageHandler(context, context.getSubscription());
         this.joinController = new JoinController(context);
+        this.leaveController = new LeaveController(context);
+
+        this.stateChangeListeners = new CopyOnWriteArrayList<>();
+
+        this.term = meta.loadTerm();
+
+        final Endpoint vote = meta.loadVote();
+        if (vote != null)
+        {
+            lastVotedForAvailable = true;
+            lastVotedFor.wrap(vote);
+        }
+
+        this.configuration = meta.loadConfiguration();
+
+        if (configuration != null)
+        {
+            final List<Member> members = configuration.members();
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member m = members.get(i);
+                this.members.add(new Member(m.endpoint(), context));
+            }
+        }
     }
+
 
     @Override
     public String roleName()
@@ -95,8 +141,19 @@ public class Raft implements Agent
         workcount += fragmentHandler.doWork();
         workcount += state.doWork();
         workcount += joinController.doWork();
+        workcount += leaveController.doWork();
 
         return workcount;
+    }
+
+    public void close()
+    {
+        this.state.close();
+
+        while (!this.state.isClosed())
+        {
+            this.state.doWork();
+        }
     }
 
     public int id()
@@ -107,6 +164,11 @@ public class Raft implements Agent
     public LogStream stream()
     {
         return stream;
+    }
+
+    public MetaStore meta()
+    {
+        return meta;
     }
 
     public Configuration configuration()
@@ -141,6 +203,7 @@ public class Raft implements Agent
             this.term = term;
             leader(null);
             lastVotedFor(null);
+            meta.storeTermAndVote(term, null);
         }
         return this;
     }
@@ -156,7 +219,13 @@ public class Raft implements Agent
         if (previousCommitPosition < commitPosition)
         {
             this.commitPosition = commitPosition;
+            final long configurationPosition = configuration().configurationEntryPosition();
+            if (configurationPosition > previousCommitPosition && configurationPosition <= commitPosition)
+            {
+                meta.storeConfiguration(configuration);
+            }
         }
+
         return this;
     }
 
@@ -204,6 +273,7 @@ public class Raft implements Agent
         {
             lastVotedForAvailable = true;
             this.lastVotedFor.wrap(lastVotedFor);
+            meta.storeVote(lastVotedFor);
         }
 
         return this;
@@ -250,33 +320,42 @@ public class Raft implements Agent
         return join();
     }
 
-    public Raft join(final List<Member> cluster)
+    public Raft join(final List<Member> members)
     {
         if (configuration == null)
         {
-            final List<Member> clusterMembers = new CopyOnWriteArrayList<>();
-            for (int i = 0; i < cluster.size(); i++)
+            final List<Member> configuredMembers = new CopyOnWriteArrayList<>();
+            for (int i = 0; i < members.size(); i++)
             {
-                final Member member = cluster.get(i);
+                final Member member = members.get(i);
                 if (!member.equals(this.member.endpoint()))
                 {
-                    clusterMembers.add(member);
+                    configuredMembers.add(member);
                 }
             }
 
-            if (clusterMembers.isEmpty())
+            if (configuredMembers.isEmpty())
             {
                 throw new IllegalStateException("cannot join empty cluster");
             }
 
-            configure(new Configuration(0L, 0, clusterMembers));
+            configure(new Configuration(0L, 0, configuredMembers));
         }
 
         return join();
     }
 
+    public CompletableFuture<Void> leave()
+    {
+        final CompletableFuture<Void> future = new CompletableFuture<Void>();
+        leaveController.open(future);
+        return future;
+    }
+
     protected Raft join()
     {
+        transition(State.FOLLOWER);
+
         final List<Member> activeMembers = new CopyOnWriteArrayList<>();
 
         final int size = members.size();
@@ -292,10 +371,6 @@ public class Raft implements Agent
         if (!activeMembers.isEmpty())
         {
             joinController.open(activeMembers);
-        }
-        else
-        {
-            transition(State.FOLLOWER);
         }
 
         return this;
@@ -314,19 +389,15 @@ public class Raft implements Agent
         {
             final Member configuredMember = configuredMembers.get(i);
 
-            if (configuredMember.equals(member) && !members.contains(member))
+            if (!members.contains(configuredMember))
             {
-                members.add(member);
-            }
-            else
-            {
-                final int idx = members.indexOf(configuredMember);
-                Member existingMember = idx >= 0 ? members.get(idx) : null;
-
-                if (existingMember == null)
+                if (member.equals(configuredMember))
                 {
-                    existingMember = new Member(configuredMember.endpoint(), context);
-                    members.add(existingMember);
+                    members.add(member);
+                }
+                else
+                {
+                    members.add(new Member(configuredMember.endpoint(), context));
                 }
             }
         }
@@ -345,6 +416,12 @@ public class Raft implements Agent
 
                     final ReplicationController replicationController = member.getReplicationController();
                     replicationController.closeForcibly();
+
+                    final PollController pollController = member.getPollController();
+                    pollController.closeForcibly();
+
+                    final ConfigureController configureController = member.getConfigureController();
+                    configureController.closeForcibly();
                 }
                 finally
                 {
@@ -359,7 +436,10 @@ public class Raft implements Agent
 
         this.configuration = configuration;
 
-        // TODO: if configuration is committed, then store it!
+        if (commitPosition() >= configuration.configurationEntryPosition())
+        {
+            meta.storeConfiguration(this.configuration);
+        }
 
         return this;
     }
@@ -368,6 +448,8 @@ public class Raft implements Agent
     {
         if (this.state.state() != state)
         {
+//            System.out.println(String.format("Transitioning %s from %s to %s, %d", stream.getLogName(), this.state.state(), state, System.currentTimeMillis()));
+
             try
             {
                 this.state.close();
@@ -381,6 +463,11 @@ public class Raft implements Agent
             {
                 this.state = getState(state);
                 this.state.open();
+            }
+
+            for (int i = 0; i < stateChangeListeners.size(); i++)
+            {
+                stateChangeListeners.get(i).accept(this);
             }
         }
     }
@@ -400,29 +487,44 @@ public class Raft implements Agent
         }
     }
 
-    public int onVoteRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connection, final long requestId)
+    public AppendResponse handleAppendRequest(final AppendRequest appendRequest)
     {
-        return state.onVoteRequest(buffer, offset, length, channelId, connection, requestId);
+        return state.append(appendRequest);
     }
 
-    public int onAppendRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId)
+    public void handleAppendResponse(final AppendResponse appendResponse)
     {
-        return state.onAppendRequest(buffer, offset, length, channelId);
+        state.appended(appendResponse);
     }
 
-    public int onAppendResponse(final DirectBuffer buffer, final int offset, final int length)
+    public PollResponse handlePollRequest(final PollRequest pollRequest)
     {
-        return state.onAppendResponse(buffer, offset, length);
+        return state.poll(pollRequest);
     }
 
-    public int onJoinRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    public VoteResponse handleVoteRequest(final VoteRequest voteRequest)
     {
-        return state.onJoinRequest(buffer, offset, length, channelId, connectionId, requestId);
+        return state.vote(voteRequest);
     }
 
-    public int onConfigureRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    public ConfigureResponse handleConfigureRequest(final ConfigureRequest configureRequest)
     {
-        return state.onConfigureRequest(buffer, offset, length, channelId, connectionId, requestId);
+        return state.configure(configureRequest);
+    }
+
+    public CompletableFuture<JoinResponse> handleJoinRequest(final JoinRequest joinRequest)
+    {
+        return state.join(joinRequest);
+    }
+
+    public CompletableFuture<LeaveResponse> handleLeaveRequest(final LeaveRequest leaveRequest)
+    {
+        return state.leave(leaveRequest);
+    }
+
+    public void onStateChange(Consumer<Raft> listener)
+    {
+        stateChangeListeners.add(listener);
     }
 
     public enum State

@@ -17,7 +17,7 @@ public class TransportConnectionPoolService implements Service<TransportConnecti
     public void start(final ServiceStartContext serviceContext)
     {
         final Transport transport = transportInjector.getValue();
-        connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, 100, 2);
+        connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, 100, 128);
     }
 
     @Override

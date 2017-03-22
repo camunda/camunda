@@ -1,20 +1,23 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
-import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
-import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
 import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
+import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
+import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
+import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
+import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
-import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.transport.protocol.Protocols;
 
 public abstract class ActiveState extends InactiveState
 {
@@ -28,25 +31,6 @@ public abstract class ActiveState extends InactiveState
     protected long randomTimeout(final long min)
     {
         return min + (Math.abs(random.nextLong()) % min);
-    }
-
-    public abstract State state();
-
-    public int onVoteRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connection, final long requestId)
-    {
-        voteRequest.reset();
-        voteRequest.wrap(buffer, offset, length);
-
-        final VoteResponse voteResponse = vote(voteRequest);
-
-        messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-            .channelId(channelId)
-            .connectionId(connection)
-            .requestId(requestId)
-            .message(voteResponse)
-            .tryWriteMessage();
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
 
     public VoteResponse vote(final VoteRequest voteRequest)
@@ -86,6 +70,10 @@ public abstract class ActiveState extends InactiveState
         {
             granted = false;
         }
+        else if (!context.getRaft().members().contains(candidate))
+        {
+            granted = false;
+        }
         else if (lastVotedFor == null)
         {
             granted = isLogUpToDate(lastEntryPosition, lastEntryTerm);
@@ -107,34 +95,61 @@ public abstract class ActiveState extends InactiveState
                 .granted(granted);
     }
 
+    public PollResponse poll(final PollRequest pollRequest)
+    {
+        final int pollTerm = pollRequest.term();
+
+        final boolean transition = updateTermAndLeader(pollTerm, null);
+
+        final PollResponse pollResponse = handlePollRequest(pollRequest);
+
+        if (transition)
+        {
+            raft.transition(Raft.State.FOLLOWER);
+        }
+
+        return pollResponse;
+    }
+
+    protected PollResponse handlePollRequest(final PollRequest pollRequest)
+    {
+        final int currentTerm = raft.term();
+
+        final int voteTerm = pollRequest.term();
+        final long lastEntryPosition = pollRequest.lastEntryPosition();
+        final int lastEntryTerm = pollRequest.lastEntryTerm();
+
+        boolean granted = false;
+
+        if (voteTerm < currentTerm)
+        {
+            granted = false;
+        }
+        else
+        {
+            granted = isLogUpToDate(lastEntryPosition, lastEntryTerm);
+        }
+
+        pollResponse.reset();
+        return pollResponse
+                .id(raft.id())
+                .term(currentTerm)
+                .granted(granted);
+    }
+
     protected boolean isLogUpToDate(final long entryPosition, final int entryTerm)
     {
         return logStreamState.isLastReceivedEntry(entryPosition, entryTerm);
     }
 
-    public int onAppendRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId)
+    public AppendResponse append(final AppendRequest appendRequest)
     {
-        appendRequest.reset();
-        appendRequest.wrap(buffer, offset, length);
-
-        final AppendResponse appendResponse = append(appendRequest);
-
-        messageWriter.protocol(Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
-            .channelId(channelId)
-            .message(appendResponse)
-            .tryWriteMessage();
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-    }
-
-    protected AppendResponse append(final AppendRequest request)
-    {
-        final int term = request.term();
-        final Member leader = request.leader();
+        final int term = appendRequest.term();
+        final Member leader = appendRequest.leader();
 
         final boolean transition = updateTermAndLeader(term, leader);
 
-        final AppendResponse response = handleAppendRequest(request);
+        final AppendResponse response = handleAppendRequest(appendRequest);
 
         if (transition)
         {
@@ -198,9 +213,6 @@ public abstract class ActiveState extends InactiveState
 
         if (entry != null)
         {
-            System.out.println("\n");
-            System.out.println("append");
-
             logStreamState.append(entry);
         }
 
@@ -213,6 +225,32 @@ public abstract class ActiveState extends InactiveState
         }
 
         return acknowledgeAppendRequest(logStreamState.lastWrittenPosition());
+    }
+
+    @Override
+    public void appended(AppendResponse appendResponse)
+    {
+        // ignore;
+    }
+
+    @Override
+    public CompletableFuture<JoinResponse> join(JoinRequest joinRequest)
+    {
+        joinResponse.reset();
+        return CompletableFuture.completedFuture(joinResponse.id(raft.id())
+            .term(raft.term())
+            .succeeded(false)
+            .members(raft.members()));
+    }
+
+    @Override
+    public CompletableFuture<LeaveResponse> leave(LeaveRequest leaveRequest)
+    {
+        leaveResponse.reset();
+        return CompletableFuture.completedFuture(leaveResponse.id(raft.id())
+            .term(raft.term())
+            .succeeded(false)
+            .members(raft.members()));
     }
 
     protected AppendResponse rejectAppendRequest(final long logPosition)

@@ -1,11 +1,15 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
 import static org.camunda.tngp.broker.clustering.raft.Raft.State.*;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Configuration;
 import org.camunda.tngp.broker.clustering.raft.Member;
@@ -13,11 +17,25 @@ import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.controller.AppendController;
 import org.camunda.tngp.broker.clustering.raft.controller.ConfigurationController;
+import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
 import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
 import org.camunda.tngp.broker.clustering.raft.entry.InitializeEntry;
-import org.camunda.tngp.broker.clustering.util.MessageWriter;
-import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
+import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
+import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
+import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
+import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
+import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
+import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
+import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.broker.logstreams.LogStreamService;
+import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
@@ -32,7 +50,7 @@ public class LeaderState extends ActiveState
     private static final int TRANSITION_DEFAULT = 1;
     private static final int TRANSITION_CLOSE = 2;
 
-    private static final StateMachineCommand<LeaderContext> CLOSE_LEADER_STATE_MACHINE_COMMAND = (c) ->
+    private static final StateMachineCommand<LeaderContext> CLOSE_LEADERSHIP_STATE_MACHINE_COMMAND = (c) ->
     {
         final boolean closed = c.tryTake(TRANSITION_CLOSE);
         if (!closed)
@@ -50,6 +68,15 @@ public class LeaderState extends ActiveState
         }
     };
 
+    private static final StateMachineCommand<ConfigureContext> CLOSE_CONFIGURE_STATE_MACHINE_COMMAND = (c) ->
+    {
+        final boolean closed = c.tryTake(TRANSITION_CLOSE);
+        if (!closed)
+        {
+            throw new IllegalStateException("Cannot close state machine.");
+        }
+    };
+
     private final WaitState<LeaderContext> leaderClosedState = (c) ->
     {
     };
@@ -57,51 +84,63 @@ public class LeaderState extends ActiveState
     {
     };
 
+    private final StartLogStreamControllerState startLogStreamControllerState = new StartLogStreamControllerState();
+    private final OpeningLogStreamControllerState openingLogStreamControllerState = new OpeningLogStreamControllerState();
     private final OpenAppendControllerState openAppendControllerState = new OpenAppendControllerState();
     private final AppendInitialEntryState appendInitialEntryState = new AppendInitialEntryState();
     private final OpenConfigurationControllerState openConfigurationControllerState = new OpenConfigurationControllerState();
+    private final AppendConfigurationEntryState appendConfigurationEntryState = new AppendConfigurationEntryState();
+    private final InstallLogStreamServiceState installLogStreamServiceState = new InstallLogStreamServiceState();
+    private final RemoveLogStreamServiceState removeLogStreamServiceState = new RemoveLogStreamServiceState();
+    private final RemovingLogStreamServiceState removingLogStreamServiceState = new RemovingLogStreamServiceState();
+    private final StopLogStreamControllerState stopLogStreamControllerState = new StopLogStreamControllerState();
     private final CloseAppendControllerState closeAppendControllerState = new CloseAppendControllerState();
     private final ClosingAppendControllerState closingAppendControllerState = new ClosingAppendControllerState();
 
-    private final StateMachineAgent<LeaderContext> leaderStateMachine;
+    private final StateMachineAgent<LeaderContext> leadershipStateMachine;
     private LeaderContext leaderContext;
 
     private final WaitState<ReplicationContext> replicationClosedState = (c) ->
     {
     };
 
-    private final ReplicationState replicationState = new ReplicationState();
+    private final OpenReplicationState openReplicationState = new OpenReplicationState();
     private final CloseReplicationsState closeReplicationsState = new CloseReplicationsState();
     private final ClosingReplicationsState closingReplicationsState = new ClosingReplicationsState();
 
     private final StateMachineAgent<ReplicationContext> replicationStateMachine;
     private ReplicationContext replicationContext;
 
-    private final List<Member> joiningMembers;
-    private final Member joiningMember;
+    private final WaitState<ConfigureContext> configureClosedState = (c) ->
+    {
+    };
 
-    private boolean sendJoinResponse;
-    private int joinChannelId;
-    private long joinConnectionId;
-    private long joinRequestId;
+    private final OpenConfigureState openConfigureState = new OpenConfigureState();
+    private final CloseConfigureState closeConfigureState = new CloseConfigureState();
+    private final ClosingConfigureState closingConfigureState = new ClosingConfigureState();
+
+    private final StateMachineAgent<ConfigureContext> configureStateMachine;
+    private ConfigureContext configureContext;
+
+    private final List<Member> configuringMembers;
+    private final Member configuringMember;
 
     private final ConfigurationController configurationController;
 
-    private final MessageWriter messageWriter;
-
+    private long commitPosition;
 
     public LeaderState(final RaftContext context)
     {
         super(context);
 
-        this.joiningMembers = new CopyOnWriteArrayList<>();
-        this.joiningMember = new Member();
+        this.commitPosition = -1L;
+
+        this.configuringMembers = new CopyOnWriteArrayList<>();
+        this.configuringMember = new Member();
 
         this.configurationController = new ConfigurationController(context);
 
-        this.messageWriter = new MessageWriter(context.getSendBuffer());
-
-        this.leaderStateMachine = new StateMachineAgent<>(StateMachine
+        this.leadershipStateMachine = new StateMachineAgent<>(StateMachine
                 .<LeaderContext> builder(s ->
                 {
                     leaderContext = new LeaderContext(s, context);
@@ -110,19 +149,40 @@ public class LeaderState extends ActiveState
                 })
                 .initialState(leaderClosedState)
 
-                .from(leaderClosedState).take(TRANSITION_OPEN).to(openAppendControllerState)
+                .from(leaderClosedState).take(TRANSITION_OPEN).to(startLogStreamControllerState)
                 .from(leaderClosedState).take(TRANSITION_CLOSE).to(leaderClosedState)
 
+                .from(startLogStreamControllerState).take(TRANSITION_DEFAULT).to(openingLogStreamControllerState)
+                .from(startLogStreamControllerState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
+
+                .from(openingLogStreamControllerState).take(TRANSITION_DEFAULT).to(openAppendControllerState)
+                .from(openingLogStreamControllerState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
+
                 .from(openAppendControllerState).take(TRANSITION_DEFAULT).to(appendInitialEntryState)
-                .from(openAppendControllerState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+                .from(openAppendControllerState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
 
                 .from(appendInitialEntryState).take(TRANSITION_DEFAULT).to(openConfigurationControllerState)
-                .from(appendInitialEntryState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+                .from(appendInitialEntryState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
 
-                .from(openConfigurationControllerState).take(TRANSITION_DEFAULT).to(leaderInitializedState)
-                .from(openConfigurationControllerState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+                .from(openConfigurationControllerState).take(TRANSITION_DEFAULT).to(appendConfigurationEntryState)
+                .from(openConfigurationControllerState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
 
-                .from(leaderInitializedState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
+                .from(appendConfigurationEntryState).take(TRANSITION_DEFAULT).to(installLogStreamServiceState)
+                .from(appendConfigurationEntryState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
+
+                .from(installLogStreamServiceState).take(TRANSITION_DEFAULT).to(leaderInitializedState)
+                .from(installLogStreamServiceState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
+
+                .from(leaderInitializedState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
+
+                .from(removeLogStreamServiceState).take(TRANSITION_DEFAULT).to(removingLogStreamServiceState)
+                .from(removeLogStreamServiceState).take(TRANSITION_CLOSE).to(removeLogStreamServiceState)
+
+                .from(removingLogStreamServiceState).take(TRANSITION_DEFAULT).to(stopLogStreamControllerState)
+                .from(removingLogStreamServiceState).take(TRANSITION_CLOSE).to(removingLogStreamServiceState)
+
+                .from(stopLogStreamControllerState).take(TRANSITION_DEFAULT).to(closeAppendControllerState)
+                .from(stopLogStreamControllerState).take(TRANSITION_CLOSE).to(stopLogStreamControllerState)
 
                 .from(closeAppendControllerState).take(TRANSITION_DEFAULT).to(closingAppendControllerState)
                 .from(closeAppendControllerState).take(TRANSITION_CLOSE).to(closeAppendControllerState)
@@ -140,10 +200,10 @@ public class LeaderState extends ActiveState
                 })
                 .initialState(replicationClosedState)
 
-                .from(replicationClosedState).take(TRANSITION_OPEN).to(replicationState)
+                .from(replicationClosedState).take(TRANSITION_OPEN).to(openReplicationState)
                 .from(replicationClosedState).take(TRANSITION_CLOSE).to(replicationClosedState)
 
-                .from(replicationState).take(TRANSITION_CLOSE).to(closeReplicationsState)
+                .from(openReplicationState).take(TRANSITION_CLOSE).to(closeReplicationsState)
 
                 .from(closeReplicationsState).take(TRANSITION_DEFAULT).to(closingReplicationsState)
                 .from(closeReplicationsState).take(TRANSITION_CLOSE).to(closeReplicationsState)
@@ -152,18 +212,91 @@ public class LeaderState extends ActiveState
                 .from(closingReplicationsState).take(TRANSITION_CLOSE).to(closingReplicationsState)
 
                 .build());
+
+        this.configureStateMachine = new StateMachineAgent<>(StateMachine
+                .<ConfigureContext> builder(s ->
+                {
+                    configureContext = new ConfigureContext(s, context);
+                    return configureContext;
+                })
+                .initialState(configureClosedState)
+
+                .from(configureClosedState).take(TRANSITION_OPEN).to(openConfigureState)
+                .from(configureClosedState).take(TRANSITION_CLOSE).to(configureClosedState)
+
+                .from(openConfigureState).take(TRANSITION_CLOSE).to(closeConfigureState)
+
+                .from(closeConfigureState).take(TRANSITION_DEFAULT).to(closingConfigureState)
+                .from(closeConfigureState).take(TRANSITION_CLOSE).to(closeConfigureState)
+
+                .from(closingConfigureState).take(TRANSITION_DEFAULT).to(configureClosedState)
+                .from(closingConfigureState).take(TRANSITION_CLOSE).to(closingConfigureState)
+
+                .build());
     }
 
-    public int onAppendResponse(final DirectBuffer buffer, final int offset, final int length)
+    @Override
+    public PollResponse poll(PollRequest pollRequest)
     {
-        appendResponse.reset();
-        appendResponse.wrap(buffer, offset, length);
+        pollResponse.reset();
+        return pollResponse.id(raft.id())
+                .term(raft.term())
+                .granted(false);
+    }
 
+    @Override
+    public VoteResponse vote(VoteRequest voteRequest)
+    {
+        if (updateTermAndLeader(voteRequest.term(), null))
+        {
+            raft.transition(FOLLOWER);
+            return super.vote(voteRequest);
+        }
+
+        voteResponse.reset();
+        return voteResponse.id(raft.id())
+                .term(raft.term())
+                .granted(false);
+    }
+
+    @Override
+    public AppendResponse append(AppendRequest appendRequest)
+    {
+        final int id = raft.id();
+        final int currentTerm = raft.term();
+
+        final Member leader = appendRequest.leader();
+        final int appendRequestTerm = appendRequest.term();
+
+        if (updateTermAndLeader(appendRequestTerm, leader))
+        {
+            raft.transition(FOLLOWER);
+            return super.append(appendRequest);
+        }
+
+        if (appendRequestTerm < currentTerm)
+        {
+            appendResponse.reset();
+            return appendResponse.id(id)
+                .term(currentTerm)
+                .succeeded(false);
+        }
+
+        raft.leader(leader != null ? leader.endpoint() : null);
+        return super.append(appendRequest);
+    }
+
+    public void appended(final AppendResponse appendResponse)
+    {
         final Member respondedBy = appendResponse.member();
         final boolean succeeded = appendResponse.succeeded();
         final long entryPosition = appendResponse.entryPosition();
 
-        if (respondedBy != null)
+        if (updateTermAndLeader(appendResponse.term(), null))
+        {
+            raft.transition(FOLLOWER);
+        }
+        else if (respondedBy != null)
         {
             final Member member = raft.getMemberByEndpoint(respondedBy.endpoint());
 
@@ -171,11 +304,10 @@ public class LeaderState extends ActiveState
             {
                 member.lastContact(System.currentTimeMillis());
 
-                System.out.println("[APPEND RESPONSE] succeeded: " + succeeded + ", entryPosition: " + entryPosition);
-
                 if (succeeded)
                 {
                     member.failures(0);
+                    member.matchPosition(appendResponse.entryPosition());
                 }
                 else
                 {
@@ -184,78 +316,130 @@ public class LeaderState extends ActiveState
                 }
             }
         }
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
 
-    public int onJoinRequest(final DirectBuffer buffer, final int offset, final int length, final int channelId, final long connectionId, final long requestId)
+    @Override
+    public CompletableFuture<JoinResponse> join(final JoinRequest joinRequest)
     {
-        joinRequest.reset();
-        joinRequest.wrap(buffer, offset, length);
-
-        joinResponse.reset();
-        boolean respond = false;
-
         final int id = raft.id();
         final int term = raft.term();
 
-        final Configuration configuration = raft.configuration();
-        final List<Member> members = configuration.members();
+        final List<Member> members = raft.members();
 
         if (initializing() || configuring())
         {
-            respond = true;
-            joinResponse
-                .id(id)
-                .term(term)
-                .succeeded(false)
-                .members(members);
+            joinResponse.reset();
+            return CompletableFuture.completedFuture(joinResponse.id(id)
+                    .term(term)
+                    .succeeded(false)
+                    .members(members));
         }
-        else if (members.contains(joinRequest.member()))
+
+        if (members.contains(joinRequest.member()))
         {
-            respond = true;
-            joinResponse
-                .id(id)
-                .term(term)
-                .succeeded(true)
-                .members(members);
-        }
-        else
-        {
-            final Endpoint endpoint = joinRequest.member().endpoint();
-            joiningMember.endpoint().wrap(endpoint);
-
-            joiningMembers.clear();
-            joiningMembers.addAll(members);
-            joiningMembers.add(joiningMember);
-
-            sendJoinResponse = true;
-            joinChannelId = channelId;
-            joinConnectionId = connectionId;
-            joinRequestId = requestId;
-
-            configurationController.open(joiningMembers);
+            joinResponse.reset();
+            return CompletableFuture.completedFuture(joinResponse.id(id)
+                    .term(term)
+                    .succeeded(true)
+                    .members(members));
         }
 
-        if (respond)
-        {
-            messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-                .channelId(channelId)
-                .connectionId(connectionId)
-                .requestId(requestId)
-                .message(joinResponse)
-                .tryWriteMessage();
-        }
+        final Endpoint endpoint = joinRequest.member().endpoint();
+        configuringMember.endpoint().wrap(endpoint);
 
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        configuringMembers.clear();
+        configuringMembers.addAll(members);
+        configuringMembers.add(configuringMember);
+
+        return configurationController.openAsync(configuringMembers)
+                .thenAccept((c) -> {
+                    final Configuration configuration = raft.configuration();
+                    joinResponse.reset();
+                    joinResponse.id(id)
+                        .term(term)
+                        .succeeded(true)
+                        .configurationEntryPosition(configuration.configurationEntryPosition())
+                        .configurationEntryTerm(configuration.configurationEntryTerm())
+                        .members(configuration.members());
+                })
+                .exceptionally((e) ->
+                {
+                    joinResponse.reset();
+                    joinResponse.id(id)
+                        .term(term)
+                        .succeeded(false)
+                        .members(raft.configuration().members());
+                    return null;
+                })
+                .<JoinResponse> thenCompose((c) -> {
+                    return CompletableFuture.completedFuture(joinResponse);
+                });
     }
 
-    public boolean initializing()
+    @Override
+    public CompletableFuture<LeaveResponse> leave(final LeaveRequest leaveRequest)
     {
-        return leaderStateMachine.getCurrentState() != leaderInitializedState;
+        final int id = raft.id();
+        final int term = raft.term();
+
+        final List<Member> members = raft.members();
+
+        if (initializing() || configuring())
+        {
+            leaveResponse.reset();
+            return CompletableFuture.completedFuture(leaveResponse.id(id)
+                    .term(term)
+                    .succeeded(false)
+                    .members(members));
+        }
+
+        if (!members.contains(leaveRequest.member()))
+        {
+            leaveResponse.reset();
+            return CompletableFuture.completedFuture(leaveResponse.id(id)
+                    .term(term)
+                    .succeeded(true)
+                    .members(members));
+        }
+
+        final Endpoint endpoint = leaveRequest.member().endpoint();
+        configuringMember.endpoint().wrap(endpoint);
+
+        configuringMembers.clear();
+        configuringMembers.addAll(members);
+        configuringMembers.remove(configuringMember);
+
+        return configurationController.openAsync(configuringMembers)
+                .thenAccept((c) -> {
+                    final Configuration configuration = raft.configuration();
+                    leaveResponse.reset();
+                    leaveResponse.id(id)
+                        .term(term)
+                        .succeeded(true)
+                        .configurationEntryPosition(configuration.configurationEntryPosition())
+                        .configurationEntryTerm(configuration.configurationEntryTerm())
+                        .members(configuration.members());
+                })
+                .exceptionally((e) ->
+                {
+                    leaveResponse.reset();
+                    leaveResponse.id(id)
+                        .term(term)
+                        .succeeded(false)
+                        .members(raft.configuration().members());
+                    return null;
+                })
+                .<LeaveResponse> thenCompose((c) -> {
+                    return CompletableFuture.completedFuture(leaveResponse);
+                });
     }
 
-    public boolean configuring()
+    protected boolean initializing()
+    {
+        return leadershipStateMachine.getCurrentState() != leaderInitializedState;
+    }
+
+    protected boolean configuring()
     {
         return !configurationController.isClosed();
     }
@@ -272,40 +456,14 @@ public class LeaderState extends ActiveState
         int workcount = 0;
 
         workcount += replicationStateMachine.doWork();
-        workcount += leaderStateMachine.doWork();
+        workcount += configureStateMachine.doWork();
+        workcount += leadershipStateMachine.doWork();
         workcount += configurationController.doWork();
 
         if (configurationController.isConfigured() || configurationController.isFailed())
         {
             workcount += 1;
-
-            if (sendJoinResponse)
-            {
-                joinResponse.reset();
-                joinResponse
-                    .id(raft.id())
-                    .term(raft.term())
-                    .succeeded(configurationController.isConfigured())
-                    .configurationEntryPosition(raft.configuration().configurationEntryPosition())
-                    .configurationEntryTerm(raft.configuration().configurationEntryTerm())
-                    .members(raft.configuration().members());
-
-                messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-                    .channelId(joinChannelId)
-                    .connectionId(joinConnectionId)
-                    .requestId(joinRequestId)
-                    .message(joinResponse)
-                    .tryWriteMessage();
-
-                sendJoinResponse = false;
-
-                joinChannelId = -1;
-                joinConnectionId = -1L;
-                joinRequestId = -1L;
-            }
-
             configurationController.close();
-
         }
 
         return workcount;
@@ -314,7 +472,7 @@ public class LeaderState extends ActiveState
     @Override
     public void open()
     {
-        if (isLeaderStateMachineClosed())
+        if (isLeadershipStateMachineClosed())
         {
             leaderContext.take(TRANSITION_OPEN);
         }
@@ -332,29 +490,48 @@ public class LeaderState extends ActiveState
         {
             throw new IllegalStateException("Cannot open state machine, has not been closed.");
         }
+
+
+        if (isConfigureStateMachineClosed())
+        {
+            configureContext.take(TRANSITION_OPEN);
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot open state machine, has not been closed.");
+        }
     }
 
     @Override
     public void close()
     {
         replicationStateMachine.addCommand(CLOSE_REPLICATION_STATE_MACHINE_COMMAND);
-        leaderStateMachine.addCommand(CLOSE_LEADER_STATE_MACHINE_COMMAND);
+        leadershipStateMachine.addCommand(CLOSE_LEADERSHIP_STATE_MACHINE_COMMAND);
+        configureStateMachine.addCommand(CLOSE_CONFIGURE_STATE_MACHINE_COMMAND);
+        configurationController.close();
+
+        commitPosition = -1L;
     }
 
     @Override
     public boolean isClosed()
     {
-        return isLeaderStateMachineClosed() && isReplicationStateMachineClosed();
+        return isLeadershipStateMachineClosed() && isReplicationStateMachineClosed() && isConfigureStateMachineClosed();
     }
 
-    protected boolean isLeaderStateMachineClosed()
+    protected boolean isLeadershipStateMachineClosed()
     {
-        return leaderStateMachine.getCurrentState() == leaderClosedState;
+        return leadershipStateMachine.getCurrentState() == leaderClosedState;
     }
 
     protected boolean isReplicationStateMachineClosed()
     {
         return replicationStateMachine.getCurrentState() == replicationClosedState;
+    }
+
+    protected boolean isConfigureStateMachineClosed()
+    {
+        return configureStateMachine.getCurrentState() == configureClosedState;
     }
 
     class LeaderContext extends SimpleStateMachineContext
@@ -364,6 +541,8 @@ public class LeaderState extends ActiveState
         final InitializeEntry initialEntry;
 
         ConfigurationController configController;
+        CompletableFuture<Void> logStreamRemoveFuture;
+        CompletableFuture<Void> logStreamControllerFuture;
 
         LeaderContext(final StateMachine<?> stateMachine, final RaftContext raftContext)
         {
@@ -376,6 +555,62 @@ public class LeaderState extends ActiveState
         public void reset()
         {
             initialEntry.reset();
+            logStreamRemoveFuture = null;
+            logStreamControllerFuture = null;
+        }
+    }
+
+    class StartLogStreamControllerState implements State<LeaderContext>
+    {
+        @Override
+        public int doWork(LeaderContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+
+            final Raft raft = raftContext.getRaft();
+            final AgentRunnerServices agentRunner = raftContext.getAgentRunner();
+            final AgentRunnerService conductorAgentRunner = agentRunner.conductorAgentRunnerService();
+
+            final LogStream stream = raft.stream();
+
+            int workcount = 0;
+
+            workcount += 1;
+            context.logStreamControllerFuture = stream.startLogStreaming(conductorAgentRunner);
+
+            context.take(TRANSITION_DEFAULT);
+
+            return workcount;
+        }
+    }
+
+    class OpeningLogStreamControllerState implements State<LeaderContext>
+    {
+        @Override
+        public int doWork(LeaderContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final CompletableFuture<Void> future = context.logStreamControllerFuture;
+
+            if (future.isDone())
+            {
+                context.logStreamControllerFuture = null;
+                future.get();
+
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+
+        @Override
+        public void onFailure(LeaderContext context, Exception e)
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+            raft.transition(FOLLOWER);
         }
     }
 
@@ -408,6 +643,7 @@ public class LeaderState extends ActiveState
 
             if (appendController.isAppended())
             {
+                commitPosition = appendController.entryPosition();
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }
@@ -435,31 +671,99 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class ConfigureState implements State<LeaderContext>
+    class AppendConfigurationEntryState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
         {
-            final ConfigurationController configController = context.configController;
-
             int workcount = 0;
 
-            workcount += configController.doWork();
+            final ConfigurationController controller = context.configController;
 
-            if (configController.isConfigured())
+            if (controller.isAppended())
             {
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (configController.isFailed())
+
+            return workcount;
+        }
+    }
+
+    class InstallLogStreamServiceState implements TransitionState<LeaderContext>
+    {
+        @Override
+        public void work(LeaderContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+
+            final Raft raft = raftContext.getRaft();
+            final ServiceContainer serviceContainer = raftContext.getServiceContainer();
+
+            final LogStream stream = raft.stream();
+
+            final ServiceName<LogStream> serviceName = logStreamServiceName(stream.getLogName());
+            final LogStreamService service = new LogStreamService(stream);
+            serviceContainer.createService(serviceName, service)
+                .dependency(AGENT_RUNNER_SERVICE)
+                .group(LOG_STREAM_SERVICE_GROUP)
+                .install();
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class RemoveLogStreamServiceState implements TransitionState<LeaderContext>
+    {
+        @Override
+        public void work(LeaderContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+            final LogStream stream = raft.stream();
+
+            final ServiceContainer serviceContainer = raftContext.getServiceContainer();
+            final ServiceName<LogStream> serviceName = logStreamServiceName(stream.getLogName());
+            if (serviceContainer.hasService(serviceName))
             {
-                // TODO: what should we do, when we were not able to
-                // apply (or commit) current configuration during initialization.
+                context.logStreamRemoveFuture = serviceContainer.removeService(serviceName);
+            }
+
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class RemovingLogStreamServiceState implements State<LeaderContext>
+    {
+        @Override
+        public int doWork(LeaderContext context) throws Exception
+        {
+            int workcount = 0;
+
+            final CompletableFuture<Void> future = context.logStreamRemoveFuture;
+
+            if (future == null || future.isDone())
+            {
                 workcount += 1;
-                raft.transition(FOLLOWER);
+                context.take(TRANSITION_DEFAULT);
             }
 
             return workcount;
+        }
+    }
+
+    class StopLogStreamControllerState implements TransitionState<LeaderContext>
+    {
+        @Override
+        public void work(LeaderContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+            final LogStream stream = raft.stream();
+
+            stream.stopLogStreaming();
+
+            context.take(TRANSITION_DEFAULT);
         }
     }
 
@@ -500,43 +804,6 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class CloseConfigurationControllerState implements TransitionState<LeaderContext>
-    {
-        @Override
-        public void work(LeaderContext context) throws Exception
-        {
-            final ConfigurationController configController = context.configController;
-
-            if (configController.isClosed())
-            {
-                configController.close();
-            }
-
-            context.take(TRANSITION_DEFAULT);
-        }
-    }
-
-    class ClosingConfigurationControllerState implements State<LeaderContext>
-    {
-        @Override
-        public int doWork(LeaderContext context) throws Exception
-        {
-            final ConfigurationController configController = context.configController;
-
-            int workcount = 0;
-
-            workcount += configController.doWork();
-
-            if (configController.isClosed())
-            {
-                workcount += 1;
-                context.take(TRANSITION_DEFAULT);
-            }
-
-            return workcount;
-        }
-    }
-
     class ReplicationContext extends SimpleStateMachineContext
     {
         final RaftContext raftContext;
@@ -546,10 +813,9 @@ public class LeaderState extends ActiveState
             super(stateMachine);
             this.raftContext = raftContext;
         }
-
     }
 
-    class ReplicationState implements State<ReplicationContext>
+    class OpenReplicationState implements State<ReplicationContext>
     {
 
         @Override
@@ -578,6 +844,32 @@ public class LeaderState extends ActiveState
                     }
 
                     workcount += replicationController.doWork();
+                }
+            }
+
+
+            // TODO: rework commit
+            if (commitPosition >= 0)
+            {
+                if (members.size() <= 1)
+                {
+                    self.resetReaderToLastEntry();
+                    if (self.currentEntryPosition() > raft.commitPosition())
+                    {
+                        raft.commitPosition(self.currentEntryPosition());
+                    }
+                }
+                else
+                {
+                    final int quorum = raft.quorum();
+                    final List<Member> copy = new ArrayList<>(members);
+                    Collections.sort(copy, (m1, m2) -> Long.compare(m2.matchPosition() != 0 ? m2.matchPosition() : 0L, m1.matchPosition() != 0 ? m1.matchPosition() : 0L));
+                    final long matchPosition = copy.get(quorum - 2).matchPosition();
+
+                    if (matchPosition > 0 && matchPosition > raft.commitPosition())
+                    {
+                        raft.commitPosition(matchPosition);
+                    }
                 }
             }
 
@@ -653,4 +945,117 @@ public class LeaderState extends ActiveState
         }
     }
 
+    class ConfigureContext extends SimpleStateMachineContext
+    {
+        final RaftContext raftContext;
+
+        ConfigureContext(StateMachine<?> stateMachine, final RaftContext raftContext)
+        {
+            super(stateMachine);
+            this.raftContext = raftContext;
+        }
+    }
+
+    class OpenConfigureState implements State<ConfigureContext>
+    {
+
+        @Override
+        public int doWork(ConfigureContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            int workcount = 0;
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final ConfigureController configureController = member.getConfigureController();
+
+                if (!self.equals(member) && configureController != null)
+                {
+                    if (configureController.isClosed())
+                    {
+                        configureController.open();
+                        workcount += 1;
+                    }
+
+                    workcount += configureController.doWork();
+                }
+            }
+
+            return workcount;
+        }
+    }
+
+    class CloseConfigureState implements TransitionState<ConfigureContext>
+    {
+        @Override
+        public void work(ConfigureContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final ConfigureController configureController = member.getConfigureController();
+
+                if (!self.equals(member) && configureController != null)
+                {
+                    if (!configureController.isClosed())
+                    {
+                        configureController.close();
+                    }
+                }
+            }
+            context.take(TRANSITION_DEFAULT);
+        }
+    }
+
+    class ClosingConfigureState implements State<ConfigureContext>
+    {
+        @Override
+        public int doWork(ConfigureContext context) throws Exception
+        {
+            final RaftContext raftContext = context.raftContext;
+            final Raft raft = raftContext.getRaft();
+
+            final List<Member> members = raft.members();
+            final Member self = raft.member();
+
+            int workcount = 0;
+            int closed = 0;
+
+            for (int i = 0; i < members.size(); i++)
+            {
+                final Member member = members.get(i);
+                final ConfigureController configureController = member.getConfigureController();
+
+                if (!self.equals(member) && configureController != null)
+                {
+                    workcount += configureController.doWork();
+
+                    if (configureController.isClosed())
+                    {
+                        closed += 1;
+                    }
+                }
+            }
+
+            if (closed == members.size() - 1)
+            {
+                workcount += 1;
+                context.take(TRANSITION_DEFAULT);
+            }
+
+            return workcount;
+        }
+    }
 }

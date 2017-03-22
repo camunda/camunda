@@ -1,8 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
-import static org.camunda.tngp.broker.clustering.raft.Raft.State.*;
-
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
@@ -10,8 +9,8 @@ import org.camunda.tngp.broker.clustering.raft.Configuration;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
-import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
-import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -21,7 +20,7 @@ import org.camunda.tngp.util.state.StateMachineCommand;
 import org.camunda.tngp.util.state.TransitionState;
 import org.camunda.tngp.util.state.WaitState;
 
-public class JoinController
+public class LeaveController
 {
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_OPEN = 1;
@@ -29,9 +28,9 @@ public class JoinController
     private static final int TRANSITION_FAIL = 3;
     private static final int TRANSITION_NEXT = 4;
     private static final int TRANSITION_CONFIGURE = 5;
-    private static final int TRANSITION_JOINED = 6;
+    private static final int TRANSITION_LEFT = 6;
 
-    private static final StateMachineCommand<JoinContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
+    private static final StateMachineCommand<LeaveContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
     {
         c.reset();
 
@@ -42,32 +41,32 @@ public class JoinController
         }
     };
 
-    private final WaitState<JoinContext> closedState = (c) ->
+    private final WaitState<LeaveContext> closedState = (c) ->
     {
     };
-    private final WaitState<JoinContext> failedState = (c) ->
+    private final WaitState<LeaveContext> failedState = (c) ->
     {
     };
-    private final WaitState<JoinContext> joinedState = (c) ->
+    private final WaitState<LeaveContext> joinedState = (c) ->
     {
     };
 
     private final OpenRequestState openRequestState = new OpenRequestState();
-    private final JoinState joinState = new JoinState();
+    private final LeaveState leaveState = new LeaveState();
     private final ConfigureState configureState = new ConfigureState();
     private final CloseRequestState closeRequestState = new CloseRequestState();
     private final ClosingState closingState = new ClosingState();
 
-    private final StateMachineAgent<JoinContext> joinStateMachine;
-    private JoinContext joinContext;
+    private final StateMachineAgent<LeaveContext> leaveStateMachine;
+    private LeaveContext leaveContext;
 
-    public JoinController(final RaftContext raftContext)
+    public LeaveController(final RaftContext raftContext)
     {
-        this.joinStateMachine  = new StateMachineAgent<>(
-                StateMachine.<JoinContext> builder(s ->
+        this.leaveStateMachine  = new StateMachineAgent<>(
+                StateMachine.<LeaveContext> builder(s ->
                 {
-                    joinContext = new JoinContext(s, raftContext);
-                    return joinContext;
+                    leaveContext = new LeaveContext(s, raftContext);
+                    return leaveContext;
                 })
 
                 .initialState(closedState)
@@ -75,16 +74,16 @@ public class JoinController
                 .from(closedState).take(TRANSITION_OPEN).to(openRequestState)
                 .from(closedState).take(TRANSITION_CLOSE).to(closedState)
 
-                .from(openRequestState).take(TRANSITION_DEFAULT).to(joinState)
+                .from(openRequestState).take(TRANSITION_DEFAULT).to(leaveState)
                 .from(openRequestState).take(TRANSITION_FAIL).to(failedState)
                 .from(openRequestState).take(TRANSITION_CLOSE).to(closeRequestState)
 
-                .from(joinState).take(TRANSITION_CONFIGURE).to(configureState)
-                .from(joinState).take(TRANSITION_DEFAULT).to(closeRequestState)
-                .from(joinState).take(TRANSITION_FAIL).to(failedState)
-                .from(joinState).take(TRANSITION_CLOSE).to(closeRequestState)
+                .from(leaveState).take(TRANSITION_CONFIGURE).to(configureState)
+                .from(leaveState).take(TRANSITION_DEFAULT).to(closeRequestState)
+                .from(leaveState).take(TRANSITION_FAIL).to(failedState)
+                .from(leaveState).take(TRANSITION_CLOSE).to(closeRequestState)
 
-                .from(configureState).take(TRANSITION_JOINED).to(joinedState)
+                .from(configureState).take(TRANSITION_LEFT).to(joinedState)
                 .from(configureState).take(TRANSITION_DEFAULT).to(closeRequestState)
                 .from(configureState).take(TRANSITION_FAIL).to(failedState)
                 .from(configureState).take(TRANSITION_CLOSE).to(closeRequestState)
@@ -103,12 +102,12 @@ public class JoinController
                 );
     }
 
-    public void open(final List<Member> members)
+    public void open(final CompletableFuture<Void> future)
     {
         if (isClosed())
         {
-            joinContext.members = members;
-            joinContext.take(TRANSITION_OPEN);
+            leaveContext.leaveFuture = future;
+            leaveContext.take(TRANSITION_OPEN);
         }
         else
         {
@@ -118,73 +117,63 @@ public class JoinController
 
     public void close()
     {
-        joinStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
+        leaveStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
     }
 
     public int doWork()
     {
-        return joinStateMachine.doWork();
-    }
-
-    public boolean isJoined()
-    {
-        return joinStateMachine.getCurrentState() == joinedState;
-    }
-
-    public boolean isFailed()
-    {
-        return joinStateMachine.getCurrentState() == failedState;
+        return leaveStateMachine.doWork();
     }
 
     public boolean isClosed()
     {
-        return joinStateMachine.getCurrentState() == closedState;
+        return leaveStateMachine.getCurrentState() == closedState;
     }
 
-    class JoinContext extends SimpleStateMachineContext
+    class LeaveContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final RequestResponseController requestController;
 
-        final JoinRequest joinRequest;
-        final JoinResponse joinResponse;
+        final LeaveRequest leaveRequest;
+        final LeaveResponse leaveResponse;
 
-        List<Member> members;
+        CompletableFuture<Void> leaveFuture;
+
         int position = -1;
         int transitionAfterClosing = TRANSITION_DEFAULT;
 
-        JoinContext(StateMachine<?> stateMachine, final RaftContext raftContext)
+        LeaveContext(StateMachine<?> stateMachine, final RaftContext raftContext)
         {
             super(stateMachine);
             this.raft = raftContext.getRaft();
             this.requestController = new RequestResponseController(raftContext.getClientChannelManager(), raftContext.getConnections());
-            this.joinRequest = new JoinRequest();
-            this.joinResponse = new JoinResponse();
+            this.leaveRequest = new LeaveRequest();
+            this.leaveResponse = new LeaveResponse();
         }
 
         public void reset()
         {
-            members = null;
             position = -1;
         }
     }
 
-    class OpenRequestState implements TransitionState<JoinContext>
+    class OpenRequestState implements TransitionState<LeaveContext>
     {
         @Override
-        public void work(JoinContext context) throws Exception
+        public void work(LeaveContext context) throws Exception
         {
             final Raft raft = context.raft;
             final RequestResponseController requestController = context.requestController;
 
-            final List<Member> members = context.members;
+            final List<Member> members = raft.members();
             final Member self = raft.member();
 
             int position = context.position + 1;
-            final JoinRequest joinRequest = context.joinRequest;
+            final LeaveRequest leaveRequest = context.leaveRequest;
 
-            joinRequest.reset();
-            joinRequest.id(raft.id())
+            leaveRequest.reset();
+            leaveRequest.id(raft.id())
                 .member(self);
 
             if (position >= members.size() - 1)
@@ -201,7 +190,7 @@ public class JoinController
 
             if (member != null)
             {
-                requestController.open(member.endpoint(), joinRequest);
+                requestController.open(member.endpoint(), leaveRequest);
 
                 context.position = position;
                 context.take(TRANSITION_DEFAULT);
@@ -211,20 +200,12 @@ public class JoinController
                 context.take(TRANSITION_FAIL);
             }
         }
-
-        @Override
-        public void onFailure(JoinContext context, Exception e)
-        {
-            e.printStackTrace();
-
-            context.take(TRANSITION_FAIL);
-        }
     }
 
-    class JoinState implements State<JoinContext>
+    class LeaveState implements State<LeaveContext>
     {
         @Override
-        public int doWork(final JoinContext context)
+        public int doWork(final LeaveContext context)
         {
             final RequestResponseController requestController = context.requestController;
 
@@ -247,84 +228,44 @@ public class JoinController
         }
     }
 
-    class ConfigureState implements TransitionState<JoinContext>
+    class ConfigureState implements TransitionState<LeaveContext>
     {
         @Override
-        public void work(JoinContext context) throws Exception
+        public void work(LeaveContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
-            final JoinResponse joinResponse = context.joinResponse;
-            final List<Member> cluster = context.members;
+            final LeaveResponse leaveResponse = context.leaveResponse;
             final Raft raft = context.raft;
-            final Member self = raft.member();
+
+            leaveResponse.reset();
 
             final DirectBuffer responseBuffer = requestController.getResponseBuffer();
             final int responseLength = requestController.getResponseLength();
-            joinResponse.wrap(responseBuffer, 0, responseLength);
+            leaveResponse.wrap(responseBuffer, 0, responseLength);
 
-            if (joinResponse.succeeded())
+            if (leaveResponse.succeeded())
             {
-                final long configEntryPosition = joinResponse.configurationEntryPosition();
-                final int configEntryTerm = joinResponse.configurationEntryTerm();
-                final List<Member> members = joinResponse.members();
+                final long configEntryPosition = leaveResponse.configurationEntryPosition();
+                final int configEntryTerm = leaveResponse.configurationEntryTerm();
+                final List<Member> members = leaveResponse.members();
 
-                if (members.contains(self))
-                {
-                    // apply configuration
-                    final List<Member> copy = new CopyOnWriteArrayList<>(members);
-                    final Configuration newConfiguration = new Configuration(configEntryPosition, configEntryTerm, copy);
-                    raft.configure(newConfiguration);
+                // apply configuration
+                final List<Member> copy = new CopyOnWriteArrayList<>(members);
+                final Configuration newConfiguration = new Configuration(configEntryPosition, configEntryTerm, copy);
+                raft.configure(newConfiguration);
 
-                    // transition to follower state
-                    raft.transition(FOLLOWER);
+                raft.meta().storeConfiguration(newConfiguration);
 
-                    context.take(TRANSITION_JOINED);
-                }
-                else
-                {
-                    context.take(TRANSITION_FAIL);
-                }
-            }
-            else
-            {
-                final List<Member> members = joinResponse.members();
-
-                if (members != null)
-                {
-                    for (int i = 0; i < members.size(); i++)
-                    {
-                        final Member receivedMember = members.get(i);
-                        if (!cluster.contains(receivedMember))
-                        {
-                            cluster.add(receivedMember);
-                        }
-                    }
-
-                    int i = 0;
-                    while (i < cluster.size())
-                    {
-                        final Member clusterMember = cluster.get(i);
-                        if (!members.contains(clusterMember))
-                        {
-                            cluster.remove(clusterMember);
-                        }
-                        else
-                        {
-                            i++;
-                        }
-                    }
-                }
-
-                context.transitionAfterClosing = TRANSITION_NEXT;
-                context.take(TRANSITION_DEFAULT);
+                context.leaveFuture.complete(null);
+                context.take(TRANSITION_LEFT);
             }
         }
     }
 
-    class CloseRequestState implements TransitionState<JoinContext>
+    class CloseRequestState implements TransitionState<LeaveContext>
     {
         @Override
-        public void work(JoinContext context) throws Exception
+        public void work(LeaveContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
 
@@ -337,10 +278,10 @@ public class JoinController
         }
     }
 
-    class ClosingState implements State<JoinContext>
+    class ClosingState implements State<LeaveContext>
     {
         @Override
-        public int doWork(JoinContext context) throws Exception
+        public int doWork(LeaveContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
 

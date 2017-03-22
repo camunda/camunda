@@ -3,8 +3,10 @@ package org.camunda.tngp.broker.clustering.raft;
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
+import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class RaftContext
@@ -12,6 +14,8 @@ public class RaftContext
     private Raft raft;
     private LogStreamState logStreamState;
 
+    private ServiceContainer serviceContainer;
+    private AgentRunnerServices agentRunner;
     private Endpoint raftEndpoint;
     private Subscription subscription;
     private ClientChannelManager clientChannelManager;
@@ -85,6 +89,26 @@ public class RaftContext
     public void setSendBuffer(Dispatcher sendBuffer)
     {
         this.sendBuffer = sendBuffer;
+    }
+
+    public AgentRunnerServices getAgentRunner()
+    {
+        return agentRunner;
+    }
+
+    public void setAgentRunner(AgentRunnerServices agentRunner)
+    {
+        this.agentRunner = agentRunner;
+    }
+
+    public ServiceContainer getServiceContainer()
+    {
+        return serviceContainer;
+    }
+
+    public void setServiceContainer(ServiceContainer serviceContainer)
+    {
+        this.serviceContainer = serviceContainer;
     }
 
 }

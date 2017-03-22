@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.clustering.raft;
 
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
+import org.camunda.tngp.broker.clustering.raft.controller.PollController;
 import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
 import org.camunda.tngp.broker.clustering.raft.controller.VoteController;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -23,8 +25,13 @@ public class Member
 
     private final ReplicationController replicationController;
     private final VoteController voteController;
+    private final PollController pollController;
+    private final ConfigureController configureController;
 
     private int failures = 0;
+
+    private long configEntryPosition = -1;
+    private int configEntryTerm = -1;
 
     private long currentEntryPosition = -1L;
     private int currentEntryTerm = -1;
@@ -40,6 +47,8 @@ public class Member
         this.metadata = null;
         this.replicationController = null;
         this.voteController = null;
+        this.pollController = null;
+        this.configureController = null;
     }
 
     public Member(final Endpoint endpoint, final RaftContext context)
@@ -54,6 +63,8 @@ public class Member
 
         this.replicationController = new ReplicationController(context, this);
         this.voteController = new VoteController(context, this);
+        this.pollController = new PollController(context, this);
+        this.configureController = new ConfigureController(context, this);
     }
 
     public Endpoint endpoint()
@@ -156,6 +167,28 @@ public class Member
         return nextEntry;
     }
 
+    public long configEntryPosition()
+    {
+        return configEntryPosition;
+    }
+
+    public Member configEntryPosition(final long configEntryPosition)
+    {
+        this.configEntryPosition = configEntryPosition;
+        return this;
+    }
+
+    public int configEntryTerm()
+    {
+        return configEntryTerm;
+    }
+
+    public Member configEntryTerm(final int configEntryTerm)
+    {
+        this.configEntryTerm = configEntryTerm;
+        return this;
+    }
+
     public long currentEntryPosition()
     {
         return currentEntryPosition;
@@ -175,6 +208,17 @@ public class Member
     public Member currentEntryTerm(final int currentEntryTerm)
     {
         this.currentEntryTerm = currentEntryTerm;
+        return this;
+    }
+
+    public long matchPosition()
+    {
+        return matchPosition;
+    }
+
+    public Member matchPosition(final long matchPosition)
+    {
+        this.matchPosition = matchPosition;
         return this;
     }
 
@@ -217,6 +261,16 @@ public class Member
     public VoteController getVoteController()
     {
         return voteController;
+    }
+
+    public PollController getPollController()
+    {
+        return pollController;
+    }
+
+    public ConfigureController getConfigureController()
+    {
+        return configureController;
     }
 
     @Override

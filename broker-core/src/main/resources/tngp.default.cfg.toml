@@ -22,7 +22,10 @@ port = 51017
 receiveBufferSize = 16
 
 [network.gossip]
-peersStorageFile = "/tmp/51016.tngp"
+peersStorageFile = "/tmp/tngp/51015/gossip/51016.tngp"
+
+[network.management]
+metaDirectory = "/tmp/tngp/51015/meta"
 
 # System Configuration --------------------------------
 
@@ -43,7 +46,7 @@ defaultLogSegmentSize = 512
 [[log]]
 name = "default-task-queue-log"
 id = 0
-logDirectory = "/tmp/tngp-51015-task"
+logDirectory = "/tmp/tngp/51015/logs/default-task-queue"
 
 [snapshot]
 useTempSnapshotDirectory = true

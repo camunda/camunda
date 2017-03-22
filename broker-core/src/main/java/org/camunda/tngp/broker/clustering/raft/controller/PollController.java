@@ -6,8 +6,8 @@ import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
-import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
-import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
+import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
@@ -20,14 +20,14 @@ import org.camunda.tngp.util.state.StateMachineCommand;
 import org.camunda.tngp.util.state.TransitionState;
 import org.camunda.tngp.util.state.WaitState;
 
-public class VoteController
+public class PollController
 {
     private static final int TRANSITION_DEFAULT = 0;
     private static final int TRANSITION_OPEN = 1;
     private static final int TRANSITION_CLOSE = 2;
     private static final int TRANSITION_FAILED = 3;
 
-    private static final StateMachineCommand<VoteContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
+    private static final StateMachineCommand<PollContext> CLOSE_STATE_MACHINE_COMMAND = (c) ->
     {
         c.reset();
 
@@ -38,42 +38,42 @@ public class VoteController
         }
     };
 
-    protected final WaitState<VoteContext> closedState = (c) ->
+    protected final WaitState<PollContext> closedState = (c) ->
     {
     };
-    protected final WaitState<VoteContext> responseAvailableState = (c) ->
+    protected final WaitState<PollContext> responseAvailableState = (c) ->
     {
     };
-    protected final WaitState<VoteContext> failedState = (c) ->
+    protected final WaitState<PollContext> failedState = (c) ->
     {
     };
 
-    private final PrepareVoteRequestState prepareVoteRequestState = new PrepareVoteRequestState();
+    private final PreparePollRequestState preparePollRequestState = new PreparePollRequestState();
     private final OpenRequestState openRequestState = new OpenRequestState();
     private final OpenState openState = new OpenState();
     private final ProcessResponseState processResponseState = new ProcessResponseState();
     private final CloseRequestState closeRequestState = new CloseRequestState();
     private final ClosingState closingState = new ClosingState();
 
-    private final StateMachineAgent<VoteContext> requestVoteStateMachine;
-    private VoteContext requestVoteContext;
+    private final StateMachineAgent<PollContext> requestPollStateMachine;
+    private PollContext pollContext;
 
 
-    public VoteController(final RaftContext raftContext, final Member member)
+    public PollController(final RaftContext raftContext, final Member member)
     {
-        this.requestVoteStateMachine = new StateMachineAgent<>(StateMachine
-                .<VoteContext> builder(s ->
+        this.requestPollStateMachine = new StateMachineAgent<>(StateMachine
+                .<PollContext> builder(s ->
                 {
-                    requestVoteContext = new VoteContext(s, raftContext, member);
-                    return requestVoteContext;
+                    pollContext = new PollContext(s, raftContext, member);
+                    return pollContext;
                 })
                 .initialState(closedState)
 
-                .from(closedState).take(TRANSITION_OPEN).to(prepareVoteRequestState)
+                .from(closedState).take(TRANSITION_OPEN).to(preparePollRequestState)
                 .from(closedState).take(TRANSITION_CLOSE).to(closedState)
 
-                .from(prepareVoteRequestState).take(TRANSITION_DEFAULT).to(openRequestState)
-                .from(prepareVoteRequestState).take(TRANSITION_CLOSE).to(closeRequestState)
+                .from(preparePollRequestState).take(TRANSITION_DEFAULT).to(openRequestState)
+                .from(preparePollRequestState).take(TRANSITION_CLOSE).to(closeRequestState)
 
                 .from(openRequestState).take(TRANSITION_DEFAULT).to(openState)
                 .from(openRequestState).take(TRANSITION_CLOSE).to(closeRequestState)
@@ -101,8 +101,8 @@ public class VoteController
     {
         if (isClosed())
         {
-            requestVoteContext.quorum = quorum;
-            requestVoteContext.take(TRANSITION_OPEN);
+            pollContext.quorum = quorum;
+            pollContext.take(TRANSITION_OPEN);
         }
         else
         {
@@ -112,7 +112,7 @@ public class VoteController
 
     public void close()
     {
-        requestVoteStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
+        requestPollStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
     }
 
     public void closeForcibly()
@@ -130,30 +130,30 @@ public class VoteController
 
     public boolean isClosed()
     {
-        return requestVoteStateMachine.getCurrentState() == closedState;
+        return requestPollStateMachine.getCurrentState() == closedState;
     }
 
     public boolean isFailed()
     {
-        return requestVoteStateMachine.getCurrentState() == failedState;
+        return requestPollStateMachine.getCurrentState() == failedState;
     }
 
     public int doWork()
     {
-        return requestVoteStateMachine.doWork();
+        return requestPollStateMachine.doWork();
     }
 
-    class VoteContext extends SimpleStateMachineContext
+    class PollContext extends SimpleStateMachineContext
     {
         final RaftContext context;
         final RequestResponseController requestController;
-        final VoteRequest voteRequest;
-        final VoteResponse voteResponse;
+        final PollRequest pollRequest;
+        final PollResponse pollResponse;
         final Endpoint endpoint;
 
         Quorum quorum;
 
-        VoteContext(final StateMachine<VoteContext> stateMachine, final RaftContext context, final Member member)
+        PollContext(final StateMachine<PollContext> stateMachine, final RaftContext context, final Member member)
         {
             super(stateMachine);
 
@@ -163,8 +163,8 @@ public class VoteController
             final TransportConnectionPool connections = context.getConnections();
             this.requestController = new RequestResponseController(clientChannelManager, connections);
 
-            this.voteRequest = new VoteRequest();
-            this.voteResponse = new VoteResponse();
+            this.pollRequest = new PollRequest();
+            this.pollResponse = new PollResponse();
 
             this.endpoint = new Endpoint();
             this.endpoint.wrap(member.endpoint());
@@ -172,18 +172,18 @@ public class VoteController
 
         public void reset()
         {
-            voteRequest.reset();
-            voteResponse.reset();
+            pollRequest.reset();
+            pollResponse.reset();
             quorum = null;
         }
     }
 
-    class PrepareVoteRequestState implements TransitionState<VoteContext>
+    class PreparePollRequestState implements TransitionState<PollContext>
     {
         @Override
-        public void work(VoteContext context) throws Exception
+        public void work(PollContext context) throws Exception
         {
-            final VoteRequest voteRequest = context.voteRequest;
+            final PollRequest pollRequest = context.pollRequest;
             final RaftContext raftContext = context.context;
             final Raft raft = raftContext.getRaft();
             final LogStreamState logStreamState = raftContext.getLogStreamState();
@@ -195,8 +195,8 @@ public class VoteController
             final long lastReceivedPosition = logStreamState.lastReceivedPosition();
             final int lastReceivedTerm = logStreamState.lastReceivedTerm();
 
-            voteRequest.reset();
-            voteRequest.id(id)
+            pollRequest.reset();
+            pollRequest.id(id)
                 .term(term)
                 .lastEntryPosition(lastReceivedPosition)
                 .lastEntryTerm(lastReceivedTerm)
@@ -206,25 +206,25 @@ public class VoteController
         }
     }
 
-    class OpenRequestState implements TransitionState<VoteContext>
+    class OpenRequestState implements TransitionState<PollContext>
     {
         @Override
-        public void work(VoteContext context) throws Exception
+        public void work(PollContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
             final Endpoint endpoint = context.endpoint;
-            final VoteRequest voteRequest = context.voteRequest;
+            final PollRequest pollRequest = context.pollRequest;
 
-            requestController.open(endpoint, voteRequest);
+            requestController.open(endpoint, pollRequest);
 
             context.take(TRANSITION_DEFAULT);
         }
     }
 
-    class OpenState implements State<VoteContext>
+    class OpenState implements State<PollContext>
     {
         @Override
-        public int doWork(VoteContext context) throws Exception
+        public int doWork(PollContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
 
@@ -247,13 +247,13 @@ public class VoteController
         }
     }
 
-    class ProcessResponseState implements TransitionState<VoteContext>
+    class ProcessResponseState implements TransitionState<PollContext>
     {
         @Override
-        public void work(VoteContext context) throws Exception
+        public void work(PollContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
-            final VoteResponse voteResponse = context.voteResponse;
+            final PollResponse pollResponse = context.pollResponse;
             final RaftContext raftContext = context.context;
             final Quorum quorum = context.quorum;
 
@@ -262,23 +262,22 @@ public class VoteController
             final DirectBuffer responseBuffer = requestController.getResponseBuffer();
             final int responseLength = requestController.getResponseLength();
 
-            voteResponse.wrap(responseBuffer, 0, responseLength);
+            pollResponse.wrap(responseBuffer, 0, responseLength);
 
-            final int voteResponseTerm = voteResponse.term();
-            final int currentTerm = raft.term();
+            final int pollResponseTerm = pollResponse.term();
 
-            if (voteResponseTerm > currentTerm)
+            if (pollResponseTerm > raft.term())
             {
-                raft.term(voteResponseTerm);
-                quorum.stepdown();
+                raft.term(pollResponseTerm);
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (!voteResponse.granted())
+
+            if (!pollResponse.granted())
             {
                 quorum.fail();
                 context.take(TRANSITION_DEFAULT);
             }
-            else if (voteResponseTerm != currentTerm)
+            else if (pollResponseTerm != raft.term())
             {
                 // voted for another term
                 quorum.fail();
@@ -292,10 +291,10 @@ public class VoteController
         }
     }
 
-    class CloseRequestState implements TransitionState<VoteContext>
+    class CloseRequestState implements TransitionState<PollContext>
     {
         @Override
-        public void work(VoteContext context) throws Exception
+        public void work(PollContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
 
@@ -308,10 +307,10 @@ public class VoteController
         }
     }
 
-    class ClosingState implements State<VoteContext>
+    class ClosingState implements State<PollContext>
     {
         @Override
-        public int doWork(VoteContext context) throws Exception
+        public int doWork(PollContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
 

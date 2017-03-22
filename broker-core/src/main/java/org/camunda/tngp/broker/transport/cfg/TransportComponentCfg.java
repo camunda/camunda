@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.transport.cfg;
 
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
+import org.camunda.tngp.broker.clustering.management.config.ClusterManagementConfig;
 
 public class TransportComponentCfg
 {
@@ -13,5 +14,6 @@ public class TransportComponentCfg
     public SocketBindingCfg replicationApi = new SocketBindingCfg();
 
     public GossipConfiguration gossip = new GossipConfiguration();
+    public ClusterManagementConfig management = new ClusterManagementConfig();
 
 }

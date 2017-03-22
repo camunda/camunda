@@ -1,9 +1,7 @@
-package org.camunda.tngp.broker.clustering.management.message;
+package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.*;
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.*;
+import static org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder.*;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -12,26 +10,30 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
-import org.camunda.tngp.clustering.management.InvitationRequestDecoder;
-import org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder;
-import org.camunda.tngp.clustering.management.InvitationRequestEncoder;
-import org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder;
-import org.camunda.tngp.clustering.management.MessageHeaderDecoder;
-import org.camunda.tngp.clustering.management.MessageHeaderEncoder;
+import org.camunda.tngp.clustering.raft.BooleanType;
+import org.camunda.tngp.clustering.raft.LeaveResponseDecoder;
+import org.camunda.tngp.clustering.raft.LeaveResponseDecoder.MembersDecoder;
+import org.camunda.tngp.clustering.raft.LeaveResponseEncoder;
+import org.camunda.tngp.clustering.raft.LeaveResponseEncoder.MembersEncoder;
+import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
+import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-public class InvitationRequest implements BufferWriter, BufferReader
+public class LeaveResponse implements BufferReader, BufferWriter
 {
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final InvitationRequestDecoder bodyDecoder = new InvitationRequestDecoder();
+    protected final LeaveResponseDecoder bodyDecoder = new LeaveResponseDecoder();
 
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    protected final InvitationRequestEncoder bodyEncoder = new InvitationRequestEncoder();
+    protected final LeaveResponseEncoder bodyEncoder = new LeaveResponseEncoder();
 
-    protected int id;
-    protected String name;
-    protected int term;
+    protected int id = -1;
+    protected int term = -1;
+
+    protected long configurationEntryPosition = -1L;
+    protected int configurationEntryTerm = -1;
+    protected boolean succeeded;
     protected List<Member> members = new CopyOnWriteArrayList<>();
 
     public int id()
@@ -39,20 +41,9 @@ public class InvitationRequest implements BufferWriter, BufferReader
         return id;
     }
 
-    public InvitationRequest id(final int id)
+    public LeaveResponse id(final int id)
     {
         this.id = id;
-        return this;
-    }
-
-    public String name()
-    {
-        return name;
-    }
-
-    public InvitationRequest name(final String name)
-    {
-        this.name = name;
         return this;
     }
 
@@ -61,9 +52,42 @@ public class InvitationRequest implements BufferWriter, BufferReader
         return term;
     }
 
-    public InvitationRequest term(final int term)
+    public LeaveResponse term(final int term)
     {
         this.term = term;
+        return this;
+    }
+
+    public boolean succeeded()
+    {
+        return succeeded;
+    }
+
+    public LeaveResponse succeeded(final boolean succeeded)
+    {
+        this.succeeded = succeeded;
+        return this;
+    }
+
+    public long configurationEntryPosition()
+    {
+        return configurationEntryPosition;
+    }
+
+    public LeaveResponse configurationEntryPosition(final long configurationEntryPosition)
+    {
+        this.configurationEntryPosition = configurationEntryPosition;
+        return this;
+    }
+
+    public int configurationEntryTerm()
+    {
+        return configurationEntryTerm;
+    }
+
+    public LeaveResponse configurationEntryTerm(final int configurationEntryTerm)
+    {
+        this.configurationEntryTerm = configurationEntryTerm;
         return this;
     }
 
@@ -72,7 +96,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
         return members;
     }
 
-    public InvitationRequest members(final List<Member> members)
+    public LeaveResponse members(final List<Member> members)
     {
         this.members.clear();
         this.members.addAll(members);
@@ -82,31 +106,15 @@ public class InvitationRequest implements BufferWriter, BufferReader
     @Override
     public int getLength()
     {
-        final int size = members.size();
+        final int size = members != null ? members.size() : 0;
 
         int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
-
         length += sbeHeaderSize() + (sbeBlockLength() + hostHeaderLength()) * size;
 
         for (int i = 0; i < size; i++)
         {
             final Member member = members.get(i);
-            final Endpoint endpoint = member.endpoint();
-            length += endpoint.hostLength();
-        }
-
-        length += logNameHeaderLength();
-
-        if (name != null && !name.isEmpty())
-        {
-            try
-            {
-                length += name.getBytes("UTF-8").length;
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                e.printStackTrace();
-            }
+            length += member.endpoint().hostLength();
         }
 
         return length;
@@ -123,13 +131,16 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         offset += headerEncoder.encodedLength();
 
-        final int size = members.size();
-
-        final MembersEncoder encoder = bodyEncoder.wrap(buffer, offset)
+        bodyEncoder.wrap(buffer, offset)
             .id(id)
             .term(term)
-            .membersCount(size);
+            .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
+            .configurationEntryPosition(configurationEntryPosition)
+            .configurationEntryTerm(configurationEntryTerm);
 
+        final int size = members != null ? members.size() : 0;
+
+        final MembersEncoder encoder = bodyEncoder.membersCount(size);
         for (int i = 0; i < size; i++)
         {
             final Member member = members.get(i);
@@ -139,8 +150,6 @@ public class InvitationRequest implements BufferWriter, BufferReader
                 .port(endpoint.port())
                 .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
-
-        bodyEncoder.logName(name);
     }
 
     @Override
@@ -153,11 +162,13 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         id = bodyDecoder.id();
         term = bodyDecoder.term();
+        succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
+        configurationEntryPosition = bodyDecoder.configurationEntryPosition();
+        configurationEntryTerm = bodyDecoder.configurationEntryTerm();
 
         members.clear();
 
         final Iterator<MembersDecoder> iterator = bodyDecoder.members().iterator();
-
         while (iterator.hasNext())
         {
             final MembersDecoder decoder = iterator.next();
@@ -165,23 +176,23 @@ public class InvitationRequest implements BufferWriter, BufferReader
             final Member member = new Member();
             member.endpoint().port(decoder.port());
 
-            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
             final int hostLength = decoder.hostLength();
+            final MutableDirectBuffer endpointBuffer = member.endpoint().getHostBuffer();
             member.endpoint().hostLength(hostLength);
             decoder.getHost(endpointBuffer, 0, hostLength);
 
+            // TODO: make this garbage free
             members.add(member);
         }
-
-        name = bodyDecoder.logName();
     }
 
     public void reset()
     {
-        members.clear();
         id = -1;
         term = -1;
-        name = null;
+        configurationEntryPosition = -1L;
+        configurationEntryTerm = -1;
+        succeeded = false;
+        members.clear();
     }
-
 }

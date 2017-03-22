@@ -1,15 +1,25 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.clustering.raft.Configuration;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
-import org.camunda.tngp.dispatcher.FragmentHandler;
-import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
+import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
+import org.camunda.tngp.broker.clustering.raft.message.ConfigureRequest;
+import org.camunda.tngp.broker.clustering.raft.message.ConfigureResponse;
+import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
+import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
+import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
+import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
+import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
+import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
+import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 
 public class InactiveState extends RaftState
 {
@@ -50,74 +60,38 @@ public class InactiveState extends RaftState
         return !open;
     }
 
-    @Override
-    public int onVoteRequest(DirectBuffer buffer, int offset, int length, int channelId, long connectionId, long requestId)
+    public PollResponse poll(final PollRequest pollRequest)
     {
-        voteResponse.reset();
-        voteResponse
-            .id(raft.id())
-            .term(raft.term())
-            .granted(false);
-
-        messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-            .channelId(channelId)
-            .connectionId(connectionId)
-            .requestId(requestId)
-            .message(voteResponse)
-            .tryWriteMessage();
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        throw new IllegalStateException();
     }
 
-    @Override
-    public int onAppendRequest(DirectBuffer buffer, int offset, int length, int channelId)
+    public VoteResponse vote(final VoteRequest voteRequest)
     {
-        appendResponse.reset();
-        appendResponse
-            .id(raft.id())
-            .term(raft.term())
-            .succeeded(false)
-            .entryPosition(logStreamState.lastReceivedPosition());
-
-        messageWriter.protocol(Protocols.FULL_DUPLEX_SINGLE_MESSAGE)
-            .channelId(channelId)
-            .message(appendResponse)
-            .tryWriteMessage();
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        throw new IllegalStateException();
     }
 
-    @Override
-    public int onAppendResponse(final DirectBuffer buffer, final int offset, final int length)
+    public AppendResponse append(final AppendRequest appendRequest)
     {
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        throw new IllegalStateException();
     }
 
-    @Override
-    public int onJoinRequest(DirectBuffer buffer, int offset, int length, int channelId, long connectionId, long requestId)
+    public void appended(final AppendResponse appendResponse)
     {
-        joinResponse.reset();
-        joinResponse
-            .id(raft.id())
-            .term(raft.term())
-            .succeeded(false);
-
-        messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-            .channelId(channelId)
-            .connectionId(connectionId)
-            .requestId(requestId)
-            .message(joinResponse)
-            .tryWriteMessage();
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+        throw new IllegalStateException();
     }
 
-    @Override
-    public int onConfigureRequest(DirectBuffer buffer, int offset, int length, int channelId, long connectionId, long requestId)
+    public CompletableFuture<JoinResponse> join(final JoinRequest joinRequest)
     {
-        configureRequest.reset();
-        configureRequest.wrap(buffer, offset, length);
+        throw new IllegalStateException();
+    }
 
+    public CompletableFuture<LeaveResponse> leave(final LeaveRequest leaveRequest)
+    {
+        throw new IllegalStateException();
+    }
+
+    public ConfigureResponse configure(final ConfigureRequest configureRequest)
+    {
         final int term = configureRequest.term();
         final long configurationEntryPosition = configureRequest.configurationEntryPosition();
         final int configurationEntryTerm = configureRequest.configurationEntryTerm();
@@ -125,7 +99,10 @@ public class InactiveState extends RaftState
 
         updateTermAndLeader(term, null);
 
-        raft.configure(new Configuration(configurationEntryPosition, configurationEntryTerm, new CopyOnWriteArrayList<>(members)));
+        raft.configure(new Configuration(
+                configurationEntryPosition,
+                configurationEntryTerm,
+                new CopyOnWriteArrayList<>(members)));
 
         if (raft.commitPosition() >= raft.configuration().configurationEntryPosition())
         {
@@ -133,19 +110,9 @@ public class InactiveState extends RaftState
         }
 
         configureResponse.reset();
-        configureResponse.reset();
-        configureResponse
+        return configureResponse
             .id(raft.id())
             .term(raft.term());
-
-        messageWriter.protocol(Protocols.REQUEST_RESPONSE)
-            .channelId(channelId)
-            .connectionId(connectionId)
-            .requestId(requestId)
-            .message(configureResponse)
-            .tryWriteMessage();
-
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
 
 }

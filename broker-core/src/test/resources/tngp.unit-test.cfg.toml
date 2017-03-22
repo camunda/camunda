@@ -24,6 +24,9 @@ receiveBufferSize = 16
 [network.gossip]
 useTempFile = true
 
+[network.management]
+useTempDirectory = true
+
 # System Configuration --------------------------------
 
 [threading]

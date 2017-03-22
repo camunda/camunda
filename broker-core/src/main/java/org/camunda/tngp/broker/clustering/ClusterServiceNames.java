@@ -30,7 +30,7 @@ public class ClusterServiceNames
 
     public static ServiceName<RaftContext> raftContextServiceName(final String name)
     {
-        return ServiceName.newServiceName(String.format("cluster.raft.context.%s", name), RaftContext.class);
+        return ServiceName.newServiceName(String.format("cluster.raft.%s.context", name), RaftContext.class);
     }
 
     public static ServiceName<Raft> raftServiceName(final String name)

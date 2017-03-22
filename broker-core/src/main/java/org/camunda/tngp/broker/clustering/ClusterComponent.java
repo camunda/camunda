@@ -76,7 +76,6 @@ public class ClusterComponent implements Component
         }
 
         final TransportConnectionPoolService transportConnectionPoolService = new TransportConnectionPoolService();
-
         final ServiceName<TransportConnectionPool> transportConnectionPoolServiceName = transportConnectionPoolName(component);
         serviceContainer.createService(transportConnectionPoolServiceName, transportConnectionPoolService)
             .dependency(TRANSPORT, transportConnectionPoolService.getTransportInjector())
@@ -149,17 +148,17 @@ public class ClusterComponent implements Component
             .dependency(PEER_LIST_SERVICE, clusterManagementContextService.getPeerListInjector())
             .dependency(PEER_LOCAL_SERVICE, clusterManagementContextService.getLocalPeerInjector())
             .dependency(AGENT_RUNNER_SERVICE, clusterManagementContextService.getAgentRunnerInjector())
+            .dependency(LOG_STREAMS_MANAGER_SERVICE, clusterManagementContextService.getLogStreamsManagerInjector())
             .dependency(clientChannelManagerServiceName, clusterManagementContextService.getClientChannelManagerInjector())
             .dependency(transportConnectionPoolServiceName, clusterManagementContextService.getTransportConnectionPoolInjector())
             .dependency(subscriptionServiceName, clusterManagementContextService.getSubscriptionInjector())
             .install();
 
-        final ClusterManagerService clusterManagerService = new ClusterManagerService();
+        final ClusterManagerService clusterManagerService = new ClusterManagerService(serviceContainer, config.management);
         serviceContainer.createService(CLUSTER_MANAGER_SERVICE, clusterManagerService)
             .dependency(CLUSTER_MANAGER_CONTEXT_SERVICE, clusterManagerService.getClusterManagementContextInjector())
             .dependency(AGENT_RUNNER_SERVICE, clusterManagerService.getAgentRunnerInjector())
             .groupReference(RAFT_SERVICE_GROUP, clusterManagerService.getRaftGroupReference())
-            .groupReference(LOG_STREAM_SERVICE_GROUP, clusterManagerService.getLogStreamsGroupReference())
             .install();
     }
 

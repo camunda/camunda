@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -8,9 +10,13 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.util.buffer.BufferWriter;
-import org.camunda.tngp.util.state.*;
-
-import static org.camunda.tngp.protocol.clientapi.EventType.RAFT_EVENT;
+import org.camunda.tngp.util.state.SimpleStateMachineContext;
+import org.camunda.tngp.util.state.State;
+import org.camunda.tngp.util.state.StateMachine;
+import org.camunda.tngp.util.state.StateMachineAgent;
+import org.camunda.tngp.util.state.StateMachineCommand;
+import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 public class AppendController
 {
@@ -169,9 +175,7 @@ public class AppendController
             super(stateMachine);
             this.metadata =  new BrokerEventMetadata();
             this.raft = raftContext.getRaft();
-
-            final LogStream stream = raft.stream();
-            this.logStreamWriter = new LogStreamWriter(stream).positionAsKey();
+            this.logStreamWriter = new LogStreamWriter();
             this.listener = new LogStreamListener();
         }
 
@@ -205,6 +209,7 @@ public class AppendController
             metadata.raftTermId(raft.term());
             metadata.eventType(RAFT_EVENT);
 
+            logStreamWriter.wrap(stream);
             final long position = logStreamWriter
                     .positionAsKey()
                     .valueWriter(entry)
@@ -264,15 +269,13 @@ public class AppendController
         public int doWork(AppendContext context) throws Exception
         {
             final Raft raft = context.raft;
-            final LogStream stream = raft.stream();
 
             final long entryPosition = context.entryPosition;
 
             int workcount = 0;
 
-//            if (raft.commitPosition() >= entryPosition)
-
-            if (stream.getCurrentAppenderPosition() >= entryPosition)
+            if (raft.commitPosition() >= entryPosition)
+//            if (stream.getCurrentAppenderPosition() >= entryPosition)
             {
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
@@ -292,7 +295,10 @@ public class AppendController
             final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
             final LogStreamListener listener = context.listener;
 
-            logStreamController.removeFailureListener(listener);
+            if (logStreamController != null)
+            {
+                logStreamController.removeFailureListener(listener);
+            }
 
             context.take(TRANSITION_DEFAULT);
         }

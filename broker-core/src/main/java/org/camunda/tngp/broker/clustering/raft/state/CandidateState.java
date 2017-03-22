@@ -7,6 +7,10 @@ import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.controller.VoteController;
+import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
+import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
+import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
+import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.StateMachine;
@@ -120,6 +124,47 @@ public class CandidateState extends ActiveState
         return Raft.State.CANDIDATE;
     }
 
+    @Override
+    public AppendResponse append(AppendRequest request)
+    {
+        if (updateTermAndLeader(request.term(), null))
+        {
+            raft.transition(State.FOLLOWER);
+        }
+
+        return super.append(request);
+    }
+
+    @Override
+    public VoteResponse vote(VoteRequest voteRequest)
+    {
+        if (updateTermAndLeader(voteRequest.term(), null))
+        {
+            raft.transition(State.FOLLOWER);
+            return super.vote(voteRequest);
+        }
+
+        final Member self = raft.member();
+        final Member candidate = voteRequest.candidate();
+
+        if (self.equals(candidate))
+        {
+            voteResponse.reset();
+            return voteResponse.id(raft.id())
+                    .id(raft.id())
+                    .term(raft.term())
+                    .granted(true);
+        }
+        else
+        {
+            voteResponse.reset();
+            return voteResponse.id(raft.id())
+                    .id(raft.id())
+                    .term(raft.term())
+                    .granted(false);
+        }
+    }
+
     class CandidateContext extends SimpleStateMachineContext
     {
         final Raft raft;
@@ -150,10 +195,12 @@ public class CandidateState extends ActiveState
         {
             final Quorum quorum = context.quorum;
             final Raft raft = context.raft;
+            final Member self = raft.member();
             final List<Member> members = raft.members();
 
             final int currentTerm = raft.term();
             raft.term(currentTerm + 1);
+            raft.lastVotedFor(self.endpoint());
 
             if (members.size() == 1)
             {
@@ -238,8 +285,6 @@ public class CandidateState extends ActiveState
             }
             else if (System.currentTimeMillis() >= electionTime + electionTimeout)
             {
-                System.out.println("[CANDIDATE]: start new election round, log: " + raft.id() + ", now: " + System.currentTimeMillis());
-
                 for (int i = 0; i < members.size(); i++)
                 {
                     final Member member = members.get(i);

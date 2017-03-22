@@ -35,7 +35,7 @@
 
     </types>
 
-    <!-- RAFT MESSAGES: 0 - 199 -->
+    <!-- RAFT MESSAGES -->
 
     <sbe:message name="JoinRequest" id="0">
         <field name="id" id="0" type="uint16"/>
@@ -55,8 +55,27 @@
             <data name="host" id="8" type="varDataEncoding"/>
         </group>
     </sbe:message>
+    
+    <sbe:message name="LeaveRequest" id="2">
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="port" id="2" type="uint16"/>
+        <data name="host" id="3" type="varDataEncoding"/>
+    </sbe:message>
+    
+    <sbe:message name="LeaveResponse" id="3" >
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="succeeded" id="3" type="BooleanType" />
+        <field name="configurationEntryPosition" id="4" type="uint64"/>
+        <field name="configurationEntryTerm" id="5" type="int32"/>
+        <group name="members" id="6" dimensionType="groupSizeEncoding">
+            <field name="port" id="7" type="uint16"/>
+            <data name="host" id="8" type="varDataEncoding"/>
+        </group>
+    </sbe:message>
 
-    <sbe:message name="ConfigureRequest" id="2">
+    <sbe:message name="ConfigureRequest" id="4">
         <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
         <field name="configurationEntryPosition" id="2" type="uint64"/>
@@ -67,12 +86,12 @@
         </group>
     </sbe:message>
 
-    <sbe:message name="ConfigureResponse" id="3">
+    <sbe:message name="ConfigureResponse" id="5">
         <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
     </sbe:message>
 
-    <sbe:message name="VoteRequest" id="4">
+    <sbe:message name="PollRequest" id="6">
         <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
         <field name="lastEntryPosition" id="2" type="uint64"/>
@@ -81,13 +100,28 @@
         <data name="host" id="5" type="varDataEncoding"/>
     </sbe:message>
 
-    <sbe:message name="VoteResponse" id="5">
+    <sbe:message name="PollResponse" id="7">
         <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
         <field name="granted" id="2" type="BooleanType"/>
     </sbe:message>
 
-    <sbe:message name="AppendRequest" id="6">
+    <sbe:message name="VoteRequest" id="8">
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="lastEntryPosition" id="2" type="uint64"/>
+        <field name="lastEntryTerm" id="3" type="int32"/>
+        <field name="port" id="4" type="uint16"/>
+        <data name="host" id="5" type="varDataEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="VoteResponse" id="9">
+        <field name="id" id="0" type="uint16"/>
+        <field name="term" id="1" type="uint16"/>
+        <field name="granted" id="2" type="BooleanType"/>
+    </sbe:message>
+
+    <sbe:message name="AppendRequest" id="10">
         <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
         <field name="previousEntryPosition" id="2" type="uint64"/>
@@ -98,7 +132,7 @@
         <data name="data" id="7" type="varDataEncoding"/>
     </sbe:message>
 
-    <sbe:message name="AppendResponse" id="7">
+    <sbe:message name="AppendResponse" id="11">
         <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
         <field name="succeeded" id="2" type="BooleanType"/>

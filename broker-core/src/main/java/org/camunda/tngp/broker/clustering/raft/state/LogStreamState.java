@@ -9,7 +9,11 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
-import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 
 public class LogStreamState
@@ -145,10 +149,10 @@ public class LogStreamState
 
         if (addr >= 0)
         {
-            logStorage.truncate(addr);
-            System.out.println("truncate log storage: " + addr);
             blockIndex.truncate(position);
             System.out.println("truncate block index: " + position);
+            logStorage.truncate(addr);
+            System.out.println("truncate log storage: " + addr);
         }
         else
         {
@@ -172,8 +176,6 @@ public class LogStreamState
 
             if (addr > 0)
             {
-                onBlockWritten(firstBufferedEntryPosition, addr, blockLength);
-
                 lastWrittenPosition = lastReceivedPosition;
                 lastWrittenTerm = lastReceivedTerm;
             }
@@ -195,22 +197,6 @@ public class LogStreamState
         lastReceivedTerm = lastWrittenTerm;
 
         lastFlush = System.currentTimeMillis();
-    }
-
-    protected void onBlockWritten(long position, long addr, int blockLength)
-    {
-        final int indexBlockSize = stream.getIndexBlockSize();
-
-        if (currentBlockSize == 0)
-        {
-            blockIndex.addBlock(position, addr);
-        }
-
-        currentBlockSize += blockLength;
-        if (currentBlockSize >= indexBlockSize)
-        {
-            currentBlockSize = 0;
-        }
     }
 
     public boolean isLastReceivedEntry(final long logPosition, final int logTerm)

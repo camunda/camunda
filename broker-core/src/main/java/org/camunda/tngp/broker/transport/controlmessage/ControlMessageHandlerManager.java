@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.broker.transport.controlmessage;
 
-import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.TRANSPORT_CONTROL_MESSAGE_HANDLER_SUBSCRIPTION;
+import static org.camunda.tngp.broker.services.DispatcherSubscriptionNames.*;
 
 import java.util.Arrays;
 import java.util.List;

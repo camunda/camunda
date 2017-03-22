@@ -12,23 +12,21 @@
  */
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
 
 import java.nio.channels.FileChannel;
 import java.time.Duration;
 import java.util.List;
 
+import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.executor.ScheduledCommand;
 import org.camunda.tngp.broker.system.executor.ScheduledExecutor;
+import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.broker.taskqueue.processor.TaskExpireLockStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
@@ -42,20 +40,30 @@ import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.FileUtil;
 
-public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager
+public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQueueManager, Agent
 {
+    protected static final String NAME = "task.queue.manager";
+
     protected final Injector<Dispatcher> sendBufferInjector = new Injector<>();
     protected final Injector<ScheduledExecutor> executorInjector = new Injector<>();
     protected final Injector<TaskSubscriptionManager> taskSubscriptionManagerInjector = new Injector<>();
+    protected final Injector<AgentRunnerServices> agentRunnerServicesInjector = new Injector<>();
+
+    protected final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
+            .onAdd((name, stream) -> addStream(stream, name))
+            .build();
 
     protected final List<TaskQueueCfg> taskQueueCfgs;
 
     protected ServiceStartContext serviceContext;
+    protected DeferredCommandContext asyncContext;
 
     protected ScheduledCommand scheduledCheckExpirationCmd;
 
@@ -146,14 +154,11 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     public void start(ServiceStartContext serviceContext)
     {
         this.serviceContext = serviceContext;
+        this.asyncContext = new DeferredCommandContext();
 
-        serviceContext.run(() ->
-        {
-            for (TaskQueueCfg taskQueueCfg : taskQueueCfgs)
-            {
-                startTaskQueue(taskQueueCfg);
-            }
-        });
+        final AgentRunnerServices agentRunnerService = agentRunnerServicesInjector.getValue();
+        agentRunnerService.conductorAgentRunnerService().run(this);
+
     }
 
     @Override
@@ -161,7 +166,13 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     {
         ctx.run(() ->
         {
-            scheduledCheckExpirationCmd.cancel();
+            if (scheduledCheckExpirationCmd != null)
+            {
+                scheduledCheckExpirationCmd.cancel();
+            }
+
+            final AgentRunnerServices agentRunnerService = agentRunnerServicesInjector.getValue();
+            agentRunnerService.conductorAgentRunnerService().remove(this);
         });
     }
 
@@ -184,6 +195,45 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     public Injector<TaskSubscriptionManager> getTaskSubscriptionManagerInjector()
     {
         return taskSubscriptionManagerInjector;
+    }
+
+    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
+    {
+        return logStreamsGroupReference;
+    }
+
+    public Injector<AgentRunnerServices> getAgentRunnerServicesInjector()
+    {
+        return agentRunnerServicesInjector;
+    }
+
+    public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
+    {
+        asyncContext.runAsync((r) ->
+        {
+            for (int i = 0; i < taskQueueCfgs.size(); i++)
+            {
+                final String logName = logStream.getLogName();
+                final TaskQueueCfg cfg = taskQueueCfgs.get(i);
+                if (logName.equals(cfg.logName))
+                {
+                    startTaskQueue(cfg);
+                    break;
+                }
+            }
+        });
+    }
+
+    @Override
+    public int doWork() throws Exception
+    {
+        return asyncContext.doWork();
+    }
+
+    @Override
+    public String roleName()
+    {
+        return NAME;
     }
 
 }

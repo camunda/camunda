@@ -2,11 +2,12 @@ package org.camunda.tngp.broker.clustering.management.service;
 
 import org.camunda.tngp.broker.clustering.management.ClusterManager;
 import org.camunda.tngp.broker.clustering.management.ClusterManagerContext;
+import org.camunda.tngp.broker.clustering.management.config.ClusterManagementConfig;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
-import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceGroupReference;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
@@ -17,10 +18,14 @@ public class ClusterManagerService implements Service<ClusterManager>
     private Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
 
     private ClusterManager clusterManager;
+    private ClusterManagementConfig config;
+    private ServiceContainer serviceContainer;
 
-    private final ServiceGroupReference<LogStream> logStreamsGroupReference = ServiceGroupReference.<LogStream>create()
-            .onAdd((name, stream) -> clusterManager.addStream(stream))
-            .build();
+    public ClusterManagerService(final ServiceContainer serviceContainer, final ClusterManagementConfig config)
+    {
+        this.serviceContainer = serviceContainer;
+        this.config = config;
+    }
 
     private final ServiceGroupReference<Raft> raftGroupReference = ServiceGroupReference.<Raft>create()
             .onAdd((name, raft) -> clusterManager.addRaft(raft))
@@ -30,11 +35,16 @@ public class ClusterManagerService implements Service<ClusterManager>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ClusterManagerContext context = clusterManagementContextInjector.getValue();
-        final AgentRunnerServices agentRunner = agentRunnerInjector.getValue();
+        startContext.run(() ->
+        {
+            final ClusterManagerContext context = clusterManagementContextInjector.getValue();
+            final AgentRunnerServices agentRunner = agentRunnerInjector.getValue();
 
-        clusterManager = new ClusterManager(context, startContext);
-        agentRunner.clusterAgentService().run(clusterManager);
+            clusterManager = new ClusterManager(context, serviceContainer, config);
+            clusterManager.open();
+
+            agentRunner.clusterAgentService().run(clusterManager);
+        });
 
     }
 
@@ -56,11 +66,6 @@ public class ClusterManagerService implements Service<ClusterManager>
         return clusterManagementContextInjector;
     }
 
-
-    public ServiceGroupReference<LogStream> getLogStreamsGroupReference()
-    {
-        return logStreamsGroupReference;
-    }
 
     public ServiceGroupReference<Raft> getRaftGroupReference()
     {

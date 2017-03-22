@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
@@ -118,6 +119,26 @@ public class ConfigurationController
         }
     }
 
+    public CompletableFuture<Void> openAsync(final List<Member> members)
+    {
+        if (isClosed())
+        {
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+
+            configurationContext.members.clear();
+            configurationContext.members.addAll(members);
+            configurationContext.configurationFuture = future;
+
+            configurationContext.take(TRANSITION_OPEN);
+
+            return future;
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot open state machine, has not been closed.");
+        }
+    }
+
     public void close()
     {
         configurationStateMachine.addCommand(CLOSE_STATE_MACHINE_COMMAND);
@@ -138,6 +159,11 @@ public class ConfigurationController
         return configurationStateMachine.getCurrentState() == failedState;
     }
 
+    public boolean isAppended()
+    {
+        return configurationContext.appendController.isAppended();
+    }
+
     public boolean isConfigured()
     {
         return configurationStateMachine.getCurrentState() == configuredState;
@@ -150,6 +176,8 @@ public class ConfigurationController
         final ConfigurationEntry configuration;
         final List<Member> members;
         final MessageWriter messageWriter;
+
+        CompletableFuture<Void> configurationFuture;
 
         ConfigurationContext(final StateMachine<?> stateMachine, final RaftContext raftContext)
         {
@@ -222,6 +250,12 @@ public class ConfigurationController
             }
             else if (appendController.isFailed())
             {
+                final CompletableFuture<Void> future = context.configurationFuture;
+                if (future != null)
+                {
+                    future.completeExceptionally(null);
+                }
+
                 context.take(TRANSITION_FAILED);
             }
 
@@ -261,6 +295,12 @@ public class ConfigurationController
 
             if (appendController.isCommitted())
             {
+                final CompletableFuture<Void> future = context.configurationFuture;
+                if (future != null)
+                {
+                    future.complete(null);
+                }
+
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }

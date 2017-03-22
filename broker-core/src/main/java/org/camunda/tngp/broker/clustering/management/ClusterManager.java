@@ -1,19 +1,14 @@
 package org.camunda.tngp.broker.clustering.management;
 
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.clientChannelManagerName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftContextServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.subscriptionServiceName;
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.transportConnectionPoolName;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,11 +20,12 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManagerService;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
-import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
+import org.camunda.tngp.broker.clustering.management.config.ClusterManagementConfig;
 import org.camunda.tngp.broker.clustering.management.handler.ClusterManagerFragmentHandler;
 import org.camunda.tngp.broker.clustering.management.message.InvitationRequest;
 import org.camunda.tngp.broker.clustering.management.message.InvitationResponse;
 import org.camunda.tngp.broker.clustering.raft.Member;
+import org.camunda.tngp.broker.clustering.raft.MetaStore;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.service.RaftContextService;
@@ -38,19 +34,21 @@ import org.camunda.tngp.broker.clustering.service.SubscriptionService;
 import org.camunda.tngp.broker.clustering.service.TransportConnectionPoolService;
 import org.camunda.tngp.broker.clustering.util.MessageWriter;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.broker.logstreams.LogStreamsManager;
+import org.camunda.tngp.broker.logstreams.cfg.LogStreamCfg;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
-import org.camunda.tngp.logstreams.LogStreams;
+import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
-import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterManager implements Agent
 {
     private final ClusterManagerContext context;
-    private final ServiceStartContext serviceContainer;
+    private final ServiceContainer serviceContainer;
 
     private final List<Raft> rafts;
 
@@ -64,12 +62,15 @@ public class ClusterManager implements Agent
     private final InvitationRequest invitationRequest;
     private final InvitationResponse invitationResponse;
 
+    private ClusterManagementConfig config;
+
     private final MessageWriter messageWriter;
 
-    public ClusterManager(final ClusterManagerContext context, final ServiceStartContext serviceContainer)
+    public ClusterManager(final ClusterManagerContext context, final ServiceContainer serviceContainer, ClusterManagementConfig config)
     {
         this.context = context;
         this.serviceContainer = serviceContainer;
+        this.config = config;
         this.rafts = new CopyOnWriteArrayList<>();
         this.managementCmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
         this.commandConsumer = (r) -> r.run();
@@ -81,6 +82,74 @@ public class ClusterManager implements Agent
         this.messageWriter = new MessageWriter(context.getSendBuffer());
 
         context.getPeers().registerListener((p) -> addPeer(p));
+    }
+
+    public void open()
+    {
+        String metaDirectory = config.metaDirectory;
+
+        if (config.useTempDirectory || metaDirectory == null || metaDirectory.isEmpty())
+        {
+            try
+            {
+                final File tempDir = Files.createTempDirectory("tngp-meta-").toFile();
+                metaDirectory = tempDir.getAbsolutePath();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException("Could not create temp directory for meta data", e);
+            }
+        }
+
+        config.metaDirectory = metaDirectory;
+
+        final LogStreamsManager logStreamManager = context.getLogStreamsManager();
+
+        final File dir = new File(metaDirectory);
+
+        if (!dir.exists())
+        {
+            try
+            {
+                dir.getParentFile().mkdirs();
+                Files.createDirectory(dir.toPath());
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        final File[] metaFiles = dir.listFiles();
+
+        if (metaFiles.length > 0)
+        {
+            for (int i = 0; i < metaFiles.length; i++)
+            {
+                final File file = metaFiles[i];
+                final MetaStore meta = new MetaStore(file.getAbsolutePath());
+
+                final int id = meta.loadLogId();
+                LogStream logStream = logStreamManager.getLogStream(id);
+
+                if (logStream == null)
+                {
+                    final String name = meta.loadLogName();
+                    final String directory = meta.loadLogDirectory();
+                    logStream = logStreamManager.createLogStream(id, name, directory);
+                }
+
+                createRaft(logStream, meta, Collections.emptyList(), false);
+            }
+        }
+        else if (context.getPeers().sizeVolatile() == 1)
+        {
+            final Collection<LogStream> logStreams = logStreamManager.getLogStreams();
+            for (final LogStream logStream : logStreams)
+            {
+                createRaft(logStream, Collections.emptyList(), true);
+            }
+        }
     }
 
     @Override
@@ -104,6 +173,11 @@ public class ClusterManager implements Agent
             workcount += requestController.doWork();
 
             if (requestController.isFailed() || requestController.isResponseAvailable())
+            {
+                requestController.close();
+            }
+
+            if (requestController.isClosed())
             {
                 activeRequestController.remove(i);
             }
@@ -132,6 +206,7 @@ public class ClusterManager implements Agent
                     // the number of concurrent invitations.
                     final InvitationRequest invitationRequest = new InvitationRequest();
                     invitationRequest.id(raft.id())
+                        .name(raft.stream().getLogName())
                         .term(raft.term())
                         .members(raft.configuration().members());
 
@@ -146,21 +221,12 @@ public class ClusterManager implements Agent
         });
     }
 
-    public void addStream(final LogStream logStream)
+    public void addRaft(final Raft raft)
     {
         managementCmdQueue.add(() ->
         {
-            final PeerList peers = context.getPeers();
-            if (peers.sizeVolatile() == 1)
-            {
-                createRaft(logStream, Collections.emptyList());
-            }
+            rafts.add(raft);
         });
-    }
-
-    public void addRaft(final Raft raft)
-    {
-        managementCmdQueue.add(() -> rafts.add(raft));
     }
 
     public void removeRaft(final Raft raft)
@@ -179,7 +245,18 @@ public class ClusterManager implements Agent
         });
     }
 
-    public void createRaft(LogStream logStream, List<Member> members)
+    public void createRaft(LogStream logStream, List<Member> members, boolean bootstrap)
+    {
+        final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
+        final String path = logStorage.getConfig().getPath();
+
+        final MetaStore meta = new MetaStore(this.config.metaDirectory + File.separator + String.format("%d-%s.meta", logStream.getId(), logStream.getLogName()));
+        meta.storeLogIdAndNameAndDirectory(logStream.getId(), logStream.getLogName(), path);
+
+        createRaft(logStream, meta, members, bootstrap);
+    }
+
+    public void createRaft(LogStream logStream, MetaStore meta, List<Member> members, boolean bootstrap)
     {
         final int id = logStream.getId();
         final String component = String.format("raft.%d", id);
@@ -207,7 +284,7 @@ public class ClusterManager implements Agent
             .install();
 
         // TODO: provide raft configuration
-        final RaftContextService raftContextService = new RaftContextService();
+        final RaftContextService raftContextService = new RaftContextService(serviceContainer);
         final ServiceName<RaftContext> raftContextServiceName = raftContextServiceName(String.valueOf(id));
         serviceContainer.createService(raftContextServiceName, raftContextService)
             .dependency(PEER_LOCAL_SERVICE, raftContextService.getLocalPeerInjector())
@@ -215,9 +292,10 @@ public class ClusterManager implements Agent
             .dependency(clientChannelManagerServiceName, raftContextService.getClientChannelManagerInjector())
             .dependency(transportConnectionPoolServiceName, raftContextService.getTransportConnectionPoolInjector())
             .dependency(subscriptionServiceName, raftContextService.getSubscriptionInjector())
+            .dependency(AGENT_RUNNER_SERVICE, raftContextService.getAgentRunnerInjector())
             .install();
 
-        final RaftService raftService = new RaftService(logStream, new CopyOnWriteArrayList<>(members));
+        final RaftService raftService = new RaftService(logStream, meta, new CopyOnWriteArrayList<>(members), bootstrap);
         final ServiceName<Raft> raftServiceName = raftServiceName(String.valueOf(id));
         serviceContainer.createService(raftServiceName, raftService)
             .group(RAFT_SERVICE_GROUP)
@@ -231,19 +309,14 @@ public class ClusterManager implements Agent
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
 
-        final int id = invitationRequest.id();
+        final LogStreamCfg config = new LogStreamCfg();
+        config.id = invitationRequest.id();
+        config.name = invitationRequest.name();
 
-        // TODO: start log stream as service, if it is not already started as a service!
-        final LogStream stream = LogStreams.createFsLogStream("raft-log-" + context.getLocalPeer().managementEndpoint().port(), id)
-                .deleteOnClose(false)
-                .logDirectory("/tmp/raft-log-" + context.getLocalPeer().managementEndpoint().port() + "-" + id)
-                .agentRunnerService(context.getAgentRunner().logAppenderAgentRunnerService())
-                .writeBufferAgentRunnerService(context.getAgentRunner().conductorAgentRunnerService())
-                .logSegmentSize(512 * 1024 * 1024)
-                .build();
-        stream.open();
+        final LogStreamsManager logStreamManager = context.getLogStreamsManager();
+        final LogStream logStream = logStreamManager.createLogStream(config);
 
-        createRaft(stream, new ArrayList<>(invitationRequest.members()));
+        createRaft(logStream, new ArrayList<>(invitationRequest.members()), false);
 
         invitationResponse.reset();
         messageWriter.protocol(Protocols.REQUEST_RESPONSE)
@@ -255,4 +328,5 @@ public class ClusterManager implements Agent
 
         return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
+
 }

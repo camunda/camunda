@@ -17,13 +17,11 @@ public class LogStreamService implements Service<LogStream>
     @Override
     public void start(ServiceStartContext serviceContext)
     {
-        serviceContext.async(logStream.openAsync());
     }
 
     @Override
     public void stop(ServiceStopContext stopContext)
     {
-        stopContext.async(logStream.closeAsync());
     }
 
     @Override

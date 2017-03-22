@@ -24,7 +24,10 @@ receiveBufferSize = 16
 initialContactPoints = [
   "localhost:51016"
 ]
-peersStorageFile = "/tmp/7777.tngp"
+peersStorageFile = "/tmp/tngp/7777/gossip/7777.tngp"
+
+[network.management]
+metaDirectory = "/tmp/tngp/7777/meta"
 
 # System Configuration --------------------------------
 
@@ -41,11 +44,9 @@ useTempCountersFile = true
 [logs]
 logWriteBufferSize = 256
 defaultLogSegmentSize = 512
-
-[[log]]
-name = "default-task-queue-log"
-id = 0
-logDirectory = "/tmp/tngp-7777-task"
+logDirectories = [
+    "/tmp/tngp/7777/logs"
+]
 
 [snapshot]
 useTempSnapshotDirectory = true
