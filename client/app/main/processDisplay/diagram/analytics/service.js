@@ -1,5 +1,5 @@
 import {dispatchAction} from 'view-utils';
-import {updateOverlayVisibility} from 'utils';
+import {updateOverlayVisibility, isBpmnType} from 'utils';
 import {createSetElementAction} from './reducer';
 
 export const BRANCH_OVERLAY = 'BRANCH_OVERLAY';
@@ -36,7 +36,7 @@ export function addBranchOverlay(viewer, {flowNodes, piCount}) {
   Object.keys(flowNodes).forEach(element => {
     const value = flowNodes[element];
 
-    if (value !== undefined && elementRegistry.get(element).businessObject.$instanceOf('bpmn:EndEvent')) {
+    if (value !== undefined && isBpmnType(elementRegistry.get(element), 'EndEvent')) {
       // create overlay node from html string
       const container = document.createElement('div');
       const percentageValue = Math.round(value / piCount * 1000) / 10;

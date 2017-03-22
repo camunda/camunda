@@ -12,7 +12,10 @@ describe('<Analytics>', () => {
   let leaveGatewayAnalysisMode;
   let addBranchOverlay;
   let $document;
+  let hoverElement;
+  let removeOverlays;
 
+  let heatmapData;
   let diagramElement;
   let endEvent;
   let gateway;
@@ -21,7 +24,7 @@ describe('<Analytics>', () => {
   let isBpmnType;
 
   beforeEach(() => {
-    const heatmapData = {
+    heatmapData = {
       piCount: 7,
       flowNodes: {
         act1: 1,
@@ -70,11 +73,17 @@ describe('<Analytics>', () => {
     };
     __set__('$document', $document);
 
+    removeOverlays = sinon.spy();
+    __set__('removeOverlays', removeOverlays);
+
     addBranchOverlay = sinon.spy();
     __set__('addBranchOverlay', addBranchOverlay);
 
     setEndEvent = sinon.spy();
     __set__('setEndEvent', setEndEvent);
+
+    hoverElement = sinon.spy();
+    __set__('hoverElement', hoverElement);
 
     setGateway = sinon.spy();
     __set__('setGateway', setGateway);
@@ -110,13 +119,22 @@ describe('<Analytics>', () => {
   afterEach(() => {
     __ResetDependency__('createModal');
     __ResetDependency__('isBpmnType');
+    __ResetDependency__('removeOverlays');
     __ResetDependency__('addBranchOverlay');
     __ResetDependency__('setEndEvent');
     __ResetDependency__('setGateway');
+    __ResetDependency__('hoverElement');
     __ResetDependency__('leaveGatewayAnalysisMode');
     __ResetDependency__('GATEWAY_ANALYSIS_MODE');
     __ResetDependency__('$document');
     __ResetDependency__('resetStatisticData');
+  });
+
+  it('should process element hovering', () => {
+    update(initialState);
+    viewer.on.firstCall.args[1]({element: diagramElement});
+
+    expect(hoverElement.calledWith(viewer, diagramElement)).to.eql(true);
   });
 
   it('should do nothing when a non end event is clicked', () => {
@@ -175,5 +193,12 @@ describe('<Analytics>', () => {
 
     expect(viewer.addMarker.calledWith('act3', 'highlight_selected')).to.eql(true);
     expect(viewer.addMarker.calledWith('act1', 'highlight_selected')).to.eql(true);
+  });
+
+  it('should handle overlays', () => {
+    update(initialState);
+
+    expect(removeOverlays.calledWith(viewer)).to.eql(true);
+    expect(addBranchOverlay.calledWith(viewer, heatmapData)).to.eql(true);
   });
 });
