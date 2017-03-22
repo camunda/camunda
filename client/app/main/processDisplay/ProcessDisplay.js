@@ -12,7 +12,7 @@ function Process() {
   const Diagram = createDiagram();
 
   const template = <div className="process-display">
-    <Controls selector="controls" onCriteriaChanged={loadData} />
+    <Controls onCriteriaChanged={loadData} getBpmnViewer={Diagram.getViewer} />
     <div className="diagram">
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>

@@ -29,7 +29,7 @@ describe('<Controls>', () => {
 
     onCriteriaChanged = sinon.spy();
 
-    ({node, update} = mountTemplate(<Controls selector="controls" onCriteriaChanged={onCriteriaChanged} />));
+    ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} />));
   });
 
   afterEach(() => {
