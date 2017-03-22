@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 import org.camunda.tngp.broker.protocol.clientapi.EmbeddedBrokerRule;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
-import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
 import org.junit.Before;
@@ -28,21 +28,22 @@ public class TopicSubscriptionAcknowledgementTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    protected int subscriptionId;
+    protected long subscriberKey;
 
     @Before
     public void openSubscription()
     {
-        final ControlMessageResponse response = apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("topicId", 0)
-                .put("startPosition", 0)
-                .put("name", SUBSCRIPTION_NAME)
-                .done()
-            .sendAndAwait();
-        subscriptionId = (int) response.getData().get("id");
+        openSubscription(0);
     }
+
+    public void openSubscription(long startPosition)
+    {
+        final ExecuteCommandResponse response = apiRule
+                .openTopicSubscription(0, SUBSCRIPTION_NAME, startPosition)
+                .await();
+        subscriberKey = response.key();
+    }
+
 
     protected void closeSubscription()
     {
@@ -50,7 +51,7 @@ public class TopicSubscriptionAcknowledgementTest
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
                 .put("topicId", 0)
-                .put("subscriptionId", subscriptionId)
+                .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
     }
@@ -63,14 +64,14 @@ public class TopicSubscriptionAcknowledgementTest
             .eventTypeSubscription()
             .topicId(0)
             .command()
-                .put("subscriptionName", SUBSCRIPTION_NAME)
+                .put("name", SUBSCRIPTION_NAME)
                 .put("event", "ACKNOWLEDGE")
                 .put("ackPosition", 0)
                 .done()
             .sendAndAwait();
 
         // then
-        assertThat(response.getEvent()).containsEntry("subscriptionName", SUBSCRIPTION_NAME);
+        assertThat(response.getEvent()).containsEntry("name", SUBSCRIPTION_NAME);
         assertThat(response.getEvent()).containsEntry("event", "ACKNOWLEDGED");
     }
 
@@ -87,7 +88,7 @@ public class TopicSubscriptionAcknowledgementTest
             .eventTypeSubscription()
             .topicId(0)
             .command()
-                .put("subscriptionName", SUBSCRIPTION_NAME)
+                .put("name", SUBSCRIPTION_NAME)
                 .put("event", "ACKNOWLEDGE")
                 .put("ackPosition", events.get(0).position())
                 .done()
@@ -117,7 +118,7 @@ public class TopicSubscriptionAcknowledgementTest
         apiRule.createCmdRequest()
             .eventTypeSubscription()
             .command()
-                .put("subscriptionName", SUBSCRIPTION_NAME)
+                .put("name", SUBSCRIPTION_NAME)
                 .put("event", "ACKNOWLEDGE")
                 .put("acknowledgedPosition", Long.MAX_VALUE)
                 .done()
@@ -137,6 +138,42 @@ public class TopicSubscriptionAcknowledgementTest
 
         assertThat(firstEvent).isPresent();
         // TODO: what is the expected behavior here?
+    }
+
+    @Test
+    public void shouldPersistStartPosition()
+    {
+        // given
+        apiRule.createCmdRequest()
+            .topicId(0)
+            .eventTypeTask()
+            .command()
+                .put("eventType", "CREATE")
+                .put("type", "foo")
+                .put("retries", 1)
+                .done()
+            .sendAndAwait();
+
+        final List<Long> taskEventPositions = apiRule.subscribedEvents()
+            .filter((e) -> e.eventType() == EventType.TASK_EVENT)
+            .map((e) -> e.position())
+            .limit(2)
+            .collect(Collectors.toList());
+
+        closeSubscription();
+        apiRule.moveSubscribedEventsStreamToTail();
+
+        // when
+        openSubscription(taskEventPositions.get(1));
+
+        // then it begins at the original offset (we didn't send any ACK before)
+        final List<Long> taskEventPositionsAfterReopen = apiRule.subscribedEvents()
+            .filter((e) -> e.eventType() == EventType.TASK_EVENT)
+            .map((e) -> e.position())
+            .limit(2)
+            .collect(Collectors.toList());
+
+        assertThat(taskEventPositionsAfterReopen).containsExactlyElementsOf(taskEventPositions);
     }
 
 }

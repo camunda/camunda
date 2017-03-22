@@ -7,7 +7,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.event.TopicSubscriptionNames;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -16,6 +15,7 @@ import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
@@ -27,45 +27,53 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.util.DeferredCommandContext;
 
-public class TopicSubscriptionManagementProcessor implements StreamProcessor, EventProcessor
+public class TopicSubscriptionManagementProcessor implements StreamProcessor
 {
 
     protected static final int MAXIMUM_SUBSCRIPTION_NAME_LENGTH = 32;
 
     protected final SnapshotSupport snapshotResource;
 
-    protected final int streamId;
+    protected int streamId;
     protected final ServiceName<LogStream> streamServiceName;
 
     protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
-    protected long nextSubscriptionId = 0L;
 
-    protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
-    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
-    protected long eventKey;
-
+    protected final ErrorResponseWriter errorWriter;
     protected final CommandResponseWriter responseWriter;
     protected final Supplier<SubscribedEventWriter> eventWriterFactory;
     protected final ServiceStartContext serviceContext;
-    protected DeferredCommandContext cmdContext;
     protected final Bytes2LongHashIndex ackIndex;
 
+    protected DeferredCommandContext cmdContext;
+    protected LogStreamWriter streamWriter;
+
+    protected final AckProcessor ackProcessor = new AckProcessor();
+    protected final SubscribeProcessor subscribeProcessor = new SubscribeProcessor(MAXIMUM_SUBSCRIPTION_NAME_LENGTH, this);
+    protected final SubscribedProcessor subscribedProcessor = new SubscribedProcessor();
+
+    protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
+    protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
+    protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
+    protected LoggedEvent currentEvent;
+
     public TopicSubscriptionManagementProcessor(
-            int streamId,
             ServiceName<LogStream> streamServiceName,
             IndexStore ackIndexStore,
             CommandResponseWriter responseWriter,
+            ErrorResponseWriter errorWriter,
             Supplier<SubscribedEventWriter> eventWriterFactory,
             ServiceStartContext serviceContext)
     {
-        this.streamId = streamId;
         this.streamServiceName = streamServiceName;
         this.responseWriter = responseWriter;
+        this.errorWriter = errorWriter;
         this.eventWriterFactory = eventWriterFactory;
         this.serviceContext = serviceContext;
         this.ackIndex = new Bytes2LongHashIndex(ackIndexStore, Short.MAX_VALUE, 256, MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
@@ -76,6 +84,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor, Ev
     public void onOpen(StreamProcessorContext context)
     {
         this.cmdContext = context.getStreamProcessorCmdQueue();
+        this.streamWriter = context.getLogStreamWriter();
+        this.streamId = context.getSourceStream().getId();
     }
 
     @Override
@@ -87,69 +97,57 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor, Ev
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
-        eventKey = event.getLongKey();
 
         metadata.reset();
         metadata.wrap(event.getMetadata(), event.getMetadataOffset(), event.getMetadataLength());
+        currentEvent = event;
 
-        subscriptionEvent.reset();
-        subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-
-        if (subscriptionEvent.getEvent() == TopicSubscriptionEventType.ACKNOWLEDGE)
+        if (metadata.getEventType() == EventType.SUBSCRIPTION_EVENT)
         {
-            return this;
+            return onSubscriptionEvent(event);
+        }
+        else if (metadata.getEventType() == EventType.SUBSCRIBER_EVENT)
+        {
+            return onSubscriberEvent(event);
         }
         else
         {
             return null;
         }
-
     }
 
-    public static MetadataFilter filter()
+    protected EventProcessor onSubscriberEvent(LoggedEvent event)
     {
-        return (m) -> EventType.SUBSCRIPTION_EVENT == m.getEventType();
-    }
+        subscriberEvent.reset();
+        subscriberEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
 
-    @Override
-    public void processEvent()
-    {
-    }
-
-    @Override
-    public long writeEvent(LogStreamWriter writer)
-    {
-        metadata.protocolVersion(Constants.PROTOCOL_VERSION);
-
-        return writer
-            .key(eventKey)
-            .metadataWriter(metadata)
-            .valueWriter(subscriptionEvent)
-            .tryWrite();
-    }
-
-    @Override
-    public boolean executeSideEffects()
-    {
-        subscriptionEvent.event(TopicSubscriptionEventType.ACKNOWLEDGED);
-        return responseWriter
-                .brokerEventMetadata(metadata)
-                .eventWriter(subscriptionEvent)
-                .longKey(eventKey)
-                .topicId(streamId)
-                .tryWriteResponse();
-    }
-
-    @Override
-    public void updateState()
-    {
-        putAck(subscriptionEvent.getSubscriptionName(), subscriptionEvent.getAckPosition());
-
-        final TopicSubscriptionProcessor subscriptionProcessor = subscriptionRegistry.getProcessorByName(subscriptionEvent.getSubscriptionName());
-
-        if (subscriptionProcessor != null)
+        if (subscriberEvent.getEvent() == TopicSubscriberEventType.SUBSCRIBE)
         {
-            subscriptionProcessor.onAck(subscriptionEvent.getAckPosition());
+            subscribeProcessor.wrap(currentEvent, metadata, subscriberEvent);
+            return subscribeProcessor;
+        }
+        else if (subscriberEvent.getEvent() == TopicSubscriberEventType.SUBSCRIBED)
+        {
+            return subscribedProcessor;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    protected EventProcessor onSubscriptionEvent(LoggedEvent event)
+    {
+        subscriptionEvent.reset();
+        subscriptionEvent.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+
+        if (subscriptionEvent.getEvent() == TopicSubscriptionEventType.ACKNOWLEDGE)
+        {
+            return ackProcessor;
+        }
+        else
+        {
+            return null;
         }
     }
 
@@ -158,111 +156,207 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor, Ev
         ackIndex.put(subscriptionName, 0, subscriptionName.capacity(), ackPosition);
     }
 
-    protected long determineResumePosition(DirectBuffer subscriptionName, long startPosition)
-    {
-        final long lastAckedPosition = ackIndex.get(subscriptionName, 0, subscriptionName.capacity(), -1L);
-
-        if (lastAckedPosition >= 0)
-        {
-            return lastAckedPosition + 1;
-        }
-        else
-        {
-            return startPosition;
-        }
-    }
-
-    public CompletableFuture<Void> openSubscriptionAsync(TopicSubscription subscription)
-    {
-        final DirectBuffer nameBuffer = subscription.getName();
-
-        if (nameBuffer.capacity() > MAXIMUM_SUBSCRIPTION_NAME_LENGTH)
-        {
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            future.completeExceptionally(new RuntimeException("Subscription name must be " + MAXIMUM_SUBSCRIPTION_NAME_LENGTH + " characters or shorter."));
-            return future;
-        }
-
-        final UnsafeBuffer subscriptionName = new UnsafeBuffer(new byte[nameBuffer.capacity()]);
-        subscriptionName.putBytes(0, nameBuffer, 0, nameBuffer.capacity());
-        final int topicId = subscription.getTopicId();
-        final int channelId = subscription.getChannelId();
-        final long startPosition = subscription.getStartPosition();
-        final int prefetchCapacity = subscription.getPrefetchCapacity();
-
-        return cmdContext.runAsync((future) ->
-        {
-            final long resumePosition = determineResumePosition(subscriptionName, startPosition);
-
-            final long subscriptionId = nextSubscriptionId++;
-            subscription.setId(subscriptionId);
-
-            final TopicSubscriptionProcessor streamProcessor = new TopicSubscriptionProcessor(
-                    channelId,
-                    topicId,
-                    subscriptionId,
-                    resumePosition,
-                    subscriptionName,
-                    prefetchCapacity,
-                    eventWriterFactory.get());
-
-            createStreamProcessorServiceAsync(
-                    streamServiceName,
-                    TopicSubscriptionNames.subscriptionPushServiceName(streamServiceName.getName(), streamProcessor.getNameAsString()),
-                    StreamProcessorIds.TOPIC_SUBSCRIPTION_PROCESSOR_ID,
-                    streamProcessor,
-                    TopicSubscriptionProcessor.eventFilter())
-                .thenAccept((v) -> subscriptionRegistry.addSubscription(streamProcessor))
-                .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
-        });
-    }
-
-    public CompletableFuture<Void> closeSubscriptionAsync(long subscriptionId)
+    public CompletableFuture<Void> closePushProcessorAsync(long subscriberKey)
     {
         return cmdContext.runAsync((future) ->
         {
-            final TopicSubscriptionProcessor processor = subscriptionRegistry.removeProcessorById(subscriptionId);
+            final TopicSubscriptionPushProcessor processor = subscriptionRegistry.removeProcessorByKey(subscriberKey);
 
             if (processor != null)
             {
                 final ServiceName<StreamProcessorController> subscriptionProcessorName =
                         TopicSubscriptionNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
 
-                removeStreamProcessorServiceAsync(subscriptionProcessorName)
+                serviceContext.removeService(subscriptionProcessorName)
                     .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
             else
             {
-                future.completeExceptionally(new RuntimeException("Subscription with id " + subscriptionId + " is not open"));
+                future.completeExceptionally(new RuntimeException("Subscription with id " + subscriberKey + " is not open"));
             }
         });
     }
 
 
-    protected CompletableFuture<Void> createStreamProcessorServiceAsync(
-            ServiceName<LogStream> logStreamName,
-            ServiceName<StreamProcessorController> processorName,
-            int processorId,
-            StreamProcessor streamProcessor,
-            MetadataFilter eventFilter)
+    public long determineResumePosition(DirectBuffer subscriptionName, long startPosition, boolean forceStart)
     {
-        final StreamProcessorService streamProcessorService = new StreamProcessorService(
-                processorName.getName(),
-                processorId,
-                streamProcessor)
-            .eventFilter(eventFilter);
+        final long lastAckedPosition = ackIndex.get(subscriptionName, 0, subscriptionName.capacity(), -1L);
 
-        return serviceContext.createService(processorName, streamProcessorService)
-            .dependency(logStreamName, streamProcessorService.getSourceStreamInjector())
-            .dependency(logStreamName, streamProcessorService.getTargetStreamInjector())
+        if (forceStart)
+        {
+            return startPosition;
+        }
+        else
+        {
+            if (lastAckedPosition >= 0)
+            {
+                return lastAckedPosition + 1;
+            }
+            else
+            {
+                return startPosition;
+            }
+        }
+    }
+
+    public CompletableFuture<TopicSubscriptionPushProcessor> openPushProcessorAsync(
+            int clientChannelId,
+            long subscriberKey,
+            long resumePosition,
+            DirectBuffer subscriptionName,
+            int prefetchCapacity)
+    {
+        final TopicSubscriptionPushProcessor processor = new TopicSubscriptionPushProcessor(
+                metadata.getReqChannelId(),
+                subscriberKey,
+                resumePosition,
+                subscriptionName,
+                subscriberEvent.getPrefetchCapacity(),
+                eventWriterFactory.get());
+
+        final ServiceName<StreamProcessorController> serviceName = TopicSubscriptionNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
+
+        final StreamProcessorService streamProcessorService = new StreamProcessorService(
+                serviceName.getName(),
+                StreamProcessorIds.TOPIC_SUBSCRIPTION_PROCESSOR_ID,
+                processor)
+            .eventFilter(TopicSubscriptionPushProcessor.eventFilter());
+
+        return serviceContext.createService(serviceName, streamProcessorService)
+            .dependency(streamServiceName, streamProcessorService.getSourceStreamInjector())
+            .dependency(streamServiceName, streamProcessorService.getTargetStreamInjector())
             .dependency(SNAPSHOT_STORAGE_SERVICE, streamProcessorService.getSnapshotStorageInjector())
             .dependency(AGENT_RUNNER_SERVICE, streamProcessorService.getAgentRunnerInjector())
-            .install();
+            .install()
+            .thenApply((v) -> processor);
     }
 
-    protected CompletableFuture<Void> removeStreamProcessorServiceAsync(ServiceName<StreamProcessorController> processorName)
+    public boolean writeRequestResponseError(BrokerEventMetadata metadata, LoggedEvent event, String error)
     {
-        return serviceContext.removeService(processorName);
+        return errorWriter
+            .metadata(metadata)
+            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+            .errorMessage(error)
+            .failedRequest(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+            .tryWriteResponse();
     }
 
+    public void registerPushProcessor(TopicSubscriptionPushProcessor processor)
+    {
+        subscriptionRegistry.addSubscription(processor);
+    }
+
+    public long writeSubscriberEvent(BrokerEventMetadata metadata, TopicSubscriberEvent subscriberEvent, LoggedEvent sourceEvent)
+    {
+        return streamWriter
+            .metadataWriter(metadata)
+            .valueWriter(subscriberEvent)
+            .sourceEvent(sourceEvent.getStreamId(), sourceEvent.getPosition())
+            .key(sourceEvent.getLongKey())
+            .tryWrite();
+    }
+
+
+    public static MetadataFilter filter()
+    {
+        return (m) -> EventType.SUBSCRIPTION_EVENT == m.getEventType() || EventType.SUBSCRIBER_EVENT == m.getEventType();
+    }
+
+
+    protected class AckProcessor implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            subscriptionEvent.event(TopicSubscriptionEventType.ACKNOWLEDGED);
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            metadata.protocolVersion(Constants.PROTOCOL_VERSION);
+
+            return writer
+                .key(currentEvent.getLongKey())
+                .metadataWriter(metadata)
+                .valueWriter(subscriptionEvent)
+                .sourceEvent(streamId, currentEvent.getPosition())
+                .tryWrite();
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+            if (metadata.getReqRequestId() >= 0)
+            {
+                return responseWriter
+                        .brokerEventMetadata(metadata)
+                        .eventWriter(subscriptionEvent)
+                        .longKey(currentEvent.getLongKey())
+                        .topicId(streamId)
+                        .tryWriteResponse();
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        @Override
+        public void updateState()
+        {
+            putAck(subscriptionEvent.getName(), subscriptionEvent.getAckPosition());
+
+            final TopicSubscriptionPushProcessor subscriptionProcessor = subscriptionRegistry.getProcessorByName(subscriptionEvent.getName());
+
+            if (subscriptionProcessor != null)
+            {
+                subscriptionProcessor.onAck(subscriptionEvent.getAckPosition());
+            }
+        }
+    }
+
+    protected class SubscribedProcessor implements EventProcessor
+    {
+
+        @Override
+        public void processEvent()
+        {
+        }
+
+        @Override
+        public boolean executeSideEffects()
+        {
+
+            return responseWriter.brokerEventMetadata(metadata)
+                    .eventWriter(subscriberEvent)
+                    .longKey(currentEvent.getLongKey())
+                    .topicId(streamId)
+                    .tryWriteResponse();
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
+
+            subscriptionEvent.reset();
+            subscriptionEvent.event(TopicSubscriptionEventType.ACKNOWLEDGE)
+                .name(openedSubscriptionName, 0, openedSubscriptionName.capacity())
+                .ackPosition(subscriberEvent.getStartPosition() - 1);
+
+            metadata.eventType(EventType.SUBSCRIPTION_EVENT)
+                .reqChannelId(-1)
+                .reqConnectionId(-1)
+                .reqRequestId(-1);
+
+            return writer
+                    .key(currentEvent.getLongKey())
+                    .metadataWriter(metadata)
+                    .valueWriter(subscriptionEvent)
+                    .sourceEvent(streamId, currentEvent.getPosition())
+                    .tryWrite();
+
+        }
+    }
 }

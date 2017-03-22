@@ -1,37 +1,16 @@
 package org.camunda.tngp.client.impl.cmd;
 
-public class TopicSubscription
+public class TopicSubscriberEvent
 {
 
-    protected long id;
-    protected int topicId;
+    protected SubscriberEventType event;
     protected long startPosition;
     protected String name;
     protected int prefetchCapacity;
 
-    public TopicSubscription()
+    public TopicSubscriberEvent()
     {
         reset();
-    }
-
-    public long getId()
-    {
-        return id;
-    }
-
-    public void setId(long id)
-    {
-        this.id = id;
-    }
-
-    public int getTopicId()
-    {
-        return topicId;
-    }
-
-    public void setTopicId(int topicId)
-    {
-        this.topicId = topicId;
     }
 
     public long getStartPosition()
@@ -64,11 +43,21 @@ public class TopicSubscription
         return prefetchCapacity;
     }
 
+    public void setEvent(SubscriberEventType event)
+    {
+        this.event = event;
+    }
+
+    public SubscriberEventType getEvent()
+    {
+        return event;
+    }
+
     public void reset()
     {
-        this.id = -1L;
-        this.topicId = -1;
         this.startPosition = -1L;
         this.prefetchCapacity = -1;
+        this.event = null;
+        this.name = null;
     }
 }

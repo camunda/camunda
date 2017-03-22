@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.event.processor;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
@@ -17,7 +18,7 @@ import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.collection.LongRingBuffer;
 
-public class TopicSubscriptionProcessor implements StreamProcessor, EventProcessor
+public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
 {
 
     protected final BrokerEventMetadata metadata = new BrokerEventMetadata();
@@ -26,11 +27,11 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     protected LoggedEvent event;
 
     protected final int channelId;
-    protected final int logStreamId;
-    protected final long subscriptionId;
-    protected final long startPosition;
+    protected final long subscriberKey;
+    protected long startPosition;
     protected final DirectBuffer name;
     protected final String nameString;
+    protected int logStreamId;
 
     protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
     protected final SubscribedEventWriter channelWriter;
@@ -41,10 +42,9 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
 
     // TODO: should neither write snapshots nor perform recovery/reprocessing; both are externally managed
     //   => see https://github.com/camunda-tngp/camunda-tngp/issues/169
-    public TopicSubscriptionProcessor(
+    public TopicSubscriptionPushProcessor(
             int channelId,
-            int logStreamId,
-            long subscriptionId,
+            long subscriberKey,
             long startPosition,
             DirectBuffer name,
             int prefetchCapacity,
@@ -52,10 +52,11 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     {
         this.channelWriter = channelWriter;
         this.channelId = channelId;
-        this.logStreamId = logStreamId;
-        this.subscriptionId = subscriptionId;
+        this.subscriberKey = subscriberKey;
         this.startPosition = startPosition;
-        this.name = name;
+        final byte[] nameBytes = new byte[name.capacity()];
+        name.getBytes(0, nameBytes);
+        this.name = new UnsafeBuffer(nameBytes);
         this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
 
         if (prefetchCapacity > 0)
@@ -68,11 +69,20 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
     public void onOpen(StreamProcessorContext context)
     {
 
-        cmdQueue = context.getStreamProcessorCmdQueue();
-        streamWriter = context.getLogStreamWriter();
-        final LogStreamReader logReader = context.getSourceLogStreamReader();
+        this.cmdQueue = context.getStreamProcessorCmdQueue();
+        this.streamWriter = context.getLogStreamWriter();
 
+        final LogStreamReader logReader = context.getSourceLogStreamReader();
+        this.logStreamId = context.getSourceStream().getId();
         setToStartPosition(logReader);
+    }
+
+    /**
+     * @return the position at which this processor actually started. This may be different than the constructor argument
+     */
+    public long getStartPosition()
+    {
+        return startPosition;
     }
 
     protected void setToStartPosition(LogStreamReader logReader)
@@ -90,6 +100,8 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
                 logReader.next();
             }
         }
+
+        startPosition = logReader.getPosition();
     }
 
     @Override
@@ -120,7 +132,7 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
             .longKey(event.getLongKey())
             .position(event.getPosition())
             .topicId(logStreamId)
-            .subscriptionId(subscriptionId)
+            .subscriptionId(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage();
@@ -165,7 +177,7 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
         {
             if (recordsPendingEvents())
             {
-                pendingEvents.consumeUntilInclusive(eventPosition);
+                pendingEvents.consumeAscendingUntilInclusive(eventPosition);
             }
         });
     }
@@ -180,8 +192,9 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
 
     public static MetadataFilter eventFilter()
     {
-        // don't push ACKs; this may lead to infinite loops of pushing events and ACKing those events
-        return (m) -> m.getEventType() != EventType.SUBSCRIPTION_EVENT;
+        // don't push subscription or subscriber events;
+        // this may lead to infinite loops of pushing events that in turn trigger creation of more such events (e.g. ACKs)
+        return (m) -> m.getEventType() != EventType.SUBSCRIPTION_EVENT && m.getEventType() != EventType.SUBSCRIBER_EVENT;
     }
 
     public DirectBuffer getName()
@@ -191,6 +204,6 @@ public class TopicSubscriptionProcessor implements StreamProcessor, EventProcess
 
     public long getSubscriptionId()
     {
-        return subscriptionId;
+        return subscriberKey;
     }
 }

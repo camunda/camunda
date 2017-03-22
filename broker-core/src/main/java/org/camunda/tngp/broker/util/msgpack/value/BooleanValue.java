@@ -7,6 +7,16 @@ public class BooleanValue extends BaseValue
 {
     protected boolean val = false;
 
+    public BooleanValue()
+    {
+        this(false);
+    }
+
+    public BooleanValue(boolean initialValue)
+    {
+        this.val = initialValue;
+    }
+
     @Override
     public void reset()
     {
@@ -16,6 +26,11 @@ public class BooleanValue extends BaseValue
     public boolean getValue()
     {
         return val;
+    }
+
+    public void setValue(boolean value)
+    {
+        this.val = value;
     }
 
     @Override

@@ -86,6 +86,20 @@ public class EmbeddedBrokerRule extends ExternalResource
         }
     }
 
+    public <T> void removeService(ServiceName<T> name)
+    {
+        try
+        {
+            broker.getBrokerContext().getServiceContainer()
+                .removeService(name)
+                .get(10, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException | ExecutionException | TimeoutException e)
+        {
+            throw new RuntimeException("Could not remove service " + name.getName() + " in 10 seconds.");
+        }
+    }
+
     static class TestService implements Service<TestService>
     {
 

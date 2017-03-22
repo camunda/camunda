@@ -83,7 +83,7 @@ public class StubResponseChannelHandler implements TransportChannelHandler
             boolean requestHandled = false;
             if (ExecuteCommandRequestDecoder.TEMPLATE_ID == headerDecoder.templateId())
             {
-                final ExecuteCommandRequest request = new ExecuteCommandRequest(msgPackHelper);
+                final ExecuteCommandRequest request = new ExecuteCommandRequest(transportChannel.getId(), msgPackHelper);
                 request.wrap(copy, requestResponseMessageOffset, requestResponseMessageLength);
                 commandRequests.add(request);
                 allRequests.add(request);

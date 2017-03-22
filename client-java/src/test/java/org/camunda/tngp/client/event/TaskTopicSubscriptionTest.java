@@ -62,7 +62,7 @@ public class TaskTopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = brokerRule.getReceivedControlMessageRequests().get(0).getChannelId();
+        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
 
         // when pushing two events
         pushTopicEvent(clientChannelId, 123L, 1L, 1L);

@@ -110,13 +110,17 @@ public class StubBrokerRule extends ExternalResource
 
     public void stubTopicSubscriptionApi(long initialId)
     {
-        final AtomicLong idGenerator = new AtomicLong(initialId);
+        final AtomicLong subscriberKeyProvider = new AtomicLong(initialId);
+        final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
-        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
+        onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT
+                && "SUBSCRIBE".equals(r.getCommand().get("event")))
             .respondWith()
-            .data()
-                .allOf((r) -> r.getData())
-                .put("id", idGenerator.getAndIncrement())
+            .longKey((r) -> subscriberKeyProvider.getAndIncrement())
+            .topicId((r) -> r.topicId())
+            .event()
+                .allOf((r) -> r.getCommand())
+                .put("event", "SUBSCRIBED")
                 .done()
             .register();
 
@@ -127,11 +131,10 @@ public class StubBrokerRule extends ExternalResource
                 .done()
             .register();
 
-        final AtomicLong keyProvider = new AtomicLong(0);
         onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT
                 && "ACKNOWLEDGE".equals(r.getCommand().get("event")))
             .respondWith()
-            .longKey((r) -> keyProvider.incrementAndGet())
+            .longKey((r) -> subscriptionKeyProvider.getAndIncrement())
             .topicId((r) -> r.topicId())
             .event()
                 .allOf((r) -> r.getCommand())

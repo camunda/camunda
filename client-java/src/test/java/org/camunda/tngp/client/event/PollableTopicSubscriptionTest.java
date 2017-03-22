@@ -62,7 +62,7 @@ public class PollableTopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = brokerRule.getReceivedControlMessageRequests().get(0).getChannelId();
+        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
 
         pushTopicEvent(clientChannelId, 123L, 1L, 1L);
         pushTopicEvent(clientChannelId, 123L, 1L, 2L);

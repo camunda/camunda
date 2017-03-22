@@ -179,7 +179,7 @@ public class ClientApiMessageHandler
                     .metadata(eventMetadata)
                     .errorCode(ErrorCode.TOPIC_NOT_FOUND)
                     .errorMessage("Cannot execute command. Topic with id '%d' not found", topicId)
-                    .failedRequest(buffer, messageOffset, messageLength)
+                    .failedRequest(buffer, eventOffset, eventLength)
                     .tryWriteResponseOrLogFailure();
         }
         return isHandled;

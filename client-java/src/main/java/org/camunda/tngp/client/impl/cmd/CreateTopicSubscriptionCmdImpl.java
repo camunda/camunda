@@ -1,25 +1,24 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
-import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.EnsureUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<TopicSubscription, Long>
+public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<TopicSubscriberEvent, Long>
 {
-    protected final TopicSubscription subscription = new TopicSubscription();
+    protected final TopicSubscriberEvent subscription = new TopicSubscriberEvent();
 
     public CreateTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
     {
-        super(cmdExecutor, objectMapper, TopicSubscription.class, ControlMessageType.ADD_TOPIC_SUBSCRIPTION, TopicSubscription::getId);
-        this.subscription.setTopicId(topicId);
+        super(cmdExecutor, objectMapper, TopicSubscriberEvent.class, topicId, EventType.SUBSCRIBER_EVENT);
     }
 
     @Override
     public void validate()
     {
-        EnsureUtil.ensureGreaterThanOrEqual("topicId", subscription.getTopicId(), 0);
+        EnsureUtil.ensureGreaterThanOrEqual("topicId", topicId, 0);
     }
 
     public CreateTopicSubscriptionCmdImpl startPosition(long startPosition)
@@ -43,6 +42,7 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<To
     @Override
     protected Object writeCommand()
     {
+        this.subscription.setEvent(SubscriberEventType.SUBSCRIBE);
         return subscription;
     }
 
@@ -50,6 +50,18 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractControlMessageCmd<To
     protected void reset()
     {
         subscription.reset();
+    }
+
+    @Override
+    protected long getKey()
+    {
+        return -1;
+    }
+
+    @Override
+    protected Long getResponseValue(long key, TopicSubscriberEvent event)
+    {
+        return key;
     }
 
 }

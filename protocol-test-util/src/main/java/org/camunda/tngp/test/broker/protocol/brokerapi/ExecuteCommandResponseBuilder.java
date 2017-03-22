@@ -2,6 +2,7 @@ package org.camunda.tngp.test.broker.protocol.brokerapi;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;

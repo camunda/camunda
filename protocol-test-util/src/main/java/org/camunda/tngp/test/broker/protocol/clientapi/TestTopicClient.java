@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
 public class TestTopicClient
@@ -71,16 +70,9 @@ public class TestTopicClient
      */
     public Stream<SubscribedEvent> receiveEvents(Predicate<SubscribedEvent> filter)
     {
-        final ControlMessageResponse response = apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("topicId", topicId)
-                .put("startPosition", 0)
-                .put("name", "test")
-            .done()
-            .sendAndAwait();
+        final ExecuteCommandResponse response = apiRule.openTopicSubscription(topicId, "test", 0).await();
 
-        assertThat((int) response.getData().get("id")).isGreaterThanOrEqualTo(0);
+        assertThat(response.key()).isGreaterThanOrEqualTo(0);
 
         return apiRule.subscribedEvents().filter(filter);
     }

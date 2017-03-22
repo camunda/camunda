@@ -8,22 +8,22 @@ public class CloseSubscriptionRequest extends UnpackedObject
 {
 
     protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
-    protected LongProperty subscriptionIdProp = new LongProperty("subscriptionId");
+    protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey");
 
     public CloseSubscriptionRequest()
     {
-        this.declareProperty(subscriptionIdProp)
+        this.declareProperty(subscriberKeyProp)
             .declareProperty(topicIdProp);
     }
 
-    public long getSubscriptionId()
+    public long getSubscriberKey()
     {
-        return subscriptionIdProp.getValue();
+        return subscriberKeyProp.getValue();
     }
 
-    public CloseSubscriptionRequest subscriptionId(long subscriptionId)
+    public CloseSubscriptionRequest subscriberKey(long subscriberKey)
     {
-        this.subscriptionIdProp.setValue(subscriptionId);
+        this.subscriberKeyProp.setValue(subscriberKey);
         return this;
     }
 

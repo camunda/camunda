@@ -56,7 +56,7 @@ public class RemoveTopicSubscriptionHandlerTest
         metadata.reqChannelId(14);
 
         final DirectBuffer request = encode(new CloseSubscriptionRequest()
-                .subscriptionId(5L)
+                .subscriberKey(5L)
                 .topicId(0));
         handler.handle(request, metadata);
 

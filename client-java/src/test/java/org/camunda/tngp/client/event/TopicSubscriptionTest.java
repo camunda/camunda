@@ -67,7 +67,7 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = brokerRule.getReceivedControlMessageRequests().get(0).getChannelId();
+        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
 
         // when pushing two events
         pushTopicEvent(clientChannelId, 123L, 1L, 1L);
@@ -100,7 +100,7 @@ public class TopicSubscriptionTest
                 .name(SUBSCRIPTION_NAME)
                 .open();
 
-        final int clientChannelId = brokerRule.getReceivedControlMessageRequests().get(0).getChannelId();
+        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
         pushTopicEvent(clientChannelId, 123L, 1L, 1L);
 
         // when
@@ -119,7 +119,7 @@ public class TopicSubscriptionTest
         assertThat(acknowledgements).isNotEmpty();
 
         final ExecuteCommandRequest lastAck = acknowledgements.get(acknowledgements.size() - 1);
-        assertThat(lastAck.getCommand().get("subscriptionName")).isEqualTo(SUBSCRIPTION_NAME);
+        assertThat(lastAck.getCommand().get("name")).isEqualTo(SUBSCRIPTION_NAME);
         assertThat(lastAck.getCommand().get("ackPosition")).isEqualTo(1);
 
         final ControlMessageRequest removeRequest = brokerRule.getReceivedControlMessageRequests().stream()
@@ -149,7 +149,7 @@ public class TopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = brokerRule.getReceivedControlMessageRequests().get(0).getChannelId();
+        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
         pushTopicEvent(clientChannelId, 123L, 1L, 1L);
 
         // when
@@ -187,11 +187,11 @@ public class TopicSubscriptionTest
             .open();
 
         // then
-        final ControlMessageRequest addSubscriptionRequest = brokerRule.getReceivedControlMessageRequests().stream()
-            .filter((r) -> r.messageType() == ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
+        final ExecuteCommandRequest addSubscriptionRequest = brokerRule.getReceivedCommandRequests().stream()
+            .filter((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT && "SUBSCRIBE".equals(r.getCommand().get("event")))
             .findFirst()
             .get();
 
-        assertThat(addSubscriptionRequest.getData()).containsEntry("prefetchCapacity", 32);
+        assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", 32);
     }
 }

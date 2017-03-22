@@ -96,4 +96,17 @@ public class ClientApiRule extends ExternalResource
         return new TestTopicClient(this, topicId);
     }
 
+    public ExecuteCommandRequest openTopicSubscription(int topicId, String name, long startPosition)
+    {
+        return createCmdRequest()
+            .topicId(topicId)
+            .eventTypeSubscriber()
+            .command()
+                .put("startPosition", startPosition)
+                .put("name", name)
+                .put("event", "SUBSCRIBE")
+                .done()
+            .send();
+    }
+
 }

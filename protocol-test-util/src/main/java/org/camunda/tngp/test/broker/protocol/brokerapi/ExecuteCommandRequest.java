@@ -19,9 +19,11 @@ public class ExecuteCommandRequest implements BufferReader
     protected final MsgPackHelper msgPackHelper;
 
     protected Map<String, Object> command;
+    protected int channelId;
 
-    public ExecuteCommandRequest(MsgPackHelper msgPackHelper)
+    public ExecuteCommandRequest(int channelId, MsgPackHelper msgPackHelper)
     {
+        this.channelId = channelId;
         this.msgPackHelper = msgPackHelper;
     }
 
@@ -43,6 +45,11 @@ public class ExecuteCommandRequest implements BufferReader
     public Map<String, Object> getCommand()
     {
         return command;
+    }
+
+    public int getChannelId()
+    {
+        return channelId;
     }
 
     @Override

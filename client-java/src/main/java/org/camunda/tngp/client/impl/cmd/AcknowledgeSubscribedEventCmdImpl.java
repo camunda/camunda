@@ -6,25 +6,25 @@ import org.camunda.tngp.util.EnsureUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<SubscriptionAcknowledgement, Long>
+public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<TopicSubscriptionEvent, Long>
 {
-    protected final SubscriptionAcknowledgement ack = new SubscriptionAcknowledgement();
+    protected final TopicSubscriptionEvent ack = new TopicSubscriptionEvent();
 
     public AcknowledgeSubscribedEventCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, final int topicId)
     {
-        super(cmdExecutor, objectMapper, SubscriptionAcknowledgement.class, topicId, EventType.SUBSCRIPTION_EVENT);
+        super(cmdExecutor, objectMapper, TopicSubscriptionEvent.class, topicId, EventType.SUBSCRIPTION_EVENT);
     }
 
     @Override
     public void validate()
     {
         EnsureUtil.ensureGreaterThanOrEqual("ackPosition", ack.getAckPosition(), 0L);
-        EnsureUtil.ensureNotNull("subscriptionName", ack.getSubscriptionName());
+        EnsureUtil.ensureNotNull("subscriptionName", ack.getName());
     }
 
     public AcknowledgeSubscribedEventCmdImpl subscriptionName(String name)
     {
-        this.ack.setSubscriptionName(name);
+        this.ack.setName(name);
         return this;
     }
 
@@ -53,7 +53,7 @@ public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<Su
     }
 
     @Override
-    protected Long getResponseValue(long key, SubscriptionAcknowledgement event)
+    protected Long getResponseValue(long key, TopicSubscriptionEvent event)
     {
         return key;
     }

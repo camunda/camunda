@@ -6,9 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.camunda.tngp.broker.protocol.clientapi.EmbeddedBrokerRule;
-import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
-import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
+import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,30 +23,21 @@ public class TopicSubscriptionThrottlingTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    protected int subscriptionId;
+    protected long subscriberKey;
 
     public void openSubscription(int prefetchCapacity)
     {
-        final ControlMessageResponse response = apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("topicId", 0)
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicId(0)
+            .eventTypeSubscriber()
+            .command()
                 .put("startPosition", 0)
-                .put("name", SUBSCRIPTION_NAME)
+                .put("name", "foo")
+                .put("event", "SUBSCRIBE")
                 .put("prefetchCapacity", prefetchCapacity)
                 .done()
             .sendAndAwait();
-        subscriptionId = (int) response.getData().get("id");
-    }
-
-    protected void closeSubscription()
-    {
-        apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("subscriptionId", subscriptionId)
-                .done()
-            .sendAndAwait();
+        subscriberKey = response.key();
     }
 
     @Test
@@ -92,7 +82,7 @@ public class TopicSubscriptionThrottlingTest
             .topicId(0)
             .eventTypeSubscription()
             .command()
-                .put("subscriptionName", SUBSCRIPTION_NAME)
+                .put("name", SUBSCRIPTION_NAME)
                 .put("event", "ACKNOWLEDGE")
                 .put("ackPosition", eventPositions.get(1))
                 .done()

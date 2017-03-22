@@ -2,64 +2,34 @@ package org.camunda.tngp.broker.event.processor;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.BooleanProperty;
+import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
-public class TopicSubscription extends UnpackedObject
+public class TopicSubscriberEvent extends UnpackedObject
 {
-    protected LongProperty idProp = new LongProperty("id", -1L);
-    protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
     // negative value for end of log
     protected LongProperty startPositionProp = new LongProperty("startPosition", -1L);
     protected IntegerProperty prefetchCapacityProp = new IntegerProperty("prefetchCapacity", -1);
     protected StringProperty nameProp = new StringProperty("name");
 
-    protected int channelId;
+    // true if startPosition should override any previously acknowledged position
+    protected BooleanProperty forceStartProp = new BooleanProperty("forceStart", false);
+    protected EnumProperty<TopicSubscriberEventType> eventProp = new EnumProperty<>("event", TopicSubscriberEventType.class);
 
-    public TopicSubscription()
+    public TopicSubscriberEvent()
     {
-        this.declareProperty(idProp)
-            .declareProperty(topicIdProp)
+        this
+            .declareProperty(eventProp)
             .declareProperty(startPositionProp)
             .declareProperty(nameProp)
-            .declareProperty(prefetchCapacityProp);
+            .declareProperty(prefetchCapacityProp)
+            .declareProperty(forceStartProp);
     }
 
-    public long getId()
-    {
-        return idProp.getValue();
-    }
-
-    public TopicSubscription setId(long id)
-    {
-        this.idProp.setValue(id);
-        return this;
-    }
-
-    public int getTopicId()
-    {
-        return topicIdProp.getValue();
-    }
-
-    public TopicSubscription setTopicId(int topicId)
-    {
-        this.topicIdProp.setValue(topicId);
-        return this;
-    }
-
-    public int getChannelId()
-    {
-        return channelId;
-    }
-
-    public TopicSubscription setChannelId(int channelId)
-    {
-        this.channelId = channelId;
-        return this;
-    }
-
-    public TopicSubscription startPosition(long startPosition)
+    public TopicSubscriberEvent startPosition(long startPosition)
     {
         this.startPositionProp.setValue(startPosition);
         return this;
@@ -70,7 +40,7 @@ public class TopicSubscription extends UnpackedObject
         return startPositionProp.getValue();
     }
 
-    public TopicSubscription prefetchCapacity(int prefetchCapacity)
+    public TopicSubscriberEvent prefetchCapacity(int prefetchCapacity)
     {
         this.prefetchCapacityProp.setValue(prefetchCapacity);
         return this;
@@ -92,9 +62,25 @@ public class TopicSubscription extends UnpackedObject
         return nameProp.getValue();
     }
 
-    public TopicSubscription setName(String name)
+    public TopicSubscriberEvent setName(String name)
     {
         nameProp.setValue(name);
+        return this;
+    }
+
+    public boolean getForceStart()
+    {
+        return forceStartProp.getValue();
+    }
+
+    public TopicSubscriberEventType getEvent()
+    {
+        return eventProp.getValue();
+    }
+
+    public TopicSubscriberEvent setEvent(TopicSubscriberEventType event)
+    {
+        this.eventProp.setValue(event);
         return this;
     }
 

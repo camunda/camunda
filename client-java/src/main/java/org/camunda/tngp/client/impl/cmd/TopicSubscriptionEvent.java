@@ -1,20 +1,20 @@
 package org.camunda.tngp.client.impl.cmd;
 
-public class SubscriptionAcknowledgement
+public class TopicSubscriptionEvent
 {
 
-    protected String subscriptionName;
+    protected String name;
     protected final SubscriptionEventType event = SubscriptionEventType.ACKNOWLEDGE;
     protected long ackPosition;
 
-    public String getSubscriptionName()
+    public String getName()
     {
-        return subscriptionName;
+        return name;
     }
 
-    public void setSubscriptionName(String subscriptionName)
+    public void setName(String subscriptionName)
     {
-        this.subscriptionName = subscriptionName;
+        this.name = subscriptionName;
     }
 
     public long getAckPosition()
@@ -34,7 +34,7 @@ public class SubscriptionAcknowledgement
 
     public void reset()
     {
-        this.subscriptionName = null;
+        this.name = null;
         this.ackPosition = -1L;
     }
 }

@@ -60,8 +60,10 @@ public class ErrorResponse implements BufferReader
 
         errorData = responseBuffer.getStringWithoutLengthUtf8(errorDataOffset, errorDataLength);
 
+        bodyDecoder.limit(errorDataOffset + errorDataLength);
+
         final int failedRequestLength = bodyDecoder.failedRequestLength();
-        final int failedRequestOffset = errorDataOffset + errorDataLength + ErrorResponseDecoder.failedRequestHeaderLength();
+        final int failedRequestOffset = bodyDecoder.limit() + ErrorResponseDecoder.failedRequestHeaderLength();
 
         try (final InputStream is = new DirectBufferInputStream(responseBuffer, failedRequestOffset, failedRequestLength))
         {

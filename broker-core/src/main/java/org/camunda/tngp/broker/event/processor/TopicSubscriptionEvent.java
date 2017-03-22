@@ -8,26 +8,26 @@ import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class TopicSubscriptionEvent extends UnpackedObject
 {
-    protected StringProperty subscriptionNameProp = new StringProperty("subscriptionName");
+    protected StringProperty nameProp = new StringProperty("name");
     protected EnumProperty<TopicSubscriptionEventType> eventProp = new EnumProperty<>("event", TopicSubscriptionEventType.class);
     protected LongProperty ackPositionProp = new LongProperty("ackPosition");
 
     public TopicSubscriptionEvent()
     {
-        declareProperty(subscriptionNameProp)
+        declareProperty(nameProp)
             .declareProperty(eventProp)
             .declareProperty(ackPositionProp);
     }
 
-    public TopicSubscriptionEvent subscriptionName(DirectBuffer nameBuffer, int offset, int length)
+    public TopicSubscriptionEvent name(DirectBuffer nameBuffer, int offset, int length)
     {
-        this.subscriptionNameProp.setValue(nameBuffer, offset, length);
+        this.nameProp.setValue(nameBuffer, offset, length);
         return this;
     }
 
-    public DirectBuffer getSubscriptionName()
+    public DirectBuffer getName()
     {
-        return subscriptionNameProp.getValue();
+        return nameProp.getValue();
     }
 
     public long getAckPosition()
@@ -35,9 +35,10 @@ public class TopicSubscriptionEvent extends UnpackedObject
         return ackPositionProp.getValue();
     }
 
-    public void ackPosition(long ackPosition)
+    public TopicSubscriptionEvent ackPosition(long ackPosition)
     {
         this.ackPositionProp.setValue(ackPosition);
+        return this;
     }
 
     public TopicSubscriptionEventType getEvent()

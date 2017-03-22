@@ -4,16 +4,16 @@ public class CloseSubscriptionRequest
 {
 
     protected int topicId;
-    protected long subscriptionId;
+    protected long subscriberKey;
 
-    public long getSubscriptionId()
+    public long getSubscriberKey()
     {
-        return subscriptionId;
+        return subscriberKey;
     }
 
-    public void setSubscriptionId(long id)
+    public void setSubscriberKey(long id)
     {
-        this.subscriptionId = id;
+        this.subscriberKey = id;
     }
 
     public int getTopicId()
@@ -28,7 +28,7 @@ public class CloseSubscriptionRequest
 
     public void reset()
     {
-        this.subscriptionId = -1L;
+        this.subscriberKey = -1L;
         this.topicId = -1;
     }
 }

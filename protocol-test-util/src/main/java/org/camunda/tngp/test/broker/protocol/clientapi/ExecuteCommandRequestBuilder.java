@@ -55,6 +55,12 @@ public class ExecuteCommandRequestBuilder
         return this;
     }
 
+    public ExecuteCommandRequestBuilder eventTypeSubscriber()
+    {
+        request.eventType(EventType.SUBSCRIBER_EVENT);
+        return this;
+    }
+
     public ExecuteCommandRequestBuilder command(Map<String, Object> command)
     {
         request.command(command);

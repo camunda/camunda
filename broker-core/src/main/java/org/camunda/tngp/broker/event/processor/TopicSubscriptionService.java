@@ -17,6 +17,7 @@ import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
+import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SingleMessageWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -103,10 +104,10 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
             final IndexStore indexStore = newIndexStoreForLog(logStream.getLogName());
 
             final TopicSubscriptionManagementProcessor ackProcessor = new TopicSubscriptionManagementProcessor(
-                logStream.getId(),
                 logStreamServiceName,
                 indexStore,
                 new CommandResponseWriter(sendBufferInjector.getValue()),
+                new ErrorResponseWriter(sendBufferInjector.getValue()),
                 () -> new SubscribedEventWriter(new SingleMessageWriter(sendBufferInjector.getValue())),
                 serviceContext
                 );
@@ -191,30 +192,13 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         return "subscription-service";
     }
 
-    public CompletableFuture<Void> createSubscriptionAsync(TopicSubscription subscription)
-    {
-        final TopicSubscriptionManagementProcessor managementProcessor = managersByLog.get(subscription.getTopicId());
-
-        if (managementProcessor != null)
-        {
-            return managementProcessor.openSubscriptionAsync(subscription);
-        }
-        else
-        {
-            final CompletableFuture<Void> future = new CompletableFuture<>();
-            future.completeExceptionally(new RuntimeException("No subscription management processor registered for topic " + subscription.getTopicId()));
-            return future;
-        }
-
-    }
-
-    public CompletableFuture<Void> closeSubscriptionAsync(int topicId, long subscriptionId)
+    public CompletableFuture<Void> closeSubscriptionAsync(int topicId, long subscriberKey)
     {
         final TopicSubscriptionManagementProcessor managementProcessor = managersByLog.get(topicId);
 
         if (managementProcessor != null)
         {
-            return managementProcessor.closeSubscriptionAsync(subscriptionId);
+            return managementProcessor.closePushProcessorAsync(subscriberKey);
         }
         else
         {
