@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {createAnalyticsRenderer,
+import {createCreateAnalyticsRendererFunction,
         __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/Analytics';
 
 describe('<Analytics>', () => {
@@ -22,6 +22,7 @@ describe('<Analytics>', () => {
   let initialState;
   let gatewayAnalysisState;
   let isBpmnType;
+  let integrator;
 
   beforeEach(() => {
     heatmapData = {
@@ -113,7 +114,12 @@ describe('<Analytics>', () => {
       })
     };
 
-    update = createAnalyticsRenderer({viewer});
+    integrator = {
+      unhover: sinon.spy(),
+      hover: sinon.spy()
+    };
+
+    update = createCreateAnalyticsRendererFunction(integrator)({viewer});
   });
 
   afterEach(() => {

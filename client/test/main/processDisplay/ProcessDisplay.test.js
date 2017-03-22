@@ -7,10 +7,9 @@ import {LOADED_STATE, LOADING_STATE} from 'utils/loading';
 
 describe('<ProcessDisplay>', () => {
   let Controls;
-  let createDiagram;
   let createHeatmapRenderer;
   let createAnalyticsRenderer;
-  let Diagram;
+  let createDiagramControlsIntegrator;
   let Statistics;
   let loadData;
   let node;
@@ -46,11 +45,12 @@ describe('<ProcessDisplay>', () => {
     __set__('createAnalyticsRenderer', createAnalyticsRenderer);
 
     Controls = createMockComponent('Controls');
-    __set__('Controls', Controls);
 
-    Diagram = createMockComponent('Diagram');
-    createDiagram = sinon.stub().returns(Diagram);
-    __set__('createDiagram', createDiagram);
+    createDiagramControlsIntegrator = sinon.stub().returns({
+      Controls,
+      Diagram: createMockComponent('Diagram')
+    });
+    __set__('createDiagramControlsIntegrator', createDiagramControlsIntegrator);
 
     Statistics = createMockComponent('Statistics');
     __set__('Statistics', Statistics);
@@ -62,12 +62,11 @@ describe('<ProcessDisplay>', () => {
   });
 
   afterEach(() => {
-    __ResetDependency__('Controls');
     __ResetDependency__('Statistics');
     __ResetDependency__('createHeatmapDiagram');
-    __ResetDependency__('createDiagram');
     __ResetDependency__('createHeatmapRenderer');
     __ResetDependency__('createAnalyticsRenderer');
+    __ResetDependency__('createDiagramControlsIntegrator');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');
   });

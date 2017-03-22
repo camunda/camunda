@@ -1,15 +1,16 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
-import {createHeatmapRenderer, createAnalyticsRenderer} from './diagram';
-import {Controls, areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
+import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './diagram';
+import {areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
 import {loadData} from './service';
-import {LoadingIndicator, createDiagram} from 'widgets';
+import {LoadingIndicator} from 'widgets';
+import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
 
 export const ProcessDisplay = withSelector(Process);
 
 function Process() {
-  const Diagram = createDiagram();
+  const {Diagram, Controls, integrator} = createDiagramControlsIntegrator();
 
   const template = <div className="process-display">
     <Controls onCriteriaChanged={loadData} getBpmnViewer={Diagram.getViewer} />
@@ -43,7 +44,7 @@ function Process() {
             <Diagram selector="display" createOverlaysRenderer={[createHeatmapRenderer]} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
-            <Diagram selector="display" createOverlaysRenderer={[createAnalyticsRenderer]} />
+            <Diagram selector="display" createOverlaysRenderer={[createCreateAnalyticsRendererFunction(integrator)]} />
           </Case>
           <Default>
             <Diagram selector="display" />

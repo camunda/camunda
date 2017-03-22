@@ -2,9 +2,10 @@ import {expect} from 'chai';
 import sinon from 'sinon';
 import {jsx} from 'view-utils';
 import {mountTemplate, createMockComponent} from 'testHelpers';
-import {Controls, __set__, __ResetDependency__} from 'main/processDisplay/controls/Controls';
+import {createControls, __set__, __ResetDependency__} from 'main/processDisplay/controls/Controls';
 
 describe('<Controls>', () => {
+  let Controls;
   let Filter;
   let CreateFilter;
   let ProcessDefinition;
@@ -28,6 +29,8 @@ describe('<Controls>', () => {
     __set__('getDefinitionId', getDefinitionId);
 
     onCriteriaChanged = sinon.spy();
+
+    Controls = createControls();
 
     ({node, update} = mountTemplate(<Controls onCriteriaChanged={onCriteriaChanged} />));
   });

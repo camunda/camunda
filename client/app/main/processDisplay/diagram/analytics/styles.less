@@ -7,7 +7,14 @@
     cursor: pointer;
   }
 
-  .highlight_selected .djs-outline {
+  .hover-highlight .djs-outline,
+  .hover.highlight .djs-outline {
+    stroke-width: 2px !important;
+    stroke: #276e8c !important;
+    fill: rgba(48, 116, 142, 0.6) !important;
+  }
+
+  .highlight_selected.djs-element .djs-outline {
     stroke-width: 2px !important;
     stroke: rgba(66, 180, 21, 1.0) !important;
     fill: rgba(66, 180, 21, 0.7) !important;
