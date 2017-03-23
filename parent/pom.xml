@@ -45,7 +45,7 @@
       
       <dependency>
         <groupId>org.camunda.tngp</groupId>
-        <artifactId>broker-core-test-client</artifactId>
+        <artifactId>tngp-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 

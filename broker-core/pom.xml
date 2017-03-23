@@ -60,7 +60,7 @@
     
     <dependency>
       <groupId>org.camunda.tngp</groupId>
-      <artifactId>broker-core-test-client</artifactId>
+      <artifactId>tngp-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
