@@ -1,7 +1,6 @@
 package org.camunda.tngp.client.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import java.util.List;
 import java.util.Set;
@@ -61,7 +60,7 @@ public class TopicSubscriptionTest
         brokerRule.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
-        client.topic(0).newSubscription()
+        final TopicSubscription subscription = client.topic(0).newSubscription()
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -75,6 +74,7 @@ public class TopicSubscriptionTest
 
         // then
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
+        assertThat(subscription.isOpen()).isFalse();
         Thread.sleep(1000L); // wait an extra second as we might receive more events if this feature is broken
 
         assertThat(handler.getRecordedEvents()).hasSize(3);
@@ -84,35 +84,6 @@ public class TopicSubscriptionTest
             .collect(Collectors.toSet());
 
         assertThat(eventPositions).containsExactly(1L);
-    }
-
-    @Test
-    public void shouldCloseSubscriptionOnThirdHandlerFailure()
-    {
-        // given
-        brokerRule.stubTopicSubscriptionApi(123L);
-
-        final FailingHandler handler = new FailingHandler();
-        final TopicSubscription subscription = client.topic(0).newSubscription()
-            .startAtHeadOfTopic()
-            .handler(handler)
-            .name(SUBSCRIPTION_NAME)
-            .open();
-
-        final int clientChannelId = brokerRule.getReceivedControlMessageRequests().get(0).getChannelId();
-
-        // when
-        pushTopicEvent(clientChannelId, 123L, 1L, 1L);
-
-        // then
-        TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
-        assertThat(subscription.isOpen()).isFalse();
-
-        final List<ControlMessageRequest> controlMessageRequests = brokerRule.getReceivedControlMessageRequests();
-        assertThat(controlMessageRequests).hasSize(2);
-        assertThat(controlMessageRequests.get(1).messageType()).isEqualTo(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION);
-        assertThat(controlMessageRequests.get(1).getData()).containsExactly(entry("subscriptionId", 123));
-
     }
 
     @Test
