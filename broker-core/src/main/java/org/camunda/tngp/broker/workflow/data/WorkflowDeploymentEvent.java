@@ -14,7 +14,7 @@ public class WorkflowDeploymentEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    private final EnumProperty<WorkflowDeploymentEventType> eventProp = new EnumProperty<>("event", WorkflowDeploymentEventType.class);
+    private final EnumProperty<WorkflowDeploymentEventType> eventTypeProp = new EnumProperty<>("eventType", WorkflowDeploymentEventType.class);
     private final StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(
@@ -27,20 +27,20 @@ public class WorkflowDeploymentEvent extends UnpackedObject
 
     public WorkflowDeploymentEvent()
     {
-        this.declareProperty(eventProp)
+        this.declareProperty(eventTypeProp)
             .declareProperty(bpmnXmlProp)
             .declareProperty(deployedWorkflowsProp)
             .declareProperty(errorMessageProp);
     }
 
-    public WorkflowDeploymentEventType getEvent()
+    public WorkflowDeploymentEventType getEventType()
     {
-        return eventProp.getValue();
+        return eventTypeProp.getValue();
     }
 
-    public WorkflowDeploymentEvent setEvent(WorkflowDeploymentEventType event)
+    public WorkflowDeploymentEvent setEventType(WorkflowDeploymentEventType event)
     {
-        this.eventProp.setValue(event);
+        this.eventTypeProp.setValue(event);
         return this;
     }
 

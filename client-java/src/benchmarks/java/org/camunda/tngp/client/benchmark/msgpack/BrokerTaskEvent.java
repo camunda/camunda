@@ -17,7 +17,7 @@ import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
 public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
 {
-    private final EnumProperty<TaskEventType> eventProp = new EnumProperty<>("event", TaskEventType.class);
+    private final EnumProperty<TaskEventType> eventTypeProp = new EnumProperty<>("eventType", TaskEventType.class);
     private final LongProperty lockTimeProp = new LongProperty("lockTime");
     private final StringProperty typeProp = new StringProperty("type");
     private final PackedProperty headersProp = new PackedProperty("headers");
@@ -42,7 +42,7 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
 
     public BrokerTaskEvent(boolean accessValuesOnDeserialization)
     {
-        objectValue.declareProperty(eventProp)
+        objectValue.declareProperty(eventTypeProp)
             .declareProperty(lockTimeProp)
             .declareProperty(typeProp)
             .declareProperty(headersProp)
@@ -53,7 +53,7 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
 
     public TaskEventType getEventType()
     {
-        return eventProp.getValue();
+        return eventTypeProp.getValue();
     }
 
     public long getLockTime()
@@ -77,10 +77,9 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
     }
 
     @Override
-    public void setEvent(TaskEventType event)
+    public void setEventType(TaskEventType event)
     {
-        eventProp.setValue(event);
-
+        eventTypeProp.setValue(event);
     }
 
     @Override

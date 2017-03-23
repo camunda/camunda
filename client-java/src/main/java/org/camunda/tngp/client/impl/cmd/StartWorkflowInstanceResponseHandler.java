@@ -1,7 +1,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.client.cmd.WorkflowInstance;
+import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 
 public class StartWorkflowInstanceResponseHandler implements ClientResponseHandler<WorkflowInstance>
 {

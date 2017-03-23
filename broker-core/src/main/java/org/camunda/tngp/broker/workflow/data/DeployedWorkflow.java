@@ -19,29 +19,29 @@ import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class DeployedWorkflow extends UnpackedObject
 {
-    private final StringProperty processIdProp = new StringProperty("processId");
+    private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
     private final IntegerProperty versionProp = new IntegerProperty("version");
 
     public DeployedWorkflow()
     {
-        this.declareProperty(processIdProp)
+        this.declareProperty(bpmnProcessIdProp)
             .declareProperty(versionProp);
     }
 
-    public DirectBuffer getProcessId()
+    public DirectBuffer getBpmnProcessId()
     {
-        return processIdProp.getValue();
+        return bpmnProcessIdProp.getValue();
     }
 
-    public DeployedWorkflow setProcessId(String processId)
+    public DeployedWorkflow setBpmnProcessId(String bpmnProcessId)
     {
-        this.processIdProp.setValue(processId);
+        this.bpmnProcessIdProp.setValue(bpmnProcessId);
         return this;
     }
 
-    public DeployedWorkflow setProcessId(DirectBuffer processId, int offset, int length)
+    public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length)
     {
-        this.processIdProp.setValue(processId, offset, length);
+        this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
         return this;
     }
 

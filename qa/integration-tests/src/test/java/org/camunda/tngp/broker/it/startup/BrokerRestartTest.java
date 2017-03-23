@@ -1,21 +1,12 @@
 package org.camunda.tngp.broker.it.startup;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.regex.Pattern;
-
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.process.ServiceTaskTest;
 import org.camunda.tngp.broker.it.taskqueue.TaskSubscriptionTest.RecordingTaskHandler;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
-import org.camunda.tngp.client.cmd.WorkflowInstance;
+import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestFileUtil;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
@@ -25,6 +16,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Ignore
 public class BrokerRestartTest
@@ -75,8 +75,8 @@ public class BrokerRestartTest
         // given
         TestUtil.doRepeatedly(() ->
             client.workflowTopic(0)
-                .start()
-                .workflowDefinitionKey("anId")
+                .create()
+                .bpmnProcessId("anId")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -111,8 +111,8 @@ public class BrokerRestartTest
     {
         // given
         client.workflowTopic(0)
-            .start()
-            .workflowDefinitionKey("anId")
+            .create()
+            .bpmnProcessId("anId")
             .execute();
 
         final LockedTasksBatch taskBatch = TestUtil.doRepeatedly(() ->
@@ -144,8 +144,8 @@ public class BrokerRestartTest
 
         // then
         final WorkflowInstance wfInstance = client.workflowTopic(0)
-            .start()
-            .workflowDefinitionKey("anId")
+            .create()
+            .bpmnProcessId("anId")
             .execute();
 
         assertThat(wfInstance).isNotNull();
@@ -156,20 +156,20 @@ public class BrokerRestartTest
     {
         // given
         final WorkflowInstance wfInstance = client.workflowTopic(0)
-            .start()
-            .workflowDefinitionKey("anId")
+                .create()
+                .bpmnProcessId("anId")
             .execute();
 
         restartBroker();
 
         // when
         final WorkflowInstance wfInstance2 = client.workflowTopic(0)
-            .start()
-            .workflowDefinitionKey("anId")
+                .create()
+                .bpmnProcessId("anId2")
             .execute();
 
         // then
-        assertThat(wfInstance2.getId()).isGreaterThan(wfInstance.getId());
+        assertThat(wfInstance2.getWorkflowInstanceKey()).isGreaterThan(wfInstance.getWorkflowInstanceKey());
     }
 
     @Test

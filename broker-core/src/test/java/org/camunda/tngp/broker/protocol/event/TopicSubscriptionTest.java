@@ -37,7 +37,7 @@ public class TopicSubscriptionTest
             .topicId(0)
             .eventTypeTask()
             .command()
-                .put("event", "CREATE")
+                .put("eventType", "CREATE")
                 .put("type", "foo")
                 .put("retries", 1)
                 .done()
@@ -66,12 +66,12 @@ public class TopicSubscriptionTest
         assertThat(taskEvents.get(0).subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(taskEvents.get(0).position()).isEqualTo(taskKey);
         assertThat(taskEvents.get(0).topicId()).isEqualTo(0);
-        assertThat(taskEvents.get(0).event()).contains(entry("event", "CREATE"));
+        assertThat(taskEvents.get(0).event()).contains(entry("eventType", "CREATE"));
 
         assertThat(taskEvents.get(1).subscriptionId()).isEqualTo(subscriptionId);
         assertThat(taskEvents.get(1).subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(taskEvents.get(1).position()).isGreaterThan(taskKey);
         assertThat(taskEvents.get(1).topicId()).isEqualTo(0);
-        assertThat(taskEvents.get(1).event()).contains(entry("event", "CREATED"));
+        assertThat(taskEvents.get(1).event()).contains(entry("eventType", "CREATED"));
     }
 }

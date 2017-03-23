@@ -136,7 +136,7 @@ public class TopicSubscriptionThrottlingTest
                 .topicId(0)
                 .eventTypeTask()
                 .command()
-                    .put("event", "CREATE")
+                    .put("eventType", "CREATE")
                     .put("type", "theTaskType")
                     .done()
                 .sendAndAwait();

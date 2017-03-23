@@ -8,14 +8,13 @@ import org.camunda.tngp.client.task.impl.MsgPackField;
 public class LockedTaskImpl implements LockedTask
 {
     protected long id;
-    protected Long workflowInstanceId;
+    protected Long workflowInstanceKey;
     protected Instant lockTime;
     protected MsgPackField payload = new MsgPackField();
 
     public void setId(long taskId)
     {
         this.id = taskId;
-
     }
 
     @Override
@@ -36,14 +35,14 @@ public class LockedTaskImpl implements LockedTask
     }
 
     @Override
-    public Long getWorkflowInstanceId()
+    public Long getWorkflowInstanceKey()
     {
-        return workflowInstanceId;
+        return workflowInstanceKey;
     }
 
-    public void setWorkflowInstanceId(Long workflowInstanceId)
+    public void setWorkflowInstanceKey(Long workflowInstanceKey)
     {
-        this.workflowInstanceId = workflowInstanceId;
+        this.workflowInstanceKey = workflowInstanceKey;
     }
 
     @Override

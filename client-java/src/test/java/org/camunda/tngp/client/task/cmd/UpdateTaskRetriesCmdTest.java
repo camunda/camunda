@@ -106,7 +106,7 @@ public class UpdateTaskRetriesCmdTest
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
-        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.UPDATE_RETRIES);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.UPDATE_RETRIES);
         assertThat(taskEvent.getType()).isEqualTo("foo");
         assertThat(taskEvent.getRetries()).isEqualTo(2);
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
@@ -125,7 +125,7 @@ public class UpdateTaskRetriesCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.RETRIES_UPDATED);
+        taskEvent.setEventType(TaskEventType.RETRIES_UPDATED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -152,7 +152,7 @@ public class UpdateTaskRetriesCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.UPDATE_RETRIES_REJECTED);
+        taskEvent.setEventType(TaskEventType.UPDATE_RETRIES_REJECTED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 

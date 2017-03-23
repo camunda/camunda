@@ -35,6 +35,8 @@ public class BpmnTransformerTests
         assertThat(element).isInstanceOf(ExecutableStartEvent.class);
         assertThat(element.getId()).isEqualTo("foo");
         assertThat(element.getName()).isEqualTo("bar");
+
+        assertThat(process.getScopeStartEvent()).isEqualTo(element);
     }
 
     @Test

@@ -6,7 +6,7 @@ public interface LockedTask
 {
     long getId();
 
-    Long getWorkflowInstanceId();
+    Long getWorkflowInstanceKey();
 
     Instant getLockTime();
 

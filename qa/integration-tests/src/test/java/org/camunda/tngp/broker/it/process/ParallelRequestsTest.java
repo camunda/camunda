@@ -12,8 +12,8 @@ import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
-import org.camunda.tngp.client.cmd.WorkflowInstance;
 import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
+import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -64,8 +64,8 @@ public class ParallelRequestsTest
                     () ->
                     TestUtil.doRepeatedly(() ->
                         client.workflowTopic(0)
-                            .start()
-                            .workflowDefinitionId(0)
+                            .create()
+                            .bpmnProcessId("foo")
                             .execute())
                         .until(
                             (wfInstance) -> wfInstance != null,

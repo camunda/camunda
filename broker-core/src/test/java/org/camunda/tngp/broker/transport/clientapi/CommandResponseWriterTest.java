@@ -32,7 +32,7 @@ public class CommandResponseWriterTest
 {
     private static final int TOPIC_ID = 1;
     private static final long KEY = 2L;
-    private static final byte[] EVENT = "event".getBytes();
+    private static final byte[] EVENT = "eventType".getBytes();
 
     private final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 

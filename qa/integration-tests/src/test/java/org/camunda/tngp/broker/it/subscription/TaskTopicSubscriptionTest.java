@@ -72,7 +72,7 @@ public class TaskTopicSubscriptionTest
         TestUtil.waitUntil(() -> handler.numRecordedEvents() == 2);
 
         final TaskEvent event1 = handler.getEvent(0);
-        assertThat(event1.getEvent()).isEqualTo("CREATE");
+        assertThat(event1.getEventType()).isEqualTo("CREATE");
         assertThat(event1.getHeaders()).containsExactly(entry("key", "value"));
         assertThat(event1.getLockExpirationTime()).isNull();
         assertThat(event1.getLockOwner()).isNull();
@@ -81,7 +81,7 @@ public class TaskTopicSubscriptionTest
         assertThat(event1.getPayload()).isEqualTo("{}");
 
         final TaskEvent event2 = handler.getEvent(1);
-        assertThat(event2.getEvent()).isEqualTo("CREATED");
+        assertThat(event2.getEventType()).isEqualTo("CREATED");
     }
 
 

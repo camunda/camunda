@@ -16,20 +16,20 @@ import java.util.Map;
 
 public class JacksonTaskEvent implements TaskEvent
 {
-    private TaskEventType event;
+    private TaskEventType eventType;
     private long lockTime;
     private String type;
     private Map<String, String> headers;
     private byte[] payload;
 
-    public TaskEventType getEvent()
+    public TaskEventType getEventType()
     {
-        return event;
+        return eventType;
     }
 
-    public void setEvent(TaskEventType event)
+    public void setEventType(TaskEventType eventType)
     {
-        this.event = event;
+        this.eventType = eventType;
     }
 
     public Long getLockTime()
@@ -74,7 +74,7 @@ public class JacksonTaskEvent implements TaskEvent
 
     public void reset()
     {
-        event = null;
+        eventType = null;
         lockTime = -1L;
         type = null;
         headers = null;

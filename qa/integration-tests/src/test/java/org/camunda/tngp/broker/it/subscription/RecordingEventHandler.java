@@ -69,7 +69,7 @@ public class RecordingEventHandler implements TopicEventHandler
         assertThat(eventMetadata.getEventKey()).isEqualTo(taskKey);
 
         final JsonNode event = objectMapper.readTree(taskEvent.event.getJson());
-        assertThat(event.get("event").asText()).isEqualTo(eventType);
+        assertThat(event.get("eventType").asText()).isEqualTo(eventType);
     }
 
     public void reset()

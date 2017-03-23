@@ -32,12 +32,12 @@ public interface TaskTopicSubscriptionBuilder
     TaskTopicSubscriptionBuilder taskEventHandler(TaskEventHandler handler);
 
     /**
-     * Defines the position at which to start receiving events from.
+     * Defines the position at which to create receiving events from.
      * A <code>position</code> greater than the current tail position
      * of the topic is equivalent to starting at the tail position. In this case,
      * events with a lower position than the supplied position may be received.
      *
-     * @param position the position in the topic at which to start receiving events from
+     * @param position the position in the topic at which to create receiving events from
      * @return this builder
      */
     TaskTopicSubscriptionBuilder startAtPosition(long position);

@@ -104,7 +104,7 @@ public class CreateTaskCmdTest
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
-        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.CREATE);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.CREATE);
         assertThat(taskEvent.getType()).isEqualTo("foo");
         assertThat(taskEvent.getRetries()).isEqualTo(4);
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
@@ -177,7 +177,7 @@ public class CreateTaskCmdTest
         headers.put("k", "v");
 
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.CREATED);
+        taskEvent.setEventType(TaskEventType.CREATED);
         taskEvent.setType("foo");
         taskEvent.setHeaders(headers);
         taskEvent.setPayload(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));

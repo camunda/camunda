@@ -43,8 +43,8 @@ public class PayloadTest
             .execute();
 
         workflowsClient
-            .start()
-            .workflowDefinitionId(0)
+            .create()
+            .bpmnProcessId("foo")
             .payload("foo")
             .execute();
 

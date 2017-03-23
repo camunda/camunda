@@ -14,17 +14,17 @@ package org.camunda.tngp.client.workflow.cmd.impl;
 
 public class DeployedWorkflow
 {
-    private String processId;
+    private String bpmnProcessId;
     private Integer version;
 
-    public String getProcessId()
+    public String getBpmnProcessId()
     {
-        return processId;
+        return bpmnProcessId;
     }
 
-    public void setProcessId(String processId)
+    public void setBpmnProcessId(String bpmnProcessId)
     {
-        this.processId = processId;
+        this.bpmnProcessId = bpmnProcessId;
     }
 
     public Integer getVersion()
@@ -39,7 +39,7 @@ public class DeployedWorkflow
 
     public void reset()
     {
-        processId = null;
+        bpmnProcessId = null;
         version = null;
     }
 }

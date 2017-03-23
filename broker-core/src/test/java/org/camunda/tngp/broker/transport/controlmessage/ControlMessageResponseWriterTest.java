@@ -30,7 +30,7 @@ import org.junit.Test;
 
 public class ControlMessageResponseWriterTest
 {
-    private static final byte[] DATA = "event".getBytes();
+    private static final byte[] DATA = "eventType".getBytes();
 
     private final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 

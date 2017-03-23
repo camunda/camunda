@@ -115,7 +115,7 @@ public interface POJOFactory
 
     static void populatePOJO(TaskEvent event)
     {
-        event.setEvent(TaskEventType.ABORT_FAILED);
+        event.setEventType(TaskEventType.ABORT_FAILED);
         final HashMap<String, String> headers = new HashMap<>();
         headers.put("key1", "val1");
         headers.put("key2", "val3");

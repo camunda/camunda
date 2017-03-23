@@ -90,7 +90,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     @Override
     protected Object writeCommand()
     {
-        taskEvent.setEvent(TaskEventType.CREATE);
+        taskEvent.setEventType(TaskEventType.CREATE);
         taskEvent.setType(taskType);
         taskEvent.setRetries(retries);
         taskEvent.setHeaders(headers);

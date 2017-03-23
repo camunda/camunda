@@ -4,7 +4,7 @@ public class ExecutableScope extends ExecutableFlowNode
 {
     private ExecutableFlowElement[] flowElements;
 
-    private ExecutableBpmnEvent scopeStartEvent;
+    private ExecutableStartEvent scopeStartEvent;
 
     public ExecutableFlowElement[] getFlowElements()
     {
@@ -31,12 +31,12 @@ public class ExecutableScope extends ExecutableFlowNode
         return null;
     }
 
-    public ExecutableBpmnEvent getScopeStartEvent()
+    public ExecutableStartEvent getScopeStartEvent()
     {
         return scopeStartEvent;
     }
 
-    public void setScopeStartEvent(ExecutableBpmnEvent scopeStartEvent)
+    public void setScopeStartEvent(ExecutableStartEvent scopeStartEvent)
     {
         this.scopeStartEvent = scopeStartEvent;
     }

@@ -99,7 +99,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     @Override
     protected Object writeCommand()
     {
-        taskEvent.setEvent(TaskEventType.COMPLETE);
+        taskEvent.setEventType(TaskEventType.COMPLETE);
         taskEvent.setType(taskType);
         taskEvent.setLockOwner(lockOwner);
         taskEvent.setHeaders(headers);
@@ -125,7 +125,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     {
         long result = -1;
 
-        if (event.getEvent() == TaskEventType.COMPLETED)
+        if (event.getEventType() == TaskEventType.COMPLETED)
         {
             result = key;
         }

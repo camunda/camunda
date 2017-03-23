@@ -104,7 +104,7 @@ public class FailTaskCmdTest
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
-        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.FAIL);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.FAIL);
         assertThat(taskEvent.getType()).isEqualTo("foo");
         assertThat(taskEvent.getRetries()).isEqualTo(2);
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
@@ -154,7 +154,7 @@ public class FailTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.FAILED);
+        taskEvent.setEventType(TaskEventType.FAILED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -181,7 +181,7 @@ public class FailTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.FAIL_REJECTED);
+        taskEvent.setEventType(TaskEventType.FAIL_REJECTED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 

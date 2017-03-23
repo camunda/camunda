@@ -35,13 +35,13 @@ public class CreateTaskTest
     {
         // given
         brokerRule.onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.TASK_EVENT &&
-                "CREATE".equals(ecr.getCommand().get("event")))
+                "CREATE".equals(ecr.getCommand().get("eventType")))
             .respondWith()
             .topicId(0)
             .longKey(123)
             .event()
               .allOf((r) -> r.getCommand())
-              .put("event", "CREATED")
+              .put("eventType", "CREATED")
               .put("headers", new HashMap<>())
               .put("payload", new byte[0])
               .done()

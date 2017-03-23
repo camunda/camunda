@@ -114,7 +114,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     @Override
     protected Object writeCommand()
     {
-        deploymentEvent.setEvent(DeploymentEventType.CREATE_DEPLOYMENT);
+        deploymentEvent.setEventType(DeploymentEventType.CREATE_DEPLOYMENT);
         deploymentEvent.setBpmnXml(resource);
 
         return deploymentEvent;
@@ -137,7 +137,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     @Override
     protected DeploymentResult getResponseValue(long key, DeploymentEvent event)
     {
-        final boolean isDeployed = event.getEvent() == DeploymentEventType.DEPLOYMENT_CREATED;
+        final boolean isDeployed = event.getEventType() == DeploymentEventType.DEPLOYMENT_CREATED;
 
         final DeploymentResultImpl result = new DeploymentResultImpl()
                 .setIsDeployed(isDeployed)
@@ -148,7 +148,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
         {
             final List<WorkflowDefinition> deployedWorkflows = event.getDeployedWorkflows().stream()
                     .map(wf -> new WorkflowDefinitionImpl()
-                            .setProcessId(wf.getProcessId())
+                            .setBpmnProcessId(wf.getBpmnProcessId())
                             .setVersion(wf.getVersion()))
                     .collect(Collectors.toList());
 

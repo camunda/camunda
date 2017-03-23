@@ -16,7 +16,7 @@ import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class ProcessIdRule implements ModelElementValidator<Process>
+public class BpmnProcessIdRule implements ModelElementValidator<Process>
 {
     public static final int PROCESS_ID_MAX_LENGTH = 255;
 
@@ -29,15 +29,15 @@ public class ProcessIdRule implements ModelElementValidator<Process>
     @Override
     public void validate(Process process, ValidationResultCollector validationResultCollector)
     {
-        final String processId = process.getId();
+        final String bpmnProcessId = process.getId();
 
-        if (processId == null || processId.isEmpty())
+        if (bpmnProcessId == null || bpmnProcessId.isEmpty())
         {
-            validationResultCollector.addError(ValidationCodes.NO_PROCESS_ID, "Process Id is required.");
+            validationResultCollector.addError(ValidationCodes.NO_PROCESS_ID, "BPMN process Id is required.");
         }
-        else if (processId.length() > PROCESS_ID_MAX_LENGTH)
+        else if (bpmnProcessId.length() > PROCESS_ID_MAX_LENGTH)
         {
-            validationResultCollector.addError(ValidationCodes.PROCESS_ID_TOO_LONG, "Process Id must not be longer than " + PROCESS_ID_MAX_LENGTH + " chars.");
+            validationResultCollector.addError(ValidationCodes.PROCESS_ID_TOO_LONG, "BPMN process Id must not be longer than " + PROCESS_ID_MAX_LENGTH + " chars.");
         }
     }
 

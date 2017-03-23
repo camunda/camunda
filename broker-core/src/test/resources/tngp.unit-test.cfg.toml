@@ -60,3 +60,10 @@ perWorkerResponsePoolCapacity = 32
 [[task-queue]]
 logName = "default-task-queue-log"
 useTempIndexFile = true
+
+
+# Workflow Queues ------------------------------------------
+
+[[workflow-queue]]
+logName = "default-task-queue-log"
+useTempIndexFile = true

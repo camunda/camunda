@@ -62,6 +62,7 @@ public class DeploymentStreamProcessorTest
     {
         MockitoAnnotations.initMocks(this);
 
+
         streamProcessor = new DeploymentStreamProcessor(mockResponseWriter, mockIndexStore);
 
         final StreamProcessorContext context = new StreamProcessorContext();
@@ -80,11 +81,11 @@ public class DeploymentStreamProcessorTest
 
         // when
         mockController.processEvent(1L, event -> event
-                .setEvent(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
+                .setEventType(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
                 .setBpmnXml(asBuffer(bpmnModelInstance)));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEvent()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
         verify(mockResponseWriter).longKey(1L);
@@ -101,7 +102,7 @@ public class DeploymentStreamProcessorTest
 
         // when
         mockController.processEvent(1L, event -> event
-                .setEvent(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
+                .setEventType(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
                 .setBpmnXml(asBuffer(bpmnModelInstance)));
 
         // then
@@ -114,7 +115,7 @@ public class DeploymentStreamProcessorTest
 
             final DeployedWorkflow deployedWorkflow = deployedWorkflows.next();
 
-            assertThatBuffer(deployedWorkflow.getProcessId()).hasBytes("process".getBytes());
+            assertThatBuffer(deployedWorkflow.getBpmnProcessId()).hasBytes("process".getBytes());
             assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
         }
 
@@ -130,12 +131,12 @@ public class DeploymentStreamProcessorTest
             .done();
 
         mockController.processEvent(1L, event -> event
-                .setEvent(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
+                .setEventType(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
                 .setBpmnXml(asBuffer(bpmnModelInstance)));
 
         // when
         mockController.processEvent(2L, event -> event
-                .setEvent(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
+                .setEventType(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
                 .setBpmnXml(asBuffer(bpmnModelInstance)));
 
         // then
@@ -148,7 +149,7 @@ public class DeploymentStreamProcessorTest
 
             final DeployedWorkflow deployedWorkflow = deployedWorkflows.next();
 
-            assertThatBuffer(deployedWorkflow.getProcessId()).hasBytes("process".getBytes());
+            assertThatBuffer(deployedWorkflow.getBpmnProcessId()).hasBytes("process".getBytes());
             assertThat(deployedWorkflow.getVersion()).isEqualTo(2);
         }
 
@@ -164,11 +165,11 @@ public class DeploymentStreamProcessorTest
 
         // when
         mockController.processEvent(1L, event -> event
-                .setEvent(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
+                .setEventType(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
                 .setBpmnXml(asBuffer(bpmnModelInstance)));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEvent()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
         assertThat(mockController.getLastWrittenEventValue().getErrorMessage().capacity()).isGreaterThan(0);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
@@ -184,11 +185,11 @@ public class DeploymentStreamProcessorTest
 
         // when
         mockController.processEvent(1L, event -> event
-                .setEvent(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
+                .setEventType(WorkflowDeploymentEventType.CREATE_DEPLOYMENT)
                 .setBpmnXml(resource));
 
         // then
-        assertThat(mockController.getLastWrittenEventValue().getEvent()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
+        assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
         assertThat(mockController.getLastWrittenEventValue().getErrorMessage().capacity()).isGreaterThan(0);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 

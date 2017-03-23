@@ -16,13 +16,13 @@ import org.camunda.tngp.client.workflow.cmd.WorkflowDefinition;
 
 public class WorkflowDefinitionImpl implements WorkflowDefinition
 {
-    private String processId;
+    private String bpmnProcessId;
     private int version;
 
     @Override
-    public String getProcessId()
+    public String getBpmnProcessId()
     {
-        return processId;
+        return bpmnProcessId;
     }
 
     @Override
@@ -31,9 +31,9 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition
         return version;
     }
 
-    public WorkflowDefinitionImpl setProcessId(String processId)
+    public WorkflowDefinitionImpl setBpmnProcessId(String bpmnProcessId)
     {
-        this.processId = processId;
+        this.bpmnProcessId = bpmnProcessId;
         return this;
     }
 

@@ -34,7 +34,18 @@ public class ExecuteCommandRequestBuilder
 
     public ExecuteCommandRequestBuilder eventTypeTask()
     {
-        request.eventType(EventType.TASK_EVENT);
+        return eventType(EventType.TASK_EVENT);
+    }
+
+    public ExecuteCommandRequestBuilder eventTypeWorkflow()
+    {
+        return eventType(EventType.WORKFLOW_EVENT);
+    }
+
+
+    public ExecuteCommandRequestBuilder eventType(EventType eventType)
+    {
+        request.eventType(eventType);
         return this;
     }
 

@@ -92,7 +92,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     @Override
     protected Object writeCommand()
     {
-        taskEvent.setEvent(TaskEventType.UPDATE_RETRIES);
+        taskEvent.setEventType(TaskEventType.UPDATE_RETRIES);
         taskEvent.setType(taskType);
         taskEvent.setRetries(retries);
         taskEvent.setHeaders(headers);
@@ -118,7 +118,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     {
         long result = -1;
 
-        if (event.getEvent() == TaskEventType.RETRIES_UPDATED)
+        if (event.getEventType() == TaskEventType.RETRIES_UPDATED)
         {
             result = key;
         }

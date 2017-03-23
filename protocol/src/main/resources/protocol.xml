@@ -31,8 +31,9 @@
         <validValue name="RAFT_EVENT">1</validValue>
         <validValue name="SUBSCRIPTION_EVENT">2</validValue>
         <validValue name="DEPLOYMENT_EVENT">3</validValue>
+      <validValue name="WORKFLOW_EVENT">4</validValue>
     </enum>
-    
+
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">
         <validValue name="ADD_TASK_SUBSCRIPTION">0</validValue>
         <validValue name="REMOVE_TASK_SUBSCRIPTION">1</validValue>
@@ -41,7 +42,7 @@
         <validValue name="REMOVE_TOPIC_SUBSCRIPTION">4</validValue>
         <validValue name="ACKNOWLEDGE_TOPIC_EVENT">5</validValue>
     </enum>
-    
+
     <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
         <validValue name="TASK_SUBSCRIPTION">0</validValue>
         <validValue name="TOPIC_SUBSCRIPTION">1</validValue>
@@ -78,7 +79,7 @@
     <field name="longKey" id="2" type="uint64" />
     <data name="event" id="4" type="varDataEncoding" />
   </sbe:message>
-  
+
   <sbe:message name="SubscribedEvent" id="30">
     <field name="topicId" id="1" type="int32" />
     <field name="position" id="2" type="uint64" />

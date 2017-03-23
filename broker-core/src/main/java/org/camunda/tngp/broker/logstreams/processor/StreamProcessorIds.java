@@ -27,4 +27,6 @@ public class StreamProcessorIds
     public static final int TOPIC_SUBSCRIPTION_ACK_PROCESSOR_ID = 50;
 
     public static final int DEPLOYMENT_PROCESSOR_ID = 60;
+
+    public static final int WORKFLOW_PROCESSOR_ID = 70;
 }

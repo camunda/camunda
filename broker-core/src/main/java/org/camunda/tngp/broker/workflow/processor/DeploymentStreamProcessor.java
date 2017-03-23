@@ -15,17 +15,13 @@ package org.camunda.tngp.broker.workflow.processor;
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static org.camunda.tngp.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
 
-import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
-import org.agrona.DirectBuffer;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -35,8 +31,9 @@ import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEventType;
 import org.camunda.tngp.broker.workflow.graph.WorkflowValidationResultFormatter;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessIdRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
@@ -73,7 +70,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
     {
         this.responseWriter = responseWriter;
 
-        this.index = new Bytes2LongHashIndex(indexStore, Short.MAX_VALUE, 64, ProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR);
+        this.index = new Bytes2LongHashIndex(indexStore, Short.MAX_VALUE, 64, BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR);
         this.indexSnapshotSupport = new HashIndexSnapshotSupport<>(index, indexStore);
     }
 
@@ -97,6 +94,9 @@ public class DeploymentStreamProcessor implements StreamProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
+        sourceEventMetadata.reset();
+        deploymentEvent.reset();
+
         eventKey = event.getLongKey();
 
         event.readMetadata(sourceEventMetadata);
@@ -104,7 +104,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
 
         EventProcessor eventProcessor = null;
 
-        switch (deploymentEvent.getEvent())
+        switch (deploymentEvent.getEventType())
         {
             case CREATE_DEPLOYMENT:
                 eventProcessor = createDeploymentEventProcessor;
@@ -120,9 +120,6 @@ public class DeploymentStreamProcessor implements StreamProcessor
     @Override
     public void afterEvent()
     {
-        sourceEventMetadata.reset();
-        deploymentEvent.reset();
-
         deployedWorkflows.clear();
     }
 
@@ -131,15 +128,14 @@ public class DeploymentStreamProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            final BpmnModelInstance bpmnModelInstance = readModel(deploymentEvent.getBpmnXml());
-
-            if (bpmnModelInstance != null)
+            try
             {
+                final BpmnModelInstance bpmnModelInstance = bpmnTransformer.readModelFromBuffer(deploymentEvent.getBpmnXml());
                 final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
 
                 if (!validationResults.hasErrors())
                 {
-                    deploymentEvent.setEvent(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
+                    deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
 
                     collectDeployedWorkflows(bpmnModelInstance);
                 }
@@ -150,51 +146,35 @@ public class DeploymentStreamProcessor implements StreamProcessor
                     deploymentEvent.setErrorMessage(errorMessage);
                 }
             }
+            catch (Exception e)
+            {
+                final String errorMessage = generateErrorMessage(e);
+                deploymentEvent.setErrorMessage(errorMessage);
+            }
 
             if (deployedWorkflows.isEmpty())
             {
-                deploymentEvent.setEvent(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
+                deploymentEvent.setEventType(WorkflowDeploymentEventType.DEPLOYMENT_REJECTED);
             }
-        }
-
-        protected BpmnModelInstance readModel(final DirectBuffer buffer)
-        {
-            BpmnModelInstance bpmnModelInstance = null;
-
-            final byte[] bytes = new byte[buffer.capacity()];
-            buffer.getBytes(0, bytes);
-
-            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes))
-            {
-                bpmnModelInstance = Bpmn.readModelFromStream(inputStream);
-            }
-            catch (Exception e)
-            {
-                final StringWriter stacktraceWriter = new StringWriter();
-                e.printStackTrace(new PrintWriter(stacktraceWriter));
-
-                deploymentEvent.setErrorMessage("Failed to read BPMN model. " + stacktraceWriter.toString());
-            }
-            return bpmnModelInstance;
         }
 
         protected void collectDeployedWorkflows(final BpmnModelInstance bpmnModelInstance)
         {
-            final Collection<Process> processes = bpmnModelInstance.getModelElementsByType(Process.class);
+            final List<ExecutableProcess> processes = bpmnTransformer.transform(bpmnModelInstance);
             // currently, it can only be one process
-            final Process process = processes.iterator().next();
+            final ExecutableProcess process = processes.get(0);
 
-            final String processId = process.getId();
-            final byte[] processIdKey = processId.getBytes(StandardCharsets.UTF_8);
+            final String bpmnProcessId = process.getId();
+            final byte[] bpmnProcessIdKey = bpmnProcessId.getBytes(StandardCharsets.UTF_8);
 
-            final int latestVersion = (int) index.get(processIdKey, 0L);
+            final int latestVersion = (int) index.get(bpmnProcessIdKey, 0L);
 
             final int version = latestVersion + 1;
 
-            deployedWorkflows.add(new DeployedWorkflow(processIdKey, version));
+            deployedWorkflows.add(new DeployedWorkflow(bpmnProcessIdKey, version));
 
             deploymentEvent.deployedWorkflows().add()
-                .setProcessId(processId)
+                .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version);
         }
 
@@ -205,6 +185,15 @@ public class DeploymentStreamProcessor implements StreamProcessor
             validationResults.write(errorMessageWriter, validationResultFormatter);
 
             return errorMessageWriter.toString();
+        }
+
+        protected String generateErrorMessage(final Exception e)
+        {
+            final StringWriter stacktraceWriter = new StringWriter();
+
+            e.printStackTrace(new PrintWriter(stacktraceWriter));
+
+            return String.format("Failed to deploy BPMN model: %s", stacktraceWriter);
         }
 
         @Override
@@ -242,25 +231,25 @@ public class DeploymentStreamProcessor implements StreamProcessor
             {
                 final DeployedWorkflow deployedWorkflow = deployedWorkflows.get(i);
 
-                index.put(deployedWorkflow.getProcessId(), deployedWorkflow.getVersion());
+                index.put(deployedWorkflow.getBpmnProcessId(), deployedWorkflow.getVersion());
             }
         }
     }
 
     private final class DeployedWorkflow
     {
-        private final byte[] processId;
+        private final byte[] bpmnProcessId;
         private final int version;
 
-        DeployedWorkflow(byte[] processId, int version)
+        DeployedWorkflow(byte[] bpmnProcessId, int version)
         {
-            this.processId = processId;
+            this.bpmnProcessId = bpmnProcessId;
             this.version = version;
         }
 
-        public byte[] getProcessId()
+        public byte[] getBpmnProcessId()
         {
-            return processId;
+            return bpmnProcessId;
         }
 
         public int getVersion()

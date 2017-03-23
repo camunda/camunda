@@ -48,7 +48,7 @@ public class DeployBpmnResourceTest
         assertThat(result.getDeployedWorkflows()).hasSize(1);
 
         final WorkflowDefinition deployedWorkflow = result.getDeployedWorkflows().get(0);
-        assertThat(deployedWorkflow.getProcessId()).isEqualTo("process");
+        assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
         assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
     }
 
@@ -85,7 +85,7 @@ public class DeployBpmnResourceTest
         // then
         assertThat(result.isDeployed()).isFalse();
         assertThat(result.getDeployedWorkflows()).hasSize(0);
-        assertThat(result.getErrorMessage()).contains("no-start-event").contains("The process must contain at least one start event.");
+        assertThat(result.getErrorMessage()).contains("no-start-event").contains("The process must contain at least one none start event.");
     }
 
     @Test

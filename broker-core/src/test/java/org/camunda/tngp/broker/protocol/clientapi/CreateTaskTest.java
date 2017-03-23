@@ -28,7 +28,7 @@ public class CreateTaskTest
             .topicId(0)
             .eventTypeTask()
             .command()
-                .put("event", "CREATE")
+                .put("eventType", "CREATE")
                 .put("type", "theTaskType")
                 .done()
             .sendAndAwait();
@@ -38,7 +38,7 @@ public class CreateTaskTest
         assertThat(resp.topicId()).isEqualTo(0L);
 
         final Map<String, Object> event = resp.getEvent();
-        assertThat(event).containsEntry("event", "CREATED");
+        assertThat(event).containsEntry("eventType", "CREATED");
         assertThat(event).containsEntry("type", "theTaskType");
     }
 }

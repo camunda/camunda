@@ -4,7 +4,7 @@ public class WorkflowQueueCfg
 {
     public String logName;
 
-    public String indexFile;
+    public String indexDirectory;
     public boolean useTempIndexFile = false;
 }
 

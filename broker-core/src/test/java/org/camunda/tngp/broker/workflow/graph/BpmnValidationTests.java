@@ -9,9 +9,10 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.Process;
+import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessIdRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes;
 import org.junit.Test;
 
@@ -88,7 +89,7 @@ public class BpmnValidationTests
     }
 
     @Test
-    public void shouldNotBeValidIfNoProcessId()
+    public void shouldNotBeValidIfNoBpmnProcessId()
     {
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("")
@@ -110,14 +111,14 @@ public class BpmnValidationTests
     }
 
     @Test
-    public void shouldNotBeValidIfProcessIdTooLong()
+    public void shouldNotBeValidIfBpmnProcessIdTooLong()
     {
         // given
-        final StringBuffer processIdBuilder = new StringBuffer();
-        IntStream.range(0, ProcessIdRule.PROCESS_ID_MAX_LENGTH + 1).forEach(i -> processIdBuilder.append("a"));
-        final String processId = processIdBuilder.toString();
+        final StringBuffer bpmnProcessIdBuilder = new StringBuffer();
+        IntStream.range(0, BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH + 1).forEach(i -> bpmnProcessIdBuilder.append("a"));
+        final String bpmnProcessId = bpmnProcessIdBuilder.toString();
 
-        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess(processId)
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent()
             .done();
 
@@ -127,7 +128,7 @@ public class BpmnValidationTests
         // then
         assertThat(validationResults.hasErrors()).isTrue();
         assertThat(validationResults.getErrorCount()).isEqualTo(1);
-        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById(processId)))
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById(bpmnProcessId)))
             .isNotNull()
             .hasSize(1)
             .extracting("code").contains(ValidationCodes.PROCESS_ID_TOO_LONG);
@@ -152,5 +153,46 @@ public class BpmnValidationTests
             .extracting("code").contains(ValidationCodes.NO_START_EVENT);
     }
 
+    @Test
+    public void shouldNotBeValidIfNoNoneStartEvent()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
+                .startEvent("foo")
+                    .message("bar")
+                .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getErrorCount()).isEqualTo(1);
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("process")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.NO_START_EVENT);
+    }
+
+    @Test
+    public void shouldNotBeValidIfMoreThanOneNoneStartEvent()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process").done();
+
+        final Process process = bpmnModelInstance.getModelElementById("process");
+        process.addChildElement(bpmnModelInstance.newInstance(StartEvent.class));
+        process.addChildElement(bpmnModelInstance.newInstance(StartEvent.class));
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getErrorCount()).isEqualTo(1);
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("process")))
+            .isNotNull()
+            .hasSize(1)
+            .extracting("code").contains(ValidationCodes.MORE_THAN_ONE_NONE_START_EVENT);
+    }
 
 }

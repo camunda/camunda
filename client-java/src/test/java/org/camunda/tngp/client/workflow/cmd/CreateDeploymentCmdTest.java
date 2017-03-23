@@ -19,6 +19,7 @@ import static org.mockito.Mockito.mock;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.agrona.concurrent.UnsafeBuffer;
@@ -79,7 +80,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldWriteRequest() throws Exception
+    public void shouldWriteRequest() throws JsonParseException, JsonMappingException, IOException
     {
         // given
         command
@@ -106,12 +107,12 @@ public class CreateDeploymentCmdTest
 
         final DeploymentEvent deploymentEvent = objectMapper.readValue(command, DeploymentEvent.class);
 
-        assertThat(deploymentEvent.getEvent()).isEqualTo(DeploymentEventType.CREATE_DEPLOYMENT);
+        assertThat(deploymentEvent.getEventType()).isEqualTo(DeploymentEventType.CREATE_DEPLOYMENT);
         assertThat(deploymentEvent.getBpmnXml()).isEqualTo("myProcess");
     }
 
     @Test
-    public void shouldDeployBpmnModelInstanceRequest() throws Exception
+    public void shouldDeployBpmnModelInstanceRequest() throws IOException
     {
         // given
         command
@@ -125,7 +126,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployResourceFromStreamRequest() throws Exception
+    public void shouldDeployResourceFromStreamRequest() throws IOException
     {
         // given
         final String bpmnXml = Bpmn.convertToString(BPMN_MODEL_INSTANCE);
@@ -142,7 +143,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployResourceFromFileRequest() throws Exception
+    public void shouldDeployResourceFromFileRequest() throws JsonParseException, JsonMappingException, IOException, URISyntaxException
     {
         // given
         final String filePath = getClass().getResource("/workflow/one-task-process.bpmn").toURI().getPath();
@@ -158,7 +159,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployResourceFromClasspathRequest() throws Exception
+    public void shouldDeployResourceFromClasspathRequest() throws JsonParseException, JsonMappingException, IOException, URISyntaxException
     {
         // given
         command
@@ -184,15 +185,15 @@ public class CreateDeploymentCmdTest
 
         // given
         final DeploymentEvent deploymentEvent = new DeploymentEvent();
-        deploymentEvent.setEvent(DeploymentEventType.DEPLOYMENT_CREATED);
+        deploymentEvent.setEventType(DeploymentEventType.DEPLOYMENT_CREATED);
         deploymentEvent.setErrorMessage("foo");
 
         final DeployedWorkflow deployedWorkflow1 = new DeployedWorkflow();
-        deployedWorkflow1.setProcessId("p1");
+        deployedWorkflow1.setBpmnProcessId("p1");
         deployedWorkflow1.setVersion(1);
 
         final DeployedWorkflow deployedWorkflow2 = new DeployedWorkflow();
-        deployedWorkflow2.setProcessId("p2");
+        deployedWorkflow2.setBpmnProcessId("p2");
         deployedWorkflow2.setVersion(2);
 
         deploymentEvent.setDeployedWorkflows(Arrays.asList(deployedWorkflow1, deployedWorkflow2));
@@ -212,7 +213,7 @@ public class CreateDeploymentCmdTest
         assertThat(deploymentResult.isDeployed()).isTrue();
 
         assertThat(deploymentResult.getDeployedWorkflows()).hasSize(2);
-        assertThat(deploymentResult.getDeployedWorkflows()).extracting("processId").contains("p1", "p2");
+        assertThat(deploymentResult.getDeployedWorkflows()).extracting("bpmnProcessId").contains("p1", "p2");
         assertThat(deploymentResult.getDeployedWorkflows()).extracting("version").contains(1, 2);
     }
 
@@ -223,7 +224,7 @@ public class CreateDeploymentCmdTest
 
         // given
         final DeploymentEvent deploymentEvent = new DeploymentEvent();
-        deploymentEvent.setEvent(DeploymentEventType.DEPLOYMENT_REJECTED);
+        deploymentEvent.setEventType(DeploymentEventType.DEPLOYMENT_REJECTED);
         deploymentEvent.setErrorMessage("error");
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(deploymentEvent);

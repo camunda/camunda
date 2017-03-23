@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.workflow.graph.transformer.validator;
 
 import java.util.Collection;
 
+import org.camunda.bpm.model.bpmn.instance.EventDefinition;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -33,12 +34,31 @@ public class ProcessStartEventRule implements ModelElementValidator<Process>
     {
         final Collection<StartEvent> startEvents = process.getChildElementsByType(StartEvent.class);
 
-        if (startEvents.isEmpty())
-        {
-            validationResultCollector.addError(ValidationCodes.NO_START_EVENT, "The process must contain at least one start event.");
-        }
-        // TODO verify that only one default start event
-    }
+        int noneStartEventCount = 0;
 
+        for (StartEvent startEvent : startEvents)
+        {
+            final Collection<EventDefinition> eventDefinitions = startEvent.getEventDefinitions();
+
+            if (eventDefinitions.isEmpty())
+            {
+                noneStartEventCount += 1;
+            }
+            else
+            {
+                final String errorMessage = String.format("Ignore start event with id '%s'. Event type is not supported.", startEvent.getId());
+                validationResultCollector.addWarning(ValidationCodes.NOT_SUPPORTED_START_EVENT, errorMessage);
+            }
+        }
+
+        if (noneStartEventCount == 0)
+        {
+            validationResultCollector.addError(ValidationCodes.NO_START_EVENT, "The process must contain at least one none start event.");
+        }
+        else if (noneStartEventCount > 1)
+        {
+            validationResultCollector.addError(ValidationCodes.MORE_THAN_ONE_NONE_START_EVENT, "The process must not contain more than one none start event.");
+        }
+    }
 
 }

@@ -41,7 +41,7 @@ public class POJODeserializationContext
         writer.wrap(msgpackBuf, 0);
         writer.writeMapHeader(5);
 
-        writer.writeString(utf8("event"));
+        writer.writeString(utf8("eventType"));
         writer.writeString(utf8(TaskEventType.ABORT_FAILED.toString()));
 
         writer.writeString(utf8("lockTime"));

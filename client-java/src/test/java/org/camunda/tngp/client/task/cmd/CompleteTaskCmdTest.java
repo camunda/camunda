@@ -106,7 +106,7 @@ public class CompleteTaskCmdTest
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
-        assertThat(taskEvent.getEvent()).isEqualTo(TaskEventType.COMPLETE);
+        assertThat(taskEvent.getEventType()).isEqualTo(TaskEventType.COMPLETE);
         assertThat(taskEvent.getType()).isEqualTo("foo");
         assertThat(taskEvent.getHeaders()).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
         assertThat(taskEvent.getPayload()).isEqualTo(msgPackConverter.convertToMsgPack("{ \"bar\" : 4 }"));
@@ -156,7 +156,7 @@ public class CompleteTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.COMPLETED);
+        taskEvent.setEventType(TaskEventType.COMPLETED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
@@ -183,7 +183,7 @@ public class CompleteTaskCmdTest
 
         // given
         final TaskEvent taskEvent = new TaskEvent();
-        taskEvent.setEvent(TaskEventType.COMPLETE_REJECTED);
+        taskEvent.setEventType(TaskEventType.COMPLETE_REJECTED);
 
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 

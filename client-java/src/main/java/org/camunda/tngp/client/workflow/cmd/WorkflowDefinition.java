@@ -1,8 +1,9 @@
 package org.camunda.tngp.client.workflow.cmd;
 
+
 public interface WorkflowDefinition
 {
-    String getProcessId();
+    String getBpmnProcessId();
 
     int getVersion();
 }

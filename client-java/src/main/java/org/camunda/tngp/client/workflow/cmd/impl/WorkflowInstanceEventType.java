@@ -1,5 +1,9 @@
-package org.camunda.tngp.broker.workflow.data;
+package org.camunda.tngp.client.workflow.cmd.impl;
 
+/**
+ * Represents the workflow instance event types,
+ * which are written by the broker.
+ */
 public enum WorkflowInstanceEventType
 {
     CREATE_WORKFLOW_INSTANCE,
@@ -8,3 +12,4 @@ public enum WorkflowInstanceEventType
 
     EVENT_OCCURRED;
 }
+

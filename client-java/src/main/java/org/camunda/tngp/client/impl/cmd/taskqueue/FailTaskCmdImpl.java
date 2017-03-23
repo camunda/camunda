@@ -116,7 +116,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     @Override
     protected Object writeCommand()
     {
-        taskEvent.setEvent(TaskEventType.FAIL);
+        taskEvent.setEventType(TaskEventType.FAIL);
         taskEvent.setType(taskType);
         taskEvent.setLockOwner(lockOwner);
         taskEvent.setRetries(retries);
@@ -145,7 +145,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     {
         long result = -1;
 
-        if (event.getEvent() == TaskEventType.FAILED)
+        if (event.getEventType() == TaskEventType.FAILED)
         {
             result = key;
         }

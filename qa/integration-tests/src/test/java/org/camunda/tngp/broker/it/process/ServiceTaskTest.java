@@ -1,8 +1,5 @@
 package org.camunda.tngp.broker.it.process;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
-
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
@@ -11,13 +8,16 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTask;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
-import org.camunda.tngp.client.cmd.WorkflowInstance;
+import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
 
 @Ignore
 public class ServiceTaskTest
@@ -55,15 +55,13 @@ public class ServiceTaskTest
 
         // when
         final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
-            workflowService
-                .start()
-                .workflowDefinitionId(0)
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
+                workflowService.create().bpmnProcessId("0")
+                        .execute())
+                .until(
+                    (wfInstance) -> wfInstance != null,
+                    (exception) -> !exception.getMessage().contains("(1-3)"));
 
-        assertThat(workflowInstance.getId()).isGreaterThanOrEqualTo(0);
+        assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("0");
     }
 
     @Test
@@ -77,8 +75,8 @@ public class ServiceTaskTest
         // given
         final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
             workflowService
-                .start()
-                .workflowDefinitionId(0)
+                .create()
+                .bpmnProcessId("foo")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -99,7 +97,7 @@ public class ServiceTaskTest
         // then
         assertThat(tasksBatch.getLockedTasks()).hasSize(1);
         assertThat(tasksBatch.getLockedTasks().get(0).getId()).isGreaterThan(0);
-        assertThat(tasksBatch.getLockedTasks().get(0).getWorkflowInstanceId()).isEqualTo(workflowInstance.getId());
+        assertThat(tasksBatch.getLockedTasks().get(0).getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
     }
 
     @Test
@@ -114,8 +112,8 @@ public class ServiceTaskTest
 
         TestUtil.doRepeatedly(() ->
             workflowService
-                .start()
-                .workflowDefinitionId(0)
+                .create()
+                .bpmnProcessId("foo")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -123,8 +121,8 @@ public class ServiceTaskTest
 
         TestUtil.doRepeatedly(() ->
             workflowService
-                .start()
-                .workflowDefinitionId(0)
+                    .create()
+                    .bpmnProcessId("foo")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -158,8 +156,8 @@ public class ServiceTaskTest
 
         TestUtil.doRepeatedly(() ->
             workflowService
-                .start()
-                .workflowDefinitionId(0)
+                    .create()
+                    .bpmnProcessId("foo")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -197,8 +195,8 @@ public class ServiceTaskTest
 
         TestUtil.doRepeatedly(() ->
             workflowService
-                .start()
-                .workflowDefinitionId(0)
+                    .create()
+                    .bpmnProcessId("foo")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,
@@ -260,8 +258,8 @@ public class ServiceTaskTest
         // given
         TestUtil.doRepeatedly(() ->
             workflowService
-                .start()
-                .workflowDefinitionId(0)
+                    .create()
+                    .bpmnProcessId("foo")
                 .execute())
             .until(
                 (wfInstance) -> wfInstance != null,

@@ -436,7 +436,7 @@ public class TaskSubscriptionTest
     protected TopicEventImpl task(long position, long key)
     {
         final Map<String, Object> taskEvent = new HashMap<>();
-        taskEvent.put("event", TaskEventType.LOCKED.toString());
+        taskEvent.put("eventType", TaskEventType.LOCKED.toString());
         taskEvent.put("lockTime", LOCK_TIME);
         taskEvent.put("lockOwner", LOCK_OWNER);
         taskEvent.put("retries", 3);

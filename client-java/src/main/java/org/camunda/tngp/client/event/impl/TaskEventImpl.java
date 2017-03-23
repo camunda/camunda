@@ -10,7 +10,7 @@ import org.camunda.tngp.protocol.Protocol;
 public class TaskEventImpl implements TaskEvent
 {
 
-    protected String event;
+    protected String eventType;
     protected Map<String, String> headers;
     protected Long lockTime;
     protected Integer lockOwner;
@@ -48,14 +48,14 @@ public class TaskEventImpl implements TaskEvent
     }
 
     @Override
-    public String getEvent()
+    public String getEventType()
     {
-        return event;
+        return eventType;
     }
 
-    public void setEvent(String event)
+    public void setEventType(String eventType)
     {
-        this.event = event;
+        this.eventType = eventType;
     }
 
     @Override

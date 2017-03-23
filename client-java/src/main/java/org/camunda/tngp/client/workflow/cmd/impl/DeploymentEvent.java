@@ -16,21 +16,21 @@ import java.util.List;
 
 public class DeploymentEvent
 {
-    private DeploymentEventType event;
+    private DeploymentEventType eventType;
     private String bpmnXml;
 
     private List<DeployedWorkflow> deployedWorkflows;
 
     private String errorMessage;
 
-    public DeploymentEventType getEvent()
+    public DeploymentEventType getEventType()
     {
-        return event;
+        return eventType;
     }
 
-    public void setEvent(DeploymentEventType event)
+    public void setEventType(DeploymentEventType eventType)
     {
-        this.event = event;
+        this.eventType = eventType;
     }
 
     public String getBpmnXml()
@@ -65,7 +65,7 @@ public class DeploymentEvent
 
     public void reset()
     {
-        event = null;
+        eventType = null;
         bpmnXml = null;
         deployedWorkflows = null;
         errorMessage = null;
