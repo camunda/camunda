@@ -12,6 +12,7 @@
  */
 package org.camunda.tngp.servicecontainer.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -124,15 +125,7 @@ public class ServiceStartContextTest
 
     protected void assertCompleted(CompletableFuture<Void> serviceFuture)
     {
-        // NOTE: since the future is of type Void, we cannot use "isCompleted()" since that performed a null check -_-
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-        }
-        catch (Throwable t)
-        {
-            LangUtil.rethrowUnchecked(t);
-        }
+        assertThat(serviceFuture).isCompleted();
     }
 
     class MockService implements Service<Object>

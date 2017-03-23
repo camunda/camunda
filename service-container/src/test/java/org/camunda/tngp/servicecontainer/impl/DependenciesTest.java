@@ -1,5 +1,6 @@
 package org.camunda.tngp.servicecontainer.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
@@ -201,48 +202,16 @@ public class DependenciesTest
 
     protected void assertCompleted(CompletableFuture<Void> serviceFuture)
     {
-        // NOTE: since the future is of type Void, we cannot use "isCompleted()" since that performed a null check -_-
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-        }
-        catch (Throwable t)
-        {
-            LangUtil.rethrowUnchecked(t);
-        }
+        assertThat(serviceFuture).isCompleted();
     }
 
     protected void assertNotCompleted(CompletableFuture<Void> serviceFuture)
     {
-        // NOTE: since the future is of type Void, we cannot use "isCompleted()" since that performed a null check -_-
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-            Assert.fail("Exception expected");
-        }
-        catch (TimeoutException t)
-        {
-            // expected
-        }
-        catch (Throwable t) {
-            LangUtil.rethrowUnchecked(t);
-        }
+        assertThat(serviceFuture).isNotCompleted();
     }
 
     protected void assertFailed(CompletableFuture<Void> serviceFuture)
     {
-        // NOTE: since the future is of type Void, we cannot use "isCompleted()" since that performed a null check -_-
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-            Assert.fail("Exception expected");
-        }
-        catch (TimeoutException | InterruptedException t)
-        {
-            LangUtil.rethrowUnchecked(t);
-        }
-        catch (ExecutionException t) {
-            // expected
-        }
+        assertThat(serviceFuture).hasFailed();
     }
 }

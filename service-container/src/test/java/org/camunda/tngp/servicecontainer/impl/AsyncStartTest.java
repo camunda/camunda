@@ -1,20 +1,16 @@
 package org.camunda.tngp.servicecontainer.impl;
 
-import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.agrona.LangUtil;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -369,50 +365,17 @@ public class AsyncStartTest
 
     protected void assertCompleted(CompletableFuture<Void> serviceFuture)
     {
-        // NOTE: since the future is of type Void, we cannot use "isCompleted()" since that performed a null check -_-
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-        }
-        catch (Throwable t)
-        {
-            LangUtil.rethrowUnchecked(t);
-        }
+        assertThat(serviceFuture).isCompleted();
     }
 
     protected void assertNotCompleted(CompletableFuture<Void> serviceFuture)
     {
-        // NOTE: since the future is of type Void, we cannot use "isCompleted()" since that performed a null check -_-
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-            Assert.fail("Exception expected");
-        }
-        catch (TimeoutException t)
-        {
-            // expected
-        }
-        catch (Throwable t)
-        {
-            LangUtil.rethrowUnchecked(t);
-        }
+        assertThat(serviceFuture).isNotCompleted();
     }
 
     protected void assertFailed(CompletableFuture<Void> serviceFuture)
     {
-        try
-        {
-            serviceFuture.get(1, TimeUnit.NANOSECONDS);
-            Assert.fail("Exception expected");
-        }
-        catch (ExecutionException e)
-        {
-            // expected
-        }
-        catch (Throwable t)
-        {
-            LangUtil.rethrowUnchecked(t);
-        }
+        assertThat(serviceFuture).hasFailed();
     }
 
 }
