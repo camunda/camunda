@@ -66,13 +66,7 @@ public class EmbeddedBrokerRule extends ExternalResource
         try
         {
             // Hack: block until default task queue log has been installed
-            // in the future we should deal with this as follows:
-            // - introduce operations in service container. An operation groups the installation of a number of services in the container
-            //   and succeeds / fails atomically
-            // - install all the system services (excluding log services, streamprocessors ...) as part of the startup operations
-            // - provide client api to create / delete topics and truncate topics
-            // - around the testsuite, create a topic for the tests
-            // - between each test, truncate the topic
+            // How to make it better: https://github.com/camunda-tngp/camunda-tngp/issues/196
             serviceContainer.createService(TestService.NAME, new TestService())
                 .dependency(LogStreamServiceNames.logStreamServiceName("default-task-queue-log"))
                 .dependency(TransportServiceNames.serverSocketBindingReceiveBufferName(TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME))
