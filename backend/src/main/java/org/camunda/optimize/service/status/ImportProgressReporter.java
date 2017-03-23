@@ -29,8 +29,8 @@ public class ImportProgressReporter {
         2 * engineEntityFetcher.fetchProcessDefinitionCount();
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
-      int tempResult = (int) (Math.floor(alreadyImportedCount * 100. / totalEngineEntityCount));
-      return Math.min(tempResult, 100);
+      int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
+      return tempResult;
     } else {
       return 0;
     }

@@ -33,7 +33,7 @@ public class ImportJobExecutor {
     startExecutingImportJobs();
   }
 
-  boolean isActive() {
+  public boolean isActive() {
     return importExecutor.getActiveCount() > 0;
   }
 

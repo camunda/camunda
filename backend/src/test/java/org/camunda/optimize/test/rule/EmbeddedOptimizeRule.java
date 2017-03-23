@@ -134,4 +134,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     camundaOptimize.startImportScheduler();
   }
 
+  public boolean isImporting() {
+    return this.getJobExecutor().isActive();
+  }
 }

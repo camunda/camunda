@@ -61,7 +61,9 @@ public class ImportPerformanceTest {
 
     engineRule.waitForAllProcessesToFinish();
     embeddedOptimizeRule.startImportScheduler();
-    while (embeddedOptimizeRule.getProgressValue() <= 95) {
+    //give importing time to warm up
+    Thread.currentThread().sleep(10000);
+    while (embeddedOptimizeRule.isImporting()) {
       Thread.currentThread().sleep(10000);
       logger.info("current import progress [" + embeddedOptimizeRule.getProgressValue() + "%]");
     }

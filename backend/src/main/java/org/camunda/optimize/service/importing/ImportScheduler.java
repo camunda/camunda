@@ -27,9 +27,6 @@ public class ImportScheduler extends Thread {
   @Autowired
   protected ImportJobExecutor importJobExecutor;
 
-  @Autowired
-  protected ImportProgressReporter importProgressReporter;
-
   protected long backoffCounter = STARTING_BACKOFF;
 
   private boolean enabled = true;
@@ -61,10 +58,6 @@ public class ImportScheduler extends Thread {
       }
       lastReset = LocalDateTime.now();
     }
-  }
-
-  private boolean importMissedEngineEntities() {
-    return !importJobExecutor.isActive() && !importProgressReporter.allEntitiesAreImported();
   }
 
   @Override
