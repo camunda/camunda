@@ -30,7 +30,7 @@ public class ImportProgressReporter {
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
       int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
-      return tempResult;
+      return Math.min(tempResult, 100);
     } else {
       return 0;
     }
