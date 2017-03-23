@@ -4,7 +4,6 @@ import org.camunda.optimize.qa.performance.steps.decorator.TimeMeasurementTestSt
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class PerfTest {
 
