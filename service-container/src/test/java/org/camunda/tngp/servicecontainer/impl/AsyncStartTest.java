@@ -1,11 +1,13 @@
 package org.camunda.tngp.servicecontainer.impl;
 
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.LangUtil;
 import org.camunda.tngp.servicecontainer.Service;
@@ -265,12 +267,75 @@ public class AsyncStartTest
         assertFailed(service2StartFuture);
     }
 
+    @Test
+    public void shouldWaitForAsyncStartWhenRemovedConcurrently()
+    {
+        // given
+        final AsyncStartService service = new AsyncStartService();
+
+        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                .install();
+
+        serviceContainer.doWorkUntilDone();
+
+        // when
+        CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
+        serviceContainer.doWorkUntilDone();
+
+        // then
+        assertNotCompleted(service1StartFuture);
+        assertNotCompleted(removeFuture);
+
+        // AND
+
+        // when
+        service.future.complete(null);
+        serviceContainer.doWorkUntilDone();
+
+        // then
+        assertFailed(service1StartFuture);
+        assertCompleted(removeFuture);
+        assertThat(service.wasStopped).isTrue();
+    }
+
+    @Test
+    public void shouldWaitForAsyncStartWhenRemovedConcurrently_failure()
+    {
+        // given
+        final AsyncStartService service = new AsyncStartService();
+
+        final CompletableFuture<Void> service1StartFuture = serviceContainer.createService(service1Name, service)
+                .install();
+
+        serviceContainer.doWorkUntilDone();
+
+        // when
+        CompletableFuture<Void> removeFuture = serviceContainer.removeService(service1Name);
+        serviceContainer.doWorkUntilDone();
+
+        // then
+        assertNotCompleted(service1StartFuture);
+        assertNotCompleted(removeFuture);
+
+        // AND
+
+        // when
+        service.future.completeExceptionally(new Throwable()); // async start completes exceptionally
+        serviceContainer.doWorkUntilDone();
+
+        // then
+        assertFailed(service1StartFuture);
+        assertCompleted(removeFuture);
+        assertThat(service.wasStopped).isFalse();
+    }
+
 
     static class AsyncStartService implements Service<Object>
     {
         CompletableFuture<Void> future;
         Object value = new Object();
         Runnable action;
+        volatile boolean wasStopped = false;
 
         @Override
         public void start(ServiceStartContext startContext)
@@ -292,7 +357,7 @@ public class AsyncStartTest
         @Override
         public void stop(ServiceStopContext stopContext)
         {
-
+            wasStopped = true;
         }
 
         @Override

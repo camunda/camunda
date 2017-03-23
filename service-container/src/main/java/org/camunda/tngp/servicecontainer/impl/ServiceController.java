@@ -657,21 +657,34 @@ public class ServiceController
         @Override
         public void accept(Object t, Throwable u)
         {
-            if (stopOnCompletion)
+            cmdQueue.add(() ->
             {
-                firstStopState = invokeStopState;
-            }
-            else
-            {
-                if (u == null)
+                if (stopOnCompletion)
                 {
-                    onAsyncStartCompleted();
+                    if (u == null)
+                    {
+                        firstStopState = invokeStopState;
+                    }
+                    else
+                    {
+                        firstStopState = uninjectDependenciesState;
+                    }
+
+                    state = stopDependentsState;
                 }
                 else
                 {
-                    onAsyncStartFailed(u);
+                    if (u == null)
+                    {
+                        onAsyncStartCompleted();
+                    }
+                    else
+                    {
+                        onAsyncStartFailed(u);
+                    }
                 }
-            }
+            });
+            container.idleStrategy.signalWorkAvailable();
         }
 
     }
@@ -793,7 +806,14 @@ public class ServiceController
             operation = ServiceOperation.REMOVING;
         }
 
-        if (firstStopState == null)
+        if (state == awaitAsyncStartState)
+        {
+            // first, we wait for the async start actions to complete.
+            // when complete, the service transitions into the stopDependentsState.
+            // SEE: org.camunda.tngp.servicecontainer.impl.ServiceController.StartContextImpl.accept(Object, Throwable)
+            startContext.stopOnCompletion = true;
+        }
+        else if (firstStopState == null)
         {
             if (state == resolvingState || state == awaitDependenciesState || state == injectDependenciesState)
             {
@@ -802,10 +822,6 @@ public class ServiceController
             else if (state == invokeStartState)
             {
                 firstStopState = uninjectDependenciesState;
-            }
-            else if (state == awaitAsyncStartState)
-            {
-                startContext.stopOnCompletion = true;
             }
             else if (state == updateReferencesState)
             {
