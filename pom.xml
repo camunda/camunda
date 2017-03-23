@@ -25,6 +25,11 @@
     <jackson.version>2.8.5</jackson.version>
     <camunda.engine.version>7.7.0-alpha1</camunda.engine.version>
     <elasticsearch.version>5.2.0</elasticsearch.version>
+    <spring.version>3.2.17.RELEASE</spring.version>
+    <mockito.version>2.2.0</mockito.version>
+    <httpclient.version>4.5.2</httpclient.version>
+    <hamcrest.version>1.3</hamcrest.version>
+    <junit.version>4.12</junit.version>
   </properties>
 
   <profiles>
