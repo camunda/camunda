@@ -9,18 +9,27 @@ public interface TngpClient extends AutoCloseable
 {
     /**
      * Provides APIs specific to topics of type <code>task</code>.
+     *
+     * @param topicId
+     *            the id of the topic
      */
-    TaskTopicClient taskTopic(int id);
+    TaskTopicClient taskTopic(int topicId);
 
     /**
      * Provides APIs specific to topics of type <code>workflow</code>.
+     *
+     * @param topicId
+     *            the id of the topic
      */
-    WorkflowTopicClient workflowTopic(int id);
+    WorkflowTopicClient workflowTopic(int topicId);
 
     /**
      * Provides general purpose APIs for any kind of topic.
+     *
+     * @param topicId
+     *            the id of the topic
      */
-    TopicClient topic(int id);
+    TopicClient topic(int topicId);
 
     TransportConnectionPool getConnectionPool();
 

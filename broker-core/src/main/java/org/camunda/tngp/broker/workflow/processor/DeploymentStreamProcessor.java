@@ -126,7 +126,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         deployedWorkflows.clear();
     }
 
-    class CreateDeploymentEventProcessor implements EventProcessor
+    private final class CreateDeploymentEventProcessor implements EventProcessor
     {
         @Override
         public void processEvent()
@@ -247,7 +247,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         }
     }
 
-    class DeployedWorkflow
+    private final class DeployedWorkflow
     {
         private final byte[] processId;
         private final int version;

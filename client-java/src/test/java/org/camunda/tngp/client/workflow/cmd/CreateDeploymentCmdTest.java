@@ -19,7 +19,6 @@ import static org.mockito.Mockito.mock;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.agrona.concurrent.UnsafeBuffer;
@@ -80,7 +79,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldWriteRequest() throws JsonParseException, JsonMappingException, IOException
+    public void shouldWriteRequest() throws Exception
     {
         // given
         command
@@ -112,7 +111,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployBpmnModelInstanceRequest() throws JsonParseException, JsonMappingException, IOException
+    public void shouldDeployBpmnModelInstanceRequest() throws Exception
     {
         // given
         command
@@ -126,7 +125,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployResourceFromStreamRequest() throws JsonParseException, JsonMappingException, IOException
+    public void shouldDeployResourceFromStreamRequest() throws Exception
     {
         // given
         final String bpmnXml = Bpmn.convertToString(BPMN_MODEL_INSTANCE);
@@ -143,7 +142,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployResourceFromFileRequest() throws JsonParseException, JsonMappingException, IOException, URISyntaxException
+    public void shouldDeployResourceFromFileRequest() throws Exception
     {
         // given
         final String filePath = getClass().getResource("/workflow/one-task-process.bpmn").toURI().getPath();
@@ -159,7 +158,7 @@ public class CreateDeploymentCmdTest
     }
 
     @Test
-    public void shouldDeployResourceFromClasspathRequest() throws JsonParseException, JsonMappingException, IOException, URISyntaxException
+    public void shouldDeployResourceFromClasspathRequest() throws Exception
     {
         // given
         command
