@@ -20,6 +20,8 @@ import static org.hamcrest.number.OrderingComparison.lessThan;
 
 public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestCase {
 
+  private static final long CORRELATION_FACTOR = 10L;
+
   @Test
   public void getActivityCorrelationWithoutFilter() {
     // given
@@ -39,7 +41,7 @@ public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestC
       testResult.getResult(GetActivityCorrelationStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * 4)));
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
   }
 
   @Test
@@ -69,7 +71,7 @@ public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestC
       testResult.getResult(GetActivityCorrelationStep.class);
 
     // then
-    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * 4)));
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
   }
 
 }

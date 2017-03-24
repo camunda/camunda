@@ -77,6 +77,8 @@ public class ConfigurationService {
   private String userValidationEndpoint;
   @Value("${camunda.optimize.engine.name}")
   private String engineName;
+  @Value("${camunda.optimize.engine.enabled}")
+  private boolean engineConnected;
 
 
   @Value("${camunda.optimize.es.analyzer.name}")
@@ -248,5 +250,9 @@ public class ConfigurationService {
 
   public int getEngineReadTimeout() {
     return engineReadTimeout;
+  }
+
+  public boolean isEngineConnected() {
+    return engineConnected;
   }
 }

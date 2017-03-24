@@ -69,6 +69,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   protected void finished(Description description) {
+    stopOptimize();
+  }
+
+  public void stopOptimize() {
     try {
       camundaOptimize.destroy();
       camundaOptimize = null;

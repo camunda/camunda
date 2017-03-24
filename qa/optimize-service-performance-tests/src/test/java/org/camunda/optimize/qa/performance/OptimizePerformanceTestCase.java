@@ -8,9 +8,13 @@ import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,10 +24,12 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public abstract class OptimizePerformanceTestCase {
 
-  private static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  @ClassRule
-  public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  @Rule
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   private static final String PROPERTIES_FILE_NAME;
 
@@ -31,28 +37,19 @@ public abstract class OptimizePerformanceTestCase {
     PROPERTIES_FILE_NAME = "perf-test-config.properties";
   }
 
-  protected static PerfTestConfiguration configuration;
-  private static TransportClient client = null;
+  protected PerfTestConfiguration configuration;
 
-  @BeforeClass
-  public static void init() throws IOException {
+  @Before
+  public void init() throws IOException {
     Properties properties = loadConfigurationProperties();
     configuration = new PerfTestConfiguration(properties);
     authenticate(configuration);
-    elasticSearchRule.init();
-    client = elasticSearchRule.getClient();
-    configuration.setClient(client);
+    configuration.setClient(elasticSearchRule.getClient());
   }
 
-  private static void authenticate(PerfTestConfiguration configuration) {
+  private void authenticate(PerfTestConfiguration configuration) {
     String authorizationToken = embeddedOptimizeRule.authenticateAdmin();
     configuration.setAuthorizationToken(authorizationToken);
-  }
-
-  @AfterClass
-  public static void tearDown() {
-    elasticSearchRule.deleteOptimizeIndex();
-    client.close();
   }
 
   private static Properties loadConfigurationProperties() {

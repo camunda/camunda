@@ -2,6 +2,7 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.service.exceptions.UnauthorizedUserException;
+import org.camunda.optimize.service.util.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +19,13 @@ public class AuthenticationService {
   private AuthenticationProvider engineAuthenticationProvider;
 
   @Autowired
+  private ConfigurationService configurationService;
+
+  @Autowired
   private TokenService tokenService;
 
   public String authenticateUser(CredentialsDto credentials) throws UnauthorizedUserException {
-    if (!engineAuthenticationProvider.authenticate(credentials)) {
+    if (!configurationService.isEngineConnected() || !engineAuthenticationProvider.authenticate(credentials)) {
       // Authenticate the user using the credentials provided
       if (!elasticAuthenticationProvider.authenticate(credentials)) {
         throw new UnauthorizedUserException();
