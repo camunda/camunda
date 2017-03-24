@@ -11,6 +11,7 @@ describe('<Controls>', () => {
   let ProcessDefinition;
   let getDefinitionId;
   let View;
+  let AnalysisSelection;
   let onCriteriaChanged;
   let node;
   let update;
@@ -20,6 +21,7 @@ describe('<Controls>', () => {
     CreateFilter = createMockComponent('CreateFilter');
     ProcessDefinition = createMockComponent('ProcessDefinition');
     View = createMockComponent('View');
+    AnalysisSelection = createMockComponent('AnalysisSelection');
     getDefinitionId = sinon.stub().returnsArg(0);
 
     __set__('Filter', Filter);
@@ -27,6 +29,7 @@ describe('<Controls>', () => {
     __set__('ProcessDefinition', ProcessDefinition);
     __set__('View', View);
     __set__('getDefinitionId', getDefinitionId);
+    __set__('AnalysisSelection', AnalysisSelection);
 
     onCriteriaChanged = sinon.spy();
 
@@ -41,6 +44,7 @@ describe('<Controls>', () => {
     __ResetDependency__('ProcessDefinition');
     __ResetDependency__('View');
     __ResetDependency__('getDefinitionId');
+    __ResetDependency__('AnalysisSelection');
   });
 
   it('should display Filter', () => {
@@ -69,6 +73,30 @@ describe('<Controls>', () => {
 
   it('should display View', () => {
     expect(node).to.contain.text(View.text);
+  });
+
+  it('should not display Analysis selection by default', () => {
+    expect(node).to.not.contain.text(AnalysisSelection.text);
+  });
+
+  describe('Branch Analysis View', () => {
+    let state;
+
+    beforeEach(() => {
+      state = {
+        controls: {
+          view: 'branch_analysis'
+        },
+        display: {
+          selection: {}
+        }
+      };
+      update(state);
+    });
+
+    it('should display the analysis selection', () => {
+      expect(node).to.not.contain.text(AnalysisSelection.text);
+    });
   });
 
   describe('onProcessDefinitionSelected', () => {

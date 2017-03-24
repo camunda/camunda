@@ -143,6 +143,27 @@ describe('<Analytics>', () => {
     expect(hoverElement.calledWith(viewer, diagramElement)).to.eql(true);
   });
 
+  describe('integrator', () => {
+    beforeEach(() => {
+      update(initialState);
+    });
+
+    it('should unhover all previous hovers on hover', () => {
+      viewer.on.firstCall.args[1]({element: diagramElement});
+      expect(integrator.unhover.calledTwice).to.eql(true);
+    });
+
+    it('should call the hover with the appropriate type (EndEvent)', () => {
+      viewer.on.firstCall.args[1]({element: endEvent});
+      expect(integrator.hover.calledWith('EndEvent')).to.eql(true);
+    });
+
+    it('should call the hover with the appropriate type (Gateway)', () => {
+      viewer.on.firstCall.args[1]({element: gateway});
+      expect(integrator.hover.calledWith('Gateway')).to.eql(true);
+    });
+  });
+
   it('should do nothing when a non end event is clicked', () => {
     update(initialState);
     viewer.on.secondCall.args[1]({element: diagramElement});
