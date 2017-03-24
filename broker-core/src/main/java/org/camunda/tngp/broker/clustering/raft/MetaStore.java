@@ -297,6 +297,14 @@ public class MetaStore
             os.write(writeBuffer.byteArray(), 0, length);
             os.flush();
 
+        }
+        catch (IOException e)
+        {
+            LangUtil.rethrowUnchecked(e);
+        }
+
+        try
+        {
             final Path sourcePath = Paths.get(String.format("%s", file));
             final Path backupPath = Paths.get(String.format("%s.bak", file));
             Files.move(backupPath, sourcePath, REPLACE_EXISTING);
