@@ -217,4 +217,27 @@ public class InjectedDependencyTest
         assertThat(serviceContainer.hasService(service2Name)).isFalse();
     }
 
+    @Test
+    public void shouldNotHaveServiceAfterRemovingService()
+    {
+        // given
+        final Injector<Object> injector = new Injector<>();
+        final Injector<Object> anotherInjector = new  Injector<>();
+        serviceContainer.createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .dependency(service2Name, anotherInjector)
+            .install();
+        serviceContainer.createService(service2Name, mockService2)
+            .install();
+        serviceContainer.doWorkUntilDone();
+
+        // when
+        serviceContainer.removeService(service2Name);
+        serviceContainer.doWorkUntilDone();
+
+        // when + then
+        assertThat(serviceContainer.hasService(service1Name)).isFalse();
+        assertThat(serviceContainer.hasService(service2Name)).isFalse();
+    }
+
 }
