@@ -44,7 +44,7 @@ mavenJob(jobName) {
     }
   }
   triggers {
-    scm 'H/5 * * * *'
+    githubPush()
   }
   label 'ubuntu'
   jdk 'jdk-8-latest'
