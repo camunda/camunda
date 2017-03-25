@@ -9,7 +9,7 @@ mkdir -p ${WORKDIR}
 ssh ${REMOTE_USERNAME}@${REMOTE_HOST} "rm -Rf ${WORKDIR} ; mkdir ${WORKDIR}"
 
 # copy distribution to remote
-scp ../../dist/target/tngp-distribution-0.1.0-SNAPSHOT.tar.gz ${REMOTE_USERNAME}@${REMOTE_HOST}:~/${WORKDIR}/tngp-distribution.tar.gz
+scp ../../dist/target/tngp-distribution-1.0.0-SNAPSHOT.tar.gz ${REMOTE_USERNAME}@${REMOTE_HOST}:~/${WORKDIR}/tngp-distribution.tar.gz
 
 # extract and start in background
 # PID is saved in file
