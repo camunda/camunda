@@ -29,6 +29,7 @@ public class AgentGroup implements Agent
         agents = newArray; // volatile store
     }
 
+    @Override
     public int doWork() throws Exception
     {
         final Agent[] agents = this.agents; // volatile load
@@ -37,12 +38,25 @@ public class AgentGroup implements Agent
 
         for (int i = 0; i < agents.length; i++)
         {
-            sum += agents[i].doWork();
+            final Agent agent = agents[i];
+
+            for (int j = 0; j < 50; j++)
+            {
+                final int wc = agent.doWork();
+
+                if (wc == 0)
+                {
+                    break;
+                }
+
+                sum += wc;
+            }
         }
 
         return sum;
     }
 
+    @Override
     public synchronized void onClose()
     {
         for (Agent agent : agents)
@@ -60,6 +74,7 @@ public class AgentGroup implements Agent
         agents = new Agent[0];
     }
 
+    @Override
     public String roleName()
     {
         return roleName;
