@@ -267,7 +267,7 @@ public class MetaStore
                 readBuffer.wrap(new byte[(int) length]);
             }
 
-            try (final InputStream is = new FileInputStream(metaFile))
+            try (InputStream is = new FileInputStream(metaFile))
             {
                 StreamUtil.read(is, readBuffer.byteArray());
             }
@@ -292,7 +292,7 @@ public class MetaStore
         meta.write(writeBuffer, 0);
 
         final File target = new File(String.format("%s.bak", file));
-        try (final OutputStream os = new FileOutputStream(target))
+        try (OutputStream os = new FileOutputStream(target))
         {
             os.write(writeBuffer.byteArray(), 0, length);
             os.flush();

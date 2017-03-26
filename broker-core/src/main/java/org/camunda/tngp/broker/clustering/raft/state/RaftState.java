@@ -71,18 +71,18 @@ public abstract class RaftState
 
     public abstract State state();
 
-    public abstract PollResponse poll(final PollRequest pollRequest);
+    public abstract PollResponse poll(PollRequest pollRequest);
 
-    public abstract VoteResponse vote(final VoteRequest voteRequest);
+    public abstract VoteResponse vote(VoteRequest voteRequest);
 
-    public abstract AppendResponse append(final AppendRequest appendRequest);
+    public abstract AppendResponse append(AppendRequest appendRequest);
 
-    public abstract void appended(final AppendResponse appendResponse);
+    public abstract void appended(AppendResponse appendResponse);
 
-    public abstract ConfigureResponse configure(final ConfigureRequest configureRequest);
+    public abstract ConfigureResponse configure(ConfigureRequest configureRequest);
 
-    public abstract CompletableFuture<JoinResponse> join(final JoinRequest joinRequest);
+    public abstract CompletableFuture<JoinResponse> join(JoinRequest joinRequest);
 
-    public abstract CompletableFuture<LeaveResponse> leave(final LeaveRequest leaveRequest);
+    public abstract CompletableFuture<LeaveResponse> leave(LeaveRequest leaveRequest);
 
 }

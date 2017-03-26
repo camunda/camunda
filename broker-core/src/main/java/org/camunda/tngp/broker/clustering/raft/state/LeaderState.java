@@ -286,6 +286,7 @@ public class LeaderState extends ActiveState
         return super.append(appendRequest);
     }
 
+    @Override
     public void appended(final AppendResponse appendResponse)
     {
         final Member respondedBy = appendResponse.member();
@@ -352,7 +353,8 @@ public class LeaderState extends ActiveState
         configuringMembers.add(configuringMember);
 
         return configurationController.openAsync(configuringMembers)
-                .thenAccept((c) -> {
+                .thenAccept((c) ->
+                {
                     final Configuration configuration = raft.configuration();
                     joinResponse.reset();
                     joinResponse.id(id)
@@ -371,7 +373,8 @@ public class LeaderState extends ActiveState
                         .members(raft.configuration().members());
                     return null;
                 })
-                .<JoinResponse> thenCompose((c) -> {
+                .<JoinResponse> thenCompose((c) ->
+                {
                     return CompletableFuture.completedFuture(joinResponse);
                 });
     }
@@ -410,7 +413,8 @@ public class LeaderState extends ActiveState
         configuringMembers.remove(configuringMember);
 
         return configurationController.openAsync(configuringMembers)
-                .thenAccept((c) -> {
+                .thenAccept((c) ->
+                {
                     final Configuration configuration = raft.configuration();
                     leaveResponse.reset();
                     leaveResponse.id(id)
@@ -429,7 +433,8 @@ public class LeaderState extends ActiveState
                         .members(raft.configuration().members());
                     return null;
                 })
-                .<LeaveResponse> thenCompose((c) -> {
+                .<LeaveResponse> thenCompose((c) ->
+                {
                     return CompletableFuture.completedFuture(leaveResponse);
                 });
     }
@@ -552,6 +557,7 @@ public class LeaderState extends ActiveState
             this.initialEntry = new InitializeEntry();
         }
 
+        @Override
         public void reset()
         {
             initialEntry.reset();

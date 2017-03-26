@@ -164,7 +164,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
             final byte[] bytes = new byte[buffer.capacity()];
             buffer.getBytes(0, bytes);
 
-            try (final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes))
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes))
             {
                 bpmnModelInstance = Bpmn.readModelFromStream(inputStream);
             }

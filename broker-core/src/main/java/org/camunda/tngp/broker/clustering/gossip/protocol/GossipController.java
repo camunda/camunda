@@ -217,7 +217,7 @@ public class GossipController
             final File file = new File(config.peersStorageFile);
             final MessageDigest messageDigest = StreamUtil.getSha1Digest();
 
-            try (final InputStream is = peers.toInputStream())
+            try (InputStream is = peers.toInputStream())
             {
                 StreamUtil.write(file, is, messageDigest);
             }

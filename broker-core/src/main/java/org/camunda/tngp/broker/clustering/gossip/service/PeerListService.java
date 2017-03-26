@@ -86,7 +86,7 @@ public class PeerListService implements Service<PeerList>
         {
             final byte[] data = new byte[(int) file.length()];
 
-            try (final InputStream is = new FileInputStream(file))
+            try (InputStream is = new FileInputStream(file))
             {
                 StreamUtil.read(is, data);
             }
