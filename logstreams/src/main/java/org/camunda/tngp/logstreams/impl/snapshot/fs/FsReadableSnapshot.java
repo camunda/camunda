@@ -75,10 +75,11 @@ public class FsReadableSnapshot implements ReadableSnapshot
     {
         final String checksumLine;
 
-        try (
-            final FileInputStream fileInputStream = new FileInputStream(checksumFile);
-            final InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-            final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        try
+        (
+            FileInputStream fileInputStream = new FileInputStream(checksumFile);
+            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
         )
         {
             checksumLine = bufferedReader.readLine();
