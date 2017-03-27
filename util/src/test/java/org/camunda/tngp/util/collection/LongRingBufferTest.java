@@ -48,7 +48,7 @@ public class LongRingBufferTest
         buffer.addElementToHead(3L);
 
         // when
-        buffer.consumeUntilInclusive(2L);
+        buffer.consumeAscendingUntilInclusive(2L);
 
         // then
         assertThat(buffer.isSaturated()).isFalse();
@@ -65,14 +65,31 @@ public class LongRingBufferTest
         buffer.addElementToHead(3L);
 
         // when
-        buffer.consumeUntilInclusive(3L);
+        buffer.consumeAscendingUntilInclusive(3L);
 
         // then
         assertThat(buffer.isSaturated()).isFalse();
     }
 
     @Test
-    public void shouldConsumeAllElementsIfNotExists()
+    public void shouldConsumeAllLowerElements()
+    {
+        // given
+        final LongRingBuffer buffer = new LongRingBuffer(3);
+
+        buffer.addElementToHead(1L);
+        buffer.addElementToHead(2L);
+        buffer.addElementToHead(5L);
+
+        // when
+        buffer.consumeAscendingUntilInclusive(4L);
+
+        // then
+        assertThat(buffer.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldConsumeAllElementsIfMax()
     {
         // given
         final LongRingBuffer buffer = new LongRingBuffer(3);
@@ -82,10 +99,10 @@ public class LongRingBufferTest
         buffer.addElementToHead(3L);
 
         // when
-        buffer.consumeUntilInclusive(4L);
+        buffer.consumeAscendingUntilInclusive(4L);
 
         // then
-        assertThat(buffer.isSaturated()).isFalse();
+        assertThat(buffer.size()).isEqualTo(0);
     }
 
 
@@ -98,7 +115,7 @@ public class LongRingBufferTest
         buffer.addElementToHead(1L);
         buffer.addElementToHead(2L);
         buffer.addElementToHead(3L);
-        buffer.consumeUntilInclusive(2L);
+        buffer.consumeAscendingUntilInclusive(2L);
 
         // when
         buffer.addElementToHead(4L);

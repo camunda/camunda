@@ -33,21 +33,22 @@ public class LongRingBuffer
     }
 
     /**
-     * Consumes until the given element or the head is reached
+     * Consumes until an element equal or greater than the argument (inclusive) or the head is reached
      *
      * @param element
      */
-    public void consumeUntilInclusive(long element)
+    public void consumeAscendingUntilInclusive(long element)
     {
-        if (size > 0)
+        while (size > 0 && elements[(tail + 1) % elements.length] <= element)
         {
-            do
-            {
-                tail = (tail + 1) % elements.length;
-                size--;
-            }
-            while (size > 0 && elements[tail] != element);
+            tail = (tail + 1) % elements.length;
+            size--;
         }
+    }
+
+    public int size()
+    {
+        return size;
     }
 
     /**
