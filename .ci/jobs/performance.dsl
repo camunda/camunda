@@ -6,7 +6,22 @@ pipelineJob('Performance') {
     }
   }
 
+  jdk '(Default)'
+
   triggers {
     githubPush()
+  }
+
+  publishers {
+    extendedEmail {
+      triggers {
+        statusChanged {
+          sendTo {
+            culprits()
+            requester()
+          }
+        }
+      }
+    }
   }
 }
