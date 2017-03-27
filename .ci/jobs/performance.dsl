@@ -1,7 +1,7 @@
 pipelineJob('Performance') {
   definition {
     cps {
-      script(readFileFromWorkspace('performance.groovy'))
+      script(readFileFromWorkspace('.ci/pipelines/performance.groovy'))
       sandbox()
     }
   }
