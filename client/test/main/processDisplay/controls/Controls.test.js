@@ -8,8 +8,6 @@ describe('<Controls>', () => {
   let Controls;
   let Filter;
   let CreateFilter;
-  let ProcessDefinition;
-  let getDefinitionId;
   let View;
   let AnalysisSelection;
   let onCriteriaChanged;
@@ -19,16 +17,12 @@ describe('<Controls>', () => {
   beforeEach(() => {
     Filter = createMockComponent('Filter');
     CreateFilter = createMockComponent('CreateFilter');
-    ProcessDefinition = createMockComponent('ProcessDefinition');
     View = createMockComponent('View');
     AnalysisSelection = createMockComponent('AnalysisSelection');
-    getDefinitionId = sinon.stub().returnsArg(0);
 
     __set__('Filter', Filter);
     __set__('CreateFilter', CreateFilter);
-    __set__('ProcessDefinition', ProcessDefinition);
     __set__('View', View);
-    __set__('getDefinitionId', getDefinitionId);
     __set__('AnalysisSelection', AnalysisSelection);
 
     onCriteriaChanged = sinon.spy();
@@ -41,10 +35,21 @@ describe('<Controls>', () => {
   afterEach(() => {
     __ResetDependency__('Filter');
     __ResetDependency__('CreateFilter');
-    __ResetDependency__('ProcessDefinition');
     __ResetDependency__('View');
-    __ResetDependency__('getDefinitionId');
     __ResetDependency__('AnalysisSelection');
+  });
+
+  it('should call the change callback initially', () => {
+    update({
+      controls: {
+        view: 'none'
+      },
+      display: {
+        selection: {}
+      }
+    });
+
+    expect(onCriteriaChanged.calledOnce).to.eql(true);
   });
 
   it('should display Filter', () => {
@@ -57,18 +62,6 @@ describe('<Controls>', () => {
 
   it('should pass onFilterAdded to CreateFilter', () => {
     expect(CreateFilter.getAttribute('onFilterAdded')).to.be.ok;
-  });
-
-  it('should display ProcessDefinition', () => {
-    expect(node).to.contain.text(ProcessDefinition.text);
-  });
-
-  it('should pass selector to ProcessDefinition', () => {
-    expect(ProcessDefinition.getAttribute('selector')).to.eql('processDefinition');
-  });
-
-  it('should pass onProcessDefinitionSelected to ProcessDefinition', () => {
-    expect(ProcessDefinition.getAttribute('onProcessDefinitionSelected')).to.be.ok;
   });
 
   it('should display View', () => {
@@ -96,36 +89,6 @@ describe('<Controls>', () => {
 
     it('should display the analysis selection', () => {
       expect(node).to.not.contain.text(AnalysisSelection.text);
-    });
-  });
-
-  describe('onProcessDefinitionSelected', () => {
-    let onProcessDefinitionSelected;
-    let state;
-
-    beforeEach(() => {
-      onProcessDefinitionSelected = ProcessDefinition.getAttribute('onProcessDefinitionSelected');
-      state = {
-        controls: {
-          processDefinition: 'definition',
-          filter: [],
-          view: 'view'
-        }
-      };
-      update(state);
-    });
-
-    it('should create filter object and call onCriteriaChanged with it', () => {
-      onProcessDefinitionSelected();
-
-      expect(onCriteriaChanged.called).to.eql(true, 'expected onFilterChanged to be called');
-      expect(
-        onCriteriaChanged.calledWith({
-          definition: state.controls.processDefinition,
-          query: [],
-          view: 'view'
-        })
-      ).to.eql(true, 'expected onFilterChanged to be called with right filter');
     });
   });
 });

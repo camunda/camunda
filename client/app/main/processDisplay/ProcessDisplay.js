@@ -1,6 +1,5 @@
 import {jsx, withSelector, Match, Case, Default, includes} from 'view-utils';
 import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './diagram';
-import {areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
 import {loadData} from './service';
@@ -17,23 +16,6 @@ function Process() {
     <div className="diagram">
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
-          <Case predicate={isThereNoProcessDefinitions}>
-            <div className="help_screen overlay">
-              <div className="no_definitions">
-                <span className="indicator glyphicon glyphicon-info-sign"></span>
-                <div className="title">No Process Definitions</div>
-                <div className="text"><a href="https://github.com/camunda/camunda-optimize/wiki/Installation-guide">Find out how to import your data</a></div>
-              </div>
-            </div>
-          </Case>
-          <Case predicate={noDefinitionSelected}>
-            <div className="help_screen overlay">
-              <div className="process_definition">
-                <span className="indicator glyphicon glyphicon-chevron-up"></span>
-                <div>Select Process Defintion</div>
-              </div>
-            </div>
-          </Case>
           <Case predicate={hasNoData}>
             <Diagram selector="display" />
             <div className="no-data-indicator">
@@ -70,15 +52,7 @@ function Process() {
   }
 
   function isLoadingSomething({display: {diagram, heatmap}, controls}) {
-    return isLoading(diagram) || isLoading(heatmap) || areControlsLoadingSomething(controls);
-  }
-
-  function isThereNoProcessDefinitions({controls}) {
-    return isDataEmpty(controls);
-  }
-
-  function noDefinitionSelected({controls}) {
-    return !getDefinitionId(controls);
+    return isLoading(diagram) || isLoading(heatmap);
   }
 
   return template;

@@ -1,18 +1,18 @@
 import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction} from './reducer';
 import {dispatchAction} from 'view-utils';
 import {post} from 'http';
-import {getFilterQuery} from 'utils';
+import {getFilterQuery, getDefinitionId} from 'utils';
 import {addNotification} from 'notifications';
 
 export function resetStatisticData() {
   dispatchAction(createResetCorrelationAction());
 }
 
-export function loadStatisticData({endEvent, gateway}, {filter, processDefinition: {selected}}) {
+export function loadStatisticData({endEvent, gateway}, {filter}) {
   const query = {
     end: endEvent,
     gateway,
-    processDefinitionId: selected,
+    processDefinitionId: getDefinitionId(),
     filter: getFilterQuery(filter)
   };
 

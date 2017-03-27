@@ -1,6 +1,5 @@
 import {addChild, addChildren} from './jsx';
 import {runUpdate} from './runUpdate';
-import {updateOnlyWhenStateChanges} from './updateOnlyWhenStateChanges';
 import {DESTROY_EVENT} from './events';
 import {$document} from './dom';
 import {createProxyNode} from './createProxyNode';
@@ -19,25 +18,22 @@ export function Match({didStateChange, children}) {
 
     const proxyNode = createProxyNode(parentNode, startMarker);
 
-    return updateOnlyWhenStateChanges(
-      (state) => {
-        const child = findChild(children, state);
+    return (state) => {
+      const child = findChild(children, state);
 
-        if (child) {
-          if (child !== lastChild) {
-            update = replaceChild(proxyNode, update, eventsBus, child);
-            lastChild = child;
-          }
-
-          runUpdate(update, state);
-        } else {
-          removeChild(proxyNode, update);
-          update = undefined;
-          lastChild = undefined;
+      if (child) {
+        if (child !== lastChild) {
+          update = replaceChild(proxyNode, update, eventsBus, child);
+          lastChild = child;
         }
-      },
-      didStateChange
-    );
+
+        runUpdate(update, state);
+      } else {
+        removeChild(proxyNode, update);
+        update = undefined;
+        lastChild = undefined;
+      }
+    };
   };
 }
 

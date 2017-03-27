@@ -1,3 +1,5 @@
+import {getLastRoute} from 'router';
+
 export function getFilterQuery(filter) {
   return {
     dates: filter.reduce((dates, entry) => {
@@ -19,4 +21,10 @@ export function getFilterQuery(filter) {
       ]);
     }, [])
   };
+}
+
+export function getDefinitionId() {
+  const {params: {definition}} = getLastRoute();
+
+  return definition;
 }

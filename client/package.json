@@ -54,7 +54,7 @@
     "mocha": "^3.2.0",
     "promise-mock": "^1.1.0",
     "request": "^2.79.0",
-    "selenium-standalone": "^6.0.1",
+    "selenium-standalone": "^6.1.0",
     "serve-static": "^1.11.1",
     "shelljs": "^0.7.6",
     "sinon": "2.0.0-pre.4",

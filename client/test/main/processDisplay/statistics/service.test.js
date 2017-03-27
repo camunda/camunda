@@ -13,6 +13,7 @@ describe('Statistics service', () => {
   let dispatchAction;
   let getFilterQuery;
   let addNotification;
+  let getDefinitionId;
 
   let createLoadCorrelationAction;
   let createLoadCorrelationResultAction;
@@ -21,6 +22,7 @@ describe('Statistics service', () => {
   const LOAD_ACTION = 'LOAD_CORRELATION';
   const RESULT_ACTION = 'CORRELATION_RESULT';
   const RESET_ACTION = 'RESET_CORRELATION';
+  const definitionId = 'some_definition_id';
 
   beforeEach(() => {
     dispatchAction = sinon.spy();
@@ -50,6 +52,9 @@ describe('Statistics service', () => {
     getFilterQuery = sinon.stub().returns(filterQuery);
     __set__('getFilterQuery', getFilterQuery);
 
+    getDefinitionId = sinon.stub().returns(definitionId);
+    __set__('getDefinitionId', getDefinitionId);
+
     addNotification = sinon.spy();
     __set__('addNotification', addNotification);
 
@@ -65,6 +70,7 @@ describe('Statistics service', () => {
 
   afterEach(() => {
     __ResetDependency__('dispatchAction');
+    __ResetDependency__('getDefinitionId');
     __ResetDependency__('getFilterQuery');
     __ResetDependency__('addNotification');
     __ResetDependency__('createLoadCorrelationAction');
@@ -92,10 +98,7 @@ describe('Statistics service', () => {
       };
 
       controls = {
-        filter: [],
-        processDefinition: {
-          selected: 'test_process'
-        }
+        filter: []
       };
     });
 
@@ -127,7 +130,7 @@ describe('Statistics service', () => {
 
         expect(end).to.eql('EndEvent_0ip3gsn');
         expect(gateway).to.eql('Gateway_2jc2dh3');
-        expect(processDefinitionId).to.eql('test_process');
+        expect(processDefinitionId).to.eql(definitionId);
         expect(filter.dates).to.exist;
         expect(filter.dates).to.be.empty;
       });

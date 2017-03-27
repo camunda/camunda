@@ -1,4 +1,3 @@
-import {SELECT_PROCESS_DEFINITION} from 'main/processDisplay/controls/processDefinition/reducer';
 import {SET_VIEW} from 'main/processDisplay/controls/view/reducer';
 
 export const SET_ELEMENT = 'SET_ELEMENT';
@@ -12,7 +11,7 @@ export const reducer = (state = {}, action) => {
         [action.elementType]: action.id
       }
     };
-  } else if (action.type === SELECT_PROCESS_DEFINITION || action.type === SET_VIEW) {
+  } else if (action.type === SET_VIEW) {
     return {
       ...state,
       selection: {}

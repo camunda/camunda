@@ -6,4 +6,4 @@ export {
 } from './loading';
 export {onNextUpdate} from './onNextUpdate';
 export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
-export {getFilterQuery} from './query';
+export {getFilterQuery, getDefinitionId} from './query';

@@ -21,13 +21,6 @@ describe('<ProcessDisplay>', () => {
   beforeEach(() => {
     state = {
       controls: {
-        processDefinition: {
-          selected: 'definition',
-          availableProcessDefinitions: {
-            state: LOADED_STATE,
-            data: ['procDef1', 'procDef2']
-          }
-        },
         view: 'none'
       },
       display: {
@@ -78,20 +71,6 @@ describe('<ProcessDisplay>', () => {
 
   it('should pass loadData to Controls component as onCriteriaChanged attribute', () => {
     expect(Controls.getAttribute('onCriteriaChanged')).to.eql(loadData);
-  });
-
-  it('should display a no process definitions hint', () => {
-    state.controls.processDefinition.availableProcessDefinitions.data.length = 0;
-    update(state);
-
-    expect(node.querySelector('.help_screen .no_definitions')).to.not.be.null;
-  });
-
-  it('should display a select process definition hint', () => {
-    state.controls.processDefinition.selected = null;
-    update(state);
-
-    expect(node.querySelector('.help_screen .process_definition')).to.not.be.null;
   });
 
   it('should display a loading indicator while loading', () => {

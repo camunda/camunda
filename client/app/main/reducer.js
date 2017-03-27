@@ -15,5 +15,6 @@ export const reducer = combineReducers({
   loginForm,
   notifications,
   version: (state = 'v1.0.0') => state,
-  processDisplay: createDynamicReducer('processDisplay')
+  processDisplay: createDynamicReducer('processDisplay'),
+  processSelection: createDynamicReducer('processSelection')
 });

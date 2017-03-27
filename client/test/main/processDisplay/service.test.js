@@ -23,6 +23,7 @@ describe('ProcessDisplay service', () => {
   let filter;
   let get;
   let post;
+  let getDefinitionId;
 
   setupPromiseMocking();
 
@@ -50,6 +51,9 @@ describe('ProcessDisplay service', () => {
 
     createLoadingHeatmapResultAction = sinon.stub().returns(STOP_ACTION_HEATMAP);
     __set__('createLoadingHeatmapResultAction', createLoadingHeatmapResultAction);
+
+    getDefinitionId = sinon.stub().returns(processId);
+    __set__('getDefinitionId', getDefinitionId);
   });
 
   afterEach(() => {
@@ -58,6 +62,7 @@ describe('ProcessDisplay service', () => {
     __ResetDependency__('createLoadingDiagramResultAction');
     __ResetDependency__('createLoadingHeatmapAction');
     __ResetDependency__('createLoadingHeatmapResultAction');
+    __ResetDependency__('getDefinitionId');
   });
 
   describe('loadData', () => {
@@ -102,21 +107,11 @@ describe('ProcessDisplay service', () => {
       expect(loadHeatmap.callCount).to.eql(2, 'expected heatmap to be loaded');
     });
 
-    it('should not load heatmap and diagram if filter is not valid', () => {
-      loadData({
-        query: []
-      });
-
-      expect(loadHeatmap.called).to.eql(false, 'expected heatmap not to be loaded');
-      expect(loadDiagram.called).to.eql(false, 'expected diagram not to be loaded');
-    });
-
     it('should load heatmap and diagram with correct process definition and filter', () => {
       const start = 'start-date';
       const end = 'end-date';
-      const definition = 'some-def-id';
       const expectedQuery = {
-        processDefinitionId: definition,
+        processDefinitionId: processId,
         filter: {
           dates: [
             {
@@ -138,7 +133,6 @@ describe('ProcessDisplay service', () => {
       };
 
       loadData({
-        definition,
         query: [
           {
             data: {

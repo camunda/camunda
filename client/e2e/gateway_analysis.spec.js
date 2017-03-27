@@ -5,7 +5,7 @@ describe('Gateway Analysis', () => {
     browser.localStorage('DELETE');
   });
 
-  it.only('should open the analysis diagram section', () => {
+  it('should open the analysis diagram section', () => {
     // LOGIN
     browser.url('/');
     browser.waitForEnabled('input[type="text"]');
@@ -14,14 +14,15 @@ describe('Gateway Analysis', () => {
     browser.setValue('input[type="password"]', 'admin');
     browser.click('button[type="submit"]');
 
-    browser.waitForExist('.processDefinitionSelect option[value]:not([value=""])');
+    browser.waitForExist('.process-definition-card*=Process_1');
+    browser.click('.process-definition-card*=Process_1');
 
     // SELECT VIEW
+    browser.waitForExist('.dropdown*=None');
     browser.click('.dropdown*=None');
     browser.click('a*=Branch');
 
     // SELECT PROCESS DEFINITION
-    browser.selectByVisibleText('.processDefinitionSelect', 'Process_1');
     const endEventSelector = '.djs-element.djs-shape.highlight[data-element-id*="EndEvent"]';
     const gatewaySelector = '.djs-element.djs-shape.highlight[data-element-id*="Gateway"]';
 

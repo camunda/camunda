@@ -2,7 +2,7 @@ import {dispatchAction, includes} from 'view-utils';
 import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
-import {getFilterQuery} from 'utils';
+import {getFilterQuery, getDefinitionId} from 'utils';
 
 const viewHeatmapEndpoints = {
   branch_analysis: 'frequency',
@@ -10,9 +10,9 @@ const viewHeatmapEndpoints = {
   duration: 'duration'
 };
 
-export function loadData({definition, query, view}) {
+export function loadData({query, view}) {
   const params = {
-    processDefinitionId: definition,
+    processDefinitionId: getDefinitionId(),
     filter: getFilterQuery(query)
   };
 

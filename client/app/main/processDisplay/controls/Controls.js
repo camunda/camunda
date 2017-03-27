@@ -1,6 +1,5 @@
 import {jsx, createStateComponent, withSelector, Match, Case, Scope} from 'view-utils';
 import {Filter, CreateFilter} from './filter';
-import {ProcessDefinition, getDefinitionId} from './processDefinition';
 import {createAnalysisSelection} from './analysisSelection';
 import {View} from './view';
 
@@ -10,14 +9,13 @@ export function createControls(analysisControlIntegrator) {
   const Controls = withSelector(({onCriteriaChanged, getBpmnViewer}) => {
     const State = createStateComponent();
 
-    return <State>
+    const template = <State>
       <div className="controls row">
         <div className="col-xs-12">
           <form>
             <table>
               <tbody>
                 <tr>
-                  <td><label>Process Definition</label></td>
                   <td><label>View</label></td>
                   <td colspan="2"><label>Filter</label></td>
                   <Match>
@@ -29,7 +27,6 @@ export function createControls(analysisControlIntegrator) {
                 </tr>
               <tr>
                 <Scope selector="controls">
-                  <ProcessDefinition selector="processDefinition" onProcessDefinitionSelected={onControlsChange} />
                   <View onViewChanged={onControlsChange}/>
                   <Filter onFilterDeleted={onControlsChange} />
                   <CreateFilter onFilterAdded={onControlsChange} />
@@ -73,14 +70,25 @@ export function createControls(analysisControlIntegrator) {
     }
 
     function onControlsChange() {
-      const {controls: {processDefinition, filter: query, view}} = State.getState();
+      const {controls: {filter: query, view}} = State.getState();
 
       onCriteriaChanged({
-        definition: getDefinitionId(processDefinition),
         query,
         view
       });
     }
+
+    return (parentNode, eventsBus) => {
+      const templateUpdate = template(parentNode, eventsBus);
+      let initialChangeTriggered = false;
+
+      return [templateUpdate, () => {
+        if (!initialChangeTriggered) {
+          initialChangeTriggered = true;
+          onControlsChange();
+        }
+      }];
+    };
   });
 
   Controls.nodes = AnalysisSelection.nodes;

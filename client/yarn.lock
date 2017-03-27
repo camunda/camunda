@@ -4550,9 +4550,9 @@ sax@~0.6.0:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/sax/-/sax-0.6.1.tgz#563b19c7c1de892e09bfc4f2fc30e3c27f0952b9"
 
-selenium-standalone@^6.0.1:
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/selenium-standalone/-/selenium-standalone-6.0.1.tgz#60522106595e09d67e50559d65de262a61a2f184"
+selenium-standalone@^6.1.0:
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/selenium-standalone/-/selenium-standalone-6.1.0.tgz#b20a75e414b57bde3af0788c169c4dd0d9234b10"
   dependencies:
     async "^2.1.4"
     commander "^2.9.0"

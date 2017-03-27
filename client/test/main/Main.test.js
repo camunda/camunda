@@ -82,6 +82,28 @@ describe('<Main>', () => {
     expect(node).to.contain.text(DynamicLoader.text);
     expect(DynamicLoader.calledWith({
       children: [],
+      module: 'processSelection',
+      selector: 'processSelection'
+    })).to.eql(true, 'expected DynamicLoader to be created with processSelection module');
+  });
+
+  it('should the processDisplay view', () => {
+    update({
+      router: {
+        route: {
+          name: 'processDisplay',
+          params: {definition: 'foo'}
+        }
+      },
+      login: {
+        user: 's',
+        token: 's'
+      }
+    });
+
+    expect(node).to.contain.text(DynamicLoader.text);
+    expect(DynamicLoader.calledWith({
+      children: [],
       module: 'processDisplay',
       selector: 'processDisplay'
     })).to.eql(true, 'expected DynamicLoader to be created with processDisplay module');

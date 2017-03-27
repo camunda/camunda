@@ -9,3 +9,13 @@ addModuleLoader('processDisplay', () => {
     });
   });
 });
+
+addModuleLoader('processSelection', () => {
+  return new Promise(resolve => {
+    require.ensure(['./processSelection'], () => {
+      const {ProcessSelection, reducer} = require('./processSelection');
+
+      resolve({component: ProcessSelection, reducer: reducer});
+    });
+  });
+});

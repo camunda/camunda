@@ -8,6 +8,10 @@ router.addRoutes(
     url: '/login?name=:name&params=:params'
   },
   {
+    name: 'processDisplay',
+    url: '/processDisplay?definition=:definition'
+  },
+  {
     name: 'default',
     url: '/',
     test: url => (/\/$|\/index.html$/g).test(url) && {}

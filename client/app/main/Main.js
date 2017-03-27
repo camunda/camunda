@@ -19,6 +19,11 @@ export function Main() {
             </RouteView>
             <RouteView name="default">
               <Authenticated routeName="login">
+                <DynamicLoader module="processSelection" selector="processSelection" />
+              </Authenticated>
+            </RouteView>
+            <RouteView name="processDisplay">
+              <Authenticated routeName="login">
                 <DynamicLoader module="processDisplay" selector="processDisplay" />
               </Authenticated>
             </RouteView>

@@ -1,0 +1,47 @@
+.process-selection {
+  height: ~"calc(100vh - @{header-height} - @{footer-height})";
+
+  padding-top: 15px;
+  padding-left: 15px;
+  padding-right: 15px;
+
+  .bjs-powered-by {
+    display: none !important;
+  }
+
+  .process-definition-card {
+    border: 1px solid darkgray;
+    cursor: pointer;
+
+    .diagram {
+      height: 200px;
+    }
+
+    .name {
+      height: 50px;
+      border-top: 1px solid gray;
+      line-height: 50px;
+      background-color: #F1F1F1;
+      padding-left: 1em;
+      font-size: 1.2em;
+    }
+
+  }
+
+  .no-definitions {
+    text-align: center;
+    padding-top: 10rem;
+
+    .indicator {
+      font-size: 7rem;
+    }
+
+    .title {
+      font-size: 4rem;
+    }
+
+    .text {
+      font-size: 1.5rem;
+    }
+  }
+}
