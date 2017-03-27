@@ -1,8 +1,29 @@
+def githubOrga = 'camunda'
+def gitRepository = 'camunda-optimize'
+def gitBranch = 'master'
+
 pipelineJob('Performance') {
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/performance.groovy'))
       sandbox()
+    }
+  }
+
+  scm {
+    git {
+      remote {
+        github "${githubOrga}/${gitRepository}", 'ssh'
+        credentials 'camunda-jenkins-github-ssh'
+      }
+      branch gitBranch
+      extensions {
+        localBranch gitBranch
+        pathRestriction {
+          includedRegions(dslScriptPathToMonitor)
+          excludedRegions('')
+        }
+      }
     }
   }
 
