@@ -9,7 +9,7 @@ pipelineJob('Performance') {
   jdk '(Default)'
 
   triggers {
-    githubPush()
+    upstream('camunda-optimize/master', 'SUCCESS')
   }
 
   publishers {
