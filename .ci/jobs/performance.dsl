@@ -19,10 +19,6 @@ pipelineJob('Performance') {
       branch gitBranch
       extensions {
         localBranch gitBranch
-        pathRestriction {
-          includedRegions(dslScriptPathToMonitor)
-          excludedRegions('')
-        }
       }
     }
   }
