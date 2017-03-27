@@ -4,7 +4,6 @@
 
 pipeline {
   agent { label 'optimize-build' }
-  displayName 'Performance'
   // Environment
   environment {
     DISPLAY = ":0"
