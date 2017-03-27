@@ -5,4 +5,8 @@ pipelineJob('Performance') {
       sandbox()
     }
   }
+
+  triggers {
+    githubPush()
+  }
 }
