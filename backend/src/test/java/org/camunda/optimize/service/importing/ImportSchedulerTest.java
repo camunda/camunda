@@ -140,7 +140,7 @@ public class ImportSchedulerTest {
     long toSleep = LocalDateTime.now().until(expectedReset, ChronoUnit.MILLIS);
     
     //when
-    Thread.currentThread().sleep(toSleep + 1);
+    Thread.currentThread().sleep(Math.max(toSleep,1000L));
     importScheduler.checkAndResetImportIndexing();
 
     // then
