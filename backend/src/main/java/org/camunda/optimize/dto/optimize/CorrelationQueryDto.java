@@ -5,8 +5,8 @@ package org.camunda.optimize.dto.optimize;
  */
 public class CorrelationQueryDto extends HeatMapQueryDto {
 
-  private String end;
-  private String gateway;
+  protected String end;
+  protected String gateway;
 
   public String getEnd() {
     return end;

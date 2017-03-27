@@ -4,8 +4,8 @@ package org.camunda.optimize.dto.engine;
  * @author Askar Akhmerov
  */
 public class CredentialsDto {
-  private String username;
-  private String password;
+  protected String username;
+  protected String password;
 
   public String getUsername() {
     return username;

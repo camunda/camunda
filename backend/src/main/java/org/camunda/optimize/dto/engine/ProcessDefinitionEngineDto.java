@@ -1,7 +1,5 @@
 package org.camunda.optimize.dto.engine;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.io.Serializable;
 
 public class ProcessDefinitionEngineDto implements Serializable,EngineDto {

@@ -7,10 +7,10 @@ import java.util.Map;
  * @author Askar Akhmerov
  */
 public class GatewaySplitDto {
-  private String endEvent;
-  private Long total;
+  protected String endEvent;
+  protected Long total;
 
-  private Map<String, CorrelationOutcomeDto> followingNodes = new HashMap<>();
+  protected Map<String, CorrelationOutcomeDto> followingNodes = new HashMap<>();
 
   public String getEndEvent() {
     return endEvent;

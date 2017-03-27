@@ -8,19 +8,19 @@ import java.util.Date;
  */
 public class EventDto implements Serializable,OptimizeDto {
 
-  private String id;
-  private String activityId;
-  private String activityInstanceId;
-  private Date timestamp;
-  private String processDefinitionKey;
-  private String processDefinitionId;
-  private String processInstanceId;
-  private Date startDate;
-  private Date endDate;
-  private Date processInstanceStartDate;
-  private Date processInstanceEndDate;
-  private Long durationInMs;
-  private String activityType;
+  protected String id;
+  protected String activityId;
+  protected String activityInstanceId;
+  protected Date timestamp;
+  protected String processDefinitionKey;
+  protected String processDefinitionId;
+  protected String processInstanceId;
+  protected Date startDate;
+  protected Date endDate;
+  protected Date processInstanceStartDate;
+  protected Date processInstanceEndDate;
+  protected Long durationInMs;
+  protected String activityType;
 
   public String getId() {
     return id;

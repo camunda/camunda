@@ -5,6 +5,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.CountDto;
+import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -164,11 +165,11 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String token = embeddedOptimizeRule.authenticateAdmin();
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
+    List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
+        .get(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
     assertThat(definitions.size(),is(2));
 
     String id = null;

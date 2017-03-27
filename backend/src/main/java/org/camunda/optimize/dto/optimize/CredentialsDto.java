@@ -7,8 +7,8 @@ import java.io.Serializable;
  */
 public class CredentialsDto implements Serializable {
 
-  private String username;
-  private String password;
+  protected String username;
+  protected String password;
 
   public String getUsername() {
     return username;

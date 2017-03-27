@@ -1,7 +1,5 @@
 package org.camunda.optimize.dto.optimize;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.io.Serializable;
 
 public class ProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
@@ -33,5 +31,4 @@ public class ProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
   public void setName(String name) {
     this.name = name;
   }
-
 }

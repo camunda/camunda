@@ -2,8 +2,8 @@ package org.camunda.optimize.dto.optimize;
 
 public class ConnectionStatusDto {
 
-  private boolean isConnectedToEngine;
-  private boolean isConnectedToElasticsearch;
+  protected boolean isConnectedToEngine;
+  protected boolean isConnectedToElasticsearch;
 
   public boolean isConnectedToEngine() {
     return isConnectedToEngine;

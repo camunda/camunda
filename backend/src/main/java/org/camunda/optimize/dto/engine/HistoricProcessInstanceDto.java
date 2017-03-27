@@ -7,22 +7,22 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HistoricProcessInstanceDto implements EngineDto {
 
-  private String id;
-  private String businessKey;
-  private String processDefinitionId;
-  private String processDefinitionKey;
-  private String processDefinitionName;
-  private Date startTime;
-  private Date endTime;
-  private Long durationInMillis;
-  private String startUserId;
-  private String startActivityId;
-  private String deleteReason;
-  private String superProcessInstanceId;
-  private String superCaseInstanceId;
-  private String caseInstanceId;
-  private String tenantId;
-  private String state;
+  protected String id;
+  protected String businessKey;
+  protected String processDefinitionId;
+  protected String processDefinitionKey;
+  protected String processDefinitionName;
+  protected Date startTime;
+  protected Date endTime;
+  protected Long durationInMillis;
+  protected String startUserId;
+  protected String startActivityId;
+  protected String deleteReason;
+  protected String superProcessInstanceId;
+  protected String superCaseInstanceId;
+  protected String caseInstanceId;
+  protected String tenantId;
+  protected String state;
 
   @Override
   public String getId() {

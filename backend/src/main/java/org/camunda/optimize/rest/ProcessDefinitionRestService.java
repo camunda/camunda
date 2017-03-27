@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
@@ -10,12 +11,13 @@ import org.camunda.optimize.service.es.reader.CorrelationReader;
 import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
 import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.List;
+import java.util.Collection;
 
 @Secured
 @Path("/process-definition")
@@ -36,8 +38,9 @@ public class ProcessDefinitionRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions() {
-    return processDefinitionReader.getProcessDefinitions();
+  public Collection<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitionsWithXml(
+      @QueryParam("includeXml") boolean includeXml) throws OptimizeException {
+    return processDefinitionReader.getProcessDefinitions(includeXml);
   }
 
   @GET

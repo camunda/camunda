@@ -4,9 +4,9 @@ package org.camunda.optimize.dto.optimize;
  * @author Askar Akhmerov
  */
 public class CorrelationOutcomeDto {
-  private Long activitiesReached;
-  private Long activityCount;
-  private String activityId;
+  protected Long activitiesReached;
+  protected Long activityCount;
+  protected String activityId;
 
   public Long getActivitiesReached() {
     return activitiesReached;

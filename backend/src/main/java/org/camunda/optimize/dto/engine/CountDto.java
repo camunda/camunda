@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.engine;
 
 public class CountDto {
 
-  private int count;
+  protected int count;
 
   public int getCount() {
     return count;

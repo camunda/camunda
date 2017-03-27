@@ -4,25 +4,25 @@ import java.util.Date;
 
 public class HistoricActivityInstanceEngineDto implements EngineDto {
 
-  private String id;
-  private String parentActivityInstanceId;
-  private String activityId;
-  private String activityName;
-  private String activityType;
-  private String processDefinitionKey;
-  private String processDefinitionId;
-  private String processInstanceId;
-  private String executionId;
-  private String taskId;
-  private String calledProcessInstanceId;
-  private String calledCaseInstanceId;
-  private String assignee;
-  private Date startTime;
-  private Date endTime;
-  private Long durationInMillis;
-  private Boolean canceled;
-  private Boolean completeScope;
-  private String tenantId;
+  protected String id;
+  protected String parentActivityInstanceId;
+  protected String activityId;
+  protected String activityName;
+  protected String activityType;
+  protected String processDefinitionKey;
+  protected String processDefinitionId;
+  protected String processInstanceId;
+  protected String executionId;
+  protected String taskId;
+  protected String calledProcessInstanceId;
+  protected String calledCaseInstanceId;
+  protected String assignee;
+  protected Date startTime;
+  protected Date endTime;
+  protected Long durationInMillis;
+  protected Boolean canceled;
+  protected Boolean completeScope;
+  protected String tenantId;
 
   public String getId() {
     return id;

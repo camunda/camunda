@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
@@ -65,8 +66,8 @@ public class ProcessEngineImportRestServiceIT {
 
     //then
     assertThat(response.getStatus(),is(200));
-    List<ProcessDefinitionEngineDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>(){});
+    List<ExtendedProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
 
     assertThat(definitions,is(notNullValue()));
     assertThat(definitions.size(), is(1));

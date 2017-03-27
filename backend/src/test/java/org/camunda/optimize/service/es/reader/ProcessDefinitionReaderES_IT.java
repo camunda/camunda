@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -48,7 +49,7 @@ public class ProcessDefinitionReaderES_IT {
     }
 
     // when
-    List<ProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
+    List<ExtendedProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
 
     assertThat(testDefinition.size(), is(11));
   }
@@ -63,7 +64,7 @@ public class ProcessDefinitionReaderES_IT {
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
 
     // when
-    List<ProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
+    List<ExtendedProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
 
     // then
     assertThat(testDefinition.size(), is(1));
@@ -93,7 +94,7 @@ public class ProcessDefinitionReaderES_IT {
     rule.addEntryToElasticsearch(configurationService.getEventType(),"2", event2);
 
     // when
-    List<ProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
+    List<ExtendedProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions();
 
     // then
     assertThat(testDefinition.size(), is(1));

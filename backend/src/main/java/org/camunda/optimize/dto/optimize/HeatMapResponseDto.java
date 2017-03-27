@@ -6,8 +6,8 @@ import java.util.Map;
  * @author Askar Akhmerov
  */
 public class HeatMapResponseDto {
-  private Map<String, Long> flowNodes;
-  private Long piCount;
+  protected Map<String, Long> flowNodes;
+  protected Long piCount;
 
   public Map<String, Long> getFlowNodes() {
     return flowNodes;

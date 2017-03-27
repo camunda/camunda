@@ -2,8 +2,8 @@ package org.camunda.optimize.dto.optimize;
 
 public class ProcessDefinitionXmlOptimizeDto implements OptimizeDto {
 
-  private String id;
-  private String bpmn20Xml;
+  protected String id;
+  protected String bpmn20Xml;
 
   public String getId() {
     return id;

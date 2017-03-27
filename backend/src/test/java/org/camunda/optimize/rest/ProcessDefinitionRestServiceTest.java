@@ -3,6 +3,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
@@ -86,10 +87,10 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   public void getProcessDefinitions() throws IOException {
     // given some mocks
     String token = authenticateAdmin();
-    ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
+    ExtendedProcessDefinitionOptimizeDto expected = new ExtendedProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = "123";
     expected.setId(expectedProcessDefinitionId);
-    Mockito.when(processDefinitionReader.getProcessDefinitions()).thenReturn(Collections.singletonList(expected));
+    Mockito.when(processDefinitionReader.getProcessDefinitions(Mockito.eq(false))).thenReturn(Collections.singletonList(expected));
 
     // when
     Response response =
@@ -100,11 +101,39 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    List<ProcessDefinitionEngineDto> definitions =
-      response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>(){});
+    List<ExtendedProcessDefinitionOptimizeDto> definitions =
+      response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
     assertThat(definitions,is(notNullValue()));
     assertThat(definitions.get(0).getId(), is(expectedProcessDefinitionId));
   }
+
+  @Test
+  public void getProcessDefinitionsWithXml() throws IOException {
+    // given some mocks
+    String token = authenticateAdmin();
+    ExtendedProcessDefinitionOptimizeDto expected = new ExtendedProcessDefinitionOptimizeDto();
+    String expectedProcessDefinitionId = "123";
+    expected.setId(expectedProcessDefinitionId);
+    expected.setBpmn20Xml("test");
+    Mockito.when(processDefinitionReader.getProcessDefinitions(Mockito.eq(true))).thenReturn(Collections.singletonList(expected));
+
+    // when
+    Response response =
+        target("process-definition")
+            .queryParam("includeXml", true)
+            .request()
+            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    List<ExtendedProcessDefinitionOptimizeDto> definitions =
+        response.readEntity(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+    assertThat(definitions,is(notNullValue()));
+    assertThat(definitions.get(0).getId(), is(expectedProcessDefinitionId));
+    assertThat(definitions.get(0).getBpmn20Xml(), is("test"));
+  }
+
 
   @Test
   public void getProcessDefinitionXmlWithoutAuthentication() throws IOException {
