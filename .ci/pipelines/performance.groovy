@@ -38,7 +38,7 @@ pipeline {
     }
     stage('Performance') {
       steps {
-        sh 'mvn -Pservice-perf-tests -f qa/optimize-service-performance-tests/pom.xml -s settings.xml clean verify'
+        sh 'mvn -Pservice-perf-tests -f qa/service-performance-tests/pom.xml -s settings.xml clean verify'
       }
     }
   }

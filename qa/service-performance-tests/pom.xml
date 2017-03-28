@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>qa</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>service-performance-tests</artifactId>
+
+  <properties>
+    <version.camunda>${camunda.engine.version}</version.camunda>
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+  </properties>
+
+  <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
+  <repositories>
+    <repository>
+      <id>test</id>
+      <url>http://repository</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>transport</artifactId>
+      <version>5.1.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+      <version>2.7</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-engine</artifactId>
+      <version>${version.camunda}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <!--<scope>test</scope>-->
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+      <!-- please note that it can conflict with transitive httpclient
+      from elasticsearch transport -->
+      <version>${httpclient.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-codec</artifactId>
+          <groupId>commons-codec</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>service-perf-tests</id>
+
+      <properties>
+        <test.heatmap.max.duration.ms>1000</test.heatmap.max.duration.ms>
+        <data.generation.numberOfThreads>2</data.generation.numberOfThreads>
+        <data.generation.size>1000000</data.generation.size>
+        <camunda.optimize.es.index>optimize</camunda.optimize.es.index>
+        <camunda.optimize.es.event.type>event</camunda.optimize.es.event.type>
+      </properties>
+      <build>
+        <testResources>
+          <testResource>
+            <directory>src/test/resources</directory>
+            <filtering>true</filtering>
+          </testResource>
+        </testResources>
+
+        <plugins>
+          <plugin>
+            <groupId>com.github.alexcojocaru</groupId>
+            <artifactId>elasticsearch-maven-plugin</artifactId>
+            <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
+            <version>5.0</version>
+            <configuration>
+              <clusterName>elasticsearch</clusterName>
+              <tcpPort>9300</tcpPort>
+              <httpPort>9200</httpPort>
+              <pathScripts>${project.basedir}/../../backend/src/main/scripts</pathScripts>
+            </configuration>
+            <executions>
+              <!--
+            The elasticsearch maven plugin goals are by default bound to the
+            pre-integration-test and post-integration-test phases
+          -->
+              <execution>
+                <id>start-elasticsearch</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>runforked</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>stop-elasticsearch</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>surefire-it</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>**/*PerformanceTest*</include>
+                  </includes>
+                  <skipTests>false</skipTests>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
