@@ -1,10 +1,9 @@
 #!/usr/bin/env groovy
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
-git credentialsId: 'camunda-jenkins-github-ssh', url: 'git@github.com:camunda/camunda-optimize.git'
 
 pipeline {
-  
+
   agent { label 'optimize-build' }
   // Environment
   environment {
@@ -14,7 +13,7 @@ pipeline {
 
   options {
     // General Jenkins job properties
-    buildDiscarder(logRotator(numToKeepStr:'10'))
+    buildDiscarder(logRotator(numToKeepStr: '10'))
     // "wrapper" steps that should wrap the entire build execution
     timestamps()
     timeout(time: 30, unit: 'MINUTES')
@@ -23,6 +22,16 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
+        checkout([$class: 'GitSCM',
+                  branches: [[name: '*/master']],
+                  doGenerateSubmoduleConfigurations: false,
+                  extensions: [],
+                  submoduleCfg: [],
+                  userRemoteConfigs: [[credentialsId: 'camunda-jenkins-github-ssh',
+                                       url: 'git@github.com:camunda/camunda-optimize.git'
+                                      ]]
+        ])
+
         configFileProvider([
             configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
         ]) {}
