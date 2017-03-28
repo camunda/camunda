@@ -8,17 +8,25 @@ describe('<View>', () => {
   let node;
   let update;
   let setView;
+  let onNextUpdate;
+  let onViewChanged;
 
   beforeEach(() => {
     setView = sinon.spy();
     __set__('setView', setView);
 
-    ({node, update} = mountTemplate(<View />));
+    onNextUpdate = sinon.stub().callsArg(0);
+    __set__('onNextUpdate', onNextUpdate);
+
+    onViewChanged = sinon.spy();
+
+    ({node, update} = mountTemplate(<View onViewChanged={onViewChanged} />));
     update({});
   });
 
   afterEach(() => {
     __ResetDependency__('setView');
+    __ResetDependency__('onNextUpdate');
   });
 
   it('should display a select field', () => {
@@ -34,5 +42,17 @@ describe('<View>', () => {
     });
 
     expect(setView.calledWith('frequency')).to.eql(true);
+  });
+
+  it('should call onViewChanged on next update when view changes', () => {
+    node.querySelector('select').value = 'frequency';
+    triggerEvent({
+      node,
+      selector: 'select',
+      eventName: 'change'
+    });
+
+    expect(onNextUpdate.calledWith(onViewChanged)).to.eql(true);
+    expect(onViewChanged.calledOnce).to.eql(true);
   });
 });

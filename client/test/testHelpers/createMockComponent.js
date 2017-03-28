@@ -13,7 +13,8 @@ export function createMockComponent(text, applyChildren) {
     ];
   });
 
-  const constructedTemplates = [];
+  let constructedTemplates = [];
+  let appliedCalls = [];
   const constructoringFn = observeFunction(
     (attributes) => {
       const Reference = createReferenceComponent();
@@ -22,6 +23,8 @@ export function createMockComponent(text, applyChildren) {
         <Children children={attributes.children} />
       </div>;
       const constructedTemplate = (node, eventsBus) => {
+        appliedCalls.push(attributes);
+
         if (!applyChildren) {
           return template(node, eventsBus);
         }
@@ -32,8 +35,6 @@ export function createMockComponent(text, applyChildren) {
         ];
       };
 
-      constructedTemplate.attributes = attributes;
-      constructedTemplate.text = text;
       constructedTemplate.getChildrenNode = () => Reference.getNode('children');
 
       constructedTemplates.push(constructedTemplate);
@@ -45,15 +46,21 @@ export function createMockComponent(text, applyChildren) {
   constructoringFn.set('template', template);
   constructoringFn.set('update', update);
 
-  constructoringFn.getEventsBus = (index) => {
-    return template.calls[index][1];
-  };
+  constructoringFn.getEventsBus = withIndex(
+    {
+      arity: 1,
+      calls: template.calls
+    },
+    (index = 0) => {
+      return template.calls[index][1];
+    }
+  );
 
-  constructoringFn.getAttribute = withIndex(2, (attribute, index = 0) => {
+  constructoringFn.getAttribute = withIndex({arity: 2}, (attribute, index = 0) => {
     return constructoringFn.calls[index][0][attribute];
   });
 
-  constructoringFn.getChildTemplate = withIndex(2, (predicate, index = 0) => {
+  constructoringFn.getChildTemplate = withIndex({arity: 2}, (predicate, index = 0) => {
     return constructoringFn
       .getAttribute('children', index)
       .filter(
@@ -61,15 +68,30 @@ export function createMockComponent(text, applyChildren) {
       );
   });
 
-  constructoringFn.getChildrenNode = withIndex(1, (index = 0) => {
+  constructoringFn.getChildrenNode = withIndex({arity: 1}, (index = 0) => {
     return constructedTemplates[index].getChildrenNode();
   });
+
+  constructoringFn.appliedWith = (predicate) => {
+    const predicateFn = buildPredicateFunction(predicate);
+
+    return appliedCalls.filter(predicateFn).length > 0;
+  };
+
+  constructoringFn.reset = () => {
+    constructoringFn.calls = [];
+    constructedTemplates = [];
+    appliedCalls = [];
+
+    template.reset();
+    update.reset();
+  };
 
   constructoringFn.text = text;
 
   return constructoringFn;
 
-  function withIndex(arity, method) {
+  function withIndex({arity, calls = constructoringFn.calls, throwOnFail = true}, method) {
     return (...args) => {
       const lastArg = args[args.length - 1];
 
@@ -77,24 +99,26 @@ export function createMockComponent(text, applyChildren) {
         return method(...args);
       }
 
-      const index = findIndex(lastArg);
+      const index = findIndex(lastArg, calls, throwOnFail);
 
       return method(...args.slice(0, args.length - 1), index);
     };
   }
 
-  function findIndex(predicate) {
+  function findIndex(predicate, calls, throwOnFail) {
     const predicateFn = buildPredicateFunction(predicate);
 
-    for (let i = 0; i < constructoringFn.calls.length; i++) {
-      const attributes = constructoringFn.calls[i][0];
+    for (let i = 0; i < calls.length; i++) {
+      const attributes = calls[i][0];
 
       if (predicateFn(attributes)) {
         return i;
       }
     }
 
-    throw new Error('Could not find index matching given predicate');
+    if (throwOnFail) {
+      throw new Error('Could not find index matching given predicate');
+    }
   }
 }
 

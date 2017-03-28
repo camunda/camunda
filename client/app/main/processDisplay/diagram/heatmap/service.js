@@ -37,7 +37,7 @@ export function addHeatmapOverlay(viewer, data) {
         .getAttribute('width')
         , 10);
 
-        // add overlay to viewer
+      // add overlay to viewer
       viewer.get('overlays').add(element, VALUE_OVERLAY, {
         position: {
           top: -36,

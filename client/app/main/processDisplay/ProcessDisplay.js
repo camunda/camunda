@@ -1,4 +1,4 @@
-import {jsx, withSelector, Match, Case, Default} from 'view-utils';
+import {jsx, withSelector, Match, Case, Default, includes} from 'view-utils';
 import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './diagram';
 import {areControlsLoadingSomething, isDataEmpty, getDefinitionId} from './controls';
 import {Statistics} from './statistics';
@@ -40,11 +40,11 @@ function Process() {
               No Data
             </div>
           </Case>
-          <Case predicate={shouldDisplay('frequency')}>
-            <Diagram selector="display" createOverlaysRenderer={[createHeatmapRenderer]} />
+          <Case predicate={shouldDisplay(['frequency', 'duration'])}>
+            <Diagram selector="display" createOverlaysRenderer={createHeatmapRenderer} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
-            <Diagram selector="display" createOverlaysRenderer={[createCreateAnalyticsRendererFunction(integrator)]} />
+            <Diagram selector="display" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
           </Case>
           <Default>
             <Diagram selector="display" />
@@ -60,8 +60,12 @@ function Process() {
   }
 
   function shouldDisplay(targetView) {
+    if (typeof targetView === 'string') {
+      targetView = [targetView];
+    }
+
     return ({controls: {view}}) => {
-      return view === targetView;
+      return includes(targetView, view);
     };
   }
 

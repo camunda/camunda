@@ -1,10 +1,16 @@
-import {dispatchAction} from 'view-utils';
+import {dispatchAction, includes} from 'view-utils';
 import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
 import {getFilterQuery} from 'utils';
 
-export function loadData({definition, query}) {
+const viewHeatmapEndpoints = {
+  branch_analysis: 'frequency',
+  frequency: 'frequency',
+  duration: 'duration'
+};
+
+export function loadData({definition, query, view}) {
   const params = {
     processDefinitionId: definition,
     filter: getFilterQuery(query)
@@ -12,7 +18,9 @@ export function loadData({definition, query}) {
 
   if (areParamsValid(params)) {
     loadDiagram(params);
-    loadHeatmap(params);
+    if (includes(['duration', 'frequency', 'branch_analysis'], view)) {
+      loadHeatmap(view, params);
+    }
   }
 }
 
@@ -20,9 +28,9 @@ function areParamsValid({processDefinitionId}) {
   return !!processDefinitionId;
 }
 
-export function loadHeatmap(filter) {
+export function loadHeatmap(view, filter) {
   dispatchAction(createLoadingHeatmapAction());
-  post('/api/process-definition/heatmap/frequency', filter)
+  post(`/api/process-definition/heatmap/${viewHeatmapEndpoints[view]}`, filter)
     .then(response => response.json())
     .then(result => {
       dispatchAction(createLoadingHeatmapResultAction(result));

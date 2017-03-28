@@ -87,13 +87,12 @@ function generateData(values, viewer, {x: xOffset, y: yOffset}) {
     // add multiple points evenly distributed in the area of the node. Number of points depends on area of node
     for (let i = 0; i < element.width+ACTIVITY_DENSITY/2; i+= ACTIVITY_DENSITY) {
       for (let j = 0; j < element.height+ACTIVITY_DENSITY/2; j+= ACTIVITY_DENSITY) {
-        if (values[key] === 0) {
-          values[key] += Number.EPSILON;
-        }
+        const value = values[key] === 0 ? Number.EPSILON : values[key];
+
         data.push({
           x: (element.x + i - xOffset) / RESOLUTION,
           y: (element.y + j - yOffset) / RESOLUTION,
-          value: values[key] * ACTIVITY_VALUE_MODIFIER,
+          value: value * ACTIVITY_VALUE_MODIFIER,
           radius: ACTIVITY_RADIUS / RESOLUTION
         });
       }

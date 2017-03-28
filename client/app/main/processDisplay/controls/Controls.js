@@ -30,7 +30,7 @@ export function createControls(analysisControlIntegrator) {
               <tr>
                 <Scope selector="controls">
                   <ProcessDefinition selector="processDefinition" onProcessDefinitionSelected={onControlsChange} />
-                  <View />
+                  <View onViewChanged={onControlsChange}/>
                   <Filter onFilterDeleted={onControlsChange} />
                   <CreateFilter onFilterAdded={onControlsChange} />
                 </Scope>
@@ -73,14 +73,13 @@ export function createControls(analysisControlIntegrator) {
     }
 
     function onControlsChange() {
-      const {controls: {processDefinition, filter: query}} = State.getState();
+      const {controls: {processDefinition, filter: query, view}} = State.getState();
 
-      const criteria = {
+      onCriteriaChanged({
         definition: getDefinitionId(processDefinition),
-        query
-      };
-
-      onCriteriaChanged(criteria);
+        query,
+        view
+      });
     }
   });
 

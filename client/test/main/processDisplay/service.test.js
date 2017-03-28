@@ -33,7 +33,7 @@ describe('ProcessDisplay service', () => {
     }};
 
     filter = {
-      processDefinitionId: processId,
+      processDefinitionId: processId
     };
 
     dispatchAction = sinon.spy();
@@ -77,14 +77,29 @@ describe('ProcessDisplay service', () => {
       __ResetDependency__('loadDiagram');
     });
 
-    it('should load heatmap and diagram if filter is valid', () => {
+    it('should load diagram if filter is valid', () => {
       loadData({
         definition: 'some-id',
         query: []
       });
 
-      expect(loadHeatmap.calledOnce).to.eql(true, 'expected heatmap to be loaded');
       expect(loadDiagram.calledOnce).to.eql(true, 'expected diagram to be loaded');
+    });
+
+    it('should load heatmap when view is duration or frequency', () => {
+      loadData({
+        definition: 'some-id',
+        query: [],
+        view: 'duration'
+      });
+
+      loadData({
+        definition: 'some-id',
+        query: [],
+        view: 'frequency'
+      });
+
+      expect(loadHeatmap.callCount).to.eql(2, 'expected heatmap to be loaded');
     });
 
     it('should not load heatmap and diagram if filter is not valid', () => {
@@ -131,10 +146,11 @@ describe('ProcessDisplay service', () => {
               end
             }
           }
-        ]
+        ],
+        view: 'duration'
       });
 
-      expect(loadHeatmap.calledWith(expectedQuery)).to.eql(true, 'expected heatmap to be loaded with correct query');
+      expect(loadHeatmap.calledWith('duration', expectedQuery)).to.eql(true, 'expected heatmap to be loaded with correct query');
       expect(loadDiagram.calledWith(expectedQuery)).to.eql(true, 'expected diagram to be loaded with correct query');
     });
   });
@@ -148,7 +164,7 @@ describe('ProcessDisplay service', () => {
       }));
       __set__('post', post);
 
-      loadHeatmap(filter);
+      loadHeatmap('frequency', filter);
     });
 
     afterEach(() => {
@@ -159,8 +175,14 @@ describe('ProcessDisplay service', () => {
       expect(dispatchAction.calledWith(START_ACTION_HEATMAP)).to.eql(true);
     });
 
-    it('calls backend with specified filter', () => {
+    it('calls backend with specified filter for frequency', () => {
       expect(post.calledWith('/api/process-definition/heatmap/frequency', filter)).to.eql(true);
+    });
+
+    it('calls backend with specified filter for duration', () => {
+      loadHeatmap('duration', filter);
+
+      expect(post.calledWith('/api/process-definition/heatmap/duration', filter)).to.eql(true);
     });
 
     it('dispatches stop loading action', () => {

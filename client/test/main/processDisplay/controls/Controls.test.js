@@ -108,7 +108,8 @@ describe('<Controls>', () => {
       state = {
         controls: {
           processDefinition: 'definition',
-          filter: []
+          filter: [],
+          view: 'view'
         }
       };
       update(state);
@@ -121,7 +122,8 @@ describe('<Controls>', () => {
       expect(
         onCriteriaChanged.calledWith({
           definition: state.controls.processDefinition,
-          query: []
+          query: [],
+          view: 'view'
         })
       ).to.eql(true, 'expected onFilterChanged to be called with right filter');
     });

@@ -5,7 +5,7 @@ describe('Gateway Analysis', () => {
     browser.localStorage('DELETE');
   });
 
-  it('should open the analysis diagram section', () => {
+  it.only('should open the analysis diagram section', () => {
     // LOGIN
     browser.url('/');
     browser.waitForEnabled('input[type="text"]');

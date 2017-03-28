@@ -9,9 +9,11 @@ describe('<ProcessDisplay>', () => {
   let Controls;
   let createHeatmapRenderer;
   let createAnalyticsRenderer;
+  let createCreateAnalyticsRendererFunction;
   let createDiagramControlsIntegrator;
   let Statistics;
   let loadData;
+  let Diagram;
   let node;
   let update;
   let state;
@@ -42,14 +44,13 @@ describe('<ProcessDisplay>', () => {
     __set__('createHeatmapRenderer', createHeatmapRenderer);
 
     createAnalyticsRenderer = sinon.spy();
-    __set__('createAnalyticsRenderer', createAnalyticsRenderer);
+    createCreateAnalyticsRendererFunction = sinon.stub().returns(createAnalyticsRenderer);
+    __set__('createCreateAnalyticsRendererFunction', createCreateAnalyticsRendererFunction);
 
     Controls = createMockComponent('Controls');
+    Diagram = createMockComponent('Diagram');
 
-    createDiagramControlsIntegrator = sinon.stub().returns({
-      Controls,
-      Diagram: createMockComponent('Diagram')
-    });
+    createDiagramControlsIntegrator = sinon.stub().returns({Controls, Diagram});
     __set__('createDiagramControlsIntegrator', createDiagramControlsIntegrator);
 
     Statistics = createMockComponent('Statistics');
@@ -65,7 +66,7 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('Statistics');
     __ResetDependency__('createHeatmapDiagram');
     __ResetDependency__('createHeatmapRenderer');
-    __ResetDependency__('createAnalyticsRenderer');
+    __ResetDependency__('createCreateAnalyticsRendererFunction');
     __ResetDependency__('createDiagramControlsIntegrator');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('loadHeatmap');
@@ -102,17 +103,43 @@ describe('<ProcessDisplay>', () => {
   });
 
   it('should display a diagram when the frequency view mode is selected', () => {
+    Diagram.reset();
+
     state.controls.view = 'frequency';
+
     update(state);
 
     expect(node.textContent).to.contain('Diagram');
+    expect(Diagram.appliedWith({
+      selector: 'display',
+      createOverlaysRenderer: createHeatmapRenderer
+    })).to.eql(true);
+  });
+
+  it('should display a diagram when the duration view mode is selected', () => {
+    Diagram.reset();
+
+    state.controls.view = 'duration';
+    update(state);
+
+    expect(node.textContent).to.contain('Diagram');
+    expect(Diagram.appliedWith({
+      selector: 'display',
+      createOverlaysRenderer: createHeatmapRenderer
+    })).to.eql(true);
   });
 
   it('should display a diagram when the branch analysis view mode is selected', () => {
+    Diagram.reset();
+
     state.controls.view = 'branch_analysis';
     update(state);
 
     expect(node.textContent).to.contain('Diagram');
+    expect(Diagram.appliedWith({
+      selector: 'display',
+      createOverlaysRenderer: createAnalyticsRenderer
+    })).to.eql(true);
   });
 
   it('should display a no data indicator if the heatmap data contains no process instances', () => {
