@@ -11,7 +11,7 @@ public class PerfTestContext {
 
   public PerfTestContext(PerfTestConfiguration configuration) {
     this.configuration = configuration;
-    parameter =  new HashMap<>();
+    parameter = new HashMap<>();
   }
 
   public void addParameter(String name, Object value) {

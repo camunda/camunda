@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 
 public class GetActivityCorrelationStep extends PerfTestStep {
 
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
   private FilterMapDto filter;
 
   private ObjectMapper objectMapper = new ObjectMapper();
@@ -42,7 +43,6 @@ public class GetActivityCorrelationStep extends PerfTestStep {
       try {
         client.close();
       } catch (IOException e) {
-        Logger logger = LoggerFactory.getLogger(GetActivityCorrelationStep.class);
         logger.error("Could not close http client!", e);
       }
     }
@@ -54,6 +54,7 @@ public class GetActivityCorrelationStep extends PerfTestStep {
 
     CloseableHttpResponse response = client.execute(post);
     if(response.getStatusLine().getStatusCode() != 200 ) {
+      logger.error(response.getStatusLine().toString());
       throw new PerfTestException("Post request was not successful!");
     }
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
