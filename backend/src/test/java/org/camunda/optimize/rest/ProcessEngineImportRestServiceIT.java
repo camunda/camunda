@@ -73,6 +73,7 @@ public class ProcessEngineImportRestServiceIT {
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(),is(notNullValue()));
     assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
+    assertThat(definitions.get(0).getVersion(),is(notNullValue()));
   }
 
 }

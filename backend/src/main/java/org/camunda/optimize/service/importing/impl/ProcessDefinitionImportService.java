@@ -62,6 +62,7 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
     optimizeDto.setName(dto.getName());
     optimizeDto.setKey(dto.getKey());
     optimizeDto.setId(dto.getId());
+    optimizeDto.setVersion(dto.getVersion());
     return optimizeDto;
   }
 }

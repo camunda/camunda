@@ -23,6 +23,9 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
       .startObject("key")
         .field("type", "keyword")
       .endObject()
+      .startObject("version")
+        .field("type", "long")
+      .endObject()
       .startObject("name")
         .field("type", "keyword")
       .endObject();

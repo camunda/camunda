@@ -7,6 +7,7 @@ public class ProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
   protected String id;
   protected String key;
   protected String name;
+  protected long version;
 
   public String getId() {
     return id;
@@ -30,5 +31,13 @@ public class ProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public long getVersion() {
+    return version;
+  }
+
+  public void setVersion(long version) {
+    this.version = version;
   }
 }
