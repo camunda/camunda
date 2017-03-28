@@ -10,19 +10,6 @@ pipelineJob('Performance') {
     }
   }
 
-  scm {
-    git {
-      remote {
-        github "${githubOrga}/${gitRepository}", 'ssh'
-        credentials 'camunda-jenkins-github-ssh'
-      }
-      branch gitBranch
-      extensions {
-        localBranch gitBranch
-      }
-    }
-  }
-
   jdk '(Default)'
 
   triggers {
