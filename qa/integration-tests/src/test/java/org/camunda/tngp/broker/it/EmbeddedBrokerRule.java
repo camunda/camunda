@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.it;
 
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
@@ -72,7 +72,7 @@ public class EmbeddedBrokerRule extends ExternalResource
                 .dependency(TransportServiceNames.serverSocketBindingReceiveBufferName(TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME))
                 .dependency(taskQueueInstanceStreamProcessorServiceName("default-task-queue-log"))
                 .install()
-                .get(5, TimeUnit.SECONDS);
+                .get(10, TimeUnit.SECONDS);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e)
         {

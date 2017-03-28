@@ -1,12 +1,8 @@
 package org.camunda.tngp.broker.it.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.Definitions;
-import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TngpClient;
@@ -39,6 +35,7 @@ public class DeployBpmnResourceTest
         final DeploymentResult result = workflowService.deploy()
             .bpmnModelInstance(Bpmn.createExecutableProcess("process")
                     .startEvent()
+                    .endEvent()
                     .done())
             .execute();
 
@@ -97,47 +94,16 @@ public class DeployBpmnResourceTest
 
         // when
         final DeploymentResult result = workflowService.deploy()
-            .bpmnModelInstance(Bpmn.createProcess().startEvent().endEvent().done())
+            .bpmnModelInstance(Bpmn.createProcess()
+                    .startEvent()
+                    .endEvent()
+                    .done())
             .execute();
 
         // then
         assertThat(result.isDeployed()).isFalse();
         assertThat(result.getDeployedWorkflows()).hasSize(0);
         assertThat(result.getErrorMessage()).contains("BPMN model must contain at least one executable process");
-    }
-
-    @Test
-    public void shouldNotDeployTwoProcessesInsideOneDiagram()
-    {
-        // given
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
-        final BpmnModelInstance modelInstance = Bpmn.createEmptyModel();
-        final Definitions definitions = modelInstance.newInstance(Definitions.class);
-        definitions.setTargetNamespace(BPMN20_NS);
-        modelInstance.setDefinitions(definitions);
-
-        final Process process1 = modelInstance.newInstance(Process.class);
-        definitions.addChildElement(process1);
-        process1.setExecutable(true);
-        process1.setId("process1");
-        process1.builder().startEvent().endEvent();
-
-        final Process process2 = modelInstance.newInstance(Process.class);
-        definitions.addChildElement(process2);
-        process2.setExecutable(true);
-        process2.setId("process2");
-        process2.builder().startEvent().endEvent();
-
-        // when
-        final DeploymentResult result = workflowService.deploy()
-            .bpmnModelInstance(modelInstance)
-            .execute();
-
-        // then
-        assertThat(result.isDeployed()).isFalse();
-        assertThat(result.getErrorMessage()).contains("BPMN model must not contain more than one executable process");
     }
 
 }
