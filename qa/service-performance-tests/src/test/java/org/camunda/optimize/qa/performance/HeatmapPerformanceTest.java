@@ -8,6 +8,7 @@ import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.steps.GetDurationGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.GetFrequencyGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGenerationStep;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -18,17 +19,21 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 
 public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
+  FilterMapDto filter = new FilterMapDto();
+  PerfTest test;
+
+  @Before
+  public void setUp() {
+    super.setUp();
+    filter.setDates(new ArrayList<>());
+    testBuilder = this.testBuilder
+        .step(new HeatMapDataGenerationStep());
+  }
 
   @Test
   public void getFrequencyHeatmapWithoutFilter() {
-    // given
-    FilterMapDto filter;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
-
-    PerfTest test =
-      createPerformanceTest()
-        .step(new HeatMapDataGenerationStep())
+    //given
+    test = testBuilder
         .step(new GetFrequencyGetHeatMapStep(filter))
         .done();
 
@@ -46,19 +51,14 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     // given
     String operator = "<";
     String type = "start_date";
-    FilterMapDto filter;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
-
     DateFilterDto date = new DateFilterDto();
     date.setOperator(operator);
     date.setType(type);
     date.setValue(new Date());
+
     filter.getDates().add(date);
 
-    PerfTest test =
-      createPerformanceTest()
-        .step(new HeatMapDataGenerationStep())
+    test = testBuilder
         .step(new GetFrequencyGetHeatMapStep(filter))
         .done();
 
@@ -73,14 +73,8 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
 
   @Test
   public void getDurationHeatmapWithoutFilter() {
-    // given
-    FilterMapDto filter;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
-
-    PerfTest test =
-      createPerformanceTest()
-        .step(new HeatMapDataGenerationStep())
+    //given
+    test = testBuilder
         .step(new GetDurationGetHeatMapStep(filter))
         .done();
 
@@ -98,9 +92,6 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     // given
     String operator = "<";
     String type = "start_date";
-    FilterMapDto filter;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
 
     DateFilterDto date = new DateFilterDto();
     date.setOperator(operator);
@@ -108,9 +99,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     date.setValue(new Date());
     filter.getDates().add(date);
 
-    PerfTest test =
-      createPerformanceTest()
-        .step(new HeatMapDataGenerationStep())
+    test = testBuilder
         .step(new GetDurationGetHeatMapStep(filter))
         .done();
 

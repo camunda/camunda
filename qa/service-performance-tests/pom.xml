@@ -14,6 +14,8 @@
   <properties>
     <version.camunda>${camunda.engine.version}</version.camunda>
     <failOnMissingWebXml>false</failOnMissingWebXml>
+    <allure.version>1.4.23.HOTFIX1</allure.version>
+    <aspectj.version>1.8.9</aspectj.version>
   </properties>
 
   <!-- DO NOT REMOVE IF YOU DON'T KNOW WHAT YOU DO -->
@@ -99,6 +101,11 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>ru.yandex.qatools.allure</groupId>
+      <artifactId>allure-junit-adaptor</artifactId>
+      <version>${allure.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -172,6 +179,24 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>
+                -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
+              </argLine>
+              <properties>
+                <property>
+                  <name>listener</name>
+                  <value>ru.yandex.qatools.allure.junit.AllureRunListener</value>
+                </property>
+              </properties>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjweaver</artifactId>
+                <version>${aspectj.version}</version>
+              </dependency>
+            </dependencies>
             <executions>
               <execution>
                 <id>surefire-it</id>
@@ -209,5 +234,16 @@
       </plugin>
     </plugins>
   </build>
+
+  <reporting>
+    <excludeDefaults>true</excludeDefaults>
+    <plugins>
+      <plugin>
+        <groupId>ru.yandex.qatools.allure</groupId>
+        <artifactId>allure-maven-plugin</artifactId>
+        <version>2.5</version>
+      </plugin>
+    </plugins>
+  </reporting>
 
 </project>

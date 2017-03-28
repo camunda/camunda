@@ -1,6 +1,7 @@
 package org.camunda.optimize.qa.performance;
 
 import org.camunda.bpm.engine.impl.util.IoUtil;
+import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestBuilder;
 import org.camunda.optimize.qa.performance.framework.PerfTestConfiguration;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
@@ -38,6 +39,7 @@ public abstract class OptimizePerformanceTestCase {
   }
 
   protected static PerfTestConfiguration configuration;
+  protected PerfTestBuilder testBuilder;
 
   @BeforeClass
   public static void init() throws IOException {
@@ -49,6 +51,7 @@ public abstract class OptimizePerformanceTestCase {
   public void setUp() {
     authenticate(configuration);
     configuration.setClient(elasticSearchRule.getClient());
+    testBuilder = createPerformanceTest();
   }
 
   private void authenticate(PerfTestConfiguration configuration) {

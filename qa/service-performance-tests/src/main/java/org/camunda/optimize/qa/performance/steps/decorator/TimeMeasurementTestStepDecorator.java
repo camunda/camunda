@@ -5,6 +5,7 @@ import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.yandex.qatools.allure.annotations.Step;
 
 public class TimeMeasurementTestStepDecorator extends PerfTestStep {
 

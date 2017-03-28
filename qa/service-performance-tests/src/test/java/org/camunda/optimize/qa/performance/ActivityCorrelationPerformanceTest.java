@@ -9,6 +9,7 @@ import org.camunda.optimize.qa.performance.steps.CorrelationDiscoveryDataGenerat
 import org.camunda.optimize.qa.performance.steps.GetActivityCorrelationStep;
 import org.camunda.optimize.qa.performance.steps.GetFrequencyGetHeatMapStep;
 import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGenerationStep;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -22,18 +23,22 @@ public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestC
 
   private static final long CORRELATION_FACTOR = 10L;
 
-  @Test
-  public void getActivityCorrelationWithoutFilter() {
-    // given
-    FilterMapDto filter;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
+  FilterMapDto filter = new FilterMapDto();
+  PerfTest test;
 
-    PerfTest test =
-      createPerformanceTest()
+  @Before
+  public void setUp() {
+    super.setUp();
+    filter.setDates(new ArrayList<>());
+    test = this.testBuilder
         .step(new CorrelationDiscoveryDataGenerationStep())
         .step(new GetActivityCorrelationStep(filter))
         .done();
+  }
+
+
+  @Test
+  public void getActivityCorrelationWithoutFilter() {
 
     // when
     PerfTestResult testResult = test.run();
@@ -49,21 +54,12 @@ public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestC
     // given
     String operator = "<";
     String type = "start_date";
-    FilterMapDto filter;
-    filter = new FilterMapDto();
-    filter.setDates(new ArrayList<>());
 
     DateFilterDto date = new DateFilterDto();
     date.setOperator(operator);
     date.setType(type);
     date.setValue(new Date());
     filter.getDates().add(date);
-
-    PerfTest test =
-      createPerformanceTest()
-        .step(new CorrelationDiscoveryDataGenerationStep())
-        .step(new GetActivityCorrelationStep(filter))
-        .done();
 
     // when
     PerfTestResult testResult = test.run();

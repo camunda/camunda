@@ -17,6 +17,7 @@ import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.yandex.qatools.allure.annotations.Step;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -33,6 +34,7 @@ public class GetActivityCorrelationStep extends PerfTestStep {
   }
 
   @Override
+  @Step ("Get correlation from Optimize")
   public PerfTestStepResult execute(PerfTestContext context) {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     try {

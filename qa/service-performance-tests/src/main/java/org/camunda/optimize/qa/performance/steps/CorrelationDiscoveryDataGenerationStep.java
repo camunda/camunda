@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
+import ru.yandex.qatools.allure.annotations.Step;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -22,6 +23,7 @@ public class CorrelationDiscoveryDataGenerationStep extends DataGenerationStep {
   private final String GATEWAY_ACTIVITY = "gw_1";
 
   @Override
+  @Step ("Generate Correlation discovery data")
   public PerfTestStepResult execute(PerfTestContext context) {
     PerfTestStepResult result = super.execute(context);
     context.addParameter("endActivityId", END_ACTIVITY);
