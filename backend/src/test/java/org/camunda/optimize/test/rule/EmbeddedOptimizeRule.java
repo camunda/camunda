@@ -8,6 +8,7 @@ import org.camunda.optimize.service.importing.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.glassfish.jersey.client.ClientProperties;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -110,7 +111,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   private Client getClient() {
-    return ClientBuilder.newClient();
+    Client client = ClientBuilder.newClient();
+    client.property(ClientProperties.CONNECT_TIMEOUT, 5000);
+    client.property(ClientProperties.READ_TIMEOUT,    5000);
+    return client;
   }
 
   public String getProcessDefinitionEndpoint() {
