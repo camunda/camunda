@@ -15,10 +15,10 @@ package org.camunda.tngp.broker.workflow;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_PROCESSOR_ID;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
-import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.workflowStreamProcessorServiceName;
+import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -109,7 +109,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
     private void installWorkflowStreamProcessor(WorkflowQueueCfg config, String logName)
     {
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowStreamProcessorServiceName(logName);
+        final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
         final IndexStore workflowPositionIndexStore = createIndexStore(config, "workflow.instance.position");
@@ -122,7 +122,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(responseWriter, workflowPositionIndexStore, workflowVersionIndexStore);
         final StreamProcessorService workflowStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
-                WORKFLOW_PROCESSOR_ID,
+                WORKFLOW_INSTANCE_PROCESSOR_ID,
                 workflowInstanceStreamProcessor)
                 .eventFilter(WorkflowInstanceStreamProcessor.eventFilter());
 

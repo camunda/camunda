@@ -6,8 +6,8 @@ package org.camunda.tngp.client.workflow.cmd;
 public interface WorkflowInstance
 {
     /**
-     * The bpmn process id which corresponds to the workflow definition id.
-     * @return
+     * The BPMN process id which identifies the workflow definition.
+     * @return the id of the BPMN process
      */
     String getBpmnProcessId();
 

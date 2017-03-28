@@ -28,5 +28,5 @@ public class StreamProcessorIds
 
     public static final int DEPLOYMENT_PROCESSOR_ID = 60;
 
-    public static final int WORKFLOW_PROCESSOR_ID = 70;
+    public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
 }

@@ -9,6 +9,7 @@ public class WorkflowInstanceEvent
     protected int version = -1;
     protected long workflowInstanceKey;
     protected WorkflowInstanceEventType eventType;
+    protected String activityId;
 
     public String getBpmnProcessId()
     {
@@ -50,11 +51,23 @@ public class WorkflowInstanceEvent
         this.workflowInstanceKey = workflowInstanceKey;
     }
 
+    public String getActivityId()
+    {
+        return activityId;
+    }
+
+    public void setActivityId(String activityId)
+    {
+        this.activityId = activityId;
+    }
+
     public void reset()
     {
         bpmnProcessId = null;
         version = -1;
         workflowInstanceKey = -1;
         eventType = null;
+        activityId = null;
     }
+
 }

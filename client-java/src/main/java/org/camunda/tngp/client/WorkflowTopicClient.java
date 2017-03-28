@@ -1,18 +1,18 @@
 package org.camunda.tngp.client;
 
-import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.CreateDeploymentCmd;
+import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
 
 public interface WorkflowTopicClient
 {
 
     /**
-     * Deploy new workflows.
+     * Deploy new workflow definitions.
      */
     CreateDeploymentCmd deploy();
 
     /**
-     * Create new workflow.
+     * Create new workflow instance.
      */
     CreateWorkflowInstanceCmd create();
 }

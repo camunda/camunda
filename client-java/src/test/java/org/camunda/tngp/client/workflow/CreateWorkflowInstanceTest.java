@@ -1,5 +1,7 @@
 package org.camunda.tngp.client.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
@@ -11,8 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
@@ -122,7 +122,6 @@ public class CreateWorkflowInstanceTest
                 .event()
                 .allOf((r) -> r.getCommand())
                 .put("eventType", "WORKFLOW_INSTANCE_CREATED")
-                .put("version", 2)
                 .put("workflowInstanceKey", 1)
                 .done()
                 .register();

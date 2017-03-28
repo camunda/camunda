@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
- * POJO representing an eventType of type {@link TopicEventType#TASK}.
+ * POJO representing an event of type {@link TopicEventType#TASK}.
  */
 public interface TaskEvent
 {
@@ -15,7 +15,7 @@ public interface TaskEvent
     String getType();
 
     /**
-     * @return the name of the eventType type in the task's eventType lifecycle
+     * @return the name of the type in the task's event lifecycle
      */
     String getEventType();
 
