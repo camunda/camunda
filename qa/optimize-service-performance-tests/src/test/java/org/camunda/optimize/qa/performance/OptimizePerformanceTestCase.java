@@ -24,11 +24,11 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public abstract class OptimizePerformanceTestCase {
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
+  @ClassRule
+  public static RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   private static final String PROPERTIES_FILE_NAME;
@@ -37,12 +37,16 @@ public abstract class OptimizePerformanceTestCase {
     PROPERTIES_FILE_NAME = "perf-test-config.properties";
   }
 
-  protected PerfTestConfiguration configuration;
+  protected static PerfTestConfiguration configuration;
 
-  @Before
-  public void init() throws IOException {
+  @BeforeClass
+  public static void init() throws IOException {
     Properties properties = loadConfigurationProperties();
     configuration = new PerfTestConfiguration(properties);
+  }
+
+  @Before
+  public void setUp() {
     authenticate(configuration);
     configuration.setClient(elasticSearchRule.getClient());
   }
