@@ -65,6 +65,7 @@ public class BufferedLogStreamReaderTest
         when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
 
         mockLogStorage.add(newLogEntry()
+                .streamId(53)
                 .address(10)
                 .position(1)
                 .key(2)
@@ -83,6 +84,7 @@ public class BufferedLogStreamReaderTest
         assertThat(event).isNotNull();
         assertThat(event.getPosition()).isEqualTo(1L);
         assertThat(event.getLongKey()).isEqualTo(2L);
+        assertThat(event.getStreamId()).isEqualTo(53);
 
         assertThat(event.getSourceEventLogStreamId()).isEqualTo(3);
         assertThat(event.getSourceEventPosition()).isEqualTo(4L);
