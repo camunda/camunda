@@ -1,9 +1,9 @@
 #!/usr/bin/env groovy
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
+git credentialsId: 'camunda-jenkins-github-ssh', url: 'git@github.com:camunda/camunda-optimize.git'
 
 pipeline {
-  git credentialsId: 'camunda-jenkins-github-ssh', url: 'git@github.com:camunda/camunda-optimize.git'
   
   agent { label 'optimize-build' }
   // Environment
