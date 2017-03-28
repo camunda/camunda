@@ -1,12 +1,8 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.camunda.tngp.logstreams.impl.LogStreamImpl.LogStreamBuilder.*;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -16,104 +12,57 @@ import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+
 /**
- * @author Christopher Zell <christopher.zell@camunda.com>
+ * Represents the implementation of the LogStream interface.
  */
 public final class LogStreamImpl implements LogStream
 {
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
-    private final BiConsumer<Void, Throwable> removeWriteBufferReference = (((aVoid, throwable) -> this.writeBuffer = null));
-
-    private final BiConsumer<Void, Throwable> removeLogStreamControllerReference = ((aVoid, throwable) ->
-    {
-        this.logStreamController = null;
-        this.writeBuffer.closeAsync().whenComplete(removeWriteBufferReference);
-    });
 
     protected volatile int term = 0;
     protected Position commitPosition;
 
-    protected final LogBlockIndex logBlockIndex;
-    protected final LogStorage logStorage;
+    protected final LogControllerContext controllerContext;
     protected final int logId;
-    protected final String logName;
-    protected final AgentRunnerService agentRunnerService;
+
 
     protected final LogBlockIndexController logBlockIndexController;
 
     protected LogStreamController logStreamController;
+    protected AgentRunnerService writeAgentRunnerService;
     protected Dispatcher writeBuffer;
+
 
     private LogStreamImpl(LogStreamBuilder logStreamBuilder)
     {
-        this.logName = logStreamBuilder.getLogName();
+        this.controllerContext = logStreamBuilder.getLogControllerContext();
         this.logId = logStreamBuilder.getLogId();
-        this.logBlockIndex = logStreamBuilder.getBlockIndex();
-        this.logStorage = logStreamBuilder.getLogStorage();
-        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder);
 
         this.commitPosition = new AtomicLongPosition();
         this.commitPosition.setOrdered(-1L);
 
-        if (!logStreamBuilder.isWithoutLogStreamController())
+        if (!logStreamBuilder.isLogStreamControllerDisabled())
         {
             this.logStreamController = new LogStreamController(logStreamBuilder);
+            writeAgentRunnerService = logStreamBuilder.getWriteBufferAgentRunnerService();
             this.writeBuffer = logStreamBuilder.getWriteBuffer();
         }
     }
 
-
-    public abstract static class LogStreamBuilder implements LogBlockIndexController.LogBlockIndexControllerBuilder,
-        LogStreamController.LogStreamControllerBuilder
-    {
-
-        protected static Dispatcher initWriteBuffer(Dispatcher writeBuffer, BufferedLogStreamReader logReader,
-                                                    String logName, int writeBufferSize)
-        {
-            if (writeBuffer == null)
-            {
-                // Get position of last entry
-                long lastPosition = 0;
-
-                logReader.seekToLastEvent();
-
-                if (logReader.hasNext())
-                {
-                    final LoggedEvent lastEntry = logReader.next();
-                    lastPosition = lastEntry.getPosition();
-                }
-
-                // dispatcher needs to generate positions greater than the last position
-                int partitionId = 0;
-
-                if (lastPosition > 0)
-                {
-                    partitionId = PositionUtil.partitionId(lastPosition);
-                }
-
-                writeBuffer = Dispatchers.create("log-write-buffer-" + logName)
-                    .bufferSize(writeBufferSize)
-                    .subscriptions("log-appender")
-                    .initialPartitionId(partitionId + 1)
-                    .conductorExternallyManaged()
-                    .build();
-            }
-            return writeBuffer;
-        }
-
-        public abstract int getLogId();
-
-        public abstract boolean isWithoutLogStreamController();
-
-        public LogStream build()
-        {
-            return new LogStreamImpl(this);
-        }
-    }
 
     public LogBlockIndexController getLogBlockIndexController()
     {
@@ -134,7 +83,7 @@ public final class LogStreamImpl implements LogStream
     @Override
     public String getLogName()
     {
-        return logName;
+        return controllerContext.getName();
     }
 
     @Override
@@ -161,8 +110,8 @@ public final class LogStreamImpl implements LogStream
         final CompletableFuture<Void> completableFuture;
         if (logStreamController != null)
         {
-            final CompletableFuture<Void> logStreamControllerFuture = logStreamController.openAsync();
-            completableFuture = CompletableFuture.allOf(logBlockIndexControllerFuture, logStreamControllerFuture);
+            completableFuture = CompletableFuture.allOf(logBlockIndexControllerFuture,
+                logStreamController.openAsync());
         }
         else
         {
@@ -193,21 +142,26 @@ public final class LogStreamImpl implements LogStream
     public CompletableFuture<Void> closeAsync()
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        final BiConsumer<Void, Throwable> voidThrowableBiConsumer = (n, e) ->
+        final BiConsumer<Void, Throwable> closeLogStorage = (n, e) ->
         {
-            logStorage.close();
+            controllerContext.logStorageClose();
             future.complete(null);
         };
 
-        final CompletableFuture<Void> bFuture = logBlockIndexController.closeAsync();
+        //write buffer close
+        final CompletableFuture<Void> logBlockIndexControllerClosingFuture =
+            logBlockIndexController.closeAsync();
         if (logStreamController != null)
         {
-            final CompletableFuture<Void> lFuture = logStreamController.closeAsync();
-            CompletableFuture.allOf(bFuture, lFuture).whenComplete(voidThrowableBiConsumer);
+            // can't close dispatcher since has no method to reopen
+            // TODO camunda-tngp/dispatcher#12
+            CompletableFuture.allOf(logBlockIndexControllerClosingFuture,
+                logStreamController.closeAsync())
+                .whenComplete(closeLogStorage);
         }
         else
         {
-            bFuture.whenComplete(voidThrowableBiConsumer);
+            logBlockIndexControllerClosingFuture.whenComplete(closeLogStorage);
         }
 
         return future;
@@ -264,13 +218,13 @@ public final class LogStreamImpl implements LogStream
     @Override
     public LogStorage getLogStorage()
     {
-        return logStorage;
+        return controllerContext.getLogStorage();
     }
 
     @Override
     public LogBlockIndex getLogBlockIndex()
     {
-        return logBlockIndex;
+        return controllerContext.getBlockIndex();
     }
 
     @Override
@@ -280,35 +234,64 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public void stopLogStreaming()
+    public CompletableFuture<Void> closeLogStreamController()
     {
+        final CompletableFuture<Void> completableFuture;
         if (logStreamController != null)
         {
-            logStreamController.closeAsync().whenComplete(removeLogStreamControllerReference);
+            completableFuture = new CompletableFuture<>();
+//            Dispatcher should be closed, but this will fail the integration tests
+//            see TODO camunda-tngp/logstreams#60
+//            writeBuffer.closeAsync()
+//                       .thenCompose((v) ->
+            logStreamController.closeAsync()
+                .handle((v, ex) ->
+                {
+                    writeBuffer = null;
+                    logStreamController = null;
+                    return ex != null
+                        ? completableFuture.completeExceptionally(ex)
+                        : completableFuture.complete(null);
+                });
         }
+        else
+        {
+            completableFuture = CompletableFuture.completedFuture(null);
+        }
+        return completableFuture;
     }
 
     @Override
-    public CompletableFuture<Void> startLogStreaming(AgentRunnerService writeBufferAgentRunnerService)
+    public CompletableFuture<Void> openLogStreamController()
     {
-        return startLogStreaming(writeBufferAgentRunnerService, DEFAULT_MAX_APPEND_BLOCK_SIZE);
+
+        return openLogStreamController(writeAgentRunnerService, DEFAULT_MAX_APPEND_BLOCK_SIZE);
     }
 
     @Override
-    public CompletableFuture<Void> startLogStreaming(AgentRunnerService writeBufferAgentRunnerService,
-                                  int maxAppendBlockSize)
+    public CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService)
     {
-        return new LogStreamControlBuilder()
-            .maxAppendBlockSize(maxAppendBlockSize)
+        return openLogStreamController(writeBufferAgentRunnerService, DEFAULT_MAX_APPEND_BLOCK_SIZE);
+    }
+
+    @Override
+    public CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService,
+                                                           int maxAppendBlockSize)
+    {
+        final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(controllerContext.getName(), logId)
+            .logControllerContext(controllerContext)
             .writeBufferAgentRunnerService(writeBufferAgentRunnerService)
-            .build()
-            .openAsync();
+            .maxAppendBlockSize(maxAppendBlockSize);
+
+        this.logStreamController = new LogStreamController(logStreamBuilder);
+        this.writeBuffer = logStreamBuilder.getWriteBuffer();
+        return logStreamController.openAsync();
     }
 
     @Override
     public Dispatcher getWriteBuffer()
     {
-        return writeBuffer;
+        return logStreamController == null ? null : logStreamController.getWriteBuffer();
     }
 
     @Override
@@ -321,90 +304,331 @@ public final class LogStreamImpl implements LogStream
         return logBlockIndexController.truncate(position);
     }
 
-    private final class LogStreamControlBuilder implements LogStreamController.LogStreamControllerBuilder
+    // BUILDER ////////////////////////
+    public static class LogStreamBuilder<T extends LogStreamBuilder<T>>
     {
-        protected int maxAppendBlockSize;
-        protected int writeBufferSize = DEFAULT_WRITE_BUFFER_SIZE;
-        protected Dispatcher writeBuffer;
+        // MANDATORY /////
+        // LogController Base
+        protected final String logName;
+        protected final int logId;
+        protected AgentRunnerService agentRunnerService;
+        protected LogStorage logStorage;
+        protected LogBlockIndex logBlockIndex;
+
+        protected LogControllerContext logControllerContext;
+
+        protected String logRootPath;
+        protected String logDirectory;
+
+        protected CountersManager countersManager;
+
+        // OPTIONAL ////////////////////////////////////////////
+        protected boolean logStreamControllerDisabled;
+        protected int initialLogSegmentId = 0;
+        protected boolean deleteOnClose;
+        protected int maxAppendBlockSize = 1024 * 1024 * 4;
+        protected int writeBufferSize = 1024 * 1024 * 16;
+        protected int logSegmentSize = 1024 * 1024 * 128;
+        protected int indexBlockSize = 1024 * 32;
+        protected int readBlockSize = 1024 * 32;
+        protected SnapshotPolicy snapshotPolicy;
+        protected SnapshotStorage snapshotStorage;
+
         protected AgentRunnerService writeBufferAgentRunnerService;
+        protected Dispatcher writeBuffer;
 
-        @Override
-        public String getLogName()
+        public LogStreamBuilder(String logName, int logId)
         {
-            return LogStreamImpl.this.logName;
+            this.logName = logName;
+            this.logId = logId;
         }
 
-        @Override
-        public LogStorage getLogStorage()
+        public T logRootPath(String logRootPath)
         {
-            return LogStreamImpl.this.logStorage;
+            this.logRootPath = logRootPath;
+            return (T) this;
         }
 
-        @Override
-        public LogBlockIndex getBlockIndex()
+        public T logDirectory(String logDir)
         {
-            return LogStreamImpl.this.logBlockIndex;
+            this.logDirectory = logDir;
+            return (T) this;
         }
 
-        @Override
-        public AgentRunnerService getAgentRunnerService()
-        {
-            return LogStreamImpl.this.agentRunnerService;
-        }
-
-        public LogStreamControlBuilder maxAppendBlockSize(int maxAppendBlockSize)
-        {
-            this.maxAppendBlockSize = maxAppendBlockSize;
-            return this;
-        }
-
-        public LogStreamControlBuilder writeBufferSize(int writeBufferSize)
+        public T writeBufferSize(int writeBufferSize)
         {
             this.writeBufferSize = writeBufferSize;
-            return this;
+            return (T) this;
         }
 
-        public LogStreamControlBuilder writeBuffer(Dispatcher writeBuffer)
+        public T maxAppendBlockSize(int maxAppendBlockSize)
         {
-            this.writeBuffer = writeBuffer;
-            return this;
+            this.maxAppendBlockSize = maxAppendBlockSize;
+            return (T) this;
         }
 
-        public LogStreamControlBuilder writeBufferAgentRunnerService(AgentRunnerService writeBufferAgentRunnerService)
+        public T writeBufferAgentRunnerService(AgentRunnerService writeBufferAgentRunnerService)
         {
             this.writeBufferAgentRunnerService = writeBufferAgentRunnerService;
-            return this;
+            return (T) this;
         }
 
-        @Override
+        public T initialLogSegmentId(int logFragmentId)
+        {
+            this.initialLogSegmentId = logFragmentId;
+            return (T) this;
+        }
+
+        public T logSegmentSize(int logSegmentSize)
+        {
+            this.logSegmentSize = logSegmentSize;
+            return (T) this;
+        }
+
+        public T deleteOnClose(boolean deleteOnClose)
+        {
+            this.deleteOnClose = deleteOnClose;
+            return (T) this;
+        }
+
+        public T agentRunnerService(AgentRunnerService agentRunnerService)
+        {
+            this.agentRunnerService = agentRunnerService;
+            return (T) this;
+        }
+
+        public T countersManager(CountersManager countersManager)
+        {
+            this.countersManager = countersManager;
+            return (T) this;
+        }
+
+        public T indexBlockSize(int indexBlockSize)
+        {
+            this.indexBlockSize = indexBlockSize;
+            return (T) this;
+        }
+
+        public T logStorage(LogStorage logStorage)
+        {
+            this.logStorage = logStorage;
+            return (T) this;
+        }
+
+        public T logBlockIndex(LogBlockIndex logBlockIndex)
+        {
+            this.logBlockIndex = logBlockIndex;
+            return (T) this;
+        }
+
+        public T logControllerContext(LogControllerContext logControllerContext)
+        {
+            this.logControllerContext = logControllerContext;
+            return (T) this;
+        }
+
+        public T logStreamControllerDisabled(boolean logStreamControllerDisabled)
+        {
+            this.logStreamControllerDisabled = logStreamControllerDisabled;
+            return (T) this;
+        }
+
+        public T writeBuffer(Dispatcher writeBuffer)
+        {
+            this.writeBuffer = writeBuffer;
+            return (T) this;
+        }
+
+        public T snapshotStorage(SnapshotStorage snapshotStorage)
+        {
+            this.snapshotStorage = snapshotStorage;
+            return (T) this;
+        }
+
+        public T snapshotPolicy(SnapshotPolicy snapshotPolicy)
+        {
+            this.snapshotPolicy = snapshotPolicy;
+            return (T) this;
+        }
+
+        public T readBlockSize(int readBlockSize)
+        {
+            this.readBlockSize = readBlockSize;
+            return (T) this;
+        }
+
+        // getter /////////////////
+
+        public String getLogName()
+        {
+            return logName;
+        }
+
+        public int getLogId()
+        {
+            return logId;
+        }
+
+        public AgentRunnerService getAgentRunnerService()
+        {
+            if (agentRunnerService == null)
+            {
+                if (logControllerContext == null)
+                {
+                    Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
+                }
+                else
+                {
+                    agentRunnerService = logControllerContext.getAgentRunnerService();
+                }
+            }
+
+            return agentRunnerService;
+        }
+
+        protected void initLogStorage()
+        {
+        }
+
+        public LogStorage getLogStorage()
+        {
+            if (logStorage == null)
+            {
+                if (logControllerContext == null)
+                {
+                    initLogStorage();
+                }
+                else
+                {
+                    logStorage = logControllerContext.getLogStorage();
+                }
+            }
+            return logStorage;
+        }
+
+        public LogBlockIndex getBlockIndex()
+        {
+            if (logBlockIndex == null)
+            {
+                if (logControllerContext == null)
+                {
+                    this.logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
+                }
+                else
+                {
+                    this.logBlockIndex = logControllerContext.getBlockIndex();
+                }
+            }
+            return logBlockIndex;
+        }
+
+        public LogControllerContext getLogControllerContext()
+        {
+            if (logControllerContext == null)
+            {
+                logControllerContext = new LogControllerContext(
+                    getLogName(),
+                    getLogStorage(),
+                    getBlockIndex(),
+                    getAgentRunnerService());
+            }
+            return logControllerContext;
+        }
+
         public int getMaxAppendBlockSize()
         {
             return maxAppendBlockSize;
         }
 
-        @Override
-        public Dispatcher getWriteBuffer()
+        public int getIndexBlockSize()
         {
-            if (writeBuffer == null)
-            {
-                final BufferedLogStreamReader streamReader = new BufferedLogStreamReader(getLogStorage(), getLogBlockIndex());
-                writeBuffer = initWriteBuffer(writeBuffer, streamReader, logName, writeBufferSize);
-            }
-            return writeBuffer;
+            return indexBlockSize;
         }
 
-        @Override
+        public int getReadBlockSize()
+        {
+            return readBlockSize;
+        }
+
+        public SnapshotPolicy getSnapshotPolicy()
+        {
+            if (snapshotPolicy == null)
+            {
+                snapshotPolicy = new TimeBasedSnapshotPolicy(Duration.ofMinutes(1));
+            }
+            return snapshotPolicy;
+        }
+
         public AgentRunnerService getWriteBufferAgentRunnerService()
         {
             return writeBufferAgentRunnerService;
         }
 
-        public LogStreamController build()
+        protected Dispatcher initWriteBuffer(Dispatcher writeBuffer, BufferedLogStreamReader logReader,
+                                             String logName, int writeBufferSize)
         {
-            // init write buffer
-            LogStreamImpl.this.logStreamController = new LogStreamController(this);
-            LogStreamImpl.this.writeBuffer = LogStreamControlBuilder.this.getWriteBuffer();
-            return logStreamController;
+            if (writeBuffer == null)
+            {
+                // Get position of last entry
+                long lastPosition = 0;
+
+                logReader.seekToLastEvent();
+
+                if (logReader.hasNext())
+                {
+                    final LoggedEvent lastEntry = logReader.next();
+                    lastPosition = lastEntry.getPosition();
+                }
+
+                // dispatcher needs to generate positions greater than the last position
+                int partitionId = 0;
+
+                if (lastPosition > 0)
+                {
+                    partitionId = PositionUtil.partitionId(lastPosition);
+                }
+
+                writeBuffer = Dispatchers.create("log-write-buffer-" + logName)
+                    .bufferSize(writeBufferSize)
+                    .subscriptions("log-appender")
+                    .initialPartitionId(partitionId + 1)
+                    .conductorExternallyManaged()
+                    .build();
+            }
+            return writeBuffer;
+        }
+
+        public Dispatcher getWriteBuffer()
+        {
+            if (writeBuffer == null)
+            {
+                final BufferedLogStreamReader logReader = new BufferedLogStreamReader(getLogStorage(), getBlockIndex());
+                writeBuffer = initWriteBuffer(writeBuffer, logReader, logName, writeBufferSize);
+            }
+            return writeBuffer;
+        }
+
+        public boolean isLogStreamControllerDisabled()
+        {
+            return logStreamControllerDisabled;
+        }
+
+        public void initSnapshotStorage()
+        {
+        }
+
+        public SnapshotStorage getSnapshotStorage()
+        {
+            if (snapshotStorage == null)
+            {
+                initSnapshotStorage();
+            }
+            return snapshotStorage;
+        }
+
+        public LogStream build()
+        {
+            return new LogStreamImpl(this);
         }
     }
 }

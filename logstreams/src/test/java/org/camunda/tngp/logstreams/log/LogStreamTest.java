@@ -4,7 +4,8 @@ import org.agrona.concurrent.Agent;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
-import org.camunda.tngp.logstreams.impl.LogController;
+import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
+import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.LogStreamImpl;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
@@ -24,8 +25,7 @@ import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Christopher Zell <christopher.zell@camunda.com>
@@ -125,7 +125,7 @@ public class LogStreamTest
         // when log stream is created with builder and without flag is set
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -158,9 +158,9 @@ public class LogStreamTest
 
         // when log stream is open
         final CompletableFuture<Void> completableFuture = logStream.openAsync();
-        final LogController logBlockIndexController = logStream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
         logBlockIndexController.doWork();
-        final LogController logStreamController = logStream.getLogStreamController();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
         logStreamController.doWork();
 
         // then
@@ -182,7 +182,7 @@ public class LogStreamTest
         when(logStream.getLogStorage().isOpen()).thenReturn(true);
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -192,9 +192,9 @@ public class LogStreamTest
 
         // when log stream is open
         final CompletableFuture<Void> completableFuture = stream.openAsync();
-        final LogController logBlockIndexController = stream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = stream.getLogBlockIndexController();
         logBlockIndexController.doWork();
-        final LogController logStreamController = stream.getLogStreamController();
+        final LogStreamController logStreamController = stream.getLogStreamController();
 
         // then
         assertTrue(completableFuture.isDone());
@@ -217,13 +217,13 @@ public class LogStreamTest
 
         // given open log stream
         logStream.openAsync();
-        final LogController logBlockIndexController = logStream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
         logBlockIndexController.doWork();
-        final LogController logStreamController = logStream.getLogStreamController();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
         logStreamController.doWork();
 
         // when log streaming is stopped
-        logStream.stopLogStreaming();
+        logStream.closeLogStreamController();
         logStreamController.doWork(); // closing
         logStreamController.doWork(); // close
 
@@ -234,7 +234,7 @@ public class LogStreamTest
 
         // dispatcher is null as well
         assertNull(logStream.getWriteBuffer());
-        verify(mockWriteBuffer).closeAsync();
+//        verify(mockWriteBuffer).closeAsync();
 
         // agent and controller is removed from agent runner's
         verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
@@ -265,15 +265,67 @@ public class LogStreamTest
         // given open log stream with stopped log stream controller
         logStream.openAsync();
         logStream.getLogBlockIndexController().doWork();
-        LogController logStreamController = logStream.getLogStreamController();
+        LogStreamController logStreamController = logStream.getLogStreamController();
         logStreamController.doWork();
 
-        logStream.stopLogStreaming();
+        logStream.closeLogStreamController();
         logStreamController.doWork(); // closing
         logStreamController.doWork(); // close
 
         // when log streaming is started
-        logStream.startLogStreaming(mockConductorAgentRunnerService);
+        logStream.openLogStreamController();
+        logStreamController = logStream.getLogStreamController();
+
+        // then
+        // log stream controller has been set
+        assertNotNull(logStreamController);
+        logStreamController.doWork();
+        // is running
+        assertTrue(logStreamController.isRunning());
+
+        // dispatcher is initialized
+        assertNotNull(logStream.getWriteBuffer());
+
+        // verify usage of agent runner service, only one times with mock because after re-opening new agent is used
+        verify(mockConductorAgentRunnerService, times(2)).run(any(Agent.class));
+        verify(mockConductorAgentRunnerService).run(mockWriteBufferConductorAgent);
+        verify(mockAgentRunnerService).run(logStreamController);
+    }
+
+    @Test
+    public void shouldStopAndStartLogStreamControllerWithDifferentAgentRunners()
+    {
+        final CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        completableFuture.complete(null);
+        when(mockWriteBuffer.closeAsync()).thenReturn(completableFuture);
+
+        // set up block index and log storage
+        when(mockBlockIndex.size()).thenReturn(1);
+        when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
+        when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
+
+        mockLogStorage.add(newLogEntry()
+            .address(10)
+            .position(1)
+            .key(2)
+            .sourceEventLogStreamId(3)
+            .sourceEventPosition(4L)
+            .producerId(5)
+            .value("event".getBytes()));
+        final AgentRunnerService secondAgentRunnerService = mock(AgentRunnerService.class);
+
+        // given open log stream with stopped log stream controller
+        logStream.openAsync();
+        logStream.getLogBlockIndexController().doWork();
+        LogStreamController logStreamController = logStream.getLogStreamController();
+        logStreamController.doWork();
+
+        logStream.closeLogStreamController();
+        logStreamController.doWork(); // closing
+        logStreamController.doWork(); // close
+
+        // when log streaming is started
+        logStream.openLogStreamController(secondAgentRunnerService);
         logStreamController = logStream.getLogStreamController();
 
         // then
@@ -288,6 +340,7 @@ public class LogStreamTest
 
         // verify usage of agent runner service
         verify(mockConductorAgentRunnerService).run(mockWriteBufferConductorAgent);
+        verify(secondAgentRunnerService).run(any(Agent.class));
         verify(mockAgentRunnerService).run(logStreamController);
     }
 
@@ -311,7 +364,7 @@ public class LogStreamTest
         // given log stream with without flag
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -320,8 +373,8 @@ public class LogStreamTest
             .indexBlockSize(INDEX_BLOCK_SIZE).build();
 
         // when log streaming is started
-        stream.startLogStreaming(mockConductorAgentRunnerService);
-        final LogController logStreamController = stream.getLogStreamController();
+        stream.openLogStreamController(mockConductorAgentRunnerService);
+        final LogStreamController logStreamController = stream.getLogStreamController();
 
         // then
         // log stream controller has been set
@@ -344,9 +397,9 @@ public class LogStreamTest
     {
         // given open log stream
         logStream.openAsync();
-        final LogController logBlockIndexController = logStream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
         logBlockIndexController.doWork();
-        final LogController logStreamController = logStream.getLogStreamController();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
         logStreamController.doWork();
 
         // when log stream is closed
@@ -374,7 +427,7 @@ public class LogStreamTest
         // given open log stream without log stream controller
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -383,7 +436,7 @@ public class LogStreamTest
             .indexBlockSize(INDEX_BLOCK_SIZE).build();
         stream.openAsync();
 
-        final LogController logBlockIndexController = stream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = stream.getLogBlockIndexController();
         logBlockIndexController.doWork();
 
         // when log stream is closed
@@ -406,9 +459,9 @@ public class LogStreamTest
     {
         // given open->close log stream
         logStream.openAsync();
-        final LogController logBlockIndexController = logStream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
         logBlockIndexController.doWork();
-        final LogController logStreamController = logStream.getLogStreamController();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
         logStreamController.doWork();
 
         logStream.closeAsync();
@@ -435,7 +488,7 @@ public class LogStreamTest
         // given open->close log stream without log stream controller
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
@@ -443,7 +496,7 @@ public class LogStreamTest
             .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE).build();
         stream.openAsync();
-        final LogController logBlockIndexController = stream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = stream.getLogBlockIndexController();
         logBlockIndexController.doWork();
 
         stream.closeAsync();
@@ -464,9 +517,9 @@ public class LogStreamTest
     {
         // given open log stream
         logStream.openAsync();
-        final LogController logBlockIndexController = logStream.getLogBlockIndexController();
+        final LogBlockIndexController logBlockIndexController = logStream.getLogBlockIndexController();
         logBlockIndexController.doWork();
-        final LogController logStreamController = logStream.getLogStreamController();
+        final LogStreamController logStreamController = logStream.getLogStreamController();
         logStreamController.doWork();
 
         // expect exception

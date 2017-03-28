@@ -12,13 +12,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 
 /**
  * @author Christopher Zell <christopher.zell@camunda.com>
@@ -29,7 +29,9 @@ public class CompleteEventsInBlockProcessorTest
     private static final int SEGMENT_SIZE = 1024 * 16;
 
     private static final String MSG = "test";
+    private static final String SEC_MSG = "asdf";
     private static final byte[] MSG_BYTES = MSG.getBytes();
+    private static final byte[] SEC_MSG_BYTES = SEC_MSG.getBytes();
     protected static final int ALIGNED_LEN = alignedLength(MSG_BYTES.length);
 
     @Rule
@@ -41,7 +43,6 @@ public class CompleteEventsInBlockProcessorTest
     final CompleteEventsInBlockProcessor processor = new CompleteEventsInBlockProcessor();
 
     private String logPath;
-    private File logDirectory;
     private FsLogStorageConfiguration fsStorageConfig;
     private FsLogStorage fsLogStorage;
     private long appendedAddress;
@@ -50,8 +51,6 @@ public class CompleteEventsInBlockProcessorTest
     public void init()
     {
         logPath = tempFolder.getRoot().getAbsolutePath();
-        logDirectory = new File(logPath);
-
         fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
         fsLogStorage = new FsLogStorage(fsStorageConfig);
 
@@ -60,17 +59,19 @@ public class CompleteEventsInBlockProcessorTest
         directBuffer.wrap(writeBuffer);
 
         /*
-         Buffer: [8test8test2401234567890123456789]
+         Buffer: [4test4asdf30012345678901234567890123456789]
          */
         //small events
-        for (int i = 0; i < 2; i++)
-        {
-            final int idx = i * ALIGNED_LEN;
-            directBuffer.putInt(idx, MSG_BYTES.length);
-            directBuffer.putBytes(messageOffset(idx), MSG_BYTES);
-        }
+        int idx = 0;
+        directBuffer.putInt(idx, MSG_BYTES.length);
+        directBuffer.putBytes(messageOffset(idx), MSG_BYTES);
+
+        idx = ALIGNED_LEN;
+        directBuffer.putInt(idx, SEC_MSG_BYTES.length);
+        directBuffer.putBytes(messageOffset(idx), SEC_MSG_BYTES);
+
         // a large event
-        final int idx = 2 * ALIGNED_LEN;
+        idx = 2 * ALIGNED_LEN;
         final String msg = "012345678901234567890123456789"; // 30
         directBuffer.putInt(idx, msg.length()); // aligned size: 48
         directBuffer.putBytes(messageOffset(idx), msg.getBytes());
@@ -95,8 +96,7 @@ public class CompleteEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(MSG_BYTES.length);
-        final byte[] bytes = getBytes(readBuffer, messageOffset(0));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThatBuffer(buffer).hasBytes(MSG_BYTES, messageOffset(0));
     }
 
     @Test
@@ -116,13 +116,11 @@ public class CompleteEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(MSG_BYTES.length);
-        byte[] bytes = getBytes(readBuffer, messageOffset(0));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThatBuffer(buffer).hasBytes(MSG_BYTES, messageOffset(0));
 
         // second event was read as well
-        assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(MSG_BYTES.length);
-        bytes = getBytes(readBuffer, messageOffset(ALIGNED_LEN));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(SEC_MSG_BYTES.length);
+        assertThatBuffer(buffer).hasBytes(SEC_MSG_BYTES, messageOffset(ALIGNED_LEN));
     }
 
     @Test
@@ -142,11 +140,11 @@ public class CompleteEventsInBlockProcessorTest
 
         // and only first event is read
         assertThat(buffer.getInt(0)).isEqualTo(MSG_BYTES.length);
-        final byte[] bytes = getBytes(readBuffer, messageOffset(0));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThatBuffer(buffer).hasBytes(MSG_BYTES, messageOffset(0));
 
-        // rest is empty / clear
-        assertClearBuffer(readBuffer, ALIGNED_LEN);
+        // position and limit is reset
+        assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
+        assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
     }
 
     @Test
@@ -167,11 +165,11 @@ public class CompleteEventsInBlockProcessorTest
 
         // and only first event is read
         assertThat(buffer.getInt(0)).isEqualTo(MSG_BYTES.length);
-        final byte[] bytes = getBytes(readBuffer, messageOffset(0));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThatBuffer(buffer).hasBytes(MSG_BYTES, messageOffset(0));
 
-        // rest is empty / clear
-        assertClearBuffer(readBuffer, ALIGNED_LEN);
+        // position and limit is reset
+        assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
+        assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
     }
 
     @Test
@@ -221,35 +219,14 @@ public class CompleteEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(MSG_BYTES.length);
-        byte[] bytes = getBytes(readBuffer, messageOffset(0));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThatBuffer(buffer).hasBytes(MSG_BYTES, messageOffset(0));
 
         // second event was read as well
-        assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(MSG_BYTES.length);
-        bytes = getBytes(readBuffer, messageOffset(ALIGNED_LEN));
-        assertThat(bytes).isEqualTo(MSG_BYTES);
+        assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(SEC_MSG_BYTES.length);
+        assertThatBuffer(buffer).hasBytes(SEC_MSG_BYTES, messageOffset(ALIGNED_LEN));
 
-        // rest is empty / clear
-        assertClearBuffer(readBuffer, 2 * ALIGNED_LEN);
+        // position and limit is reset
+        assertThat(readBuffer.position()).isEqualTo(2 * ALIGNED_LEN);
+        assertThat(readBuffer.limit()).isEqualTo(2 * ALIGNED_LEN);
     }
-
-    private void assertClearBuffer(ByteBuffer readBuffer, int offSet)
-    {
-        final byte b = 0;
-        for (int i = 0; i < readBuffer.capacity() - offSet; i++)
-        {
-            assertThat(readBuffer.get(i + offSet)).isEqualTo(b);
-        }
-    }
-
-    private byte[] getBytes(ByteBuffer readBuffer, int startIdx)
-    {
-        final byte[] bytes = new byte[MSG_BYTES.length];
-        for (int i = 0; i < MSG_BYTES.length; i++)
-        {
-            bytes[i] = readBuffer.get(startIdx + i);
-        }
-        return bytes;
-    }
-
 }

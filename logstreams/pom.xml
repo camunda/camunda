@@ -36,7 +36,7 @@
       <artifactId>util</artifactId>
       <version>${version.util}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>hash-index</artifactId>

@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 
@@ -51,14 +52,12 @@ public class LogRecoveryTest
     @After
     public void destroy() throws Exception
     {
-        temFolder.delete();
         agentRunnerService.close();
     }
 
     @Test
-    public void shouldRecoverIndexFromLogStorage() throws InterruptedException, ExecutionException
+    public void shouldRecoverIndexWithLogBlockIndexController() throws InterruptedException, ExecutionException
     {
-
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
             .logRootPath(logPath)
             .deleteOnClose(false)
@@ -76,7 +75,10 @@ public class LogRecoveryTest
 
         log.close();
 
-        readLogAndAssertEvents(WORK_COUNT);
+        final int indexSize = log.getLogBlockIndex().size();
+        final int calculatesIndexSize = calculateIndexSize(WORK_COUNT);
+        assertThat(indexSize).isGreaterThan(calculatesIndexSize);
+        readLogAndAssertEvents(WORK_COUNT, calculatesIndexSize);
     }
 
     @Test
@@ -101,13 +103,16 @@ public class LogRecoveryTest
 
         isLastLogEntry.set(true);
 
-        // write one more event to create the snapshot
-        writeLogEvents(log, 1, MSG_SIZE, WORK_COUNT);
-        waitUntilWrittenKey(log, WORK_COUNT + 1);
+        // write more events to create the snapshot
+        writeLogEvents(log, 1000, MSG_SIZE, WORK_COUNT);
+        waitUntilWrittenKey(log, WORK_COUNT + 1000);
 
         log.close();
 
-        readLogAndAssertEvents(WORK_COUNT + 1);
+        final int indexSize = log.getLogBlockIndex().size();
+        final int calculatesIndexSize = calculateIndexSize(WORK_COUNT + 1000);
+        assertThat(indexSize).isGreaterThan(calculatesIndexSize);
+        readLogAndAssertEvents(WORK_COUNT + 1000, calculatesIndexSize);
     }
 
     @Test
@@ -138,11 +143,14 @@ public class LogRecoveryTest
 
         log.close();
 
-        readLogAndAssertEvents(WORK_COUNT);
+        final int indexSize = log.getLogBlockIndex().size();
+        final int calculatesIndexSize = calculateIndexSize(WORK_COUNT);
+        assertThat(indexSize).isGreaterThan(calculatesIndexSize);
+        readLogAndAssertEvents(WORK_COUNT, calculatesIndexSize);
     }
 
     @Test
-    public void shouldRecoverIndexFromPeriodicallyCreatedSnapshotAndLogStorage() throws InterruptedException, ExecutionException
+    public void shouldRecoverIndexFromPeriodicallyCreatedSnapshot() throws InterruptedException, ExecutionException
     {
         final int snapshotInterval = 10;
 
@@ -165,8 +173,12 @@ public class LogRecoveryTest
 
         log.close();
 
-        readLogAndAssertEvents(WORK_COUNT);
+        final int indexSize = log.getLogBlockIndex().size();
+        final int calculatesIndexSize = calculateIndexSize(WORK_COUNT);
+        assertThat(indexSize).isGreaterThan(calculatesIndexSize);
+        readLogAndAssertEvents(WORK_COUNT, calculatesIndexSize);
     }
+
 
     @Test
     public void shouldRecoverEventPosition() throws InterruptedException, ExecutionException
@@ -174,38 +186,45 @@ public class LogRecoveryTest
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
             .logRootPath(logPath)
             .deleteOnClose(false)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
             .snapshotPolicy(pos -> false)
             .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
-            .build();
-
+            .writeBufferAgentRunnerService(agentRunnerService).build();
         log.open();
 
         // write events
-        writeLogEvents(log, 10, MSG_SIZE, 0);
-        waitUntilWrittenKey(log, 10);
+        writeLogEvents(log, 1500, MSG_SIZE, 0);
+        waitUntilWrittenKey(log, 1500);
 
         log.close();
+        int indexSize = log.getLogBlockIndex().size();
+        assertThat(indexSize).isGreaterThan(0);
 
         // re-open the log
         final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
             .logRootPath(logPath)
             .deleteOnClose(false)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
             .snapshotPolicy(pos -> false)
             .agentRunnerService(agentRunnerService)
-            .writeBufferAgentRunnerService(agentRunnerService)
-            .build();
-
+            .writeBufferAgentRunnerService(agentRunnerService).build();
         newLog.open();
 
+        // check if indices are equal
+        final int newIndexSize = newLog.getLogBlockIndex().size();
+        assertThat(indexSize).isEqualTo(newIndexSize);
+
         // write more events
-        writeLogEvents(newLog, 15, MSG_SIZE, 10);
-        waitUntilWrittenKey(newLog, 25);
+        writeLogEvents(newLog, 1500, MSG_SIZE, 1500);
+        waitUntilWrittenKey(newLog, 3000);
 
         newLog.close();
+        indexSize = newLog.getLogBlockIndex().size();
+        final int calculatesIndexSize = calculateIndexSize(3000);
+        assertThat(indexSize).isGreaterThanOrEqualTo(calculatesIndexSize);
 
         // assert that the event position is recovered after re-open and continues after the last event
-        readLogAndAssertEvents(25);
+        readLogAndAssertEvents(3000, calculatesIndexSize);
     }
 
     @Test
@@ -214,6 +233,7 @@ public class LogRecoveryTest
         final LogStream log = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
             .logRootPath(logPath)
             .deleteOnClose(false)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
             .snapshotPolicy(pos -> false)
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService)
@@ -222,31 +242,40 @@ public class LogRecoveryTest
         log.open();
 
         // write events
-        writeLogEvents(log, 10, MSG_SIZE, 0);
-        waitUntilWrittenKey(log, 10);
+        writeLogEvents(log, 1000, MSG_SIZE, 0);
+        waitUntilWrittenKey(log, 1000);
 
         log.close();
+        int indexSize = log.getLogBlockIndex().size();
+        assertThat(indexSize).isEqualTo(0);
 
         // resume the log
         log.open();
 
         // write more events
-        writeLogEvents(log, 15, MSG_SIZE, 10);
-        waitUntilWrittenKey(log, 25);
+        writeLogEvents(log, 500, MSG_SIZE, 1000);
+        waitUntilWrittenKey(log, 1500);
 
         log.close();
 
-        readLogAndAssertEvents(25);
+        // after resume an index was written
+        final int calculatesIndexSize = calculateIndexSize(1500);
+        assertThat(log.getLogBlockIndex().size()).isGreaterThan(indexSize);
+        indexSize = log.getLogBlockIndex().size();
+        assertThat(indexSize).isGreaterThan(calculatesIndexSize);
+
+        readLogAndAssertEvents(1500, calculatesIndexSize);
     }
 
-    protected void readLogAndAssertEvents(int workCount)
+    protected void readLogAndAssertEvents(int workCount, int indexSize)
     {
         final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
             .logRootPath(logPath)
             .deleteOnClose(true)
             .logSegmentSize(LOG_SEGMENT_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
             .agentRunnerService(agentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .build();
 
         newLog.open();
@@ -256,6 +285,13 @@ public class LogRecoveryTest
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, workCount, MSG_SIZE);
 
         newLog.close();
+
+        final int newIndexSize = newLog.getLogBlockIndex().size();
+        assertThat(newIndexSize).isGreaterThan(indexSize);
     }
 
+    private int calculateIndexSize(int workCount)
+    {
+        return (int) (Math.floor(workCount * MSG_SIZE) / INDEX_BLOCK_SIZE);
+    }
 }

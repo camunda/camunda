@@ -17,6 +17,7 @@ import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
 import org.camunda.tngp.util.FileUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -221,6 +222,56 @@ public class FsLogStorageTest
         thrown.expectMessage("log storage is already closed");
 
         fsLogStorage.append(ByteBuffer.wrap(MSG));
+    }
+
+    protected final ReadResultProcessor readResultProcessor = (buffer, readResult) ->
+    {
+        return -1;
+    };
+
+    @Test
+    public void shouldReadWithProcessor()
+    {
+        // given
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        // when
+        final long result = fsLogStorage.read(readBuffer, address, (buffer, resultAddress) ->
+        {
+            // then
+            assertThat(resultAddress).isEqualTo(MSG.length);
+            assertThat(buffer.array()).isEqualTo(MSG);
+            return resultAddress;
+        });
+        assertThat(result).isEqualTo(address + MSG.length);
+    }
+
+    @Test
+    public void shouldReadWithProcessorAndReturnDifferentAddress()
+    {
+        // given
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        // when
+        final long result = fsLogStorage.read(readBuffer, address, (buffer, resultAddress) -> resultAddress - 1);
+        assertThat(result).isEqualTo(address + MSG.length - 1);
+    }
+
+    @Test
+    public void shouldReadWithProcessorAndReturnErrorCode()
+    {
+        // given
+        final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+        fsLogStorage.open();
+        final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+        // when
+        final long result = fsLogStorage.read(readBuffer, address, (buffer, resultAddress) -> (int) LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+        assertThat(result).isEqualTo(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
     }
 
     @Test

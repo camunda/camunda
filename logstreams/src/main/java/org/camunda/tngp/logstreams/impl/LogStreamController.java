@@ -9,17 +9,19 @@ import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
 import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
 
-public class LogStreamController extends LogController
+public class LogStreamController implements Agent
 {
     protected static final int TRANSITION_FAIL = 3;
     protected static final int TRANSITION_RECOVER = 5;
@@ -34,89 +36,89 @@ public class LogStreamController extends LogController
     protected final ClosingState closingState = new ClosingState();
     protected final ClosedState closedState = new ClosedState();
 
-    protected final StateMachineAgent<Context> stateMachine = new StateMachineAgent<>(
-        StateMachine.<Context>builder(s -> new Context(s))
-            .initialState(closedState)
-            .from(openingState).take(TRANSITION_DEFAULT).to(openState)
-            .from(openingState).take(TRANSITION_FAIL).to(failingState)
-            .from(openState).take(TRANSITION_FAIL).to(failingState)
-            .from(openState).take(TRANSITION_CLOSE).to(closingState)
-            .from(failingState).take(TRANSITION_DEFAULT).to(failedState)
-            .from(failedState).take(TRANSITION_CLOSE).to(closingState)
-            .from(failedState).take(TRANSITION_RECOVER).to(recoveredState)
-            .from(recoveredState).take(TRANSITION_DEFAULT).to(openState)
-            .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
-            .from(closedState).take(TRANSITION_OPEN).to(openingState)
-            .build()
-    );
+    protected final LogStateMachineAgent stateMachine;
 
     //  MANDATORY //////////////////////////////////////////////////
+    protected final LogControllerContext logControllerContext;
     protected final BlockPeek blockPeek = new BlockPeek();
     protected final int maxAppendBlockSize;
     protected final Dispatcher writeBuffer;
     protected final AgentRunnerService writeBufferAgentRunnerService;
     protected Subscription writeBufferSubscription;
+    protected final Runnable openStateRunnable;
+    protected final Runnable closedStateRunnable;
 
     protected List<LogStreamFailureListener> failureListeners = new ArrayList<>();
 
-    public LogStreamController(LogStreamControllerBuilder logStreamControllerBuilder)
+    public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
-        super(logStreamControllerBuilder);
-        this.maxAppendBlockSize = logStreamControllerBuilder.getMaxAppendBlockSize();
-        this.writeBuffer = logStreamControllerBuilder.getWriteBuffer();
-        this.writeBufferAgentRunnerService = logStreamControllerBuilder.getWriteBufferAgentRunnerService();
-    }
+        this.logControllerContext = logStreamBuilder.getLogControllerContext();
+        this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
+        this.writeBuffer = logStreamBuilder.getWriteBuffer();
+        this.writeBufferAgentRunnerService = logStreamBuilder.getWriteBufferAgentRunnerService();
 
-    public interface LogStreamControllerBuilder extends LogControllerBuilder
-    {
-        int getMaxAppendBlockSize();
-
-        Dispatcher getWriteBuffer();
-
-        AgentRunnerService getWriteBufferAgentRunnerService();
+        this.openStateRunnable = () -> logControllerContext.agentRunnerServiceRun(this);
+        this.closedStateRunnable = () -> logControllerContext.agentRunnerServiceRemove(this);
+        this.stateMachine = new LogStateMachineAgent(
+            StateMachine.<LogContext>builder(s -> new LogContext(s))
+                .initialState(closedState)
+                .from(openingState).take(TRANSITION_DEFAULT).to(openState)
+                .from(openingState).take(TRANSITION_FAIL).to(failingState)
+                .from(openState).take(TRANSITION_FAIL).to(failingState)
+                .from(openState).take(TRANSITION_CLOSE).to(closingState)
+                .from(failingState).take(TRANSITION_DEFAULT).to(failedState)
+                .from(failedState).take(TRANSITION_CLOSE).to(closingState)
+                .from(failedState).take(TRANSITION_RECOVER).to(recoveredState)
+                .from(recoveredState).take(TRANSITION_DEFAULT).to(openState)
+                .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
+                .from(closedState).take(TRANSITION_OPEN).to(openingState)
+                .build(), openStateRunnable, closedStateRunnable);
     }
 
     @Override
-    protected StateMachineAgent<Context> getStateMachine()
+    public int doWork()
+    {
+        return getStateMachine().doWork();
+    }
+
+    @Override
+    public String roleName()
+    {
+        return logControllerContext.getName();
+    }
+
+    protected LogStateMachineAgent getStateMachine()
     {
         return stateMachine;
     }
 
-    class OpeningState implements TransitionState<Context>
+    protected class OpeningState implements TransitionState<LogContext>
     {
         @Override
-        public void work(Context context)
+        public void work(LogContext context)
         {
             try
             {
-                if (!logStorage.isOpen())
-                {
-                    logStorage.open();
-                }
+                logControllerContext.logStorageOpen();
 
                 writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
                 writeBufferAgentRunnerService.run(writeBuffer.getConductorAgent());
 
                 context.take(TRANSITION_DEFAULT);
-                openFuture.complete(null);
+                stateMachine.completeOpenFuture(null);
             }
             catch (Exception e)
             {
                 context.take(TRANSITION_FAIL);
-
-                openFuture.completeExceptionally(e);
-            }
-            finally
-            {
-                openFuture = null;
+                stateMachine.completeOpenFuture(e);
             }
         }
     }
 
-    class OpenState implements State<Context>
+    protected class OpenState implements State<LogContext>
     {
         @Override
-        public int doWork(Context context)
+        public int doWork(LogContext context)
         {
             final int bytesAvailable = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
 
@@ -128,7 +130,7 @@ public class LogStreamController extends LogController
                 final long position = buffer.getLong(positionOffset(messageOffset(0)));
                 context.setLastPosition(position);
 
-                final long address = logStorage.append(nioBuffer);
+                final long address = logControllerContext.logStorageAppend(nioBuffer);
 
                 if (address >= 0)
                 {
@@ -150,10 +152,10 @@ public class LogStreamController extends LogController
         }
     }
 
-    class FailingState implements TransitionState<Context>
+    protected class FailingState implements TransitionState<LogContext>
     {
         @Override
-        public void work(Context context)
+        public void work(LogContext context)
         {
             for (int i = 0; i < failureListeners.size(); i++)
             {
@@ -172,10 +174,10 @@ public class LogStreamController extends LogController
         }
     }
 
-    class FailedState implements State<Context>
+    protected class FailedState implements State<LogContext>
     {
         @Override
-        public int doWork(Context context)
+        public int doWork(LogContext context)
         {
             final int available = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
 
@@ -188,10 +190,10 @@ public class LogStreamController extends LogController
         }
     }
 
-    class RecoveredState implements TransitionState<Context>
+    protected class RecoveredState implements TransitionState<LogContext>
     {
         @Override
-        public void work(Context context)
+        public void work(LogContext context)
         {
             for (int i = 0; i < failureListeners.size(); i++)
             {
@@ -210,17 +212,49 @@ public class LogStreamController extends LogController
         }
     }
 
-    class ClosingState implements TransitionState<Context>
+    protected class ClosingState implements TransitionState<LogContext>
     {
-
         @Override
-        public void work(Context context)
+        public void work(LogContext context)
         {
             final Agent conductorAgent = writeBuffer.getConductorAgent();
             writeBufferAgentRunnerService.remove(conductorAgent);
             context.take(TRANSITION_DEFAULT);
         }
+    }
 
+    protected class ClosedState implements WaitState<LogContext>
+    {
+        @Override
+        public void work(LogContext logContext) throws Exception
+        {
+            getStateMachine().closing();
+        }
+    }
+
+    public boolean isRunning()
+    {
+        return getStateMachine().isRunning();
+    }
+
+    public void open()
+    {
+        getStateMachine().open();
+    }
+
+    public CompletableFuture<Void> openAsync()
+    {
+        return getStateMachine().openAsync();
+    }
+
+    public void close()
+    {
+        getStateMachine().close();
+    }
+
+    public CompletableFuture<Void> closeAsync()
+    {
+        return getStateMachine().closeAsync();
     }
 
     public void recover()
@@ -270,4 +304,8 @@ public class LogStreamController extends LogController
         stateMachine.addCommand(context -> failureListeners.remove(listener));
     }
 
+    public Dispatcher getWriteBuffer()
+    {
+        return writeBuffer;
+    }
 }

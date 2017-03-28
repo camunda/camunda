@@ -35,6 +35,7 @@ public class FsLogStorage implements LogStorage
     protected static final int STATE_CLOSED = 2;
 
     protected final FsLogStorageConfiguration config;
+    protected final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
 
     /**
      * Readable log segments
@@ -194,12 +195,12 @@ public class FsLogStorage implements LogStorage
         }
     }
 
-    ReadResultProcessor readResultProcessor = (buffer, readResult) -> readResult;
+
 
     @Override
     public long read(ByteBuffer readBuffer, long addr)
     {
-        return read(readBuffer, addr, readResultProcessor);
+        return read(readBuffer, addr, defaultReadResultProcessor);
     }
 
     @Override

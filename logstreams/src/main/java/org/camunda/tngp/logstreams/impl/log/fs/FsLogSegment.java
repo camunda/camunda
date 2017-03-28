@@ -1,9 +1,9 @@
 package org.camunda.tngp.logstreams.impl.log.fs;
 
-import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
-import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_CAPACITY_OFFSET;
-import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_ID_OFFSET;
-import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,10 +12,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.util.FileUtil;
+import static org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor.*;
 
 public class FsLogSegment
 {
@@ -230,8 +227,6 @@ public class FsLogSegment
      * </ul>
      *
      * @param readBuffer the buffer to read data into
-     * @param offset the offset in the buffer into which data is to be read
-     * @param length the max number of bytes to read
      * @param fileOffset the offset in the file to read from
      * @return operation result
      */

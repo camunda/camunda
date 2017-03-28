@@ -1,13 +1,14 @@
-package org.camunda.tngp.logstreams.log;
+package org.camunda.tngp.logstreams.impl;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.logstreams.impl.ReadableFragment;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 
 /**
+ * Represents the implementation of the logged event.
  */
 public class LoggedEventImpl implements ReadableFragment, LoggedEvent
 {

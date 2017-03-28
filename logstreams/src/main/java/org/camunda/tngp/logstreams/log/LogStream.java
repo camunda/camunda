@@ -3,7 +3,8 @@ package org.camunda.tngp.logstreams.log;
 import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.logstreams.impl.LogController;
+import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
+import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
@@ -17,8 +18,8 @@ import org.camunda.tngp.util.agent.AgentRunnerService;
  *
  * The LogStream will append available events to the log storage with the help of an LogController.
  * The events are read from a given Dispatcher, if available. This can be stopped with the
- * {@link LogStream#stopLogStreaming()}  method and re-/started with {@link LogStream#startLogStreaming(AgentRunnerService)}
- * or {@link LogStream#startLogStreaming(AgentRunnerService, int)}.
+ * {@link LogStream#closeLogStreamController()}  method and re-/started with {@link LogStream#openLogStreamController(AgentRunnerService)}
+ * or {@link LogStream#openLogStreamController(AgentRunnerService, int)}.
  *
  * To access the current LogStorage the {@link LogStream#getLogStorage()} can be used. The {@link #close()}
  * method will close all LogController and the log storage.
@@ -132,42 +133,53 @@ public interface LogStream extends AutoCloseable
      *
      * @return the log stream controller
      */
-    LogController getLogStreamController();
+    LogStreamController getLogStreamController();
 
     /**
      * Returns the log block index controller, which creates periodically the block index for the log storage.
      * @return the log block index controller
      */
-    LogController getLogBlockIndexController();
+    LogBlockIndexController getLogBlockIndexController();
 
     /**
      * Stops the streaming to the log storage. New events are no longer append to the log storage.
      */
-    void stopLogStreaming();
+    CompletableFuture<Void> closeLogStreamController();
 
     /**
-     * This method delegates to {@link #startLogStreaming(AgentRunnerService, int)}.
+     * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
+     *
+     * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size
+     * and the old agent runner service is reused.
+     *
+     * @see {@link #openLogStreamController(AgentRunnerService, int)}
+     * @return returns the future for the log stream controller opening
+     */
+    CompletableFuture<Void> openLogStreamController();
+
+    /**
+     * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
      *
      * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size.
      *
-     * @see {@link #startLogStreaming(AgentRunnerService, int)}
+     * @see {@link #openLogStreamController(AgentRunnerService, int)}
      * @param writeBufferAgentRunnerService the agent runner service which is used for the scheduling
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> startLogStreaming(AgentRunnerService writeBufferAgentRunnerService);
+    CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService);
 
     /**
      * Starts the log streaming from the write buffer into log storage. The write buffer
      * is internally created .The given agent runner service is used to schedule the writing.
      *
      * The {@link #DEFAULT_MAX_APPEND_BLOCK_SIZE} is used as default max append block size.
-     * This method delegates to {@link #startLogStreaming(AgentRunnerService, int)}.
+     * This method delegates to {@link #openLogStreamController(AgentRunnerService, int)}.
      *
      * @param writeBufferAgentRunnerService the agent runner service which is used for the scheduling
      * @param maxAppendBlockSize the maximum block size which should been appended
      * @return returns the future for the log stream controller opening
      */
-    CompletableFuture<Void> startLogStreaming(AgentRunnerService writeBufferAgentRunnerService, int maxAppendBlockSize);
+    CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService, int maxAppendBlockSize);
 
     /**
      * Truncates the log stream from the given position to the end of the stream.

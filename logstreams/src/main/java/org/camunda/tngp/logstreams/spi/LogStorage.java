@@ -71,7 +71,7 @@ public interface LogStorage
      * buffer does not have sufficient capacity to read a whole block</li>
      * </ul>
      *
-     * If this method returns with a positive status code, bytes will be available between the
+     * If this method returns with a positive status code, bytes will be written between the given
      * readbuffer's {@link ByteBuffer#position()} and {@link ByteBuffer#limit()}.
      *
      * This method is invoked concurrently by consumer threads of the log.
@@ -95,7 +95,7 @@ public interface LogStorage
      * buffer does not have sufficient capacity to read a whole block</li>
      * </ul>
      *
-     * If this method returns with a positive status code, bytes will be available between the
+     * If this method returns with a positive status code, bytes will be written between the given
      * readbuffer's {@link ByteBuffer#position()} and {@link ByteBuffer#limit()}.
      *
      * This method is invoked concurrently by consumer threads of the log.

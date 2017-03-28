@@ -1,19 +1,14 @@
 package org.camunda.tngp.logstreams.impl.log.index;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.*;
+import org.agrona.concurrent.AtomicBuffer;
+import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.util.StreamUtil;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.log.LoggedEventImpl;
-import org.camunda.tngp.logstreams.spi.LogStorage;
-import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.util.StreamUtil;
+import static org.camunda.tngp.logstreams.impl.log.index.LogBlockIndexDescriptor.*;
 
 /**
  * Block index, mapping an event's position to the physical address of the block in which it resides
@@ -276,104 +271,6 @@ public class LogBlockIndex implements SnapshotSupport
         if (idx < 0 || idx >= size)
         {
             throw new IllegalArgumentException(String.format("Index out of bounds. index=%d, size=%d.", idx, size));
-        }
-    }
-
-    public void recover(LogStorage logStorage, int indexBlockSize)
-    {
-        recover(logStorage, 0, indexBlockSize);
-    }
-
-    public void recover(LogStorage logStorage, long startPosition, int indexBlockSize)
-    {
-        final ByteBuffer readBuffer = ByteBuffer.allocateDirect(indexBlockSize);
-        final UnsafeBuffer readBufferView = new UnsafeBuffer(readBuffer);
-
-        final LoggedEventImpl logEntry = new LoggedEventImpl();
-
-        int currentBlockSize = 0;
-
-        long readAddress = logStorage.getFirstBlockAddress();
-        if (startPosition > 0)
-        {
-            // start reading from address of given start position
-            readAddress = Math.max(lookupBlockAddress(startPosition), readAddress);
-        }
-
-        while (readAddress > 0)
-        {
-            long nextReadAddress = logStorage.read(readBuffer, readAddress);
-
-            if (nextReadAddress > 0)
-            {
-                int available = readBuffer.position();
-                int offset = 0;
-
-                currentBlockSize += available;
-
-                // read all fragments of the block
-                while (offset < available)
-                {
-                    final int read = available - offset;
-
-                    if (read < HEADER_LENGTH)
-                    {
-                        // end of block - read a partly header
-
-                        // read remainder of header
-                        readBuffer.limit(available);
-                        readBuffer.position(offset);
-                        readBuffer.compact();
-                        readBuffer.limit(HEADER_LENGTH);
-
-                        nextReadAddress = logStorage.read(readBuffer, nextReadAddress);
-
-                        // continue reading the rest of the fragment
-                        offset = 0;
-                        available = HEADER_LENGTH;
-                    }
-
-                    // read the log entry
-                    logEntry.wrap(readBufferView, offset);
-
-                    final int fragmentLength = logEntry.getFragmentLength();
-
-                    if (read >= fragmentLength)
-                    {
-                        final long position = logEntry.getPosition();
-
-                        // create index of completely read log entry
-                        // - if index size is reached
-                        if (currentBlockSize >= indexBlockSize && position > startPosition)
-                        {
-                            addBlock(position, readAddress);
-
-                            currentBlockSize = 0;
-                        }
-                    }
-                    else
-                    {
-                        // end of block - read a partly log entry or only the header
-
-                        // read the remainder of the fragment
-                        readBuffer.position(offset);
-                        readBuffer.limit(available);
-                        readBuffer.compact();
-
-                        readBuffer.limit(fragmentLength);
-                        nextReadAddress = logStorage.read(readBuffer, nextReadAddress);
-
-                        // reset the buffer
-                        readBufferView.setMemory(0, readBuffer.capacity(), (byte) 0);
-                    }
-
-                    // continue with next fragment
-                    offset += fragmentLength;
-                }
-            }
-            // continue with next block
-            readAddress = nextReadAddress;
-            readBuffer.clear();
         }
     }
 

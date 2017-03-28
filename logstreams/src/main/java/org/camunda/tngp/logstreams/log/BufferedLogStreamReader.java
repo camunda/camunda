@@ -2,6 +2,7 @@ package org.camunda.tngp.logstreams.log;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 
@@ -9,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGHT;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 public class BufferedLogStreamReader implements LogStreamReader
@@ -212,7 +213,7 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     protected boolean readMore(int minBytes)
     {
-        final int initialPosition = curr.fragmentOffset;
+        final int initialPosition = curr.getFragementOffset();
 
         if (initialPosition >= 0)
         {
@@ -293,7 +294,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
 
         final int fragmentLength = curr.getFragmentLength();
-        int nextFragmentOffset = curr.fragmentOffset + fragmentLength;
+        int nextFragmentOffset = curr.getFragementOffset() + fragmentLength;
         final int nextHeaderEnd = nextFragmentOffset + headerLength;
 
         if (available < nextHeaderEnd)
@@ -347,7 +348,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
         else
         {
-            final int offset = curr.fragmentOffset;
+            final int offset = curr.getFragementOffset();
             final int fragmentLength = curr.getFragmentLength();
 
             curr.wrap(buffer, offset + fragmentLength);

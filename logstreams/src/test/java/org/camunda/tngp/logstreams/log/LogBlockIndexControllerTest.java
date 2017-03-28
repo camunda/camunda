@@ -1,9 +1,6 @@
 package org.camunda.tngp.logstreams.log;
 
-import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
@@ -39,7 +36,8 @@ public class LogBlockIndexControllerTest
     private static final long LOG_POSITION = 100L;
     private static final long LOG_ADDRESS = 456L;
 
-    private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
+    private static final int INDEX_BLOCK_SIZE = 1024 * 2;
+    private static final int READ_BLOCK_SIZE = 1024;
     private static final long TRUNCATE_ADDRESS = 12345L;
     private static final long TRUNCATE_POSITION = 101L;
 
@@ -47,13 +45,6 @@ public class LogBlockIndexControllerTest
 
     @Mock
     private AgentRunnerService mockAgentRunnerService;
-
-    @Mock
-    private Dispatcher mockWriteBuffer;
-    @Mock
-    private Subscription mockWriteBufferSubscription;
-    @Mock
-    private Agent mockWriteBufferConductorAgent;
 
     @Mock
     private LogBlockIndex mockBlockIndex;
@@ -78,17 +69,16 @@ public class LogBlockIndexControllerTest
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
 
         builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
             .logBlockIndex(mockBlockIndex)
+            .readBlockSize(READ_BLOCK_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE);
 
         when(mockLogStorage.getFirstBlockAddress()).thenReturn(LOG_ADDRESS);
         when(mockBlockIndex.lookupBlockAddress(anyLong())).thenReturn(LOG_ADDRESS);
-        when(mockWriteBuffer.getSubscriptionByName("log-appender")).thenReturn(mockWriteBufferSubscription);
-        when(mockWriteBuffer.getConductorAgent()).thenReturn(mockWriteBufferConductorAgent);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
         blockIdxController = new LogBlockIndexController(builder);
@@ -150,9 +140,11 @@ public class LogBlockIndexControllerTest
     public void shouldCreateSnapshot() throws Exception
     {
         when(mockBlockIndex.getLogPosition(anyInt())).thenReturn(LOG_POSITION);
-        final ByteBuffer buffer = ByteBuffer.allocate(INDEX_BLOCK_SIZE);
+
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
         when(mockSnapshotPolicy.apply(LOG_POSITION)).thenReturn(true);
 
         blockIdxController.openAsync();
@@ -173,9 +165,9 @@ public class LogBlockIndexControllerTest
     @Test
     public void shouldRefuseSnapshotAndReturnToOpenStateIfFailToWriteSnapshot() throws Exception
     {
-        final ByteBuffer buffer = ByteBuffer.allocate(INDEX_BLOCK_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
@@ -194,13 +186,12 @@ public class LogBlockIndexControllerTest
         verify(mockSnapshotWriter).abort();
     }
 
-
     @Test
-    public void shouldAddBlockToIndexIfLimitIsReached() throws Exception
+    public void shouldAddBlockForHalfFullBlock() throws Exception
     {
-        final ByteBuffer buffer = ByteBuffer.allocate(INDEX_BLOCK_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         blockIdxController.openAsync();
         // -> opening
@@ -213,14 +204,53 @@ public class LogBlockIndexControllerTest
     }
 
     @Test
+    public void shouldNotAddBlockForLessThenHalfFullBlock() throws Exception
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
+        when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE - 1 + LOG_ADDRESS, READ_BLOCK_SIZE - 1));
+
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+        // -> open
+        blockIdxController.doWork();
+
+        // idx for block should be created
+        verify(mockBlockIndex, never()).addBlock(anyLong(), anyLong());
+    }
+
+    @Test
+    public void shouldAddBlockForFullBlock() throws Exception
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
+        when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        when(mockLogStorage.read(eq(buffer), eq(READ_BLOCK_SIZE), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+        // -> open
+        blockIdxController.doWork();
+        blockIdxController.doWork();
+
+        // idx for block should be created
+        verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
+    }
+
+    @Test
     public void shouldNotAddBlockToIndexIfLimitIsNotReached() throws Exception
     {
         // given
-        final ByteBuffer buffer = ByteBuffer.allocate(INDEX_BLOCK_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
-        when(mockLogStorage.read(any(ByteBuffer.class), eq(INDEX_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + 2 * LOG_ADDRESS, (int) LOG_ADDRESS));
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + 3 * LOG_ADDRESS, (int) LOG_ADDRESS));
 
         blockIdxController.openAsync();
         // opening
@@ -233,7 +263,7 @@ public class LogBlockIndexControllerTest
         // idx for first block is created
         verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
         // second idx is not created since block is not full enough
-        verify(mockBlockIndex, never()).addBlock(LOG_POSITION, INDEX_BLOCK_SIZE + LOG_ADDRESS);
+        verify(mockBlockIndex, never()).addBlock(LOG_POSITION, READ_BLOCK_SIZE + LOG_ADDRESS);
     }
 
     @Test
@@ -241,7 +271,7 @@ public class LogBlockIndexControllerTest
     {
         // read block which should be truncated
         when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
         when(mockLogStorage.getFirstBlockAddress()).thenReturn(LOG_ADDRESS);
 
         // given open block index controller and empty block index
@@ -276,7 +306,7 @@ public class LogBlockIndexControllerTest
     {
         // read block which should be truncated
         when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + TRUNCATE_ADDRESS, READ_BLOCK_SIZE));
         when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_ADDRESS);
         when(mockBlockIndex.size()).thenReturn(1, 0);
 
@@ -312,7 +342,7 @@ public class LogBlockIndexControllerTest
     {
         when(mockBlockIndex.size()).thenReturn(2, 1);
         when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, INDEX_BLOCK_SIZE));
+            .thenAnswer(readAndProcessLog(TRUNCATE_ADDRESS + READ_BLOCK_SIZE, READ_BLOCK_SIZE));
         when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_ADDRESS);
 
         // given open block index controller with written block index
@@ -358,20 +388,21 @@ public class LogBlockIndexControllerTest
     {
         // given custom log block index controller
         // which ioBuffer can only contain two event's
-        final int alignedLength = alignedLength(911);
+        final int alignedLength = 2 * alignedLength(911);
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
         builder.agentRunnerService(mockAgentRunnerService)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)
             .snapshotPolicy(mockSnapshotPolicy)
             .logBlockIndex(mockBlockIndex)
+            .readBlockSize(alignedLength)
             .indexBlockSize(2 * alignedLength);
 
         final LogBlockIndexController controller = new LogBlockIndexController(builder);
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
-            .thenAnswer(readAndProcessLog(2 * alignedLength, 2 * alignedLength));
+            .thenAnswer(readAndProcessLog(TRUNCATE_ADDRESS + alignedLength, alignedLength));
         when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION + 1)).thenReturn(TRUNCATE_ADDRESS);
         when(mockBlockIndex.size()).thenReturn(1);
 

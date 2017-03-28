@@ -1,23 +1,29 @@
 package org.camunda.tngp.logstreams.impl;
 
+import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.log.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.*;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
-import org.camunda.tngp.util.state.StateMachineAgent;
 import org.camunda.tngp.util.state.TransitionState;
+import org.camunda.tngp.util.state.WaitState;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import static org.camunda.tngp.logstreams.spi.LogStorage.*;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
+import static org.camunda.tngp.logstreams.impl.LoggedEventAccessUtil.getFragmentLength;
+import static org.camunda.tngp.logstreams.impl.LoggedEventAccessUtil.getPosition;
+import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
+import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 /**
- * @author Christopher Zell <christopher.zell@camunda.com>
+ * Represents the log block index controller, which creates the log block index
+ * for the given log storage.
  */
-public class LogBlockIndexController extends LogController
+public class LogBlockIndexController implements Agent
 {
+    private static final int ILLEGAL_ADDRESS = -1;
     protected static final int TRANSITION_SNAPSHOT = 3;
     protected static final int TRANSITION_TRUNCATE = 4;
 
@@ -26,101 +32,105 @@ public class LogBlockIndexController extends LogController
     protected final OpeningState openingState = new OpeningState();
     protected final OpenState openState = new OpenState();
     protected final SnapshottingState snapshottingState = new SnapshottingState();
-    protected final ClosingState closingState = new ClosingState();
     protected final ClosedState closedState = new ClosedState();
     protected final TruncateState truncateState = new TruncateState();
-
-    protected final StateMachineAgent<Context> stateMachine = new StateMachineAgent<>(
-        StateMachine.<Context>builder(s -> new Context(s))
-            .initialState(closedState)
-            .from(openingState).take(TRANSITION_DEFAULT).to(openState)
-            .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
-            .from(openState).take(TRANSITION_CLOSE).to(closingState)
-            .from(openState).take(TRANSITION_TRUNCATE).to(truncateState)
-            .from(truncateState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
-            .from(truncateState).take(TRANSITION_DEFAULT).to(openState)
-            .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
-            .from(closingState).take(TRANSITION_DEFAULT).to(closedState)
-            .from(closedState).take(TRANSITION_OPEN).to(openingState)
-            .build()
-    );
+    protected final LogStateMachineAgent stateMachine;
 
     //  MANDATORY //////////////////////////////////////////////////
 
+    protected final LogControllerContext controllerContext;
     protected final int indexBlockSize;
     protected final SnapshotStorage snapshotStorage;
     protected final SnapshotPolicy snapshotPolicy;
     protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
     protected final ReadResultProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
+    protected final Runnable openStateRunnable;
+    protected final Runnable closedStateRunnable;
 
     // INTERNAL ///////////////////////////////////////////////////
 
-    protected long nextAddress = -1;
+    protected long nextAddress = ILLEGAL_ADDRESS;
     protected int bufferSize;
     protected ByteBuffer ioBuffer;
     protected CompletableFuture<Void> truncateFuture;
+    protected long truncatePosition;
 
-    public LogBlockIndexController(LogBlockIndexControllerBuilder logBlockIndexControllerBuilder)
+    public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
-        super(logBlockIndexControllerBuilder);
-        this.indexBlockSize = logBlockIndexControllerBuilder.getIndexBlockSize();
-        this.snapshotStorage = logBlockIndexControllerBuilder.getSnapshotStorage();
-        this.snapshotPolicy = logBlockIndexControllerBuilder.getSnapshotPolicy();
-        this.bufferSize = indexBlockSize;
-        ioBuffer = ByteBuffer.allocate(bufferSize);
+        this.controllerContext = logStreamBuilder.getLogControllerContext();
+        this.indexBlockSize = logStreamBuilder.getIndexBlockSize();
+        this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
+        this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
+        this.bufferSize = logStreamBuilder.getReadBlockSize();
+        ioBuffer = ByteBuffer.allocateDirect(bufferSize);
         buffer.wrap(ioBuffer);
-    }
 
-    public interface LogBlockIndexControllerBuilder extends LogControllerBuilder
-    {
-        int getIndexBlockSize();
-
-        SnapshotStorage getSnapshotStorage();
-
-        SnapshotPolicy getSnapshotPolicy();
+        this.openStateRunnable = () -> controllerContext.agentRunnerServiceRun(this);
+        this.closedStateRunnable = () -> controllerContext.agentRunnerServiceRemove(this);
+        this.stateMachine = new LogStateMachineAgent(
+            StateMachine.<LogContext>builder(s -> new LogContext(s))
+                .initialState(closedState)
+                .from(openingState).take(TRANSITION_DEFAULT).to(openState)
+                .from(openState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+                .from(openState).take(TRANSITION_TRUNCATE).to(truncateState)
+                .from(truncateState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
+                .from(truncateState).take(TRANSITION_DEFAULT).to(openState)
+                .from(snapshottingState).take(TRANSITION_DEFAULT).to(openState)
+                .from(openState).take(TRANSITION_CLOSE).to(closedState)
+                .from(closedState).take(TRANSITION_OPEN).to(openingState)
+                .build(), openStateRunnable, closedStateRunnable);
     }
 
     @Override
-    protected StateMachineAgent<Context> getStateMachine()
+    public int doWork()
+    {
+        return getStateMachine().doWork();
+    }
+
+    @Override
+    public String roleName()
+    {
+        return controllerContext.getName();
+    }
+
+    protected LogStateMachineAgent getStateMachine()
     {
         return stateMachine;
     }
 
-
-    protected class OpeningState implements TransitionState<Context>
+    protected class OpeningState implements TransitionState<LogContext>
     {
         @Override
-        public void work(Context context)
+        public void work(LogContext logContext)
         {
             try
             {
-                if (!logStorage.isOpen())
-                {
-                    logStorage.open();
-                }
+                controllerContext.logStorageOpen();
+
                 recoverBlockIndex();
             }
             catch (Exception e)
             {
-                // snasphot could not been read - so we start with the first block
-                nextAddress = logStorage.getFirstBlockAddress();
+                // snapshot could not been read - so we start with the first block
+                nextAddress = controllerContext.logStorageFirstBlockAddress();
             }
             finally
             {
-                context.take(TRANSITION_DEFAULT);
-                openFuture.complete(null);
-                openFuture = null;
+                logContext.take(TRANSITION_DEFAULT);
+
+                stateMachine.completeOpenFuture(null);
             }
         }
 
         protected void recoverBlockIndex() throws Exception
         {
-            final long recoveredAddress = logStorage.getFirstBlockAddress();
-            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(name);
+            final long recoveredAddress = controllerContext.logStorageFirstBlockAddress();
+            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(controllerContext.getName());
             if (lastSnapshot != null)
             {
-                lastSnapshot.recoverFromSnapshot(blockIndex);
-                nextAddress = Math.max(blockIndex.lookupBlockAddress(lastSnapshot.getPosition()), recoveredAddress);
+                lastSnapshot.recoverFromSnapshot(controllerContext.getBlockIndex());
+                nextAddress = Math.max(controllerContext.logBlockIndexLookupBlockAddress(lastSnapshot.getPosition()),
+                    recoveredAddress);
             }
             else
             {
@@ -130,143 +140,125 @@ public class LogBlockIndexController extends LogController
 
     }
 
-    protected class OpenState implements State<Context>
+    protected class OpenState implements State<LogContext>
     {
+        private int currentBlockSize = 0;
 
         @Override
-        public int doWork(Context context)
+        public int doWork(LogContext logContext)
         {
             // open state
-            if (nextAddress == -1)
+            if (nextAddress == ILLEGAL_ADDRESS)
             {
-                nextAddress = logStorage.getFirstBlockAddress();
+                nextAddress = controllerContext.logStorageFirstBlockAddress();
             }
 
-            if (nextAddress == -1)
+            int result = 0;
+            if (nextAddress != ILLEGAL_ADDRESS)
             {
-                return 0;
-            }
+                final long currentAddress = nextAddress;
 
-            final long currentAddress = nextAddress;
-
-            // read buffer with only complete events
-            final long opResult = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
-            if (opResult == OP_RESULT_NO_DATA)
-            {
-                return 0;
+                // read buffer with only complete events
+                final long opResult = controllerContext.logStorageRead(ioBuffer, currentAddress, readResultProcessor);
+                if (opResult == OP_RESULT_INVALID_ADDR)
+                {
+                    System.err.println(String.format("Can't read from illegal address: %d", currentAddress));
+                }
+                else
+                {
+                    if (opResult == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
+                    {
+                        increaseBufferSize();
+                        result = 1;
+                    }
+                    else if (opResult > 0)
+                    {
+                        tryToCreateBlockIndex(logContext, currentAddress, opResult);
+                        // set next address
+                        nextAddress = opResult;
+                        result = 1;
+                    }
+                }
             }
-            else if (opResult == OP_RESULT_INVALID_ADDR)
-            {
-                throw new IllegalStateException(String.format("Can't read from illegal address: %d", currentAddress));
-            }
-            else if (opResult == OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY)
-            {
-                increaseBufferSize();
-                return 1;
-            }
-            else
-            {
-                tryToCreateBlockIndex(context, currentAddress, opResult);
-                return 1;
-            }
+            return result;
         }
 
-        private void tryToCreateBlockIndex(Context context, long currentAddress, long opResult)
+        private void tryToCreateBlockIndex(LogContext logContext, long currentAddress, long opResult)
         {
-            // the block size is equal to the position in the buffer
-            final int blockSize = ioBuffer.position();
+            currentBlockSize += ioBuffer.position();
 
             // if remaining block size is less then current block size we will create an index
             // this means will create indices after the block is half full
-            final int remainingIndexBlockSize = indexBlockSize - blockSize;
-            if (blockSize >= remainingIndexBlockSize)
+            final int remainingIndexBlockSize = indexBlockSize - currentBlockSize;
+            if (currentBlockSize >= remainingIndexBlockSize)
             {
-                final long currentBlockAddress = context.getCurrentBlockAddress();
+                final long currentBlockAddress = logContext.getCurrentBlockAddress();
 
                 // if current block address is zero then a complete block was read at once
                 // so we have to use the currentAddress which corresponds to the begin of the block
                 // otherwise we use the cached block address if block was partly read
-                createBlockIdx(context, currentBlockAddress == 0 ? currentAddress : currentBlockAddress);
+                createBlockIdx(logContext, currentBlockAddress == 0 ? currentAddress : currentBlockAddress);
 
                 // reset buffer position and limit for reuse
                 ioBuffer.clear();
 
                 // reset cached block address
-                context.setCurrentBlockAddress(0);
+                logContext.setCurrentBlockAddress(0);
+                currentBlockSize = 0;
             }
             else
             {
                 // block was not filled enough
                 // read next events into buffer after the current read events
-                ioBuffer.position(blockSize);
-                ioBuffer.limit(indexBlockSize);
+                ioBuffer.clear();
 
                 // cache address of block begin
-                if (context.getCurrentBlockAddress() == 0)
+                if (logContext.getCurrentBlockAddress() == 0)
                 {
-                    context.setCurrentBlockAddress(currentAddress);
+                    logContext.setCurrentBlockAddress(currentAddress);
+                    logContext.setLastPosition(getPosition(buffer, 0));
                 }
             }
-            // set next address
-            nextAddress = opResult;
         }
 
         private void increaseBufferSize()
         {
             // increase buffer and try again
             bufferSize *= 2;
-            final int pos = ioBuffer.position();
-            final ByteBuffer newBuffer = ByteBuffer.allocateDirect(bufferSize);
-
-            if (pos > 0)
-            {
-                // copy remaining data
-                ioBuffer.flip();
-                newBuffer.put(ioBuffer);
-            }
-
-            newBuffer.limit(newBuffer.capacity());
-            newBuffer.position(pos);
-
-            ioBuffer = newBuffer;
+            ioBuffer = ByteBuffer.allocateDirect(bufferSize);
             buffer.wrap(ioBuffer);
         }
 
-        private void createBlockIdx(Context context, long addressOfFirstEventInBlock)
+        private void createBlockIdx(LogContext logContext, long addressOfFirstEventInBlock)
         {
             // wrap buffer to access first event
-            final LoggedEventImpl firstEventInBlock = new LoggedEventImpl();
             buffer.wrap(ioBuffer);
-            firstEventInBlock.wrap(buffer, 0);
 
             // write block IDX
-            final long position = firstEventInBlock.getPosition();
-            blockIndex.addBlock(position, addressOfFirstEventInBlock);
+            final long contextPosition = logContext.getLastPosition();
+            final long position = contextPosition == 0
+                ? getPosition(buffer, 0)
+                : contextPosition;
+            controllerContext.logBlockIndexAddBlock(position, addressOfFirstEventInBlock);
 
             // check if snapshot should be created
             if (snapshotPolicy.apply(position))
             {
-                context.setLastPosition(position);
-                context.take(TRANSITION_SNAPSHOT);
+                logContext.setLastPosition(position);
+                logContext.take(TRANSITION_SNAPSHOT);
+            }
+            else
+            {
+                logContext.setLastPosition(0);
             }
         }
     }
 
-    protected class ClosingState implements TransitionState<Context>
-    {
-        @Override
-        public void work(Context context)
-        {
-            context.take(TRANSITION_DEFAULT);
-        }
-
-    }
-
-    protected class SnapshottingState implements TransitionState<Context>
+    protected class SnapshottingState implements TransitionState<LogContext>
     {
 
         @Override
-        public void work(Context context)
+        public void work(LogContext logContext)
         {
             SnapshotWriter snapshotWriter = null;
             try
@@ -274,11 +266,13 @@ public class LogBlockIndexController extends LogController
                 // should do recovery if fails to flush because of corrupted block index - see #8
 
                 // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
-                logStorage.flush();
+                controllerContext.logStorageFlush();
 
-                snapshotWriter = snapshotStorage.createSnapshot(name, context.getLastPosition());
+                snapshotWriter = snapshotStorage.createSnapshot(
+                    controllerContext.getName(),
+                    logContext.getLastPosition());
 
-                snapshotWriter.writeSnapshot(blockIndex);
+                snapshotWriter.writeSnapshot(controllerContext.getBlockIndex());
                 snapshotWriter.commit();
             }
             catch (Exception e)
@@ -292,21 +286,57 @@ public class LogBlockIndexController extends LogController
             }
             finally
             {
+                logContext.setLastPosition(0);
                 // regardless whether the writing of the snapshot was successful or not we go to the open state
-                context.take(TRANSITION_DEFAULT);
+                logContext.take(TRANSITION_DEFAULT);
             }
+        }
+    }
+
+    protected class ClosedState implements WaitState<LogContext>
+    {
+        @Override
+        public void work(LogContext logContext) throws Exception
+        {
+            getStateMachine().closing();
         }
     }
 
     public boolean isClosed()
     {
-        return stateMachine.getCurrentState() == closedState;
+        return getStateMachine().getCurrentState() == closedState;
     }
 
     public boolean isOpen()
     {
-        return stateMachine.getCurrentState() == openState;
+        return getStateMachine().getCurrentState() == openState;
     }
+
+    public boolean isRunning()
+    {
+        return getStateMachine().isRunning();
+    }
+
+    public void open()
+    {
+        getStateMachine().open();
+    }
+
+    public CompletableFuture<Void> openAsync()
+    {
+        return getStateMachine().openAsync();
+    }
+
+    public void close()
+    {
+        getStateMachine().close();
+    }
+
+    public CompletableFuture<Void> closeAsync()
+    {
+        return getStateMachine().closeAsync();
+    }
+
 
     public long getNextAddress()
     {
@@ -318,17 +348,14 @@ public class LogBlockIndexController extends LogController
         return indexBlockSize;
     }
 
-
-    protected long truncatePosition;
-
     public CompletableFuture<Void> truncate(long position)
     {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
-        getStateMachine().addCommand(context ->
+        getStateMachine().addCommand(LogContext ->
         {
 
-            final boolean possibleToTakeTransition = context.tryTake(TRANSITION_TRUNCATE);
+            final boolean possibleToTakeTransition = LogContext.tryTake(TRANSITION_TRUNCATE);
             if (possibleToTakeTransition)
             {
                 truncatePosition = position;
@@ -343,60 +370,58 @@ public class LogBlockIndexController extends LogController
         return future;
     }
 
-    private class TruncateState implements State<Context>
+    private class TruncateState implements State<LogContext>
     {
 
         public static final String EXCEPTION_MSG_TRUNCATE_FAILED = "Truncation failed! Position %d was not found.";
 
         @Override
-        public int doWork(Context context) throws Exception
+        public int doWork(LogContext logContext) throws Exception
         {
-            context.reset();
+            logContext.reset();
             int transition = TRANSITION_DEFAULT;
             try
             {
-                long truncateAddress = blockIndex.size() > 0
-                    ? blockIndex.lookupBlockAddress(truncatePosition)
-                    : logStorage.getFirstBlockAddress();
+                long truncateAddress = controllerContext.logBlockIndexTryLookupBlockAddress(truncatePosition);
 
                 // find event with given position to calculate address
                 ioBuffer.clear();
-                logStorage.read(ioBuffer, truncateAddress);
+                controllerContext.logStorageRead(ioBuffer, truncateAddress);
+
                 truncateAddress = findAddressForTruncateEvent(truncateAddress);
 
                 // truncate
-                transition = truncate(context, transition, truncateAddress);
+                transition = truncate(logContext, transition, truncateAddress);
             }
             finally
             {
                 truncatePosition = 0;
                 truncateFuture.complete(null);
                 truncateFuture = null;
-                context.take(transition);
+                logContext.take(transition);
             }
             return 0;
         }
 
-        private int truncate(Context context, int transition, long truncateAddress)
+        private int truncate(LogContext logContext, int transition, long truncateAddress)
         {
-            if (truncateAddress != -1)
+            if (truncateAddress != ILLEGAL_ADDRESS)
             {
-                blockIndex.truncate(truncatePosition);
-                logStorage.truncate(truncateAddress);
+                controllerContext.truncateLogBlockIndexAndLogStorage(truncatePosition, truncateAddress);
 
                 // write new snapshot
-                final int lastIdx = blockIndex.size() - 1;
+                final int lastIdx = controllerContext.logBlockIndexLastIndex();
                 if (lastIdx >= 0)
                 {
-                    final long lastBlockPosition = blockIndex.getLogPosition(lastIdx);
+                    final long lastBlockPosition = controllerContext.logBlockIndexLogPosition(lastIdx);
 
-                    context.setLastPosition(lastBlockPosition);
+                    logContext.setLastPosition(lastBlockPosition);
                     transition = TRANSITION_SNAPSHOT;
                 }
                 else
                 {
                     // if all blocks are deleted we need to clean up the snapshots as well
-                    snapshotStorage.purgeSnapshot(name);
+                    snapshotStorage.purgeSnapshot(controllerContext.getName());
                 }
             }
             else
@@ -409,7 +434,6 @@ public class LogBlockIndexController extends LogController
         private long findAddressForTruncateEvent(long truncateAddress)
         {
             buffer.wrap(ioBuffer);
-            final LoggedEventImpl event = new LoggedEventImpl();
 
             int offset = 0;
             boolean foundAddress = false;
@@ -417,16 +441,17 @@ public class LogBlockIndexController extends LogController
             {
                 if (offset >= buffer.capacity())
                 {
-                    return -1;
+                    return ILLEGAL_ADDRESS;
                 }
-                event.wrap(buffer, offset);
-                if (event.getPosition() == truncatePosition)
+
+                final long position = getPosition(buffer, offset);
+                if (position == truncatePosition)
                 {
                     foundAddress = true;
                 }
                 else
                 {
-                    offset += event.getFragmentLength();
+                    offset += getFragmentLength(buffer, offset);
                 }
             }
             return truncateAddress + offset;

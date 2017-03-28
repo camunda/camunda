@@ -78,8 +78,6 @@ public class LogStreamControllerTest
     @Mock
     private SnapshotStorage mockSnapshotStorage;
     @Mock
-    private ReadableSnapshot mockSnapshot;
-    @Mock
     private SnapshotWriter mockSnapshotWriter;
     @Mock
     private SnapshotPolicy mockSnapshotPolicy;
@@ -157,30 +155,28 @@ public class LogStreamControllerTest
         verify(mockConductorAgentRunnerService, times(1)).run(mockWriteBufferConductorAgent);
     }
 
-    // should not close anymore
-//    @Test
-//    public void shouldClose()
-//    {
-//        controller.openAsync();
-//        controller.doWork();
-//
-//        assertThat(controller.isClosed()).isFalse();
-//
-//        final CompletableFuture<Void> future = controller.closeAsync();
-//
-//        // -> closing
-//        controller.doWork();
-//        // -> closed
-//        controller.doWork();
-//
-//        assertThat(future).isCompleted();
-//        assertThat(controller.isClosed()).isTrue();
-//
-//        verify(mockAgentRunnerService).remove(any(Agent.class));
-//        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
-//
-//        verify(mockLogStorage).close();
-//    }
+    @Test
+    public void shouldClose()
+    {
+        controller.openAsync();
+        controller.doWork();
+
+        assertThat(controller.isClosed()).isFalse();
+
+        final CompletableFuture<Void> future = controller.closeAsync();
+
+        // -> closing
+        controller.doWork();
+        // -> closed
+        controller.doWork();
+
+        assertThat(future).isCompleted();
+        assertThat(controller.isClosed()).isTrue();
+
+        verify(mockAgentRunnerService).remove(any(Agent.class));
+        verify(mockConductorAgentRunnerService).remove(mockWriteBufferConductorAgent);
+
+    }
 
     @Test
     public void shouldNotCloseIfNotOpen()

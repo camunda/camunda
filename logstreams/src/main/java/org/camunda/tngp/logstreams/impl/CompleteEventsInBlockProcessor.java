@@ -1,13 +1,13 @@
 package org.camunda.tngp.logstreams.impl;
 
-import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.logstreams.log.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
 
 import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.logstreams.impl.LoggedEventAccessUtil.getFragmentLength;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 /**
@@ -15,14 +15,9 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_
  */
 public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 {
-    public static void clearBuffer(ByteBuffer buffer, int beginPosition)
-    {
-        final byte b = 0;
-        for (; beginPosition < buffer.limit(); beginPosition++)
-        {
-            buffer.put(beginPosition, b);
-        }
-    }
+    private static final byte ZERO_BYTE = 0;
+
+    protected final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
 
     @Override
     public int process(ByteBuffer byteBuffer, int readResult)
@@ -37,15 +32,11 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 
         int remainingBytes = readResult;
         int position = byteBuffer.position() - readResult;
-        final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
         directBuffer.wrap(byteBuffer);
 
         while (remainingBytes > 0)
         {
-            final LoggedEventImpl loggedEvent = new LoggedEventImpl();
-            loggedEvent.wrap(directBuffer, position);
-
-            final int messageLength = loggedEvent.getFragmentLength(); // alignedLength(loggedEvent.getMessageLength());
+            final int messageLength = getFragmentLength(directBuffer, position);
             if (messageLength <= remainingBytes)
             {
                 // logged event was completely read into the block
@@ -58,7 +49,6 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
                 {
                     // clean remaining bytes
                     readResult = readResult - remainingBytes;
-                    clearBuffer(byteBuffer, readResult);
                     remainingBytes = 0;
                 }
             }
@@ -70,7 +60,6 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
                 {
                     // remove event which does not fit and was not read completely
                     readResult = readResult - remainingBytes;
-                    clearBuffer(byteBuffer, readResult);
                     remainingBytes = 0;
                 }
                 else
@@ -79,6 +68,8 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor
                 }
             }
         }
+        byteBuffer.position(readResult);
+        byteBuffer.limit(readResult);
         return readResult;
     }
 }
