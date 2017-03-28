@@ -14,7 +14,7 @@
     <modules>
         <module>engine-purge</module>
         <module>import-performance</module>
-        <module>optimize-service-performance-tests</module>
+        <module>service-performance-tests</module>
     </modules>
 
 
