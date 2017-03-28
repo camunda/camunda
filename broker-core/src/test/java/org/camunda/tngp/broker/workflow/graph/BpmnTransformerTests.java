@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
@@ -19,7 +20,7 @@ public class BpmnTransformerTests
     private BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
     @Test
-    public void shouldTransformStartEvnet()
+    public void shouldTransformStartEvent()
     {
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess()
@@ -40,9 +41,35 @@ public class BpmnTransformerTests
     }
 
     @Test
-    public void shouldTransformEndEvnet()
+    public void shouldTransformSequenceFlow()
     {
         // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess()
+                .startEvent("a")
+                .sequenceFlowId("to")
+                .endEvent("b")
+                .done();
+
+        // when
+        final ExecutableProcess process = transformSingleProcess(bpmnModelInstance);
+
+        // then
+        final ExecutableFlowElement element = process.findFlowElementById("to");
+        assertThat(element).isInstanceOf(ExecutableSequenceFlow.class);
+
+        final ExecutableSequenceFlow sequenceFlow = (ExecutableSequenceFlow) element;
+        assertThat(sequenceFlow.getId()).isEqualTo("to");
+        assertThat(sequenceFlow.getSourceNode().getId()).isEqualTo("a");
+        assertThat(sequenceFlow.getTargetNode().getId()).isEqualTo("b");
+
+        assertThat(sequenceFlow.getSourceNode().getOutgoingSequenceFlows()).hasSize(1).contains(sequenceFlow);
+        assertThat(sequenceFlow.getTargetNode().getIncomingSequenceFlows()).hasSize(1).contains(sequenceFlow);
+    }
+
+    @Test
+    public void shouldTransformEndEvent()
+    {
+     // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess()
             .startEvent()
             .endEvent("foo")

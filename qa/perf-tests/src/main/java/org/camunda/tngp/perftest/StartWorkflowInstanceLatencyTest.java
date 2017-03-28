@@ -52,8 +52,8 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
 
         return () ->
         {
-            return workflowsClient.start()
-                .workflowDefinitionKey("process")
+            return workflowsClient.create()
+                .bpmnProcessId("process")
                 .executeAsync(connection);
         };
     }

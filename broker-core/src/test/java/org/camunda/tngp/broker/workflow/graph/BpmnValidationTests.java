@@ -26,6 +26,7 @@ public class BpmnValidationTests
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
             .startEvent()
+            .endEvent()
             .done();
 
         // when
@@ -41,6 +42,7 @@ public class BpmnValidationTests
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createProcess("process")
             .startEvent()
+            .endEvent()
             .done();
 
         // when
@@ -68,13 +70,13 @@ public class BpmnValidationTests
         definitions.addChildElement(process1);
         process1.setExecutable(true);
         process1.setId("process1");
-        process1.builder().startEvent().done();
+        process1.builder().startEvent().endEvent().done();
 
         final Process process2 = bpmnModelInstance.newInstance(Process.class);
         definitions.addChildElement(process2);
         process2.setExecutable(true);
         process2.setId("process2");
-        process2.builder().startEvent().done();
+        process2.builder().startEvent().endEvent().done();
 
         // when
         final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
@@ -94,6 +96,7 @@ public class BpmnValidationTests
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("")
             .startEvent()
+            .endEvent()
             .done();
 
         // when
@@ -120,6 +123,7 @@ public class BpmnValidationTests
 
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent()
+            .endEvent()
             .done();
 
         // when
@@ -160,6 +164,7 @@ public class BpmnValidationTests
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
                 .startEvent("foo")
                     .message("bar")
+                .endEvent()
                 .done();
 
         // when
@@ -180,8 +185,14 @@ public class BpmnValidationTests
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process").done();
 
         final Process process = bpmnModelInstance.getModelElementById("process");
-        process.addChildElement(bpmnModelInstance.newInstance(StartEvent.class));
-        process.addChildElement(bpmnModelInstance.newInstance(StartEvent.class));
+
+        final StartEvent startEvent1 = bpmnModelInstance.newInstance(StartEvent.class);
+        process.addChildElement(startEvent1);
+        startEvent1.builder().endEvent().done();
+
+        final StartEvent startEvent2 = bpmnModelInstance.newInstance(StartEvent.class);
+        process.addChildElement(startEvent2);
+        startEvent2.builder().endEvent().done();
 
         // when
         final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
@@ -193,6 +204,49 @@ public class BpmnValidationTests
             .isNotNull()
             .hasSize(1)
             .extracting("code").contains(ValidationCodes.MORE_THAN_ONE_NONE_START_EVENT);
+    }
+
+    @Test
+    public void shouldNotBeValidIfNoOutgoingSequenceFlow()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
+                .startEvent("foo")
+                .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getErrorCount()).isEqualTo(1);
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.NO_OUTGOING_SEQUENCE_FLOW);
+    }
+
+    @Test
+    public void shouldNotBeValidIfMoreThanOneOutgoingSequenceFlow()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
+                .startEvent("foo")
+                    .sequenceFlowId("a")
+                    .endEvent()
+                .moveToNode("foo")
+                    .sequenceFlowId("b")
+                    .endEvent()
+                .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getErrorCount()).isEqualTo(1);
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.MORE_THAN_ONE_OUTGOING_SEQUENCE_FLOW);
     }
 
 }

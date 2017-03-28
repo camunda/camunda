@@ -19,7 +19,9 @@ import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEventType;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableBpmnEvent;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
@@ -46,6 +48,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
     protected final CreateWorkflowInstanceEventProcessor createWorkflowInstanceEventProcessor = new CreateWorkflowInstanceEventProcessor();
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
+    protected final EventOccurredEventProcessor eventOccurredEventProcessor = new EventOccurredEventProcessor();
 
     // data //////////////////////////////////////////
 
@@ -144,6 +147,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     eventProcessor = workflowInstanceCreatedEventProcessor;
                     break;
 
+                case EVENT_OCCURRED:
+                    eventProcessor = eventOccurredEventProcessor;
+                    break;
+
                 default:
                     break;
             }
@@ -157,6 +164,51 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         sourceEventMetadata.reset();
         deploymentEvent.reset();
         workflowInstanceEvent.reset();
+    }
+
+    protected ExecutableProcess getProcess(final DirectBuffer bpmnProcessId, int version)
+    {
+        ExecutableProcess process = null;
+
+        final long deploymentEventPosition = workflowPositionIndexAccessor.wrap(bpmnProcessId, version).getEventPosition();
+
+        if (deploymentEventPosition >= 0)
+        {
+            final boolean found = deploymentLogStreamReader.seek(deploymentEventPosition);
+
+            if (found && deploymentLogStreamReader.hasNext())
+            {
+                final LoggedEvent deployedWorkflowEvent = deploymentLogStreamReader.next();
+
+                deployedWorkflowEvent.readValue(deploymentEvent);
+
+                // currently, it can only be one
+                process = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
+            }
+        }
+
+        if (process == null)
+        {
+            throw new RuntimeException("Failed to start workflow instance. No deployment event found.");
+        }
+
+        return process;
+    }
+
+    protected long writeWorkflowEvent(LogStreamWriter writer)
+    {
+        targetEventMetadata.reset();
+        targetEventMetadata
+                .protocolVersion(Constants.PROTOCOL_VERSION)
+                .eventType(WORKFLOW_EVENT);
+
+        // TODO: targetEventMetadata.raftTermId(raftTermId);
+
+        // don't forget to set the key or use positionAsKey
+        return writer
+                .metadataWriter(targetEventMetadata)
+                .valueWriter(workflowInstanceEvent)
+                .tryWrite();
     }
 
     private final class CreateWorkflowInstanceEventProcessor implements EventProcessor
@@ -199,18 +251,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
-                    .eventType(WORKFLOW_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-            return writer
-                    .key(eventKey)
-                    .metadataWriter(targetEventMetadata)
-                    .valueWriter(workflowInstanceEvent)
-                    .tryWrite();
+            return writeWorkflowEvent(writer.key(eventKey));
         }
     }
 
@@ -233,50 +274,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 .setActivityId(activityId);
         }
 
-        protected ExecutableProcess getProcess(final DirectBuffer bpmnProcessId, int version)
-        {
-            ExecutableProcess process = null;
-
-            final long deploymentEventPosition = workflowPositionIndexAccessor.wrap(bpmnProcessId, version).getEventPosition();
-
-            if (deploymentEventPosition >= 0)
-            {
-                final boolean found = deploymentLogStreamReader.seek(deploymentEventPosition);
-
-                if (found && deploymentLogStreamReader.hasNext())
-                {
-                    final LoggedEvent deployedWorkflowEvent = deploymentLogStreamReader.next();
-
-                    deployedWorkflowEvent.readValue(deploymentEvent);
-
-                    // currently, it can only be one
-                    process = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
-                }
-            }
-
-            if (process == null)
-            {
-                throw new RuntimeException("Failed to start workflow instance. No deployment event found.");
-            }
-
-            return process;
-        }
-
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            targetEventMetadata.reset();
-            targetEventMetadata
-                    .protocolVersion(Constants.PROTOCOL_VERSION)
-                    .eventType(WORKFLOW_EVENT);
-
-            // TODO: targetEventMetadata.raftTermId(raftTermId);
-
-            return writer
-                    .positionAsKey()
-                    .metadataWriter(targetEventMetadata)
-                    .valueWriter(workflowInstanceEvent)
-                    .tryWrite();
+            return writeWorkflowEvent(writer.positionAsKey());
         }
 
         @Override
@@ -285,6 +286,33 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             // TODO increment workflow instance token count
         }
 
+    }
+
+    private final class EventOccurredEventProcessor implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            final DirectBuffer bpmnProcessId = workflowInstanceEvent.getBpmnProcessId();
+            final int version = workflowInstanceEvent.getVersion();
+
+            final ExecutableProcess process = getProcess(bpmnProcessId, version);
+
+            final DirectBuffer currentActivityId = workflowInstanceEvent.getActivityId();
+            final ExecutableBpmnEvent occurredEvent = process.getChildById(currentActivityId);
+            // currently, the event is a start event and has exactly one outgoing sequence flow
+            final ExecutableSequenceFlow sequenceFlow = occurredEvent.getOutgoingSequenceFlows()[0];
+
+            workflowInstanceEvent
+                .setEventType(WorkflowInstanceEventType.SEQUENCE_FLOW_TAKEN)
+                .setActivityId(sequenceFlow.getId());
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.positionAsKey());
+        }
     }
 
     private final class DeployedWorkflowEventProcessor implements EventProcessor

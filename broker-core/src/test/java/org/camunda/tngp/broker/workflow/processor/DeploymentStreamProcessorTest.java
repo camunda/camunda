@@ -77,6 +77,7 @@ public class DeploymentStreamProcessorTest
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
             .startEvent()
+            .endEvent()
             .done();
 
         // when
@@ -98,6 +99,7 @@ public class DeploymentStreamProcessorTest
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
             .startEvent()
+            .endEvent()
             .done();
 
         // when
@@ -128,6 +130,7 @@ public class DeploymentStreamProcessorTest
         // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
             .startEvent()
+            .endEvent()
             .done();
 
         mockController.processEvent(1L, event -> event

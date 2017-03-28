@@ -1,5 +1,8 @@
 package org.camunda.tngp.broker.workflow.graph.model;
 
+import org.agrona.DirectBuffer;
+import org.camunda.tngp.util.buffer.BufferUtil;
+
 public class ExecutableScope extends ExecutableFlowNode
 {
     private ExecutableFlowElement[] flowElements;
@@ -16,15 +19,21 @@ public class ExecutableScope extends ExecutableFlowNode
         this.flowElements = flowElements;
     }
 
-    public ExecutableFlowElement getChildById(String id)
+    public <T extends ExecutableFlowElement> T getChildById(String id)
+    {
+        return getChildById(BufferUtil.wrapString(id));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ExecutableFlowElement> T getChildById(DirectBuffer id)
     {
         for (int i = 0; i < flowElements.length; i++)
         {
             final ExecutableFlowElement flowElement = flowElements[i];
 
-            if (id.equals(flowElement.getId()))
+            if (BufferUtil.equals(id, flowElement.getIdBuffer()))
             {
-                return flowElement;
+                return (T) flowElement;
             }
         }
 

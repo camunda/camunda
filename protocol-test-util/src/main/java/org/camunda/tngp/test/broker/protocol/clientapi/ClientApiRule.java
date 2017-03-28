@@ -1,11 +1,8 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.net.InetSocketAddress;
 import java.util.stream.Stream;
 
-import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.Transport;
@@ -94,20 +91,9 @@ public class ClientApiRule extends ExternalResource
         return subscribedEventCollector.getPendingEvents();
     }
 
-    public ClientApiRule openSubscription(int topicId)
+    public TestTopicClient topic(int topicId)
     {
-        final ControlMessageResponse response = createControlMessageRequest()
-            .messageType(ControlMessageType.ADD_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("topicId", topicId)
-                .put("startPosition", 0)
-                .put("name", "test")
-            .done()
-            .sendAndAwait();
-
-        assertThat((int) response.getData().get("id")).isGreaterThanOrEqualTo(0);
-
-        return this;
+        return new TestTopicClient(this, topicId);
     }
 
 }

@@ -53,8 +53,8 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
 
         return () ->
         {
-            return workflows.start()
-                .workflowDefinitionKey("process")
+            return workflows.create()
+                .bpmnProcessId("process")
                 .executeAsync(connection);
         };
     }
