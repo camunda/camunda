@@ -7,3 +7,7 @@ export function isViewSelected({view}, targetView) {
 
   return includes(targetView, view);
 }
+
+export function getView({view}) {
+  return view;
+}

@@ -20,7 +20,7 @@ export function createHeatmapRenderer({viewer}) {
     }
   };
 
-  function renderHeatmap({heatmap: {data: {flowNodes}}}) {
+  function renderHeatmap({view, heatmap: {data: {flowNodes}}}) {
     // add heatmap
     if (!heatmapRendered) {
       removeHeatmap(viewer);
@@ -31,7 +31,7 @@ export function createHeatmapRenderer({viewer}) {
 
     // add heatmap overlays
     removeOverlays(viewer);
-    addHeatmapOverlay(viewer, flowNodes);
+    addHeatmapOverlay(viewer, flowNodes, view);
   }
 
   function removeHeatmap() {

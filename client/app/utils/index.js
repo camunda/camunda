@@ -7,3 +7,4 @@ export {
 export {onNextUpdate} from './onNextUpdate';
 export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
 export {getFilterQuery, getDefinitionId} from './query';
+export {howLong} from './howLong';

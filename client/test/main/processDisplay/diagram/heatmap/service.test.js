@@ -32,6 +32,7 @@ describe('Heatmap service', () => {
   let notHoveredOverlay;
   let hoveredOverlay;
   let getFunction;
+  let howLong;
 
   setupPromiseMocking();
 
@@ -44,6 +45,9 @@ describe('Heatmap service', () => {
 
     createHoverElementAction = sinon.stub().returns(HOVER_ACTION);
     __set__('createHoverElementAction', createHoverElementAction);
+
+    howLong =  sinon.stub().returns('duration');
+    __set__('howLong', howLong);
 
     clearFunction = sinon.spy();
 
@@ -77,6 +81,7 @@ describe('Heatmap service', () => {
     __ResetDependency__('dispatchAction');
     __ResetDependency__('generateHeatmap');
     __ResetDependency__('createHoverElementAction');
+    __ResetDependency__('howLong');
   });
 
   describe('get Heatmap', () => {
@@ -118,6 +123,16 @@ describe('Heatmap service', () => {
       const type = addFunction.getCall(0).args[1];
 
       expect(type).to.eql(VALUE_OVERLAY);
+    });
+
+    it('should add overlay with duration', () => {
+      addHeatmapOverlay(viewer, heatmapData, 'duration');
+
+      addHeatmapOverlay(viewer, heatmapData);
+
+      const node = addFunction.getCall(0).args[2].html;
+
+      expect(node.textContent).to.contain('duration');
     });
 
     describe('interaction', () => {

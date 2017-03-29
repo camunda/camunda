@@ -90,7 +90,6 @@ describe('<ProcessDisplay>', () => {
 
     expect(node.textContent).to.contain('Diagram');
     expect(Diagram.appliedWith({
-      selector: 'display',
       createOverlaysRenderer: createHeatmapRenderer
     })).to.eql(true);
   });
@@ -103,7 +102,6 @@ describe('<ProcessDisplay>', () => {
 
     expect(node.textContent).to.contain('Diagram');
     expect(Diagram.appliedWith({
-      selector: 'display',
       createOverlaysRenderer: createHeatmapRenderer
     })).to.eql(true);
   });

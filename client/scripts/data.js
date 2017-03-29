@@ -90,7 +90,8 @@ function getEventsForActivity(processInstanceId, entry, definition) {
   var activityInstanceId = uuid();
 
   return states.map(function(state, index) {
-    var startOffset = Math.round(Math.random() * 1000 * 60 * 60 * 24 * 365);
+    var dayLength =  1000 * 60 * 60 * 24;
+    var startOffset = Math.round(Math.random() * dayLength * 365);
     var endOffset = Math.round(Math.random() * startOffset);
 
     return {
@@ -102,7 +103,8 @@ function getEventsForActivity(processInstanceId, entry, definition) {
       state: state,
       timestamp: new Date().getTime() + Math.round(index * -5000 * Math.random()),
       startDate: getDateString(startOffset),
-      endDate: getDateString(endOffset)
+      endDate: getDateString(endOffset),
+      durationInMs: Math.round(dayLength * 20 * Math.random())
     };
   });
 }

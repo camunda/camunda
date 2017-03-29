@@ -3,7 +3,7 @@ import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './di
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
 import {loadData} from './service';
-import {isViewSelected} from './controls';
+import {isViewSelected, getView as getControlsView} from './controls';
 import {LoadingIndicator} from 'widgets';
 import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
 
@@ -24,7 +24,7 @@ function Process() {
             </div>
           </Case>
           <Case predicate={shouldDisplay(['frequency', 'duration'])}>
-            <Diagram selector="display" createOverlaysRenderer={createHeatmapRenderer} />
+            <Diagram selector={getHeatmapState} createOverlaysRenderer={createHeatmapRenderer} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="display" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
@@ -38,8 +38,15 @@ function Process() {
     <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
 
-  function hasNoData({display:{heatmap:{data}}}) {
-    return !data || !data.piCount;
+  function getHeatmapState({display, controls}) {
+    return {
+      ...display,
+      view: getControlsView(controls)
+    };
+  }
+
+  function hasNoData({controls, display:{heatmap:{data}}}) {
+    return (!data || !data.piCount) && isViewSelected(controls, ['frequency', 'duration', 'branch_analysis']);
   }
 
   function shouldDisplay(targetView) {
