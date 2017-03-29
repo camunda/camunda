@@ -17,7 +17,8 @@ describe('Gateway Analysis', () => {
     browser.waitForExist('.processDefinitionSelect option[value]:not([value=""])');
 
     // SELECT VIEW
-    browser.selectByVisibleText('.view-select', 'Branch Analysis');
+    browser.click('.dropdown*=None');
+    browser.click('a*=Branch');
 
     // SELECT PROCESS DEFINITION
     browser.selectByVisibleText('.processDefinitionSelect', 'Process_1');

@@ -3,3 +3,4 @@ export {createModal} from './Modal';
 export {createDiagram} from './Diagram';
 export {Chart} from './Chart';
 export {LoadingIndicator} from './LoadingIndicator';
+export {Select, StaticOption} from './Select';

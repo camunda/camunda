@@ -1,5 +1,5 @@
 import {jsx} from 'view-utils';
-import {mountTemplate, triggerEvent} from 'testHelpers';
+import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {View, __set__, __ResetDependency__} from 'main/processDisplay/controls/view/View';
@@ -10,6 +10,8 @@ describe('<View>', () => {
   let setView;
   let onNextUpdate;
   let onViewChanged;
+  let Select;
+  let onValueSelected;
 
   beforeEach(() => {
     setView = sinon.spy();
@@ -18,10 +20,15 @@ describe('<View>', () => {
     onNextUpdate = sinon.stub().callsArg(0);
     __set__('onNextUpdate', onNextUpdate);
 
+    Select = createMockComponent('Select');
+    __set__('Select', Select);
+
     onViewChanged = sinon.spy();
 
     ({node, update} = mountTemplate(<View onViewChanged={onViewChanged} />));
     update({});
+
+    onValueSelected = Select.getAttribute('onValueSelected');
   });
 
   afterEach(() => {
@@ -30,27 +37,17 @@ describe('<View>', () => {
   });
 
   it('should display a select field', () => {
-    expect(node.querySelector('select')).to.exist;
+    expect(node).to.contain.text(Select.text);
   });
 
   it('should set the view on selection', () => {
-    node.querySelector('select').value = 'frequency';
-    triggerEvent({
-      node,
-      selector: 'select',
-      eventName: 'change'
-    });
+    onValueSelected({value: 'frequency'});
 
     expect(setView.calledWith('frequency')).to.eql(true);
   });
 
   it('should call onViewChanged on next update when view changes', () => {
-    node.querySelector('select').value = 'frequency';
-    triggerEvent({
-      node,
-      selector: 'select',
-      eventName: 'change'
-    });
+    onValueSelected({value: 'frequency'});
 
     expect(onNextUpdate.calledWith(onViewChanged)).to.eql(true);
     expect(onViewChanged.calledOnce).to.eql(true);
