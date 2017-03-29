@@ -582,7 +582,7 @@ public class LeaderState extends ActiveState
             int workcount = 0;
 
             workcount += 1;
-            context.logStreamControllerFuture = stream.startLogStreaming(conductorAgentRunner);
+            context.logStreamControllerFuture = stream.openLogStreamController(conductorAgentRunner);
 
             context.take(TRANSITION_DEFAULT);
 
@@ -760,16 +760,22 @@ public class LeaderState extends ActiveState
 
     class StopLogStreamControllerState implements TransitionState<LeaderContext>
     {
+        CompletableFuture<Void> completableFuture;
         @Override
         public void work(LeaderContext context) throws Exception
         {
             final RaftContext raftContext = context.raftContext;
             final Raft raft = raftContext.getRaft();
             final LogStream stream = raft.stream();
-
-            stream.stopLogStreaming();
-
-            context.take(TRANSITION_DEFAULT);
+            if (completableFuture == null)
+            {
+                completableFuture = stream.closeLogStreamController();
+            }
+            if (completableFuture.isDone())
+            {
+                completableFuture = null;
+                context.take(TRANSITION_DEFAULT);
+            }
         }
     }
 

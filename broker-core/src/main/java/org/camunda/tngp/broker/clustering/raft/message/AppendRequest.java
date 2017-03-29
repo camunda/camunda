@@ -8,7 +8,7 @@ import org.camunda.tngp.clustering.raft.AppendRequestEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.log.LoggedEventImpl;
+import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 

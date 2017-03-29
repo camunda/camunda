@@ -13,7 +13,7 @@ import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.log.LoggedEventImpl;
+import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 
 public class LogStreamState

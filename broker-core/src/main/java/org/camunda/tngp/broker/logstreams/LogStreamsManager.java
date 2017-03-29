@@ -95,7 +95,7 @@ public class LogStreamsManager
             .logDirectory(logDirectory)
             .agentRunnerService(agentRunner.logAppenderAgentRunnerService())
             .logSegmentSize(logSegmentSize)
-            .withoutLogStreamController(true)
+            .logStreamControllerDisabled(true)
             .build();
 
         logStreams.put(logId, logStream);
@@ -111,7 +111,7 @@ public class LogStreamsManager
                 .logDirectory(logDirectory)
                 .agentRunnerService(agentRunner.logAppenderAgentRunnerService())
                 .logSegmentSize(logComponentConfig.defaultLogSegmentSize * 1024 * 1024)
-                .withoutLogStreamController(true)
+                .logStreamControllerDisabled(true)
                 .build();
 
         logStreams.put(id, logStream);
