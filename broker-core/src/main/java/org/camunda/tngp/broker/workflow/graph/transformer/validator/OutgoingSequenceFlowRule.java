@@ -34,7 +34,14 @@ public class OutgoingSequenceFlowRule implements ModelElementValidator<FlowNode>
     {
         final Collection<SequenceFlow> outgoingSequenceFlows = flowNode.getOutgoing();
 
-        if (outgoingSequenceFlows.isEmpty() && !(flowNode instanceof EndEvent))
+        if (flowNode instanceof EndEvent)
+        {
+            if (!outgoingSequenceFlows.isEmpty())
+            {
+                validationResultCollector.addError(ValidationCodes.OUTGOING_SEQUENCE_FLOW_AT_END_EVENT, "An end event must not have an outgoing sequence flow.");
+            }
+        }
+        else if (outgoingSequenceFlows.isEmpty())
         {
             validationResultCollector.addError(ValidationCodes.NO_OUTGOING_SEQUENCE_FLOW, "The flow element must have one outgoing sequence flow.");
         }

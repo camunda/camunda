@@ -3,6 +3,9 @@ package org.camunda.tngp.broker.protocol.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
@@ -20,28 +23,28 @@ public class WorkflowInstanceFunctionalTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-    private TestTopicClient testTopicClient;
+    private TestTopicClient testClient;
 
     @Before
     public void init()
     {
-        testTopicClient = apiRule.topic(0);
+        testClient = apiRule.topic(0);
     }
 
     @Test
     public void shouldStartWorkflowInstanceAtNoneStartEvent()
     {
         // given
-        testTopicClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableProcess("process")
                 .startEvent("foo")
                 .endEvent()
                 .done());
 
         // when
-        final long workflowInstanceKey = testTopicClient.createWorkflowInstance("process");
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
         // then
-        final SubscribedEvent event = testTopicClient.receiveSingleEvent(workflowInstanceEvents("EVENT_OCCURRED"));
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("START_EVENT_OCCURRED"));
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
@@ -55,17 +58,17 @@ public class WorkflowInstanceFunctionalTest
     public void shouldTakeSequenceFlowFromStartEvent()
     {
         // given
-        testTopicClient.deploy(Bpmn.createExecutableProcess("process")
+        testClient.deploy(Bpmn.createExecutableProcess("process")
                     .startEvent()
                     .sequenceFlowId("foo")
                     .endEvent()
                     .done());
 
         // when
-        final long workflowInstanceKey = testTopicClient.createWorkflowInstance("process");
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
         // then
-        final SubscribedEvent event = testTopicClient.receiveSingleEvent(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN"));
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("SEQUENCE_FLOW_TAKEN"));
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
@@ -73,6 +76,79 @@ public class WorkflowInstanceFunctionalTest
             .containsEntry("version", 1)
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "foo");
+    }
+
+    @Test
+    public void shouldOccureEndEvent()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .endEvent("foo")
+                .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("END_EVENT_OCCURRED"));
+
+        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("version", 1)
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "foo");
+    }
+
+    @Test
+    public void shouldCompleteWorkflowInstance()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .endEvent()
+                .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+
+        assertThat(event.longKey()).isEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("version", 1)
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "");
+    }
+
+    @Test
+    public void shouldCreateAndCompleteWorkflowInstance()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent("a")
+                .sequenceFlowId("b")
+                .endEvent("c")
+                .done());
+
+        // when
+        testClient.createWorkflowInstance("process");
+
+        // then
+        final List<SubscribedEvent> events = testClient.receiveEvents(workflowInstanceEvents())
+            .limit(6)
+            .collect(Collectors.toList());
+
+        assertThat(events).extracting(e -> e.event().get("eventType")).containsExactly(
+                "CREATE_WORKFLOW_INSTANCE",
+                "WORKFLOW_INSTANCE_CREATED",
+                "START_EVENT_OCCURRED",
+                "SEQUENCE_FLOW_TAKEN",
+                "END_EVENT_OCCURRED",
+                "WORKFLOW_INSTANCE_COMPLETED");
     }
 
 }

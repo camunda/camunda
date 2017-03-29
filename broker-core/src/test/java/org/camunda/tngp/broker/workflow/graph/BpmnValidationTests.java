@@ -50,7 +50,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getDefinitions()))
             .isNotNull()
             .hasSize(1)
@@ -83,7 +82,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getDefinitions()))
             .isNotNull()
             .hasSize(1)
@@ -106,7 +104,6 @@ public class BpmnValidationTests
         final Process process = bpmnModelInstance.getModelElementsByType(Process.class).iterator().next();
 
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(process))
             .isNotNull()
             .hasSize(1)
@@ -131,7 +128,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById(bpmnProcessId)))
             .isNotNull()
             .hasSize(1)
@@ -150,7 +146,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("process")))
             .isNotNull()
             .hasSize(1)
@@ -172,7 +167,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("process")))
             .isNotNull()
             .extracting("code").contains(ValidationCodes.NO_START_EVENT);
@@ -199,7 +193,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("process")))
             .isNotNull()
             .hasSize(1)
@@ -219,7 +212,6 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
             .isNotNull()
             .extracting("code").contains(ValidationCodes.NO_OUTGOING_SEQUENCE_FLOW);
@@ -243,10 +235,30 @@ public class BpmnValidationTests
 
         // then
         assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getErrorCount()).isEqualTo(1);
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
             .isNotNull()
             .extracting("code").contains(ValidationCodes.MORE_THAN_ONE_OUTGOING_SEQUENCE_FLOW);
+    }
+
+    @Test
+    public void shouldNotBeValidIfEndEventHasAnOutgoingSequenceFlow()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent("foo")
+            .userTask()
+            .endEvent()
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.OUTGOING_SEQUENCE_FLOW_AT_END_EVENT);
     }
 
 }

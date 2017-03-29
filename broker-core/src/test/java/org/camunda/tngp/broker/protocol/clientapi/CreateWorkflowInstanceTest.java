@@ -102,7 +102,7 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        final SubscribedEvent event = apiRule.topic(0).receiveSingleEvent(workflowInstanceEvents("EVENT_OCCURRED"));
+        final SubscribedEvent event = apiRule.topic(0).receiveSingleEvent(workflowInstanceEvents("START_EVENT_OCCURRED"));
 
         assertThat(event.event())
             .containsEntry(PROP_BPMN_PROCESS_ID, "process")
@@ -138,7 +138,7 @@ public class CreateWorkflowInstanceTest
                 .sendAndAwait();
 
         // then
-        final SubscribedEvent event = apiRule.topic(0).receiveSingleEvent(workflowInstanceEvents("EVENT_OCCURRED"));
+        final SubscribedEvent event = apiRule.topic(0).receiveSingleEvent(workflowInstanceEvents("START_EVENT_OCCURRED"));
 
         assertThat(event.event())
             .containsEntry(PROP_BPMN_PROCESS_ID, "process")
