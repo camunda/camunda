@@ -7,7 +7,6 @@ import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
@@ -36,7 +35,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
     protected final SubscribedEventWriter channelWriter;
     protected DeferredCommandContext cmdQueue;
-    protected LogStreamWriter streamWriter;
 
     protected LongRingBuffer pendingEvents;
 
@@ -70,8 +68,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     {
 
         this.cmdQueue = context.getStreamProcessorCmdQueue();
-        this.streamWriter = context.getLogStreamWriter();
-
         final LogStreamReader logReader = context.getSourceLogStreamReader();
         this.logStreamId = context.getSourceStream().getId();
         setToStartPosition(logReader);

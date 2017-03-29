@@ -17,7 +17,7 @@ public class TopicSubscriptionThrottlingTest
 {
     protected static final String SUBSCRIPTION_NAME = "foo";
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("tngp.unit-test.cfg.toml");
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
     @Rule

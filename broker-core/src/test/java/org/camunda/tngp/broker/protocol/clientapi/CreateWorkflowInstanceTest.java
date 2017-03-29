@@ -19,7 +19,7 @@ public class CreateWorkflowInstanceTest
     public static final String PROP_BPMN_XML = "bpmnXml";
     public static final String PROP_VERSION = "version";
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("tngp.unit-test.cfg.toml");
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientApiRule apiRule = new ClientApiRule();
 

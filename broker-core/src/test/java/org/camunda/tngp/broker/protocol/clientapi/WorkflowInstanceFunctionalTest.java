@@ -17,7 +17,7 @@ import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceFunctionalTest
 {
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("tngp.unit-test.cfg.toml");
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
     @Rule

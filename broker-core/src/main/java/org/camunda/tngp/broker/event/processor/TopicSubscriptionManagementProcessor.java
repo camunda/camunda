@@ -267,7 +267,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         @Override
         public void processEvent()
         {
-            subscriptionEvent.event(TopicSubscriptionEventType.ACKNOWLEDGED);
+            subscriptionEvent.setEvent(TopicSubscriptionEventType.ACKNOWLEDGED);
         }
 
         @Override
@@ -339,9 +339,9 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
 
             subscriptionEvent.reset();
-            subscriptionEvent.event(TopicSubscriptionEventType.ACKNOWLEDGE)
-                .name(openedSubscriptionName, 0, openedSubscriptionName.capacity())
-                .ackPosition(subscriberEvent.getStartPosition() - 1);
+            subscriptionEvent.setEvent(TopicSubscriptionEventType.ACKNOWLEDGE)
+                .setName(openedSubscriptionName, 0, openedSubscriptionName.capacity())
+                .setAckPosition(subscriberEvent.getStartPosition() - 1);
 
             metadata.eventType(EventType.SUBSCRIPTION_EVENT)
                 .reqChannelId(-1)

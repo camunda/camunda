@@ -26,7 +26,7 @@ public class EmbeddedBrokerRule extends ExternalResource
 
     public EmbeddedBrokerRule()
     {
-        this(() -> null);
+        this("tngp.unit-test.cfg.toml");
     }
 
     public EmbeddedBrokerRule(Supplier<InputStream> configSupplier)

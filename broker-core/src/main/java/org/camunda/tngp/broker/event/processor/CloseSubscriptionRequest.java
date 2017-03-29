@@ -21,7 +21,7 @@ public class CloseSubscriptionRequest extends UnpackedObject
         return subscriberKeyProp.getValue();
     }
 
-    public CloseSubscriptionRequest subscriberKey(long subscriberKey)
+    public CloseSubscriptionRequest setSubscriberKey(long subscriberKey)
     {
         this.subscriberKeyProp.setValue(subscriberKey);
         return this;
@@ -32,7 +32,7 @@ public class CloseSubscriptionRequest extends UnpackedObject
         return topicIdProp.getValue();
     }
 
-    public CloseSubscriptionRequest topicId(int topicId)
+    public CloseSubscriptionRequest setTopicId(int topicId)
     {
         this.topicIdProp.setValue(topicId);
         return this;

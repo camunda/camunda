@@ -19,7 +19,7 @@ public class TopicSubscriptionEvent extends UnpackedObject
             .declareProperty(ackPositionProp);
     }
 
-    public TopicSubscriptionEvent name(DirectBuffer nameBuffer, int offset, int length)
+    public TopicSubscriptionEvent setName(DirectBuffer nameBuffer, int offset, int length)
     {
         this.nameProp.setValue(nameBuffer, offset, length);
         return this;
@@ -35,7 +35,7 @@ public class TopicSubscriptionEvent extends UnpackedObject
         return ackPositionProp.getValue();
     }
 
-    public TopicSubscriptionEvent ackPosition(long ackPosition)
+    public TopicSubscriptionEvent setAckPosition(long ackPosition)
     {
         this.ackPositionProp.setValue(ackPosition);
         return this;
@@ -46,7 +46,7 @@ public class TopicSubscriptionEvent extends UnpackedObject
         return eventProp.getValue();
     }
 
-    public TopicSubscriptionEvent event(TopicSubscriptionEventType event)
+    public TopicSubscriptionEvent setEvent(TopicSubscriptionEventType event)
     {
         this.eventProp.setValue(event);
         return this;

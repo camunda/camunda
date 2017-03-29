@@ -29,7 +29,7 @@ public class TopicSubscriberEvent extends UnpackedObject
             .declareProperty(forceStartProp);
     }
 
-    public TopicSubscriberEvent startPosition(long startPosition)
+    public TopicSubscriberEvent setStartPosition(long startPosition)
     {
         this.startPositionProp.setValue(startPosition);
         return this;
@@ -40,7 +40,7 @@ public class TopicSubscriberEvent extends UnpackedObject
         return startPositionProp.getValue();
     }
 
-    public TopicSubscriberEvent prefetchCapacity(int prefetchCapacity)
+    public TopicSubscriberEvent setPrefetchCapacity(int prefetchCapacity)
     {
         this.prefetchCapacityProp.setValue(prefetchCapacity);
         return this;

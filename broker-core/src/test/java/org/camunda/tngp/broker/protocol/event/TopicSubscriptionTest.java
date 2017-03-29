@@ -28,7 +28,7 @@ public class TopicSubscriptionTest
 
     public static final int MAXIMUM_SUBSCRIPTION_NAME_LENGTH = 32;
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("tngp.unit-test.cfg.toml");
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
     @Rule

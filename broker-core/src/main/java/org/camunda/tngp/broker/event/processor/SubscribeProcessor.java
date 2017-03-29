@@ -240,7 +240,7 @@ public class SubscribeProcessor implements EventProcessor
             metadata.protocolVersion(Constants.PROTOCOL_VERSION);
 
             subscriberEvent
-                .startPosition(processor.getStartPosition())
+                .setStartPosition(processor.getStartPosition())
                 .setEvent(TopicSubscriberEventType.SUBSCRIBED);
 
             return manager.writeSubscriberEvent(metadata, subscriberEvent, event);

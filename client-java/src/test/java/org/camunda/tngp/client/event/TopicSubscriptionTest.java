@@ -245,6 +245,26 @@ public class TopicSubscriptionTest
             .isPresent();
 
         assertThat(hasSentAck).isTrue();
+    }
 
+    @Test
+    public void shouldCloseSubscriptionOnClientDisconnect()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .handler((m, e) ->
+            {
+            })
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        client.disconnect();
+
+        // then
+        assertThat(subscription.isClosed());
     }
 }

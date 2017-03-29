@@ -13,7 +13,6 @@ import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -22,7 +21,7 @@ public class TopicSubscriptionAcknowledgementTest
 {
     protected static final String SUBSCRIPTION_NAME = "foo";
 
-    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule("tngp.unit-test.cfg.toml");
+    public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
     @Rule
@@ -111,16 +110,16 @@ public class TopicSubscriptionAcknowledgementTest
     }
 
     @Test
-    @Ignore("https://github.com/camunda-tngp/camunda-tngp/issues/174")
     public void shouldResumeAtTailOnLongMaxAckPosition()
     {
         // given
         apiRule.createCmdRequest()
             .eventTypeSubscription()
+            .topicId(0)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("event", "ACKNOWLEDGE")
-                .put("acknowledgedPosition", Long.MAX_VALUE)
+                .put("ackPosition", Long.MAX_VALUE)
                 .done()
             .sendAndAwait();
 
@@ -131,13 +130,25 @@ public class TopicSubscriptionAcknowledgementTest
         // when
         openSubscription();
 
+        // and
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicId(0)
+            .eventTypeTask()
+            .command()
+                .put("eventType", "CREATE")
+                .put("type", "theTaskType")
+                .done()
+            .sendAndAwait();
+
+        final long taskKey = response.key();
+
         // then
         final Optional<SubscribedEvent> firstEvent = apiRule
                 .subscribedEvents()
                 .findFirst();
 
         assertThat(firstEvent).isPresent();
-        // TODO: what is the expected behavior here?
+        assertThat(firstEvent.get().longKey()).isEqualTo(taskKey);
     }
 
     @Test
