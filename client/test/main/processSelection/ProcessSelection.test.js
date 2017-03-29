@@ -21,6 +21,7 @@ describe('<ProcessSelection>', () => {
           id: 'processId',
           key: 'processKey',
           name: 'processName',
+          version: 4,
           bpmn20Xml: 'some xml'
         }]
       }
@@ -69,5 +70,11 @@ describe('<ProcessSelection>', () => {
     update(state);
 
     expect(node.textContent).to.include('processName');
+  });
+
+  it('should display the version of the process definition', () => {
+    update(state);
+
+    expect(node.textContent).to.include('4');
   });
 });

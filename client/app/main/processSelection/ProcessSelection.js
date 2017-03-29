@@ -27,6 +27,10 @@ export const ProcessSelection = withSelector(() => {
                     </div>
                     <div className="name">
                       <Text property="name" />
+                      <span className="version">
+                        <span style="color: darkgray;">v</span>
+                        <Text property="version" />
+                      </span>
                     </div>
                   </div>
                 </div>
