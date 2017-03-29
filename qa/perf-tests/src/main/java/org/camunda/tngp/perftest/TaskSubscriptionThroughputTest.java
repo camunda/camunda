@@ -93,6 +93,7 @@ public class TaskSubscriptionThroughputTest
 
         final TaskSubscription subscription = client.taskTopic(0).newTaskSubscription()
             .lockTime(10000)
+            .lockOwner(0)
             .taskType(TASK_TYPE)
             .handler((t) ->
             {
