@@ -4,10 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.camunda.tngp.client.TngpClient;
+import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.EventType;
@@ -193,5 +198,53 @@ public class TopicSubscriptionTest
             .get();
 
         assertThat(addSubscriptionRequest.getCommand()).containsEntry("prefetchCapacity", 32);
+    }
+
+    @Test
+    public void shouldOnlyAcknowledgeEventAndCloseSubscriptionAfterLastEventHasBeenHandled() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+        final ControllableHandler handler = new ControllableHandler();
+
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .handler(handler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
+
+        pushTopicEvent(clientChannelId, 123L, 1L, 1L);
+        TestUtil.waitUntil(() -> handler.isWaiting());
+
+        // when
+        final CompletableFuture<Void> closeFuture = subscription.closeAsync();
+
+        // then
+        Thread.sleep(1000L);
+        assertThat(closeFuture).isNotDone();
+
+        boolean hasSentAck = brokerRule.getReceivedCommandRequests().stream()
+            .filter((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT)
+            .findAny()
+            .isPresent();
+
+        assertThat(hasSentAck).isFalse();
+
+        // and when
+        handler.signal();
+
+        // then
+        closeFuture.get(1L, TimeUnit.SECONDS);
+
+        // and
+        hasSentAck = brokerRule.getReceivedCommandRequests().stream()
+            .filter((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT)
+            .findAny()
+            .isPresent();
+
+        assertThat(hasSentAck).isTrue();
+
     }
 }

@@ -24,6 +24,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected final int capacity;
 
     protected final AtomicInteger state = new AtomicInteger(STATE_NEW);
+    protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
     protected CompletableFuture<Void> closeFuture;
 
     public EventSubscription(EventAcquisition<T> eventAcquisition, int upperBoundCapacity)
@@ -56,6 +57,11 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public boolean hasPendingEvents()
     {
         return !pendingEvents.isEmpty();
+    }
+
+    public boolean hasEventsInProcessing()
+    {
+        return eventsInProcessing.get() > 0;
     }
 
     public boolean isOpen()
@@ -158,15 +164,23 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
                 break;
             }
 
-            handledEvents++;
-
+            eventsInProcessing.incrementAndGet();
             try
             {
-                pollHandler.accept(event);
+                handledEvents++;
+
+                try
+                {
+                    pollHandler.accept(event);
+                }
+                catch (Exception e)
+                {
+                    onUnhandledEventHandlingException(event, e);
+                }
             }
-            catch (Exception e)
+            finally
             {
-                onUnhandledEventHandlingException(event, e);
+                eventsInProcessing.decrementAndGet();
             }
         }
 
@@ -196,5 +210,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected abstract void onEventsPolled(int numEvents);
 
     public abstract int getTopicId();
+
 
 }
