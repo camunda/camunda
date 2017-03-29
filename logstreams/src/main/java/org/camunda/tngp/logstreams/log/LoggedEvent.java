@@ -14,11 +14,6 @@ public interface LoggedEvent
     long getPosition();
 
     /**
-     * @return the id of the stream this event belongs to
-     */
-    int getStreamId();
-
-    /**
      * @return the log stream id of the event which causes this event. Returns a
      *         negative value if no such an event exists.
      */

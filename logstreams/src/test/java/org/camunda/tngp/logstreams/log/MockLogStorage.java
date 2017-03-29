@@ -68,7 +68,6 @@ public class MockLogStorage
 
     public static class MockLogEntryBuilder
     {
-        private int streamId = 0;
         private long address = 0;
         private long nextAddress = 0;
 
@@ -120,12 +119,6 @@ public class MockLogStorage
         public MockLogEntryBuilder producerId(int producerId)
         {
             this.producerId = producerId;
-            return this;
-        }
-
-        public MockLogStorage.MockLogEntryBuilder streamId(int streamId)
-        {
-            this.streamId = streamId;
             return this;
         }
 
@@ -187,7 +180,6 @@ public class MockLogStorage
                 for (int i = 0; i < amount; i++)
                 {
                     buffer.putInt(lengthOffset(offset), messageLength);
-                    buffer.putInt(streamIdOffset(offset), streamId);
 
                     final int messageOffset = messageOffset(offset);
                     if (messageOffset <= byteBuffer.limit())

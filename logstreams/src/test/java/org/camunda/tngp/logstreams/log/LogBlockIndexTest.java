@@ -516,6 +516,31 @@ public class LogBlockIndexTest
     }
 
     @Test
+    public void shouldRecoverIndexFromLogStorageWithOverlappingLogEntryHeader()
+    {
+        mockLogStorage
+            .firstBlockAddress(1L)
+            // second log entry header overlaps the block
+            .add(newLogEntries(2).address(1).position(11).messageLength(INDEX_BLOCK_SIZE - 2 * HEADER_LENGTH).nextAddress(3))
+            // the remaining part of the second log entry header
+            .add(newLogEntry().address(3).position(12).messageLength(HEADER_LENGTH).nextAddress(4))
+            // the second log entry message
+            .add(newLogEntry().address(4).position(12).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(5))
+            // next log entry
+            .add(newLogEntry().address(5).position(13).messageLength(INDEX_BLOCK_SIZE - HEADER_LENGTH).nextAddress(6));
+
+        blockIndex.recover(mockLogStorage.getMock(), INDEX_BLOCK_SIZE);
+
+        assertThat(blockIndex.size()).isEqualTo(2);
+
+        assertThat(blockIndex.getAddress(0)).isEqualTo(1);
+        assertThat(blockIndex.getLogPosition(0)).isEqualTo(11);
+
+        assertThat(blockIndex.getAddress(1)).isEqualTo(5);
+        assertThat(blockIndex.getLogPosition(1)).isEqualTo(13);
+    }
+
+    @Test
     public void shouldRecoverIndexFromSnapshotAndLogStorage() throws Exception
     {
         // add one block and create snapshot
