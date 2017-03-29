@@ -3,6 +3,9 @@ import {mountTemplate, createMockComponent, triggerEvent, selectByText} from 'te
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {CreateFilter, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/CreateFilter';
+import {TODAY, YESTERDAY, PAST7, PAST30,
+        LAST_WEEK, LAST_MONTH, LAST_YEAR,
+        THIS_WEEK, THIS_MONTH, THIS_YEAR} from 'main/processDisplay/controls/filter/DateButton';
 
 describe('<CreateFilter>', () => {
   let node;
@@ -163,7 +166,17 @@ describe('<CreateFilter>', () => {
       });
 
       it('should contain date buttons', () => {
-        expect(bodyNode.textContent).to.include('DateButton');
+        expect(bodyNode.textContent).to.include(DateButton.text);
+        expect(DateButton.appliedWith({dateLabel: TODAY})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: YESTERDAY})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: PAST7})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: PAST30})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: LAST_WEEK})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: LAST_MONTH})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: LAST_YEAR})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: THIS_WEEK})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: THIS_MONTH})).to.eql(true);
+        expect(DateButton.appliedWith({dateLabel: THIS_YEAR})).to.eql(true);
       });
     });
 
