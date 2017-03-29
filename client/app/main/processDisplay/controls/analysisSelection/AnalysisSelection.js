@@ -7,18 +7,17 @@ export function createAnalysisSelection(integrator) {
 
   const AnalysisSelection = withSelector(() => {
     return <Children>
-      <AnalysisInput selector={exposeIntegrator('endEvent')}>
+      <AnalysisInput selector={formatSelection('endEvent')} integrator={integrator}>
         <Reference name="EndEvent" />
       </AnalysisInput>
-      <AnalysisInput selector={exposeIntegrator('gateway')}>
+      <AnalysisInput selector={formatSelection('gateway')} integrator={integrator}>
         <Reference name="Gateway" />
       </AnalysisInput>
     </Children>;
 
-    function exposeIntegrator(type) {
+    function formatSelection(type) {
       return (selection) => {
         return {
-          integrator,
           type: capitalize(type),
           label: capitalize(type.replace(/[A-Z]/g, ' $&')),
           name: selection[type]

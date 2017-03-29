@@ -1,4 +1,4 @@
-import {jsx, createStateComponent, withSelector, Match, Case, Scope} from 'view-utils';
+import {jsx, createStateComponent, withSelector, Match, Case} from 'view-utils';
 import {Filter, CreateFilter} from './filter';
 import {createAnalysisSelection} from './analysisSelection';
 import {View} from './view';
@@ -26,14 +26,12 @@ export function createControls(analysisControlIntegrator) {
                   </Match>
                 </tr>
               <tr>
-                <Scope selector="controls">
-                  <View onViewChanged={onControlsChange}/>
-                  <Filter onFilterDeleted={onControlsChange} />
-                  <CreateFilter onFilterAdded={onControlsChange} />
-                </Scope>
+                <View onViewChanged={onControlsChange}/>
+                <Filter onFilterDeleted={onControlsChange} />
+                <CreateFilter onFilterAdded={onControlsChange} />
                 <Match>
                   <Case predicate={isBranchAnalyisView}>
-                    <AnalysisSelection selector={getAnalysisSelection} />
+                    <AnalysisSelection selector="selection" />
                   </Case>
                 </Match>
               </tr>
@@ -44,33 +42,12 @@ export function createControls(analysisControlIntegrator) {
       </div>
     </State>;
 
-    function getAnalysisSelection({display:{selection}}) {
-      const out = {};
-
-      Object.keys(selection).forEach(key => {
-        out[key] = getName(selection[key]);
-      });
-
-      return out;
-    }
-
-    function getName(id) {
-      if (id) {
-        return getBpmnViewer()
-        .get('elementRegistry')
-        .get(id)
-        .businessObject
-        .name
-        || id;
-      }
-    }
-
-    function isBranchAnalyisView({controls:{view}}) {
+    function isBranchAnalyisView({view}) {
       return view === 'branch_analysis';
     }
 
     function onControlsChange() {
-      const {controls: {filter: query, view}} = State.getState();
+      const {filter: query, view} = State.getState();
 
       onCriteriaChanged({
         query,

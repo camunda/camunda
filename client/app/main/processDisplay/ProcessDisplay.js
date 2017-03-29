@@ -1,8 +1,9 @@
-import {jsx, withSelector, Match, Case, Default, includes} from 'view-utils';
+import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './diagram';
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
 import {loadData} from './service';
+import {isViewSelected} from './controls';
 import {LoadingIndicator} from 'widgets';
 import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
 
@@ -12,7 +13,7 @@ function Process() {
   const {Diagram, Controls, integrator} = createDiagramControlsIntegrator();
 
   const template = <div className="process-display">
-    <Controls onCriteriaChanged={loadData} getBpmnViewer={Diagram.getViewer} />
+    <Controls selector={createControlsState} onCriteriaChanged={loadData} />
     <div className="diagram">
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
@@ -42,13 +43,35 @@ function Process() {
   }
 
   function shouldDisplay(targetView) {
-    if (typeof targetView === 'string') {
-      targetView = [targetView];
-    }
-
-    return ({controls: {view}}) => {
-      return includes(targetView, view);
+    return ({controls}) => {
+      return isViewSelected(controls, targetView);
     };
+  }
+
+  function createControlsState({controls, display}) {
+    const selection = {};
+
+    Object.keys(display.selection).forEach(key => {
+      selection[key] = getName(display.selection[key]);
+    });
+
+    return {
+      ...controls,
+      selection
+    };
+  }
+
+  function getName(id) {
+    const viewer = Diagram.getViewer();
+
+    if (id && viewer) {
+      return viewer
+      .get('elementRegistry')
+      .get(id)
+      .businessObject
+      .name
+      || id;
+    }
   }
 
   function isLoadingSomething({display: {diagram, heatmap}, controls}) {

@@ -1,6 +1,6 @@
 import {jsx, OnEvent, Match, Case, Default, Text, withSelector, Children} from 'view-utils';
 
-export const AnalysisInput = withSelector(({children}) => {
+export const AnalysisInput = withSelector(({children, integrator}) => {
   return <td>
     <ul className="list-group">
       <li className="list-group-item" style="padding: 6px; cursor: default;">
@@ -29,15 +29,15 @@ export const AnalysisInput = withSelector(({children}) => {
     return name;
   }
 
-  function unset({state:{integrator, type}}) {
+  function unset({state:{type}}) {
     integrator.unset(type);
   }
 
-  function hover({state:{integrator, type}}) {
+  function hover({state:{type}}) {
     integrator.hover(type, true);
   }
 
-  function unhover({state:{integrator, type}}) {
+  function unhover({state:{type}}) {
     integrator.unhover(type, true);
   }
 });

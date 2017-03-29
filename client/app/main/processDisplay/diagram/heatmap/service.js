@@ -1,4 +1,4 @@
-import generateHeatmap from './heatmap_generator';
+import generateHeatmap from './generateHeatmap';
 import {updateOverlayVisibility} from 'utils';
 
 export const VALUE_OVERLAY = 'VALUE_OVERLAY';

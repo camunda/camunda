@@ -41,12 +41,15 @@ describe('<AnalysisSelection>', () => {
     expect(AnalysisSelection.nodes.Gateway).to.exist;
   });
 
-  it('should give the integrator, a type, a label and the selection to the input', () => {
+  it('should give a type, a label and the selection to the input', () => {
     const childState = AnalysisInput.calls[0][0].selector(state);
 
-    expect(childState.integrator).to.eql(integrator);
     expect(childState.type).to.eql('EndEvent');
     expect(childState.label).to.eql('End Event');
     expect(childState.name).to.eql('SomeEndEvent');
+  });
+
+  it('should pass the integrator to AnalysisInput', () => {
+    expect(AnalysisInput.calls[0][0].integrator).to.eql(integrator);
   });
 });

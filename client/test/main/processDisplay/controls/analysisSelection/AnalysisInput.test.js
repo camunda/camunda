@@ -22,13 +22,12 @@ describe('<AnalysisInput>', () => {
     };
 
     state = {
-      integrator,
       type,
       name,
       label
     };
 
-    ({node, update} = mountTemplate(<AnalysisInput />));
+    ({node, update} = mountTemplate(<AnalysisInput integrator={integrator} />));
   });
 
   it('should display a list item', () => {
