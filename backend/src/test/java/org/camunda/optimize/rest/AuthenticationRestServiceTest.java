@@ -4,15 +4,21 @@ import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.util.ConfigurationService;
-import org.camunda.optimize.test.AbstractJerseyTest;
 import org.camunda.optimize.test.mock.AuthenticationHelper;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.spring.OptimizeAwareDependencyInjectionListener;
 import org.elasticsearch.client.transport.TransportClient;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
+import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
+import org.springframework.test.context.web.ServletTestExecutionListener;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
@@ -29,8 +35,18 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
-public class AuthenticationRestServiceTest extends AbstractJerseyTest {
+@ContextConfiguration(locations = { "/restTestApplicationContext.xml" })
+@TestExecutionListeners({
+    ServletTestExecutionListener.class,
+    OptimizeAwareDependencyInjectionListener.class,
+    DirtiesContextTestExecutionListener.class,
+    TransactionalTestExecutionListener.class
+})
+public class AuthenticationRestServiceTest {
+
+  @ClassRule
+  public static EmbeddedOptimizeRule embeddedOptimizeRule =
+      new EmbeddedOptimizeRule("classpath*:mockedEmbeddedOptimizeContext.xml");
 
   @Autowired
   private TransportClient esClientMock;
@@ -79,7 +95,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
 
     AuthenticationHelper.setupPositiveUserQuery(esClientMock,configurationService);
 
-    return target("authentication")
+    return embeddedOptimizeRule.target("authentication")
         .request()
         .post(Entity.json(entity));
   }
@@ -92,7 +108,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
     String token = response.readEntity(String.class);
 
     //when
-    Response logoutResponse = target("authentication/logout")
+    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
         .get();
@@ -111,7 +127,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
     String token = response.readEntity(String.class);
 
     //when
-    Response testResponse = target("authentication/test")
+    Response testResponse = embeddedOptimizeRule.target("authentication/test")
         .request()
         .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
         .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION_HEADER,"Bearer " + token)
@@ -127,7 +143,7 @@ public class AuthenticationRestServiceTest extends AbstractJerseyTest {
   public void logoutSecure() throws Exception {
 
     //when
-    Response logoutResponse = target("authentication/logout")
+    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + "randomToken")
         .get();

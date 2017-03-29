@@ -17,6 +17,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -159,5 +160,9 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   public void initializeIndex() {
     jerseyCamundaOptimize.getApplicationContext().getBean(ElasticSearchSchemaInitializer.class).initializeSchema();
+  }
+
+  protected ApplicationContext getApplicationContext() {
+    return jerseyCamundaOptimize.getApplicationContext();
   }
 }

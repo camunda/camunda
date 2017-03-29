@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+  http://www.springframework.org/schema/beans/spring-beans.xsd
+  http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
+>
+
+  <context:annotation-config/>
+  <context:component-scan base-package="org.camunda.optimize.service"/>
+  <context:component-scan base-package="org.camunda.optimize.rest"/>
+
+  <context:property-placeholder location="classpath:service.properties,classpath:service-unit.properties" />
+
+  <bean id="engineClient" class="org.camunda.optimize.test.factory.MockEngineClientFactory"/>
+
+  <bean id="transportClient"  class="org.camunda.optimize.test.factory.MockTransportClientFactory"/>
+
+  <bean id="schemaInitializer"  class="org.camunda.optimize.test.factory.MockSchemaInitializerFactory"/>
+
+  <bean id="importServiceProvider"  class="org.camunda.optimize.test.factory.MockImportServiceProviderFactory"/>
+
+  <bean id="importJobExecutor" class="org.camunda.optimize.test.factory.MockImportJobExecutorFactory" />
+
+  <context:property-placeholder location="classpath:service.properties,classpath:service-it.properties" />
+
+  <bean id="objectMapper"
+        class="com.fasterxml.jackson.databind.ObjectMapper"
+        factory-method="createDefaultMapper"
+        factory-bean="objectMapperFactory"
+  />
+
+  <!-- provide a bean, but do not start it -->
+  <bean id="importScheduler" class="org.camunda.optimize.service.importing.ImportScheduler" />
+
+  <bean id="processDefinitionReader" class="org.camunda.optimize.test.factory.MockProcessDefinitionReaderFactory"/>
+  <bean id="frequencyHeatMapReader" class="org.camunda.optimize.test.factory.MockFrequencyHeatMapReaderFactory"/>
+  <bean id="durationHeatMapReader" class="org.camunda.optimize.test.factory.MockDurationHeatMapReaderFactory"/>
+  <bean id="correlationReader" class="org.camunda.optimize.test.factory.MockCorrelationReaderFactory"/>
+  <bean id="statusCheckingService" class="org.camunda.optimize.test.factory.MockStatusCheckingServiceFactory"/>
+  <bean id="importProgressReporter" class="org.camunda.optimize.test.factory.MockImportProgressReporterFactory"/>
+
+
+</beans>

@@ -4,15 +4,20 @@ import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.ConnectionStatusDto;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
-import org.camunda.optimize.test.AbstractJerseyTest;
-import org.junit.Before;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.spring.OptimizeAwareDependencyInjectionListener;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
+import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
+import org.springframework.test.context.web.ServletTestExecutionListener;
 
 import javax.ws.rs.core.Response;
 
@@ -21,12 +26,21 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
-public class StatusRestServiceTest extends AbstractJerseyTest{
+@ContextConfiguration( locations = { "/restTestApplicationContext.xml" })
+@TestExecutionListeners ({
+    ServletTestExecutionListener.class,
+    OptimizeAwareDependencyInjectionListener.class,
+    DirtiesContextTestExecutionListener.class,
+    TransactionalTestExecutionListener.class
+})
+public class StatusRestServiceTest {
+
+  @ClassRule
+  public static EmbeddedOptimizeRule embeddedOptimizeRule =
+      new EmbeddedOptimizeRule("classpath*:mockedEmbeddedOptimizeContext.xml");
 
   @Autowired
   private StatusCheckingService mockedStatusCheckingService;
-
   @Autowired
   private ImportProgressReporter importProgressReporter;
 
@@ -39,8 +53,7 @@ public class StatusRestServiceTest extends AbstractJerseyTest{
     Mockito.when(mockedStatusCheckingService.getConnectionStatus()).thenReturn(expected);
 
     // when
-    Response response =
-      target("status/connection")
+    Response response = embeddedOptimizeRule.target("status/connection")
       .request()
       .get();
 
@@ -60,8 +73,7 @@ public class StatusRestServiceTest extends AbstractJerseyTest{
     Mockito.when(importProgressReporter.computeImportProgress()).thenReturn(expectedCount);
 
     // when
-    Response response =
-      target("status/import-progress")
+    Response response = embeddedOptimizeRule.target("status/import-progress")
       .request()
       .get();
 
@@ -72,5 +84,4 @@ public class StatusRestServiceTest extends AbstractJerseyTest{
     assertThat(actual, is(notNullValue()));
     assertThat(actual.getCount(), is(expectedCount));
   }
-
 }

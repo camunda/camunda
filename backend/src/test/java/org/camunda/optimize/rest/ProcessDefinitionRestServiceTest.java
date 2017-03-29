@@ -1,21 +1,20 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
-import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.GatewaySplitDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.CorrelationReader;
 import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
 import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.AuthenticationProvider;
 import org.camunda.optimize.service.security.AuthenticationService;
-import org.camunda.optimize.test.AbstractJerseyTest;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.spring.OptimizeAwareDependencyInjectionListener;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -24,7 +23,11 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
+import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
+import org.springframework.test.context.web.ServletTestExecutionListener;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
@@ -43,8 +46,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
-public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
+@ContextConfiguration(locations = { "/restTestApplicationContext.xml" })
+@TestExecutionListeners({
+    ServletTestExecutionListener.class,
+    OptimizeAwareDependencyInjectionListener.class,
+    DirtiesContextTestExecutionListener.class,
+    TransactionalTestExecutionListener.class
+})
+public class ProcessDefinitionRestServiceTest {
+
+  @ClassRule
+  public static EmbeddedOptimizeRule embeddedOptimizeRule =
+      new EmbeddedOptimizeRule("classpath*:mockedEmbeddedOptimizeContext.xml");
 
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
@@ -75,7 +88,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   public void getProcessDefinitionsWithoutAuthentication() throws IOException {
     // when
     Response response =
-      target("process-definition")
+      embeddedOptimizeRule.target("process-definition")
         .request()
         .get();
 
@@ -86,7 +99,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getProcessDefinitions() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     ExtendedProcessDefinitionOptimizeDto expected = new ExtendedProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = "123";
     expected.setId(expectedProcessDefinitionId);
@@ -94,7 +107,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
 
     // when
     Response response =
-      target("process-definition")
+      embeddedOptimizeRule.target("process-definition")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .get();
@@ -110,7 +123,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getProcessDefinitionsWithXml() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     ExtendedProcessDefinitionOptimizeDto expected = new ExtendedProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = "123";
     expected.setId(expectedProcessDefinitionId);
@@ -119,7 +132,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
 
     // when
     Response response =
-        target("process-definition")
+        embeddedOptimizeRule.target("process-definition")
             .queryParam("includeXml", true)
             .request()
             .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
@@ -139,7 +152,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   public void getProcessDefinitionXmlWithoutAuthentication() throws IOException {
     // when
     Response response =
-      target("process-definition/123/xml")
+      embeddedOptimizeRule.target("process-definition/123/xml")
       .request()
       .get();
 
@@ -150,13 +163,13 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getProcessDefinitionXml() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     String expectedXml = "ProcessModelXml";
     Mockito.when(processDefinitionReader.getProcessDefinitionXml("123")).thenReturn(expectedXml);
 
     // when
     Response response =
-      target("process-definition/123/xml")
+      embeddedOptimizeRule.target("process-definition/123/xml")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .get();
@@ -172,7 +185,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   public void getFrequencyHeatMapWithoutAuthentication() throws IOException {
     // when
     Response response =
-      target("process-definition/123/heatmap/frequency")
+      embeddedOptimizeRule.target("process-definition/123/heatmap/frequency")
       .request()
       .get();
 
@@ -183,14 +196,14 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getFrequencyHeatMap() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     HeatMapResponseDto expected = new HeatMapResponseDto();
     expected.setPiCount(10L);
     Mockito.when(frequencyHeatMapReader.getHeatMap(Mockito.anyString())).thenReturn(expected);
 
     // when
     Response response =
-      target("process-definition/123/heatmap/frequency")
+      embeddedOptimizeRule.target("process-definition/123/heatmap/frequency")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .get();
@@ -208,7 +221,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/heatmap/frequency")
+      embeddedOptimizeRule.target("process-definition/heatmap/frequency")
       .request()
       .post(entity);
 
@@ -219,7 +232,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getFrequencyHeatPostMap() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     HeatMapResponseDto expected = new HeatMapResponseDto();
     expected.setPiCount(10L);
     Mockito.when(frequencyHeatMapReader.getHeatMap(Mockito.any(HeatMapQueryDto.class))).thenReturn(expected);
@@ -227,7 +240,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/heatmap/frequency")
+      embeddedOptimizeRule.target("process-definition/heatmap/frequency")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .post(entity);
@@ -244,7 +257,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   public void getDurationHeatMapWithoutAuthentication() throws IOException {
     // when
     Response response =
-      target("process-definition/123/heatmap/duration")
+      embeddedOptimizeRule.target("process-definition/123/heatmap/duration")
       .request()
       .get();
 
@@ -255,14 +268,14 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getDurationHeatMap() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     HeatMapResponseDto expected = new HeatMapResponseDto();
     expected.setPiCount(10L);
     Mockito.when(durationHeatMapReader.getHeatMap(Mockito.anyString())).thenReturn(expected);
 
     // when
     Response response =
-      target("process-definition/123/heatmap/duration")
+      embeddedOptimizeRule.target("process-definition/123/heatmap/duration")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .get();
@@ -280,7 +293,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/heatmap/duration")
+      embeddedOptimizeRule.target("process-definition/heatmap/duration")
       .request()
       .post(entity);
 
@@ -291,7 +304,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getDurationHeatMapAsPost() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     HeatMapResponseDto expected = new HeatMapResponseDto();
     expected.setPiCount(10L);
     Mockito.when(durationHeatMapReader.getHeatMap(Mockito.any(HeatMapQueryDto.class))).thenReturn(expected);
@@ -299,7 +312,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     // when
     Entity<HeatMapQueryDto> entity = Entity.entity(new HeatMapQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/heatmap/duration")
+      embeddedOptimizeRule.target("process-definition/heatmap/duration")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .post(entity);
@@ -317,7 +330,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     // when
     Entity<CorrelationQueryDto> entity = Entity.entity(new CorrelationQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/correlation")
+      embeddedOptimizeRule.target("process-definition/correlation")
       .request()
       .post(entity);
 
@@ -328,7 +341,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
   @Test
   public void getCorrelation() throws IOException {
     // given some mocks
-    String token = authenticateAdmin();
+    String token = embeddedOptimizeRule.authenticateAdmin();
     GatewaySplitDto expected = new GatewaySplitDto();
     expected.setTotal(10L);
     Mockito.when(correlationReader.activityCorrelation(Mockito.any(CorrelationQueryDto.class))).thenReturn(expected);
@@ -336,7 +349,7 @@ public class ProcessDefinitionRestServiceTest extends AbstractJerseyTest {
     // when
     Entity<CorrelationQueryDto> entity = Entity.entity(new CorrelationQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
-      target("process-definition/correlation")
+      embeddedOptimizeRule.target("process-definition/correlation")
       .request()
       .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
       .post(entity);

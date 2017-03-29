@@ -15,6 +15,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -30,10 +31,20 @@ import java.util.Properties;
  */
 public class EmbeddedOptimizeRule extends TestWatcher {
 
+  private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
+  private final String contextLocation;
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
 
-  private EmbeddedCamundaOptimize camundaOptimize;
+  private TestEmbeddedCamundaOptimize camundaOptimize;
   private Properties properties;
+
+  public EmbeddedOptimizeRule(String contextLocation) {
+    this.contextLocation = contextLocation;
+  }
+
+  public EmbeddedOptimizeRule() {
+    this(DEFAULT_CONTEXT_LOCATION);
+  }
 
   public void init() {
     properties = PropertyUtil.loadProperties("it-test.properties");
@@ -59,7 +70,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   protected void starting(Description description) {
     if (camundaOptimize == null) {
-      camundaOptimize = new EmbeddedCamundaOptimize("classpath:embeddedOptimizeContext.xml");
+      camundaOptimize = new TestEmbeddedCamundaOptimize(contextLocation);
       init();
     }
     try {
@@ -144,5 +155,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public boolean isImporting() {
     return this.getJobExecutor().isActive();
+  }
+
+  public ApplicationContext getApplicationContext() {
+    return camundaOptimize.getApplicationContext();
   }
 }
