@@ -251,7 +251,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         return streamWriter
             .metadataWriter(metadata)
             .valueWriter(subscriberEvent)
-            .sourceEvent(sourceEvent.getStreamId(), sourceEvent.getPosition())
             .key(sourceEvent.getLongKey())
             .tryWrite();
     }
@@ -280,7 +279,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 .key(currentEvent.getLongKey())
                 .metadataWriter(metadata)
                 .valueWriter(subscriptionEvent)
-                .sourceEvent(streamId, currentEvent.getPosition())
                 .tryWrite();
         }
 
@@ -354,7 +352,6 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                     .key(currentEvent.getLongKey())
                     .metadataWriter(metadata)
                     .valueWriter(subscriptionEvent)
-                    .sourceEvent(streamId, currentEvent.getPosition())
                     .tryWrite();
 
         }
