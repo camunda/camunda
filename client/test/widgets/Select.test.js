@@ -1,8 +1,8 @@
 import {expect} from 'chai';
-import {jsx, Socket, Scope, Text} from 'view-utils';
+import {jsx} from 'view-utils';
 import sinon from 'sinon';
 import {createMockComponent, mountTemplate, selectByText, triggerEvent} from 'testHelpers';
-import {Select, StaticOption, __set__, __ResetDependency__} from 'widgets/Select';
+import {Select, Option, __set__, __ResetDependency__} from 'widgets/Select';
 
 describe('<Select>', () => {
   let update;
@@ -31,10 +31,8 @@ describe('<Select>', () => {
   describe('with default label', () => {
     beforeEach(() => {
       ({update} = mountTemplate(<Select onValueSelected={onValueSelected}>
-        <Socket name="list">
-          <StaticOption name="Ala" value="ala" isDefault="true" />,
-          <StaticOption name="Marcin" value="marcin" />
-        </Socket>
+        <Option value="ala" isDefault>Ala</Option>,
+        <Option value="marcin">Marcin</Option>
       </Select>));
       update({});
 
@@ -45,48 +43,6 @@ describe('<Select>', () => {
     it('should display all dropdown options', () => {
       expect(dropdownListNode).to.contain.text('Ala');
       expect(dropdownListNode).to.contain.text('Marcin');
-    });
-
-    it('should select default option on startup', () => {
-      expect(dropdownLabelNode).to.contain.text('Ala');
-    });
-
-    it('should be able to select element by clicking option', () => {
-      const [marcinOption] = selectByText(
-        dropdownListNode.querySelectorAll('a'),
-        'Marcin'
-      );
-
-      triggerEvent({
-        node: marcinOption,
-        eventName: 'click'
-      });
-
-      update({a: 1});
-
-      expect(dropdownLabelNode).to.contain.text('Marcin');
-      expect(onValueSelected.calledWith({name: 'Marcin', value: 'marcin'}))
-        .to.eql(true, 'expect onValueSelect to be called with proper item');
-    });
-  });
-
-  describe('with custom label', () => {
-    beforeEach(() => {
-      ({update} = mountTemplate(<Select onValueSelected={onValueSelected}>
-        <Socket name="label">
-          <Scope selector="current">
-            <Text property="name" />
-          </Scope>
-        </Socket>
-        <Socket name="list">
-          <StaticOption name="Ala" value="ala" isDefault="true" />,
-          <StaticOption name="Marcin" value="marcin" />
-        </Socket>
-      </Select>));
-      update({});
-
-      dropdownListNode = MockSocket.getChildrenNode({name: 'list'});
-      dropdownLabelNode = MockSocket.getChildrenNode({name: 'label'});
     });
 
     it('should select default option on startup', () => {
