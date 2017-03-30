@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext.xml" })
+@ContextConfiguration(locations = { "/unit/applicationContext.xml" })
 public class ProcessDefinitionWriterTest {
 
   @Autowired

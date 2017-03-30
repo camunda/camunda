@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/applicationContext.xml"})
+@ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class ActivityImportServiceTest {
 
   private static final String TEST_ACTIVITY_ID = "testActivityId";

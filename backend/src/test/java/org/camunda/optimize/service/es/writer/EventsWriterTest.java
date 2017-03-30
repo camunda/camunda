@@ -23,7 +23,7 @@ import java.util.List;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/applicationContext.xml"})
+@ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class EventsWriterTest {
 
   @Autowired

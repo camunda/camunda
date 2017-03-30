@@ -33,7 +33,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es-it-applicationContext.xml"})
+@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
 public class CorrelationReaderES_IT {
   public static final String PROCESS_DEFINITION_ID = "123";
   public static final String END_ACTIVITY = "endActivity";

@@ -7,7 +7,6 @@ import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.spring.OptimizeAwareDependencyInjectionListener;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -26,7 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration( locations = { "/restTestApplicationContext.xml" })
+@ContextConfiguration( locations = {"/rest/restTestApplicationContext.xml"})
 @TestExecutionListeners ({
     ServletTestExecutionListener.class,
     OptimizeAwareDependencyInjectionListener.class,
@@ -37,7 +36,7 @@ public class StatusRestServiceTest {
 
   @ClassRule
   public static EmbeddedOptimizeRule embeddedOptimizeRule =
-      new EmbeddedOptimizeRule("classpath*:mockedEmbeddedOptimizeContext.xml");
+      new EmbeddedOptimizeRule("classpath*:rest/mockedEmbeddedOptimizeContext.xml");
 
   @Autowired
   private StatusCheckingService mockedStatusCheckingService;

@@ -55,7 +55,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void init() {
-    properties = PropertyUtil.loadProperties("it-test.properties");
+    properties = PropertyUtil.loadProperties("it/it-test.properties");
     initObjectMapper();
     initTransport();
   }

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/it-applicationContext.xml" })
+@ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class AuthenticationRestServiceIT {
   private static final String USERNAME_PASSWORD = "demo";
 

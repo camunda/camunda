@@ -35,7 +35,7 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/restTestApplicationContext.xml" })
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 @TestExecutionListeners({
     ServletTestExecutionListener.class,
     OptimizeAwareDependencyInjectionListener.class,
@@ -46,7 +46,7 @@ public class AuthenticationRestServiceTest {
 
   @ClassRule
   public static EmbeddedOptimizeRule embeddedOptimizeRule =
-      new EmbeddedOptimizeRule("classpath*:mockedEmbeddedOptimizeContext.xml");
+      new EmbeddedOptimizeRule("classpath*:rest/mockedEmbeddedOptimizeContext.xml");
 
   @Autowired
   private TransportClient esClientMock;

@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/applicationContext.xml"})
+@ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class ProcessDefinitionImportServiceTest {
 
   private static final String TEST_PROCESS_DEFINITION_ID = "testProcessdefinitionId";

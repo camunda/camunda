@@ -2,17 +2,14 @@ package org.camunda.optimize.test.rule;
 
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
-import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
-import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -47,7 +44,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void init() {
-    properties = PropertyUtil.loadProperties("it-test.properties");
+    properties = PropertyUtil.loadProperties("it/it-test.properties");
   }
 
   public void importEngineEntities() {

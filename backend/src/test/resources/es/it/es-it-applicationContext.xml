@@ -9,6 +9,6 @@
 >
 
   <context:annotation-config/>
-  <import resource="embeddedOptimizeContext.xml"/>
+  <import resource="../../embeddedOptimizeContext.xml"/>
 
 </beans>

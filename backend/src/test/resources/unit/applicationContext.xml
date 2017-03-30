@@ -12,7 +12,7 @@
   <context:component-scan base-package="org.camunda.optimize.service"/>
   <context:component-scan base-package="org.camunda.optimize.rest"/>
 
-  <context:property-placeholder location="classpath:service.properties,service-unit.properties" />
+  <context:property-placeholder location="classpath:service.properties,classpath:unit/service-unit.properties" />
 
   <bean id="engineClient" class="org.camunda.optimize.test.factory.MockEngineClientFactory"/>
 

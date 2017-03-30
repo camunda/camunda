@@ -21,7 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es-it-applicationContext.xml"})
+@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
 public class DurationHeatMapReaderES_IT {
 
   private static final String TEST_DEFINITION = "testDefinition";

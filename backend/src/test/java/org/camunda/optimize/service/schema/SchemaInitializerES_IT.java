@@ -26,7 +26,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es-it-applicationContext.xml"})
+@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
 public class SchemaInitializerES_IT {
 
   @Autowired

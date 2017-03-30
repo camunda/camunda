@@ -53,7 +53,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private static final int MAX_WAIT = 10;
   public static final String COUNT = "count";
-  public static final String DEFAULT_PROPERTIES_PATH = "it-test.properties";
+  public static final String DEFAULT_PROPERTIES_PATH = "it/it-test.properties";
   private String propertiesPath;
   private boolean cleanEngine = true;
 

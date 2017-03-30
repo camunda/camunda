@@ -46,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/restTestApplicationContext.xml" })
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
 @TestExecutionListeners({
     ServletTestExecutionListener.class,
     OptimizeAwareDependencyInjectionListener.class,
@@ -57,7 +57,7 @@ public class ProcessDefinitionRestServiceTest {
 
   @ClassRule
   public static EmbeddedOptimizeRule embeddedOptimizeRule =
-      new EmbeddedOptimizeRule("classpath*:mockedEmbeddedOptimizeContext.xml");
+      new EmbeddedOptimizeRule("classpath*:rest/mockedEmbeddedOptimizeContext.xml");
 
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
