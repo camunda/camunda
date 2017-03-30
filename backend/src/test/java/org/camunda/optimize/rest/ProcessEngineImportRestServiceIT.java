@@ -19,6 +19,7 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -68,7 +69,7 @@ public class ProcessEngineImportRestServiceIT {
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(),is(notNullValue()));
     assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
-    assertThat(definitions.get(0).getVersion(),is(notNullValue()));
+    assertThat(definitions.get(0).getVersion(),is(not(0L)));
   }
 
 }
