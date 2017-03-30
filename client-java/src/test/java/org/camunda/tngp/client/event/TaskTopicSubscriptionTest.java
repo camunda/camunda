@@ -80,4 +80,26 @@ public class TaskTopicSubscriptionTest
 
         assertThat(eventPositions).containsExactly(1L);
     }
+
+    @Test
+    public void shouldCloseSubscriptionOnChannelClose()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final TopicSubscription subscription = client.taskTopic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .defaultHandler((m, t) ->
+            {
+            })
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        brokerRule.closeServerSocketBinding();
+
+        // then
+        TestUtil.waitUntil(() -> subscription.isClosed());
+        assertThat(subscription.isClosed()).isTrue();
+    }
 }

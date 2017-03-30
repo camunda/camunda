@@ -23,7 +23,13 @@ public abstract class AbstractControlMessageWithoutResponseCmd<E> extends Abstra
     public AbstractControlMessageWithoutResponseCmd(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, Class<E> messageType,
             ControlMessageType controlMessageType)
     {
-        super(cmdExecutor, objectMapper, messageType, controlMessageType, null);
+        super(cmdExecutor, objectMapper, messageType, controlMessageType);
+    }
+
+    @Override
+    protected Void getResponseValue(int channelId, E data)
+    {
+        return null;
     }
 
 }

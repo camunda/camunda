@@ -68,7 +68,7 @@ public class ResponseFuture<R> implements Future<R>
 
                 if (schemaId == responseHandler.getResponseSchemaId() && templateId == responseHandler.getResponseTemplateId())
                 {
-                    responseObject = responseHandler.readResponse(responseBuffer, responseMessageOffset, blockLength, version);
+                    responseObject = responseHandler.readResponse(request.getChannelId(), responseBuffer, responseMessageOffset, blockLength, version);
                 }
                 else
                 {

@@ -112,7 +112,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    protected Long getResponseValue(long key, TaskEvent event)
+    protected Long getResponseValue(int channelId, long key, TaskEvent event)
     {
         return key;
     }

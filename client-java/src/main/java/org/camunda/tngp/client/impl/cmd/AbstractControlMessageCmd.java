@@ -15,7 +15,6 @@ package org.camunda.tngp.client.impl.cmd;
 import static org.camunda.tngp.protocol.clientapi.ControlMessageType.NULL_VAL;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -39,15 +38,12 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
     protected final Class<E> messageType;
     protected final ControlMessageType controlMessageType;
 
-    protected final Function<E, R> responseHandler;
-
     protected byte[] serializedCommand;
 
     public AbstractControlMessageCmd(ClientCmdExecutor cmdExecutor,
             ObjectMapper objectMapper,
             Class<E> messageType,
-            ControlMessageType controlMessageType,
-            Function<E, R> responseHandler)
+            ControlMessageType controlMessageType)
     {
         super(cmdExecutor);
 
@@ -59,7 +55,6 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
         this.objectMapper = objectMapper;
         this.messageType = messageType;
         this.controlMessageType = controlMessageType;
-        this.responseHandler = responseHandler;
     }
 
     @Override
@@ -140,21 +135,18 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
     }
 
     @Override
-    public R readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
+    public R readResponse(int channelId, DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         R result = null;
 
-        if (responseHandler != null)
-        {
-            responseDecoder.wrap(responseBuffer, offset, blockLength, version);
+        responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
-            final byte[] dataBuffer = new byte[responseDecoder.dataLength()];
-            responseDecoder.getData(dataBuffer, 0, dataBuffer.length);
+        final byte[] dataBuffer = new byte[responseDecoder.dataLength()];
+        responseDecoder.getData(dataBuffer, 0, dataBuffer.length);
 
-            final E data = readData(dataBuffer);
+        final E data = readData(dataBuffer);
 
-            result = responseHandler.apply(data);
-        }
+        result = getResponseValue(channelId, data);
 
         return result;
     }
@@ -171,4 +163,5 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
         }
     }
 
+    protected abstract R getResponseValue(int channelId, E data);
 }

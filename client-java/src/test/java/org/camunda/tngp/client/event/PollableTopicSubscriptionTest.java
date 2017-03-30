@@ -83,4 +83,23 @@ public class PollableTopicSubscriptionTest
         assertThat(subscription.isOpen()).isTrue();
         assertThat(handler.numRecordedEvents()).isEqualTo(1);
     }
+
+    @Test
+    public void shouldCloseSubscriptionOnChannelClose()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final PollableTopicSubscription subscription = client.topic(0).newPollableSubscription()
+            .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        brokerRule.closeServerSocketBinding();
+
+        // then
+        TestUtil.waitUntil(() -> subscription.isClosed());
+        assertThat(subscription.isClosed()).isTrue();
+    }
 }

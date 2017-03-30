@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.event.processor;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -164,10 +165,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
             if (processor != null)
             {
-                final ServiceName<StreamProcessorController> subscriptionProcessorName =
-                        TopicSubscriptionNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
-
-                serviceContext.removeService(subscriptionProcessorName)
+                closePushProcessor(processor)
                     .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
             }
             else
@@ -175,6 +173,14 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 future.completeExceptionally(new RuntimeException("Subscription with id " + subscriberKey + " is not open"));
             }
         });
+    }
+
+    public CompletableFuture<Void> closePushProcessor(TopicSubscriptionPushProcessor processor)
+    {
+        final ServiceName<StreamProcessorController> subscriptionProcessorName =
+                TopicSubscriptionNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
+
+        return serviceContext.removeService(subscriptionProcessorName);
     }
 
 
@@ -207,11 +213,11 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             int prefetchCapacity)
     {
         final TopicSubscriptionPushProcessor processor = new TopicSubscriptionPushProcessor(
-                metadata.getReqChannelId(),
+                clientChannelId,
                 subscriberKey,
                 resumePosition,
                 subscriptionName,
-                subscriberEvent.getPrefetchCapacity(),
+                prefetchCapacity,
                 eventWriterFactory.get());
 
         final ServiceName<StreamProcessorController> serviceName = TopicSubscriptionNames.subscriptionPushServiceName(streamServiceName.getName(), processor.getNameAsString());
@@ -253,6 +259,24 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             .valueWriter(subscriberEvent)
             .key(sourceEvent.getLongKey())
             .tryWrite();
+    }
+
+    public void onClientChannelCloseAsync(int channelId)
+    {
+        cmdContext.runAsync(() ->
+        {
+            final Iterator<TopicSubscriptionPushProcessor> subscriptionsIt = subscriptionRegistry.iterateSubscriptions();
+
+            while (subscriptionsIt.hasNext())
+            {
+                final TopicSubscriptionPushProcessor processor = subscriptionsIt.next();
+                if (processor.getChannelId() == channelId)
+                {
+                    subscriptionsIt.remove();
+                    closePushProcessor(processor);
+                }
+            }
+        });
     }
 
 
@@ -356,4 +380,5 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
         }
     }
+
 }

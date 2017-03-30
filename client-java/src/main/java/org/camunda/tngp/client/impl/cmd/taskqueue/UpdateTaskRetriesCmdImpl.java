@@ -114,7 +114,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     }
 
     @Override
-    protected Long getResponseValue(long key, TaskEvent event)
+    protected Long getResponseValue(int channelId, long key, TaskEvent event)
     {
         long result = -1;
 

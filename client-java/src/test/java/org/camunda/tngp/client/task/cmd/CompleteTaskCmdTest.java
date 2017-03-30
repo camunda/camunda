@@ -165,7 +165,7 @@ public class CompleteTaskCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final Long taskKey = responseHandler.readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(taskKey).isEqualTo(2L);
@@ -192,7 +192,7 @@ public class CompleteTaskCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final Long taskKey = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final Long taskKey = responseHandler.readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(taskKey).isEqualTo(-1L);

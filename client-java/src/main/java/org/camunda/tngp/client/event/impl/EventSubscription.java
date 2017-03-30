@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.camunda.tngp.client.impl.Loggers;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.util.CheckedConsumer;
 import org.slf4j.Logger;
 
@@ -15,13 +16,24 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public static final int STATE_NEW = 0;
     public static final int STATE_OPENING = 1;
     public static final int STATE_OPEN = 2;
+
+    // semantics of closing: subscription is currently open on broker-side and we want to close it and clean up on client side
     public static final int STATE_CLOSING = 3;
     public static final int STATE_CLOSED = 4;
+
+    // semantics of aborting: subscription is closed on broker side and we want to clean up on client side
+    public static final int STATE_ABORTING = 5;
+    public static final int STATE_ABORTED = 6;
 
     protected long id;
     protected final EventAcquisition<T> eventAcquisition;
     protected final ManyToManyConcurrentArrayQueue<TopicEventImpl> pendingEvents;
     protected final int capacity;
+
+    /*
+     * The channel that events are received on
+     */
+    protected int receiveChannelId;
 
     protected final AtomicInteger state = new AtomicInteger(STATE_NEW);
     protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
@@ -42,6 +54,16 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public void setId(long id)
     {
         this.id = id;
+    }
+
+    public int getReceiveChannelId()
+    {
+        return receiveChannelId;
+    }
+
+    public void setReceiveChannelId(int receiveChannelId)
+    {
+        this.receiveChannelId = receiveChannelId;
     }
 
     public int capacity()
@@ -76,7 +98,8 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     public boolean isClosed()
     {
-        return state.get() == STATE_CLOSED;
+        final int currentState = state.get();
+        return currentState == STATE_CLOSED || currentState == STATE_ABORTED;
     }
 
     public abstract boolean isManagedSubscription();
@@ -131,6 +154,14 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         else
         {
             return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public void abortAsync()
+    {
+        if (state.compareAndSet(STATE_OPEN, STATE_ABORTING))
+        {
+            eventAcquisition.abort((T) this);
         }
     }
 
@@ -203,7 +234,19 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         closeFuture.complete(null);
     }
 
-    protected abstract Long requestNewSubscription();
+    public void onCloseFailed(Exception e)
+    {
+        // setting this to closed anyway for now
+        state.compareAndSet(STATE_CLOSING, STATE_CLOSED);
+        closeFuture.completeExceptionally(e);
+    }
+
+    public void onAbort()
+    {
+        state.compareAndSet(STATE_ABORTING, STATE_ABORTED);
+    }
+
+    protected abstract EventSubscriptionCreationResult requestNewSubscription();
 
     protected abstract void requestSubscriptionClose();
 

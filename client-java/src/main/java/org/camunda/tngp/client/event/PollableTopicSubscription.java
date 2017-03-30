@@ -8,6 +8,11 @@ public interface PollableTopicSubscription
     boolean isOpen();
 
     /**
+     * @return true if this subscription is not open and is not in the process of opening or closing
+     */
+    boolean isClosed();
+
+    /**
      * Closes the subscription. Blocks until all pending events have been handled.
      */
     void close();

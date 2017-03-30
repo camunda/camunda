@@ -19,6 +19,7 @@ import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ErrorResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
+import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -405,6 +406,35 @@ public class TopicSubscriptionTest
         // then
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
         assertThat(errorResponse.getErrorData()).contains("Cannot close topic subscription. Cannot remove service");
+    }
+
+    @Test
+    public void shouldCloseSubscriptionOnTransportChannelClose()
+    {
+        // given
+        ExecuteCommandResponse subscriptionResponse = apiRule
+            .openTopicSubscription(0, "foo", 0)
+            .await();
+
+        final long firstSubscriberKey = subscriptionResponse.key();
+
+        // when the transport channel is closed
+        apiRule.closeChannel();
+
+        // then the subscription has been closed and we can reopen it
+        apiRule.openChannel();
+        subscriptionResponse = TestUtil.doRepeatedly(() ->
+        {
+            // it is not guaranteed this succeeds the first time as the event of the closed channel is asynchronous by nature
+            return apiRule
+                .openTopicSubscription(0, "foo", 0)
+                .await();
+        })
+            .until((r) -> r != null);
+
+        final long secondSubscriberKey = subscriptionResponse.key();
+
+        assertThat(secondSubscriberKey).isNotEqualTo(firstSubscriberKey);
     }
 
     protected String getStringOfLength(int numCharacters)

@@ -16,6 +16,7 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
+import org.camunda.tngp.client.task.impl.ClientTransportChannelListener;
 import org.camunda.tngp.client.task.impl.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
@@ -52,6 +53,7 @@ public class TngpClientImpl implements TngpClient
     protected final ObjectMapper objectMapper;
 
     protected SubscriptionManager subscriptionManager;
+    protected ClientTransportChannelListener channelListener;
 
     public TngpClientImpl(final Properties properties)
     {
@@ -113,6 +115,7 @@ public class TngpClientImpl implements TngpClient
                 autoCompleteTasks,
                 prefetchCapacity,
                 dataFrameReceiveBuffer.openSubscription("task-acquisition"));
+        channelListener = new ClientTransportChannelListener(subscriptionManager);
     }
 
     @Override
@@ -121,6 +124,7 @@ public class TngpClientImpl implements TngpClient
         channel = transport.createClientChannel(contactPoint)
                 .requestResponseProtocol(connectionPool)
                 .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
+                .channelEventHandler(channelListener)
                 .connect();
 
         channelResolver.setChannelId(channel.getId());

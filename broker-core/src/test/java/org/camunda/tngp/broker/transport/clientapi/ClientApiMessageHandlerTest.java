@@ -5,6 +5,7 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLe
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,7 +13,9 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -102,7 +105,12 @@ public class ClientApiMessageHandlerTest
 
         logStream.open();
 
-        messageHandler = new ClientApiMessageHandler(mockSendBuffer, mockControlMessageDispatcher, mockErrorResponseWriter);
+        messageHandler = new ClientApiMessageHandler(
+                mockSendBuffer,
+                mockControlMessageDispatcher,
+                mockErrorResponseWriter,
+                mock(TopicSubscriptionService.class),
+                mock(TaskSubscriptionManager.class));
 
         messageHandler.addStream(logStream);
     }

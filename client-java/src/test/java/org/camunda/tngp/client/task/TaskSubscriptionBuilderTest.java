@@ -13,6 +13,7 @@ import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.impl.TaskTopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackMapper;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.PollableTaskSubscriptionBuilderImpl;
 import org.camunda.tngp.client.task.impl.TaskSubscriptionBuilderImpl;
@@ -52,7 +53,7 @@ public class TaskSubscriptionBuilderTest
         MockitoAnnotations.initMocks(this);
 
         when(client.brokerTaskSubscription()).thenReturn(openSubscriptionCmd);
-        when(openSubscriptionCmd.execute()).thenReturn(123L);
+        when(openSubscriptionCmd.execute()).thenReturn(new EventSubscriptionCreationResult(123L, 5));
 
         subscriptions = new EventSubscriptions<>();
         acquisition = new EventAcquisition<TaskSubscriptionImpl>(subscriptions)

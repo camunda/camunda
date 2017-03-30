@@ -22,6 +22,7 @@ import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CreateTaskSubscriptionCmdImpl;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskSubscription;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
@@ -106,7 +107,7 @@ public class CreateTaskSubscriptionCmdTest
     @Test
     public void shouldReadResponse() throws JsonProcessingException
     {
-        final ClientResponseHandler<Long> responseHandler = command.getResponseHandler();
+        final ClientResponseHandler<EventSubscriptionCreationResult> responseHandler = command.getResponseHandler();
 
         assertThat(responseHandler.getResponseSchemaId()).isEqualTo(responseEncoder.sbeSchemaId());
         assertThat(responseHandler.getResponseTemplateId()).isEqualTo(responseEncoder.sbeTemplateId());
@@ -122,10 +123,11 @@ public class CreateTaskSubscriptionCmdTest
         responseEncoder.putData(jsonData, 0, jsonData.length);
 
         // when
-        final Long subscriptionId = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final EventSubscriptionCreationResult result = responseHandler.readResponse(5, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
-        assertThat(subscriptionId).isEqualTo(3L);
+        assertThat(result.getSubscriptionId()).isEqualTo(3L);
+        assertThat(result.getReceiveChannelId()).isEqualTo(5);
     }
 
     @Test

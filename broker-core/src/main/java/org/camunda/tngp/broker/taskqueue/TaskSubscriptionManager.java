@@ -19,6 +19,7 @@ import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueL
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -240,6 +241,21 @@ public class TaskSubscriptionManager implements Agent
                 entrySet.remove(entry);
             }
         }
+    }
+
+    public void onClientChannelCloseAsync(int channelId)
+    {
+        asyncContext.runAsync(() ->
+        {
+            final Iterator<LockTaskStreamProcessor> processorIt = streamProcessorBySubscriptionId.values().iterator();
+            while (processorIt.hasNext())
+            {
+                final LockTaskStreamProcessor processor = processorIt.next();
+                processor
+                    .onClientChannelCloseAsync(channelId)
+                    .thenCompose(hasSubscriptions -> !hasSubscriptions ? removeStreamProcessorService(processor) : CompletableFuture.completedFuture(null));
+            }
+        });
     }
 
     class LogStreamBucket

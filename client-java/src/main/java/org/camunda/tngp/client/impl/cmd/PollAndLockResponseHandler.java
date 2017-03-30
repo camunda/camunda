@@ -19,7 +19,7 @@ public class PollAndLockResponseHandler implements ClientResponseHandler<LockedT
     }
 
     @Override
-    public LockedTasksBatch readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
+    public LockedTasksBatch readResponse(int channelId, DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         return null;
     }

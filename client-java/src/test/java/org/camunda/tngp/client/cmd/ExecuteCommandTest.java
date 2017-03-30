@@ -71,7 +71,7 @@ public class ExecuteCommandTest
         }
 
         @Override
-        protected Void getResponseValue(long key, Void event)
+        protected Void getResponseValue(int channelId, long key, Void event)
         {
             return null;
         }

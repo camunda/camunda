@@ -135,7 +135,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     }
 
     @Override
-    protected DeploymentResult getResponseValue(long key, DeploymentEvent event)
+    protected DeploymentResult getResponseValue(int channelId, long key, DeploymentEvent event)
     {
         final boolean isDeployed = event.getEventType() == DeploymentEventType.DEPLOYMENT_CREATED;
 

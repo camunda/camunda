@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.impl.Loggers;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.client.task.impl.SubscribedEventHandler;
 import org.camunda.tngp.util.DeferredCommandContext;
@@ -51,19 +52,34 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     {
         return asyncContext.runAsync((future) ->
         {
-            final Long subscriptionId = subscription.requestNewSubscription();
+            final EventSubscriptionCreationResult result = subscription.requestNewSubscription();
 
-            subscription.setId(subscriptionId);
+            subscription.setId(result.getSubscriptionId());
+            subscription.setReceiveChannelId(result.getReceiveChannelId());
             subscriptions.addSubscription(subscription);
             future.complete(null);
         });
     }
 
-    public void closeSubscription(T subscription)
+    protected void closeSubscription(T subscription)
     {
-        subscription.requestSubscriptionClose();
+        try
+        {
+            subscription.requestSubscriptionClose();
+            subscriptions.removeSubscription(subscription);
+            subscription.onClose();
+        }
+        catch (Exception e)
+        {
+            subscription.onCloseFailed(e);
+        }
+    }
+
+    protected void abort(T subscription)
+    {
+        // don't try to send any further requests regarding this subscription
         subscriptions.removeSubscription(subscription);
-        subscription.onClose();
+        subscription.onAbort();
     }
 
     public CompletableFuture<Void> onEventsPolledAsync(T subscription, int numEvents)
@@ -115,7 +131,5 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
 
         return workCount;
     }
-
-
 
 }

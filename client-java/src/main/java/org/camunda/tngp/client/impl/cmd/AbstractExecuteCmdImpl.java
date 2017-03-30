@@ -153,7 +153,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     }
 
     @Override
-    public R readResponse(DirectBuffer responseBuffer, int offset, int blockLength, int version)
+    public R readResponse(int channelId, DirectBuffer responseBuffer, int offset, int blockLength, int version)
     {
         responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
@@ -164,7 +164,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         final E event = readEvent(eventBuffer);
 
-        return getResponseValue(key, event);
+        return getResponseValue(channelId, key, event);
     }
 
     protected E readEvent(byte[] buffer)
@@ -179,6 +179,6 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         }
     }
 
-    protected abstract R getResponseValue(long key, E event);
+    protected abstract R getResponseValue(int channelId, long key, E event);
 
 }

@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.camunda.tngp.transport.protocol.Protocols.*;
+import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
+import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
 
 import java.util.function.Consumer;
 
@@ -10,7 +11,9 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -51,11 +54,21 @@ public class ClientApiMessageHandler
     protected final Dispatcher controlMessageDispatcher;
     protected final ClaimedFragment claimedControlMessageFragment = new ClaimedFragment();
 
-    public ClientApiMessageHandler(Dispatcher sendBuffer, Dispatcher controlMessageDispatcher, ErrorResponseWriter errorResponseWriter)
+    protected final TopicSubscriptionService topicSubscriptionService;
+    protected final TaskSubscriptionManager taskSubscriptionManager;
+
+    public ClientApiMessageHandler(
+            Dispatcher sendBuffer,
+            Dispatcher controlMessageDispatcher,
+            ErrorResponseWriter errorResponseWriter,
+            TopicSubscriptionService topicSubscriptionService,
+            TaskSubscriptionManager taskSubscriptionManager)
     {
         this.sendBuffer = sendBuffer;
         this.controlMessageDispatcher = controlMessageDispatcher;
         this.errorResponseWriter = errorResponseWriter;
+        this.topicSubscriptionService = topicSubscriptionService;
+        this.taskSubscriptionManager = taskSubscriptionManager;
     }
 
     public boolean handleMessage(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
@@ -228,4 +241,11 @@ public class ClientApiMessageHandler
     {
         cmdQueue.add(() -> logStreamsById.remove(logStream.getId()));
     }
+
+    public void onChannelClose(int channelId)
+    {
+        topicSubscriptionService.onClientChannelCloseAsync(channelId);
+        taskSubscriptionManager.onClientChannelCloseAsync(channelId);
+    }
+
 }

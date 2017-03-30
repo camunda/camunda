@@ -3,6 +3,7 @@ package org.camunda.tngp.test.broker.protocol.clientapi;
 import java.net.InetSocketAddress;
 import java.util.stream.Stream;
 
+import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.Transport;
@@ -35,11 +36,8 @@ public class ClientApiRule extends ExternalResource
                 .build();
 
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, 2, 64);
-        clientChannel = transport
-                .createClientChannel(new InetSocketAddress(host, port))
-                .requestResponseProtocol(connectionPool)
-                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, subscribedEventCollector)
-                .connect();
+        openChannel();
+
         msgPackHelper = new MsgPackHelper();
     }
 
@@ -48,7 +46,7 @@ public class ClientApiRule extends ExternalResource
     {
         if (clientChannel != null)
         {
-            clientChannel.close();
+            closeChannel();
         }
 
         if (connectionPool != null)
@@ -107,6 +105,45 @@ public class ClientApiRule extends ExternalResource
                 .put("event", "SUBSCRIBE")
                 .done()
             .send();
+    }
+
+    public ControlMessageRequest openTaskSubscription(int topicId, String type)
+    {
+        return createControlMessageRequest()
+            .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .data()
+                .put("topicId", topicId)
+                .put("taskType", type)
+                .put("lockDuration", 1000L)
+                .put("lockOwner", 0)
+                .put("credits", 10)
+                .done()
+            .send();
+    }
+
+    public void closeChannel()
+    {
+        if (clientChannel == null)
+        {
+            throw new RuntimeException("No channel open");
+        }
+
+        clientChannel.close();
+        clientChannel = null;
+    }
+
+    public void openChannel()
+    {
+        if (clientChannel != null)
+        {
+            throw new RuntimeException("Cannot open more than one channel at once");
+        }
+
+        clientChannel = transport
+            .createClientChannel(new InetSocketAddress(host, port))
+            .requestResponseProtocol(connectionPool)
+            .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, subscribedEventCollector)
+            .connect();
     }
 
 }

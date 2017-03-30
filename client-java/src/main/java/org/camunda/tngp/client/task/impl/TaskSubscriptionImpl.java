@@ -118,7 +118,7 @@ public class TaskSubscriptionImpl
     }
 
     @Override
-    public Long requestNewSubscription()
+    public EventSubscriptionCreationResult requestNewSubscription()
     {
         return taskClient.brokerTaskSubscription()
                 .taskType(taskType)

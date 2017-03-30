@@ -160,4 +160,10 @@ public class SubscriptionManager
         return new TaskTopicSubscriptionBuilderImpl(client.topic(topicId), topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
     }
 
+    public void onChannelClosed(int channelId)
+    {
+        taskSubscriptions.abortSubscriptionsOnChannel(channelId);
+        topicSubscriptions.abortSubscriptionsOnChannel(channelId);
+    }
+
 }

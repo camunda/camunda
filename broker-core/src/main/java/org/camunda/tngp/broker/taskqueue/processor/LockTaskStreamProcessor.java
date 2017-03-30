@@ -132,15 +132,43 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         return cmdQueue.runAsync(future ->
         {
             final TaskSubscription subscription = subscriptionsById.remove(subscriptionId);
-            if (subscription != null)
-            {
-                availableSubscriptionCredits -= subscription.getCredits();
-            }
+            final boolean hasSubscriptions = onRemove(subscription);
 
-            final boolean hasSubscriptions = subscriptionsById.size() > 0;
-            if (!hasSubscriptions)
+            future.complete(hasSubscriptions);
+        });
+    }
+
+    protected boolean onRemove(TaskSubscription subscription)
+    {
+        if (subscription != null)
+        {
+            availableSubscriptionCredits -= subscription.getCredits();
+        }
+
+        final boolean hasSubscriptions = subscriptionsById.size() > 0;
+        if (!hasSubscriptions)
+        {
+            isSuspended = true;
+        }
+
+        return hasSubscriptions;
+    }
+
+    public CompletableFuture<Boolean> onClientChannelCloseAsync(int channelId)
+    {
+        return cmdQueue.runAsync(future ->
+        {
+            final Iterator<TaskSubscription> subscriptionIt = subscriptionsById.values().iterator();
+
+            boolean hasSubscriptions = true;
+            while (subscriptionIt.hasNext())
             {
-                isSuspended = true;
+                final TaskSubscription subscription = subscriptionIt.next();
+                if (subscription.getChannelId() == channelId)
+                {
+                    subscriptionIt.remove();
+                    hasSubscriptions = onRemove(subscription);
+                }
             }
 
             future.complete(hasSubscriptions);

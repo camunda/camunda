@@ -24,6 +24,7 @@ public class StubBrokerRule extends ExternalResource
 
     protected StubResponseChannelHandler channelHandler;
     protected MsgPackHelper msgPackHelper;
+    private InetSocketAddress bindAddr;
 
     public StubBrokerRule()
     {
@@ -45,13 +46,11 @@ public class StubBrokerRule extends ExternalResource
                 .threadingMode(ThreadingMode.SHARED)
                 .build();
 
-        final InetSocketAddress bindAddr = new InetSocketAddress(host, port);
+        bindAddr = new InetSocketAddress(host, port);
 
         channelHandler = new StubResponseChannelHandler(transport.getSendBuffer(), msgPackHelper);
 
-        serverSocketBinding = transport.createServerSocketBinding(bindAddr)
-            .transportChannelHandler(channelHandler)
-            .bind();
+        openServerSocketBinding();
     }
 
     @Override
@@ -59,13 +58,35 @@ public class StubBrokerRule extends ExternalResource
     {
         if (serverSocketBinding != null)
         {
-            serverSocketBinding.close();
+            closeServerSocketBinding();
         }
         if (transport != null)
         {
             transport.close();
         }
+    }
 
+    public void closeServerSocketBinding()
+    {
+        if (serverSocketBinding == null)
+        {
+            throw new RuntimeException("No open server socket binding");
+        }
+
+        serverSocketBinding.close();
+        serverSocketBinding = null;
+    }
+
+    public void openServerSocketBinding()
+    {
+        if (serverSocketBinding != null)
+        {
+            throw new RuntimeException("Server socket binding already open");
+        }
+
+        serverSocketBinding = transport.createServerSocketBinding(bindAddr)
+            .transportChannelHandler(channelHandler)
+            .bind();
     }
 
     public ExecuteCommandResponseBuilder onExecuteCommandRequest()

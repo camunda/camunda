@@ -72,7 +72,7 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     }
 
     @Override
-    protected WorkflowInstance getResponseValue(long key, WorkflowInstanceEvent event)
+    protected WorkflowInstance getResponseValue(int channelId, long key, WorkflowInstanceEvent event)
     {
         if (event.getEventType() == WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED)
         {

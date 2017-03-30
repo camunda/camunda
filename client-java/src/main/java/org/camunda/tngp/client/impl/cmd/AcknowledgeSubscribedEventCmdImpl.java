@@ -53,7 +53,7 @@ public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<To
     }
 
     @Override
-    protected Long getResponseValue(long key, TopicSubscriptionEvent event)
+    protected Long getResponseValue(int channelId, long key, TopicSubscriptionEvent event)
     {
         return key;
     }

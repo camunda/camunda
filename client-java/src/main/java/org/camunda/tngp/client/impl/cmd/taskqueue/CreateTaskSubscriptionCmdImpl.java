@@ -4,18 +4,15 @@ import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
-import java.util.function.Function;
-
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageCmd;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<TaskSubscription, Long>
+public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<TaskSubscription, EventSubscriptionCreationResult>
 {
-    protected static final Function<TaskSubscription, Long> RESPONSE_HANDLER = TaskSubscription::getId;
-
     protected final TaskSubscription subscription = new TaskSubscription();
 
     private final int topicId;
@@ -26,7 +23,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
 
     public CreateTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
     {
-        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.ADD_TASK_SUBSCRIPTION, RESPONSE_HANDLER);
+        super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.ADD_TASK_SUBSCRIPTION);
         this.topicId = topicId;
     }
 
@@ -83,6 +80,12 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
         subscription.setCredits(initialCredits);
 
         return subscription;
+    }
+
+    @Override
+    protected EventSubscriptionCreationResult getResponseValue(int channelId, TaskSubscription data)
+    {
+        return new EventSubscriptionCreationResult(data.getId(), channelId);
     }
 
 }

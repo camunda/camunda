@@ -18,4 +18,10 @@ public class ClientApiChannelHandler extends DefaultChannelHandler
     {
         return messageHandler.handleMessage(transportChannel, buffer, offset, length);
     }
+
+    @Override
+    public void onChannelClosed(TransportChannel transportChannel)
+    {
+        messageHandler.onChannelClose(transportChannel.getId());
+    }
 }

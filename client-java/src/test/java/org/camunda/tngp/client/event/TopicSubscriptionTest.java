@@ -267,4 +267,60 @@ public class TopicSubscriptionTest
         // then
         assertThat(subscription.isClosed());
     }
+
+    @Test
+    public void shouldCloseSubscriptionOnChannelClose()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final TopicSubscription subscription = client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .handler((m, e) ->
+            {
+            })
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // when
+        brokerRule.closeServerSocketBinding();
+
+        // then
+        TestUtil.waitUntil(() -> subscription.isClosed());
+        assertThat(subscription.isClosed()).isTrue();
+    }
+
+    @Test
+    public void shouldAllowReopeningSubscriptionAfterChannelClose() throws InterruptedException
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final TopicSubscription firstSubscription = client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .handler((m, e) ->
+            {
+            })
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        brokerRule.closeServerSocketBinding();
+        TestUtil.waitUntil(() -> !firstSubscription.isOpen());
+        client.disconnect();
+
+        brokerRule.openServerSocketBinding();
+        client.connect();
+
+        // when
+        final TopicSubscription secondSubscription = client.topic(0).newSubscription()
+                .startAtHeadOfTopic()
+                .handler((m, e) ->
+                {
+                })
+                .name(SUBSCRIPTION_NAME)
+                .open();
+
+        // then
+        assertThat(secondSubscription.isOpen()).isTrue();
+    }
 }

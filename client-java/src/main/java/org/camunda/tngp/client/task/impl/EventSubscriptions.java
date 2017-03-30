@@ -56,6 +56,25 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         }
     }
 
+    public void abortSubscriptionsOnChannel(int channelId)
+    {
+        for (T subscription : pollableSubscriptions)
+        {
+            if (subscription.getReceiveChannelId() == channelId)
+            {
+                subscription.abortAsync();
+            }
+        }
+
+        for (T subscription : managedSubscriptions)
+        {
+            if (subscription.getReceiveChannelId() == channelId)
+            {
+                subscription.abortAsync();
+            }
+        }
+    }
+
     public List<T> getManagedSubscriptions()
     {
         return managedSubscriptions;

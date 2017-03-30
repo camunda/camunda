@@ -5,6 +5,7 @@ import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SER
 
 import java.io.File;
 import java.nio.channels.FileChannel;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -177,6 +178,19 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
             final ServiceName<StreamProcessorController> ackServiceName =
                     TopicSubscriptionNames.subscriptionManagementServiceName(logStream.getLogName());
             removeStreamProcessorService(ackServiceName);
+        });
+    }
+
+    public void onClientChannelCloseAsync(int channelId)
+    {
+        asyncContext.runAsync(() ->
+        {
+            final Iterator<TopicSubscriptionManagementProcessor> managerIt = managersByLog.values().iterator();
+
+            while (managerIt.hasNext())
+            {
+                managerIt.next().onClientChannelCloseAsync(channelId);
+            }
         });
     }
 

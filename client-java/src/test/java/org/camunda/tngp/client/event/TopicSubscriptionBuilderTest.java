@@ -12,6 +12,7 @@ import org.camunda.tngp.client.event.impl.TopicSubscriptionBuilderImpl;
 import org.camunda.tngp.client.event.impl.TopicSubscriptionImpl;
 import org.camunda.tngp.client.impl.cmd.CreateTopicSubscriptionCmdImpl;
 import org.camunda.tngp.client.task.SyncContext;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.client.task.impl.EventSubscriptions;
 import org.camunda.tngp.test.util.FluentMock;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class TopicSubscriptionBuilderTest
         MockitoAnnotations.initMocks(this);
         subscriptions = new EventSubscriptions<>();
         when(client.createTopicSubscription()).thenReturn(openSubscriptionCmd);
-        when(openSubscriptionCmd.execute()).thenReturn(123L);
+        when(openSubscriptionCmd.execute()).thenReturn(new EventSubscriptionCreationResult(123L, 5));
 
         acquisition = new EventAcquisition<TopicSubscriptionImpl>(subscriptions)
         {

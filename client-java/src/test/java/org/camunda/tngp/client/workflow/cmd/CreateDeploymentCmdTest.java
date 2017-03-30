@@ -205,7 +205,7 @@ public class CreateDeploymentCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final DeploymentResult deploymentResult = responseHandler.readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final DeploymentResult deploymentResult = responseHandler.readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(deploymentResult.getKey()).isEqualTo(2L);
@@ -234,7 +234,7 @@ public class CreateDeploymentCmdTest
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
-        final DeploymentResult deploymentResult = command.getResponseHandler().readResponse(writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
+        final DeploymentResult deploymentResult = command.getResponseHandler().readResponse(0, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
         assertThat(deploymentResult.getErrorMessage()).isEqualTo("error");

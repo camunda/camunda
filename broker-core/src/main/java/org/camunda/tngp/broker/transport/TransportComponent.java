@@ -9,6 +9,7 @@ import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
+import org.camunda.tngp.broker.event.TopicSubscriptionNames;
 import org.camunda.tngp.broker.logstreams.LogStreamServiceNames;
 import org.camunda.tngp.broker.services.DispatcherService;
 import org.camunda.tngp.broker.system.Component;
@@ -87,6 +88,8 @@ public class TransportComponent implements Component
         serviceContainer.createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
             .dependency(TRANSPORT_SEND_BUFFER, messageHandlerService.getSendBufferInjector())
             .dependency(serverSocketBindingReceiveBufferName(CLIENT_API_SOCKET_BINDING_NAME), messageHandlerService.getControlMessageBufferInjector())
+            .dependency(TopicSubscriptionNames.TOPIC_SUBSCRIPTION_SERVICE, messageHandlerService.getTopicSubcriptionServiceInjector())
+            .dependency(TASK_QUEUE_SUBSCRIPTION_MANAGER, messageHandlerService.getTaskSubcriptionManagerInjector())
             .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, messageHandlerService.getLogStreamsGroupReference())
             .install();
 

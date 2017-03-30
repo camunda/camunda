@@ -1,12 +1,13 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
+import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.EnsureUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<TopicSubscriberEvent, Long>
+public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<TopicSubscriberEvent, EventSubscriptionCreationResult>
 {
     protected final TopicSubscriberEvent subscription = new TopicSubscriberEvent();
 
@@ -59,9 +60,9 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<Topic
     }
 
     @Override
-    protected Long getResponseValue(long key, TopicSubscriberEvent event)
+    protected EventSubscriptionCreationResult getResponseValue(int channelId, long key, TopicSubscriberEvent event)
     {
-        return key;
+        return new EventSubscriptionCreationResult(key, channelId);
     }
 
 }
