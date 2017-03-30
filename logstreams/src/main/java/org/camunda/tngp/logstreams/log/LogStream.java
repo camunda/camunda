@@ -1,12 +1,12 @@
 package org.camunda.tngp.logstreams.log;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.impl.LogController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents a stream of events from a log storage.
@@ -67,6 +67,27 @@ public interface LogStream extends AutoCloseable
      *         the log stream is not open
      */
     long getCurrentAppenderPosition();
+
+    /**
+     * @return the current commit position, or a negative value if no entry
+     *         is committed.
+     */
+    long getCommitPosition();
+
+    /**
+     * Sets the log streams commit position to the given position.
+     */
+    void setCommitPosition(long commitPosition);
+
+    /**
+     * @return the current term in which the log stream is active
+     */
+    int getTerm();
+
+    /**
+     * Sets the log streams term.
+     */
+    void setTerm(int term);
 
     /**
      * Register a failure listener.
@@ -157,4 +178,5 @@ public interface LogStream extends AutoCloseable
      * @return the future which is completed if the truncation was successful
      */
     CompletableFuture<Void> truncate(long position);
+
 }

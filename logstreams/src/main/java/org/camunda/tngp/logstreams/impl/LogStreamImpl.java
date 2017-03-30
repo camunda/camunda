@@ -1,5 +1,13 @@
 package org.camunda.tngp.logstreams.impl;
 
+import static org.camunda.tngp.logstreams.impl.LogStreamImpl.LogStreamBuilder.*;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.dispatcher.impl.PositionUtil;
@@ -10,12 +18,6 @@ import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
-import static org.camunda.tngp.logstreams.impl.LogStreamImpl.LogStreamBuilder.initWriteBuffer;
 
 /**
  * @author Christopher Zell <christopher.zell@camunda.com>
@@ -30,6 +32,9 @@ public final class LogStreamImpl implements LogStream
         this.logStreamController = null;
         this.writeBuffer.closeAsync().whenComplete(removeWriteBufferReference);
     });
+
+    protected volatile int term = 0;
+    protected Position commitPosition;
 
     protected final LogBlockIndex logBlockIndex;
     protected final LogStorage logStorage;
@@ -50,6 +55,9 @@ public final class LogStreamImpl implements LogStream
         this.logStorage = logStreamBuilder.getLogStorage();
         this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder);
+
+        this.commitPosition = new AtomicLongPosition();
+        this.commitPosition.setOrdered(-1L);
 
         if (!logStreamBuilder.isWithoutLogStreamController())
         {
@@ -209,6 +217,30 @@ public final class LogStreamImpl implements LogStream
     public long getCurrentAppenderPosition()
     {
         return logStreamController == null ? 0 : logStreamController.getCurrentAppenderPosition();
+    }
+
+    @Override
+    public long getCommitPosition()
+    {
+        return commitPosition.get();
+    }
+
+    @Override
+    public void setCommitPosition(long commitPosition)
+    {
+        this.commitPosition.setOrdered(commitPosition);
+    }
+
+    @Override
+    public int getTerm()
+    {
+        return term;
+    }
+
+    @Override
+    public void setTerm(int term)
+    {
+        this.term = term;
     }
 
     @Override
