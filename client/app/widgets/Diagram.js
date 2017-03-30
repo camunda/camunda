@@ -76,7 +76,7 @@ function createBpmnViewer() {
   return BpmnViewer;
 }
 
-function resetZoom(viewer) {
+export function resetZoom(viewer) {
   const canvas = viewer.get('canvas');
 
   canvas.resized();

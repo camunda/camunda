@@ -1,5 +1,6 @@
 import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/Viewer';
+import {resetZoom} from './Diagram';
 
 export const DiagramPreview = withSelector(() => {
   return <div className="diagram__holder" style="position: relative;">
@@ -29,11 +30,4 @@ function BpmnViewer() {
 
     return updateOnlyWhenStateChanges(update);
   };
-}
-
-function resetZoom(viewer) {
-  const canvas = viewer.get('canvas');
-
-  canvas.resized();
-  canvas.zoom('fit-viewport', 'auto');
 }

@@ -1,8 +1,9 @@
 import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction} from './reducer';
 import {dispatchAction} from 'view-utils';
 import {post} from 'http';
-import {getFilterQuery, getDefinitionId} from 'utils';
+import {getFilterQuery} from 'utils';
 import {addNotification} from 'notifications';
+import {getDefinitionId} from '../service';
 
 export function resetStatisticData() {
   dispatchAction(createResetCorrelationAction());

@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {loadHeatmap, loadDiagram, loadData,
+import {loadHeatmap, loadDiagram, loadData, getDefinitionId,
         __set__, __ResetDependency__} from 'main/processDisplay/service';
 
 describe('ProcessDisplay service', () => {
@@ -14,6 +14,7 @@ describe('ProcessDisplay service', () => {
 
   const processId = 'procId';
 
+  let getLastRoute;
   let dispatchAction;
   let createLoadingDiagramAction;
   let createLoadingDiagramResultAction;
@@ -23,7 +24,6 @@ describe('ProcessDisplay service', () => {
   let filter;
   let get;
   let post;
-  let getDefinitionId;
 
   setupPromiseMocking();
 
@@ -52,8 +52,12 @@ describe('ProcessDisplay service', () => {
     createLoadingHeatmapResultAction = sinon.stub().returns(STOP_ACTION_HEATMAP);
     __set__('createLoadingHeatmapResultAction', createLoadingHeatmapResultAction);
 
-    getDefinitionId = sinon.stub().returns(processId);
-    __set__('getDefinitionId', getDefinitionId);
+    getLastRoute = sinon.stub().returns({
+      params: {
+        definition: processId
+      }
+    });
+    __set__('getLastRoute', getLastRoute);
   });
 
   afterEach(() => {
@@ -62,7 +66,7 @@ describe('ProcessDisplay service', () => {
     __ResetDependency__('createLoadingDiagramResultAction');
     __ResetDependency__('createLoadingHeatmapAction');
     __ResetDependency__('createLoadingHeatmapResultAction');
-    __ResetDependency__('getDefinitionId');
+    __ResetDependency__('getLastRoute');
   });
 
   describe('loadData', () => {
@@ -226,6 +230,15 @@ describe('ProcessDisplay service', () => {
       Promise.runAll();
 
       expect(createLoadingDiagramResultAction.calledWith(xml)).to.eql(true);
+    });
+  });
+
+  describe('getDefinitionId', () => {
+    it('should retrieve the process definition from the url', () => {
+      const id = getDefinitionId();
+
+      expect(id).to.eql(processId);
+      expect(getLastRoute.calledOnce).to.eql(true);
     });
   });
 });

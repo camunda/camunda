@@ -65,7 +65,7 @@ describe('<Main>', () => {
     expect(node.querySelector('.page-wrap')).to.exist;
   });
 
-  it('should display dynamic loader view when last route and user is logged in', () => {
+  it('should display process selection view when last route and user is logged in', () => {
     update({
       router: {
         route: {
@@ -80,14 +80,13 @@ describe('<Main>', () => {
     });
 
     expect(node).to.contain.text(DynamicLoader.text);
-    expect(DynamicLoader.calledWith({
-      children: [],
+    expect(DynamicLoader.appliedWith({
       module: 'processSelection',
       selector: 'processSelection'
     })).to.eql(true, 'expected DynamicLoader to be created with processSelection module');
   });
 
-  it('should the processDisplay view', () => {
+  it('should display the process display view', () => {
     update({
       router: {
         route: {
@@ -102,11 +101,10 @@ describe('<Main>', () => {
     });
 
     expect(node).to.contain.text(DynamicLoader.text);
-    expect(DynamicLoader.calledWith({
-      children: [],
+    expect(DynamicLoader.appliedWith({
       module: 'processDisplay',
       selector: 'processDisplay'
-    })).to.eql(true, 'expected DynamicLoader to be created with processDisplay module');
+    })).to.eql(true, 'expected DynamicLoader to be applied with processDisplay module');
   });
 
   it('should redirect to login route', () => {

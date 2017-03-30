@@ -2,7 +2,8 @@ import {dispatchAction, includes} from 'view-utils';
 import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
-import {getFilterQuery, getDefinitionId} from 'utils';
+import {getFilterQuery} from 'utils';
+import {getLastRoute} from 'router';
 
 const viewHeatmapEndpoints = {
   branch_analysis: 'frequency',
@@ -47,4 +48,10 @@ export function loadDiagram({processDefinitionId}) {
     .then(result => {
       dispatchAction(createLoadingDiagramResultAction(result));
     });
+}
+
+export function getDefinitionId() {
+  const {params: {definition}} = getLastRoute();
+
+  return definition;
 }

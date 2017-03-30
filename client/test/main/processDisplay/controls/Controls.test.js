@@ -91,4 +91,30 @@ describe('<Controls>', () => {
       expect(node).to.not.contain.text(AnalysisSelection.text);
     });
   });
+
+  describe('onViewChanged', () => {
+    let onViewChanged;
+    let state;
+
+    beforeEach(() => {
+      onViewChanged = View.getAttribute('onViewChanged');
+      state = {
+        filter: [],
+        view: 'view'
+      };
+      update(state);
+    });
+
+    it('should create filter object and call onCriteriaChanged with it', () => {
+      onViewChanged();
+
+      expect(onCriteriaChanged.called).to.eql(true, 'expected onCriteriaChanged to be called');
+      expect(
+        onCriteriaChanged.calledWith({
+          query: [],
+          view: 'view'
+        })
+      ).to.eql(true, 'expected onFilterChanged to be called with right filter');
+    });
+  });
 });

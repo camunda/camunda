@@ -9,7 +9,7 @@ router.addRoutes(
   },
   {
     name: 'processDisplay',
-    url: '/processDisplay?definition=:definition'
+    url: '/process/:definition'
   },
   {
     name: 'default',
