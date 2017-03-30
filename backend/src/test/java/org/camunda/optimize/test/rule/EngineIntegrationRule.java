@@ -55,30 +55,24 @@ public class EngineIntegrationRule extends TestWatcher {
   public static final String COUNT = "count";
   public static final String DEFAULT_PROPERTIES_PATH = "it/it-test.properties";
   private String propertiesPath;
-  private boolean cleanEngine = true;
 
   private Properties properties;
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
 
   private ObjectMapper objectMapper;
 
-  public EngineIntegrationRule(String properties) {
-    this(properties, true);
-  }
-
   public EngineIntegrationRule () {
     this(DEFAULT_PROPERTIES_PATH);
   }
 
-  public EngineIntegrationRule(String properties, boolean cleanEngine) {
-    this.propertiesPath = properties;
-    this.cleanEngine = cleanEngine;
+  public EngineIntegrationRule(String propertiesLocation) {
+    this.propertiesPath = propertiesLocation;
+    properties = PropertyUtil.loadProperties(propertiesPath);
+    setupObjectMapper();
   }
 
   public void init() {
-    properties = PropertyUtil.loadProperties(propertiesPath);
     cleanEngine();
-    setupObjectMapper();
   }
 
   private void setupObjectMapper() {
@@ -96,19 +90,17 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void cleanEngine() {
-    if (cleanEngine) {
-      CloseableHttpClient client = HttpClientBuilder.create().build();
-      HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
-      try {
-        CloseableHttpResponse response = client.execute(getRequest);
-        if (response.getStatusLine().getStatusCode() != 200) {
-          throw new RuntimeException("Something really bad happened during purge, " +
-              "please check tomcat logs of engine-purge servlet");
-        }
-        client.close();
-      } catch (IOException e) {
-        logger.error("Error during purge request", e);
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
+    try {
+      CloseableHttpResponse response = client.execute(getRequest);
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new RuntimeException("Something really bad happened during purge, " +
+            "please check tomcat logs of engine-purge servlet");
       }
+      client.close();
+    } catch (IOException e) {
+      logger.error("Error during purge request", e);
     }
   }
 

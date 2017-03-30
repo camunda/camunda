@@ -7,6 +7,16 @@ In order to measure performance of the import process following steps are requir
 * run import process 
 * evaluate results\ prepare report 
 
+to start test one could use following command 
+
+```
+mvn -Pperformance clean verify
+```
+
+please note that test relies on the fact that you already have Camunda BPM Platform started and 
+configured to connect ot the database against which test will be run. Elasticsearch
+instance will be started by maven.
+
 ## Camunda BP Platform 
 
 Test itself does not provide Camunda BPM Platform, but rather relies on connection properties to an instance 

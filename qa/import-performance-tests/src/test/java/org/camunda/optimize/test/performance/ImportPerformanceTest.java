@@ -19,6 +19,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -35,47 +37,48 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @ContextConfiguration(locations = {"/import-performance-applicationContext.xml"})
 public class ImportPerformanceTest {
 
+  public static final int TEN_SECONDS = 10000;
   private final Logger logger = LoggerFactory.getLogger(ImportPerformanceTest.class);
 
   private int NUMBER_OF_INSTANCES = 100_000;
   private boolean generateData = true;
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule("import-performance-test.properties", false);
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule(false, false);
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule("import-performance-test.properties");
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule(true);
 
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
   public void importPerformanceTest() throws Exception {
     //generate data in te engine
     //given
-    long dayOne = System.currentTimeMillis();
+    LocalDateTime pointOne = LocalDateTime.now();
     if (generateData) {
       deployAndStartSimpleServiceTask(NUMBER_OF_INSTANCES);
     }
-    long dayTwo = System.currentTimeMillis();
-    logger.info("Starting took [ " + (dayTwo - dayOne)/1000 + " ] sec");
+    LocalDateTime pointTwo = LocalDateTime.now();
+    logger.info("Starting took [ " + ChronoUnit.SECONDS.between(pointOne,pointTwo) + " ] sec");
     //trigger import
 
     engineRule.waitForAllProcessesToFinish();
     embeddedOptimizeRule.startImportScheduler();
     //give importing time to warm up
-    Thread.currentThread().sleep(10000);
-    while (embeddedOptimizeRule.isImporting()) {
-      Thread.currentThread().sleep(10000);
+    Thread.currentThread().sleep(TEN_SECONDS);
+    while (embeddedOptimizeRule.isImporting() || embeddedOptimizeRule.getProgressValue() < 99) {
+      Thread.currentThread().sleep(TEN_SECONDS);
       logger.info("current import progress [" + embeddedOptimizeRule.getProgressValue() + "%]");
     }
 
-    long dayThree = System.currentTimeMillis();
+    LocalDateTime pointThree = LocalDateTime.now();
 
     //report results
-    logger.info("Import took [ " + (dayThree - dayTwo)/1000 + " ] sec");
+    logger.info("Import took [ " + ChronoUnit.SECONDS.between(pointTwo,pointThree) + " ] sec");
   }
 
   private void deployAndStartSimpleServiceTask(int numberOfInstances) throws IOException, InterruptedException {
-    BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(NUMBER_OF_INSTANCES);
+    BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(numberOfInstances);
     ThreadPoolExecutor importExecutor = new ThreadPoolExecutor(2, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue);
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .name("aProcessName")
@@ -97,6 +100,7 @@ public class ImportPerformanceTest {
         try {
           CloseableHttpClient threadClient = HttpClientBuilder.create().build();
           engineRule.startProcessInstance(procDefs.get(0).getId(), threadClient);
+          threadClient.close();
         } catch (IOException e) {
           logger.error("error while starting process", e);
         }
@@ -104,6 +108,7 @@ public class ImportPerformanceTest {
 
       importExecutor.execute(asyncStart);
     }
+    importExecutor.shutdown();
     boolean finished = importExecutor.awaitTermination(30L, TimeUnit.MINUTES);
     //assertThat("Finished data generation in 10 Minutes", finished, is(true));
   }

@@ -17,7 +17,7 @@ import javax.ws.rs.core.Response;
 /**
  * @author Askar Akhmerov
  */
-@Component ("engineAuthenticationProvider")
+@Component("engineAuthenticationProvider")
 public class EngineAuthenticationProviderImpl implements AuthenticationProvider {
   private static final Logger logger = LoggerFactory.getLogger(EngineAuthenticationProviderImpl.class);
 
@@ -30,7 +30,7 @@ public class EngineAuthenticationProviderImpl implements AuthenticationProvider 
   public boolean authenticate(CredentialsDto credentialsDto) {
     boolean authenticated = false;
     try {
-      Response response =client
+      Response response = client
           .target(configurationService.getEngineRestApiEndpoint())
           .path(configurationService.getUserValidationEndpoint())
           .request(MediaType.APPLICATION_JSON)

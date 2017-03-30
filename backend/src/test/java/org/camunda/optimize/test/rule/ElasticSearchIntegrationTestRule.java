@@ -34,28 +34,21 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private ObjectMapper objectMapper;
   private Properties properties;
   private TransportClient esclient;
-
-  private boolean dropIndex;
   private boolean cleanUp = true;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
-    this(false);
+    this(true);
   }
 
-  public ElasticSearchIntegrationTestRule(boolean dropIndex) {
-    this(dropIndex, true);
-  }
-
-  public ElasticSearchIntegrationTestRule(boolean dropIndex, boolean cleanUp) {
-    this.dropIndex = dropIndex;
+  public ElasticSearchIntegrationTestRule(boolean cleanUp) {
     this.cleanUp = cleanUp;
+    properties = PropertyUtil.loadProperties("it/it-test.properties");
   }
 
   public void init() {
-    properties = PropertyUtil.loadProperties("it/it-test.properties");
     initObjectMapper();
     initTransport();
   }
@@ -151,9 +144,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void cleanAndVerify() {
-    if (this.dropIndex) {
-      this.deleteOptimizeIndex();
-    }
     cleanUpElasticSearch();
     assureElasticsearchIsClean();
   }
