@@ -39,8 +39,8 @@ public class AppendController
 
     private static final StateMachineCommand<AppendContext> FAILED_STATE_MACHINE_COMMAND = (c) ->
     {
-        final boolean closed = c.tryTake(TRANSITION_FAIL);
-        if (!closed)
+        final boolean failed = c.tryTake(TRANSITION_FAIL);
+        if (!failed)
         {
             throw new IllegalStateException("Cannot transition to failed state.");
         }
@@ -230,6 +230,23 @@ public class AppendController
 
             return workcount;
         }
+
+        @Override
+        public void onFailure(AppendContext context, Exception e)
+        {
+            final Raft raft = context.raft;
+            final LogStream stream = raft.stream();
+            final LogStreamController logStreamController = (LogStreamController) stream.getLogStreamController();
+            final LogStreamListener listener = context.listener;
+
+            if (logStreamController != null)
+            {
+                logStreamController.removeFailureListener(listener);
+            }
+
+            e.printStackTrace();
+            context.take(TRANSITION_FAIL);
+        }
     }
 
     class AppendState implements State<AppendContext>
@@ -275,7 +292,6 @@ public class AppendController
             int workcount = 0;
 
             if (raft.commitPosition() >= entryPosition)
-//            if (stream.getCurrentAppenderPosition() >= entryPosition)
             {
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
