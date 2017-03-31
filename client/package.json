@@ -81,6 +81,7 @@
     "heatmap.js": "^2.0.5",
     "jquery": "2.2.4",
     "lodash.isequal": "^4.4.0",
+    "md5": "^2.2.1",
     "redux": "^3.6.0"
   }
 }

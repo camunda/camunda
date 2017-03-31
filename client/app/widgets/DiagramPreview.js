@@ -1,33 +1,58 @@
-import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector, $window, createReferenceComponent, dispatchAction} from 'view-utils';
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
+import {LoadingIndicator} from './LoadingIndicator';
+import md5 from 'md5';
+import {createQueue, runOnce} from 'utils';
+
+const queue = createQueue();
+const {localStorage} = $window;
 
 export const DiagramPreview = withSelector(() => {
-  return <div className="diagram__holder" style="position: relative;">
-    <BpmnViewer />
-  </div>;
-});
+  const Reference = createReferenceComponent();
+  let isLoading = () => true;
 
-function BpmnViewer() {
+  const template = <div style="position: relative; height: 100%; width: 100%">
+    <LoadingIndicator floating predicate={() => isLoading()} />
+    <div className="diagram__holder" style="position: relative;">
+      <Reference name="viewer" />
+    </div>
+  </div>;
+
   return (node, eventsBus) => {
+    const templateUpdate = template(node, eventsBus);
+    const viewerNode = Reference.getNode('viewer');
+
     const viewer = new Viewer({
-      container: node
+      container: viewerNode
     });
 
-    let diagramRendered = false;
+    const update = runOnce((diagram) => {
+      const cacheKey = `diagram_${md5(diagram)}`;
+      const cachedSVG = localStorage.getItem(cacheKey);
 
-    const update = (diagram) => {
-      if (!diagramRendered) {
+      if (cachedSVG) {
+        viewerNode.innerHTML = cachedSVG;
+        isLoading = () => false;
+        dispatchAction({type: '@@LOADED_DIAGRAM'});
+
+        return;
+      }
+
+      isLoading = queue.addTask(() => {
         viewer.importXML(diagram, (err) => {
           if (err) {
-            node.innerHTML = `Could not load diagram, got error ${err}`;
+            viewerNode.innerHTML = `Could not load diagram, got error ${err}`;
           }
-          diagramRendered = true;
-          resetZoom(viewer);
-        });
-      }
-    };
 
-    return updateOnlyWhenStateChanges(update);
+          resetZoom(viewer);
+
+          localStorage.setItem(cacheKey, viewerNode.innerHTML);
+          dispatchAction({type: '@@LOADED_DIAGRAM'});
+        });
+      });
+    });
+
+    return [templateUpdate, updateOnlyWhenStateChanges(update)];
   };
-}
+});

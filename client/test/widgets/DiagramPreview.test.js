@@ -11,6 +11,8 @@ describe('<DiagramPreview>', () => {
   let viewer;
   let canvas;
   let update;
+  let md5;
+  let queue;
 
   beforeEach(() => {
     canvas = {
@@ -33,6 +35,16 @@ describe('<DiagramPreview>', () => {
     };
     __set__('Viewer', Viewer);
 
+    md5 = sinon.stub().returns(Math.random());
+    __set__('md5', md5);
+
+    queue = {
+      addTask: sinon.stub()
+        .callsArg(0)
+        .returns(() => true)
+    };
+    __set__('queue', queue);
+
     ({update} = mountTemplate(
       <DiagramPreview />
     ));
@@ -42,6 +54,8 @@ describe('<DiagramPreview>', () => {
 
   afterEach(() => {
     __ResetDependency__('Viewer');
+    __ResetDependency__('md5');
+    __ResetDependency__('queue');
   });
 
   it('should import xml on update', () => {
@@ -52,5 +66,11 @@ describe('<DiagramPreview>', () => {
     expect(canvas.resized.calledOnce).to.eql(true, 'expected canvas.resized to be called');
     expect(canvas.zoom.calledWith('fit-viewport', 'auto'))
       .to.eql(true, 'expected canvas.zoom to be called with "fit-viewport", "auto"');
+  });
+
+  it('should not import xml on second update', () => {
+    update(diagramXml);
+
+    expect(viewer.importXML.calledOnce).to.eql(true);
   });
 });
