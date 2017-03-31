@@ -1,12 +1,10 @@
-import {jsx, updateOnlyWhenStateChanges, withSelector, $window, createReferenceComponent, dispatchAction} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector, createReferenceComponent, dispatchAction} from 'view-utils';
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
 import {LoadingIndicator} from './LoadingIndicator';
-import md5 from 'md5';
 import {createQueue, runOnce} from 'utils';
 
 const queue = createQueue();
-const {localStorage} = $window;
 
 export const DiagramPreview = withSelector(() => {
   const Reference = createReferenceComponent();
@@ -28,17 +26,6 @@ export const DiagramPreview = withSelector(() => {
     });
 
     const update = runOnce((diagram) => {
-      const cacheKey = `diagram_${md5(diagram)}`;
-      const cachedSVG = localStorage.getItem(cacheKey);
-
-      if (cachedSVG) {
-        viewerNode.innerHTML = cachedSVG;
-        isLoading = () => false;
-        dispatchAction({type: '@@LOADED_DIAGRAM'});
-
-        return;
-      }
-
       isLoading = queue.addTask(() => {
         viewer.importXML(diagram, (err) => {
           if (err) {
@@ -46,8 +33,6 @@ export const DiagramPreview = withSelector(() => {
           }
 
           resetZoom(viewer);
-
-          localStorage.setItem(cacheKey, viewerNode.innerHTML);
           dispatchAction({type: '@@LOADED_DIAGRAM'});
         });
       });
