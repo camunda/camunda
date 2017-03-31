@@ -1,4 +1,5 @@
 import {jsx, createStateComponent, withSelector, Match, Case} from 'view-utils';
+import {runOnce} from 'utils';
 import {Filter, CreateFilter} from './filter';
 import {createAnalysisSelection} from './analysisSelection';
 import {View} from './view';
@@ -57,14 +58,8 @@ export function createControls(analysisControlIntegrator) {
 
     return (parentNode, eventsBus) => {
       const templateUpdate = template(parentNode, eventsBus);
-      let initialChangeTriggered = false;
 
-      return [templateUpdate, () => {
-        if (!initialChangeTriggered) {
-          initialChangeTriggered = true;
-          onControlsChange();
-        }
-      }];
+      return [templateUpdate, runOnce(onControlsChange)];
     };
   });
 

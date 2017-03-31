@@ -1,7 +1,7 @@
 import {jsx, withSelector, Match, Case, Default, Scope, List, Text, OnEvent} from 'view-utils';
 import {LoadingIndicator, DiagramPreview} from 'widgets';
 import {loadProcessDefinitions, openDefinition} from './service';
-import {isLoaded, isInitial} from 'utils';
+import {isLoaded, runOnce} from 'utils';
 
 export const ProcessSelection = withSelector(() => {
   const template = <div className="process-selection">
@@ -61,10 +61,6 @@ export const ProcessSelection = withSelector(() => {
   return (parentNode, eventsBus) => {
     const templateUpdate = template(parentNode, eventsBus);
 
-    return [templateUpdate, ({processDefinitions}) => {
-      if (isInitial(processDefinitions)) {
-        loadProcessDefinitions();
-      }
-    }];
+    return [templateUpdate, runOnce(loadProcessDefinitions)];
   };
 });
