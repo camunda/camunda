@@ -18,19 +18,15 @@ pipeline {
     timestamps()
     timeout(time: 30, unit: 'MINUTES')
   }
+  
+  triggers {
+    upstream 'camunda-optimize/master', hudson.model.Result.SUCCESS
+  }
 
   stages {
     stage('Prepare') {
       steps {
-        checkout([$class: 'GitSCM',
-                  branches: [[name: '*/master']],
-                  doGenerateSubmoduleConfigurations: false,
-                  extensions: [],
-                  submoduleCfg: [],
-                  userRemoteConfigs: [[credentialsId: 'camunda-jenkins-github-ssh',
-                                       url: 'git@github.com:camunda/camunda-optimize.git'
-                                      ]]
-        ])
+        git url: 'git@github:camunda/camunda-optimize', branch: '*/master', credentialsId: 'camunda-jenkins-github-ssh', poll: false
 
         configFileProvider([
             configFile(fileId: 'camunda-maven-settings', replaceTokens: true, targetLocation: 'settings.xml')
