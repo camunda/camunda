@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ImportPerformanceTest {
 
   public static final int TEN_SECONDS = 10000;
+  public static final int QUEUE_SIZE = 100;
   private final Logger logger = LoggerFactory.getLogger(ImportPerformanceTest.class);
 
   private int NUMBER_OF_INSTANCES;
@@ -91,8 +93,9 @@ public class ImportPerformanceTest {
   }
 
   private void deployAndStartSimpleServiceTask(int numberOfInstances) throws IOException, InterruptedException {
-    BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(numberOfInstances);
-    ThreadPoolExecutor importExecutor = new ThreadPoolExecutor(2, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue);
+    BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
+    ThreadPoolExecutor importExecutor = new ThreadPoolExecutor(
+        2, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .name("aProcessName")
           .startEvent()
@@ -122,10 +125,19 @@ public class ImportPerformanceTest {
       importExecutor.execute(asyncStart);
     }
     importExecutor.shutdown();
-    boolean finished = importExecutor.awaitTermination(30L, TimeUnit.MINUTES);
+    boolean finished = importExecutor.awaitTermination(20L, TimeUnit.MINUTES);
     //assertThat("Finished data generation in 10 Minutes", finished, is(true));
   }
 
 
-
+  private class WaitHandler implements RejectedExecutionHandler {
+    @Override
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+      try {
+        executor.getQueue().put(r);
+      } catch (InterruptedException e) {
+        logger.error("interrupted generation", e);
+      }
+    }
+  }
 }
