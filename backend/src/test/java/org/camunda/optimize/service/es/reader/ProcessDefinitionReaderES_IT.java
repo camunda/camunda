@@ -72,6 +72,31 @@ public class ProcessDefinitionReaderES_IT {
   }
 
   @Test
+  public void getProcessDefinitionsWithXml() throws Exception {
+
+    // given
+    ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
+    procDef.setId("123");
+    procDef.setKey("testDefinition");
+    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(),"123", procDef);
+
+    ProcessDefinitionXmlOptimizeDto xmlDto = new ProcessDefinitionXmlOptimizeDto();
+    xmlDto.setId("123");
+    String leadXml = readDiagram();
+    xmlDto.setBpmn20Xml(leadXml);
+    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(),"123", xmlDto);
+
+    // when
+    List<ExtendedProcessDefinitionOptimizeDto> testDefinition = procDefReader.getProcessDefinitions(true);
+
+    // then
+    assertThat(testDefinition.size(), is(1));
+    assertThat(testDefinition.get(0).getId(), is("123"));
+    assertThat(testDefinition.get(0).getKey(), is("testDefinition"));
+    assertThat(testDefinition.get(0).getBpmn20Xml(), is(leadXml));
+  }
+
+  @Test
   public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() {
 
     // given

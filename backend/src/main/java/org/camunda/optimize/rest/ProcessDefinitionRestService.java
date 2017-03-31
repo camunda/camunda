@@ -38,7 +38,7 @@ public class ProcessDefinitionRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public Collection<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitionsWithXml(
+  public Collection<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(
       @QueryParam("includeXml") boolean includeXml) throws OptimizeException {
     return processDefinitionReader.getProcessDefinitions(includeXml);
   }
