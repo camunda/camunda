@@ -9,6 +9,7 @@ def dslScriptsToExecute = '''\
 
 def dslScriptPathToMonitor = '''\
 .ci/jobs/.*\\.dsl
+.ci/pipelines/.*
 .ci/views/.*\\.dsl
 '''
 
