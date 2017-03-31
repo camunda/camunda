@@ -9,6 +9,8 @@ import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.PropertyUtil;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -40,15 +43,25 @@ public class ImportPerformanceTest {
   public static final int TEN_SECONDS = 10000;
   private final Logger logger = LoggerFactory.getLogger(ImportPerformanceTest.class);
 
-  private int NUMBER_OF_INSTANCES = 100_000;
-  private boolean generateData = true;
+  private int NUMBER_OF_INSTANCES;
+  private boolean generateData;
+
   public EngineIntegrationRule engineRule = new EngineIntegrationRule("import-performance-test.properties");
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule(true);
-
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+
+  private Properties properties;
+
+  @Before
+  public void setUp() {
+    properties = PropertyUtil.loadProperties("import-performance-test.properties");
+    NUMBER_OF_INSTANCES = Integer.parseInt(properties.getProperty("import.test.number.of.processes"));
+    generateData = Boolean.parseBoolean(properties.getProperty("import.test.generate.data"));
+  }
 
   @Test
   public void importPerformanceTest() throws Exception {

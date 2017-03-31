@@ -66,7 +66,9 @@ docker run -d -p 1521:1521 registry.camunda.com/camunda-ci-oracle
 
 In order to measure performance of import process test case will create some data by deploying and starting
  a process into the running process engine instance. By default 100 000 process instances will be started. This
-  value can be adjusted through the property 
+  value can be adjusted through the `import.test.number.of.processes` property located in _import-performance-test.properties_.
+  Additionally data generation step can be completely disabled by changing value of 
+  `import.test.generate.data` to _false_. 
   
 ## Import process 
 
@@ -75,7 +77,7 @@ Once test data is generated import process will start in Camunda Optimize instan
  
 ## Results\Reporting 
 
-Once importing is finished a report will be generated in `target/reports` folder. 
+During the test execution runtime statistics as well as final results will be printed in standard output stream. 
 
 ## Known limitations
 
