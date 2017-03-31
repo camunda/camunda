@@ -34,4 +34,6 @@ public interface TransportRequest extends AutoCloseable
     boolean awaitResponse(long timeout, TimeUnit timeUnit);
 
     boolean isResponseAvailable();
+
+    int getChannelId();
 }

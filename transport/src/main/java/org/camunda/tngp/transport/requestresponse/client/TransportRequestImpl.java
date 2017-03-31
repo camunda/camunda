@@ -330,4 +330,10 @@ public class TransportRequestImpl implements TransportRequest
         return requestTime;
     }
 
+    @Override
+    public int getChannelId()
+    {
+        return channelId;
+    }
+
 }

@@ -43,7 +43,7 @@ public class TransportConnectionImpl implements TransportConnection
     {
         this.connectionManager = connectionManager;
         this.requestPool = transportRequestPool;
-        this.openRequests = new LongArrayIndex<>(maxRequests);
+        this.openRequests = new LongArrayIndex<>(maxRequests, TransportRequestImpl.class);
         this.sendBuffer = transport.getSendBuffer();
     }
 

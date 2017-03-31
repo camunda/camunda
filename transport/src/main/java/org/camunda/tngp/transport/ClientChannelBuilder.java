@@ -44,6 +44,15 @@ public class ClientChannelBuilder
                 new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
     }
 
+    /**
+     * Register a handler that is invoked for all channel events (open, close, etc.)
+     */
+    public ClientChannelBuilder channelEventHandler(TransportChannelHandler channelHandler)
+    {
+        this.channelHandler.setChannelEventHandler(channelHandler);
+        return this;
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public CompletableFuture<ClientChannel> connectAsync()
     {

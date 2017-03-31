@@ -1,5 +1,7 @@
 package org.camunda.tngp.transport.util;
 
+import java.lang.reflect.Array;
+
 import org.agrona.BitUtil;
 
 /**
@@ -15,7 +17,7 @@ import org.agrona.BitUtil;
  */
 public class LongArrayIndex<T>
 {
-    protected final Object[] indexedObjects;
+    protected final T[] indexedObjects;
 
     protected final long[] keys;
 
@@ -25,14 +27,15 @@ public class LongArrayIndex<T>
 
     protected volatile int size;
 
-    public LongArrayIndex(final int capacity)
+    @SuppressWarnings("unchecked")
+    public LongArrayIndex(final int capacity, Class<T> elementClass)
     {
         if (!BitUtil.isPowerOfTwo(capacity))
         {
             throw new RuntimeException("Pool capacity must be a power of two.");
         }
 
-        indexedObjects = new Object[capacity];
+        indexedObjects = (T[]) Array.newInstance(elementClass, capacity);
         keys = new long[capacity];
         this.capacity = capacity;
         this.mask = capacity - 1;
@@ -96,16 +99,15 @@ public class LongArrayIndex<T>
      *
      * @return the value
      */
-    @SuppressWarnings("unchecked")
     public T remove(final long key, final T objectToRemove)
     {
         final int index = (int) (key & mask);
-        final Object object = indexedObjects[index];
+        final T object = indexedObjects[index];
         if (object == objectToRemove)
         {
             indexedObjects[index] = null;
             size--;  // volatile store
-            return (T) object;
+            return object;
         }
         else
         {
@@ -120,13 +122,12 @@ public class LongArrayIndex<T>
      *
      * @return the value
      */
-    @SuppressWarnings("unchecked")
     public T poll(final long key)
     {
         if (size > 0) // volatile load
         {
             final int index = (int) (key & mask);
-            return (T) indexedObjects[index];
+            return indexedObjects[index];
         }
         else
         {
@@ -139,9 +140,8 @@ public class LongArrayIndex<T>
         return size; // volatile load
     }
 
-    @SuppressWarnings("unchecked")
     public T[] getObjects()
     {
-        return (T[]) indexedObjects;
+        return indexedObjects;
     }
 }
