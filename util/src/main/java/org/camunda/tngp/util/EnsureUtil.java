@@ -70,4 +70,12 @@ public class EnsureUtil
         throw new RuntimeException(property + " must have at least one non-null value");
     }
 
+    public static void ensureFalse(String property, boolean value)
+    {
+        if (value)
+        {
+            throw new RuntimeException(property + " must be false");
+        }
+    }
+
 }
