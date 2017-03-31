@@ -2,14 +2,19 @@ package org.camunda.tngp.broker.workflow.graph;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_DEFINITION_ELEMENT;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TNGP_NAMESPACE;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 
 import java.util.stream.IntStream;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
+import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
@@ -259,6 +264,71 @@ public class BpmnValidationTests
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
             .isNotNull()
             .extracting("code").contains(ValidationCodes.OUTGOING_SEQUENCE_FLOW_AT_END_EVENT);
+    }
+
+    @Test
+    public void shouldNotBeValidIfTaskTypeIsNotServiceTask()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("foo")
+            .endEvent()
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.NOT_SUPPORTED_TASK_TYPE);
+    }
+
+    @Test
+    public void shouldNotBeValidIfServiceTaskHasNoTaskDefinition()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("foo")
+            .endEvent()
+            .done());
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.NO_TASK_DEFINITION);
+    }
+
+    @Test
+    public void shouldNotBeValidIfServiceTaskHasNoTaskType()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("foo")
+            .endEvent()
+            .done());
+
+        final ModelElementInstance taskElement = bpmnModelInstance.getModelElementById("foo");
+        final ExtensionElements extensionElements = bpmnModelInstance.newInstance(ExtensionElements.class);
+        extensionElements.addExtensionElement(TNGP_NAMESPACE, TASK_DEFINITION_ELEMENT);
+        taskElement.addChildElement(extensionElements);
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.NO_TASK_TYPE);
     }
 
 }

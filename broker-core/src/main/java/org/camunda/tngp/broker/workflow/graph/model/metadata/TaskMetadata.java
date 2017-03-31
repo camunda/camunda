@@ -1,8 +1,12 @@
 package org.camunda.tngp.broker.workflow.graph.model.metadata;
 
+import org.agrona.DirectBuffer;
+import org.camunda.tngp.util.buffer.BufferUtil;
+
 public class TaskMetadata
 {
-    private String taskType;
+    private DirectBuffer taskType;
+    private int retries;
 
     private TaskHeader[] headers;
 
@@ -16,14 +20,24 @@ public class TaskMetadata
         this.headers = headers;
     }
 
-    public String getTaskType()
+    public DirectBuffer getTaskType()
     {
         return taskType;
     }
 
     public void setTaskType(String taskype)
     {
-        this.taskType = taskype;
+        this.taskType = BufferUtil.wrapString(taskype);
+    }
+
+    public int getRetries()
+    {
+        return retries;
+    }
+
+    public void setRetries(int retries)
+    {
+        this.retries = retries;
     }
 
     public static class TaskHeader
@@ -51,4 +65,5 @@ public class TaskMetadata
             this.value = value;
         }
     }
+
 }

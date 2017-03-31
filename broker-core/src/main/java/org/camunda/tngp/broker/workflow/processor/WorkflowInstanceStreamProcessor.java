@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.workflow.processor;
 
 import static org.agrona.BitUtil.SIZE_OF_CHAR;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 import java.nio.ByteOrder;
@@ -12,6 +13,9 @@ import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
+import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
+import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.broker.taskqueue.data.TaskHeaders;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
 import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
@@ -23,7 +27,9 @@ import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
+import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
@@ -53,6 +59,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final EventOccurredEventProcessor eventOccurredEventProcessor = new EventOccurredEventProcessor();
     protected final SequenceFlowTakenEventProcessor sequenceFlowTakenEventProcessor = new SequenceFlowTakenEventProcessor();
     protected final EndEventProcessor endEventProcessor = new EndEventProcessor();
+    protected final ActivityActivatedEventProcessor activityActivatedEventProcessor = new ActivityActivatedEventProcessor();
 
     // data //////////////////////////////////////////
 
@@ -61,6 +68,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected final WorkflowDeploymentEvent deploymentEvent = new WorkflowDeploymentEvent();
     protected final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
+    protected final TaskEvent taskEvent = new TaskEvent();
 
     // internal //////////////////////////////////////
 
@@ -201,6 +209,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 eventProcessor = sequenceFlowTakenEventProcessor;
                 break;
 
+            case ACTIVITY_ACTIVATED:
+                eventProcessor = activityActivatedEventProcessor;
+                break;
+
             case END_EVENT_OCCURRED:
                 eventProcessor = endEventProcessor;
                 break;
@@ -218,6 +230,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         sourceEventMetadata.reset();
         deploymentEvent.reset();
         workflowInstanceEvent.reset();
+        taskEvent.reset();
     }
 
     protected ExecutableProcess getProcess(final DirectBuffer bpmnProcessId, int version)
@@ -379,22 +392,31 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class SequenceFlowTakenEventProcessor implements EventProcessor
     {
+        boolean isTokenConsumed;
+
         @Override
         public void processEvent()
         {
-            final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
+            isTokenConsumed = false;
 
+            final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
             final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
+
+            workflowInstanceEvent.setActivityId(targetNode.getId());
 
             if (targetNode instanceof ExecutableEndEvent)
             {
-                workflowInstanceEvent
-                    .setEventType(WorkflowInstanceEventType.END_EVENT_OCCURRED)
-                    .setActivityId(targetNode.getId());
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.END_EVENT_OCCURRED);
+
+                isTokenConsumed = true;
+            }
+            else if (targetNode instanceof ExecutableServiceTask)
+            {
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
             }
             else
             {
-                throw new RuntimeException("Currently not supported. A sequence flow must end in an end event.");
+                throw new RuntimeException("Currently not supported. A sequence flow must end in an end event or service task.");
             }
         }
 
@@ -407,8 +429,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            // the current token is consumed
-            workflowInstanceIndexAccessor.decrementActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
+            if (isTokenConsumed)
+            {
+                workflowInstanceIndexAccessor.decrementActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
+            }
         }
     }
 
@@ -452,6 +476,53 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 workflowInstanceIndexAccessor.remove(workflowInstanceEvent.getWorkflowInstanceKey());
             }
+        }
+    }
+
+    private final class ActivityActivatedEventProcessor implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            final ExecutableFlowElement activty = getCurrentActivity();
+
+            if (activty instanceof ExecutableServiceTask)
+            {
+                final ExecutableServiceTask serviceTask = (ExecutableServiceTask) activty;
+                final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
+
+                final TaskHeaders taskHeaders = taskEvent.getHeaders()
+                    .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
+                    .setActivityId(serviceTask.getId());
+
+                taskEvent
+                    .setEventType(TaskEventType.CREATE)
+                    .setType(taskMetadata.getTaskType())
+                    .setRetries(taskMetadata.getRetries())
+                    .setHeaders(taskHeaders);
+            }
+            else
+            {
+                throw new RuntimeException("Currently not supported. An activity must be of type service task.");
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            targetEventMetadata.reset();
+            targetEventMetadata
+                    .protocolVersion(Constants.PROTOCOL_VERSION)
+                    .eventType(TASK_EVENT);
+
+            // TODO: targetEventMetadata.raftTermId(raftTermId);
+
+            return writer
+                    .positionAsKey()
+                    .metadataWriter(targetEventMetadata)
+                    .valueWriter(taskEvent)
+                    .tryWrite();
         }
     }
 

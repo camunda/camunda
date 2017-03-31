@@ -25,6 +25,9 @@ public class TaskEvent extends UnpackedObject
     private final PackedProperty headersProp = new PackedProperty("headers", EMPTY_MAP);
     private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
 
+    private final TaskHeaders taskHeaders = new TaskHeaders();
+    private final UnsafeBuffer taskHeadersBuffer = new UnsafeBuffer(0, 0);
+
     public TaskEvent()
     {
         this.declareProperty(eventTypeProp)
@@ -113,9 +116,21 @@ public class TaskEvent extends UnpackedObject
         return this;
     }
 
-    public TaskEvent setHeaders(DirectBuffer encodedHeaders)
+    public TaskHeaders getHeaders()
     {
-        headersProp.setValue(encodedHeaders, 0, encodedHeaders.capacity());
+        taskHeaders.wrap(headersProp.getValue());
+        return taskHeaders;
+    }
+
+    public TaskEvent setHeaders(TaskHeaders taskHeaders)
+    {
+        // TODO #203 - replace by general unpack mechanism
+        final int length = taskHeaders.getLength();
+
+        taskHeadersBuffer.wrap(new byte[length]);
+        taskHeaders.write(taskHeadersBuffer, 0);
+
+        headersProp.setValue(taskHeadersBuffer, 0, length);
         return this;
     }
 

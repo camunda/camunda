@@ -15,6 +15,8 @@ import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessI
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.ExecutableProcessRule;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.OutgoingSequenceFlowRule;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessStartEventRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.ServiceTaskRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.TaskTypeRule;
 
 public class BpmnTransformer
 {
@@ -27,6 +29,8 @@ public class BpmnTransformer
         BPMN_VALIDATORS.add(new BpmnProcessIdRule());
         BPMN_VALIDATORS.add(new ProcessStartEventRule());
         BPMN_VALIDATORS.add(new OutgoingSequenceFlowRule());
+        BPMN_VALIDATORS.add(new TaskTypeRule());
+        BPMN_VALIDATORS.add(new ServiceTaskRule());
     }
 
     public ValidationResults validate(DirectBuffer buffer)

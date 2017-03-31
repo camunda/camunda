@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.workflow.graph;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 
 import java.util.List;
 
@@ -69,7 +71,7 @@ public class BpmnTransformerTests
     @Test
     public void shouldTransformEndEvent()
     {
-     // given
+        // given
         final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess()
             .startEvent()
             .endEvent("foo")
@@ -89,21 +91,28 @@ public class BpmnTransformerTests
     @Test
     public void shouldTransformServiceTask()
     {
-        // g
-        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess()
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
             .startEvent()
             .serviceTask("foo")
                 .name("bar")
-            .done();
+            .done())
+                .taskDefinition("foo", "test", 4);
 
-        // w
+        // when
         final ExecutableProcess process = transformSingleProcess(bpmnModelInstance);
 
-        // t
+        // then
         final ExecutableFlowElement element = process.findFlowElementById("foo");
         assertThat(element).isInstanceOf(ExecutableServiceTask.class);
-        assertThat(element.getId()).isEqualTo("foo");
-        assertThat(element.getName()).isEqualTo("bar");
+
+        final ExecutableServiceTask serviceTask = (ExecutableServiceTask) element;
+        assertThat(serviceTask.getId()).isEqualTo("foo");
+        assertThat(serviceTask.getName()).isEqualTo("bar");
+
+        assertThat(serviceTask.getTaskMetadata()).isNotNull();
+        assertThatBuffer(serviceTask.getTaskMetadata().getTaskType()).hasBytes("test".getBytes());
+        assertThat(serviceTask.getTaskMetadata().getRetries()).isEqualTo(4);
     }
 
     protected ExecutableProcess transformSingleProcess(BpmnModelInstance bpmnModelInstance)

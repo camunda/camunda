@@ -16,4 +16,9 @@ public class ValidationCodes
     public static final int MORE_THAN_ONE_OUTGOING_SEQUENCE_FLOW = 31;
     public static final int OUTGOING_SEQUENCE_FLOW_AT_END_EVENT = 32;
 
+    public static final int NOT_SUPPORTED_TASK_TYPE = 40;
+
+    public static final int NO_TASK_DEFINITION = 50;
+    public static final int NO_TASK_TYPE = 51;
+
 }

@@ -1,9 +1,12 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -122,6 +125,62 @@ public class WorkflowInstanceFunctionalTest
             .containsEntry("version", 1)
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "");
+    }
+
+    @Test
+    public void shouldActivateServiceTask()
+    {
+        // given
+        testClient.deploy(wrap(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("foo")
+                    .endEvent()
+                    .done())
+                        .taskDefinition("foo", "bar", 5));
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+
+        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("version", 1)
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "foo");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void shouldCreateTaskForActivatedServiceTask()
+    {
+        // given
+        testClient.deploy(wrap(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("foo")
+                    .endEvent()
+                    .done())
+                        .taskDefinition("foo", "bar", 5));
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry("type", "bar")
+            .containsEntry("retries", 5);
+
+        assertThat((Map<String, Object>) event.event().get("headers"))
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("activityId", "foo");
     }
 
     @Test

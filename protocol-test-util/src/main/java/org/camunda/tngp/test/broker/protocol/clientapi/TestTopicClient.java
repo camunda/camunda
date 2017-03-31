@@ -98,4 +98,14 @@ public class TestTopicClient
     {
         return workflowInstanceEvents().and(eventType(eventType));
     }
+
+    public static Predicate<SubscribedEvent> taskEvents()
+    {
+        return e -> e.eventType() == EventType.TASK_EVENT;
+    }
+
+    public static Predicate<SubscribedEvent> taskEvents(String eventType)
+    {
+        return taskEvents().and(eventType(eventType));
+    }
 }
