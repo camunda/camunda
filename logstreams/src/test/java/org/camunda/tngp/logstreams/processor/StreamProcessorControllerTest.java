@@ -1385,6 +1385,32 @@ public class StreamProcessorControllerTest
         assertThat(controller.isClosed());
     }
 
+    @Test
+    public void shouldSkipReprocessingIfProcessorIsReadOnly()
+    {
+        // given
+        controller = builder.readOnly(true).build();
+
+        when(mockTargetLogStreamReader.hasNext()).thenReturn(true, false);
+        when(mockTargetLogStreamReader.next()).thenReturn(mockSourceEvent);
+
+        when(mockSourceEvent.getPosition()).thenReturn(3L);
+        mockSourceLogStreamReader.addEvent(mockSourceEvent);
+
+        open();
+
+        // when we spin a couple of times
+        final int numWaitOperations = 10;
+        for (int i = 0; i < numWaitOperations; i++)
+        {
+            controller.doWork();
+        }
+
+        // then the target stream reader was not used for reading events during reprocessing
+        verify(mockTargetLogStreamReader, never()).next();
+
+    }
+
     protected void open()
     {
         controller.openAsync();

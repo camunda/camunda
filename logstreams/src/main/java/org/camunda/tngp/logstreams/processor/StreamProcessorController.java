@@ -107,6 +107,7 @@ public class StreamProcessorController implements Agent
 
     protected final EventFilter eventFilter;
     protected final EventFilter reprocessingEventFilter;
+    protected final boolean isReadOnlyProcessor;
 
     public StreamProcessorController(StreamProcessorContext context)
     {
@@ -122,6 +123,7 @@ public class StreamProcessorController implements Agent
         this.streamProcessorCmdQueue = context.getStreamProcessorCmdQueue();
         this.eventFilter = context.getEventFilter();
         this.reprocessingEventFilter = context.getReprocessingEventFilter();
+        this.isReadOnlyProcessor = context.isReadOnlyProcessor();
     }
 
     @Override
@@ -488,7 +490,9 @@ public class StreamProcessorController implements Agent
         @Override
         public int doWork(Context context)
         {
-            if (targetLogStreamReader.hasNext())
+            // for read-only processors, we don't need to scan the log for further events
+            // that they might have written
+            if (!isReadOnlyProcessor && targetLogStreamReader.hasNext())
             {
                 final LoggedEvent targetEvent = targetLogStreamReader.next();
                 processEvent(context, targetEvent);

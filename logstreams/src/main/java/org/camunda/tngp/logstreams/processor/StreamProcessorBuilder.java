@@ -51,6 +51,8 @@ public class StreamProcessorBuilder
 
     protected DeferredCommandContext streamProcessorCmdQueue;
 
+    protected boolean readOnly;
+
     public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor)
     {
         this.id = id;
@@ -109,6 +111,12 @@ public class StreamProcessorBuilder
         return this;
     }
 
+    public StreamProcessorBuilder readOnly(boolean readOnly)
+    {
+        this.readOnly = readOnly;
+        return this;
+    }
+
     /**
      * @param reprocessingEventFilter may be null to re-process all events
      */
@@ -152,6 +160,10 @@ public class StreamProcessorBuilder
         targetLogStreamReader = new BufferedLogStreamReader();
 
         logStreamWriter = new LogStreamWriter();
+        if (readOnly)
+        {
+            logStreamWriter.disable();
+        }
     }
 
     public StreamProcessorController build()
@@ -181,6 +193,7 @@ public class StreamProcessorBuilder
 
         ctx.setEventFilter(eventFilter);
         ctx.setReprocessingEventFilter(reprocessingEventFilter);
+        ctx.setReadOnly(readOnly);
 
         return new StreamProcessorController(ctx);
     }

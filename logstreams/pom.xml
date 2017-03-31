@@ -69,6 +69,13 @@
       <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>test-util</artifactId>
+      <version>${version.util}</version>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 

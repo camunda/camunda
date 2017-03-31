@@ -35,6 +35,7 @@ public class LogStreamWriter
     protected BufferWriter metadataWriter;
 
     protected BufferWriter valueWriter;
+    protected boolean isDisabled = false;
 
     public LogStreamWriter()
     {
@@ -111,6 +112,11 @@ public class LogStreamWriter
         return this;
     }
 
+    public void disable()
+    {
+        this.isDisabled = true;
+    }
+
     public void reset()
     {
         positionAsKey = false;
@@ -133,6 +139,7 @@ public class LogStreamWriter
      */
     public long tryWrite()
     {
+        EnsureUtil.ensureFalse("isDisabled", isDisabled);
         EnsureUtil.ensureNotNull("value", valueWriter);
         if (!positionAsKey)
         {

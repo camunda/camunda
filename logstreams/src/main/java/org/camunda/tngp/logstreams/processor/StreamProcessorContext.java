@@ -15,6 +15,7 @@ public class StreamProcessorContext
     protected String name;
 
     protected StreamProcessor streamProcessor;
+    protected boolean isReadOnlyProcessor;
 
     protected LogStream sourceStream;
     protected LogStream targetStream;
@@ -182,6 +183,16 @@ public class StreamProcessorContext
     public EventFilter getReprocessingEventFilter()
     {
         return reprocessingEventFilter;
+    }
+
+    public void setReadOnly(boolean readOnly)
+    {
+        this.isReadOnlyProcessor = readOnly;
+    }
+
+    public boolean isReadOnlyProcessor()
+    {
+        return isReadOnlyProcessor;
     }
 
 }

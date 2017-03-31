@@ -283,6 +283,23 @@ public class LogStreamWriterTest
             .tryWrite();
     }
 
+    @Test
+    public void shouldFailToWriteWithDisabledWriter()
+    {
+        // given
+        writer.disable();
+        writer
+            .key(4L)
+            .value(new UnsafeBuffer(EVENT_VALUE));
+
+        // then
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("isDisabled must be false");
+
+        // when
+        writer.tryWrite();
+    }
+
     protected Answer<?> claimFragment(final long offset)
     {
         return invocation ->
