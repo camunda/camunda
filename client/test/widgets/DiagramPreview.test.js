@@ -13,6 +13,7 @@ describe('<DiagramPreview>', () => {
   let update;
   let md5;
   let queue;
+  let done;
 
   beforeEach(() => {
     canvas = {
@@ -38,9 +39,11 @@ describe('<DiagramPreview>', () => {
     md5 = sinon.stub().returns(Math.random());
     __set__('md5', md5);
 
+    done = sinon.spy();
+
     queue = {
       addTask: sinon.stub()
-        .callsArg(0)
+        .callsArgWith(0, done)
         .returns(() => true)
     };
     __set__('queue', queue);
@@ -60,6 +63,7 @@ describe('<DiagramPreview>', () => {
 
   it('should import xml on update', () => {
     expect(viewer.importXML.calledWith(diagramXml)).to.eql(true);
+    expect(done.called).to.eql(true);
   });
 
   it('should reset zoom after importing xml', () => {

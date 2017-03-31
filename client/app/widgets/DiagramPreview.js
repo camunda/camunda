@@ -1,17 +1,19 @@
-import {jsx, updateOnlyWhenStateChanges, withSelector, createReferenceComponent, dispatchAction} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector,  createReferenceComponent, dispatchAction} from 'view-utils';
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
-import {LoadingIndicator} from './LoadingIndicator';
 import {createQueue, runOnce} from 'utils';
 
 const queue = createQueue();
 
 export const DiagramPreview = withSelector(() => {
   const Reference = createReferenceComponent();
-  let isLoading = () => true;
 
   const template = <div style="position: relative; height: 100%; width: 100%">
-    <LoadingIndicator floating predicate={() => isLoading()} />
+    <div className="loading_indicator overlay diagram-preview-loading" style="position:absolute;">
+      <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
+      <div className="text">loading</div>
+      <Reference name="loader" />
+    </div>
     <div className="diagram__holder" style="position: relative;">
       <Reference name="viewer" />
     </div>
@@ -20,13 +22,14 @@ export const DiagramPreview = withSelector(() => {
   return (node, eventsBus) => {
     const templateUpdate = template(node, eventsBus);
     const viewerNode = Reference.getNode('viewer');
+    const loaderNode = Reference.getNode('loader');
 
     const viewer = new Viewer({
       container: viewerNode
     });
 
     const update = runOnce((diagram) => {
-      isLoading = queue.addTask(() => {
+      queue.addTask((done) => {
         viewer.importXML(diagram, (err) => {
           if (err) {
             viewerNode.innerHTML = `Could not load diagram, got error ${err}`;
@@ -34,6 +37,8 @@ export const DiagramPreview = withSelector(() => {
 
           resetZoom(viewer);
           dispatchAction({type: '@@LOADED_DIAGRAM'});
+          done();
+          loaderNode.style.display = 'none';
         });
       });
     });

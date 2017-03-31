@@ -27,19 +27,30 @@ export function createQueue() {
     isRunning = true;
 
     $window.setTimeout(() => {
-      executeNextTask();
-
-      if (tasks.length === 0) {
-        isRunning = false;
-      } else {
-        runQueue();
-      }
+      executeNextTask(() => {
+        if (tasks.length === 0) {
+          isRunning = false;
+        } else {
+          runQueue();
+        }
+      });
     }, 0);
   }
 
-  function executeNextTask() {
-    const task = tasks.shift();
+  function executeNextTask(callback) {
+    const task = tasks[0];
+
+    if (task.length === 1) {
+      return task(done);
+    }
 
     task();
+    done();
+
+    function done() {
+      tasks.shift();
+
+      callback();
+    }
   }
 }

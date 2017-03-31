@@ -56,5 +56,23 @@ describe('createQueue', () => {
 
       expect(queue.isWaiting(task)).to.eql(false);
     });
+
+    it('should return false only for finnished task', () => {
+      const task1 = sinon.spy();
+      const task2 = sinon.spy();
+
+      $window.setTimeout = sinon.stub();
+
+      queue.addTask(task1);
+      queue.addTask(task2);
+
+      expect(queue.isWaiting(task1)).to.eql(true);
+      expect(queue.isWaiting(task2)).to.eql(true);
+
+      $window.setTimeout.firstCall.args[0]();
+
+      expect(queue.isWaiting(task1)).to.eql(false);
+      expect(queue.isWaiting(task2)).to.eql(true);
+    });
   });
 });
