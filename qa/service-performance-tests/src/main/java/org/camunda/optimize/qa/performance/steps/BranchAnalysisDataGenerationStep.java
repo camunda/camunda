@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CorrelationDiscoveryDataGenerationStep extends DataGenerationStep {
+public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
 
   private final String END_ACTIVITY = "endActivity";
   private final String GATEWAY_ACTIVITY = "gw_1";

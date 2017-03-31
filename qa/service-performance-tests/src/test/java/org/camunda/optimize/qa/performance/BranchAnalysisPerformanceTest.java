@@ -5,10 +5,8 @@ import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
-import org.camunda.optimize.qa.performance.steps.CorrelationDiscoveryDataGenerationStep;
-import org.camunda.optimize.qa.performance.steps.GetActivityCorrelationStep;
-import org.camunda.optimize.qa.performance.steps.GetFrequencyGetHeatMapStep;
-import org.camunda.optimize.qa.performance.steps.decorator.HeatMapDataGenerationStep;
+import org.camunda.optimize.qa.performance.steps.BranchAnalysisDataGenerationStep;
+import org.camunda.optimize.qa.performance.steps.GetBranchAnalysisStep;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,7 +17,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 
-public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestCase {
+public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
 
   private static final long CORRELATION_FACTOR = 10L;
 
@@ -31,26 +29,26 @@ public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestC
     super.setUp();
     filter.setDates(new ArrayList<>());
     test = this.testBuilder
-        .step(new CorrelationDiscoveryDataGenerationStep())
-        .step(new GetActivityCorrelationStep(filter))
+        .step(new BranchAnalysisDataGenerationStep())
+        .step(new GetBranchAnalysisStep(filter))
         .done();
   }
 
 
   @Test
-  public void getActivityCorrelationWithoutFilter() {
+  public void getBranchAnalysisWithoutFilter() {
 
     // when
     PerfTestResult testResult = test.run();
     PerfTestStepResult stepResult =
-      testResult.getResult(GetActivityCorrelationStep.class);
+      testResult.getResult(GetBranchAnalysisStep.class);
 
     // then
     assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
   }
 
   @Test
-  public void getActivityCorrelationWithFilters() {
+  public void getBranchAnalysisWithFilters() {
     // given
     String operator = "<";
     String type = "start_date";
@@ -64,7 +62,7 @@ public class ActivityCorrelationPerformanceTest extends OptimizePerformanceTestC
     // when
     PerfTestResult testResult = test.run();
     PerfTestStepResult stepResult =
-      testResult.getResult(GetActivityCorrelationStep.class);
+      testResult.getResult(GetBranchAnalysisStep.class);
 
     // then
     assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));

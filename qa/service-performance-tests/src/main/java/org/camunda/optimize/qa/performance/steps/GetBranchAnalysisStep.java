@@ -7,10 +7,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
-import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -22,25 +21,25 @@ import ru.yandex.qatools.allure.annotations.Step;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-public class GetActivityCorrelationStep extends PerfTestStep {
+public class GetBranchAnalysisStep extends PerfTestStep {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
   private FilterMapDto filter;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  public GetActivityCorrelationStep(FilterMapDto filter) {
+  public GetBranchAnalysisStep(FilterMapDto filter) {
     this.filter = filter;
   }
 
   @Override
-  @Step ("Get correlation from Optimize")
+  @Step ("Get branch analysis from Optimize")
   public PerfTestStepResult execute(PerfTestContext context) {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     try {
       return getHeatmap(context, client);
     } catch (IOException | RuntimeException e) {
-      throw new PerfTestException("Something went wrong while trying to fetch the activity correlation!", e);
+      throw new PerfTestException("Something went wrong while trying to execute the branch analysis!", e);
     } finally {
       try {
         client.close();
@@ -50,7 +49,7 @@ public class GetActivityCorrelationStep extends PerfTestStep {
     }
   }
 
-  private PerfTestStepResult<GatewaySplitDto> getHeatmap(PerfTestContext context, CloseableHttpClient client) throws IOException {
+  private PerfTestStepResult<BranchAnalysisDto> getHeatmap(PerfTestContext context, CloseableHttpClient client) throws IOException {
 
     HttpPost post = setupPostRequest(context);
 
@@ -61,8 +60,8 @@ public class GetActivityCorrelationStep extends PerfTestStep {
     }
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
 
-    PerfTestStepResult<GatewaySplitDto> result = new PerfTestStepResult<>();
-    GatewaySplitDto responseDto = objectMapper.readValue(responseString, GatewaySplitDto.class);
+    PerfTestStepResult<BranchAnalysisDto> result = new PerfTestStepResult<>();
+    BranchAnalysisDto responseDto = objectMapper.readValue(responseString, BranchAnalysisDto.class);
     result.setResult(responseDto);
     this.getClass().getSimpleName();
 
@@ -73,7 +72,7 @@ public class GetActivityCorrelationStep extends PerfTestStep {
     HttpPost post = new HttpPost("http://localhost:8090/api/process-definition/correlation");
     post.addHeader("content-type", "application/json");
     post.addHeader("Authorization", "Bearer " + context.getConfiguration().getAuthorizationToken());
-    CorrelationQueryDto queryDto = new CorrelationQueryDto();
+    BranchAnalysisQueryDto queryDto = new BranchAnalysisQueryDto();
     String processDefinitionId = (String) context.getParameter("processDefinitionId");
     String gatewayId = (String) context.getParameter("gatewayActivityId");
     String endEventId = (String) context.getParameter("endActivityId");

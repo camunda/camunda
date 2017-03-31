@@ -5,6 +5,9 @@ public class ConnectionStatusDto {
   protected boolean isConnectedToEngine;
   protected boolean isConnectedToElasticsearch;
 
+  /**
+   * True if Optimize is connected to Camunda, false otherwise.
+   */
   public boolean isConnectedToEngine() {
     return isConnectedToEngine;
   }
@@ -13,6 +16,9 @@ public class ConnectionStatusDto {
     isConnectedToEngine = connectedToEngine;
   }
 
+  /**
+   * True if Optimize is connected to the Elasticsearch, false otherwise.
+   */
   public boolean isConnectedToElasticsearch() {
     return isConnectedToElasticsearch;
   }

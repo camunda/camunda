@@ -2,6 +2,7 @@ package org.camunda.optimize.test.rule;
 
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
+import org.camunda.optimize.dto.optimize.ProgressDto;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportService;
@@ -143,7 +144,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return this.target()
         .path("status/import-progress")
         .request()
-        .get(CountDto.class).getCount();
+        .get(ProgressDto.class).getProgress();
   }
 
   public void startImportScheduler() {

@@ -3,7 +3,7 @@ package org.camunda.optimize.dto.optimize;
 /**
  * @author Askar Akhmerov
  */
-public class CorrelationOutcomeDto {
+public class BranchAnalysisOutcomeDto {
   protected Long activitiesReached;
   protected Long activityCount;
   protected String activityId;

@@ -4,10 +4,10 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
-import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
-import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -33,7 +33,7 @@ import java.util.Map;
  * @author Askar Akhmerov
  */
 @Component
-public class CorrelationReader {
+public class BranchAnalysisReader {
 
   @Autowired
   private TransportClient esclient;
@@ -46,22 +46,22 @@ public class CorrelationReader {
   @Autowired
   private DateFilterHelper dateFilterHelper;
 
-  public GatewaySplitDto activityCorrelation(CorrelationQueryDto request) {
+  public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
-    GatewaySplitDto result = new GatewaySplitDto();
+    BranchAnalysisDto result = new BranchAnalysisDto();
     List<String> gatewayOutcomes = fetchGatewayOutcomes(request.getProcessDefinitionId(), request.getGateway());
 
     for (String activity : gatewayOutcomes) {
-      CorrelationOutcomeDto correlation = activityCorrelation(
+      BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(
           request.getProcessDefinitionId(),
           activity,
           request.getEnd(),
           request.getFilter()
       );
-      result.getFollowingNodes().put(correlation.getActivityId(), correlation);
+      result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
     }
 
-    CorrelationOutcomeDto end = activityCorrelation(
+    BranchAnalysisOutcomeDto end = branchAnalysis(
         request.getProcessDefinitionId(),
         request.getEnd(),
         request.getEnd(),
@@ -73,16 +73,16 @@ public class CorrelationReader {
     return result;
   }
 
-  private CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String activityId, String endActivity, FilterMapDto filter) {
+  private BranchAnalysisOutcomeDto branchAnalysis(String processDefinitionId, String activityId, String endActivity, FilterMapDto filter) {
     ValidationHelper.ensureNotEmpty("processDefinitionId", processDefinitionId);
     ValidationHelper.ensureNotEmpty("activityId", activityId);
     ValidationHelper.ensureNotEmpty("endActivityId", endActivity);
 
-    CorrelationOutcomeDto result = new CorrelationOutcomeDto();
+    BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
 
-    List<String> correlationNodes = new ArrayList<>();
-    correlationNodes.add(activityId);
-    correlationNodes.add(endActivity);
+    List<String> branchAnalysisNodes = new ArrayList<>();
+    branchAnalysisNodes.add(activityId);
+    branchAnalysisNodes.add(endActivity);
 
     BoolQueryBuilder query;
     SearchRequestBuilder srb = esclient
@@ -100,7 +100,7 @@ public class CorrelationReader {
 
 
     Map<String, Object> parameters = new HashMap<>();
-    parameters.put("_targetActivities", correlationNodes);
+    parameters.put("_targetActivities", branchAnalysisNodes);
     parameters.put("_startActivity", activityId);
     parameters.put("_agg", new HashMap<>());
 
@@ -164,7 +164,7 @@ public class CorrelationReader {
     );
   }
 
-  public CorrelationOutcomeDto activityCorrelation(String processDefinitionId, String gatewayActivity, String endActivity) {
-    return this.activityCorrelation(processDefinitionId, gatewayActivity, endActivity, null);
+  public BranchAnalysisOutcomeDto branchAnalysis(String processDefinitionId, String gatewayActivity, String endActivity) {
+    return this.branchAnalysis(processDefinitionId, gatewayActivity, endActivity, null);
   }
 }

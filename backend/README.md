@@ -70,7 +70,9 @@ java -jar ./es-java/es-java-rest/target/es-java-rest-0.0.1-SNAPSHOT-jar-with-dep
 
 ### Authentication
 
-in order to check if you are authenticated or not you can use following request
+The whole Optimize REST API is secured. To access it you need to authenticate, which returns a security token. Whenever you send a request you always need to provide that token in the header.
+
+In order to check if you are authenticated or not you can use following request
 
 ```
 curl http://localhost:8080/api/authentication/test
@@ -94,7 +96,7 @@ which will reply with something like
 ```
 
 since you did not provide any valid bearer token. In order to perform authentication for the first time 
-one hast to send POST request with username and password to /authenticate endpoint
+one has to send POST request with username and password to /authenticate endpoint
 
 ```
 curl -XPOST http://localhost:8080/api/authentication -d '{ "username":"admin", "password": "admin"}' -H "Content-Type: application/json"
@@ -126,52 +128,8 @@ you can generate documentation using [enunciate](http://enunciate.webcohesion.co
 mvn clean package -DskipTests -Pdocs
 realpath es-java/es-java-rest/target/docs/apidocs/index.html | xargs firefox
 ```
-### Heatmap
 
-Endpoint: _/heatmap_
-
-Method: *POST*
-
-Example request: 
-
-```bash
-curl -XPOST http://localhost:8080/api/heatmap -d '{"key":"leadQualification"}' -H "Content-Type: application/json"
-```
-
-Example response: 
-
-```
-{
-   "callactivity_0cw79oq" : 246280,
-   "msleadreceived" : 310696,
-   "servicetask_4" : 310234,
-   "usertask_0w1r7lc" : 268439,
-   "exclusivegateway_04zuj46" : 227010,
-   "inclusivegateway_1qmuhxg" : 209630,
-   "msleadisnew" : 189194,
-   "exclusivegateway_0mapcsy" : 246280,
-   "exclusivegateway_1jpz3p1" : 248466,
-   "usertask_1g1zsp8" : 191098
- }
- ```
-
-### Correlation
-
-Endpoint: _/heatmap/correlation_
-
-Method: *POST*
-
-Example request: 
-
-```bash
-curl -XPOST http://localhost:8080/api/heatmap/correlation -d '{"key":"leadQualification", "correlationActivities": ["EndEvent_0wsfol8","UserTask_0w1r7lc"]}' -H "Content-Type: application/json"
-```
-
-Example response: 
-
-```
-1396
-```
+[Here](https://hq2.camunda.com/jenkins/optimize/view/All/job/camunda-optimize/job/master/lastSuccessfulBuild/artifact/backend/target/docs/apidocs/index.html) you can also find the documentation of the last successful build.
 
 ### Trigger data import from engine to elasticsearch
 

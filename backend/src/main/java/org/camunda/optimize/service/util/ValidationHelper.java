@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -22,7 +22,7 @@ public class ValidationHelper {
     }
   }
 
-  public static void validate(CorrelationQueryDto dto) throws OptimizeValidationException {
+  public static void validate(BranchAnalysisQueryDto dto) throws OptimizeValidationException {
     ValidationHelper.validate((HeatMapQueryDto) dto);
     ValidationHelper.ensureNotEmpty("gateway activity id", dto.getGateway());
     ValidationHelper.ensureNotEmpty("end activity id", dto.getEnd());

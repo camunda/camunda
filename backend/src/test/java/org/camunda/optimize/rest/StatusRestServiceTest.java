@@ -2,6 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.ConnectionStatusDto;
+import org.camunda.optimize.dto.optimize.ProgressDto;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
@@ -78,9 +79,9 @@ public class StatusRestServiceTest {
 
     // then
     assertThat(response.getStatus(), is(200));
-    CountDto actual =
-      response.readEntity(CountDto.class);
+    ProgressDto actual =
+      response.readEntity(ProgressDto.class);
     assertThat(actual, is(notNullValue()));
-    assertThat(actual.getCount(), is(expectedCount));
+    assertThat(actual.getProgress(), is(expectedCount));
   }
 }

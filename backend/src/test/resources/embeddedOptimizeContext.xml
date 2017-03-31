@@ -36,7 +36,7 @@
   <bean id="processDefinitionReader" class="org.camunda.optimize.service.es.reader.ProcessDefinitionReader"/>
   <bean id="frequencyHeatMapReader" class="org.camunda.optimize.service.es.reader.FrequencyHeatMapReader"/>
   <bean id="durationHeatMapReader" class="org.camunda.optimize.service.es.reader.DurationHeatMapReader"/>
-  <bean id="correlationReader" class="org.camunda.optimize.service.es.reader.CorrelationReader"/>
+  <bean id="branchAnalysisReader" class="org.camunda.optimize.service.es.reader.BranchAnalysisReader"/>
   <bean id="statusCheckingService" class="org.camunda.optimize.service.status.StatusCheckingService"/>
   <bean id="importProgressReporter" class="org.camunda.optimize.service.status.ImportProgressReporter"/>
 

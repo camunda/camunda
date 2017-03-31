@@ -1,11 +1,11 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.service.es.reader.CorrelationReader;
+import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.DurationHeatMapReader;
 import org.camunda.optimize.service.es.reader.FrequencyHeatMapReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -69,7 +69,7 @@ public class ProcessDefinitionRestServiceTest {
   private DurationHeatMapReader durationHeatMapReader;
 
   @Autowired
-  private CorrelationReader correlationReader;
+  private BranchAnalysisReader branchAnalysisReader;
 
   @InjectMocks
   @Autowired
@@ -328,7 +328,7 @@ public class ProcessDefinitionRestServiceTest {
   @Test
   public void getCorrelationWithoutAuthentication() throws IOException {
     // when
-    Entity<CorrelationQueryDto> entity = Entity.entity(new CorrelationQueryDto(), MediaType.APPLICATION_JSON);
+    Entity<BranchAnalysisQueryDto> entity = Entity.entity(new BranchAnalysisQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
       embeddedOptimizeRule.target("process-definition/correlation")
       .request()
@@ -342,12 +342,12 @@ public class ProcessDefinitionRestServiceTest {
   public void getCorrelation() throws IOException {
     // given some mocks
     String token = embeddedOptimizeRule.authenticateAdmin();
-    GatewaySplitDto expected = new GatewaySplitDto();
+    BranchAnalysisDto expected = new BranchAnalysisDto();
     expected.setTotal(10L);
-    Mockito.when(correlationReader.activityCorrelation(Mockito.any(CorrelationQueryDto.class))).thenReturn(expected);
+    Mockito.when(branchAnalysisReader.branchAnalysis(Mockito.any(BranchAnalysisQueryDto.class))).thenReturn(expected);
 
     // when
-    Entity<CorrelationQueryDto> entity = Entity.entity(new CorrelationQueryDto(), MediaType.APPLICATION_JSON);
+    Entity<BranchAnalysisQueryDto> entity = Entity.entity(new BranchAnalysisQueryDto(), MediaType.APPLICATION_JSON);
     Response response =
       embeddedOptimizeRule.target("process-definition/correlation")
       .request()
@@ -356,8 +356,8 @@ public class ProcessDefinitionRestServiceTest {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    GatewaySplitDto actual =
-      response.readEntity(GatewaySplitDto.class);
+    BranchAnalysisDto actual =
+      response.readEntity(BranchAnalysisDto.class);
     assertThat(actual, is(notNullValue()));
     assertThat(actual.getTotal(), is(expected.getTotal()));
   }

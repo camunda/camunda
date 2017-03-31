@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.dto.optimize.CorrelationOutcomeDto;
-import org.camunda.optimize.dto.optimize.CorrelationQueryDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.dto.optimize.GatewaySplitDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
-public class CorrelationReaderES_IT {
+public class BranchAnalysisReaderES_IT {
   public static final String PROCESS_DEFINITION_ID = "123";
   public static final String END_ACTIVITY = "endActivity";
   public static final String GATEWAY_ACTIVITY = "gw_1";
@@ -51,7 +51,7 @@ public class CorrelationReaderES_IT {
   public final ExpectedException exception = ExpectedException.none();
 
   @Autowired
-  private CorrelationReader correlationReader;
+  private BranchAnalysisReader branchAnalysisReader;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -106,11 +106,11 @@ public class CorrelationReaderES_IT {
   }
 
   @Test
-  public void activityCorrelation() throws Exception {
+  public void branchAnalysis() throws Exception {
     //given
 
     //when
-    CorrelationOutcomeDto result = correlationReader.activityCorrelation(
+    BranchAnalysisOutcomeDto result = branchAnalysisReader.branchAnalysis(
         PROCESS_DEFINITION_ID, GATEWAY_ACTIVITY, END_ACTIVITY);
 
     //then
@@ -121,14 +121,14 @@ public class CorrelationReaderES_IT {
   }
 
   @Test
-  public void activityCorrelationWithDto() throws Exception {
+  public void branchAnalysisWithDto() throws Exception {
     //given
     setupFullInstanceFlow();
 
-    CorrelationQueryDto dto = getBasicCorrelationQueryDto();
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
 
     //when
-    GatewaySplitDto result = correlationReader.activityCorrelation(dto);
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
     //then
 
     assertThat(result, is(notNullValue()));
@@ -136,19 +136,19 @@ public class CorrelationReaderES_IT {
     assertThat(result.getTotal(), is(2L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
     assertThat(task1.getActivityId(), is(TASK));
     assertThat(task1.getActivitiesReached(), is(1L));
     assertThat(task1.getActivityCount(), is(1L));
 
-    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
     assertThat(task2.getActivityId(), is(TASK_2));
     assertThat(task2.getActivitiesReached(), is(0L));
     assertThat(task2.getActivityCount(), is(0L));
   }
 
-  private CorrelationQueryDto getBasicCorrelationQueryDto() {
-    CorrelationQueryDto dto = new CorrelationQueryDto();
+  private BranchAnalysisQueryDto getBasicBranchAnalysisQueryDto() {
+    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     dto.setGateway(GATEWAY_ACTIVITY);
     dto.setEnd(END_ACTIVITY);
@@ -178,14 +178,14 @@ public class CorrelationReaderES_IT {
   }
 
   @Test
-  public void activityCorrelationWithDtoFilteredByDateBefore() throws Exception {
+  public void branchAnalysisWithDtoFilteredByDateBefore() throws Exception {
     //given
     setupFullInstanceFlow();
-    CorrelationQueryDto dto = getBasicCorrelationQueryDto();
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
     DataUtilHelper.addDateFilter("<=", "start_date", new Date(), dto);
 
     //when
-    GatewaySplitDto result = correlationReader.activityCorrelation(dto);
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -193,26 +193,26 @@ public class CorrelationReaderES_IT {
     assertThat(result.getTotal(), is(2L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
     assertThat(task1.getActivityId(), is(TASK));
     assertThat(task1.getActivitiesReached(), is(1L));
     assertThat(task1.getActivityCount(), is(1L));
 
-    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
     assertThat(task2.getActivityId(), is(TASK_2));
     assertThat(task2.getActivitiesReached(), is(0L));
     assertThat(task2.getActivityCount(), is(0L));
   }
 
   @Test
-  public void activityCorrelationWithDtoFilteredByDateAfter() throws Exception {
+  public void branchAnalysisWithDtoFilteredByDateAfter() throws Exception {
     //given
     setupFullInstanceFlow();
-    CorrelationQueryDto dto = getBasicCorrelationQueryDto();
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
     DataUtilHelper.addDateFilter(">", "start_date", new Date(), dto);
 
     //when
-    GatewaySplitDto result = correlationReader.activityCorrelation(dto);
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -220,12 +220,12 @@ public class CorrelationReaderES_IT {
     assertThat(result.getTotal(), is(0L));
     assertThat(result.getFollowingNodes().size(), is(2));
 
-    CorrelationOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
     assertThat(task1.getActivityId(), is(TASK));
     assertThat(task1.getActivitiesReached(), is(0L));
     assertThat(task1.getActivityCount(), is(0L));
 
-    CorrelationOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
     assertThat(task2.getActivityId(), is(TASK_2));
     assertThat(task2.getActivitiesReached(), is(0L));
     assertThat(task2.getActivityCount(), is(0L));
@@ -237,7 +237,7 @@ public class CorrelationReaderES_IT {
     exception.expect(OptimizeValidationException.class);
 
     //when
-    correlationReader.activityCorrelation(null);
+    branchAnalysisReader.branchAnalysis(null);
   }
 
   @Test
@@ -246,7 +246,7 @@ public class CorrelationReaderES_IT {
     exception.expect(OptimizeValidationException.class);
 
     //when
-    correlationReader.activityCorrelation(new CorrelationQueryDto());
+    branchAnalysisReader.branchAnalysis(new BranchAnalysisQueryDto());
   }
 
   @Test
@@ -254,10 +254,10 @@ public class CorrelationReaderES_IT {
     //expect
     exception.expect(OptimizeValidationException.class);
     //given
-    CorrelationQueryDto request = new CorrelationQueryDto();
+    BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
     request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     //when
-    correlationReader.activityCorrelation(request);
+    branchAnalysisReader.branchAnalysis(request);
   }
 
   @Test
@@ -265,11 +265,11 @@ public class CorrelationReaderES_IT {
     //expect
     exception.expect(OptimizeValidationException.class);
 
-    CorrelationQueryDto request = new CorrelationQueryDto();
+    BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
     request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     request.setEnd(GATEWAY_ACTIVITY);
     //when
-    correlationReader.activityCorrelation(new CorrelationQueryDto());
+    branchAnalysisReader.branchAnalysis(new BranchAnalysisQueryDto());
   }
 
 
