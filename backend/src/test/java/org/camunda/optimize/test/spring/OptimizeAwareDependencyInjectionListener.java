@@ -10,17 +10,15 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
  */
 public class OptimizeAwareDependencyInjectionListener extends DependencyInjectionTestExecutionListener {
 
-  public static final String EMBEDDED_OPTIMIZE_RULE = "embeddedOptimizeRule";
+  private static final String EMBEDDED_OPTIMIZE_RULE = "embeddedOptimizeRule";
 
   protected void injectDependencies(final TestContext testContext) throws Exception {
     Object bean = testContext.getTestInstance();
     AutowireCapableBeanFactory beanFactory = testContext.getApplicationContext().getAutowireCapableBeanFactory();
     //autowire from test context
-    boolean allAutowired = true;
     try {
       beanFactory.autowireBeanProperties(bean, AutowireCapableBeanFactory.AUTOWIRE_NO, false);
-    } catch (Exception e) {
-      allAutowired = false;
+    } catch (Exception ignored) {
     }
     //if there is a rule provided - inject from optimize
     boolean usingEmbeddedOptimize = bean.getClass().getField(EMBEDDED_OPTIMIZE_RULE) != null;
