@@ -1,5 +1,5 @@
 import {jsx} from 'view-utils';
-import {onNextUpdate} from 'utils';
+import {onNextTick} from 'utils';
 import {Select, Option} from 'widgets';
 import {setView} from './service';
 
@@ -17,6 +17,6 @@ export function View({onViewChanged}) {
 
   function handleChange({value}) {
     setView(value);
-    onNextUpdate(onViewChanged);
+    onNextTick(onViewChanged);
   }
 }

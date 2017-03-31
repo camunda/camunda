@@ -16,7 +16,7 @@ describe('<CreateFilter>', () => {
   let Socket;
   let DropdownItem;
   let createStartDateFilter;
-  let onNextUpdate;
+  let onNextTick;
   let onFilterAdded;
   let $;
   let datepickerFct;
@@ -44,8 +44,8 @@ describe('<CreateFilter>', () => {
     createStartDateFilter = sinon.spy();
     __set__('createStartDateFilter', createStartDateFilter);
 
-    onNextUpdate = sinon.stub().callsArg(0);
-    __set__('onNextUpdate', onNextUpdate);
+    onNextTick = sinon.stub().callsArg(0);
+    __set__('onNextTick', onNextTick);
 
     onFilterAdded = sinon.spy();
 
@@ -65,7 +65,7 @@ describe('<CreateFilter>', () => {
     __ResetDependency__('Socket');
     __ResetDependency__('DropdownItem');
     __ResetDependency__('createStartDateFilter');
-    __ResetDependency__('onNextUpdate');
+    __ResetDependency__('onNextTick');
     __ResetDependency__('$');
   });
 

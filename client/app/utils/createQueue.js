@@ -1,4 +1,4 @@
-import {$window} from 'view-utils';
+import {onNextTick} from './onNextTick';
 
 export function createQueue() {
   const tasks = [];
@@ -23,10 +23,15 @@ export function createQueue() {
     return tasks.indexOf(task) >= 0;
   }
 
+  // It basically executes first task asynchroniously and then checks if there
+  // any tasks left if so it starts another run of runQueue function until
+  // all tasks are executed.
   function runQueue() {
     isRunning = true;
 
-    $window.setTimeout(() => {
+    // it probably could be expressed much easier with while loop by using
+    // async await syntax in future
+    onNextTick(() => {
       executeNextTask(() => {
         if (tasks.length === 0) {
           isRunning = false;
@@ -34,9 +39,12 @@ export function createQueue() {
           runQueue();
         }
       });
-    }, 0);
+    });
   }
 
+  // Executes task function that can be either asynchronious or synchriouns.
+  // After task is executed callback is called to let loop know that it can
+  // continue execution.
   function executeNextTask(callback) {
     const task = tasks[0];
 

@@ -8,7 +8,7 @@ describe('<View>', () => {
   let node;
   let update;
   let setView;
-  let onNextUpdate;
+  let onNextTick;
   let onViewChanged;
   let Select;
   let onValueSelected;
@@ -17,8 +17,8 @@ describe('<View>', () => {
     setView = sinon.spy();
     __set__('setView', setView);
 
-    onNextUpdate = sinon.stub().callsArg(0);
-    __set__('onNextUpdate', onNextUpdate);
+    onNextTick = sinon.stub().callsArg(0);
+    __set__('onNextTick', onNextTick);
 
     Select = createMockComponent('Select');
     __set__('Select', Select);
@@ -33,7 +33,7 @@ describe('<View>', () => {
 
   afterEach(() => {
     __ResetDependency__('setView');
-    __ResetDependency__('onNextUpdate');
+    __ResetDependency__('onNextTick');
   });
 
   it('should display a select field', () => {
@@ -49,7 +49,7 @@ describe('<View>', () => {
   it('should call onViewChanged on next update when view changes', () => {
     onValueSelected({value: 'frequency'});
 
-    expect(onNextUpdate.calledWith(onViewChanged)).to.eql(true);
+    expect(onNextTick.calledWith(onViewChanged)).to.eql(true);
     expect(onViewChanged.calledOnce).to.eql(true);
   });
 });
