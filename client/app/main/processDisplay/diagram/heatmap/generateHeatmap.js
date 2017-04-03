@@ -20,8 +20,8 @@ export default function generateHeatmap(viewer, data) {
 
   heatmapData = heatmapData.map(({x, y, value, radius}) => {
     return {
-      x,
-      y,
+      x: Math.round(x),
+      y: Math.round(y),
       radius,
       value: (VALUE_SHIFT + value / heatmapDataValueMax * (1 - VALUE_SHIFT)) / COOLNESS
     };
