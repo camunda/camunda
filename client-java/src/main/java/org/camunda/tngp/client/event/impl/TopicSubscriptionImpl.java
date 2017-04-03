@@ -19,7 +19,7 @@ public class TopicSubscriptionImpl
     protected final TopicClientImpl client;
 
     protected AtomicBoolean processingFlag = new AtomicBoolean(false);
-    protected long lastProcessedEventPosition;
+    protected volatile long lastProcessedEventPosition;
     protected long lastAcknowledgedPosition;
 
     protected final long startPosition;
