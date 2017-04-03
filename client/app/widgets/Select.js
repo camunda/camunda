@@ -7,7 +7,15 @@ export function Select({onValueSelected, children}) {
   const Reference = createReferenceComponent();
   let currentItem;
 
-  const template = <Dropdown>
+  // Template is split into two parts to solve problems with components application
+  // Event listener on select node must be added before <Option> component in children
+  // are applied to node. And the easiest solution is just to split template into two parts.
+  // So it might seem a little bit strange, but there is good reason for it.
+  const template = <div>
+    <Reference name="select" />
+  </div>;
+
+  const dropdownTemplate = <Dropdown>
     <Socket name="label">
       <span>
         <Reference name="label" />
@@ -19,15 +27,19 @@ export function Select({onValueSelected, children}) {
   </Dropdown>;
 
   return (node, eventsBus) => {
-    node.addEventListener(SELECT_EVENT, ({item}) => {
+    const templateUpdate = template(node, eventsBus);
+    const selectNode = Reference.getNode('select');
+
+    selectNode.addEventListener(SELECT_EVENT, ({item}) => {
       currentItem = item;
 
       onValueSelected(item);
     });
 
     return [
-      template(node, eventsBus),
-      updateLabelNode
+      templateUpdate,
+      updateLabelNode,
+      dropdownTemplate(selectNode, eventsBus)
     ];
   };
 

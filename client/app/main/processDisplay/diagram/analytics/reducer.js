@@ -2,7 +2,7 @@ import {SET_VIEW} from 'main/processDisplay/controls/view/reducer';
 
 export const SET_ELEMENT = 'SET_ELEMENT';
 
-export const reducer = (state = {}, action) => {
+export const reducer = (state = {selection: {}}, action) => {
   if (action.type === SET_ELEMENT) {
     return {
       ...state,
@@ -17,6 +17,7 @@ export const reducer = (state = {}, action) => {
       selection: {}
     };
   }
+
   return state;
 };
 

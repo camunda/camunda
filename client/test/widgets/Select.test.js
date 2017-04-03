@@ -20,6 +20,15 @@ describe('<Select>', () => {
     __set__('Socket', MockSocket);
 
     onValueSelected = sinon.spy();
+
+    ({update} = mountTemplate(<Select onValueSelected={onValueSelected}>
+      <Option value="ala" isDefault>Ala</Option>,
+      <Option value="marcin">Marcin</Option>
+    </Select>));
+    update({});
+
+    dropdownListNode = MockSocket.getChildrenNode({name: 'list'});
+    dropdownLabelNode = MockSocket.getChildrenNode({name: 'label'});
   });
 
   afterEach(() => {
@@ -28,43 +37,91 @@ describe('<Select>', () => {
     __ResetDependency__('withSockets');
   });
 
-  describe('with default label', () => {
+  it('should display all dropdown options', () => {
+    expect(dropdownListNode).to.contain.text('Ala');
+    expect(dropdownListNode).to.contain.text('Marcin');
+  });
+
+  it('should select default option on startup', () => {
+    expect(dropdownLabelNode).to.contain.text('Ala');
+  });
+
+  it('should be able to select element by clicking option', () => {
+    const [marcinOption] = selectByText(
+      dropdownListNode.querySelectorAll('a'),
+      'Marcin'
+    );
+
+    triggerEvent({
+      node: marcinOption,
+      eventName: 'click'
+    });
+
+    update({a: 1});
+
+    expect(dropdownLabelNode).to.contain.text('Marcin');
+    expect(onValueSelected.calledWith({name: 'Marcin', value: 'marcin'}))
+      .to.eql(true, 'expect onValueSelect to be called with proper item');
+  });
+
+  describe('when more than one <Select> used', () => {
+    let node;
+    let firstOnValue;
+    let secondOnValue;
+
     beforeEach(() => {
-      ({update} = mountTemplate(<Select onValueSelected={onValueSelected}>
-        <Option value="ala" isDefault>Ala</Option>,
-        <Option value="marcin">Marcin</Option>
-      </Select>));
-      update({});
+      firstOnValue = sinon.spy();
+      secondOnValue = sinon.spy();
 
-      dropdownListNode = MockSocket.getChildrenNode({name: 'list'});
-      dropdownLabelNode = MockSocket.getChildrenNode({name: 'label'});
+      ({update, node} = mountTemplate(
+        <div>
+          <Select onValueSelected={firstOnValue}>
+            <Option value="a" isDefault>A</Option>
+            <Option value="b">B</Option>
+          </Select>
+          <Select onValueSelected={secondOnValue}>
+            <Option value="a2" isDefault>A2</Option>
+            <Option value="b2">B2</Option>
+          </Select>
+        </div>
+      ));
     });
 
-    it('should display all dropdown options', () => {
-      expect(dropdownListNode).to.contain.text('Ala');
-      expect(dropdownListNode).to.contain.text('Marcin');
+    it('should have correctly set default values', () => {
+      expect(firstOnValue.calledWith({name: 'A', value:'a'})).to.eql(true);
+      expect(secondOnValue.calledWith({name: 'A2', value:'a2'})).to.eql(true);
     });
 
-    it('should select default option on startup', () => {
-      expect(dropdownLabelNode).to.contain.text('Ala');
-    });
-
-    it('should be able to select element by clicking option', () => {
-      const [marcinOption] = selectByText(
-        dropdownListNode.querySelectorAll('a'),
-        'Marcin'
+    it('should be able to use only first select', () => {
+      secondOnValue.reset();
+      const [bOption] = selectByText(
+        node.querySelectorAll('a'),
+        'B'
       );
 
       triggerEvent({
-        node: marcinOption,
+        node: bOption,
         eventName: 'click'
       });
 
-      update({a: 1});
+      expect(firstOnValue.calledWith({name: 'B', value:'b'})).to.eql(true);
+      expect(secondOnValue.called).to.eql(false);
+    });
 
-      expect(dropdownLabelNode).to.contain.text('Marcin');
-      expect(onValueSelected.calledWith({name: 'Marcin', value: 'marcin'}))
-        .to.eql(true, 'expect onValueSelect to be called with proper item');
+    it('should be able to use only second select', () => {
+      firstOnValue.reset();
+      const [bOption] = selectByText(
+        node.querySelectorAll('a'),
+        'B2'
+      );
+
+      triggerEvent({
+        node: bOption,
+        eventName: 'click'
+      });
+
+      expect(secondOnValue.calledWith({name: 'B2', value:'b2'})).to.eql(true);
+      expect(firstOnValue.called).to.eql(false);
     });
   });
 });

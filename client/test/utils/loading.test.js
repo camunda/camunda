@@ -16,6 +16,19 @@ describe('loading', () => {
     reducer = addLoading(originalReducer, LOADING_PROPERTY);
   });
 
+  it('should allow original reducer to create default state', () => {
+    const originalReducer = (state = {a: 1}) => state;
+    const reducer = addLoading(originalReducer, LOADING_PROPERTY);
+    const state = reducer(undefined, {type: '@@INIT'});
+
+    expect(state).to.eql({
+      [LOADING_PROPERTY]: {
+        state: INITIAL_STATE
+      },
+      a: 1
+    });
+  });
+
   it('creates an initial state for property', () => {
     const state = reducer(undefined, {type: '@@INIT'});
 

@@ -7,12 +7,12 @@ export function addLoading(next, ...properties) {
   const loadedTypes = getLoadedTypes(properties);
   const resetTypes = getResetTypes(properties);
 
-  return (state = {}, action) => {
+  return (state, action) => {
     const loadIdx = loadTypes.indexOf(action.type);
     const loadedIdx = loadedTypes.indexOf(action.type);
     const resetIdx = resetTypes.indexOf(action.type);
 
-    const newState = {...state};
+    const newState = next(state, action) || {};
 
     properties.forEach(prop => {
       if (!newState[prop]) {
@@ -44,7 +44,7 @@ export function addLoading(next, ...properties) {
       };
     }
 
-    return next(newState, action);
+    return newState;
   };
 }
 
