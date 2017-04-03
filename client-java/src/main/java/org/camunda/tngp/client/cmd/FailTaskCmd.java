@@ -22,12 +22,12 @@ public interface FailTaskCmd extends SetPayloadCmd<Long, FailTaskCmd>
     /**
      * Add the given key-value-pair to the task header.
      */
-    FailTaskCmd addHeader(String key, String value);
+    FailTaskCmd addHeader(String key, Object value);
 
     /**
      * Sets the given key-value-pairs as the task header.
      */
-    FailTaskCmd headers(Map<String, String> headers);
+    FailTaskCmd headers(Map<String, Object> headers);
 
     /**
      * Sets the error which causes the failure.

@@ -64,6 +64,11 @@ public class WorkflowInstanceEvent extends UnpackedObject
         return this;
     }
 
+    public WorkflowInstanceEvent setActivityId(DirectBuffer activityId)
+    {
+        return setActivityId(activityId, 0, activityId.capacity());
+    }
+
     public WorkflowInstanceEvent setActivityId(DirectBuffer activityId, int offset, int length)
     {
         this.activityIdProp.setValue(activityId, offset, length);

@@ -11,7 +11,7 @@ public class TaskEventImpl implements TaskEvent
 {
 
     protected String eventType;
-    protected Map<String, String> headers;
+    protected Map<String, Object> headers;
     protected Long lockTime;
     protected Integer lockOwner;
     protected Integer retries;
@@ -59,12 +59,12 @@ public class TaskEventImpl implements TaskEvent
     }
 
     @Override
-    public Map<String, String> getHeaders()
+    public Map<String, Object> getHeaders()
     {
         return headers;
     }
 
-    public void setHeaders(Map<String, String> headers)
+    public void setHeaders(Map<String, Object> headers)
     {
         this.headers = headers;
     }

@@ -54,12 +54,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     // processors ////////////////////////////////////
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
+
     protected final CreateWorkflowInstanceEventProcessor createWorkflowInstanceEventProcessor = new CreateWorkflowInstanceEventProcessor();
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
-    protected final EventOccurredEventProcessor eventOccurredEventProcessor = new EventOccurredEventProcessor();
+    protected final ActivityCompletedEventProcessor activityCompletedEventProcessor = new ActivityCompletedEventProcessor();
     protected final SequenceFlowTakenEventProcessor sequenceFlowTakenEventProcessor = new SequenceFlowTakenEventProcessor();
     protected final EndEventProcessor endEventProcessor = new EndEventProcessor();
     protected final ActivityActivatedEventProcessor activityActivatedEventProcessor = new ActivityActivatedEventProcessor();
+
+    protected final TaskCompletedEventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
 
     // data //////////////////////////////////////////
 
@@ -136,7 +139,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     public static MetadataFilter eventFilter()
     {
-        return m -> m.getEventType() == EventType.DEPLOYMENT_EVENT || m.getEventType() == EventType.WORKFLOW_EVENT;
+        return m -> m.getEventType() == EventType.DEPLOYMENT_EVENT
+                || m.getEventType() == EventType.WORKFLOW_EVENT
+                || m.getEventType() == EventType.TASK_EVENT;
     }
 
     @Override
@@ -157,6 +162,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             case WORKFLOW_EVENT:
                 eventProcessor = onWorkflowEvent(event);
+                break;
+
+            case TASK_EVENT:
+                eventProcessor = onTaskEvent(event);
                 break;
 
             default:
@@ -202,7 +211,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 break;
 
             case START_EVENT_OCCURRED:
-                eventProcessor = eventOccurredEventProcessor;
+            case ACTIVITY_COMPLETED:
+                eventProcessor = activityCompletedEventProcessor;
                 break;
 
             case SEQUENCE_FLOW_TAKEN:
@@ -223,6 +233,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         return eventProcessor;
     }
+
+    protected EventProcessor onTaskEvent(LoggedEvent event)
+    {
+        EventProcessor eventProcessor = null;
+
+        event.readValue(taskEvent);
+
+        switch (taskEvent.getEventType())
+        {
+            case COMPLETED:
+                eventProcessor = taskCompletedEventProcessor;
+                break;
+
+            default:
+                break;
+        }
+
+        return eventProcessor;
+    }
+
 
     @Override
     public void afterEvent()
@@ -368,15 +398,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     }
 
-    private final class EventOccurredEventProcessor implements EventProcessor
+    private final class ActivityCompletedEventProcessor implements EventProcessor
     {
         @Override
         public void processEvent()
         {
-            final ExecutableFlowNode occurredEvent = getCurrentActivity();
+            final ExecutableFlowNode currentActivity = getCurrentActivity();
 
-            // currently, the event is a start event and has exactly one outgoing sequence flow
-            final ExecutableSequenceFlow sequenceFlow = occurredEvent.getOutgoingSequenceFlows()[0];
+            // currently, the activity has exactly one outgoing sequence flow
+            final ExecutableSequenceFlow sequenceFlow = currentActivity.getOutgoingSequenceFlows()[0];
 
             workflowInstanceEvent
                 .setEventType(WorkflowInstanceEventType.SEQUENCE_FLOW_TAKEN)
@@ -492,9 +522,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
 
                 final TaskHeaders taskHeaders = taskEvent.getHeaders()
-                    .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
                     .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
-                    .setActivityId(serviceTask.getId());
+                    .setWorkflowDefinitionVersion(workflowInstanceEvent.getVersion())
+                    .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                    .setActivityId(serviceTask.getId())
+                    .setActivityInstanceKey(eventKey);
 
                 taskEvent
                     .setEventType(TaskEventType.CREATE)
@@ -549,6 +581,32 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
                 workflowPositionIndexAccessor.wrap(bpmnProcessId, version).putEventPosition(eventPosition);
             }
+        }
+    }
+
+    private final class TaskCompletedEventProcessor implements EventProcessor
+    {
+        private TaskHeaders taskHeaders;
+
+        @Override
+        public void processEvent()
+        {
+            taskHeaders = taskEvent.getHeaders();
+
+            // assuming that the workflow instance is still in this activity
+            workflowInstanceEvent
+                .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)
+                .setBpmnProcessId(taskHeaders.getBpmnProcessId())
+                .setVersion(taskHeaders.getWorkflowDefinitionVersion())
+                .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
+                .setActivityId(taskHeaders.getActivityId());
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(
+                    writer.key(taskHeaders.getActivityInstanceKey()));
         }
     }
 

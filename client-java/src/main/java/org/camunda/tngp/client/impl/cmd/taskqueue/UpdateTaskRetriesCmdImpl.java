@@ -24,7 +24,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     protected int retries = -1;
     protected String taskType;
     protected byte[] payload;
-    protected Map<String, String> headers = new HashMap<>();
+    protected Map<String, Object> headers = new HashMap<>();
 
     public UpdateTaskRetriesCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
     {
@@ -67,7 +67,7 @@ public class UpdateTaskRetriesCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, 
     }
 
     @Override
-    public UpdateTaskRetriesCmd headers(Map<String, String> newHeaders)
+    public UpdateTaskRetriesCmd headers(Map<String, Object> newHeaders)
     {
         headers.clear();
         headers.putAll(newHeaders);

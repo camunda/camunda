@@ -75,7 +75,7 @@ public class UpdateTaskRetriesCmdTest
     public void shouldWriteRequest() throws JsonParseException, JsonMappingException, IOException
     {
         // given
-        final Map<String, String> headers = new HashMap<>();
+        final Map<String, Object> headers = new HashMap<>();
         headers.put("a", "b");
         headers.put("c", "d");
 

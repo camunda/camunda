@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
 import org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient;
@@ -155,7 +156,7 @@ public class WorkflowInstanceFunctionalTest
 
     @SuppressWarnings("unchecked")
     @Test
-    public void shouldCreateTaskForActivatedServiceTask()
+    public void shouldCreateTaskWhenServiceTaskIsActivated()
     {
         // given
         testClient.deploy(wrap(
@@ -180,6 +181,38 @@ public class WorkflowInstanceFunctionalTest
         assertThat((Map<String, Object>) event.event().get("headers"))
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowDefinitionVersion", 1)
+            .containsEntry("activityId", "foo");
+    }
+
+    @Test
+    public void shouldCompleteServiceTaskWhenTaskIsCompleted()
+    {
+        // given
+        final BpmnModelInstance modelInstance = wrap(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("foo")
+                    .endEvent()
+                    .done())
+                        .taskDefinition("foo", "bar", 5);
+
+        testClient.deploy(modelInstance);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // when
+        testClient.completeTaskOfType("bar");
+
+        // then
+        final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.event())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("version", 1)
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "foo");
     }
 
@@ -187,24 +220,34 @@ public class WorkflowInstanceFunctionalTest
     public void shouldCreateAndCompleteWorkflowInstance()
     {
         // given
-        testClient.deploy(Bpmn.createExecutableProcess("process")
-                .startEvent("a")
-                .sequenceFlowId("b")
-                .endEvent("c")
-                .done());
+        final BpmnModelInstance modelInstance = wrap(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent("a")
+                    .serviceTask("b")
+                    .endEvent("c")
+                    .done())
+                        .taskDefinition("b", "foo", 5);
 
-        // when
+        testClient.deploy(modelInstance);
+
         testClient.createWorkflowInstance("process");
 
-        // then
-        final List<SubscribedEvent> events = testClient.receiveEvents(workflowInstanceEvents())
-            .limit(6)
-            .collect(Collectors.toList());
+        // when
+        testClient.completeTaskOfType("foo");
 
-        assertThat(events).extracting(e -> e.event().get("eventType")).containsExactly(
+        // then
+        final List<SubscribedEvent> workflowEvents = testClient
+                .receiveEvents(workflowInstanceEvents())
+                .limit(9)
+                .collect(Collectors.toList());
+
+        assertThat(workflowEvents).extracting(e -> e.event().get("eventType")).containsExactly(
                 "CREATE_WORKFLOW_INSTANCE",
                 "WORKFLOW_INSTANCE_CREATED",
                 "START_EVENT_OCCURRED",
+                "SEQUENCE_FLOW_TAKEN",
+                "ACTIVITY_ACTIVATED",
+                "ACTIVITY_COMPLETED",
                 "SEQUENCE_FLOW_TAKEN",
                 "END_EVENT_OCCURRED",
                 "WORKFLOW_INSTANCE_COMPLETED");

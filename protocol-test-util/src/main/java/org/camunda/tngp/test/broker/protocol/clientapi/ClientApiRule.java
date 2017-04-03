@@ -44,14 +44,15 @@ public class ClientApiRule extends ExternalResource
     @Override
     protected void after()
     {
-        if (clientChannel != null)
-        {
-            closeChannel();
-        }
 
         if (connectionPool != null)
         {
             connectionPool.close();
+        }
+
+        if (clientChannel != null)
+        {
+            closeChannel();
         }
 
         if (transport != null)
@@ -79,9 +80,16 @@ public class ClientApiRule extends ExternalResource
         return Stream.generate(subscribedEventCollector);
     }
 
-    public void moveSubscribedEventsStreamToTail()
+    public ClientApiRule moveSubscribedEventsStreamToTail()
     {
         subscribedEventCollector.moveToTail();
+        return this;
+    }
+
+    public ClientApiRule moveSubscribedEventsStreamToHead()
+    {
+        subscribedEventCollector.moveToHead();
+        return this;
     }
 
     public int numSubscribedEventsAvailable()

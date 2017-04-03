@@ -23,7 +23,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     protected String taskType;
     protected int retries = DEFAULT_RETRIES;
     protected byte[] payload;
-    protected Map<String, String> headers = new HashMap<>();
+    protected Map<String, Object> headers = new HashMap<>();
 
     public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
     {
@@ -59,14 +59,14 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     }
 
     @Override
-    public CreateTaskCmd addHeader(String key, String value)
+    public CreateTaskCmd addHeader(String key, Object value)
     {
         headers.put(key, value);
         return this;
     }
 
     @Override
-    public CreateTaskCmd setHeaders(Map<String, String> headers)
+    public CreateTaskCmd setHeaders(Map<String, Object> headers)
     {
         this.headers.clear();
         this.headers.putAll(headers);

@@ -13,13 +13,12 @@ public class TaskImpl implements Task
     protected final TaskTopicClient tasksClient;
 
     protected final long key;
-    protected final Long workflowInstanceId;
     protected final String type;
     protected final long lockExpirationTime;
     protected final int lockOwner;
     protected final int retries;
     protected final MsgPackField payload = new MsgPackField();
-    protected Map<String, String> headers;
+    protected Map<String, Object> headers;
 
     protected int state;
     protected static final int STATE_LOCKED = 0;
@@ -41,8 +40,6 @@ public class TaskImpl implements Task
         this.retries = taskEvent.getRetries();
         this.headers = taskEvent.getHeaders();
         this.payload.setMsgPack(taskEvent.getPayload());
-
-        this.workflowInstanceId = null;
 
         this.state = STATE_LOCKED;
     }
@@ -88,12 +85,6 @@ public class TaskImpl implements Task
     }
 
     @Override
-    public Long getWorkflowInstanceId()
-    {
-        return workflowInstanceId;
-    }
-
-    @Override
     public String getType()
     {
         return type;
@@ -118,13 +109,13 @@ public class TaskImpl implements Task
     }
 
     @Override
-    public Map<String, String> getHeaders()
+    public Map<String, Object> getHeaders()
     {
         return new HashMap<>(headers);
     }
 
     @Override
-    public void setHeaders(Map<String, String> newHeaders)
+    public void setHeaders(Map<String, Object> newHeaders)
     {
         this.headers = newHeaders;
     }

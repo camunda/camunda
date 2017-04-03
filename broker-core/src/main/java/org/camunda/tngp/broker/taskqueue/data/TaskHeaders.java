@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.taskqueue.data;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
@@ -23,13 +24,17 @@ public class TaskHeaders extends UnpackedObject
 
     private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
     private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", EMPTY_STRING);
+    private final IntegerProperty workflowDefinitionVersionProp = new IntegerProperty("workflowDefinitionVersion", -1);
     private final StringProperty activityIdProp = new StringProperty("activityId", EMPTY_STRING);
+    private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
     public TaskHeaders()
     {
-        this.declareProperty(workflowInstanceKeyProp)
-            .declareProperty(bpmnProcessIdProp)
-            .declareProperty(activityIdProp);
+        this.declareProperty(bpmnProcessIdProp)
+            .declareProperty(workflowDefinitionVersionProp)
+            .declareProperty(workflowInstanceKeyProp)
+            .declareProperty(activityIdProp)
+            .declareProperty(activityInstanceKeyProp);
     }
 
     public long getWorkflowInstanceKey()
@@ -71,4 +76,25 @@ public class TaskHeaders extends UnpackedObject
         return bpmnProcessIdProp.getValue();
     }
 
+    public int getWorkflowDefinitionVersion()
+    {
+        return workflowDefinitionVersionProp.getValue();
+    }
+
+    public TaskHeaders setWorkflowDefinitionVersion(int version)
+    {
+        this.workflowDefinitionVersionProp.setValue(version);
+        return this;
+    }
+
+    public long getActivityInstanceKey()
+    {
+        return activityInstanceKeyProp.getValue();
+    }
+
+    public TaskHeaders setActivityInstanceKey(long activityInstanceKey)
+    {
+        this.activityInstanceKeyProp.setValue(activityInstanceKey);
+        return this;
+    }
 }

@@ -118,7 +118,7 @@ public class CompleteTaskCmdTest
         // given
         final byte[] payload = "{ \"bar\" : 4 }".getBytes();
 
-        final Map<String, String> headers = new HashMap<>();
+        final Map<String, Object> headers = new HashMap<>();
         headers.put("a", "b");
         headers.put("c", "d");
 

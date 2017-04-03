@@ -36,6 +36,12 @@ public class ExecuteCommandRequest implements BufferWriter
         return this;
     }
 
+    public ExecuteCommandRequest key(long key)
+    {
+        this.longKey = key;
+        return this;
+    }
+
     public ExecuteCommandRequest eventType(EventType eventType)
     {
         this.eventType = eventType;

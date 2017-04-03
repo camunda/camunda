@@ -26,6 +26,8 @@ public class TestTopicClient
     private final ClientApiRule apiRule;
     private final int topicId;
 
+    private boolean isTopicSubscriptionOpen = false;
+
     public TestTopicClient(ClientApiRule apiRule, int topicId)
     {
         this.apiRule = apiRule;
@@ -64,24 +66,61 @@ public class TestTopicClient
         return response.key();
     }
 
+    public void completeTaskOfType(String taskType)
+    {
+        apiRule.openTaskSubscription(topicId, taskType).await();
+
+        final SubscribedEvent taskEvent = apiRule
+                .subscribedEvents()
+                .filter(taskEvents("LOCKED"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
+
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicId(topicId)
+            .key(taskEvent.longKey())
+            .eventTypeTask()
+            .command()
+                .put("eventType", "COMPLETE")
+                .put("type", taskType)
+                .put("lockOwner", taskEvent.event().get("lockOwner"))
+                .put("headers", taskEvent.event().get("headers"))
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getEvent().get("eventType")).isEqualTo("COMPLETED");
+    }
+
     /**
      * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations
      *   to reduce it to a finite stream
      */
     public Stream<SubscribedEvent> receiveEvents(Predicate<SubscribedEvent> filter)
     {
-        final ExecuteCommandResponse response = apiRule.openTopicSubscription(topicId, "test", 0).await();
+        ensureOpenTopicSubscription();
 
-        assertThat(response.key()).isGreaterThanOrEqualTo(0);
-
-        return apiRule.subscribedEvents().filter(filter);
+        return apiRule
+                .moveSubscribedEventsStreamToHead()
+                .subscribedEvents()
+                .filter(filter);
     }
 
     public SubscribedEvent receiveSingleEvent(Predicate<SubscribedEvent> filter)
     {
         return receiveEvents(filter)
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("no event received"));
+                .orElseThrow(() -> new AssertionError("no event received"));
+    }
+
+    private void ensureOpenTopicSubscription()
+    {
+        if (!isTopicSubscriptionOpen)
+        {
+            final ExecuteCommandResponse response = apiRule.openTopicSubscription(topicId, "test", 0).await();
+            assertThat(response.key()).isGreaterThanOrEqualTo(0);
+
+            isTopicSubscriptionOpen = true;
+        }
     }
 
     public static Predicate<SubscribedEvent> eventType(String eventType)

@@ -12,6 +12,7 @@ public enum WorkflowInstanceEventType
     SEQUENCE_FLOW_TAKEN,
 
     ACTIVITY_ACTIVATED,
+    ACTIVITY_COMPLETED,
 
     WORKFLOW_INSTANCE_COMPLETED;
 

@@ -117,7 +117,7 @@ public class CreateTaskCmdTest
         // given
         final byte[] payload = "{ \"bar\" : 4 }".getBytes();
 
-        final Map<String, String> headers = new HashMap<>();
+        final Map<String, Object> headers = new HashMap<>();
         headers.put("a", "b");
         headers.put("c", "d");
 
@@ -173,7 +173,7 @@ public class CreateTaskCmdTest
         responseEncoder.wrap(writeBuffer, 0);
 
         // given
-        final Map<String, String> headers = new HashMap<>();
+        final Map<String, Object> headers = new HashMap<>();
         headers.put("k", "v");
 
         final TaskEvent taskEvent = new TaskEvent();

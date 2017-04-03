@@ -1,294 +1,162 @@
 package org.camunda.tngp.broker.it.process;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.util.TestUtil.waitUntil;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
+import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
+import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.cmd.LockedTask;
-import org.camunda.tngp.client.cmd.LockedTasksBatch;
+import org.camunda.tngp.client.event.TaskEvent;
+import org.camunda.tngp.client.event.TopicEventType;
+import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
+import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
-import org.camunda.tngp.test.util.TestUtil;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
-
-@Ignore
 public class ServiceTaskTest
 {
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-
     public ClientRule clientRule = new ClientRule();
+    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule, 0);
 
     @Rule
     public RuleChain ruleChain = RuleChain
         .outerRule(brokerRule)
-        .around(clientRule);
+        .around(clientRule)
+        .around(recordingTaskEventHandler);
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    public static BpmnModelInstance oneTaskProcess(String taskType)
+    private WorkflowTopicClient workflowClient;
+    private TaskTopicClient taskClient;
+
+    @Before
+    public void init()
     {
-        return wrap(Bpmn.createExecutableProcess("anId")
-            .startEvent()
-            .serviceTask("serviceTask")
-            .endEvent("endEvent")
+        final TngpClient client = clientRule.getClient();
+
+        workflowClient = client.workflowTopic(0);
+        taskClient = client.taskTopic(0);
+    }
+
+    private static BpmnModelInstance oneTaskProcess(String taskType)
+    {
+        return wrap(Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task")
+            .endEvent("end")
             .done())
-        .taskAttributes("serviceTask", taskType, 0);
+        .taskDefinition("task", taskType, 3);
     }
 
     @Test
-    public void shouldStartProcessWithServiceTask()
+    public void shouldStartWorkflowInstanceWithServiceTask()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
-        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
-
-        // when
-        final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
-                workflowService.create().bpmnProcessId("0")
-                        .execute())
-                .until(
-                    (wfInstance) -> wfInstance != null,
-                    (exception) -> !exception.getMessage().contains("(1-3)"));
-
-        assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("0");
-    }
-
-    @Test
-    public void shouldPollAndLockServiceTask() throws InterruptedException
-    {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
-        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
-
         // given
-        final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
-            workflowService
-                .create()
-                .bpmnProcessId("foo")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
+        workflowClient.deploy()
+            .bpmnModelInstance(oneTaskProcess("foo"))
+            .execute();
 
         // when
-        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
-            client
-                .taskTopic(0)
-                .pollAndLock()
-                .taskType("foo")
-                .lockTime(100000L)
-                .maxTasks(1)
-                .execute())
-            .until(
-                (tasks) -> !tasks.getLockedTasks().isEmpty());
+        final WorkflowInstance workflowInstance = workflowClient.create()
+                .bpmnProcessId("process")
+                .execute();
 
         // then
-        assertThat(tasksBatch.getLockedTasks()).hasSize(1);
-        assertThat(tasksBatch.getLockedTasks().get(0).getId()).isGreaterThan(0);
-        assertThat(tasksBatch.getLockedTasks().get(0).getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
+        assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
     }
 
     @Test
-    public void shouldNotLockServiceTaskOfDifferentType()
+    public void shouldLockServiceTask()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
         // given
-        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
-        workflowService.deploy().bpmnModelInstance(oneTaskProcess("bar")).execute();
+        workflowClient.deploy()
+            .bpmnModelInstance(oneTaskProcess("foo"))
+            .execute();
 
-        TestUtil.doRepeatedly(() ->
-            workflowService
-                .create()
-                .bpmnProcessId("foo")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
-
-        TestUtil.doRepeatedly(() ->
-            workflowService
-                    .create()
-                    .bpmnProcessId("foo")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
+        final WorkflowInstance workflowInstance = workflowClient.create()
+                .bpmnProcessId("process")
+                .execute();
 
         // when
-        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
-            client
-                .taskTopic(0)
-                .pollAndLock()
-                .taskType("bar")
-                .lockTime(100000L)
-                .maxTasks(2)
-                .execute())
-            .until(
-                (tasks) -> !tasks.getLockedTasks().isEmpty());
+        taskClient.newTaskSubscription()
+            .taskType("foo")
+            .lockOwner(1)
+            .lockTime(Duration.ofMinutes(5))
+            .handler(Task::complete)
+            .open();
 
         // then
-        assertThat(tasksBatch.getLockedTasks()).hasSize(1);
-        assertThat(tasksBatch.getLockedTasks().get(0).getId()).isGreaterThan(0);
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCKED)));
+
+        final TaskEvent taskLockedEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.LOCKED)).get(0);
+        assertThat(taskLockedEvent.getHeaders())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstance.getWorkflowInstanceKey())
+            .containsEntry("activityId", "task");
     }
 
     @Test
     public void shouldCompleteServiceTask()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
         // given
-        workflowService.deploy().bpmnModelInstance(oneTaskProcess("foo")).execute();
+        workflowClient.deploy()
+            .bpmnModelInstance(oneTaskProcess("foo"))
+            .execute();
 
-        TestUtil.doRepeatedly(() ->
-            workflowService
-                    .create()
-                    .bpmnProcessId("foo")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
-
-        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
-            client
-                .taskTopic(0)
-                .pollAndLock()
-                .taskType("foo")
-                .lockTime(100000L)
-                .maxTasks(1)
-                .execute())
-            .until(
-                (tasks) -> !tasks.getLockedTasks().isEmpty());
+        workflowClient.create()
+                .bpmnProcessId("process")
+                .execute();
 
         // when
-        final LockedTask task = tasksBatch.getLockedTasks().get(0);
-        final Long result = client.taskTopic(0).complete()
-            .taskKey(task.getId())
-            .execute();
+        taskClient.newTaskSubscription()
+            .taskType("foo")
+            .lockOwner(1)
+            .lockTime(Duration.ofMinutes(5))
+            .handler(Task::complete)
+            .open();
 
         // then
-        assertThat(result).isEqualTo(task.getId());
+        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
+
+        // TODO use workflow topic subscription to verify that workflow instance is completed
+        final List<String> workflowEventTypes = new ArrayList<>();
+        clientRule.getClient().topic(0).newSubscription()
+            .name("test")
+            .startAtHeadOfTopic()
+            .handler((meta, event) ->
+            {
+                if (meta.getEventType() == TopicEventType.WORKFLOW)
+                {
+                    final Matcher matcher = Pattern.compile("\"eventType\":\"(\\w+)\"").matcher(event.getJson());
+                    if (matcher.find())
+                    {
+                        final String eventType = matcher.group(1);
+                        workflowEventTypes.add(eventType);
+                    }
+                }
+            }).open();
+
+        waitUntil(() -> workflowEventTypes.contains("WORKFLOW_INSTANCE_COMPLETED"));
     }
 
-    @Test
-    public void shouldExecuteSequenceOfServiceTasks()
-    {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
-        // given
-        workflowService.deploy().bpmnModelInstance(ProcessModels.TWO_TASKS_PROCESS).execute();
-
-        TestUtil.doRepeatedly(() ->
-            workflowService
-                    .create()
-                    .bpmnProcessId("foo")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
-
-        final LockedTasksBatch task1Batch = TestUtil.doRepeatedly(() ->
-            client
-                .taskTopic(0)
-                .pollAndLock()
-                .taskType("foo")
-                .lockTime(100000L)
-                .maxTasks(5)
-                .execute())
-            .until(
-                (tasks) -> !tasks.getLockedTasks().isEmpty());
-
-        final LockedTask task1 = task1Batch.getLockedTasks().get(0);
-        client.taskTopic(0).complete()
-            .taskKey(task1.getId())
-            .execute();
-
-
-        // when
-        final LockedTasksBatch task2Batch = TestUtil.doRepeatedly(() ->
-            client
-                .taskTopic(0)
-                .pollAndLock()
-                .taskType("bar")
-                .lockTime(100000L)
-                .maxTasks(5)
-                .execute())
-            .until(
-                (tasks) -> !tasks.getLockedTasks().isEmpty());
-
-        // then
-        assertThat(task2Batch.getLockedTasks()).hasSize(1);
-
-        final LockedTask task2 = task2Batch.getLockedTasks().get(0);
-
-        assertThat(task2.getId()).isNotEqualTo(task1.getId());
-
-        final Long result = client.taskTopic(0).complete()
-            .taskKey(task2.getId())
-            .execute();
-
-        // then
-        assertThat(result).isEqualTo(task2.getId());
-    }
-
-    @Test
-    public void shouldExecuteServiceTaskWithoutOutgoingFlow()
-    {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
-
-        workflowService.deploy().bpmnModelInstance(wrap(oneTaskProcess("foo"))
-                .removeFlowNode("endEvent")).execute();
-
-        // given
-        TestUtil.doRepeatedly(() ->
-            workflowService
-                    .create()
-                    .bpmnProcessId("foo")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("(1-3)"));
-
-        // when
-        final LockedTasksBatch tasksBatch = TestUtil.doRepeatedly(() ->
-            client
-                .taskTopic(0)
-                .pollAndLock()
-                .taskType("foo")
-                .lockTime(100000L)
-                .maxTasks(1)
-                .execute())
-            .until(
-                (tasks) -> !tasks.getLockedTasks().isEmpty());
-
-        // then
-        assertThat(tasksBatch.getLockedTasks()).hasSize(1);
-
-        final LockedTask task = tasksBatch.getLockedTasks().get(0);
-        assertThat(task.getId()).isGreaterThan(0);
-
-        final Long result = client
-            .taskTopic(0)
-            .complete()
-            .taskKey(task.getId())
-            .execute();
-
-        assertThat(result).isEqualTo(task.getId());
-    }
 }

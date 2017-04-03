@@ -175,7 +175,13 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         @Override
         public boolean executeSideEffects()
         {
-            return writeResponse();
+            boolean success = true;
+
+            if (sourceEventMetadata.hasRequestMetadata())
+            {
+                success = writeResponse();
+            }
+            return success;
         }
 
         @Override

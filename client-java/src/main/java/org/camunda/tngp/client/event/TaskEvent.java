@@ -22,7 +22,7 @@ public interface TaskEvent
     /**
      * @return headers associated with this task
      */
-    Map<String, String> getHeaders();
+    Map<String, Object> getHeaders();
 
     /**
      * @return id of the lock owner

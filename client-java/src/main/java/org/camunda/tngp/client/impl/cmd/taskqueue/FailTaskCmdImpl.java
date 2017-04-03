@@ -25,7 +25,7 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     protected int retries = -1;
     protected String taskType;
     protected byte[] payload;
-    protected Map<String, String> headers = new HashMap<>();
+    protected Map<String, Object> headers = new HashMap<>();
     protected Exception failure;
 
     public FailTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
@@ -76,14 +76,14 @@ public class FailTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> imp
     }
 
     @Override
-    public FailTaskCmd addHeader(String key, String value)
+    public FailTaskCmd addHeader(String key, Object value)
     {
         headers.put(key, value);
         return this;
     }
 
     @Override
-    public FailTaskCmd headers(Map<String, String> newHeaders)
+    public FailTaskCmd headers(Map<String, Object> newHeaders)
     {
         headers.clear();
         headers.putAll(newHeaders);

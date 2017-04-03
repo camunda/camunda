@@ -17,6 +17,7 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
     protected int readOffset = 0;
     protected int writeOffset = 0;
     protected AtomicInteger pendingEvents = new AtomicInteger(0);
+    protected AtomicInteger eventCount = new AtomicInteger(0);
 
     protected Object monitor = new Object();
     protected static final long MAX_WAIT = 10 * 1000L;
@@ -85,6 +86,8 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
         writeOffset += eventLength;
 
         pendingEvents.incrementAndGet();
+        eventCount.incrementAndGet();
+
         synchronized (monitor)
         {
             monitor.notifyAll();
@@ -103,6 +106,12 @@ public class SubscribedEventCollector implements TransportChannelHandler, Suppli
     {
         this.pendingEvents.set(0);
         this.readOffset = writeOffset;
+    }
+
+    public void moveToHead()
+    {
+        this.pendingEvents.set(eventCount.get());
+        this.readOffset = 0;
     }
 
     public int getPendingEvents()

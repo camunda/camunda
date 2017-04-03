@@ -22,10 +22,10 @@ public interface CompleteTaskCmd extends SetPayloadCmd<Long, CompleteTaskCmd>
     /**
      * Add the given key-value-pair to the task header.
      */
-    CompleteTaskCmd addHeader(String key, String value);
+    CompleteTaskCmd addHeader(String key, Object value);
 
     /**
      * Sets the given key-value-pairs as the task header.
      */
-    CompleteTaskCmd headers(Map<String, String> headers);
+    CompleteTaskCmd headers(Map<String, Object> headers);
 }

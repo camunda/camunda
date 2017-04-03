@@ -17,7 +17,7 @@ public interface UpdateTaskRetriesCmd extends SetPayloadCmd<Long, UpdateTaskRetr
     /**
      * Sets the given key-value-pairs as the task header.
      */
-    UpdateTaskRetriesCmd headers(Map<String, String> headers);
+    UpdateTaskRetriesCmd headers(Map<String, Object> headers);
 
     /**
      * Sets the remaining retries of the task. If the retries are equal to zero

@@ -32,6 +32,12 @@ public class ExecuteCommandRequestBuilder
         return this;
     }
 
+    public ExecuteCommandRequestBuilder key(long key)
+    {
+        request.key(key);
+        return this;
+    }
+
     public ExecuteCommandRequestBuilder eventTypeTask()
     {
         return eventType(EventType.TASK_EVENT);

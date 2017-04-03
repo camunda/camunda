@@ -163,7 +163,7 @@ public class TaskSubscriptionTest
         // when
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task ->
         {
-            final Map<String, String> headers = task.getHeaders();
+            final Map<String, Object> headers = task.getHeaders();
             headers.put("b", "4");
             headers.put("c", "5");
 
@@ -188,7 +188,6 @@ public class TaskSubscriptionTest
         final Task task = taskHandler.getHandledTasks().get(0);
         assertThat(task.getKey()).isEqualTo(taskKey);
         assertThat(task.getType()).isEqualTo("foo");
-        assertThat(task.getWorkflowInstanceId()).isNull();
         assertThat(task.getLockExpirationTime()).isGreaterThan(Instant.now());
 
         waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));

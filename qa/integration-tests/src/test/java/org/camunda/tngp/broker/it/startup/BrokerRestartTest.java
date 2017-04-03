@@ -1,8 +1,19 @@
 package org.camunda.tngp.broker.it.startup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.regex.Pattern;
+
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.process.ServiceTaskTest;
 import org.camunda.tngp.broker.it.taskqueue.TaskSubscriptionTest.RecordingTaskHandler;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
@@ -16,15 +27,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.regex.Pattern;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @Ignore
 public class BrokerRestartTest
@@ -61,10 +63,17 @@ public class BrokerRestartTest
     {
         client = clientRule.getClient();
 
+        final BpmnModelInstance modelInstance = wrap(Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .serviceTask("task")
+                .endEvent("end")
+                .done())
+            .taskDefinition("task", "foo", 3);
+
         clientRule.getClient()
             .workflowTopic(0)
             .deploy()
-            .bpmnModelInstance(ServiceTaskTest.oneTaskProcess("foo"))
+            .bpmnModelInstance(modelInstance)
             .execute();
     }
 

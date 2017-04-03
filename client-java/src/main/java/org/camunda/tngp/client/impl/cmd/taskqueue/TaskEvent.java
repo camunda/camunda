@@ -21,7 +21,7 @@ public class TaskEvent
     private Integer lockOwner;
     private Integer retries;
     private String type;
-    private Map<String, String> headers;
+    private Map<String, Object> headers;
     private byte[] payload;
 
     public TaskEventType getEventType()
@@ -54,12 +54,12 @@ public class TaskEvent
         this.type = type;
     }
 
-    public Map<String, String> getHeaders()
+    public Map<String, Object> getHeaders()
     {
         return headers;
     }
 
-    public void setHeaders(Map<String, String> headers)
+    public void setHeaders(Map<String, Object> headers)
     {
         this.headers = headers;
     }

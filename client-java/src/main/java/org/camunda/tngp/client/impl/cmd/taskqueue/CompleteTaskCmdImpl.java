@@ -24,7 +24,7 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected int lockOwner = -1;
     protected String taskType;
     protected byte[] payload;
-    protected Map<String, String> headers = new HashMap<>();
+    protected Map<String, Object> headers = new HashMap<>();
 
     public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
     {
@@ -67,14 +67,14 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     }
 
     @Override
-    public CompleteTaskCmd addHeader(String key, String value)
+    public CompleteTaskCmd addHeader(String key, Object value)
     {
         headers.put(key, value);
         return this;
     }
 
     @Override
-    public CompleteTaskCmd headers(Map<String, String> newHeaders)
+    public CompleteTaskCmd headers(Map<String, Object> newHeaders)
     {
         headers.clear();
         headers.putAll(newHeaders);
