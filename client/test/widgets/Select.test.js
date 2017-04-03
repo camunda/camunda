@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {jsx} from 'view-utils';
+import {jsx, List} from 'view-utils';
 import sinon from 'sinon';
 import {createMockComponent, mountTemplate, selectByText, triggerEvent} from 'testHelpers';
 import {Select, Option, __set__, __ResetDependency__} from 'widgets/Select';
@@ -122,6 +122,50 @@ describe('<Select>', () => {
 
       expect(secondOnValue.calledWith({name: 'B2', value:'b2'})).to.eql(true);
       expect(firstOnValue.called).to.eql(false);
+    });
+  });
+
+  describe('when one <Select> component is used multiple times', () => {
+    let node;
+    let state;
+    let firstSelectNode;
+    let secondSelectNode;
+
+    beforeEach(() => {
+      state = [2, 3];
+
+      ({node, update} = mountTemplate(<List>
+        <div class="element">
+          <Select onValueSelected={(item) => {}}>
+            <Option value="d" isDefault>def</Option>
+            <Option value="d2">dd</Option>
+          </Select>
+        </div>
+      </List>));
+
+      update(state);
+
+      ([firstSelectNode, secondSelectNode] = node.querySelectorAll('.element'));
+    });
+
+    it('both select usages should have default values set', () => {
+      expect(firstSelectNode).to.contain.text('def');
+      expect(secondSelectNode).to.contain.text('def');
+    });
+
+    it('should be possible to use one select without changing other', () => {
+      const [ddOption] = selectByText(
+        firstSelectNode.querySelectorAll('a'),
+        'dd'
+      );
+
+      triggerEvent({
+        node: ddOption,
+        eventName: 'click'
+      });
+
+      expect(firstSelectNode).to.contain.text('dd');
+      expect(secondSelectNode).to.contain.text('def');
     });
   });
 });

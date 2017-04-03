@@ -4,29 +4,30 @@ import {Dropdown, DropdownItem} from './Dropdown';
 const SELECT_EVENT = 'SELECT_EVENT';
 
 export function Select({onValueSelected, children}) {
-  const Reference = createReferenceComponent();
-  let currentItem;
-
-  // Template is split into two parts to solve problems with components application
-  // Event listener on select node must be added before <Option> component in children
-  // are applied to node. And the easiest solution is just to split template into two parts.
-  // So it might seem a little bit strange, but there is good reason for it.
-  const template = <div>
-    <Reference name="select" />
-  </div>;
-
-  const dropdownTemplate = <Dropdown>
-    <Socket name="label">
-      <span>
-        <Reference name="label" />
-      </span>
-    </Socket>
-    <Socket name="list">
-      <Children children={children} />
-    </Socket>
-  </Dropdown>;
-
   return (node, eventsBus) => {
+    const Reference = createReferenceComponent();
+
+    // Template is split into two parts to solve problems with components application
+    // Event listener on select node must be added before <Option> component in children
+    // are applied to node. And the easiest solution is just to split template into two parts.
+    // So it might seem a little bit strange, but there is good reason for it.
+    const template = <div>
+      <Reference name="select" />
+    </div>;
+
+    const dropdownTemplate = <Dropdown>
+      <Socket name="label">
+        <span>
+          <Reference name="label" />
+        </span>
+      </Socket>
+      <Socket name="list">
+        <Children children={children} />
+      </Socket>
+    </Dropdown>;
+
+    let currentItem;
+
     const templateUpdate = template(node, eventsBus);
     const selectNode = Reference.getNode('select');
 
@@ -41,16 +42,16 @@ export function Select({onValueSelected, children}) {
       updateLabelNode,
       dropdownTemplate(selectNode, eventsBus)
     ];
-  };
 
-  function updateLabelNode() {
-    const labelNode = Reference.getNode('label');
-    const text = currentItem && currentItem.name ? currentItem.name : currentItem;
+    function updateLabelNode() {
+      const labelNode = Reference.getNode('label');
+      const text = currentItem && currentItem.name ? currentItem.name : currentItem;
 
-    if (labelNode && text && labelNode.innerText !== text) {
-      labelNode.innerText = text;
+      if (labelNode && text && labelNode.innerText !== text) {
+        labelNode.innerText = text;
+      }
     }
-  }
+  };
 }
 
 export function Option({children, value, isDefault = false}) {
