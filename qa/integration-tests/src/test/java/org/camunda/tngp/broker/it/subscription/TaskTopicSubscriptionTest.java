@@ -38,7 +38,7 @@ public class TaskTopicSubscriptionTest
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(10);
+    public Timeout timeout = Timeout.seconds(20);
 
     protected TngpClient client;
 

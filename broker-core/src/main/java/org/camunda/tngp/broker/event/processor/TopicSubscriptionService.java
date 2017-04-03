@@ -163,21 +163,12 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
             .install();
     }
 
-    protected CompletableFuture<Void> removeStreamProcessorService(ServiceName<StreamProcessorController> processorName)
-    {
-        return serviceContext.removeService(processorName);
-    }
-
     public void onStreamRemoved(ServiceName<LogStream> logStreamServiceName, LogStream logStream)
     {
 
         asyncContext.runAsync(() ->
         {
             managersByLog.remove(logStream.getId());
-
-            final ServiceName<StreamProcessorController> ackServiceName =
-                    TopicSubscriptionNames.subscriptionManagementServiceName(logStream.getLogName());
-            removeStreamProcessorService(ackServiceName);
         });
     }
 
