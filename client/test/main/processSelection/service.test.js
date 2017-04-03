@@ -1,12 +1,13 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {loadProcessDefinitions, openDefinition,
+import {loadProcessDefinitions, openDefinition, setVersionForProcess,
         __set__, __ResetDependency__} from 'main/processSelection/service';
 
 describe('ProcessSelection service', () => {
   const START_ACTION = 'START_ACTION';
   const STOP_ACTION = 'STOP_ACTION';
+  const SET_ACTION = 'SET_ACTION';
   const processDefinitionResponse = 'some process definition data';
 
   let router;
@@ -14,6 +15,7 @@ describe('ProcessSelection service', () => {
   let get;
   let createLoadProcessDefinitionsAction;
   let createLoadProcessDefinitionsResultAction;
+  let createSetVersionAction;
 
   setupPromiseMocking();
 
@@ -38,6 +40,9 @@ describe('ProcessSelection service', () => {
 
     createLoadProcessDefinitionsResultAction = sinon.stub().returns(STOP_ACTION);
     __set__('createLoadProcessDefinitionsResultAction', createLoadProcessDefinitionsResultAction);
+
+    createSetVersionAction = sinon.stub().returns(SET_ACTION);
+    __set__('createSetVersionAction', createSetVersionAction);
   });
 
   afterEach(() => {
@@ -46,6 +51,7 @@ describe('ProcessSelection service', () => {
     __ResetDependency__('dispatchAction');
     __ResetDependency__('createLoadProcessDefinitionsAction');
     __ResetDependency__('createLoadProcessDefinitionsResultAction');
+    __ResetDependency__('createSetVersionAction');
   });
 
   describe('loadProcessDefinitions', () => {
@@ -74,6 +80,18 @@ describe('ProcessSelection service', () => {
       openDefinition('a');
 
       expect(router.goTo.calledWith('processDisplay', {definition: 'a'})).to.eql(true);
+    });
+  });
+
+  describe('setVersionForProcess', () => {
+    it('should create an action with the arguments', () => {
+      setVersionForProcess('a', 1);
+      expect(createSetVersionAction.calledWith('a', 1));
+    });
+
+    it('should dispatch the action', () => {
+      setVersionForProcess('a', 1);
+      expect(dispatchAction.calledWith(SET_ACTION));
     });
   });
 });

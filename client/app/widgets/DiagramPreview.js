@@ -2,7 +2,7 @@ import {jsx, updateOnlyWhenStateChanges, withSelector,  createReferenceComponent
 import Viewer from 'bpmn-js/lib/Viewer';
 import {resetZoom} from './Diagram';
 import {Loader} from './LoadingIndicator';
-import {createQueue, runOnce} from 'utils';
+import {createQueue} from 'utils';
 
 const queue = createQueue();
 
@@ -25,7 +25,7 @@ export const DiagramPreview = withSelector(() => {
       container: viewerNode
     });
 
-    const update = runOnce((diagram) => {
+    const update = (diagram) => {
       queue.addTask((done) => {
         viewer.importXML(diagram, (err) => {
           loaderNode.style.display = 'none';
@@ -38,7 +38,7 @@ export const DiagramPreview = withSelector(() => {
           done();
         });
       });
-    });
+    };
 
     return [templateUpdate, updateOnlyWhenStateChanges(update)];
   };
