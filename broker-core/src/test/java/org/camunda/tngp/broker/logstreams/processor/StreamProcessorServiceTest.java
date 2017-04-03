@@ -155,6 +155,22 @@ public class StreamProcessorServiceTest
         assertThat(reprocessingEventFilter.applies(event)).isFalse();
     }
 
+    public void shouldOfferReadOnlyOption()
+    {
+        // given
+        final StreamProcessorService streamProcessorService =
+            new StreamProcessorService("foo", 1, mock(StreamProcessor.class))
+            .readOnly(true);
+        injectMocks(streamProcessorService);
+
+        // when
+        streamProcessorService.start(mock(ServiceStartContext.class));
+
+        // then
+
+
+    }
+
     protected void injectMocks(StreamProcessorService streamProcessorService)
     {
         final AgentRunnerServices agentRunnerServices = mock(AgentRunnerServices.class);

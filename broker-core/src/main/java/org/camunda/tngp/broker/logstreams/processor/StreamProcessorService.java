@@ -30,6 +30,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
     protected MetadataFilter customEventFilter;
     protected EventFilter customReprocessingEventFilter;
+    protected boolean readOnly;
 
     protected MetadataFilter versionFilter = (m) ->
     {
@@ -62,6 +63,12 @@ public class StreamProcessorService implements Service<StreamProcessorController
     public StreamProcessorService reprocessingEventFilter(EventFilter reprocessingEventFilter)
     {
         this.customReprocessingEventFilter = reprocessingEventFilter;
+        return this;
+    }
+
+    public StreamProcessorService readOnly(boolean readOnly)
+    {
+        this.readOnly = readOnly;
         return this;
     }
 
@@ -101,6 +108,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
             .snapshotPositionProvider(snapshotPositionProvider)
             .agentRunnerService(agentRunnerService)
             .eventFilter(eventFilter)
+            .readOnly(readOnly)
             .reprocessingEventFilter(reprocessingEventFilter)
             .build();
 

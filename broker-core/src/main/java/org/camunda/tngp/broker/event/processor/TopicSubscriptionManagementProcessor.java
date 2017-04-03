@@ -226,7 +226,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 serviceName.getName(),
                 StreamProcessorIds.TOPIC_SUBSCRIPTION_PROCESSOR_ID,
                 processor)
-            .eventFilter(TopicSubscriptionPushProcessor.eventFilter());
+            .eventFilter(TopicSubscriptionPushProcessor.eventFilter())
+            .readOnly(true);
 
         return serviceContext.createService(serviceName, streamProcessorService)
             .dependency(streamServiceName, streamProcessorService.getSourceStreamInjector())
