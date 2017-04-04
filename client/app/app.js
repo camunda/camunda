@@ -1,23 +1,13 @@
-import {addSplash} from './splash';
-
-const removeSplash = addSplash();
-
-require.ensure(['lodash.isequal', 'redux', './init'], () => {
-  if (isPolyfillNeeded()) {
-    require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
-      removeSplash();
-
-      require('babel-polyfill');
-      require('whatwg-fetch');
-
-      require('./init');
-    });
-  } else {
-    removeSplash();
+if (isPolyfillNeeded()) {
+  require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
+    require('babel-polyfill');
+    require('whatwg-fetch');
 
     require('./init');
-  }
-});
+  });
+} else {
+  require('./init');
+}
 
 require.ensure(['./styles.less'], () => {
   require('./styles.less');

@@ -92,9 +92,6 @@ module.exports = {
     ]
   },
   plugins: [
-    new webpack.optimize.CommonsChunkPlugin({
-      names: ['manifest']
-    }),
     new HtmlWebpackPlugin({
       title: 'Camunda Optimize',
       template: 'app/index.html'
