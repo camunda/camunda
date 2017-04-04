@@ -12,9 +12,8 @@
  */
 package org.camunda.tngp.broker.it.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -29,7 +28,7 @@ public class RecordingTaskEventHandler extends ExternalResource
 {
     protected String subscriptionName = "recording-handler";
 
-    protected final List<TaskEvent> taskEvents = Collections.synchronizedList(new ArrayList<>());
+    protected final List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
 
     protected final ClientRule clientRule;
     protected final int topicId;

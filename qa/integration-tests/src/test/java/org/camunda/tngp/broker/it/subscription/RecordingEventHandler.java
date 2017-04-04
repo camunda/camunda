@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.camunda.tngp.client.event.EventMetadata;
@@ -18,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class RecordingEventHandler implements TopicEventHandler
 {
 
-    protected List<RecordedEvent> events = new ArrayList<>();
+    protected List<RecordedEvent> events = new CopyOnWriteArrayList<>();
     protected ObjectMapper objectMapper = new ObjectMapper();
 
 
