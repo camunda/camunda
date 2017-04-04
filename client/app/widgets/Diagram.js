@@ -1,13 +1,27 @@
 import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
+import {Loader} from './LoadingIndicator';
 
 export function createDiagram() {
   const BpmnViewer = createBpmnViewer();
   const Diagram = withSelector(({createOverlaysRenderer}) => {
-    return <div className="diagram__holder">
-      <BpmnViewer createOverlaysRenderer={createOverlaysRenderer} />
-    </div>;
+    return (node, eventsBus) => {
+      const template = <div>
+        <Loader className="diagram-loading" style="position: absolute" />
+        <div className="diagram__holder">
+          <BpmnViewer onLoaded={onLoaded} createOverlaysRenderer={createOverlaysRenderer} />
+        </div>
+      </div>;
+      const templateUpdate = template(node, eventsBus);
+      const loaderNode = node.querySelector('.diagram-loading');
+
+      return templateUpdate;
+
+      function onLoaded() {
+        loaderNode.style.display = 'none';
+      }
+    };
   });
 
   Diagram.getViewer = BpmnViewer.getViewer;
@@ -18,7 +32,7 @@ export function createDiagram() {
 function createBpmnViewer() {
   let viewer;
 
-  const BpmnViewer = ({createOverlaysRenderer = []}) => {
+  const BpmnViewer = ({onLoaded, createOverlaysRenderer = []}) => {
     return (node, eventsBus) => {
       viewer = new Viewer({
         container: node
@@ -61,6 +75,8 @@ function createBpmnViewer() {
               state: display,
               diagramRendered
             }));
+
+            onLoaded();
           });
         }
       }

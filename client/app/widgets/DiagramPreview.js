@@ -10,7 +10,7 @@ export const DiagramPreview = withSelector(() => {
   const Reference = createReferenceComponent();
 
   const template = <div style="position: relative; height: 100%; width: 100%">
-    <Loader className="diagram-preview-loading" style="position: absolute" />
+    <Loader className="diagram-loading" style="position: absolute" />
     <div className="diagram__holder" style="position: relative;">
       <Reference name="viewer" />
     </div>
@@ -19,7 +19,7 @@ export const DiagramPreview = withSelector(() => {
   return (node, eventsBus) => {
     const templateUpdate = template(node, eventsBus);
     const viewerNode = Reference.getNode('viewer');
-    const loaderNode = node.querySelector('.diagram-preview-loading');
+    const loaderNode = node.querySelector('.diagram-loading');
 
     const viewer = new Viewer({
       container: viewerNode

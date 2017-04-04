@@ -18,6 +18,7 @@ describe('<Diagram>', () => {
   let renderOverlays;
   let createOverlaysRenderer;
   let Diagram;
+  let node;
 
   beforeEach(() => {
     initialState = {
@@ -74,7 +75,7 @@ describe('<Diagram>', () => {
 
     Diagram = createDiagram();
 
-    ({update} = mountTemplate(
+    ({update, node} = mountTemplate(
       <Diagram createOverlaysRenderer={createOverlaysRenderer} />
     ));
   });
@@ -86,6 +87,17 @@ describe('<Diagram>', () => {
   it('should provide access to the bpmn-viewer instance', () => {
     expect(Diagram.getViewer()).to.exist;
     expect(Diagram.getViewer().constructor.name).to.eql('Viewer');
+  });
+
+  it('should display the loader', () => {
+    expect(node).to.contain('.diagram-loading');
+    expect(node.querySelector('.diagram-loading').style.display).to.eql('');
+  });
+
+  it('should hide the loader after diagram is loaded', () => {
+    update(loadedDiagramState);
+
+    expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
   });
 
   describe('overlays', () => {
