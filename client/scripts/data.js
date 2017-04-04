@@ -5,6 +5,7 @@ var bpmn = require('./bpmn');
 var states = ['COMPLETED', 'CREATED'];
 var eventsFactor = 50;
 var processInstanceFactor = 4;
+var maxVersions = 5;
 var isCI = process.env.NODE_ENV === 'ci';
 
 module.exports = {
@@ -32,21 +33,30 @@ function getData() {
 }
 
 function createProcessDefinitions(bpmnEntries) {
-  return bpmnEntries.map(function(entry) {
-    return {
-      id: uuid(),
-      key: entry.key,
-      name: entry.key
-    };
-  });
+  return bpmnEntries.reduce(function(result, entry) {
+    var numberOfVersions = Math.ceil(Math.random() * maxVersions);
+
+    for(var i = 1; i <= numberOfVersions; i++) {
+      result.push({
+        id: uuid(),
+        key: entry.key,
+        version: i,
+        name: entry.key
+      });
+    }
+
+    return result;
+  }, []);
 }
 
 function createXmlEntries(bpmnEntries, processDefinitions) {
-  return bpmnEntries.map(function(entry, index) {
-    var id = processDefinitions[index].id;
+  return processDefinitions.map(function(definition) {
+    var entry = bpmnEntries.filter(function(entry) {
+      return definition.key === entry.key;
+    })[0];
 
     return {
-      id: id,
+      id: definition.id,
       bpmn20Xml: entry.xml
     };
   });
