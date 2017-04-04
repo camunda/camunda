@@ -2,7 +2,7 @@ import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './diagram';
 import {Statistics} from './statistics';
 import {isLoading} from 'utils';
-import {loadData} from './service';
+import {loadData, loadDiagram} from './service';
 import {isViewSelected, getView as getControlsView} from './controls';
 import {LoadingIndicator} from 'widgets';
 import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
@@ -85,5 +85,9 @@ function Process() {
     return isLoading(diagram) || isLoading(heatmap);
   }
 
-  return template;
+  return (node, eventsBus) => {
+    loadDiagram();
+
+    return template(node, eventsBus);
+  };
 }

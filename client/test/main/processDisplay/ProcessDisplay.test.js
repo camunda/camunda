@@ -17,6 +17,7 @@ describe('<ProcessDisplay>', () => {
   let node;
   let update;
   let state;
+  let loadDiagram;
 
   beforeEach(() => {
     state = {
@@ -52,6 +53,9 @@ describe('<ProcessDisplay>', () => {
     loadData = 'load-data';
     __set__('loadData', loadData);
 
+    loadDiagram = sinon.spy();
+    __set__('loadDiagram', loadDiagram);
+
     ({node, update} = mountTemplate(<ProcessDisplay />));
   });
 
@@ -62,7 +66,11 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('createCreateAnalyticsRendererFunction');
     __ResetDependency__('createDiagramControlsIntegrator');
     __ResetDependency__('loadDiagram');
-    __ResetDependency__('loadHeatmap');
+    __ResetDependency__('loadDiagram');
+  });
+
+  it('should load diagram xml on starup', () => {
+    expect(loadDiagram.calledOnce).to.eql(true);
   });
 
   it('should contain diagram section', () => {

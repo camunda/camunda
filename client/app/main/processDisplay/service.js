@@ -18,7 +18,6 @@ export function loadData({query, view}) {
   };
 
   if (areParamsValid(params)) {
-    loadDiagram(params);
     if (includes(['duration', 'frequency', 'branch_analysis'], view)) {
       loadHeatmap(view, params);
     }
@@ -41,7 +40,7 @@ export function loadHeatmap(view, filter) {
     });
 }
 
-export function loadDiagram({processDefinitionId}) {
+export function loadDiagram(processDefinitionId = getDefinitionId()) {
   dispatchAction(createLoadingDiagramAction());
   get('/api/process-definition/' + processDefinitionId + '/xml')
     .then(response => response.text())

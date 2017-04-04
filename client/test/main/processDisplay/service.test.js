@@ -86,15 +86,6 @@ describe('ProcessDisplay service', () => {
       __ResetDependency__('loadDiagram');
     });
 
-    it('should load diagram if filter is valid', () => {
-      loadData({
-        definition: 'some-id',
-        query: []
-      });
-
-      expect(loadDiagram.calledOnce).to.eql(true, 'expected diagram to be loaded');
-    });
-
     it('should load heatmap when view is duration or frequency', () => {
       loadData({
         definition: 'some-id',
@@ -111,7 +102,7 @@ describe('ProcessDisplay service', () => {
       expect(loadHeatmap.callCount).to.eql(2, 'expected heatmap to be loaded');
     });
 
-    it('should load heatmap and diagram with correct process definition and filter', () => {
+    it('should load heatmap with correct process definition and filter', () => {
       const start = 'start-date';
       const end = 'end-date';
       const expectedQuery = {
@@ -149,7 +140,6 @@ describe('ProcessDisplay service', () => {
       });
 
       expect(loadHeatmap.calledWith('duration', expectedQuery)).to.eql(true, 'expected heatmap to be loaded with correct query');
-      expect(loadDiagram.calledWith(expectedQuery)).to.eql(true, 'expected diagram to be loaded with correct query');
     });
   });
 
@@ -205,7 +195,7 @@ describe('ProcessDisplay service', () => {
       }));
       __set__('get', get);
 
-      loadDiagram(filter);
+      loadDiagram();
     });
 
     afterEach(() => {
