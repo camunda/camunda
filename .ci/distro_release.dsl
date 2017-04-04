@@ -35,7 +35,7 @@ def releaseProperties =
     tag: '${RELEASE_VERSION}',
     releaseVersion: '${RELEASE_VERSION}',
     developmentVersion: '${DEVELOPMENT_VERSION}',
-    arguments: '--settings=${NEXUS_SETTINGS} -Dskip.central.release=true'
+    arguments: '--settings=${NEXUS_SETTINGS} -Dskip.central.release=true -DskipTests=true'
 ]
 
 
@@ -114,7 +114,7 @@ mavenJob(jobName)
                 {
                     mavenInstallation mavenVersion
                     providedSettings mavenSettings
-                    goals 'release:prepare release:perform -B'
+                    goals 'release:prepare release:perform -B -DskipTests=true'
                     properties releaseProperties
                     localRepository LocalRepositoryLocation.LOCAL_TO_WORKSPACE
                 }
