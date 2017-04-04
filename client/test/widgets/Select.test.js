@@ -11,6 +11,7 @@ describe('<Select>', () => {
   let onValueSelected;
   let dropdownListNode;
   let dropdownLabelNode;
+  let state;
 
   beforeEach(() => {
     Dropdown = createMockComponent('Dropdown', true);
@@ -20,12 +21,13 @@ describe('<Select>', () => {
     __set__('Socket', MockSocket);
 
     onValueSelected = sinon.spy();
+    state = {};
 
     ({update} = mountTemplate(<Select onValueSelected={onValueSelected}>
       <Option value="ala" isDefault>Ala</Option>,
       <Option value="marcin">Marcin</Option>
     </Select>));
-    update({});
+    update(state);
 
     dropdownListNode = MockSocket.getChildrenNode({name: 'list'});
     dropdownLabelNode = MockSocket.getChildrenNode({name: 'label'});
@@ -57,10 +59,13 @@ describe('<Select>', () => {
       eventName: 'click'
     });
 
-    update({a: 1});
+    update();
 
     expect(dropdownLabelNode).to.contain.text('Marcin');
-    expect(onValueSelected.calledWith({name: 'Marcin', value: 'marcin'}))
+    // The second argument passed to onValueSelected is state at the moment
+    // of triggering event, not last update. Which is just how
+    // it supposed to be, but can be confusing it this test case.
+    expect(onValueSelected.calledWith({name: 'Marcin', value: 'marcin'}, state))
       .to.eql(true, 'expect onValueSelect to be called with proper item');
   });
 

@@ -1,4 +1,4 @@
-import {jsx, Socket, Children, $document, createReferenceComponent} from 'view-utils';
+import {jsx, Socket, Children, $document, createReferenceComponent, OnEvent} from 'view-utils';
 import {Dropdown, DropdownItem} from './Dropdown';
 
 const SELECT_EVENT = 'SELECT_EVENT';
@@ -13,6 +13,7 @@ export function Select({onValueSelected, children}) {
     // So it might seem a little bit strange, but there is good reason for it.
     const template = <div>
       <Reference name="select" />
+      <OnEvent event={SELECT_EVENT} listener={onSelection} />
     </div>;
 
     const dropdownTemplate = <Dropdown>
@@ -31,17 +32,17 @@ export function Select({onValueSelected, children}) {
     const templateUpdate = template(node, eventsBus);
     const selectNode = Reference.getNode('select');
 
-    selectNode.addEventListener(SELECT_EVENT, ({item}) => {
-      currentItem = item;
-
-      onValueSelected(item);
-    });
-
     return [
       templateUpdate,
       updateLabelNode,
       dropdownTemplate(selectNode, eventsBus)
     ];
+
+    function onSelection({event: {item}, state}) {
+      currentItem = item;
+
+      onValueSelected(item, state);
+    }
 
     function updateLabelNode() {
       const labelNode = Reference.getNode('label');
