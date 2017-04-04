@@ -78,6 +78,7 @@
     "bpmn-js": "^0.20.4",
     "d3": "^4.7.0",
     "d3-tip": "^0.7.1",
+    "deep-copy": "^1.2.0",
     "heatmap.js": "^2.0.5",
     "jquery": "2.2.4",
     "lodash.isequal": "^4.4.0",

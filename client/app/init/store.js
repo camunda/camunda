@@ -1,5 +1,6 @@
 import {pipe, ACTION_EVENT_NAME} from 'view-utils';
 import {createStore} from 'redux';
+import deepCopy from 'deep-copy';
 
 export function initStore(updateComponent, reducer) {
   const store = createStore(reducer, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
@@ -8,6 +9,7 @@ export function initStore(updateComponent, reducer) {
     setTimeout(
       pipe(
         store.getState,
+        deepCopy,
         updateComponent
       ),
       0
