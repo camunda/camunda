@@ -127,7 +127,7 @@ JOBS.each
         }
 
         blockOnUpstreamProjects()
-        logRotator(-1, 5, -1, 1)
+        logRotator(-1, 50, -1, 50)
 
     }
 
