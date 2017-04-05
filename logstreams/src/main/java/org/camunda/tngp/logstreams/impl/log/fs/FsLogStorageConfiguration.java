@@ -5,7 +5,7 @@ import java.io.File;
 public class FsLogStorageConfiguration
 {
     protected static final String FRAGMENT_FILE_NAME_TEMPLATE = "%s" + File.separatorChar + "%02d.data";
-    protected static final String FRAGMENT_FILE_NAME_PATTERN = "\\d{2}.data";
+    protected static final String FRAGMENT_FILE_NAME_PATTERN = "\\d+.data";
 
     protected static final String SEGMENT_FILE_TRUNCATED_SUFFIX = ".truncated";
     protected static final String SEGMENT_FILE_BACKUP_SUFFIX = ".bak";

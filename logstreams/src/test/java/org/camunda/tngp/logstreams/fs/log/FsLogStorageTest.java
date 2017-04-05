@@ -32,6 +32,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -201,6 +202,41 @@ public class FsLogStorageTest
         final long result = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
 
         assertThat(result).isEqualTo(LogStorage.OP_RESULT_BLOCK_SIZE_TOO_BIG);
+
+    }
+
+    @Test
+    public void shouldBeAbleToCreateMoreThan100Segments()
+    {
+
+        final byte[] oneSegment = new byte[SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH];
+
+        new Random().nextBytes(oneSegment);
+
+        fsLogStorage.open();
+
+        long result = 0;
+
+        for (int i = 0; i < 101; i++)
+        {
+            Arrays.fill(oneSegment, (byte)i);
+            result = fsLogStorage.append(ByteBuffer.wrap(oneSegment));
+        }
+
+        fsLogStorage.close();
+
+
+        fsLogStorage.open();
+
+
+        final ByteBuffer readBuffer = ByteBuffer.allocate(SEGMENT_SIZE);
+
+        final long ret = fsLogStorage.read(readBuffer, result);
+
+        assertThat(ret).isNotEqualTo(LogStorage.OP_RESULT_INVALID_ADDR);
+
+        fsLogStorage.close();
+
     }
 
     @Test
