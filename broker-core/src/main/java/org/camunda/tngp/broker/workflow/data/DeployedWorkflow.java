@@ -33,10 +33,9 @@ public class DeployedWorkflow extends UnpackedObject
         return bpmnProcessIdProp.getValue();
     }
 
-    public DeployedWorkflow setBpmnProcessId(String bpmnProcessId)
+    public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId)
     {
-        this.bpmnProcessIdProp.setValue(bpmnProcessId);
-        return this;
+        return setBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
     }
 
     public DeployedWorkflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length)

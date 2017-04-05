@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.workflow.graph;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
@@ -31,10 +32,10 @@ public class BpmnTransformerTests
             .done();
 
         // when
-        final ExecutableProcess process = transformSingleProcess(bpmnModelInstance);
+        final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
 
         // then
-        final ExecutableFlowElement element = process.findFlowElementById("foo");
+        final ExecutableFlowElement element = process.findFlowElementById(wrapString("foo"));
         assertThat(element).isInstanceOf(ExecutableStartEvent.class);
         assertThat(element.getId()).isEqualTo("foo");
         assertThat(element.getName()).isEqualTo("bar");
@@ -53,10 +54,10 @@ public class BpmnTransformerTests
                 .done();
 
         // when
-        final ExecutableProcess process = transformSingleProcess(bpmnModelInstance);
+        final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
 
         // then
-        final ExecutableFlowElement element = process.findFlowElementById("to");
+        final ExecutableFlowElement element = process.findFlowElementById(wrapString("to"));
         assertThat(element).isInstanceOf(ExecutableSequenceFlow.class);
 
         final ExecutableSequenceFlow sequenceFlow = (ExecutableSequenceFlow) element;
@@ -79,10 +80,10 @@ public class BpmnTransformerTests
             .done();
 
         // when
-        final ExecutableProcess process = transformSingleProcess(bpmnModelInstance);
+        final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
 
         // then
-        final ExecutableFlowElement element = process.findFlowElementById("foo");
+        final ExecutableFlowElement element = process.findFlowElementById(wrapString("foo"));
         assertThat(element).isInstanceOf(ExecutableEndEvent.class);
         assertThat(element.getId()).isEqualTo("foo");
         assertThat(element.getName()).isEqualTo("bar");
@@ -100,10 +101,10 @@ public class BpmnTransformerTests
                 .taskDefinition("foo", "test", 4);
 
         // when
-        final ExecutableProcess process = transformSingleProcess(bpmnModelInstance);
+        final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
 
         // then
-        final ExecutableFlowElement element = process.findFlowElementById("foo");
+        final ExecutableFlowElement element = process.findFlowElementById(wrapString("foo"));
         assertThat(element).isInstanceOf(ExecutableServiceTask.class);
 
         final ExecutableServiceTask serviceTask = (ExecutableServiceTask) element;
@@ -115,9 +116,9 @@ public class BpmnTransformerTests
         assertThat(serviceTask.getTaskMetadata().getRetries()).isEqualTo(4);
     }
 
-    protected ExecutableProcess transformSingleProcess(BpmnModelInstance bpmnModelInstance)
+    protected ExecutableWorkflow transformSingleProcess(BpmnModelInstance bpmnModelInstance)
     {
-        final List<ExecutableProcess> processes = bpmnTransformer.transform(bpmnModelInstance);
+        final List<ExecutableWorkflow> processes = bpmnTransformer.transform(bpmnModelInstance);
 
         assertThat(processes.size()).isEqualTo(1);
 

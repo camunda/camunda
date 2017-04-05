@@ -25,10 +25,10 @@ import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
@@ -263,9 +263,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         taskEvent.reset();
     }
 
-    protected ExecutableProcess getProcess(final DirectBuffer bpmnProcessId, int version)
+    protected ExecutableWorkflow getWorkflow(final DirectBuffer bpmnProcessId, int version)
     {
-        ExecutableProcess process = null;
+        ExecutableWorkflow workflow = null;
 
         final long deploymentEventPosition = workflowPositionIndexAccessor.wrap(bpmnProcessId, version).getEventPosition();
 
@@ -280,16 +280,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 deployedWorkflowEvent.readValue(deploymentEvent);
 
                 // currently, it can only be one
-                process = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
+                workflow = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
             }
         }
 
-        if (process == null)
+        if (workflow == null)
         {
             throw new RuntimeException("Failed to start workflow instance. No deployment event found.");
         }
 
-        return process;
+        return workflow;
     }
 
     protected <T extends ExecutableFlowElement> T getCurrentActivity()
@@ -297,11 +297,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         final DirectBuffer bpmnProcessId = workflowInstanceEvent.getBpmnProcessId();
         final int version = workflowInstanceEvent.getVersion();
 
-        final ExecutableProcess process = getProcess(bpmnProcessId, version);
+        final ExecutableWorkflow workflow = getWorkflow(bpmnProcessId, version);
 
         final DirectBuffer currentActivityId = workflowInstanceEvent.getActivityId();
 
-        return process.getChildById(currentActivityId);
+        return workflow.getChildById(currentActivityId);
     }
 
     protected long writeWorkflowEvent(LogStreamWriter writer)
@@ -372,10 +372,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             final DirectBuffer bpmnProcessId = workflowInstanceEvent.getBpmnProcessId();
             final int version = workflowInstanceEvent.getVersion();
 
-            final ExecutableProcess process = getProcess(bpmnProcessId, version);
+            final ExecutableWorkflow workflow = getWorkflow(bpmnProcessId, version);
 
-            final ExecutableStartEvent startEvent = process.getScopeStartEvent();
-            final String activityId = startEvent.getId();
+            final ExecutableStartEvent startEvent = workflow.getScopeStartEvent();
+            final DirectBuffer activityId = startEvent.getId();
 
             workflowInstanceEvent
                 .setEventType(WorkflowInstanceEventType.START_EVENT_OCCURRED)

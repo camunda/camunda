@@ -17,10 +17,10 @@ import static org.camunda.tngp.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.Constants;
@@ -31,7 +31,7 @@ import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEventType;
 import org.camunda.tngp.broker.workflow.graph.WorkflowValidationResultFormatter;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
@@ -160,18 +160,17 @@ public class DeploymentStreamProcessor implements StreamProcessor
 
         protected void collectDeployedWorkflows(final BpmnModelInstance bpmnModelInstance)
         {
-            final List<ExecutableProcess> processes = bpmnTransformer.transform(bpmnModelInstance);
+            final List<ExecutableWorkflow> workflows = bpmnTransformer.transform(bpmnModelInstance);
             // currently, it can only be one process
-            final ExecutableProcess process = processes.get(0);
+            final ExecutableWorkflow workflow = workflows.get(0);
 
-            final String bpmnProcessId = process.getId();
-            final byte[] bpmnProcessIdKey = bpmnProcessId.getBytes(StandardCharsets.UTF_8);
+            final DirectBuffer bpmnProcessId = workflow.getId();
 
-            final int latestVersion = (int) index.get(bpmnProcessIdKey, 0L);
+            final int latestVersion = (int) index.get(bpmnProcessId.byteArray(), 0L);
 
             final int version = latestVersion + 1;
 
-            deployedWorkflows.add(new DeployedWorkflow(bpmnProcessIdKey, version));
+            deployedWorkflows.add(new DeployedWorkflow(bpmnProcessId.byteArray(), version));
 
             deploymentEvent.deployedWorkflows().add()
                 .setBpmnProcessId(bpmnProcessId)

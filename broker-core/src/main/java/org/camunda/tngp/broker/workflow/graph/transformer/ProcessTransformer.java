@@ -11,11 +11,11 @@ import org.camunda.bpm.model.bpmn.instance.FlowElement;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.tngp.broker.workflow.graph.model.BpmnFactory;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableScope;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 
-public class ProcessTransformer implements BpmnElementTransformer<Process, ExecutableProcess>
+public class ProcessTransformer implements BpmnElementTransformer<Process, ExecutableWorkflow>
 {
     @Override
     public Class<Process> getType()
@@ -24,18 +24,18 @@ public class ProcessTransformer implements BpmnElementTransformer<Process, Execu
     }
 
     @Override
-    public void transform(Process modelElement, ExecutableProcess executableProcess, ExecutableScope scope)
+    public void transform(Process modelElement, ExecutableWorkflow executableWorkflow, ExecutableScope scope)
     {
-        executableProcess.setId(modelElement.getId());
-        executableProcess.setName(modelElement.getName());
+        executableWorkflow.setId(modelElement.getId());
+        executableWorkflow.setName(modelElement.getName());
 
         final Collection<FlowElement> flowElements = modelElement.getChildElementsByType(FlowElement.class);
-        transformChildElements(executableProcess, scope, flowElements);
+        transformChildElements(executableWorkflow, scope, flowElements);
 
-        setStartEvent(executableProcess);
+        setStartEvent(executableWorkflow);
     }
 
-    private void transformChildElements(ExecutableProcess executableProcess, ExecutableScope scope, final Collection<FlowElement> flowElements)
+    private void transformChildElements(ExecutableWorkflow executableWorkflow, ExecutableScope scope, final Collection<FlowElement> flowElements)
     {
         final Map<FlowElement, ExecutableFlowElement> executableFlowElements = new HashMap<>();
 
@@ -45,9 +45,9 @@ public class ProcessTransformer implements BpmnElementTransformer<Process, Execu
 
             executableElement.setId(flowElement.getId());
             executableElement.setFlowScope(scope);
-            executableElement.setProcess(executableProcess);
+            executableElement.setWorkflow(executableWorkflow);
 
-            executableProcess.getFlowElementMap().put(executableElement.getId(), executableElement);
+            executableWorkflow.getFlowElementMap().put(executableElement.getId(), executableElement);
 
             executableFlowElements.put(flowElement, executableElement);
         }
@@ -56,29 +56,29 @@ public class ProcessTransformer implements BpmnElementTransformer<Process, Execu
 
         for (Entry<FlowElement, ExecutableFlowElement> e : executableFlowElements.entrySet())
         {
-            Transformers.apply(e.getKey(), e.getValue(), executableProcess);
+            Transformers.apply(e.getKey(), e.getValue(), executableWorkflow);
         }
     }
 
-    private void setStartEvent(ExecutableProcess executableProcess)
+    private void setStartEvent(ExecutableWorkflow executableWorkflow)
     {
-        for (ExecutableFlowElement flowElement : executableProcess.getFlowElements())
+        for (ExecutableFlowElement flowElement : executableWorkflow.getFlowElements())
         {
             if (flowElement instanceof ExecutableStartEvent)
             {
                 final ExecutableStartEvent startEvent = (ExecutableStartEvent) flowElement;
 
-                if (executableProcess.getScopeStartEvent() == null)
+                if (executableWorkflow.getScopeStartEvent() == null)
                 {
-                    executableProcess.setScopeStartEvent(startEvent);
+                    executableWorkflow.setScopeStartEvent(startEvent);
                 }
                 else
                 {
-                    throw new RuntimeException("a process can only have one start event");
+                    throw new RuntimeException("a workflow can only have one start event");
                 }
             }
         }
-        ensureNotNull("start event", executableProcess.getScopeStartEvent());
+        ensureNotNull("start event", executableWorkflow.getScopeStartEvent());
     }
 
 }

@@ -23,7 +23,7 @@ public class BpmnFactory
         TYPE_MAPPING.put(EndEvent.class, ExecutableEndEvent.class);
         TYPE_MAPPING.put(ServiceTask.class, ExecutableServiceTask.class);
         TYPE_MAPPING.put(SequenceFlow.class, ExecutableSequenceFlow.class);
-        TYPE_MAPPING.put(Process.class, ExecutableProcess.class);
+        TYPE_MAPPING.put(Process.class, ExecutableWorkflow.class);
     }
 
     public static ExecutableFlowElement createElement(BaseElement element)

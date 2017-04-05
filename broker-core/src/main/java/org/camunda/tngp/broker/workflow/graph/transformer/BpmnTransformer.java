@@ -10,7 +10,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableProcess;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.ExecutableProcessRule;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.OutgoingSequenceFlowRule;
@@ -43,18 +43,18 @@ public class BpmnTransformer
         return modelInstnace.validate(BPMN_VALIDATORS);
     }
 
-    public List<ExecutableProcess> transform(DirectBuffer buffer)
+    public List<ExecutableWorkflow> transform(DirectBuffer buffer)
     {
         return transform(readModelFromBuffer(buffer));
     }
 
-    public List<ExecutableProcess> transform(BpmnModelInstance modelInstance)
+    public List<ExecutableWorkflow> transform(BpmnModelInstance modelInstance)
     {
-        final List<ExecutableProcess> transformedProcesses = new ArrayList<>();
+        final List<ExecutableWorkflow> transformedProcesses = new ArrayList<>();
 
         for (Process process : modelInstance.getModelElementsByType(Process.class))
         {
-            final ExecutableProcess transformedProcess = transformProcess(process);
+            final ExecutableWorkflow transformedProcess = transformProcess(process);
 
             transformedProcesses.add(transformedProcess);
         }
@@ -80,13 +80,13 @@ public class BpmnTransformer
         return bpmnModelInstance;
     }
 
-    private ExecutableProcess transformProcess(Process process)
+    private ExecutableWorkflow transformProcess(Process process)
     {
-        final ExecutableProcess transformedProcess = new ExecutableProcess();
+        final ExecutableWorkflow transformedWorkflow = new ExecutableWorkflow();
 
-        Transformers.apply(process, transformedProcess, transformedProcess);
+        Transformers.apply(process, transformedWorkflow, transformedWorkflow);
 
-        return transformedProcess;
+        return transformedWorkflow;
     }
 
 }

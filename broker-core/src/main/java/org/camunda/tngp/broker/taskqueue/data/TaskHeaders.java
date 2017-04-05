@@ -53,10 +53,9 @@ public class TaskHeaders extends UnpackedObject
         return activityIdProp.getValue();
     }
 
-    public TaskHeaders setActivityId(String activityId)
+    public TaskHeaders setActivityId(DirectBuffer activityId)
     {
-        this.activityIdProp.setValue(activityId);
-        return this;
+        return setActivityId(activityId, 0, activityId.capacity());
     }
 
     public TaskHeaders setActivityId(DirectBuffer activityId, int offset, int length)

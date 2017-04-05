@@ -31,7 +31,7 @@ public class ExecutableScope extends ExecutableFlowNode
         {
             final ExecutableFlowElement flowElement = flowElements[i];
 
-            if (BufferUtil.equals(id, flowElement.getIdBuffer()))
+            if (BufferUtil.equals(id, flowElement.getId()))
             {
                 return (T) flowElement;
             }

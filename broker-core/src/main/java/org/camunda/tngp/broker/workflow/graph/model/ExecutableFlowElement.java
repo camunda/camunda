@@ -5,27 +5,20 @@ import org.camunda.tngp.util.buffer.BufferUtil;
 
 public class ExecutableFlowElement
 {
-    private String id;
-    private DirectBuffer idBuffer;
+    private DirectBuffer id;
 
     private String name;
     private ExecutableScope flowScope;
-    private ExecutableProcess process;
-
-    public String getId()
-    {
-        return id;
-    }
+    private ExecutableWorkflow workflow;
 
     public void setId(String id)
     {
-        this.id = id;
-        this.idBuffer = BufferUtil.wrapString(id);
+        this.id = BufferUtil.wrapString(id);
     }
 
-    public DirectBuffer getIdBuffer()
+    public DirectBuffer getId()
     {
-        return idBuffer;
+        return id;
     }
 
     public String getName()
@@ -48,14 +41,14 @@ public class ExecutableFlowElement
         this.flowScope = flowScope;
     }
 
-    public ExecutableProcess getProcess()
+    public ExecutableWorkflow getWorkflow()
     {
-        return process;
+        return workflow;
     }
 
-    public void setProcess(ExecutableProcess process)
+    public void setWorkflow(ExecutableWorkflow process)
     {
-        this.process = process;
+        this.workflow = process;
     }
 
 }
