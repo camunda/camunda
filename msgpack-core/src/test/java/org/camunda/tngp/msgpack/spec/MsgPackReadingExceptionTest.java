@@ -1,4 +1,5 @@
 package org.camunda.tngp.msgpack.spec;
+import static org.camunda.tngp.msgpack.spec.MsgPackCodes.*;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -19,6 +20,8 @@ public class MsgPackReadingExceptionTest
 {
 
     protected static final DirectBuffer NEVER_USED_BUF = new UnsafeBuffer(new byte[]{ (byte) 0xc1 });
+    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative buffer size";
+
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -89,6 +92,72 @@ public class MsgPackReadingExceptionTest
         // when
         codeUnderTest.accept(reader);
     }
+
+    @Test
+    public void shouldNotReadNegativeSizeInReadMapHeader()
+    {
+        //given
+        final DirectBuffer negativeSizeMapBuf = new UnsafeBuffer(new byte[]{ (byte) MAP32, (byte) 0xff, (byte) 0xff,  (byte) 0xff, (byte) 0xff });
+        reader.wrap(negativeSizeMapBuf, 0, negativeSizeMapBuf.capacity());
+
+        //then
+
+        exception.expect(RuntimeException.class);
+        exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
+
+        //when
+        reader.readMapHeader();
+    }
+
+    @Test
+    public void shouldNotReadNegativeSizeInReadArrayHeader()
+    {
+        //given
+        final DirectBuffer negativeSizeArrayBuf = new UnsafeBuffer(new byte[]{ (byte) ARRAY32, (byte) 0xff, (byte) 0xff,  (byte) 0xff, (byte) 0xff });
+        reader.wrap(negativeSizeArrayBuf, 0, negativeSizeArrayBuf.capacity());
+
+        //then
+
+        exception.expect(RuntimeException.class);
+        exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
+
+        //when
+        reader.readArrayHeader();
+    }
+
+    @Test
+    public void shouldNotReadNegativeSizeInReadStringHeader()
+    {
+        //given
+        final DirectBuffer negativeSizeStringBuf = new UnsafeBuffer(new byte[]{ (byte) STR32, (byte) 0xff, (byte) 0xff,  (byte) 0xff, (byte) 0xff });
+        reader.wrap(negativeSizeStringBuf, 0, negativeSizeStringBuf.capacity());
+
+        //then
+
+        exception.expect(RuntimeException.class);
+        exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
+
+        //when
+        reader.readStringLength();
+    }
+
+    @Test
+    public void shouldNotReadNegativeSizeInReadBinaryHeader()
+    {
+        //given
+        final DirectBuffer negativeSizeBinaryBuf = new UnsafeBuffer(new byte[]{ (byte) BIN32, (byte) 0xff, (byte) 0xff,  (byte) 0xff, (byte) 0xff });
+        reader.wrap(negativeSizeBinaryBuf, 0, negativeSizeBinaryBuf.capacity());
+
+        //then
+
+        exception.expect(RuntimeException.class);
+        exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
+
+        //when
+        reader.readBinaryLength();
+    }
+
+
 
     protected static Consumer<MsgPackReader> codeUnderTest(Consumer<MsgPackReader> arg)
     {

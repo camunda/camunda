@@ -1,4 +1,5 @@
 package org.camunda.tngp.msgpack.spec;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.ensurePositiveSize;
 
 import static org.agrona.BitUtil.*;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.*;
@@ -23,8 +24,11 @@ public class MsgPackWriter
         return this;
     }
 
+
     public MsgPackWriter writeArrayHeader(int size)
     {
+        ensurePositiveSize(size);
+
         if (size < (1 << 4))
         {
             buffer.putByte(offset, (byte) (FIXARRAY_PREFIX | size));
@@ -53,6 +57,7 @@ public class MsgPackWriter
 
     public MsgPackWriter writeMapHeader(int size)
     {
+        ensurePositiveSize(size);
         if (size < (1 << 4))
         {
             buffer.putByte(offset, (byte) (FIXMAP_PREFIX | size));
@@ -194,6 +199,7 @@ public class MsgPackWriter
 
     public MsgPackWriter writeStringHeader(int len)
     {
+        ensurePositiveSize(len);
         if (len < (1 << 5))
         {
             buffer.putByte(offset, (byte) (FIXSTR_PREFIX | len));
@@ -241,6 +247,7 @@ public class MsgPackWriter
 
     public MsgPackWriter writeBinaryHeader(int len)
     {
+        ensurePositiveSize(len);
         if (len < (1 << 8))
         {
             buffer.putByte(offset, BIN8);

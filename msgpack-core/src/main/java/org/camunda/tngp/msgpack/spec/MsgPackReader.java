@@ -2,6 +2,7 @@ package org.camunda.tngp.msgpack.spec;
 
 import static org.agrona.BitUtil.*;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.*;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.ensurePositiveSize;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,7 +41,7 @@ public class MsgPackReader
                     break;
 
                 case MAP32:
-                    mapSize = buffer.getInt(offset, BYTE_ORDER);
+                    mapSize = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
                     offset += SIZE_OF_INT;
                     break;
 
@@ -73,7 +74,7 @@ public class MsgPackReader
                     break;
 
                 case ARRAY32:
-                    mapSize = buffer.getInt(offset, BYTE_ORDER);
+                    mapSize = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
                     offset += SIZE_OF_INT;
                     break;
 
@@ -111,7 +112,7 @@ public class MsgPackReader
                     break;
 
                 case STR32:
-                    stringLength = buffer.getInt(offset, BYTE_ORDER);
+                    stringLength = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
                     offset += SIZE_OF_INT;
                     break;
 
@@ -142,7 +143,7 @@ public class MsgPackReader
                 break;
 
             case BIN32:
-                length = buffer.getInt(offset, BYTE_ORDER);
+                length = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
                 offset += SIZE_OF_INT;
                 break;
 
