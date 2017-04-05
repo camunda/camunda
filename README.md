@@ -44,7 +44,6 @@ Maven coordinates
   <groupId>org.camunda.tngp</groupId>
   <artifactId>tngp-client-java</artifactId>
   <version>1.0.0-alpha3</version>
-  <type>zip</type>
 </dependency>
 ```
 
