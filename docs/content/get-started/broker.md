@@ -29,21 +29,9 @@ Known limitations on Windows:
 
 ## Configure the Broker Distribution
 
-The file `${BROKER_HOME}/conf/tngp.conf.toml` contains the broker's configuration. The default configuration should be good to go.
+The file `${BROKER_HOME}/conf/tngp.conf.toml` contains the broker's configuration.
 
-### `[task-queues]`
+The default configuration should be good to go:
 
-Defines a set of `[task-queue]` elements.
-
-### `[task-queue]`
-
-Properties:
-
-* `id`: A numeric id of the task queue. Can be used in the BPMN XML to assign BPMN tasks to a queue.
-* `name`: A human-readable name that describes the tasks managed in the queue.
-
-### `[network.clientApi]`
-
-Properties:
-
-* `port`: Determines the port on which the broker listens to client request.
+* It uses temporary files for persistence, so a broker restart effectively resets broker state
+* It creates a default topic with id `0`

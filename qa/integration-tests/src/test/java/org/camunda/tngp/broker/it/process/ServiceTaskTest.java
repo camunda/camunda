@@ -71,6 +71,8 @@ public class ServiceTaskTest
     @Test
     public void shouldStartWorkflowInstanceWithServiceTask()
     {
+        Bpmn.writeModelToStream(System.out, oneTaskProcess("foo"));
+
         // given
         workflowClient.deploy()
             .bpmnModelInstance(oneTaskProcess("foo"))
