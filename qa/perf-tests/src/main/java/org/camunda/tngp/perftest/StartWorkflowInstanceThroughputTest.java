@@ -1,10 +1,5 @@
 package org.camunda.tngp.perftest;
 
-import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
-
-import java.util.Properties;
-import java.util.concurrent.Future;
-import java.util.function.Supplier;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -12,6 +7,12 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.perftest.helper.MaxRateThroughputTest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
+
+import java.util.Properties;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
+
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 
 public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
 {
@@ -27,13 +28,13 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
                 .endEvent()
                 .done();
 
-        wrap(processModel).taskAttributes("serviceTask", "foo", 0);
+        wrap(processModel).taskDefinition("serviceTask", "foo", 0);
 
         // create deployment
         workflowsClient
-                .deploy()
-                .bpmnModelInstance(processModel)
-                .execute();
+            .deploy()
+            .bpmnModelInstance(processModel)
+            .execute();
 
         try
         {
