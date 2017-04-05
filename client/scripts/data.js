@@ -78,9 +78,11 @@ function createEvents(factor, bpmnEntries, definitions) {
 
 function getEventsForProcess(factor, bpmnEntries, definitions) {
   var processInstanceId = uuid();
-  var entryIndex = Math.floor(Math.random() * bpmnEntries.length);
-  var entry = bpmnEntries[entryIndex];
-  var definition = definitions[entryIndex];
+  var definitionIndex = Math.floor(Math.random() * definitions.length);
+  var definition = definitions[definitionIndex];
+  var entry = bpmnEntries.filter(function(entry) {
+    return definition.key === entry.key;
+  })[0];
   var events = [];
 
   for (i = 0; i < factor; i++) {
