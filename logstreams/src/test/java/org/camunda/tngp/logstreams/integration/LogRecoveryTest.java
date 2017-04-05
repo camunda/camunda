@@ -31,6 +31,8 @@ public class LogRecoveryTest
     private static final int LOG_SEGMENT_SIZE = 1024 * 1024 * 8;
     private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
 
+    private static final int WORK_COUNT_PER_BLOCK_IDX = (INDEX_BLOCK_SIZE / MSG_SIZE);
+
     private static final String LOG_NAME = "foo";
     private static final int LOG_ID = 0;
 
@@ -193,8 +195,8 @@ public class LogRecoveryTest
         log.open();
 
         // write events
-        writeLogEvents(log, 1500, MSG_SIZE, 0);
-        waitUntilWrittenKey(log, 1500);
+        writeLogEvents(log, WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, 0);
+        waitUntilWrittenKey(log, WORK_COUNT_PER_BLOCK_IDX);
 
         log.close();
         int indexSize = log.getLogBlockIndex().size();
@@ -215,16 +217,16 @@ public class LogRecoveryTest
         assertThat(indexSize).isEqualTo(newIndexSize);
 
         // write more events
-        writeLogEvents(newLog, 1500, MSG_SIZE, 1500);
-        waitUntilWrittenKey(newLog, 3000);
+        writeLogEvents(newLog, WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, WORK_COUNT_PER_BLOCK_IDX);
+        waitUntilWrittenKey(newLog, 2 * WORK_COUNT_PER_BLOCK_IDX);
 
         newLog.close();
         indexSize = newLog.getLogBlockIndex().size();
-        final int calculatesIndexSize = calculateIndexSize(3000);
+        final int calculatesIndexSize = calculateIndexSize(2 * WORK_COUNT_PER_BLOCK_IDX);
         assertThat(indexSize).isGreaterThanOrEqualTo(calculatesIndexSize);
 
         // assert that the event position is recovered after re-open and continues after the last event
-        readLogAndAssertEvents(3000, calculatesIndexSize);
+        readLogAndAssertEvents(2 * WORK_COUNT_PER_BLOCK_IDX, calculatesIndexSize);
     }
 
     @Test
@@ -242,8 +244,8 @@ public class LogRecoveryTest
         log.open();
 
         // write events
-        writeLogEvents(log, 1000, MSG_SIZE, 0);
-        waitUntilWrittenKey(log, 1000);
+        writeLogEvents(log, WORK_COUNT_PER_BLOCK_IDX / 10, MSG_SIZE, 0);
+        waitUntilWrittenKey(log, WORK_COUNT_PER_BLOCK_IDX / 10);
 
         log.close();
         int indexSize = log.getLogBlockIndex().size();
@@ -253,18 +255,18 @@ public class LogRecoveryTest
         log.open();
 
         // write more events
-        writeLogEvents(log, 500, MSG_SIZE, 1000);
-        waitUntilWrittenKey(log, 1500);
+        writeLogEvents(log, WORK_COUNT_PER_BLOCK_IDX, MSG_SIZE, WORK_COUNT_PER_BLOCK_IDX / 10);
+        waitUntilWrittenKey(log, WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10));
 
         log.close();
 
         // after resume an index was written
-        final int calculatesIndexSize = calculateIndexSize(1500);
+        final int calculatesIndexSize = calculateIndexSize(WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10));
         assertThat(log.getLogBlockIndex().size()).isGreaterThan(indexSize);
         indexSize = log.getLogBlockIndex().size();
         assertThat(indexSize).isGreaterThan(calculatesIndexSize);
 
-        readLogAndAssertEvents(1500, calculatesIndexSize);
+        readLogAndAssertEvents(WORK_COUNT_PER_BLOCK_IDX + (WORK_COUNT_PER_BLOCK_IDX / 10), calculatesIndexSize);
     }
 
     protected void readLogAndAssertEvents(int workCount, int indexSize)
@@ -292,6 +294,14 @@ public class LogRecoveryTest
 
     private int calculateIndexSize(int workCount)
     {
-        return (int) (Math.floor(workCount * MSG_SIZE) / INDEX_BLOCK_SIZE);
+        // WORK (count * message size) / index block size = is equal to the count of
+        // block indices for each block which has the size of index block size.
+        // Sometimes the index is created for larger blocks. If events are not read complete
+        // they are truncated, for this case the block will not reach the index block size. In the next read step
+        // the event will be read complete but also other events which means the block is now larger then the index block size.
+        //
+        // The count of created indices should be greater than the half of the optimal index count.
+        //
+        return (int) (Math.floor(workCount * MSG_SIZE) / INDEX_BLOCK_SIZE) / 2;
     }
 }

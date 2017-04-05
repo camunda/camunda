@@ -305,7 +305,7 @@ public final class LogStreamImpl implements LogStream
     }
 
     // BUILDER ////////////////////////
-    public static class LogStreamBuilder<T extends LogStreamBuilder<T>>
+    public static class LogStreamBuilder<T extends LogStreamBuilder>
     {
         // MANDATORY /////
         // LogController Base
@@ -329,8 +329,8 @@ public final class LogStreamImpl implements LogStream
         protected int maxAppendBlockSize = 1024 * 1024 * 4;
         protected int writeBufferSize = 1024 * 1024 * 16;
         protected int logSegmentSize = 1024 * 1024 * 128;
-        protected int indexBlockSize = 1024 * 32;
-        protected int readBlockSize = 1024 * 32;
+        protected int indexBlockSize = 1024 * 1024 * 4;
+        protected int readBlockSize = 1024 * 1024 * 4;
         protected SnapshotPolicy snapshotPolicy;
         protected SnapshotStorage snapshotStorage;
 
@@ -343,118 +343,124 @@ public final class LogStreamImpl implements LogStream
             this.logId = logId;
         }
 
+        @SuppressWarnings("unchecked")
+        protected T self()
+        {
+            return (T) this;
+        }
+
         public T logRootPath(String logRootPath)
         {
             this.logRootPath = logRootPath;
-            return (T) this;
+            return self();
         }
 
         public T logDirectory(String logDir)
         {
             this.logDirectory = logDir;
-            return (T) this;
+            return self();
         }
 
         public T writeBufferSize(int writeBufferSize)
         {
             this.writeBufferSize = writeBufferSize;
-            return (T) this;
+            return self();
         }
 
         public T maxAppendBlockSize(int maxAppendBlockSize)
         {
             this.maxAppendBlockSize = maxAppendBlockSize;
-            return (T) this;
+            return self();
         }
 
         public T writeBufferAgentRunnerService(AgentRunnerService writeBufferAgentRunnerService)
         {
             this.writeBufferAgentRunnerService = writeBufferAgentRunnerService;
-            return (T) this;
+            return self();
         }
 
         public T initialLogSegmentId(int logFragmentId)
         {
             this.initialLogSegmentId = logFragmentId;
-            return (T) this;
+            return self();
         }
 
         public T logSegmentSize(int logSegmentSize)
         {
             this.logSegmentSize = logSegmentSize;
-            return (T) this;
+            return self();
         }
 
         public T deleteOnClose(boolean deleteOnClose)
         {
             this.deleteOnClose = deleteOnClose;
-            return (T) this;
+            return self();
         }
 
         public T agentRunnerService(AgentRunnerService agentRunnerService)
         {
             this.agentRunnerService = agentRunnerService;
-            return (T) this;
+            return self();
         }
 
         public T countersManager(CountersManager countersManager)
         {
             this.countersManager = countersManager;
-            return (T) this;
+            return self();
         }
 
         public T indexBlockSize(int indexBlockSize)
         {
             this.indexBlockSize = indexBlockSize;
-            return (T) this;
+            return self();
         }
 
         public T logStorage(LogStorage logStorage)
         {
             this.logStorage = logStorage;
-            return (T) this;
+            return self();
         }
 
         public T logBlockIndex(LogBlockIndex logBlockIndex)
         {
             this.logBlockIndex = logBlockIndex;
-            return (T) this;
+            return self();
         }
 
         public T logControllerContext(LogControllerContext logControllerContext)
         {
             this.logControllerContext = logControllerContext;
-            return (T) this;
+            return self();
         }
 
         public T logStreamControllerDisabled(boolean logStreamControllerDisabled)
         {
             this.logStreamControllerDisabled = logStreamControllerDisabled;
-            return (T) this;
+            return self();
         }
 
         public T writeBuffer(Dispatcher writeBuffer)
         {
             this.writeBuffer = writeBuffer;
-            return (T) this;
+            return self();
         }
 
         public T snapshotStorage(SnapshotStorage snapshotStorage)
         {
             this.snapshotStorage = snapshotStorage;
-            return (T) this;
+            return self();
         }
 
         public T snapshotPolicy(SnapshotPolicy snapshotPolicy)
         {
             this.snapshotPolicy = snapshotPolicy;
-            return (T) this;
+            return self();
         }
 
         public T readBlockSize(int readBlockSize)
         {
             this.readBlockSize = readBlockSize;
-            return (T) this;
+            return self();
         }
 
         // getter /////////////////

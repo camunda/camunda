@@ -1,8 +1,12 @@
 package org.camunda.tngp.logstreams.impl;
 
 import static org.agrona.BitUtil.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 
 import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
 
 /**
  *  * <pre>
@@ -99,6 +103,16 @@ public class LogEntryDescriptor
     public static int positionOffset(int offset)
     {
         return POSITION_OFFSET + offset;
+    }
+
+    public static long getPosition(DirectBuffer buffer, int offset)
+    {
+        return buffer.getLong(positionOffset(messageOffset(offset)));
+    }
+
+    public static int getFragmentLength(DirectBuffer buffer, int offset)
+    {
+        return alignedLength(buffer.getInt(lengthOffset(offset)));
     }
 
     public static int keyTypeOffset(int offset)

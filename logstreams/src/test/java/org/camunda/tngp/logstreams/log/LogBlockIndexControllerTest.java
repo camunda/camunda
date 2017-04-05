@@ -145,12 +145,16 @@ public class LogBlockIndexControllerTest
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
             .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
         when(mockSnapshotPolicy.apply(LOG_POSITION)).thenReturn(true);
 
         blockIdxController.openAsync();
         // -> opening
         blockIdxController.doWork();
         // -> open
+        blockIdxController.doWork();
         blockIdxController.doWork();
         // -> snapshotting
         blockIdxController.doWork();
@@ -169,6 +173,9 @@ public class LogBlockIndexControllerTest
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
             .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
         doThrow(new RuntimeException("expected exception")).when(mockSnapshotWriter).writeSnapshot(mockBlockIndex);
@@ -178,29 +185,13 @@ public class LogBlockIndexControllerTest
         blockIdxController.doWork();
         // -> open
         blockIdxController.doWork();
+        blockIdxController.doWork();
         // -> snapshotting
         blockIdxController.doWork();
 
         assertThat(blockIdxController.isOpen()).isTrue();
 
         verify(mockSnapshotWriter).abort();
-    }
-
-    @Test
-    public void shouldAddBlockForHalfFullBlock() throws Exception
-    {
-        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
-        when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
-
-        blockIdxController.openAsync();
-        // -> opening
-        blockIdxController.doWork();
-        // -> open
-        blockIdxController.doWork();
-
-        // idx for block should be created
-        verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
     }
 
     @Test
@@ -227,7 +218,7 @@ public class LogBlockIndexControllerTest
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
             .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
-        when(mockLogStorage.read(eq(buffer), eq(READ_BLOCK_SIZE), any(ReadResultProcessor.class)))
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
             .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         blockIdxController.openAsync();
@@ -250,12 +241,16 @@ public class LogBlockIndexControllerTest
             .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + 3 * LOG_ADDRESS, (int) LOG_ADDRESS));
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(INDEX_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + 2 * LOG_ADDRESS, (int) LOG_ADDRESS));
 
         blockIdxController.openAsync();
         // opening
         blockIdxController.doWork();
         // read first block
+        blockIdxController.doWork();
         blockIdxController.doWork();
         // read second small block
         blockIdxController.doWork();

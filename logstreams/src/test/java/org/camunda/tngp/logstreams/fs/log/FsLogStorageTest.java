@@ -17,7 +17,6 @@ import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import org.camunda.tngp.logstreams.spi.LogStorage;
-import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
 import org.camunda.tngp.util.FileUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -259,11 +258,6 @@ public class FsLogStorageTest
 
         fsLogStorage.append(ByteBuffer.wrap(MSG));
     }
-
-    protected final ReadResultProcessor readResultProcessor = (buffer, readResult) ->
-    {
-        return -1;
-    };
 
     @Test
     public void shouldReadWithProcessor()

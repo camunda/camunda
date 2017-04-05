@@ -7,7 +7,7 @@ import org.camunda.tngp.logstreams.spi.ReadResultProcessor;
 import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.logstreams.impl.LoggedEventAccessUtil.getFragmentLength;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getFragmentLength;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 /**
@@ -15,7 +15,6 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_
  */
 public class CompleteEventsInBlockProcessor implements ReadResultProcessor
 {
-    private static final byte ZERO_BYTE = 0;
 
     protected final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
 

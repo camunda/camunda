@@ -12,8 +12,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
-import static org.camunda.tngp.logstreams.impl.LoggedEventAccessUtil.getFragmentLength;
-import static org.camunda.tngp.logstreams.impl.LoggedEventAccessUtil.getPosition;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getFragmentLength;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
@@ -187,10 +187,8 @@ public class LogBlockIndexController implements Agent
         {
             currentBlockSize += ioBuffer.position();
 
-            // if remaining block size is less then current block size we will create an index
-            // this means will create indices after the block is half full
-            final int remainingIndexBlockSize = indexBlockSize - currentBlockSize;
-            if (currentBlockSize >= remainingIndexBlockSize)
+            // if block size is greater then or equals to index block size we will create an index
+            if (currentBlockSize >= indexBlockSize)
             {
                 final long currentBlockAddress = logContext.getCurrentBlockAddress();
 
