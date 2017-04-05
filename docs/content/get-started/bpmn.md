@@ -30,6 +30,7 @@ Extension element `tngp:taskDefinition`:
 
 ### Example
 
+```
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <definitions xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:tngp="http://camunda.org/schema/tngp/1.0" id="definitions_c9d638f5-ed4f-4335-ad69-75d68f11eafd" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
   <process id="process" isExecutable="true">
@@ -42,3 +43,4 @@ Extension element `tngp:taskDefinition`:
     ...
   </process>
 </definitions>
+```

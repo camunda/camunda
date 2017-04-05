@@ -53,7 +53,7 @@ Get Started
 
 1. [Run the broker](docs/content/get-started/broker.md)
 1. [Make your BPMN TNGP-ready](docs/content/get-started/bpmn.md)
-1. [Build a Java client application](docs/content/get-started/java-client-library.md) and
+1. [Build a Java client application](docs/content/get-started/java-client-library.md)
 
 
 Build from source

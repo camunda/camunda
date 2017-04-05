@@ -45,9 +45,10 @@ See the class `org.camunda.tngp.client.ClientProperties` for a description of al
 
 # API
 
-There are two major entry points:
+Entry points:
 
 * `WorkflowTopicClient workflowsClient = client.workflowTopic(int topicId)`: Provides access to workflow-related operations on the given topic, such as process instantiation
 * `TaskTopicClient tasksClient = client.taskTopic(int topicId)`: Provides access to task-related operations on the given topic, such as task subscriptions
 * `TopicClient topicClient = client.int topicId(int topicId)`: Provides access to general-purpose operations on the given topic, such as topic subscriptions
 
+Then take it from there, the Javadoc should give an idea what each method does.
