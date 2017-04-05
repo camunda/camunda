@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {setEndEvent, unsetEndEvent, setGateway, unsetGateway, leaveGatewayAnalysisMode,
-        hoverElement, addBranchOverlay, BRANCH_OVERLAY,
+        hoverElement, addBranchOverlay, BRANCH_OVERLAY, showSelectedOverlay,
         __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/service';
 import sinon from 'sinon';
 
@@ -14,6 +14,7 @@ describe('Analytics service', () => {
   let createSetElementAction;
   let updateOverlayVisibility;
   let isBpmnType;
+  let overlayNode;
 
   let viewer;
 
@@ -40,9 +41,14 @@ describe('Analytics service', () => {
     createSetElementAction = sinon.stub().returns(SET_ELEMENT);
     __set__('createSetElementAction', createSetElementAction);
 
+    overlayNode = {
+      html: document.createElement('div')
+    };
     viewer = {
       get: sinon.stub().returnsThis(),
-      add: sinon.spy()
+      add: sinon.spy(),
+      filter: sinon.stub().returnsThis(),
+      forEach: sinon.stub().callsArgWith(0, overlayNode)
     };
   });
 
@@ -123,6 +129,13 @@ describe('Analytics service', () => {
       hoverElement(viewer, 'a1');
 
       expect(updateOverlayVisibility.calledWith(viewer, 'a1', BRANCH_OVERLAY)).to.eql(true);
+    });
+
+    it('should show a selected overlay and keep it open', () => {
+      showSelectedOverlay(viewer, 'a1');
+
+      expect(overlayNode.keepOpen).to.be.true;
+      expect(overlayNode.html.style.display).to.eql('block');
     });
   });
 });

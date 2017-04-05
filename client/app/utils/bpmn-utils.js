@@ -11,14 +11,16 @@ export function updateOverlayVisibility(viewer, element, type) {
   viewer
     .get('overlays')
     .get({type})
-    .forEach(({html}) => {
-      html.style.opacity = 0;
+    .forEach((node) => {
+      if (!node.keepOpen) {
+        node.html.style.display = 'none';
+      }
     });
 
   // display the new hovered element
   const node = viewer.get('overlays').get({element, type})[0];
 
   if (node) {
-    node.html.style.opacity = 1;
+    node.html.style.display = 'block';
   }
 }

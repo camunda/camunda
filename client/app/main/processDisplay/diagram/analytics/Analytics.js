@@ -1,4 +1,4 @@
-import {setEndEvent, setGateway, hoverElement, addBranchOverlay} from './service';
+import {setEndEvent, setGateway, hoverElement, addBranchOverlay, showSelectedOverlay} from './service';
 import {isBpmnType, removeOverlays} from 'utils';
 import {resetStatisticData} from 'main/processDisplay/statistics';
 
@@ -59,12 +59,13 @@ export function createCreateAnalyticsRendererFunction(integrator) {
           }
         });
 
-        Object.values(selection).forEach(element => {
-          highlight(element, 'highlight_selected');
-        });
-
         removeOverlays(viewer);
         addBranchOverlay(viewer, data);
+
+        Object.values(selection).forEach(element => {
+          highlight(element, 'highlight_selected');
+          showSelectedOverlay(viewer, element);
+        });
       }
     };
   };

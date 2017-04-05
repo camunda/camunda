@@ -38,7 +38,10 @@ function createBpmnViewer() {
   const BpmnViewer = ({onLoaded, createOverlaysRenderer = []}) => {
     return (node, eventsBus) => {
       viewer = new Viewer({
-        container: node
+        container: node,
+        canvas: {
+          deferUpdate: false
+        }
       });
 
       if (typeof createOverlaysRenderer === 'function') {

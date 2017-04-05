@@ -134,16 +134,16 @@ describe('Heatmap service', () => {
     });
 
     describe('interaction', () => {
-      it('should clear the opacity of all overlays', () => {
+      it('should hide all overlays', () => {
         hoverElement(viewer, 'someElement');
 
-        expect(notHoveredOverlay.style.opacity).to.eql('0');
+        expect(notHoveredOverlay.style.display).to.eql('none');
       });
 
-      it('should set the opacity of the hovered element', () => {
+      it('should show the hovered element', () => {
         hoverElement(viewer, 'someElement');
 
-        expect(hoveredOverlay.style.opacity).to.eql('1');
+        expect(hoveredOverlay.style.display).to.eql('block');
       });
     });
   });

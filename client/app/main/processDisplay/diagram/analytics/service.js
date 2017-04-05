@@ -29,6 +29,19 @@ export function hoverElement(viewer, element) {
   updateOverlayVisibility(viewer, element, BRANCH_OVERLAY);
 }
 
+export function showSelectedOverlay(viewer, element) {
+  viewer
+    .get('overlays')
+    .get({type: 'BRANCH_OVERLAY'})
+    .filter(({element: {id}}) => {
+      return id === element;
+    })
+    .forEach((node) => {
+      node.keepOpen = true;
+      node.html.style.display = 'block';
+    });
+}
+
 export function addBranchOverlay(viewer, {flowNodes, piCount}) {
   const elementRegistry = viewer.get('elementRegistry');
   const overlays = viewer.get('overlays');
@@ -42,7 +55,7 @@ export function addBranchOverlay(viewer, {flowNodes, piCount}) {
       const percentageValue = Math.round(value / piCount * 1000) / 10;
 
       container.innerHTML =
-      `<div class="tooltip top" role="tooltip" style="pointer-events: none; opacity: 0;">
+      `<div class="tooltip top" role="tooltip" style="display: none; opacity: 1;">
         <table class="cam-table end-event-statistics">
           <tbody>
             <tr>
@@ -61,6 +74,12 @@ export function addBranchOverlay(viewer, {flowNodes, piCount}) {
         </table>
       </div>`;
       const overlayHtml = container.firstChild;
+
+      // stop propagation of mouse event so that click+drag does not move canvas
+      // when user tries to select text
+      overlayHtml.addEventListener('mousedown', (evt) => {
+        evt.stopPropagation();
+      });
 
       // add overlay to viewer
       overlays.add(element, BRANCH_OVERLAY, {

@@ -19,11 +19,23 @@ describe('Bpmn Utilities', () => {
         })
       };
     });
-    it('should set the opacity for all elements except the selected one to 0', () => {
+    it('should hide all elements except the selected one', () => {
       updateOverlayVisibility(viewer, elementList[0], 'SOME_TYPE');
 
-      expect(elementList[0].html.style.opacity).to.eql('1');
-      expect(elementList[1].html.style.opacity).to.eql('0');
+      expect(elementList[0].html.style.display).to.eql('block');
+      expect(elementList[1].html.style.display).to.eql('none');
+    });
+
+    it('should not hide elements that should be kept open', () => {
+      const alwaysOpen = {
+        html: document.createElement('div'),
+        keepOpen: true
+      };
+
+      elementList.push(alwaysOpen);
+      updateOverlayVisibility(viewer, elementList[0], 'SOME_TYPE');
+
+      expect(alwaysOpen.html.style.display).to.not.eql('none');
     });
   });
 });

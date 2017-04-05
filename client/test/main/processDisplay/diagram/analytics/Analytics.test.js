@@ -14,6 +14,7 @@ describe('<Analytics>', () => {
   let $document;
   let hoverElement;
   let removeOverlays;
+  let showSelectedOverlay;
 
   let heatmapData;
   let diagramElement;
@@ -77,6 +78,9 @@ describe('<Analytics>', () => {
     removeOverlays = sinon.spy();
     __set__('removeOverlays', removeOverlays);
 
+    showSelectedOverlay = sinon.spy();
+    __set__('showSelectedOverlay', showSelectedOverlay);
+
     addBranchOverlay = sinon.spy();
     __set__('addBranchOverlay', addBranchOverlay);
 
@@ -126,6 +130,7 @@ describe('<Analytics>', () => {
     __ResetDependency__('createModal');
     __ResetDependency__('isBpmnType');
     __ResetDependency__('removeOverlays');
+    __ResetDependency__('showSelectedOverlay');
     __ResetDependency__('addBranchOverlay');
     __ResetDependency__('setEndEvent');
     __ResetDependency__('setGateway');
@@ -220,6 +225,14 @@ describe('<Analytics>', () => {
 
     expect(viewer.addMarker.calledWith('act3', 'highlight_selected')).to.eql(true);
     expect(viewer.addMarker.calledWith('act1', 'highlight_selected')).to.eql(true);
+  });
+
+  it('should show overlays if an element is selected', () => {
+    gatewayAnalysisState.state.selection.endEvent = 'act1';
+    update(gatewayAnalysisState);
+
+    expect(showSelectedOverlay.calledOnce).to.eql(true);
+    expect(showSelectedOverlay.calledWith(viewer, 'act1')).to.eql(true);
   });
 
   it('should handle overlays', () => {

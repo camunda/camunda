@@ -16,7 +16,7 @@ export function addHeatmapOverlay(viewer, data, formatTooltip) {
       const container = document.createElement('div');
 
       container.innerHTML =
-      `<div class="tooltip top" role="tooltip" style="pointer-events: none; opacity: 0;">
+      `<div class="tooltip top" role="tooltip" style="opacity: 1;">
       <div class="tooltip-arrow"></div>
       <div class="tooltip-inner" style="text-align: left;">${formatTooltip(value)}</div>
       </div>`;
@@ -36,6 +36,9 @@ export function addHeatmapOverlay(viewer, data, formatTooltip) {
         .querySelector('.djs-hit')
         .getAttribute('width')
         , 10);
+
+      // hide the element initially
+      overlayHtml.style.display = 'none';
 
       // add overlay to viewer
       viewer.get('overlays').add(element, VALUE_OVERLAY, {
