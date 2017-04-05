@@ -12,13 +12,18 @@ export function addLoading(next, ...properties) {
     const loadedIdx = loadedTypes.indexOf(action.type);
     const resetIdx = resetTypes.indexOf(action.type);
 
-    const newState = next(state, action) || {};
+    let newState = next(state, action) || {};
 
-    properties.forEach(prop => {
-      if (!newState[prop]) {
-        newState[prop] = {state: INITIAL_STATE};
+    newState = properties.reduce((state, prop) => {
+      if (!state[prop]) {
+        return {
+          ...state,
+          [prop]: {state: INITIAL_STATE}
+        };
       }
-    });
+
+      return state;
+    }, newState);
 
     if (loadIdx !== -1) {
       return {
