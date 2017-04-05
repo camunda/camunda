@@ -1,20 +1,23 @@
-import {jsx, updateOnlyWhenStateChanges, withSelector} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector, createReferenceComponent} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
-import {Loader} from './LoadingIndicator';
+import {Loader} from './Loader';
 
 export function createDiagram() {
   const BpmnViewer = createBpmnViewer();
   const Diagram = withSelector(({createOverlaysRenderer}) => {
     return (node, eventsBus) => {
+      const Reference = createReferenceComponent();
       const template = <div>
-        <Loader className="diagram-loading" style="position: absolute" />
+        <Loader className="diagram-loading" style="position: absolute">
+          <Reference name="loader" />
+        </Loader>
         <div className="diagram__holder">
           <BpmnViewer onLoaded={onLoaded} createOverlaysRenderer={createOverlaysRenderer} />
         </div>
       </div>;
       const templateUpdate = template(node, eventsBus);
-      const loaderNode = node.querySelector('.diagram-loading');
+      const loaderNode = Reference.getNode('loader');
 
       return templateUpdate;
 

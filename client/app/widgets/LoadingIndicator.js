@@ -1,4 +1,5 @@
 import {jsx, Match, Case, Default, Children} from 'view-utils';
+import {Loader} from './Loader';
 
 export function LoadingIndicator({predicate, children, floating = false}) {
   return <Match>
@@ -9,11 +10,4 @@ export function LoadingIndicator({predicate, children, floating = false}) {
       <Children children={children} />
     </Default>
   </Match>;
-}
-
-export function Loader({className, style = 'position:static;'}) {
-  return <div className={'loading_indicator overlay ' + className} style={style}>
-    <div className="spinner"><span className="glyphicon glyphicon-refresh spin"></span></div>
-    <div className="text">loading</div>
-  </div>;
 }
