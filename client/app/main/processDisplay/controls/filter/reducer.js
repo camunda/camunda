@@ -1,3 +1,5 @@
+import isEqual from 'lodash.isequal';
+
 export const OPEN_DATE_FILTER_MODAL = 'OPEN_DATE_FILTER_MODAL';
 export const CLOSE_DATE_FILTER_MODAL = 'CLOSE_DATE_FILTER_MODAL';
 export const CREATE_START_DATE_FILTER = 'CREATE_START_DATE_FILTER';
@@ -23,7 +25,7 @@ export function reducer(state = [], action) {
   }
   if (action.type === DELETE_FILTER) {
     return state.filter(({data}) => {
-      return data !== action.filter;
+      return !isEqual(data, action.filter);
     });
   }
 

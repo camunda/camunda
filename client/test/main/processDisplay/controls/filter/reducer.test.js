@@ -11,7 +11,10 @@ describe('Filter reducer', () => {
         important: 'data'
       }
     };
-    const state = reducer([filter], createDeleteFilterAction(filter.data));
+    const state = reducer([filter], createDeleteFilterAction({
+      some: 'very',
+      important: 'data'
+    }));
 
     expect(state.length).to.eql(0);
   });
