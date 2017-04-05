@@ -187,7 +187,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
         // handledTasks < currentlyAvailableTasks avoids very long cycles that we spend in this method
         // in case the broker continuously produces new tasks
-        while (handledEvents < currentlyAvailableEvents && isOpen())
+        while (handledEvents < currentlyAvailableEvents)
         {
             event = pendingEvents.poll();
             if (event == null)
@@ -198,6 +198,15 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             eventsInProcessing.incrementAndGet();
             try
             {
+                // Must first increment eventsInProcessing and only then check if the subscription
+                // is still open. This avoids a race condition between the event handler executor
+                // and the event acquisition checking if there are events in processing before closing a
+                // subscription
+                if (!isOpen())
+                {
+                    break;
+                }
+
                 handledEvents++;
 
                 try
