@@ -6,7 +6,7 @@ import {isInitial, isLoading} from 'utils';
 
 export const Statistics = withSelector(({getBpmnViewer}) => {
   const template = <div className="statisticsContainer">
-    <Class className="open" selector="display" predicate={isSelectionComplete} />
+    <Class className="open" selector="diagram" predicate={isSelectionComplete} />
     <button type="button" className="close">
       <OnEvent event="click" listener={leaveGatewayAnalysisMode} />
       <span>×</span>
@@ -52,7 +52,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
   }
 
   function getHeader(amountFct) {
-    return ({display: {selection}, statistics: {correlation}}) => {
+    return ({diagram: {selection}, statistics: {correlation}}) => {
       const gateway = selection && selection.gateway;
       const endEvent = selection && selection.endEvent;
 
@@ -89,7 +89,7 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
   }
 
   function getChartData(valueFct) {
-    return ({statistics: {correlation}, display: {selection}}) => {
+    return ({statistics: {correlation}, diagram: {selection}}) => {
       const gateway = selection && selection.gateway;
 
       if (!correlation.data || !gateway) {
@@ -114,12 +114,12 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
   return (parentNode, eventsBus) => {
     const templateUpdate = template(parentNode, eventsBus);
 
-    return [templateUpdate, ({display, statistics: {correlation}, controls}) => {
-      if (!isSelectionComplete(display) && !isInitial(correlation)) {
+    return [templateUpdate, ({diagram, statistics: {correlation}, controls}) => {
+      if (!isSelectionComplete(diagram) && !isInitial(correlation)) {
         resetStatisticData();
       }
-      if (isSelectionComplete(display) && isInitial(correlation)) {
-        loadStatisticData(display.selection, controls);
+      if (isSelectionComplete(diagram) && isInitial(correlation)) {
+        loadStatisticData(diagram.selection, controls);
       }
     }];
   };

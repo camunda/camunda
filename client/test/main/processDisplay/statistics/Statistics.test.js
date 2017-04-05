@@ -14,7 +14,7 @@ describe('<Statistics>', () => {
 
   beforeEach(() => {
     unopenedState = {
-      display: {
+      diagram: {
         selection: {}
       },
       statistics: {
@@ -23,7 +23,7 @@ describe('<Statistics>', () => {
     };
 
     openedState = {
-      display: {
+      diagram: {
         selection: {
           endEvent: 'a',
           gateway: 'b'

@@ -1,7 +1,7 @@
 import {dispatchAction, includes} from 'view-utils';
 import {get, post} from 'http';
 import {createLoadingDiagramAction, createLoadingDiagramResultAction,
-        createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
+        createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './diagram';
 import {getFilterQuery} from 'utils';
 import {getLastRoute} from 'router';
 

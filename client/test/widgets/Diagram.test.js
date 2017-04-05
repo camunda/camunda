@@ -22,7 +22,7 @@ describe('<Diagram>', () => {
 
   beforeEach(() => {
     initialState = {
-      diagram: {
+      bpmnXml: {
         state: 'INITIAL'
       },
       heatmap: {
@@ -31,7 +31,7 @@ describe('<Diagram>', () => {
     };
 
     loadedDiagramState = {
-      diagram: {
+      bpmnXml: {
         state: 'LOADED',
         data: diagramXml
       },

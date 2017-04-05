@@ -18,22 +18,22 @@ function Process() {
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
           <Case predicate={hasNoData}>
-            <Diagram selector="display" />
+            <Diagram selector="diagram" />
             <div className="no-data-indicator">
               No Data
             </div>
           </Case>
           <Case predicate={shouldDisplay('frequency')}>
-            <Diagram selector="display" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
+            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
-            <Diagram selector="display" createOverlaysRenderer={createHeatmapRendererFunction(formatTime)} />
+            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(formatTime)} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
-            <Diagram selector="display" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
+            <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
           </Case>
           <Default>
-            <Diagram selector="display" />
+            <Diagram selector="diagram" />
           </Default>
         </Match>
       </LoadingIndicator>
@@ -41,7 +41,7 @@ function Process() {
     <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
 
-  function hasNoData({controls, display:{heatmap:{data}}}) {
+  function hasNoData({controls, diagram:{heatmap:{data}}}) {
     return (!data || !data.piCount) && isViewSelected(controls, ['frequency', 'duration', 'branch_analysis']);
   }
 
@@ -51,11 +51,11 @@ function Process() {
     };
   }
 
-  function createControlsState({controls, display}) {
+  function createControlsState({controls, diagram}) {
     const selection = {};
 
-    Object.keys(display.selection).forEach(key => {
-      selection[key] = getName(display.selection[key]);
+    Object.keys(diagram.selection).forEach(key => {
+      selection[key] = getName(diagram.selection[key]);
     });
 
     return {
@@ -77,8 +77,8 @@ function Process() {
     }
   }
 
-  function isLoadingSomething({display: {diagram, heatmap}, controls}) {
-    return isLoading(diagram) || isLoading(heatmap);
+  function isLoadingSomething({diagram: {bpmnXml, heatmap}, controls}) {
+    return isLoading(bpmnXml) || isLoading(heatmap);
   }
 
   return (node, eventsBus) => {

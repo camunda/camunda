@@ -52,22 +52,22 @@ function createBpmnViewer() {
       }));
       let diagramRendered = false;
 
-      const update = (display) => {
-        if (isLoaded(display.diagram)) {
-          renderDiagram(display);
+      const update = (diagram) => {
+        if (isLoaded(diagram.bpmnXml)) {
+          renderDiagram(diagram);
         } else {
           diagramRendered = false;
         }
 
         renderOverlays.forEach(fct => fct({
-          state: display,
+          state: diagram,
           diagramRendered
         }));
       };
 
-      function renderDiagram(display) {
+      function renderDiagram(diagram) {
         if (!diagramRendered) {
-          viewer.importXML(display.diagram.data, (err) => {
+          viewer.importXML(diagram.bpmnXml.data, (err) => {
             if (err) {
               node.innerHTML = `Could not load diagram, got error ${err}`;
             }
@@ -75,7 +75,7 @@ function createBpmnViewer() {
             resetZoom(viewer);
 
             renderOverlays.forEach(fct => fct({
-              state: display,
+              state: diagram,
               diagramRendered
             }));
 
