@@ -36,7 +36,7 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
                 .endEvent()
                 .done();
 
-        wrap(processModel).taskDefinition("serviceTask", "foo", 0);
+        wrap(processModel).taskDefinition("serviceTask", "foo", 3);
 
         // create deployment
         workflowsClient

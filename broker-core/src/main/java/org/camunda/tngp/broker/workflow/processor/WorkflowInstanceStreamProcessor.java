@@ -8,6 +8,7 @@ import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 import java.nio.ByteOrder;
 
 import org.agrona.DirectBuffer;
+import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -259,15 +260,29 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         return eventProcessor;
     }
 
-    protected ExecutableWorkflow getWorkflow(final DirectBuffer bpmnProcessId, int version)
+    protected DeploymentWorkflowCache workflowCache = new DeploymentWorkflowCache(1024);
+
+    private final class DeploymentWorkflowCache
     {
-        ExecutableWorkflow workflow = null;
+        private LongLruCache<ExecutableWorkflow> workflowCache;
 
-        final long deploymentEventPosition = workflowPositionIndexAccessor.wrap(bpmnProcessId, version).getEventPosition();
-
-        if (deploymentEventPosition >= 0)
+        DeploymentWorkflowCache(int cacheCapacity)
         {
-            final boolean found = deploymentLogStreamReader.seek(deploymentEventPosition);
+            this.workflowCache = new LongLruCache<>(cacheCapacity, this::lookupWorkflow, (workflow) ->
+            {
+                return;
+            });
+        }
+
+        public ExecutableWorkflow getWorkflow(long position)
+        {
+            return workflowCache.lookup(position);
+        }
+
+        private ExecutableWorkflow lookupWorkflow(long position)
+        {
+            ExecutableWorkflow workflow = null;
+            final boolean found = deploymentLogStreamReader.seek(position);
 
             if (found && deploymentLogStreamReader.hasNext())
             {
@@ -278,6 +293,20 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 // currently, it can only be one
                 workflow = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
             }
+            return workflow;
+        }
+
+    }
+
+    protected ExecutableWorkflow getWorkflow(final DirectBuffer bpmnProcessId, int version)
+    {
+        ExecutableWorkflow workflow = null;
+
+        final long deploymentEventPosition = workflowPositionIndexAccessor.wrap(bpmnProcessId, version).getEventPosition();
+
+        if (deploymentEventPosition >= 0)
+        {
+            workflow = workflowCache.getWorkflow(deploymentEventPosition);
         }
 
         if (workflow == null)
