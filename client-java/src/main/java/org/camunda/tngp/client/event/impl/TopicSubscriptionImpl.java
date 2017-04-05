@@ -148,14 +148,19 @@ public class TopicSubscriptionImpl
 
     protected void acknowledgeLastProcessedEvent()
     {
-        if (lastProcessedEventPosition > lastAcknowledgedPosition)
+
+        // note: it is important we read lastProcessedEventPosition only once
+        //   as it be changed concurrently by an executor thread
+        final long positionToAck = lastProcessedEventPosition;
+
+        if (positionToAck > lastAcknowledgedPosition)
         {
             client.acknowledgeEvent()
                 .subscriptionName(name)
-                .ackPosition(lastProcessedEventPosition)
+                .ackPosition(positionToAck)
                 .execute();
 
-            lastAcknowledgedPosition = lastProcessedEventPosition;
+            lastAcknowledgedPosition = positionToAck;
         }
     }
 
