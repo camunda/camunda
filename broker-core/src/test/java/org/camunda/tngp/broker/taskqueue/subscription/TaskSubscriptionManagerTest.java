@@ -130,7 +130,7 @@ public class TaskSubscriptionManagerTest
 
         // then
         assertThat(future).isCompleted();
-        assertThat(subscription.getId()).isEqualTo(0L);
+        assertThat(subscription.getSubscriberKey()).isEqualTo(0L);
 
         verify(mockStreamProcessorBuilder).apply(TASK_TYPE_BUFFER);
         verify(mockStreamProcessor).addSubscription(subscription);
@@ -154,7 +154,7 @@ public class TaskSubscriptionManagerTest
 
         // then
         assertThat(future).isCompleted();
-        assertThat(anotherSubscription.getId()).isEqualTo(1L);
+        assertThat(anotherSubscription.getSubscriberKey()).isEqualTo(1L);
 
         verify(mockStreamProcessorBuilder, times(1)).apply(TASK_TYPE_BUFFER);
 
@@ -183,7 +183,7 @@ public class TaskSubscriptionManagerTest
 
         // then
         assertThat(future).isCompleted();
-        assertThat(anotherSubscription.getId()).isEqualTo(1L);
+        assertThat(anotherSubscription.getSubscriberKey()).isEqualTo(1L);
 
         verify(mockStreamProcessorBuilder, times(2)).apply(TASK_TYPE_BUFFER);
 
@@ -212,7 +212,7 @@ public class TaskSubscriptionManagerTest
 
         // then
         assertThat(future).isCompleted();
-        assertThat(anotherSubscription.getId()).isEqualTo(1L);
+        assertThat(anotherSubscription.getSubscriberKey()).isEqualTo(1L);
 
         verify(mockStreamProcessorBuilder, times(1)).apply(TASK_TYPE_BUFFER);
         verify(mockStreamProcessorBuilder, times(1)).apply(ANOTHER_TASK_TYPE_BUFFER);

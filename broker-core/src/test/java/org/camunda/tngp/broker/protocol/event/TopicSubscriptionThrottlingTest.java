@@ -33,7 +33,7 @@ public class TopicSubscriptionThrottlingTest
             .command()
                 .put("startPosition", 0)
                 .put("name", "foo")
-                .put("event", "SUBSCRIBE")
+                .put("eventType", "SUBSCRIBE")
                 .put("prefetchCapacity", prefetchCapacity)
                 .done()
             .sendAndAwait();
@@ -83,7 +83,7 @@ public class TopicSubscriptionThrottlingTest
             .eventTypeSubscription()
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("event", "ACKNOWLEDGE")
+                .put("eventType", "ACKNOWLEDGE")
                 .put("ackPosition", eventPositions.get(1))
                 .done()
             .sendAndAwait();

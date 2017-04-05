@@ -43,7 +43,7 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<Topic
     @Override
     protected Object writeCommand()
     {
-        this.subscription.setEvent(SubscriberEventType.SUBSCRIBE);
+        this.subscription.setEventType(SubscriberEventType.SUBSCRIBE);
         return subscription;
     }
 

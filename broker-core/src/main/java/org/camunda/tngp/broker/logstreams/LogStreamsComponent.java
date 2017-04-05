@@ -4,7 +4,7 @@ import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREA
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 
-import org.camunda.tngp.broker.event.TopicSubscriptionNames;
+import org.camunda.tngp.broker.event.TopicSubscriptionServiceNames;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
 import org.camunda.tngp.broker.system.Component;
 import org.camunda.tngp.broker.system.SystemContext;
@@ -27,7 +27,7 @@ public class LogStreamsComponent implements Component
 
         final TopicSubscriptionService topicSubscriptionService = new TopicSubscriptionService(context.getConfigurationManager());
         context.getServiceContainer()
-            .createService(TopicSubscriptionNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
+            .createService(TopicSubscriptionServiceNames.TOPIC_SUBSCRIPTION_SERVICE, topicSubscriptionService)
             .dependency(TransportServiceNames.TRANSPORT_SEND_BUFFER, topicSubscriptionService.getSendBufferInjector())
             .dependency(AGENT_RUNNER_SERVICE, topicSubscriptionService.getAgentRunnerServicesInjector())
             .groupReference(LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP, topicSubscriptionService.getLogStreamsGroupReference())

@@ -117,7 +117,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
         return cmdQueue.runAsync(future ->
         {
-            subscriptionsById.put(subscription.getId(), subscription);
+            subscriptionsById.put(subscription.getSubscriberKey(), subscription);
 
             availableSubscriptionCredits += subscription.getCredits();
 
@@ -307,7 +307,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
             targetEventMetadata
                 .reqChannelId(lockSubscription.getChannelId())
-                .subscriptionId(lockSubscription.getId())
+                .subscriberKey(lockSubscription.getSubscriberKey())
                 .protocolVersion(Constants.PROTOCOL_VERSION)
                 .eventType(TASK_EVENT);
             // TODO: targetEventMetadata.raftTermId(raftTermId);

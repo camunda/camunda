@@ -14,7 +14,7 @@ package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 public class TaskSubscription
 {
-    private long id;
+    private long subscriberKey;
 
     private long topicId;
     private String taskType;
@@ -23,14 +23,14 @@ public class TaskSubscription
     private long lockOwner;
     private int credits;
 
-    public long getId()
+    public long getSubscriberKey()
     {
-        return id;
+        return subscriberKey;
     }
 
-    public void setId(long id)
+    public void setSubscriberKey(long subscriberKey)
     {
-        this.id = id;
+        this.subscriberKey = subscriberKey;
     }
 
     public long getTopicId()

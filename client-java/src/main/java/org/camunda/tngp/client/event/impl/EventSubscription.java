@@ -25,7 +25,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     public static final int STATE_ABORTING = 5;
     public static final int STATE_ABORTED = 6;
 
-    protected long id;
+    protected long subscriberKey;
     protected final EventAcquisition<T> eventAcquisition;
     protected final ManyToManyConcurrentArrayQueue<TopicEventImpl> pendingEvents;
     protected final int capacity;
@@ -46,14 +46,14 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         this.capacity = pendingEvents.capacity();
     }
 
-    public long getId()
+    public long getSubscriberKey()
     {
-        return id;
+        return subscriberKey;
     }
 
-    public void setId(long id)
+    public void setSubscriberKey(long subscriberKey)
     {
-        this.id = id;
+        this.subscriberKey = subscriberKey;
     }
 
     public int getReceiveChannelId()

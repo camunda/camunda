@@ -52,7 +52,7 @@ public class TaskSubscriptionTest
         final ControlMessageResponse subscriptionResponse = apiRule
             .openTaskSubscription(0, "foo")
             .await();
-        final int secondSubscriptionId = (int) subscriptionResponse.getData().get("id");
+        final int secondSubscriberKey = (int) subscriptionResponse.getData().get("subscriberKey");
 
         final Optional<SubscribedEvent> taskEvent = apiRule.subscribedEvents()
             .filter((s) -> s.subscriptionType() == SubscriptionType.TASK_SUBSCRIPTION
@@ -60,7 +60,7 @@ public class TaskSubscriptionTest
             .findFirst();
 
         assertThat(taskEvent).isPresent();
-        assertThat(taskEvent.get().subscriptionId()).isEqualTo(secondSubscriptionId);
+        assertThat(taskEvent.get().subscriberKey()).isEqualTo(secondSubscriberKey);
     }
 
 }

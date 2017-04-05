@@ -3,7 +3,7 @@ package org.camunda.tngp.client.impl.cmd;
 public class TopicSubscriberEvent
 {
 
-    protected SubscriberEventType event;
+    protected SubscriberEventType eventType;
     protected long startPosition;
     protected String name;
     protected int prefetchCapacity;
@@ -43,21 +43,21 @@ public class TopicSubscriberEvent
         return prefetchCapacity;
     }
 
-    public void setEvent(SubscriberEventType event)
+    public void setEventType(SubscriberEventType event)
     {
-        this.event = event;
+        this.eventType = event;
     }
 
-    public SubscriberEventType getEvent()
+    public SubscriberEventType getEventType()
     {
-        return event;
+        return eventType;
     }
 
     public void reset()
     {
         this.startPosition = -1L;
         this.prefetchCapacity = -1;
-        this.event = null;
+        this.eventType = null;
         this.name = null;
     }
 }

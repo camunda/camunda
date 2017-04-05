@@ -89,7 +89,7 @@ public class CloseTaskSubscriptionCmdTest
 
         final TaskSubscription taskSubscription = objectMapper.readValue(data, TaskSubscription.class);
 
-        assertThat(taskSubscription.getId()).isEqualTo(2L);
+        assertThat(taskSubscription.getSubscriberKey()).isEqualTo(2L);
         assertThat(taskSubscription.getTopicId()).isEqualTo(TOPIC_ID);
     }
 

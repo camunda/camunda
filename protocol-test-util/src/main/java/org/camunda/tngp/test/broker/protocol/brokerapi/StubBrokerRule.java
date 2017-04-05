@@ -135,13 +135,13 @@ public class StubBrokerRule extends ExternalResource
         final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
         onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT
-                && "SUBSCRIBE".equals(r.getCommand().get("event")))
+                && "SUBSCRIBE".equals(r.getCommand().get("eventType")))
             .respondWith()
             .longKey((r) -> subscriberKeyProvider.getAndIncrement())
             .topicId((r) -> r.topicId())
             .event()
                 .allOf((r) -> r.getCommand())
-                .put("event", "SUBSCRIBED")
+                .put("eventType", "SUBSCRIBED")
                 .done()
             .register();
 
@@ -153,13 +153,13 @@ public class StubBrokerRule extends ExternalResource
             .register();
 
         onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT
-                && "ACKNOWLEDGE".equals(r.getCommand().get("event")))
+                && "ACKNOWLEDGE".equals(r.getCommand().get("eventType")))
             .respondWith()
             .longKey((r) -> subscriptionKeyProvider.getAndIncrement())
             .topicId((r) -> r.topicId())
             .event()
                 .allOf((r) -> r.getCommand())
-                .put("event", "ACKNOWLEDGED")
+                .put("eventType", "ACKNOWLEDGED")
                 .done()
             .register();
     }

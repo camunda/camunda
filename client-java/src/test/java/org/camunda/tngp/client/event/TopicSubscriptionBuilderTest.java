@@ -72,7 +72,7 @@ public class TopicSubscriptionBuilderTest
 
         // then
         assertThat(subscriptions.getManagedSubscriptions()).contains(subscription);
-        assertThat(subscription.getId()).isEqualTo(123L);
+        assertThat(subscription.getSubscriberKey()).isEqualTo(123L);
         assertThat(subscription.getHandler()).isNotNull();
 
         verify(client).createTopicSubscription();
@@ -153,7 +153,7 @@ public class TopicSubscriptionBuilderTest
 
         // then
         assertThat(subscriptions.getPollableSubscriptions()).contains(subscription);
-        assertThat(subscription.getId()).isEqualTo(123L);
+        assertThat(subscription.getSubscriberKey()).isEqualTo(123L);
         assertThat(subscription.getHandler()).isNull();
 
         verify(client).createTopicSubscription();

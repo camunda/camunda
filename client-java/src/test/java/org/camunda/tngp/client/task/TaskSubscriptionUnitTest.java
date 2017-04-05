@@ -404,7 +404,7 @@ public class TaskSubscriptionUnitTest
 
         // then
         verify(client, times(1)).increaseSubscriptionCredits();
-        verify(updateCreditsCmd).subscriptionId(subscription.getId());
+        verify(updateCreditsCmd).subscriptionId(subscription.getSubscriberKey());
         verify(updateCreditsCmd).credits(4);
         verify(updateCreditsCmd, times(1)).execute();
     }

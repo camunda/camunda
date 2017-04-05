@@ -54,7 +54,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         {
             final EventSubscriptionCreationResult result = subscription.requestNewSubscription();
 
-            subscription.setId(result.getSubscriptionId());
+            subscription.setSubscriberKey(result.getSubscriberKey());
             subscription.setReceiveChannelId(result.getReceiveChannelId());
             subscriptions.addSubscription(subscription);
             future.complete(null);
@@ -92,9 +92,9 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     }
 
     @Override
-    public void onEvent(int topicId, long subscriptionId, TopicEventImpl event)
+    public void onEvent(int topicId, long subscriberKey, TopicEventImpl event)
     {
-        final T subscription = subscriptions.getSubscription(topicId, subscriptionId);
+        final T subscription = subscriptions.getSubscription(topicId, subscriberKey);
 
         if (subscription != null && subscription.isOpen())
         {
@@ -102,7 +102,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
         else
         {
-            LOGGER.debug(roleName() + ": Ignoring event " + event.toString() + " for subscription " + subscriptionId);
+            LOGGER.debug(roleName() + ": Ignoring event " + event.toString() + " for subscription " + subscriberKey);
         }
     }
 

@@ -51,7 +51,7 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         subscription.wrap(buffer);
 
-        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(subscription.getId(), subscription.getCredits());
+        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(subscription.getSubscriberKey(), subscription.getCredits());
 
         return future.handle((v, failure) ->
         {

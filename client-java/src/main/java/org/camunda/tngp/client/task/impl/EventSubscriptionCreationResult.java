@@ -2,12 +2,12 @@ package org.camunda.tngp.client.task.impl;
 
 public class EventSubscriptionCreationResult
 {
-    protected final long subscriptionId;
+    protected final long subscriberKey;
     protected final int receiveChannel;
 
-    public EventSubscriptionCreationResult(long subscriptionId, int receiveChannel)
+    public EventSubscriptionCreationResult(long subscriberKey, int receiveChannel)
     {
-        this.subscriptionId = subscriptionId;
+        this.subscriberKey = subscriberKey;
         this.receiveChannel = receiveChannel;
     }
 
@@ -16,9 +16,9 @@ public class EventSubscriptionCreationResult
         return receiveChannel;
     }
 
-    public long getSubscriptionId()
+    public long getSubscriberKey()
     {
-        return subscriptionId;
+        return subscriberKey;
     }
 
 }

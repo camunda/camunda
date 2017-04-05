@@ -9,7 +9,7 @@ import org.camunda.tngp.client.event.impl.EventSubscription;
 
 public class EventSubscriptions<T extends EventSubscription<T>>
 {
-    // topicId => subscriptionId => subscription (subscription ids are not guaranteed to be globally unique)
+    // topicId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
     protected Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptions = new Int2ObjectHashMap<>();
 
     protected final List<T> pollableSubscriptions = new CopyOnWriteArrayList<>();
@@ -19,7 +19,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
     {
         this.subscriptions
             .computeIfAbsent(subscription.getTopicId(), (i) -> new Long2ObjectHashMap<>())
-            .put(subscription.getId(), subscription);
+            .put(subscription.getSubscriberKey(), subscription);
         this.pollableSubscriptions.add(subscription);
     }
 
@@ -27,7 +27,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
     {
         this.subscriptions
             .computeIfAbsent(subscription.getTopicId(), (i) -> new Long2ObjectHashMap<>())
-            .put(subscription.getId(), subscription);
+            .put(subscription.getSubscriberKey(), subscription);
         this.managedSubscriptions.add(subscription);
     }
 
@@ -90,7 +90,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         final Long2ObjectHashMap<T> subscriptionsForTopic = subscriptions.get(subscription.getTopicId());
         if (subscriptionsForTopic != null)
         {
-            subscriptionsForTopic.remove(subscription.getId());
+            subscriptionsForTopic.remove(subscription.getSubscriberKey());
 
             if (subscriptionsForTopic.isEmpty())
             {
@@ -102,12 +102,12 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         managedSubscriptions.remove(subscription);
     }
 
-    public T getSubscription(int topicId, long id)
+    public T getSubscription(int topicId, long subscriberKey)
     {
         final Long2ObjectHashMap<T> subscriptionsForTopic = subscriptions.get(topicId);
         if (subscriptionsForTopic != null)
         {
-            return subscriptionsForTopic.get(id);
+            return subscriptionsForTopic.get(subscriberKey);
         }
         else
         {

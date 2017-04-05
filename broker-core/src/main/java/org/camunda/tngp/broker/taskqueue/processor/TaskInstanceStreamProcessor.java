@@ -235,7 +235,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                         .channelId(sourceEventMetadata.getReqChannelId())
                         .topicId(streamId)
                         .longKey(eventKey)
-                        .subscriptionId(sourceEventMetadata.getSubscriptionId())
+                        .subscriberKey(sourceEventMetadata.getSubscriberKey())
                         .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
                         .eventType(TASK_EVENT)
                         .eventWriter(taskEvent)
@@ -243,7 +243,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             }
             else
             {
-                final long subscriptionId = sourceEventMetadata.getSubscriptionId();
+                final long subscriptionId = sourceEventMetadata.getSubscriberKey();
 
                 taskSubscriptionManager.increaseSubscriptionCredits(subscriptionId, 1);
 

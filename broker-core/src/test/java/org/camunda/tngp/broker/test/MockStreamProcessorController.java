@@ -68,7 +68,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
         this.defaultEventSetter = defaultEventSetter;
         this.defaultMetadataSetter = (m) ->
         {
-            m.subscriptionId(0L);
+            m.subscriberKey(0L);
             m.protocolVersion(0);
             m.raftTermId(0);
             m.reqChannelId(0);

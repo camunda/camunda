@@ -29,7 +29,7 @@ public class SubscribedEventBuilder implements BufferWriter
     protected int topicId;
     protected long position;
     protected long longKey;
-    protected long subscriptionId;
+    protected long subscriberKey;
     protected SubscriptionType subscriptionType;
     protected EventType eventType;
     protected byte[] event;
@@ -58,9 +58,9 @@ public class SubscribedEventBuilder implements BufferWriter
         return this;
     }
 
-    public SubscribedEventBuilder subscriptionId(long subscriptionId)
+    public SubscribedEventBuilder subscriberKey(long subscriberKey)
     {
-        this.subscriptionId = subscriptionId;
+        this.subscriberKey = subscriberKey;
         return this;
     }
 
@@ -142,7 +142,7 @@ public class SubscribedEventBuilder implements BufferWriter
             .longKey(longKey)
             .position(position)
             .putEvent(event, 0, event.length)
-            .subscriptionId(subscriptionId)
+            .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .topicId(topicId);
     }

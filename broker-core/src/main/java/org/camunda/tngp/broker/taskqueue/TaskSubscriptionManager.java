@@ -99,7 +99,7 @@ public class TaskSubscriptionManager implements Agent
             }
 
             final long subscriptionId = nextSubscriptionId++;
-            subscription.setId(subscriptionId);
+            subscription.setSubscriberKey(subscriptionId);
 
             final LockTaskStreamProcessor streamProcessor = logStreamBucket.getStreamProcessorByTaskType(taskType);
             if (streamProcessor != null)

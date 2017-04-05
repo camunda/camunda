@@ -45,7 +45,7 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
     @Override
     protected Object writeCommand()
     {
-        subscription.setId(subscriptionId);
+        subscription.setSubscriberKey(subscriptionId);
         subscription.setTopicId(topicId);
 
         return subscription;

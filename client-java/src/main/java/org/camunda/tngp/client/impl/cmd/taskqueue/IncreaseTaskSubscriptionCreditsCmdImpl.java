@@ -55,7 +55,7 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     @Override
     protected Object writeCommand()
     {
-        subscription.setId(subscriptionId);
+        subscription.setSubscriberKey(subscriptionId);
         subscription.setTopicId(topicId);
         subscription.setCredits(credits);
 

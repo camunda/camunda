@@ -133,7 +133,7 @@ public class TopicSubscriptionImpl
         acknowledgeLastProcessedEvent();
 
         client.closeTopicSubscription()
-            .subscriberKey(id)
+            .subscriberKey(subscriberKey)
             .execute();
     }
 

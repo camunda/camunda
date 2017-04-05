@@ -29,7 +29,7 @@ public class TaskSubscriptions
 
     public void addSubscription(final TaskSubscription subscription)
     {
-        subscriptionsById.put(subscription.getId(), subscription);
+        subscriptionsById.put(subscription.getSubscriberKey(), subscription);
 
         final int typeHash = typeHash(subscription.getLockTaskType());
         TaskSubscriptionBucket subscriptionBucket = subscriptionsByTypeHash.get(typeHash);
@@ -38,7 +38,7 @@ public class TaskSubscriptions
             subscriptionBucket = new TaskSubscriptionBucket();
             subscriptionsByTypeHash.put(typeHash, subscriptionBucket);
         }
-        subscriptionBucket.add(subscription.getId());
+        subscriptionBucket.add(subscription.getSubscriberKey());
 
         availableCredits += subscription.getCredits();
     }

@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.Agent;
-import org.camunda.tngp.broker.event.TopicSubscriptionNames;
+import org.camunda.tngp.broker.event.TopicSubscriptionServiceNames;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
@@ -115,8 +115,8 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
             createStreamProcessorService(
                     logStreamServiceName,
-                    TopicSubscriptionNames.subscriptionManagementServiceName(logStream.getLogName()),
-                    StreamProcessorIds.TOPIC_SUBSCRIPTION_ACK_PROCESSOR_ID,
+                    TopicSubscriptionServiceNames.subscriptionManagementServiceName(logStream.getLogName()),
+                    StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID,
                     ackProcessor,
                     TopicSubscriptionManagementProcessor.filter())
                 .thenAccept((v) -> managersByLog.put(logStream.getId(), ackProcessor));
@@ -131,7 +131,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         }
         else if (config.snapshotDirectory != null && !config.snapshotDirectory.isEmpty())
         {
-            final String indexFile = config.snapshotDirectory + File.separator + "ack-index." + logName;
+            final String indexFile = config.snapshotDirectory + File.separator + "ack-index." + logName + ".idx";
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
             return new FileChannelIndexStore(indexFileChannel);
         }

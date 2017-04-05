@@ -52,7 +52,7 @@ public class TopicSubscriptionTest
             .longKey(key)
             .position(position)
             .eventType(EventType.RAFT_EVENT)
-            .subscriptionId(subscriptionId)
+            .subscriberKey(subscriptionId)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event()
                 .done()
@@ -118,7 +118,7 @@ public class TopicSubscriptionTest
 
         final List<ExecuteCommandRequest> acknowledgements = commandRequests.stream()
                 .filter((c) -> c.eventType() == EventType.SUBSCRIPTION_EVENT)
-                .filter((c) -> "ACKNOWLEDGE".equals(c.getCommand().get("event")))
+                .filter((c) -> "ACKNOWLEDGE".equals(c.getCommand().get("eventType")))
                 .collect(Collectors.toList());
 
         assertThat(acknowledgements).isNotEmpty();
@@ -193,7 +193,7 @@ public class TopicSubscriptionTest
 
         // then
         final ExecuteCommandRequest addSubscriptionRequest = brokerRule.getReceivedCommandRequests().stream()
-            .filter((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT && "SUBSCRIBE".equals(r.getCommand().get("event")))
+            .filter((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT && "SUBSCRIBE".equals(r.getCommand().get("eventType")))
             .findFirst()
             .get();
 

@@ -4,7 +4,7 @@ public class TopicSubscriptionEvent
 {
 
     protected String name;
-    protected final SubscriptionEventType event = SubscriptionEventType.ACKNOWLEDGE;
+    protected final SubscriptionEventType eventType = SubscriptionEventType.ACKNOWLEDGE;
     protected long ackPosition;
 
     public String getName()
@@ -27,9 +27,9 @@ public class TopicSubscriptionEvent
         this.ackPosition = ackPosition;
     }
 
-    public SubscriptionEventType getEvent()
+    public SubscriptionEventType getEventType()
     {
-        return event;
+        return eventType;
     }
 
     public void reset()

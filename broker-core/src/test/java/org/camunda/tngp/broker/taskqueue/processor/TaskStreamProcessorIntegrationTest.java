@@ -202,7 +202,7 @@ public class TaskStreamProcessorIntegrationTest
     {
         // given
         final TaskSubscription subscription = new TaskSubscription()
-                .setId(1L)
+                .setSubscriberKey(1L)
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
@@ -240,7 +240,7 @@ public class TaskStreamProcessorIntegrationTest
 
         verify(mockSubscribedEventWriter, times(1)).tryWriteMessage();
         verify(mockSubscribedEventWriter).channelId(11);
-        verify(mockSubscribedEventWriter).subscriptionId(1L);
+        verify(mockSubscribedEventWriter).subscriberKey(1L);
         verify(mockSubscribedEventWriter).subscriptionType(SubscriptionType.TASK_SUBSCRIPTION);
     }
 
@@ -249,7 +249,7 @@ public class TaskStreamProcessorIntegrationTest
     {
         // given
         final TaskSubscription subscription = new TaskSubscription()
-                .setId(1L)
+                .setSubscriberKey(1L)
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
@@ -303,7 +303,7 @@ public class TaskStreamProcessorIntegrationTest
     {
         // given
         final TaskSubscription subscription = new TaskSubscription()
-                .setId(1L)
+                .setSubscriberKey(1L)
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
@@ -358,7 +358,7 @@ public class TaskStreamProcessorIntegrationTest
         ClockUtil.setCurrentTime(now);
 
         final TaskSubscription subscription = new TaskSubscription()
-                .setId(1L)
+                .setSubscriberKey(1L)
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(lockDuration.toMillis())
@@ -410,7 +410,7 @@ public class TaskStreamProcessorIntegrationTest
     {
         // given
         final TaskSubscription subscription = new TaskSubscription()
-                .setId(1L)
+                .setSubscriberKey(1L)
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())

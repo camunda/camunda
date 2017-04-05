@@ -85,7 +85,7 @@ public class CreateTaskSubscriptionCmdImpl extends AbstractControlMessageCmd<Tas
     @Override
     protected EventSubscriptionCreationResult getResponseValue(int channelId, TaskSubscription data)
     {
-        return new EventSubscriptionCreationResult(data.getId(), channelId);
+        return new EventSubscriptionCreationResult(data.getSubscriberKey(), channelId);
     }
 
 }

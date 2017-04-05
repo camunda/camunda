@@ -132,7 +132,7 @@ public class TaskSubscriptionImpl
     public void requestSubscriptionClose()
     {
         taskClient.closeBrokerTaskSubscription()
-            .subscriptionId(id)
+            .subscriptionId(subscriberKey)
             .execute();
 
     }
@@ -147,7 +147,7 @@ public class TaskSubscriptionImpl
             if (credits > 0)
             {
                 taskClient.increaseSubscriptionCredits()
-                    .subscriptionId(id)
+                    .subscriptionId(subscriberKey)
                     .credits(credits)
                     .execute();
             }

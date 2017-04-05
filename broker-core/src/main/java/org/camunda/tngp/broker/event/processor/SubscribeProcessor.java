@@ -71,34 +71,6 @@ public class SubscribeProcessor implements EventProcessor
         return state.executeSideEffects();
     }
 
-    @Override
-    public void updateState()
-    {
-        state.updateState();
-    }
-
-    /**
-     * @return the position at which to resume/start the subscription (inclusive)
-     */
-    protected long determineResumePosition(long startPosition, long lastAckedPosition, boolean forceStart)
-    {
-        if (forceStart)
-        {
-            return startPosition;
-        }
-        else
-        {
-            if (lastAckedPosition >= 0)
-            {
-                return lastAckedPosition + 1;
-            }
-            else
-            {
-                return startPosition;
-            }
-        }
-    }
-
     protected class RequestFailureProcessor implements EventProcessor
     {
         protected String error;
@@ -241,9 +213,13 @@ public class SubscribeProcessor implements EventProcessor
 
             subscriberEvent
                 .setStartPosition(processor.getStartPosition())
-                .setEvent(TopicSubscriberEventType.SUBSCRIBED);
+                .setEventType(TopicSubscriberEventType.SUBSCRIBED);
 
-            return manager.writeSubscriberEvent(metadata, subscriberEvent, event);
+            return writer
+                .metadataWriter(metadata)
+                .valueWriter(subscriberEvent)
+                .key(event.getLongKey())
+                .tryWrite();
         }
     }
 }

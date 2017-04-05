@@ -117,7 +117,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(4)
-                .subscriptionId(5L));
+                .subscriberKey(5L));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
@@ -127,7 +127,7 @@ public class TaskInstanceStreamProcessorTest
 
         verify(mockSubscribedEventWriter, times(1)).tryWriteMessage();
         verify(mockSubscribedEventWriter).channelId(4);
-        verify(mockSubscribedEventWriter).subscriptionId(5L);
+        verify(mockSubscribedEventWriter).subscriberKey(5L);
         verify(mockSubscribedEventWriter).subscriptionType(SubscriptionType.TASK_SUBSCRIPTION);
     }
 
@@ -145,7 +145,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(4)
-                .subscriptionId(5L));
+                .subscriberKey(5L));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.FAIL)
@@ -159,7 +159,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(6)
-                .subscriptionId(7L));
+                .subscriberKey(7L));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
@@ -169,7 +169,7 @@ public class TaskInstanceStreamProcessorTest
 
         verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
         verify(mockSubscribedEventWriter).channelId(6);
-        verify(mockSubscribedEventWriter).subscriptionId(7L);
+        verify(mockSubscribedEventWriter).subscriberKey(7L);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(4)
-                .subscriptionId(5L));
+                .subscriberKey(5L));
 
         mockController.processEvent(2L, event -> event
                 .setEventType(TaskEventType.EXPIRE_LOCK)
@@ -200,7 +200,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockOwner(3),
             metadata -> metadata
                 .reqChannelId(6)
-                .subscriptionId(7L));
+                .subscriberKey(7L));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCKED);
@@ -210,7 +210,7 @@ public class TaskInstanceStreamProcessorTest
 
         verify(mockSubscribedEventWriter, times(2)).tryWriteMessage();
         verify(mockSubscribedEventWriter).channelId(6);
-        verify(mockSubscribedEventWriter).subscriptionId(7L);
+        verify(mockSubscribedEventWriter).subscriberKey(7L);
     }
 
     @Test
@@ -357,7 +357,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(lockTime)
                 .setLockOwner(3),
             metadata -> metadata
-                .subscriptionId(1L));
+                .subscriberKey(1L));
 
         // when
         mockController.processEvent(2L,
@@ -366,7 +366,7 @@ public class TaskInstanceStreamProcessorTest
                 .setLockTime(lockTime)
                 .setLockOwner(4),
             metadata -> metadata
-                .subscriptionId(2L));
+                .subscriberKey(2L));
 
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);

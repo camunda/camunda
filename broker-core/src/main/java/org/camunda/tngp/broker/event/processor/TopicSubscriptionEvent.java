@@ -9,7 +9,7 @@ import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 public class TopicSubscriptionEvent extends UnpackedObject
 {
     protected StringProperty nameProp = new StringProperty("name");
-    protected EnumProperty<TopicSubscriptionEventType> eventProp = new EnumProperty<>("event", TopicSubscriptionEventType.class);
+    protected EnumProperty<TopicSubscriptionEventType> eventProp = new EnumProperty<>("eventType", TopicSubscriptionEventType.class);
     protected LongProperty ackPositionProp = new LongProperty("ackPosition");
 
     public TopicSubscriptionEvent()
@@ -41,12 +41,12 @@ public class TopicSubscriptionEvent extends UnpackedObject
         return this;
     }
 
-    public TopicSubscriptionEventType getEvent()
+    public TopicSubscriptionEventType getEventType()
     {
         return eventProp.getValue();
     }
 
-    public TopicSubscriptionEvent setEvent(TopicSubscriptionEventType event)
+    public TopicSubscriptionEvent setEventType(TopicSubscriptionEventType event)
     {
         this.eventProp.setValue(event);
         return this;

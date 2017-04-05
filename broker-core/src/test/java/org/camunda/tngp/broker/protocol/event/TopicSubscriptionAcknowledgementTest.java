@@ -64,14 +64,14 @@ public class TopicSubscriptionAcknowledgementTest
             .topicId(0)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("event", "ACKNOWLEDGE")
+                .put("eventType", "ACKNOWLEDGE")
                 .put("ackPosition", 0)
                 .done()
             .sendAndAwait();
 
         // then
         assertThat(response.getEvent()).containsEntry("name", SUBSCRIPTION_NAME);
-        assertThat(response.getEvent()).containsEntry("event", "ACKNOWLEDGED");
+        assertThat(response.getEvent()).containsEntry("eventType", "ACKNOWLEDGED");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TopicSubscriptionAcknowledgementTest
             .topicId(0)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("event", "ACKNOWLEDGE")
+                .put("eventType", "ACKNOWLEDGE")
                 .put("ackPosition", events.get(0).position())
                 .done()
             .sendAndAwait();
@@ -118,7 +118,7 @@ public class TopicSubscriptionAcknowledgementTest
             .topicId(0)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
-                .put("event", "ACKNOWLEDGE")
+                .put("eventType", "ACKNOWLEDGE")
                 .put("ackPosition", Long.MAX_VALUE)
                 .done()
             .sendAndAwait();

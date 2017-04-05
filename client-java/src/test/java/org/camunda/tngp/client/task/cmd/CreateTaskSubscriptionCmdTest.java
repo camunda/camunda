@@ -116,7 +116,7 @@ public class CreateTaskSubscriptionCmdTest
 
         // given
         final TaskSubscription taskSubscription = new TaskSubscription();
-        taskSubscription.setId(3L);
+        taskSubscription.setSubscriberKey(3L);
 
         final byte[] jsonData = objectMapper.writeValueAsBytes(taskSubscription);
 
@@ -126,7 +126,7 @@ public class CreateTaskSubscriptionCmdTest
         final EventSubscriptionCreationResult result = responseHandler.readResponse(5, writeBuffer, 0, responseEncoder.sbeBlockLength(), responseEncoder.sbeSchemaVersion());
 
         // then
-        assertThat(result.getSubscriptionId()).isEqualTo(3L);
+        assertThat(result.getSubscriberKey()).isEqualTo(3L);
         assertThat(result.getReceiveChannelId()).isEqualTo(5);
     }
 

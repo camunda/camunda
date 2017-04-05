@@ -134,13 +134,13 @@ public class TopicSubscriptionTest
             .collect(Collectors.toList());
 
         assertThat(taskEvents).hasSize(2);
-        assertThat(taskEvents.get(0).subscriptionId()).isEqualTo(subscriberKey);
+        assertThat(taskEvents.get(0).subscriberKey()).isEqualTo(subscriberKey);
         assertThat(taskEvents.get(0).subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(taskEvents.get(0).position()).isEqualTo(taskKey);
         assertThat(taskEvents.get(0).topicId()).isEqualTo(0);
         assertThat(taskEvents.get(0).event()).contains(entry("eventType", "CREATE"));
 
-        assertThat(taskEvents.get(1).subscriptionId()).isEqualTo(subscriberKey);
+        assertThat(taskEvents.get(1).subscriberKey()).isEqualTo(subscriberKey);
         assertThat(taskEvents.get(1).subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
         assertThat(taskEvents.get(1).position()).isGreaterThan(taskKey);
         assertThat(taskEvents.get(1).topicId()).isEqualTo(0);
@@ -188,7 +188,7 @@ public class TopicSubscriptionTest
         assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
         assertThat(errorResponse.getErrorData()).isEqualTo("Cannot execute command. Topic with id '" +
                 Integer.MAX_VALUE + "' not found");
-        assertThat(errorResponse.getFailedRequest().get("event")).isEqualTo("SUBSCRIBE");
+        assertThat(errorResponse.getFailedRequest().get("eventType")).isEqualTo("SUBSCRIBE");
     }
 
     @Test
@@ -212,22 +212,19 @@ public class TopicSubscriptionTest
 
 
     @Test
-    public void shouldNotCloseSubscriptionNonExistingSubscription()
+    public void shouldCloseSubscriptionNonExistingSubscription()
     {
         // when
-        final ErrorResponse errorResponse = apiRule.createControlMessageRequest()
-            .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-            .data()
-                .put("topicId", 0)
-                .put("subscriberKey", Long.MAX_VALUE)
-                .done()
-            .send().awaitError();
+        final ControlMessageResponse removeResponse = apiRule.createControlMessageRequest()
+                .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
+                .data()
+                    .put("topicId", 0)
+                    .put("subscriberKey", Long.MAX_VALUE)
+                    .done()
+                .sendAndAwait();
 
         // then
-        assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-        assertThat(errorResponse.getErrorData()).isEqualTo("Cannot close topic subscription. Subscription with id " +
-                Long.MAX_VALUE + " is not open");
-        assertThat(errorResponse.getFailedRequest().get("subscriberKey")).isEqualTo(Long.MAX_VALUE);
+        assertThat(removeResponse.getData()).containsExactly(entry("subscriberKey", Long.MAX_VALUE), entry("topicId", 0));
     }
 
     @Test
@@ -292,7 +289,7 @@ public class TopicSubscriptionTest
             .topicId(0)
             .command()
                 .put("name", "foo")
-                .put("event", "ACKNOWLEDGE")
+                .put("eventType", "ACKNOWLEDGE")
                 .put("ackPosition", taskEvents.get(1))
                 .done()
             .sendAndAwait();
@@ -314,7 +311,7 @@ public class TopicSubscriptionTest
             .command()
                 .put("startPosition", taskEvents.get(0))
                 .put("name", "foo")
-                .put("event", "SUBSCRIBE")
+                .put("eventType", "SUBSCRIBE")
                 .put("forceStart", true)
                 .done()
             .sendAndAwait();
@@ -391,7 +388,7 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         // and the subscription service has abnormally closed
-        final ServiceName<Object> subscriptionServiceName = ServiceName.newServiceName("log.log.default-task-queue-log.subscription.processor.foo", Object.class);
+        final ServiceName<Object> subscriptionServiceName = ServiceName.newServiceName("log.log.default-task-queue-log.subscription.push.foo", Object.class);
         brokerRule.removeService(subscriptionServiceName);
 
         // when

@@ -28,7 +28,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected long reqConnectionId;
     protected long reqRequestId;
     protected int raftTermId;
-    protected long subscriptionId;
+    protected long subscriberKey;
     protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version by default
     protected EventType eventType = NULL_VAL;
 
@@ -47,7 +47,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         reqConnectionId = decoder.reqConnectionId();
         reqRequestId = decoder.reqRequestId();
         raftTermId = decoder.raftTermId();
-        subscriptionId = decoder.subscriptionId();
+        subscriberKey = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
         eventType = decoder.eventType();
     }
@@ -76,7 +76,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
             .reqConnectionId(reqConnectionId)
             .reqRequestId(reqRequestId)
             .raftTermId(raftTermId)
-            .subscriptionId(subscriptionId)
+            .subscriptionId(subscriberKey)
             .protocolVersion(protocolVersion)
             .eventType(eventType);
     }
@@ -125,14 +125,14 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return this;
     }
 
-    public long getSubscriptionId()
+    public long getSubscriberKey()
     {
-        return subscriptionId;
+        return subscriberKey;
     }
 
-    public BrokerEventMetadata subscriptionId(long subscriptionId)
+    public BrokerEventMetadata subscriberKey(long subscriberKey)
     {
-        this.subscriptionId = subscriptionId;
+        this.subscriberKey = subscriberKey;
         return this;
     }
 
@@ -164,7 +164,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         reqConnectionId = BrokerEventMetadataEncoder.reqConnectionIdNullValue();
         reqRequestId = BrokerEventMetadataDecoder.reqRequestIdNullValue();
         raftTermId = BrokerEventMetadataDecoder.raftTermIdNullValue();
-        subscriptionId = BrokerEventMetadataDecoder.subscriptionIdNullValue();
+        subscriberKey = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         protocolVersion = Constants.PROTOCOL_VERSION;
         eventType = NULL_VAL;
         return this;

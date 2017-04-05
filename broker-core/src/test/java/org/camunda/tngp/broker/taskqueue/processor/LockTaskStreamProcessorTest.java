@@ -68,7 +68,7 @@ public class LockTaskStreamProcessorTest
         streamProcessor = new LockTaskStreamProcessor(TASK_TYPE_BUFFER);
 
         subscription = new TaskSubscription()
-                .setId(1L)
+                .setSubscriberKey(1L)
                 .setChannelId(11)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(5).toMillis())
@@ -76,7 +76,7 @@ public class LockTaskStreamProcessorTest
                 .setCredits(3);
 
         anotherSubscription = new TaskSubscription()
-                .setId(2L)
+                .setSubscriberKey(2L)
                 .setChannelId(12)
                 .setTaskType(TASK_TYPE_BUFFER)
                 .setLockDuration(Duration.ofMinutes(10).toMillis())
@@ -115,7 +115,7 @@ public class LockTaskStreamProcessorTest
         assertThat(taskEvent.getLockOwner()).isEqualTo(1);
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
-        assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
@@ -140,7 +140,7 @@ public class LockTaskStreamProcessorTest
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
-        assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
     }
@@ -165,7 +165,7 @@ public class LockTaskStreamProcessorTest
         assertThat(taskEvent.getLockTime()).isEqualTo(lockTimeOf(subscription));
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
-        assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
     }
@@ -191,7 +191,7 @@ public class LockTaskStreamProcessorTest
         assertThat(taskEvent.getRetries()).isEqualTo(3);
 
         final BrokerEventMetadata metadata = lastWrittenEvent.getMetadata();
-        assertThat(metadata.getSubscriptionId()).isEqualTo(subscription.getId());
+        assertThat(metadata.getSubscriberKey()).isEqualTo(subscription.getSubscriberKey());
         assertThat(metadata.getReqChannelId()).isEqualTo(subscription.getChannelId());
         assertThat(metadata.getEventType()).isEqualTo(TASK_EVENT);
     }
@@ -247,8 +247,8 @@ public class LockTaskStreamProcessorTest
             final WrittenEvent<TaskEvent> lastWrittenEvent = mockController.getLastWrittenEvent();
             assertThat(lastWrittenEvent.getValue().getEventType()).isEqualTo(TaskEventType.LOCK);
 
-            final long subscriptionId = lastWrittenEvent.getMetadata().getSubscriptionId();
-            if (subscriptionId == subscription.getId())
+            final long subscriptionId = lastWrittenEvent.getMetadata().getSubscriberKey();
+            if (subscriptionId == subscription.getSubscriberKey())
             {
                 lockedTasksSubscription1.incrementAndGet();
             }
@@ -301,7 +301,7 @@ public class LockTaskStreamProcessorTest
         });
 
         // when increase credits by 1
-        streamProcessor.increaseSubscriptionCredits(subscription.getId(), 1);
+        streamProcessor.increaseSubscriptionCredits(subscription.getSubscriberKey(), 1);
 
         Stream.of(3, 4, 5).forEach(key ->
         {
@@ -326,7 +326,7 @@ public class LockTaskStreamProcessorTest
         streamProcessor.addSubscription(anotherSubscription);
 
         // when remove the first subscription
-        CompletableFuture<Boolean> future = streamProcessor.removeSubscription(subscription.getId());
+        CompletableFuture<Boolean> future = streamProcessor.removeSubscription(subscription.getSubscriberKey());
 
         // then an event is locked by the other subscription
         mockController.processEvent(2L, event -> event
@@ -339,7 +339,7 @@ public class LockTaskStreamProcessorTest
         assertThat(streamProcessor.isSuspended()).isFalse();
 
         // when remove the last subscription
-        future = streamProcessor.removeSubscription(anotherSubscription.getId());
+        future = streamProcessor.removeSubscription(anotherSubscription.getSubscriberKey());
 
         mockController.processEvent(3L, event -> event
                 .setEventType(TaskEventType.CREATED)
@@ -369,7 +369,7 @@ public class LockTaskStreamProcessorTest
         assertThat(streamProcessor.isSuspended()).isTrue();
 
         // when
-        streamProcessor.increaseSubscriptionCredits(subscription.getId(), 2);
+        streamProcessor.increaseSubscriptionCredits(subscription.getSubscriberKey(), 2);
 
         // then
         mockController.processEvent(4L, event -> event
@@ -465,7 +465,7 @@ public class LockTaskStreamProcessorTest
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("subscription credits must be greater than 0");
 
-        streamProcessor.increaseSubscriptionCredits(subscription.getId(), 0);
+        streamProcessor.increaseSubscriptionCredits(subscription.getSubscriberKey(), 0);
     }
 
     @Test

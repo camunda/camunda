@@ -51,7 +51,7 @@ public class RemoveTaskSubscriptionHandler implements ControlMessageHandler
 
         subscription.wrap(buffer);
 
-        final CompletableFuture<Void> future = manager.removeSubscription(subscription.getId());
+        final CompletableFuture<Void> future = manager.removeSubscription(subscription.getSubscriberKey());
 
         return future.handle((v, failure) ->
         {

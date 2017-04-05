@@ -45,7 +45,7 @@ public class SubscribedEventWriterTest
             .longKey(123L)
             .position(546L)
             .topicId(876)
-            .subscriptionId(4L)
+            .subscriberKey(4L)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[eventWriter.getLength() + 2]);
@@ -61,7 +61,7 @@ public class SubscribedEventWriterTest
         assertThat(bodyDecoder.longKey()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
         assertThat(bodyDecoder.topicId()).isEqualTo(876);
-        assertThat(bodyDecoder.subscriptionId()).isEqualTo(4L);
+        assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
 
         final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.eventLength()]);
         bodyDecoder.getEvent(eventBuffer, 0, eventBuffer.capacity());

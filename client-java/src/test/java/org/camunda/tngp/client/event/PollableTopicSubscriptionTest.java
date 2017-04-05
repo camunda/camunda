@@ -40,7 +40,7 @@ public class PollableTopicSubscriptionTest
             .longKey(key)
             .position(position)
             .eventType(EventType.RAFT_EVENT)
-            .subscriptionId(subscriptionId)
+            .subscriberKey(subscriptionId)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event()
                 .done()

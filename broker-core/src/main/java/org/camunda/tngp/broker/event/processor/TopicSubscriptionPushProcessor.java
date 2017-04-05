@@ -38,8 +38,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     protected LongRingBuffer pendingEvents;
 
-    // TODO: should neither write snapshots nor perform recovery/reprocessing; both are externally managed
-    //   => see https://github.com/camunda-tngp/camunda-tngp/issues/169
     public TopicSubscriptionPushProcessor(
             int channelId,
             long subscriberKey,
@@ -128,7 +126,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
             .longKey(event.getLongKey())
             .position(event.getPosition())
             .topicId(logStreamId)
-            .subscriptionId(subscriberKey)
+            .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
             .tryWriteMessage();

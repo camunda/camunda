@@ -20,7 +20,7 @@ import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class TaskSubscription extends UnpackedObject
 {
-    protected LongProperty idProp = new LongProperty("id", -1);
+    protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
 
     protected LongProperty topicIdProp = new LongProperty("topicId");
     protected StringProperty taskTypeProp = new StringProperty("taskType", "");
@@ -35,7 +35,7 @@ public class TaskSubscription extends UnpackedObject
 
     public TaskSubscription()
     {
-        this.declareProperty(idProp)
+        this.declareProperty(subscriberKeyProp)
             .declareProperty(topicIdProp)
             .declareProperty(taskTypeProp)
             .declareProperty(lockDurationProp)
@@ -43,9 +43,9 @@ public class TaskSubscription extends UnpackedObject
             .declareProperty(creditsProp);
     }
 
-    public TaskSubscription setId(long id)
+    public TaskSubscription setSubscriberKey(long subscriberKey)
     {
-        this.idProp.setValue(id);
+        this.subscriberKeyProp.setValue(subscriberKey);
         return this;
     }
 
@@ -85,9 +85,9 @@ public class TaskSubscription extends UnpackedObject
         return this;
     }
 
-    public long getId()
+    public long getSubscriberKey()
     {
-        return idProp.getValue();
+        return subscriberKeyProp.getValue();
     }
 
     public DirectBuffer getLockTaskType()

@@ -110,7 +110,7 @@ public class ClientApiRule extends ExternalResource
             .command()
                 .put("startPosition", startPosition)
                 .put("name", name)
-                .put("event", "SUBSCRIBE")
+                .put("eventType", "SUBSCRIBE")
                 .done()
             .send();
     }

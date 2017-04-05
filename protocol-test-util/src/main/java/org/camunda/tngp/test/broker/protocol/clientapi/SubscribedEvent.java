@@ -39,9 +39,9 @@ public class SubscribedEvent implements BufferReader
         return bodyDecoder.longKey();
     }
 
-    public long subscriptionId()
+    public long subscriberKey()
     {
-        return bodyDecoder.subscriptionId();
+        return bodyDecoder.subscriberKey();
     }
 
     public SubscriptionType subscriptionType()

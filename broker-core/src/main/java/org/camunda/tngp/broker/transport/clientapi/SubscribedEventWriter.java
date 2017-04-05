@@ -22,7 +22,7 @@ public class SubscribedEventWriter implements BufferWriter
     protected int topicId;
     protected long position;
     protected long longKey;
-    protected long subscriptionId;
+    protected long subscriberKey;
     protected SubscriptionType subscriptionType;
     protected EventType eventType;
     protected DirectBufferWriter eventBuffer = new DirectBufferWriter();
@@ -59,9 +59,9 @@ public class SubscribedEventWriter implements BufferWriter
         return this;
     }
 
-    public SubscribedEventWriter subscriptionId(long subscriptionId)
+    public SubscribedEventWriter subscriberKey(long subscriberKey)
     {
-        this.subscriptionId = subscriptionId;
+        this.subscriberKey = subscriberKey;
         return this;
     }
 
@@ -116,7 +116,7 @@ public class SubscribedEventWriter implements BufferWriter
             .topicId(topicId)
             .position(position)
             .longKey(longKey)
-            .subscriptionId(subscriptionId)
+            .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .eventType(eventType);
 
@@ -149,7 +149,7 @@ public class SubscribedEventWriter implements BufferWriter
         this.topicId = SubscribedEventEncoder.topicIdNullValue();
         this.position = SubscribedEventEncoder.positionNullValue();
         this.longKey = SubscribedEventEncoder.longKeyNullValue();
-        this.subscriptionId = SubscribedEventEncoder.subscriptionIdNullValue();
+        this.subscriberKey = SubscribedEventEncoder.subscriberKeyNullValue();
         this.subscriptionType = SubscriptionType.NULL_VAL;
         this.eventType = EventType.NULL_VAL;
         this.eventWriter = null;
