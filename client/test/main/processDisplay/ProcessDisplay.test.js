@@ -35,7 +35,7 @@ describe('<ProcessDisplay>', () => {
     };
 
     createHeatmapRenderer = sinon.spy();
-    __set__('createHeatmapRenderer', createHeatmapRenderer);
+    __set__('createHeatmapRendererFunction', sinon.stub().returns(createHeatmapRenderer));
 
     createAnalyticsRenderer = sinon.spy();
     createCreateAnalyticsRendererFunction = sinon.stub().returns(createAnalyticsRenderer);
@@ -62,7 +62,7 @@ describe('<ProcessDisplay>', () => {
   afterEach(() => {
     __ResetDependency__('Statistics');
     __ResetDependency__('createHeatmapDiagram');
-    __ResetDependency__('createHeatmapRenderer');
+    __ResetDependency__('createHeatmapRendererFunction');
     __ResetDependency__('createCreateAnalyticsRendererFunction');
     __ResetDependency__('createDiagramControlsIntegrator');
     __ResetDependency__('loadDiagram');

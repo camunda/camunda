@@ -1,5 +1,5 @@
 import generateHeatmap from './generateHeatmap';
-import {updateOverlayVisibility, howLong} from 'utils';
+import {updateOverlayVisibility} from 'utils';
 
 export const VALUE_OVERLAY = 'VALUE_OVERLAY';
 
@@ -7,7 +7,7 @@ export function hoverElement(viewer, element) {
   updateOverlayVisibility(viewer, element, VALUE_OVERLAY);
 }
 
-export function addHeatmapOverlay(viewer, data, view) {
+export function addHeatmapOverlay(viewer, data, formatTooltip) {
   Object.keys(data).forEach(element => {
     const value = data[element];
 
@@ -18,7 +18,7 @@ export function addHeatmapOverlay(viewer, data, view) {
       container.innerHTML =
       `<div class="tooltip top" role="tooltip" style="pointer-events: none; opacity: 0;">
       <div class="tooltip-arrow"></div>
-      <div class="tooltip-inner" style="text-align: left;">${view === 'duration' ? howLong(value) : value}</div>
+      <div class="tooltip-inner" style="text-align: left;">${formatTooltip(value)}</div>
       </div>`;
       const overlayHtml = container.firstChild;
 

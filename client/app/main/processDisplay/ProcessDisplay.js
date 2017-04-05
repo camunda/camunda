@@ -1,9 +1,9 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
-import {createHeatmapRenderer, createCreateAnalyticsRendererFunction} from './diagram';
+import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction} from './diagram';
 import {Statistics} from './statistics';
-import {isLoading} from 'utils';
+import {isLoading, formatTime} from 'utils';
 import {loadData, loadDiagram} from './service';
-import {isViewSelected, getView as getControlsView} from './controls';
+import {isViewSelected} from './controls';
 import {LoadingIndicator} from 'widgets';
 import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
 
@@ -23,8 +23,11 @@ function Process() {
               No Data
             </div>
           </Case>
-          <Case predicate={shouldDisplay(['frequency', 'duration'])}>
-            <Diagram selector={getHeatmapState} createOverlaysRenderer={createHeatmapRenderer} />
+          <Case predicate={shouldDisplay('frequency')}>
+            <Diagram selector="display" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
+          </Case>
+          <Case predicate={shouldDisplay('duration')}>
+            <Diagram selector="display" createOverlaysRenderer={createHeatmapRendererFunction(formatTime)} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="display" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
@@ -37,13 +40,6 @@ function Process() {
     </div>
     <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
-
-  function getHeatmapState({display, controls}) {
-    return {
-      ...display,
-      view: getControlsView(controls)
-    };
-  }
 
   function hasNoData({controls, display:{heatmap:{data}}}) {
     return (!data || !data.piCount) && isViewSelected(controls, ['frequency', 'duration', 'branch_analysis']);

@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {createHeatmapRenderer, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/Heatmap';
+import {createHeatmapRendererFunction, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/Heatmap';
 
 describe('<Heatmap>', () => {
   const diagramXml = 'diagram-xml';
@@ -18,6 +18,7 @@ describe('<Heatmap>', () => {
   let eventBus;
   let removeOverlays;
   let update;
+  let formatter;
 
   beforeEach(() => {
     loadedDiagramState = {
@@ -74,7 +75,9 @@ describe('<Heatmap>', () => {
       }
     };
 
-    update = createHeatmapRenderer({viewer});
+    formatter = x => x;
+
+    update = createHeatmapRendererFunction(formatter)({viewer});
   });
 
   afterEach(() => {
@@ -139,7 +142,7 @@ describe('<Heatmap>', () => {
         diagramRendered: true
       });
 
-      expect(addHeatmapOverlay.calledWith(viewer, flowNodes)).to.eql(true);
+      expect(addHeatmapOverlay.calledWith(viewer, flowNodes, formatter)).to.eql(true);
     });
 
     it('should only render heatmap once', () => {

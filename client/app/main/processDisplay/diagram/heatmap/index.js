@@ -1,1 +1,1 @@
-export {createHeatmapRenderer} from './Heatmap';
+export {createHeatmapRendererFunction} from './Heatmap';

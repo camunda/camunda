@@ -32,7 +32,7 @@ describe('Heatmap service', () => {
   let notHoveredOverlay;
   let hoveredOverlay;
   let getFunction;
-  let howLong;
+  let formatter;
 
   setupPromiseMocking();
 
@@ -46,8 +46,7 @@ describe('Heatmap service', () => {
     createHoverElementAction = sinon.stub().returns(HOVER_ACTION);
     __set__('createHoverElementAction', createHoverElementAction);
 
-    howLong =  sinon.stub().returns('duration');
-    __set__('howLong', howLong);
+    formatter = sinon.stub().returnsArg(0);
 
     clearFunction = sinon.spy();
 
@@ -81,7 +80,6 @@ describe('Heatmap service', () => {
     __ResetDependency__('dispatchAction');
     __ResetDependency__('generateHeatmap');
     __ResetDependency__('createHoverElementAction');
-    __ResetDependency__('howLong');
   });
 
   describe('get Heatmap', () => {
@@ -104,13 +102,13 @@ describe('Heatmap service', () => {
 
   describe('hover overlays', () => {
     it('should add overlays on the elements', () => {
-      addHeatmapOverlay(viewer, heatmapData);
+      addHeatmapOverlay(viewer, heatmapData, formatter);
 
       expect(addFunction.calledWith(diagramElement.id)).to.eql(true);
     });
 
     it('should add an overlay with the heat value as text content', () => {
-      addHeatmapOverlay(viewer, heatmapData);
+      addHeatmapOverlay(viewer, heatmapData, formatter);
 
       const node = addFunction.getCall(0).args[2].html;
 
@@ -118,21 +116,21 @@ describe('Heatmap service', () => {
     });
 
     it('should add the overlay with the correct type', () => {
-      addHeatmapOverlay(viewer, heatmapData);
+      addHeatmapOverlay(viewer, heatmapData, formatter);
 
       const type = addFunction.getCall(0).args[1];
 
       expect(type).to.eql(VALUE_OVERLAY);
     });
 
-    it('should add overlay with duration', () => {
-      addHeatmapOverlay(viewer, heatmapData, 'duration');
+    it('should use formatter to format data', () => {
+      const text = 'text';
 
-      addHeatmapOverlay(viewer, heatmapData);
+      addHeatmapOverlay(viewer, heatmapData, () => text);
 
       const node = addFunction.getCall(0).args[2].html;
 
-      expect(node.textContent).to.contain('duration');
+      expect(node.textContent).to.contain(text);
     });
 
     describe('interaction', () => {
