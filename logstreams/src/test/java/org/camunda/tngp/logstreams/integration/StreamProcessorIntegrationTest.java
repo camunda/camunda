@@ -40,6 +40,7 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.snapshot.SerializableWrapper;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.agent.SharedAgentRunnerService;
 import org.camunda.tngp.util.agent.SimpleAgentRunnerFactory;
@@ -462,6 +463,37 @@ public class StreamProcessorIntegrationTest
         controllableTargetLogStream.close();
     }
 
+    @Test
+    public void shouldUseDisabledWriterForReadOnlyProcessor() throws InterruptedException, ExecutionException
+    {
+        // given
+        final ErrorRecodingStreamProcessor streamProcessor = new ErrorRecodingStreamProcessor();
+
+        final StreamProcessorController streamProcessorController = LogStreams
+                .createStreamProcessor("copy-processor", 1, streamProcessor)
+                .readOnly(true)
+                .sourceStream(sourceLogStream)
+                .targetStream(targetLogStream)
+                .agentRunnerService(agentRunnerService)
+                .snapshotPolicy(position -> false)
+                .snapshotStorage(snapshotStorage)
+                .build();
+
+        streamProcessorController.openAsync().get();
+
+        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
+
+        // when
+        TestUtil.waitUntil(() -> streamProcessorController.isFailed());
+
+        // then
+        final Exception exception = streamProcessor.getRecordedException();
+        assertThat(exception).isNotNull();
+        assertThat(exception).isInstanceOf(RuntimeException.class);
+        assertThat(exception).hasMessageContaining("Cannot write event; Writing is disabled");
+    }
+
+
     private class CopyStreamProcessor implements StreamProcessor
     {
         private final SerializableWrapper<Counter> resourceCounter;
@@ -500,6 +532,63 @@ public class StreamProcessorIntegrationTest
         {
             return resourceCounter;
         }
+    }
+
+    protected class ErrorRecodingStreamProcessor implements StreamProcessor
+    {
+
+        protected Exception recordedException;
+
+        public Exception getRecordedException()
+        {
+            return recordedException;
+        }
+
+        @Override
+        public SnapshotSupport getStateResource()
+        {
+            return new SerializableWrapper<>(new Integer(0));
+        }
+
+        @Override
+        public EventProcessor onEvent(LoggedEvent event)
+        {
+            return new EventProcessor()
+            {
+
+                @Override
+                public void processEvent()
+                {
+                }
+
+                @Override
+                public long writeEvent(LogStreamWriter writer)
+                {
+                    if (recordedException != null)
+                    {
+                        throw new RuntimeException("Can at most record one exception");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            return writer
+                                .key(event.getLongKey())
+                                .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
+                                .tryWrite();
+                        }
+                        catch (Exception e)
+                        {
+                            recordedException = e;
+                            throw e;
+                        }
+                    }
+                }
+            };
+        }
+
+
+
     }
 
 }

@@ -16,9 +16,11 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.DisabledLogStreamWriter;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
 import org.camunda.tngp.logstreams.snapshot.TimeBasedSnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
@@ -159,10 +161,13 @@ public class StreamProcessorBuilder
         sourceLogStreamReader = new BufferedLogStreamReader();
         targetLogStreamReader = new BufferedLogStreamReader();
 
-        logStreamWriter = new LogStreamWriter();
         if (readOnly)
         {
-            logStreamWriter.disable();
+            logStreamWriter = new DisabledLogStreamWriter();
+        }
+        else
+        {
+            logStreamWriter = new LogStreamWriterImpl();
         }
     }
 

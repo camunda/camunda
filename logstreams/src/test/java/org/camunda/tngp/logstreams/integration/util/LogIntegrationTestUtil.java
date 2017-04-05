@@ -22,6 +22,7 @@ import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 
 public class LogIntegrationTestUtil
@@ -29,7 +30,7 @@ public class LogIntegrationTestUtil
 
     public static void writeLogEvents(final LogStream log, final int workCount, int messageSize, final int offset)
     {
-        final LogStreamWriter writer = new LogStreamWriter(log);
+        final LogStreamWriter writer = new LogStreamWriterImpl(log);
 
         final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(messageSize));
 

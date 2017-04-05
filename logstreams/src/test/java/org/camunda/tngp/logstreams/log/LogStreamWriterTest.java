@@ -12,6 +12,26 @@
  */
 package org.camunda.tngp.logstreams.log;
 
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.KEY_TYPE_UINT64;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -24,15 +44,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
-
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class LogStreamWriterTest
 {
@@ -69,7 +80,7 @@ public class LogStreamWriterTest
         when(mockLog.getWriteBuffer()).thenReturn(mockWriteBuffer);
         when(mockLog.getId()).thenReturn(LOG_ID);
 
-        writer = new LogStreamWriter(mockLog);
+        writer = new LogStreamWriterImpl(mockLog);
 
         writeBuffer = new UnsafeBuffer(new byte[1024]);
     }
@@ -281,23 +292,6 @@ public class LogStreamWriterTest
         writer
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
-    }
-
-    @Test
-    public void shouldFailToWriteWithDisabledWriter()
-    {
-        // given
-        writer.disable();
-        writer
-            .key(4L)
-            .value(new UnsafeBuffer(EVENT_VALUE));
-
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("isDisabled must be false");
-
-        // when
-        writer.tryWrite();
     }
 
     protected Answer<?> claimFragment(final long offset)
