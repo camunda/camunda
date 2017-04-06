@@ -147,6 +147,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
+        sourceEventMetadata.reset();
+        deploymentEvent.reset();
+        workflowInstanceEvent.reset();
+        taskEvent.reset();
+
         eventKey = event.getLongKey();
         eventPosition = event.getPosition();
 
@@ -251,16 +256,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         }
 
         return eventProcessor;
-    }
-
-
-    @Override
-    public void afterEvent()
-    {
-        sourceEventMetadata.reset();
-        deploymentEvent.reset();
-        workflowInstanceEvent.reset();
-        taskEvent.reset();
     }
 
     protected ExecutableWorkflow getWorkflow(final DirectBuffer bpmnProcessId, int version)
