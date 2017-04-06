@@ -17,6 +17,7 @@ import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
+import org.camunda.tngp.util.buffer.BufferUtil;
 
 public class TaskMetadataTransformer
 {
@@ -32,7 +33,7 @@ public class TaskMetadataTransformer
         final ModelElementInstance taskDefinition = getTaskDefinition(extensionElements);
 
         final String type = getTaskType(taskDefinition);
-        metadata.setTaskType(type);
+        metadata.setTaskType(BufferUtil.wrapString(type));
 
         final int retries = getTaskRetries(taskDefinition);
         metadata.setRetries(retries);

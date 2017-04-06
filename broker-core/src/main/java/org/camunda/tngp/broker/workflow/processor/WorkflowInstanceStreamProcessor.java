@@ -593,26 +593,39 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private final class TaskCompletedEventProcessor implements EventProcessor
     {
         private TaskHeaders taskHeaders;
+        private boolean isActivityCompleted;
 
         @Override
         public void processEvent()
         {
+            isActivityCompleted = false;
             taskHeaders = taskEvent.getHeaders();
 
-            // assuming that the workflow instance is still in this activity
-            workflowInstanceEvent
-                .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)
-                .setBpmnProcessId(taskHeaders.getBpmnProcessId())
-                .setVersion(taskHeaders.getWorkflowDefinitionVersion())
-                .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
-                .setActivityId(taskHeaders.getActivityId());
+            if (taskHeaders.getWorkflowInstanceKey() > 0)
+            {
+                // assuming that the workflow instance is still in this activity
+                workflowInstanceEvent
+                    .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)
+                    .setBpmnProcessId(taskHeaders.getBpmnProcessId())
+                    .setVersion(taskHeaders.getWorkflowDefinitionVersion())
+                    .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
+                    .setActivityId(taskHeaders.getActivityId());
+
+                isActivityCompleted = true;
+            }
         }
 
         @Override
         public long writeEvent(LogStreamWriter writer)
         {
-            return writeWorkflowEvent(
-                    writer.key(taskHeaders.getActivityInstanceKey()));
+            long position = 0L;
+
+            if (isActivityCompleted)
+            {
+                position = writeWorkflowEvent(
+                        writer.key(taskHeaders.getActivityInstanceKey()));
+            }
+            return position;
         }
     }
 
