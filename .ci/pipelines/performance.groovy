@@ -20,7 +20,7 @@ pipeline {
   }
   
   triggers {
-    upstream upstreamProjects: 'camunda-optimize/master', threshold: hudson.model.Result.SUCCESS
+    cron('0 2 * * *')
   }
 
   stages {
