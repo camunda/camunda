@@ -1,22 +1,46 @@
 import {jsx} from 'view-utils';
-import {onNextTick} from 'utils';
 import {Select, Option} from 'widgets';
-import {setView} from './service';
+import {Link} from 'router';
+import {getDefinitionId} from 'main/processDisplay/service';
+import {getView} from './service';
 
 export function View({onViewChanged}) {
   return <td>
     <div className="form-group">
-      <Select onValueSelected={handleChange}>
-        <Option value="none" isDefault>None</Option>
-        <Option value="frequency">Frequency</Option>
-        <Option value="duration">Duration</Option>
-        <Option value="branch_analysis">Branch Analysis</Option>
+      <Select onValueSelected={handleChange} getSelectValue={getView}>
+        <Option value="none" isDefault>
+          <Link selector={createRouteSelectorForView('none')} />
+          None
+        </Option>
+        <Option value="frequency">
+          <Link selector={createRouteSelectorForView('frequency')} />
+          Frequency
+        </Option>
+        <Option value="duration">
+          <Link selector={createRouteSelectorForView('duration')} />
+          Duration
+        </Option>
+        <Option value="branch_analysis">
+          <Link selector={createRouteSelectorForView('branch_analysis')} />
+          Branch Analysis
+        </Option>
       </Select>
     </div>
   </td>;
 
   function handleChange({value}) {
-    setView(value);
-    onNextTick(onViewChanged);
+    onViewChanged(value);
+  }
+
+  function createRouteSelectorForView(view) {
+    return () => {
+      return {
+        name: 'processDisplay',
+        params: {
+          view: view,
+          definition: getDefinitionId()
+        }
+      };
+    };
   }
 }

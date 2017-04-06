@@ -1,9 +1,10 @@
-import {jsx, Socket, Children, $document, createReferenceComponent, OnEvent} from 'view-utils';
+import {jsx, Socket, Children, $document, createReferenceComponent, OnEvent, Attribute} from 'view-utils';
 import {Dropdown, DropdownItem} from './Dropdown';
+import isEqual from 'lodash.isequal';
 
 const SELECT_EVENT = 'SELECT_EVENT';
 
-export function Select({onValueSelected, children}) {
+export function Select({onValueSelected, getSelectValue, children}) {
   return (node, eventsBus) => {
     const Reference = createReferenceComponent();
 
@@ -23,6 +24,7 @@ export function Select({onValueSelected, children}) {
         </span>
       </Socket>
       <Socket name="list">
+        <Reference name="list" />
         <Children children={children} />
       </Socket>
     </Dropdown>;
@@ -45,6 +47,10 @@ export function Select({onValueSelected, children}) {
     }
 
     function updateLabelNode() {
+      if (typeof getSelectValue === 'function') {
+        currentItem = getSelectItem() || currentItem;
+      }
+
       const labelNode = Reference.getNode('label');
       const text = currentItem && currentItem.name ? currentItem.name : currentItem;
 
@@ -52,17 +58,34 @@ export function Select({onValueSelected, children}) {
         labelNode.innerText = text;
       }
     }
+
+    function getSelectItem() {
+      const value = getSelectValue();
+      const valueNodes = Reference.getNode('list').querySelectorAll('[select-value]');
+      const [valueNode] = Array.prototype.filter.call(valueNodes, (valueNode) => {
+        const valueAttribute = valueNode.getAttribute('select-value');
+
+        return isEqual(JSON.parse(valueAttribute), value);
+      });
+
+      if (valueNode) {
+        return {
+          value,
+          name: valueNode.innerText.trim()
+        };
+      }
+    }
   };
 }
 
 export function Option({children, value, isDefault = false}) {
-  const Reference = createReferenceComponent();
-  const template = <DropdownItem listener={selectValue}>
-    <Reference name="eventSource" />
-    <Children children={children} />
-  </DropdownItem>;
-
   return (node, eventsBus) => {
+    const Reference = createReferenceComponent();
+    const template = <DropdownItem listener={selectValue}>
+      <Reference name="eventSource" />
+      <Attribute selector={() => JSON.stringify(value)} attribute="select-value" />
+      <Children children={children} />
+    </DropdownItem>;
     const templateUpdate = template(node, eventsBus);
 
     if (isDefault) {

@@ -1,5 +1,5 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
+import {jsx, includes} from 'view-utils';
+import {mountTemplate, createMockComponent, observeFunction} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {ProcessDisplay, __set__, __ResetDependency__} from 'main/processDisplay/ProcessDisplay';
@@ -18,6 +18,8 @@ describe('<ProcessDisplay>', () => {
   let update;
   let state;
   let loadDiagram;
+  let selectedView;
+  let isViewSelected;
 
   beforeEach(() => {
     state = {
@@ -56,6 +58,14 @@ describe('<ProcessDisplay>', () => {
     loadDiagram = sinon.spy();
     __set__('loadDiagram', loadDiagram);
 
+    isViewSelected = observeFunction(view =>
+      includes(
+        [].concat(view),
+        selectedView
+      )
+    );
+    __set__('isViewSelected', isViewSelected);
+
     ({node, update} = mountTemplate(<ProcessDisplay />));
   });
 
@@ -65,8 +75,9 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('createHeatmapRendererFunction');
     __ResetDependency__('createCreateAnalyticsRendererFunction');
     __ResetDependency__('createDiagramControlsIntegrator');
+    __ResetDependency__('loadData');
     __ResetDependency__('loadDiagram');
-    __ResetDependency__('loadDiagram');
+    __ResetDependency__('isViewSelected');
   });
 
   it('should load diagram xml on starup', () => {
@@ -92,7 +103,7 @@ describe('<ProcessDisplay>', () => {
   it('should display a diagram when the frequency view mode is selected', () => {
     Diagram.reset();
 
-    state.controls.view = 'frequency';
+    selectedView = 'frequency';
 
     update(state);
 
@@ -105,7 +116,8 @@ describe('<ProcessDisplay>', () => {
   it('should display a diagram when the duration view mode is selected', () => {
     Diagram.reset();
 
-    state.controls.view = 'duration';
+    selectedView = 'duration';
+
     update(state);
 
     expect(node.textContent).to.contain('Diagram');
@@ -117,7 +129,7 @@ describe('<ProcessDisplay>', () => {
   it('should display a diagram when the branch analysis view mode is selected', () => {
     Diagram.reset();
 
-    state.controls.view = 'branch_analysis';
+    selectedView = 'branch_analysis';
     update(state);
 
     expect(node.textContent).to.contain('Diagram');
@@ -128,7 +140,7 @@ describe('<ProcessDisplay>', () => {
   });
 
   it('should display a no data indicator if the heatmap data contains no process instances', () => {
-    state.controls.view = 'frequency';
+    selectedView = 'frequency';
     state.diagram.heatmap.data.piCount = 0;
     update(state);
 

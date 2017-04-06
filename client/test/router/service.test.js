@@ -64,6 +64,50 @@ describe('Router service', () => {
       expect(router2).to.equal(router);
     });
 
+    describe('with default parameters', () => {
+      let route;
+
+      beforeEach(() => {
+        route = {
+          name: 'with-defaults',
+          url: '/with-defaults/:type/:name',
+          defaults: {
+            name: 'gdansk'
+          }
+        };
+
+        router.addRoutes(route);
+      });
+
+      it('should match with missing params', () => {
+        $document.location.pathname = '/with-defaults/city';
+        $document.location.search = '';
+        router.onUrlChange();
+
+        expect(dispatchAction.called).to.eql(true, 'action should be dispatched');
+        expect(dispatchAction.calledWith({
+          name: 'with-defaults',
+          params: {
+            type: 'city',
+            name: 'gdansk'
+          }
+        })).to.eql(true, 'expected daufault parameter to be added');
+      });
+
+      it('should not match with too long url', () => {
+        $document.location.pathname = '/with-defaults/city/b/d';
+        $document.location.search = '';
+        router.onUrlChange();
+
+        expect(dispatchAction.called).to.eql(false);
+      });
+
+      it('should build url with defaults correctly', () => {
+        expect(router.getUrl(route.name, {type: 'stadt'}))
+          .to.eql('/with-defaults/stadt/gdansk');
+      });
+    });
+
     describe('addRoutes', () => {
       it('should allow routes to be added', () => {
         const route = {

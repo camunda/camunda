@@ -1,2 +1,2 @@
 export {View} from './View';
-export {reducer} from './reducer';
+export {getView} from './service';

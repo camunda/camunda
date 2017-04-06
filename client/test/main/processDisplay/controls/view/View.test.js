@@ -7,21 +7,21 @@ import {View, __set__, __ResetDependency__} from 'main/processDisplay/controls/v
 describe('<View>', () => {
   let node;
   let update;
-  let setView;
   let onNextTick;
   let onViewChanged;
   let Select;
   let onValueSelected;
+  let Link;
 
   beforeEach(() => {
-    setView = sinon.spy();
-    __set__('setView', setView);
-
     onNextTick = sinon.stub().callsArg(0);
     __set__('onNextTick', onNextTick);
 
     Select = createMockComponent('Select');
     __set__('Select', Select);
+
+    Link = createMockComponent('Link');
+    __set__('Link', Link);
 
     onViewChanged = sinon.spy();
 
@@ -32,24 +32,18 @@ describe('<View>', () => {
   });
 
   afterEach(() => {
-    __ResetDependency__('setView');
     __ResetDependency__('onNextTick');
+    __ResetDependency__('Select');
+    __ResetDependency__('Link');
   });
 
   it('should display a select field', () => {
     expect(node).to.contain.text(Select.text);
   });
 
-  it('should set the view on selection', () => {
-    onValueSelected({value: 'frequency'});
-
-    expect(setView.calledWith('frequency')).to.eql(true);
-  });
-
   it('should call onViewChanged on next update when view changes', () => {
     onValueSelected({value: 'frequency'});
 
-    expect(onNextTick.calledWith(onViewChanged)).to.eql(true);
-    expect(onViewChanged.calledOnce).to.eql(true);
+    expect(onViewChanged.calledWith('frequency')).to.eql(true);
   });
 });

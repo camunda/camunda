@@ -42,13 +42,11 @@ function Process() {
   </div>;
 
   function hasNoData({controls, diagram:{heatmap:{data}}}) {
-    return (!data || !data.piCount) && isViewSelected(controls, ['frequency', 'duration', 'branch_analysis']);
+    return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis']);
   }
 
   function shouldDisplay(targetView) {
-    return ({controls}) => {
-      return isViewSelected(controls, targetView);
-    };
+    return () => isViewSelected(targetView);
   }
 
   function createControlsState({controls, diagram}) {

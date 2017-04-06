@@ -13,6 +13,7 @@ describe('<Controls>', () => {
   let onCriteriaChanged;
   let node;
   let update;
+  let getView;
 
   beforeEach(() => {
     Filter = createMockComponent('Filter');
@@ -24,6 +25,9 @@ describe('<Controls>', () => {
     __set__('CreateFilter', CreateFilter);
     __set__('View', View);
     __set__('AnalysisSelection', AnalysisSelection);
+
+    getView = sinon.stub().returns('view');
+    __set__('getView', getView);
 
     onCriteriaChanged = sinon.spy();
 
@@ -37,17 +41,11 @@ describe('<Controls>', () => {
     __ResetDependency__('CreateFilter');
     __ResetDependency__('View');
     __ResetDependency__('AnalysisSelection');
+    __ResetDependency__('getView');
   });
 
   it('should call the change callback initially', () => {
-    update({
-      controls: {
-        view: 'none'
-      },
-      display: {
-        selection: {}
-      }
-    });
+    update({});
 
     expect(onCriteriaChanged.calledOnce).to.eql(true);
   });

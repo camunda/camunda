@@ -2,7 +2,7 @@ import {jsx, createStateComponent, withSelector, Match, Case} from 'view-utils';
 import {runOnce} from 'utils';
 import {Filter, CreateFilter} from './filter';
 import {createAnalysisSelection} from './analysisSelection';
-import {View} from './view';
+import {View, getView} from './view';
 
 export function createControls(analysisControlIntegrator) {
   const AnalysisSelection = createAnalysisSelection(analysisControlIntegrator);
@@ -27,7 +27,7 @@ export function createControls(analysisControlIntegrator) {
                   </Match>
                 </tr>
               <tr>
-                <View onViewChanged={onControlsChange}/>
+                <View onViewChanged={onViewChanged}/>
                 <Filter onFilterDeleted={onControlsChange} />
                 <CreateFilter onFilterAdded={onControlsChange} />
                 <Match>
@@ -43,16 +43,29 @@ export function createControls(analysisControlIntegrator) {
       </div>
     </State>;
 
-    function isBranchAnalyisView({view}) {
-      return view === 'branch_analysis';
+    function isBranchAnalyisView() {
+      return getView() === 'branch_analysis';
+    }
+
+    function onViewChanged(view) {
+      const state = State.getState();
+
+      if (state) { //for default value select is trigger before first state update
+        const {filter: query} = state;
+
+        onCriteriaChanged({
+          query,
+          view
+        });
+      }
     }
 
     function onControlsChange() {
-      const {filter: query, view} = State.getState();
+      const {filter: query} = State.getState();
 
       onCriteriaChanged({
         query,
-        view
+        view: getView()
       });
     }
 

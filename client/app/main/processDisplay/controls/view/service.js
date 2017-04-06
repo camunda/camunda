@@ -1,6 +1,7 @@
-import {dispatchAction} from 'view-utils';
-import {createSetViewAction} from './reducer';
+import {getLastRoute} from 'router';
 
-export function setView(value) {
-  dispatchAction(createSetViewAction(value));
+export function getView() {
+  const {params: {view}} = getLastRoute();
+
+  return view;
 }

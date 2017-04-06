@@ -1,39 +1,25 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {setView, __set__, __ResetDependency__} from 'main/processDisplay/controls/view/service';
+import {getView, __set__, __ResetDependency__} from 'main/processDisplay/controls/view/service';
 
 describe('View service', () => {
-  const SET_ACTION = 'SET_ACTION';
-
-  let dispatchAction;
-  let createSetViewAction;
+  const view = 'dd';
+  let getLastRoute;
 
   beforeEach(() => {
-    dispatchAction = sinon.spy();
-    __set__('dispatchAction', dispatchAction);
-
-    createSetViewAction = sinon.stub().returns(SET_ACTION);
-    __set__('createSetViewAction', createSetViewAction);
+    getLastRoute = sinon.stub().returns({
+      params: {view}
+    });
+    __set__('getLastRoute', getLastRoute);
   });
 
   afterEach(() => {
-    __ResetDependency__('dispatchAction');
-    __ResetDependency__('createSetViewAction');
+    __ResetDependency__('getLastRoute');
   });
 
-  describe('set view', () => {
-    const viewValue = 'fake-view';
-
-    beforeEach(() => {
-      setView(viewValue);
-    });
-
-    it('should dispatch set view action', () => {
-      expect(dispatchAction.calledWith(SET_ACTION)).to.eql(true);
-    });
-
-    it('should create action with provided view value', () => {
-      expect(createSetViewAction.calledWith(viewValue)).to.eql(true);
+  describe('getView', () => {
+    it('should return view', () => {
+      expect(getView()).to.eql(view);
     });
   });
 });

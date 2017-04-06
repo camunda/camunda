@@ -64,7 +64,8 @@ module.exports = function(config) {
       outputDir : 'target/surefire-reports/', // results will be saved as $outputDir/$browserName.xml
       outputFile: 'TESTS-TestSuite.xml', // if included, results will be saved as $outputDir/$browserName/$outputFile
       suite: 'Frontend Tests', // suite will become the package name attribute in xml testsuite element
-    }
+    },
+    browserNoActivityTimeout: 30000 // our build is taking fucking long time
   };
 
   config.set(configuration);

@@ -1,4 +1,4 @@
-import {SET_VIEW} from 'main/processDisplay/controls/view/reducer';
+import {CHANGE_ROUTE_ACTION} from 'router';
 
 export const SET_ELEMENT = 'SET_ELEMENT';
 
@@ -11,7 +11,7 @@ export const reducer = (state = {selection: {}}, action) => {
         [action.elementType]: action.id
       }
     };
-  } else if (action.type === SET_VIEW) {
+  } else if (action.type === CHANGE_ROUTE_ACTION && action.route.params.view !== 'branch_analysis') {
     return {
       ...state,
       selection: {}

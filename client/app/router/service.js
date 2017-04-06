@@ -86,24 +86,26 @@ function createNewRouter() {
   }
 }
 
-function createRoute({name, url, test, construct, reducer}) {
+function createRoute({name, url, test, construct, reducer, defaults = {}}) {
   return {
     name,
     url,
     reducer,
-    test: typeof test === 'function' ? test : createUrlTestForRoute(url),
-    construct: typeof construct === 'function' ? construct : createUrlConstructForRoute(url)
+    test: typeof test === 'function' ? test : createUrlTestForRoute(url, defaults),
+    construct: typeof construct === 'function' ? construct : createUrlConstructForRoute(url, defaults)
   };
 }
 
-export function createUrlTestForRoute(patternUrl) {
+export function createUrlTestForRoute(patternUrl, defaults) {
   const splitingRegExp = /[\/?&=]/;
   const patternParts = patternUrl.split(splitingRegExp);
 
-  return (url) => {
+  return matchFunction;
+
+  function matchFunction(url, restrictive) {
     const urlParts = url.split(splitingRegExp);
 
-    if (patternParts.length !== urlParts.length) {
+    if (urlParts.length > patternParts.length) {
       return;
     }
 
@@ -117,17 +119,17 @@ export function createUrlTestForRoute(patternUrl) {
       if (patternPart[0] === ':') {
         const name = patternPart.substr(1);
 
-        params[name] = urlPart;
+        params[name] = urlPart || defaults[name];
       } else if (patternPart !== urlPart) {
         return null;
       }
 
       return params;
     }, {});
-  };
+  }
 }
 
-export function createUrlConstructForRoute(patternUrl) {
+export function createUrlConstructForRoute(patternUrl, defaults) {
   const constantParts = patternUrl
     .split(/:\w+/)
     .filter(part => part.length > 0);
@@ -142,7 +144,7 @@ export function createUrlConstructForRoute(patternUrl) {
     return constantParts.reduce((url, constantPart, index) => {
       const name = variableParts[index] ? variableParts[index].substr(1) : null;
 
-      return url + constantPart + (name ? params[name] : '');
+      return url + constantPart + (name ? params[name] || defaults[name] : '');
     }, '');
   };
 }
