@@ -4,30 +4,22 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.metrics.scripted.InternalScriptedMetric;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Askar Akhmerov
@@ -52,78 +44,64 @@ public class BranchAnalysisReader {
     List<String> gatewayOutcomes = fetchGatewayOutcomes(request.getProcessDefinitionId(), request.getGateway());
 
     for (String activity : gatewayOutcomes) {
-      BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(
-          request.getProcessDefinitionId(),
-          activity,
-          request.getEnd(),
-          request.getFilter()
-      );
+      BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(activity, request);
       result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
     }
 
-    BranchAnalysisOutcomeDto end = branchAnalysis(
-        request.getProcessDefinitionId(),
-        request.getEnd(),
-        request.getEnd(),
-        request.getFilter()
-    );
-    result.setEndEvent(end.getActivityId());
+    BranchAnalysisOutcomeDto end = branchAnalysis(request.getEnd(), request);
+    result.setEndEvent(request.getEnd());
     result.setTotal(end.getActivityCount());
 
     return result;
   }
 
-  private BranchAnalysisOutcomeDto branchAnalysis(String processDefinitionId, String activityId, String endActivity, FilterMapDto filter) {
-    ValidationHelper.ensureNotEmpty("processDefinitionId", processDefinitionId);
-    ValidationHelper.ensureNotEmpty("activityId", activityId);
-    ValidationHelper.ensureNotEmpty("endActivityId", endActivity);
+  private BranchAnalysisOutcomeDto branchAnalysis(String activityId, BranchAnalysisQueryDto request) {
 
     BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
-
-    List<String> branchAnalysisNodes = new ArrayList<>();
-    branchAnalysisNodes.add(activityId);
-    branchAnalysisNodes.add(endActivity);
-
-    BoolQueryBuilder query;
-    SearchRequestBuilder srb = esclient
-        .prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes(configurationService.getEventType());
-
-    query = QueryBuilders.boolQuery()
-        .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId));
-
-    if (filter != null) {
-      query = dateFilterHelper.addFilters(query, filter);
-    }
-
-    srb.setQuery(query);
-
-
-    Map<String, Object> parameters = new HashMap<>();
-    parameters.put("_targetActivities", branchAnalysisNodes);
-    parameters.put("_startActivity", activityId);
-    parameters.put("_agg", new HashMap<>());
-
-
-    SearchResponse sr = srb
-        .addAggregation(AggregationBuilders
-            .scriptedMetric("processesWithActivities")
-            .initScript(getInitScript())
-            .mapScript(getMapScript())
-            .reduceScript(getReduceScript())
-            .params(parameters)
-        )
-        .get();
-
-    InternalScriptedMetric processesWithActivities = sr.getAggregations().get("processesWithActivities");
-    Map aggregation = (Map) processesWithActivities.aggregation();
-    //this can happen if filter is too strict and there is nothing in result set
-    String id = aggregation.get("startActivityId") != null ? aggregation.get("startActivityId").toString() : activityId;
-    result.setActivityId(id);
-    result.setActivityCount(Long.valueOf((Integer) aggregation.get("startActivityCount")));
-    result.setActivitiesReached(Long.valueOf((Integer) aggregation.get("activitiesReached")));
+    result.setActivityId(activityId);
+    result.setActivityCount(calculateActivityCount(activityId, request));
+    result.setActivitiesReached(calculateActivitiesReachedEndEvent(activityId, request));
 
     return result;
+  }
+
+  private long calculateActivitiesReachedEndEvent(String activityId, BranchAnalysisQueryDto request) {
+    BoolQueryBuilder query = QueryBuilders.boolQuery()
+      .must(QueryBuilders.matchQuery("processDefinitionId", request.getProcessDefinitionId()))
+      .must(QueryBuilders.termQuery("activityList", activityId))
+      .must(QueryBuilders.termQuery("activityList", request.getEnd()));
+
+    if (request.getFilter() != null) {
+      query = dateFilterHelper.addFilters(query, request.getFilter());
+    }
+
+    SearchResponse sr = esclient
+      .prepareSearch(configurationService.getOptimizeIndex())
+      .setTypes(configurationService.getBranchAnalysisDataType())
+      .setQuery(query)
+      .setSize(0)
+      .get();
+
+    return sr.getHits().totalHits();
+  }
+
+  private long calculateActivityCount(String activityId, BranchAnalysisQueryDto request) {
+    BoolQueryBuilder query = QueryBuilders.boolQuery()
+        .must(QueryBuilders.matchQuery("processDefinitionId", request.getProcessDefinitionId()))
+        .must(QueryBuilders.termQuery("activityList", activityId ));
+
+    if (request.getFilter() != null) {
+      query = dateFilterHelper.addFilters(query, request.getFilter());
+    }
+
+    SearchResponse sr = esclient
+        .prepareSearch(configurationService.getOptimizeIndex())
+        .setTypes(configurationService.getBranchAnalysisDataType())
+        .setQuery(query)
+        .setSize(0)
+        .get();
+
+    return sr.getHits().totalHits();
   }
 
   private List<String> fetchGatewayOutcomes(String processDefinitionId, String gatewayActivityId) {
@@ -135,36 +113,5 @@ public class BranchAnalysisReader {
       result.add(sequence.getTarget().getId());
     }
     return result;
-  }
-
-  private Script getReduceScript() {
-    return new Script(
-        ScriptType.FILE,
-        "groovy",
-        configurationService.getCorrelationReduceScriptPath(),
-        new HashMap<>()
-    );
-  }
-
-  private Script getMapScript() {
-    return new Script(
-        ScriptType.FILE,
-        "groovy",
-        configurationService.getCorrelationMapScriptPath(),
-        new HashMap<>()
-    );
-  }
-
-  private Script getInitScript() {
-    return new Script(
-        ScriptType.FILE,
-        "groovy",
-        configurationService.getCorrelationInitScriptPath(),
-        new HashMap<>()
-    );
-  }
-
-  public BranchAnalysisOutcomeDto branchAnalysis(String processDefinitionId, String gatewayActivity, String endActivity) {
-    return this.branchAnalysis(processDefinitionId, gatewayActivity, endActivity, null);
   }
 }

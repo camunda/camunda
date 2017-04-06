@@ -42,7 +42,7 @@ public class EventsWriterTest {
   public void importEvents() throws Exception {
     //given
     IndexRequestBuilder indexMock = setupIndexRequestBuilder();
-    ListenableActionFuture<BulkResponse> getMock = Mockito.mock(ListenableActionFuture.class);
+    BulkResponse getMock = Mockito.mock(BulkResponse.class);
     BulkRequestBuilder bulkRequest = setupBulkRequestBuilder(indexMock, getMock);
 
     List<EventDto> events = new ArrayList<>();
@@ -52,21 +52,19 @@ public class EventsWriterTest {
     events.add(event);
 
     //when
-
     underTest.importEvents(events);
 
     //then
     Mockito.verify(indexMock, Mockito.times(1))
         .setSource(objectMapper.writeValueAsString(event));
-    Mockito.verify(bulkRequest, Mockito.times(1)).execute();
-    Mockito.verify(getMock, Mockito.times(1)).get();
+    Mockito.verify(bulkRequest, Mockito.times(1)).get();
   }
 
-  private BulkRequestBuilder setupBulkRequestBuilder(IndexRequestBuilder indexMock, ListenableActionFuture<BulkResponse> getMock) {
+  private BulkRequestBuilder setupBulkRequestBuilder(IndexRequestBuilder indexMock, BulkResponse getMock) {
     BulkRequestBuilder bulkRequest = Mockito.mock(BulkRequestBuilder.class);
     Mockito.when(transportClient.prepareBulk()).thenReturn(bulkRequest);
     Mockito.when(bulkRequest.add(indexMock)).thenReturn(bulkRequest);
-    Mockito.when(bulkRequest.execute()).thenReturn(getMock);
+    Mockito.when(bulkRequest.get()).thenReturn(getMock);
     return bulkRequest;
   }
 

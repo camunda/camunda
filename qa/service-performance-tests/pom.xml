@@ -130,8 +130,6 @@
         <test.heatmap.max.duration.ms>1000</test.heatmap.max.duration.ms>
         <data.generation.numberOfThreads>2</data.generation.numberOfThreads>
         <data.generation.size>1000000</data.generation.size>
-        <camunda.optimize.es.index>optimize</camunda.optimize.es.index>
-        <camunda.optimize.es.event.type>event</camunda.optimize.es.event.type>
       </properties>
       <build>
         <testResources>

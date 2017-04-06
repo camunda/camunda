@@ -48,6 +48,8 @@ public class ConfigurationService {
   private String optimizeIndex;
   @Value("${camunda.optimize.es.event.type}")
   private String eventType;
+  @Value("${camunda.optimize.es.branchAnalysisData.type}")
+  private String branchAnalysisDataType;
   @Value("${camunda.optimize.es.procdef.type}")
   private String processDefinitionType;
   @Value("${camunda.optimize.es.procdef.xml.type}")
@@ -144,6 +146,10 @@ public class ConfigurationService {
 
   public String getEventType() {
     return eventType;
+  }
+
+  public String getBranchAnalysisDataType() {
+    return branchAnalysisDataType;
   }
 
   public String getUserValidationEndpoint() {

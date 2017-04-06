@@ -1,26 +1,20 @@
 package org.camunda.optimize.qa.performance.steps;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.optimize.qa.performance.framework.PerfTestConfiguration;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
-import org.camunda.optimize.qa.performance.util.IdGenerator;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -28,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public abstract class DataGenerationStep extends PerfTestStep {
   
@@ -39,7 +32,7 @@ public abstract class DataGenerationStep extends PerfTestStep {
   protected PerfTestContext context;
   private Integer dataGenerationSize;
   private Integer numberOfThreads;
-  private SimpleDateFormat sdf;
+  protected SimpleDateFormat sdf;
 
   @Override
   public PerfTestStepResult execute(PerfTestContext context) {
@@ -135,62 +128,6 @@ public abstract class DataGenerationStep extends PerfTestStep {
     }
   }
 
-  private int addGeneratedData(BulkRequestBuilder bulkRequest, BpmnModelInstance modelInstance, String processDefinitionKey) {
-
-    Collection<FlowNode> flowNodes = extractFlowNodes(modelInstance);
-    String processInstanceId = "processInstance:" + IdGenerator.getNextId();
-    for (FlowNode flowNode : flowNodes) {
-      String id = IdGenerator.getNextId();
-      XContentBuilder source = generateSource(
-          id,
-          flowNode.getId(),
-          processDefinitionKey,
-          processInstanceId
-      );
-      bulkRequest
-        .add(client
-          .prepareIndex(
-              context.getConfiguration().getOptimizeIndex(),
-              context.getConfiguration().getEventType(),
-              id
-          )
-          .setSource(source)
-        );
-    }
-    return flowNodes.size();
-  }
-
-  protected Collection<FlowNode> extractFlowNodes(BpmnModelInstance instance) {
-    return instance.getModelElementsByType(FlowNode.class);
-  }
-
-  private XContentBuilder generateSource(String id, String activityId, String processDefinitionKey, String processInstanceId) {
-    try {
-      String date = sdf.format(new Date());
-      return jsonBuilder()
-        .startObject()
-        .field("id", id)
-        .field("activityId", activityId)
-        .field("activityInstanceId", generateIdFrom(activityId))
-        .field("timestamp", date)
-        .field("processDefinitionKey", processDefinitionKey)
-        .field("processDefinitionId", context.getParameter("processDefinitionId"))
-        .field("processInstanceId", processInstanceId)
-        .field("startDate", date)
-        .field("endDate", date)
-        .field("processInstanceStartDate", date)
-        .field("processInstanceEndDate", date)
-        .field("durationInMs", 20)
-        .field("activityType", "flowNode")
-        .endObject();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
-
-  private String generateIdFrom(String str) {
-    return str + ":" + IdGenerator.getNextId();
-  }
+  protected abstract int addGeneratedData(BulkRequestBuilder bulkRequest, BpmnModelInstance modelInstance, String processDefinitionKey);
 
 }

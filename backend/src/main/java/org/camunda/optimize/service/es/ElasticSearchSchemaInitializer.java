@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.type.BranchAnalysisDataType;
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
@@ -16,6 +17,9 @@ public class ElasticSearchSchemaInitializer {
 
   @Autowired
   private EventType eventType;
+
+  @Autowired
+  private BranchAnalysisDataType branchAnalysisDataType;
 
   @Autowired
   private ProcessDefinitionType processDefinitionType;
@@ -37,6 +41,7 @@ public class ElasticSearchSchemaInitializer {
 
   private void initializeMappings() {
     schemaManager.addMapping(eventType);
+    schemaManager.addMapping(branchAnalysisDataType);
     schemaManager.addMapping(processDefinitionType);
     schemaManager.addMapping(processDefinitionXmlType);
     schemaManager.addMapping(usersType);

@@ -10,12 +10,19 @@ import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
+import org.camunda.optimize.qa.performance.util.IdGenerator;
 import org.camunda.optimize.qa.performance.util.PerfTestException;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import ru.yandex.qatools.allure.annotations.Step;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
 
@@ -70,30 +77,71 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
     }
   }
 
-  @Override
-  protected Collection<FlowNode> extractFlowNodes(BpmnModelInstance instance) {
+  private List<List<FlowNode>> extractProcessInstancePaths(BpmnModelInstance instance) {
     List<FlowNode> flowNodes = new LinkedList<>();
+    List<List<FlowNode>> processInstanceFlows = new LinkedList<>();
     Collection<StartEvent> startEvents = instance.getModelElementsByType(StartEvent.class);
     for (StartEvent startEvent : startEvents) {
-      walkThroughModel(flowNodes, startEvent, 2);
+      walkThroughModel(processInstanceFlows, flowNodes, startEvent);
     }
-    return flowNodes;
+    return processInstanceFlows;
   }
 
   /**
    * Walks recursively through the model and when an exclusive gateway is reached,
-   * the number of created events is split up between the two paths.
+   * a new path is created and added to the list of process instance paths.
    */
-  private void walkThroughModel(List<FlowNode> flowNodes, FlowNode currentNode, int numberOfEventsToCreate) {
-    for (int i = 0; i < numberOfEventsToCreate; i++) {
-      flowNodes.add(currentNode);
-    }
+  private void walkThroughModel(List<List<FlowNode>> processInstancePath, List<FlowNode> currentPath, FlowNode currentNode) {
+    currentPath.add(currentNode);
     Collection<SequenceFlow> sequenceFlows = currentNode.getOutgoing();
-    if (sequenceFlows.size() > 1) {
-      numberOfEventsToCreate = 1;
+    if (sequenceFlows.isEmpty()) {
+      processInstancePath.add(currentPath);
     }
     for (SequenceFlow sequenceFlow : sequenceFlows) {
-      walkThroughModel(flowNodes, sequenceFlow.getTarget(), numberOfEventsToCreate);
+      List<FlowNode> currentPathCopy = new LinkedList<>(currentPath);
+      walkThroughModel(processInstancePath, currentPathCopy, sequenceFlow.getTarget());
     }
+  }
+
+  @Override
+  protected int addGeneratedData(BulkRequestBuilder bulkRequest, BpmnModelInstance modelInstance, String processDefinitionKey) {
+
+    List<List<FlowNode>> processInstanceFlows = extractProcessInstancePaths(modelInstance);
+    for (List<FlowNode> processInstanceFlow : processInstanceFlows) {
+      String processInstanceId = "processInstance:" + IdGenerator.getNextId();
+      List<String> activityList = new LinkedList<>();
+      for (FlowNode flowNode : processInstanceFlow) {
+        activityList.add(flowNode.getId());
+      }
+      XContentBuilder source = generateSource(activityList);
+      bulkRequest
+        .add(client
+          .prepareIndex(
+            context.getConfiguration().getOptimizeIndex(),
+            context.getConfiguration().getBranchAnalysisDataType(),
+            processInstanceId
+          )
+          .setSource(source)
+        );
+    }
+    return processInstanceFlows.size();
+  }
+
+  private XContentBuilder generateSource(List<String> activityList) {
+    try {
+      String date = sdf.format(new Date());
+      return jsonBuilder()
+        .startObject()
+          .startArray("activityList")
+            .value(activityList.toString())
+          .endArray()
+          .field("processDefinitionId", context.getParameter("processDefinitionId"))
+          .field("processInstanceStartDate", date)
+          .field("processInstanceEndDate", date)
+        .endObject();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 }

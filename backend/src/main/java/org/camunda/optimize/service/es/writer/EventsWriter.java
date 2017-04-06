@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -29,19 +30,22 @@ public class EventsWriter {
   public void importEvents(List<EventDto> events) throws Exception {
     logger.debug("writing [" + events.size() + "] events to ES");
 
-    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
     for (EventDto e : events) {
-      String eventId = e.getId();
-      bulkRequest.add(esclient
-          .prepareIndex(
-              configurationService.getOptimizeIndex(),
-              configurationService.getEventType(),
-              eventId
-          )
-          .setSource(objectMapper.writeValueAsString(e)));
+      addImportEventRequest(eventBulkRequest, e);
     }
+    eventBulkRequest.get();
+  }
 
-    bulkRequest.execute().get();
+  private void addImportEventRequest(BulkRequestBuilder eventBulkRequest, EventDto e) throws JsonProcessingException {
+    String eventId = e.getId();
+    eventBulkRequest.add(esclient
+      .prepareIndex(
+        configurationService.getOptimizeIndex(),
+        configurationService.getEventType(),
+        eventId
+      )
+      .setSource(objectMapper.writeValueAsString(e)));
   }
 
 }

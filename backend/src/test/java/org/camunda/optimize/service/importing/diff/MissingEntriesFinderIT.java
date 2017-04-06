@@ -65,6 +65,7 @@ public class MissingEntriesFinderIT {
     QueryBuilder qb = matchAllQuery();
 
     SearchResponse idsResp = elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex())
+      .setTypes()
       .setQuery(qb)
       .setVersion(true)
       .setFetchSource(false)
@@ -73,7 +74,11 @@ public class MissingEntriesFinderIT {
 
     assertThat(idsResp.getHits().getTotalHits(), greaterThan(0L));
     for (SearchHit searchHitFields : idsResp.getHits().getHits()) {
-      assertThat(searchHitFields.getVersion(), is(1L));
+      if (searchHitFields.getType().equals(elasticSearchRule.getBranchAnalysisDataType())) {
+        assertThat(searchHitFields.getVersion(), is(3L));
+      } else {
+        assertThat(searchHitFields.getVersion(), is(1L));
+      }
     }
   }
 

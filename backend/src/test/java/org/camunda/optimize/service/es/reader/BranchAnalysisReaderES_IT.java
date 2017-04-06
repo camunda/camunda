@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.reader;
 
+import org.camunda.optimize.rest.optimize.dto.ActivityListDto;
+import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ConfigurationService;
@@ -35,14 +35,15 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
 public class BranchAnalysisReaderES_IT {
-  public static final String PROCESS_DEFINITION_ID = "123";
-  public static final String END_ACTIVITY = "endActivity";
-  public static final String GATEWAY_ACTIVITY = "gw_1";
-  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
-  public static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
-  public static final String DIAGRAM = "gateway_process.bpmn";
-  public static final String TASK = "task_1";
-  public static final String TASK_2 = "task_2";
+  private static final String PROCESS_DEFINITION_ID = "procDef1";
+  private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
+  private static final String END_ACTIVITY = "endActivity";
+  private static final String GATEWAY_ACTIVITY = "gw_1";
+  private static final String PROCESS_INSTANCE_ID = "processInstanceId";
+  private static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
+  private static final String DIAGRAM = "gateway_process.bpmn";
+  private static final String TASK = "task_1";
+  private static final String TASK_2 = "task_2";
 
   @Rule
   public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
@@ -63,36 +64,8 @@ public class BranchAnalysisReaderES_IT {
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram());
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
-
-    EventDto event = new EventDto();
-    event.setActivityId(END_ACTIVITY);
-    event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    event.setStartDate(new Date());
-    event.setEndDate(new Date());
-    event.setProcessInstanceStartDate(new Date());
-    event.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", event);
-
-    event = new EventDto();
-    event.setActivityId(GATEWAY_ACTIVITY);
-    event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    event.setStartDate(new Date());
-    event.setEndDate(new Date());
-    event.setProcessInstanceStartDate(new Date());
-    event.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "2", event);
-
-    event = new EventDto();
-    event.setActivityId(GATEWAY_ACTIVITY);
-    event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    event.setStartDate(new Date());
-    event.setEndDate(new Date());
-    event.setProcessInstanceStartDate(new Date());
-    event.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "3", event);
+    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
+    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
   }
 
   private String readDiagram() throws IOException {
@@ -108,29 +81,13 @@ public class BranchAnalysisReaderES_IT {
   @Test
   public void branchAnalysis() throws Exception {
     //given
-
-    //when
-    BranchAnalysisOutcomeDto result = branchAnalysisReader.branchAnalysis(
-        PROCESS_DEFINITION_ID, GATEWAY_ACTIVITY, END_ACTIVITY);
-
-    //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getActivityId(), is(GATEWAY_ACTIVITY));
-    assertThat(result.getActivityCount(), is(2L));
-    assertThat(result.getActivitiesReached(), is(1L));
-  }
-
-  @Test
-  public void branchAnalysisWithDto() throws Exception {
-    //given
     setupFullInstanceFlow();
-
     BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
 
     //when
     BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
-    //then
 
+    //then
     assertThat(result, is(notNullValue()));
     assertThat(result.getEndEvent(), is(END_ACTIVITY));
     assertThat(result.getTotal(), is(2L));
@@ -147,6 +104,41 @@ public class BranchAnalysisReaderES_IT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
+  @Test
+  public void anotherProcessDefinitionDoesNotAffectAnalysis() throws Exception {
+    //given
+    setupFullInstanceFlow();
+    ActivityListDto actList = new ActivityListDto();
+    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
+    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK_2});
+    actList.setProcessInstanceStartDate(new Date());
+    actList.setProcessInstanceEndDate(new Date());
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), "radnomProcInstId1", actList);
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), "radnomProcInstId2", actList);
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), "radnomProcInstId3", actList);
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
+    dto.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
+
+    //when
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_ACTIVITY));
+    assertThat(result.getTotal(), is(3L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(0L));
+    assertThat(task1.getActivityCount(), is(0L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(3L));
+    assertThat(task2.getActivityCount(), is(3L));
+  }
+
   private BranchAnalysisQueryDto getBasicBranchAnalysisQueryDto() {
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
@@ -156,25 +148,14 @@ public class BranchAnalysisReaderES_IT {
   }
 
   private void setupFullInstanceFlow() {
-    EventDto event = new EventDto();
-    event.setActivityId(TASK);
-    event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    event.setStartDate(new Date());
-    event.setEndDate(new Date());
-    event.setProcessInstanceStartDate(new Date());
-    event.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "4", event);
-
-    event = new EventDto();
-    event.setActivityId(END_ACTIVITY);
-    event.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    event.setStartDate(new Date());
-    event.setEndDate(new Date());
-    event.setProcessInstanceStartDate(new Date());
-    event.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    ActivityListDto actList = new ActivityListDto();
+    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK});
+    actList.setProcessInstanceStartDate(new Date());
+    actList.setProcessInstanceEndDate(new Date());
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
+    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY});
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
   }
 
   @Test
@@ -229,6 +210,65 @@ public class BranchAnalysisReaderES_IT {
     assertThat(task2.getActivityId(), is(TASK_2));
     assertThat(task2.getActivitiesReached(), is(0L));
     assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  @Test
+  public void branchAnalysisWithGtEndDateCriteria() throws Exception {
+    //given
+    setupFullInstanceFlow();
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
+    DataUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
+
+    //when
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_ACTIVITY));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  @Test
+  public void branchAnalysisWithMixedDateCriteria() throws Exception {
+    //given
+    setupFullInstanceFlow();
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
+    DataUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
+    DataUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInMs(-2000), dto);
+
+    //when
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_ACTIVITY));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  private Date nowPlusTimeInMs(int timeInMs) {
+    return new Date(new Date().getTime() + timeInMs);
   }
 
   @Test

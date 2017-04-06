@@ -95,10 +95,10 @@ public class PaginatedImportServiceTest {
     verify(engineEntityFetcher, times(4))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
     ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
-    verify(importJobExecutor, times(3)).executeImportJob(captor.capture());
+    verify(importJobExecutor, times(6)).executeImportJob(captor.capture());
     assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(1).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(1));
+    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(4).getEntitiesToImport().size(), is(1));
 
   }
 
@@ -125,10 +125,10 @@ public class PaginatedImportServiceTest {
     verify(engineEntityFetcher, times(5))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
     ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
-    verify(importJobExecutor, times(3)).executeImportJob(captor.capture());
+    verify(importJobExecutor, times(6)).executeImportJob(captor.capture());
     assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(1).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(1));
+    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(4).getEntitiesToImport().size(), is(1));
   }
 
   @Test
@@ -155,10 +155,10 @@ public class PaginatedImportServiceTest {
     verify(engineEntityFetcher, times(5))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
     ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
-    verify(importJobExecutor, times(3)).executeImportJob(captor.capture());
+    verify(importJobExecutor, times(6)).executeImportJob(captor.capture());
     assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
-    assertThat(captor.getAllValues().get(1).getEntitiesToImport().size(), is(2));
     assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
+    assertThat(captor.getAllValues().get(4).getEntitiesToImport().size(), is(2));
   }
 
   private List<HistoricActivityInstanceEngineDto> setupInputData() {
