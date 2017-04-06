@@ -30,7 +30,7 @@ public class TngpExtensions
 {
     public static final String TNGP_NAMESPACE = "http://camunda.org/schema/tngp/1.0";
 
-    public static final String TASK_DEFINITION_ELEMENT = "taskDefiniton";
+    public static final String TASK_DEFINITION_ELEMENT = "taskDefinition";
     public static final String TASK_HEADERS_ELEMENT = "taskHeaders";
     public static final String TASK_HEADER_ELEMENT = "header";
 
