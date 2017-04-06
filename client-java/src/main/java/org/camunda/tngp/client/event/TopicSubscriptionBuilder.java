@@ -31,6 +31,15 @@ public interface TopicSubscriptionBuilder
     TopicSubscriptionBuilder startAtPosition(long position);
 
     /**
+     * Forces the subscription to start over, discarding any
+     * state previously persisted in the broker. The next received events are based
+     * on the configured start position.
+     *
+     * @return this builder
+     */
+    TopicSubscriptionBuilder forcedStart();
+
+    /**
      * Same as invoking {@link #startAtPosition(long)} with the topic's current tail position.
      * In particular, it is guaranteed that this subscription does not receive any event that
      * was receivable before this subscription is opened.
@@ -64,6 +73,8 @@ public interface TopicSubscriptionBuilder
      * When executed the first time, this snippet creates a new subscription beginning at position 0.
      * When executed a second time, this snippet creates a new subscription beginning at the position
      * at which the first subscription left off.
+     *
+     * <p>Use {@link #forcedStart()} to enforce starting at the supplied start position.
      *
      * <p>This parameter is required.
      *

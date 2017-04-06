@@ -71,4 +71,10 @@ public class TopicSubscriptionBuilderImpl implements TopicSubscriptionBuilder
         return this;
     }
 
+    @Override
+    public TopicSubscriptionBuilder forcedStart()
+    {
+        implBuilder.forceStart();
+        return this;
+    }
 }

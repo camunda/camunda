@@ -23,6 +23,7 @@ public class TopicSubscriptionImpl
     protected long lastAcknowledgedPosition;
 
     protected final long startPosition;
+    protected final boolean forceStart;
     protected final String name;
     protected final int prefetchCapacity;
 
@@ -32,6 +33,7 @@ public class TopicSubscriptionImpl
             EventAcquisition<TopicSubscriptionImpl> eventAcquisition,
             int prefetchCapacity,
             long startPosition,
+            boolean forceStart,
             String name)
     {
         super(eventAcquisition, prefetchCapacity);
@@ -46,6 +48,7 @@ public class TopicSubscriptionImpl
                     .andOnException(this::logExceptionAndClose);
         }
         this.startPosition = startPosition;
+        this.forceStart = forceStart;
         this.name = name;
         this.lastProcessedEventPosition = startPosition;
         this.lastAcknowledgedPosition = startPosition;
@@ -124,6 +127,7 @@ public class TopicSubscriptionImpl
                 .startPosition(startPosition)
                 .prefetchCapacity(prefetchCapacity)
                 .name(name)
+                .forceStart(forceStart)
                 .execute();
     }
 

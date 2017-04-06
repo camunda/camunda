@@ -60,6 +60,65 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    public void shouldOpenSubscription()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final TopicEventHandler noOpHandler = (m, e) ->
+        { };
+
+        // when
+        client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .handler(noOpHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+            .stream()
+            .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
+            .findFirst()
+            .get();
+
+
+        assertThat(subscribeRequest.getCommand())
+            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("startPosition", 0)
+            .containsEntry("prefetchCapacity", 32)
+            .containsEntry("name", SUBSCRIPTION_NAME)
+            .doesNotContainEntry("forceStart", true);
+    }
+
+    @Test
+    public void shouldOpenSubscriptionAndForceStart()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        final TopicEventHandler noOpHandler = (m, e) ->
+        { };
+
+        // when
+        client.topic(0).newSubscription()
+            .startAtHeadOfTopic()
+            .forcedStart()
+            .handler(noOpHandler)
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+            .stream()
+            .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
+            .findFirst()
+            .get();
+
+        assertThat(subscribeRequest.getCommand()).containsEntry("forceStart", true);
+    }
+
+    @Test
     public void shouldRetryThreeTimesOnHandlerFailure() throws InterruptedException
     {
         // given
@@ -323,4 +382,6 @@ public class TopicSubscriptionTest
         // then
         assertThat(secondSubscription.isOpen()).isTrue();
     }
+
+
 }

@@ -59,6 +59,15 @@ public interface TaskTopicSubscriptionBuilder
     TaskTopicSubscriptionBuilder startAtHeadOfTopic();
 
     /**
+     * Forces the subscription to start over, discarding any
+     * state previously persisted in the broker. The next received events are based
+     * on the configured start position.
+     *
+     * @return this builder
+     */
+    TaskTopicSubscriptionBuilder forcedStart();
+
+    /**
      * <p>Sets the name of a subscription. The name is used by the broker to record and persist the
      * subscription's position. When a subscription is reopened, this state is used to resume
      * the subscription at the previous position. In this case, methods like {@link #startAtPosition(long)}
@@ -76,6 +85,8 @@ public interface TaskTopicSubscriptionBuilder
      * When executed the first time, this snippet creates a new subscription beginning at position 0.
      * When executed a second time, this snippet creates a new subscription beginning at the position
      * at which the first subscription left off.
+     *
+     * <p>Use {@link #forcedStart()} to enforce starting at the supplied start position.
      *
      * <p>This parameter is required.
      *

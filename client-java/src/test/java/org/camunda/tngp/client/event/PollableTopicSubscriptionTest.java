@@ -7,6 +7,7 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
+import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
@@ -45,6 +46,57 @@ public class PollableTopicSubscriptionTest
             .event()
                 .done()
             .push(channelId);
+    }
+
+    @Test
+    public void shouldOpenSubscription()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        // when
+        client.topic(0).newPollableSubscription()
+            .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+            .stream()
+            .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
+            .findFirst()
+            .get();
+
+
+        assertThat(subscribeRequest.getCommand())
+            .containsEntry("eventType", "SUBSCRIBE")
+            .containsEntry("startPosition", 0)
+            .containsEntry("prefetchCapacity", 32)
+            .containsEntry("name", SUBSCRIPTION_NAME)
+            .doesNotContainEntry("forceStart", true);
+    }
+
+    @Test
+    public void shouldOpenSubscriptionAndForceStart()
+    {
+        // given
+        brokerRule.stubTopicSubscriptionApi(123L);
+
+        // when
+        client.topic(0).newPollableSubscription()
+            .startAtHeadOfTopic()
+            .forcedStart()
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+            .stream()
+            .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
+            .findFirst()
+            .get();
+
+        assertThat(subscribeRequest.getCommand()).containsEntry("forceStart", true);
     }
 
     /**

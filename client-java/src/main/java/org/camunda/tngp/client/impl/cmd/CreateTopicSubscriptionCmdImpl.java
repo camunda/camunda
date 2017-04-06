@@ -40,6 +40,12 @@ public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<Topic
         return this;
     }
 
+    public CreateTopicSubscriptionCmdImpl forceStart(boolean forceStart)
+    {
+        this.subscription.setForceStart(forceStart);
+        return this;
+    }
+
     @Override
     protected Object writeCommand()
     {

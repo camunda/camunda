@@ -7,6 +7,7 @@ public class TopicSubscriberEvent
     protected long startPosition;
     protected String name;
     protected int prefetchCapacity;
+    protected boolean forceStart;
 
     public TopicSubscriberEvent()
     {
@@ -53,11 +54,22 @@ public class TopicSubscriberEvent
         return eventType;
     }
 
+    public boolean isForceStart()
+    {
+        return forceStart;
+    }
+
+    public void setForceStart(boolean forceStart)
+    {
+        this.forceStart = forceStart;
+    }
+
     public void reset()
     {
         this.startPosition = -1L;
         this.prefetchCapacity = -1;
         this.eventType = null;
         this.name = null;
+        this.forceStart = false;
     }
 }

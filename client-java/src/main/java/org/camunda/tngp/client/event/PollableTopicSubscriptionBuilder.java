@@ -58,12 +58,23 @@ public interface PollableTopicSubscriptionBuilder
      * When executed a second time, this snippet creates a new subscription beginning at the position
      * at which the first subscription left off.
      *
+     * <p>Use {@link #forcedStart()} to enforce starting at the supplied start position.
+     *
      * <p>This parameter is required.
      *
      * @param name the name of the subscription. must be unique for the addressed topic
      * @return this builder
      */
     PollableTopicSubscriptionBuilder name(String subscriptionName);
+
+    /**
+     * Forces the subscription to start over, discarding any
+     * state previously persisted in the broker. The next received events are based
+     * on the configured start position.
+     *
+     * @return this builder
+     */
+    PollableTopicSubscriptionBuilder forcedStart();
 
     /**
      * Opens a new topic subscription with the defined parameters.

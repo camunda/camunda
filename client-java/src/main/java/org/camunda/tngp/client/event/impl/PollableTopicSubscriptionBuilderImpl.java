@@ -54,4 +54,11 @@ public class PollableTopicSubscriptionBuilderImpl implements PollableTopicSubscr
         return this;
     }
 
+    @Override
+    public PollableTopicSubscriptionBuilder forcedStart()
+    {
+        implBuilder.forceStart();
+        return this;
+    }
+
 }

@@ -10,6 +10,7 @@ public class TopicSubscriptionImplBuilder
     protected final EventAcquisition<TopicSubscriptionImpl> acquisition;
     protected String name;
     protected final int prefetchCapacity;
+    protected boolean forceStart;
 
     public TopicSubscriptionImplBuilder(
             TopicClientImpl client,
@@ -44,6 +45,12 @@ public class TopicSubscriptionImplBuilder
         return startPosition(0L);
     }
 
+    public TopicSubscriptionImplBuilder forceStart()
+    {
+        this.forceStart = true;
+        return this;
+    }
+
     public TopicSubscriptionImplBuilder name(String name)
     {
         this.name = name;
@@ -68,6 +75,7 @@ public class TopicSubscriptionImplBuilder
             acquisition,
             prefetchCapacity,
             startPosition,
+            forceStart,
             name);
     }
 }

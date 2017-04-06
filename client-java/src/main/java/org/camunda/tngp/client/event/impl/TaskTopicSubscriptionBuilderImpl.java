@@ -96,4 +96,11 @@ public class TaskTopicSubscriptionBuilderImpl implements TaskTopicSubscriptionBu
         innerBuilder.name(subscriptionName);
         return this;
     }
+
+    @Override
+    public TaskTopicSubscriptionBuilder forcedStart()
+    {
+        innerBuilder.forcedStart();
+        return this;
+    }
 }
