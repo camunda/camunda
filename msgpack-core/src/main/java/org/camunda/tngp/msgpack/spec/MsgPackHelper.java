@@ -8,7 +8,6 @@ public class MsgPackHelper
     {
         if (size < 0)
         {
-            System.out.println("Negative buffer size");
             throw new RuntimeException("Negative buffer size");
         }
         else
