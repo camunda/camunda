@@ -76,8 +76,11 @@ public class ImportScheduler extends Thread {
 
     if (!importScheduleJobs.isEmpty()) {
       ImportScheduleJob toExecute = importScheduleJobs.poll();
+      int startIndex = toExecute.getImportService().getImportStartIndex();
+      int endIndex = 0;
       try {
         pagesPassed = toExecute.execute();
+        endIndex = toExecute.getImportService().getImportStartIndex();
       } catch (RejectedExecutionException e) {
         //nothing bad happened, we just have a lot of data to import
         //next step is sleep
@@ -93,6 +96,9 @@ public class ImportScheduler extends Thread {
         logger.debug("Processed [" + pagesPassed + "] pages during data import run, scheduling one more run");
         importScheduleJobs.add(toExecute);
         backoffCounter = STARTING_BACKOFF;
+      } if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
+        logger.debug("Index of [" + toExecute.getImportService().getClass() + " is [" + toExecute.getImportService().getImportStartIndex() + "]");
+        importScheduleJobs.add(toExecute);
       }
     }
 
