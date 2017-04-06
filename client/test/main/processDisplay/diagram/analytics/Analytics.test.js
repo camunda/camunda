@@ -22,7 +22,7 @@ describe('<Analytics>', () => {
   let gateway;
   let initialState;
   let gatewayAnalysisState;
-  let isBpmnType;
+  let isValidElement;
   let integrator;
 
   beforeEach(() => {
@@ -99,10 +99,10 @@ describe('<Analytics>', () => {
     leaveGatewayAnalysisMode = sinon.spy();
     __set__('leaveGatewayAnalysisMode', leaveGatewayAnalysisMode);
 
-    isBpmnType = sinon.stub().returns(false);
-    isBpmnType.withArgs(endEvent, 'EndEvent').returns(true);
-    isBpmnType.withArgs(gateway, 'Gateway').returns(true);
-    __set__('isBpmnType', isBpmnType);
+    isValidElement = sinon.stub().returns(false);
+    isValidElement.withArgs(endEvent, 'EndEvent').returns(true);
+    isValidElement.withArgs(gateway, 'Gateway').returns(true);
+    __set__('isValidElement', isValidElement);
 
     viewer = {
       get: sinon.stub().returnsThis(),
@@ -128,7 +128,7 @@ describe('<Analytics>', () => {
 
   afterEach(() => {
     __ResetDependency__('createModal');
-    __ResetDependency__('isBpmnType');
+    __ResetDependency__('isValidElement');
     __ResetDependency__('removeOverlays');
     __ResetDependency__('showSelectedOverlay');
     __ResetDependency__('addBranchOverlay');

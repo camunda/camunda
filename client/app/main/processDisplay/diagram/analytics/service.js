@@ -29,6 +29,22 @@ export function hoverElement(viewer, element) {
   updateOverlayVisibility(viewer, element, BRANCH_OVERLAY);
 }
 
+export function isValidElement(element, type) {
+  if (type === 'Gateway') {
+    return isValidGateway(element);
+  } else if (type === 'EndEvent') {
+    return isValidEndEvent(element);
+  }
+}
+
+function isValidGateway(element) {
+  return isBpmnType(element, 'Gateway')  && element.businessObject.outgoing.length > 1;
+}
+
+function isValidEndEvent(element) {
+  return isBpmnType(element, 'EndEvent');
+}
+
 export function showSelectedOverlay(viewer, element) {
   viewer
     .get('overlays')

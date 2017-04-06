@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import {setEndEvent, unsetEndEvent, setGateway, unsetGateway, leaveGatewayAnalysisMode,
-        hoverElement, addBranchOverlay, BRANCH_OVERLAY, showSelectedOverlay,
+        hoverElement, addBranchOverlay, BRANCH_OVERLAY, showSelectedOverlay, isValidElement,
         __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/service';
 import sinon from 'sinon';
 
@@ -136,6 +136,43 @@ describe('Analytics service', () => {
 
       expect(overlayNode.keepOpen).to.be.true;
       expect(overlayNode.html.style.display).to.eql('block');
+    });
+  });
+
+  describe('isValidElement', () => {
+    let gatewayTwoOutgoing;
+    let gatewayOneOutgoing;
+    let endEvent;
+
+    beforeEach(() => {
+      gatewayTwoOutgoing = {
+        businessObject: {
+          outgoing: [1, 2]
+        }
+      };
+      gatewayOneOutgoing = {
+        businessObject: {
+          outgoing: [1]
+        }
+      };
+      endEvent = {};
+
+      isBpmnType.returns(false);
+      isBpmnType.withArgs(gatewayOneOutgoing, 'Gateway').returns(true);
+      isBpmnType.withArgs(gatewayTwoOutgoing, 'Gateway').returns(true);
+      isBpmnType.withArgs(endEvent, 'EndEvent').returns(true);
+    });
+
+    it('should be valid for every endEvent', () => {
+      expect(isValidElement(endEvent, 'EndEvent')).to.be.true;
+    });
+
+    it('should be valid for gateways with multiple outgoing sequence flows', () => {
+      expect(isValidElement(gatewayTwoOutgoing, 'Gateway')).to.be.true;
+    });
+
+    it('should not be valid for gateways with only one outgoing sequence flow', () => {
+      expect(isValidElement(gatewayOneOutgoing, 'Gateway')).to.be.false;
     });
   });
 });

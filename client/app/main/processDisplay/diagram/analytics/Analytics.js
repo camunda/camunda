@@ -1,5 +1,5 @@
-import {setEndEvent, setGateway, hoverElement, addBranchOverlay, showSelectedOverlay} from './service';
-import {isBpmnType, removeOverlays} from 'utils';
+import {setEndEvent, setGateway, hoverElement, addBranchOverlay, showSelectedOverlay, isValidElement} from './service';
+import {removeOverlays} from 'utils';
 import {resetStatisticData} from 'main/processDisplay/statistics';
 
 export function createCreateAnalyticsRendererFunction(integrator) {
@@ -14,25 +14,25 @@ export function createCreateAnalyticsRendererFunction(integrator) {
       // takes care of the controls integrator
       integrator.unhover('EndEvent');
       integrator.unhover('Gateway');
-      if (isBpmnType(element, 'EndEvent')) {
+      if (isValidElement(element, 'EndEvent')) {
         integrator.hover('EndEvent');
-      } else if (isBpmnType(element, 'Gateway')) {
+      } else if (isValidElement(element, 'Gateway')) {
         integrator.hover('Gateway');
       }
     });
 
     viewer.get('eventBus').on('element.click', ({element}) => {
-      if (isBpmnType(element, 'EndEvent')) {
+      if (isValidElement(element, 'EndEvent')) {
         resetStatisticData();
         setEndEvent(element);
-      } else if (isBpmnType(element, 'Gateway')) {
+      } else if (isValidElement(element, 'Gateway')) {
         resetStatisticData();
         setGateway(element);
       }
     });
 
     function needsHighlight(element) {
-      return isBpmnType(element, 'Gateway') || isBpmnType(element, 'EndEvent');
+      return isValidElement(element, 'Gateway') || isValidElement(element, 'EndEvent');
     }
 
     function removeHighlight(element) {

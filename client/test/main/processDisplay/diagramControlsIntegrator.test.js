@@ -9,7 +9,7 @@ describe('Diagram Controls Integrator', () => {
   let Controls;
   let unsetGateway;
   let unsetEndEvent;
-  let isBpmnType;
+  let isValidElement;
   let viewer;
 
   const diagramElement = 'SOME_ELEMENT';
@@ -47,8 +47,8 @@ describe('Diagram Controls Integrator', () => {
     unsetEndEvent = sinon.spy();
     __set__('unsetEndEvent', unsetEndEvent);
 
-    isBpmnType = sinon.stub().returns(true);
-    __set__('isBpmnType', isBpmnType);
+    isValidElement = sinon.stub().returns(true);
+    __set__('isValidElement', isValidElement);
 
     ({integrator, Diagram, Controls} = createDiagramControlsIntegrator());
   });
@@ -58,7 +58,7 @@ describe('Diagram Controls Integrator', () => {
     __ResetDependency__('createControls');
     __ResetDependency__('unsetGateway');
     __ResetDependency__('unsetEndEvent');
-    __ResetDependency__('isBpmnType');
+    __ResetDependency__('isValidElement');
   });
 
   it('should return Diagram, Controls and the integrator', () => {

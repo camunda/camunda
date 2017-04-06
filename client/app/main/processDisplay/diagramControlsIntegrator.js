@@ -1,7 +1,6 @@
 import {createDiagram} from 'widgets';
 import {createControls} from './controls';
-import {unsetGateway, unsetEndEvent} from './diagram/analytics/service';
-import {isBpmnType} from 'utils';
+import {unsetGateway, unsetEndEvent, isValidElement} from './diagram/analytics/service';
 
 export function createDiagramControlsIntegrator() {
   const integrator = {
@@ -24,7 +23,7 @@ export function createDiagramControlsIntegrator() {
           const canvas = viewer.get('canvas');
 
           elementRegistry.forEach(element => {
-            if (isBpmnType(element, type)) {
+            if (isValidElement(element, type)) {
               if (hovered) {
                 canvas.addMarker(element, 'hover-highlight');
               } else {
