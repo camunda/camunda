@@ -3,6 +3,9 @@ package org.camunda.tngp.broker.workflow.graph;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_DEFINITION_ELEMENT;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_HEADERS_ELEMENT;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_HEADER_ELEMENT;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TASK_RETRIES_ATTRIBUTE;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TNGP_NAMESPACE;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 
@@ -14,6 +17,7 @@ import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
+import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
@@ -329,6 +333,65 @@ public class BpmnValidationTests
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
             .isNotNull()
             .extracting("code").contains(ValidationCodes.NO_TASK_TYPE);
+    }
+
+    @Test
+    public void shouldNotBeValidIfServiceTaskHasInvalidTaskRetries()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("foo")
+            .endEvent()
+            .done());
+
+        final ExtensionElements extensionElements = getExtensionElements(bpmnModelInstance, "foo");
+        final ModelElementInstance taskDefinition = extensionElements.addExtensionElement(TNGP_NAMESPACE, TASK_DEFINITION_ELEMENT);
+        taskDefinition.setAttributeValue(TASK_RETRIES_ATTRIBUTE, "bar");
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.INVALID_TASK_RETRIES);
+    }
+
+    @Test
+    public void shouldNotBeValidIfServiceTaskHasInvalidTaskHeader()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("foo")
+            .endEvent()
+            .done());
+
+        final ExtensionElements extensionElements = getExtensionElements(bpmnModelInstance, "foo");
+        final ModelElementInstance taskHeaders = extensionElements.addExtensionElement(TNGP_NAMESPACE, TASK_HEADERS_ELEMENT);
+        final DomElement taskHeader = bpmnModelInstance.getDocument().createElement(TNGP_NAMESPACE, TASK_HEADER_ELEMENT);
+        taskHeaders.getDomElement().appendChild(taskHeader);
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.NO_TASK_HEADER_KEY, ValidationCodes.NO_TASK_HEADER_VALUE);
+    }
+
+    private ExtensionElements getExtensionElements(final BpmnModelInstance bpmnModelInstance, String activityId)
+    {
+        final ExtensionElements extensionElements = bpmnModelInstance.newInstance(ExtensionElements.class);
+
+        final ModelElementInstance element = bpmnModelInstance.getModelElementById(activityId);
+        element.addChildElement(extensionElements);
+
+        return extensionElements;
     }
 
 }

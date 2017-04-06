@@ -2,11 +2,13 @@ package org.camunda.tngp.client.task.impl;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEvent;
 import org.camunda.tngp.client.task.Task;
+import org.camunda.tngp.client.task.TaskHeaders;
 
 public class TaskImpl implements Task
 {
@@ -18,7 +20,7 @@ public class TaskImpl implements Task
     protected final int lockOwner;
     protected final int retries;
     protected final MsgPackField payload = new MsgPackField();
-    protected Map<String, Object> headers;
+    protected final Map<String, Object> headers;
 
     protected int state;
     protected static final int STATE_LOCKED = 0;
@@ -38,10 +40,41 @@ public class TaskImpl implements Task
         this.lockExpirationTime = taskEvent.getLockTime();
         this.lockOwner = subscription.getLockOwner();
         this.retries = taskEvent.getRetries();
-        this.headers = taskEvent.getHeaders();
         this.payload.setMsgPack(taskEvent.getPayload());
+        this.headers = getTaskHeaders(taskEvent);
 
         this.state = STATE_LOCKED;
+    }
+
+    private Map<String, Object> getTaskHeaders(TaskEvent taskEvent)
+    {
+        final Map<String, Object> headers = new HashMap<>();
+
+        final Map<String, Object> taskHeaders = taskEvent.getHeaders();
+        if (taskHeaders != null && !taskHeaders.isEmpty())
+        {
+            headers.putAll(taskHeaders);
+
+            if (taskHeaders.containsKey(TaskHeaders.CUSTOM))
+            {
+                final Object customHeadersObject = taskEvent.getHeaders().get(TaskHeaders.CUSTOM);
+                try
+                {
+                    @SuppressWarnings("unchecked")
+                    final List<Map<String, Object>> customHeaders = (List<Map<String, Object>>) customHeadersObject;
+
+                    customHeaders.forEach(customHeader ->
+                    {
+                        headers.put(String.valueOf(customHeader.get(TaskHeaders.CUSTOM_HEADER_KEY)), customHeader.get(TaskHeaders.CUSTOM_HEADER_VALUE));
+                    });
+                }
+                catch (ClassCastException e)
+                {
+                    throw new RuntimeException("Failed to parse custom task headers. Expected List<Map<String,String>> but found: " + customHeadersObject.getClass().getSimpleName());
+                }
+            }
+        }
+        return headers;
     }
 
     @Override
@@ -112,12 +145,6 @@ public class TaskImpl implements Task
     public Map<String, Object> getHeaders()
     {
         return new HashMap<>(headers);
-    }
-
-    @Override
-    public void setHeaders(Map<String, Object> newHeaders)
-    {
-        this.headers = newHeaders;
     }
 
 }

@@ -20,5 +20,8 @@ public class ValidationCodes
 
     public static final int NO_TASK_DEFINITION = 50;
     public static final int NO_TASK_TYPE = 51;
+    public static final int INVALID_TASK_RETRIES = 52;
+    public static final int NO_TASK_HEADER_KEY = 53;
+    public static final int NO_TASK_HEADER_VALUE = 54;
 
 }

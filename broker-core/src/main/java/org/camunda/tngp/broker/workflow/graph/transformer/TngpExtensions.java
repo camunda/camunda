@@ -13,12 +13,14 @@
 package org.camunda.tngp.broker.workflow.graph.transformer;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.instance.DomDocument;
+import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -29,11 +31,13 @@ public class TngpExtensions
     public static final String TNGP_NAMESPACE = "http://camunda.org/schema/tngp/1.0";
 
     public static final String TASK_DEFINITION_ELEMENT = "taskDefiniton";
+    public static final String TASK_HEADERS_ELEMENT = "taskHeaders";
+    public static final String TASK_HEADER_ELEMENT = "header";
 
     public static final String TASK_TYPE_ATTRIBUTE = "type";
-
     public static final String TASK_RETRIES_ATTRIBUTE = "retries";
-
+    public static final String TASK_HEADER_KEY_ATTRIBUTE = "key";
+    public static final String TASK_HEADER_VALUE_ATTRIBUTE = "value";
 
     public static TngpModelInstance wrap(BpmnModelInstance modelInstance)
     {
@@ -130,17 +134,44 @@ public class TngpExtensions
 
         public TngpModelInstance taskDefinition(String activityId, String taskType, int retries)
         {
-            final ModelElementInstance taskElement = wrappedInstance.getModelElementById(activityId);
-
-            final ExtensionElements extensionElements = wrappedInstance.newInstance(ExtensionElements.class);
+            final ExtensionElements extensionElements = getExtensionElements(activityId);
             final ModelElementInstance taskDefinition = extensionElements.addExtensionElement(TNGP_NAMESPACE, TASK_DEFINITION_ELEMENT);
 
             taskDefinition.setAttributeValue(TASK_TYPE_ATTRIBUTE, taskType);
             taskDefinition.setAttributeValue(TASK_RETRIES_ATTRIBUTE, String.valueOf(retries));
 
-            taskElement.addChildElement(extensionElements);
+            return this;
+        }
+
+        public TngpModelInstance taskHeaders(String activityId, Map<String, String> headers)
+        {
+            final ExtensionElements extensionElements = getExtensionElements(activityId);
+            final ModelElementInstance taskHeaders = extensionElements.addExtensionElement(TNGP_NAMESPACE, TASK_HEADERS_ELEMENT);
+
+            headers.forEach((k, v) ->
+            {
+                final DomElement taskHeader = wrappedInstance.getDocument().createElement(TNGP_NAMESPACE, TASK_HEADER_ELEMENT);
+
+                taskHeader.setAttribute(TASK_HEADER_KEY_ATTRIBUTE, k);
+                taskHeader.setAttribute(TASK_HEADER_VALUE_ATTRIBUTE, v);
+
+                taskHeaders.getDomElement().appendChild(taskHeader);
+            });
 
             return this;
+        }
+
+        private ExtensionElements getExtensionElements(String activityId)
+        {
+            final ModelElementInstance taskElement = wrappedInstance.getModelElementById(activityId);
+
+            ExtensionElements extensionElements = (ExtensionElements) taskElement.getUniqueChildElementByType(ExtensionElements.class);
+            if (extensionElements == null)
+            {
+                extensionElements = wrappedInstance.newInstance(ExtensionElements.class);
+                taskElement.addChildElement(extensionElements);
+            }
+            return extensionElements;
         }
 
     }

@@ -1,10 +1,12 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -154,7 +156,6 @@ public class WorkflowInstanceFunctionalTest
             .containsEntry("activityId", "foo");
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void shouldCreateTaskWhenServiceTaskIsActivated()
     {
@@ -177,12 +178,47 @@ public class WorkflowInstanceFunctionalTest
         assertThat(event.event())
             .containsEntry("type", "bar")
             .containsEntry("retries", 5);
+    }
 
-        assertThat((Map<String, Object>) event.event().get("headers"))
+    @Test
+    public void shouldCreateTaskWithWorkflowInstanceAndCustomHeaders()
+    {
+        // given
+        final Map<String, String> taskHeaders = new HashMap<>();
+        taskHeaders.put("a", "b");
+        taskHeaders.put("c", "d");
+
+        testClient.deploy(wrap(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("foo")
+                    .endEvent()
+                    .done())
+                        .taskDefinition("foo", "bar", 5)
+                        .taskHeaders("foo", taskHeaders));
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> headers = (Map<String, Object>) event.event().get("headers");
+        assertThat(headers)
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowDefinitionVersion", 1)
-            .containsEntry("activityId", "foo");
+            .containsEntry("activityId", "foo")
+            .containsKey("activityInstanceKey")
+            .containsKey("customHeaders");
+
+        @SuppressWarnings("unchecked")
+        final List<Map<String, String>> customHeaders = (List<Map<String, String>>) headers.get("customHeaders");
+        assertThat(customHeaders)
+            .hasSize(2)
+            .extracting(m -> tuple(m.get("key"), m.get("value")))
+            .contains(tuple("a", "b"), tuple("c", "d"));
     }
 
     @Test

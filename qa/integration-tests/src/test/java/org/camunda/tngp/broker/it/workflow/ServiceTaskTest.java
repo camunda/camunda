@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.it.process;
+package org.camunda.tngp.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
@@ -7,19 +7,21 @@ import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
+import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
+import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpModelInstance;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.Task;
@@ -58,7 +60,7 @@ public class ServiceTaskTest
         taskClient = client.taskTopic(0);
     }
 
-    private static BpmnModelInstance oneTaskProcess(String taskType)
+    private static TngpModelInstance oneTaskProcess(String taskType)
     {
         return wrap(Bpmn.createExecutableProcess("process")
             .startEvent("start")
@@ -91,8 +93,14 @@ public class ServiceTaskTest
     public void shouldLockServiceTask()
     {
         // given
+        final Map<String, String> taskHeaders = new HashMap<>();
+        taskHeaders.put("cust1", "a");
+        taskHeaders.put("cust2", "b");
+
         workflowClient.deploy()
-            .bpmnModelInstance(oneTaskProcess("foo"))
+            .bpmnModelInstance(
+                    oneTaskProcess("foo")
+                        .taskHeaders("task", taskHeaders))
             .execute();
 
         final WorkflowInstance workflowInstance = workflowClient.create()
@@ -100,21 +108,30 @@ public class ServiceTaskTest
                 .execute();
 
         // when
+        final RecordingTaskHandler recordingTaskHandler = new RecordingTaskHandler();
+
         taskClient.newTaskSubscription()
             .taskType("foo")
             .lockOwner(1)
             .lockTime(Duration.ofMinutes(5))
-            .handler(Task::complete)
+            .handler(recordingTaskHandler)
             .open();
 
         // then
-        waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCKED)));
+        waitUntil(() -> recordingTaskHandler.getHandledTasks().size() >= 1);
 
-        final TaskEvent taskLockedEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.LOCKED)).get(0);
+        assertThat(recordingTaskHandler.getHandledTasks()).hasSize(1);
+
+        final Task taskLockedEvent = recordingTaskHandler.getHandledTasks().get(0);
         assertThat(taskLockedEvent.getHeaders())
             .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowDefinitionVersion", 1)
             .containsEntry("workflowInstanceKey", workflowInstance.getWorkflowInstanceKey())
-            .containsEntry("activityId", "task");
+            .containsEntry("activityId", "task")
+            .containsEntry("cust1", "a")
+            .containsEntry("cust2", "b")
+            .containsKey("activityInstanceKey")
+            .containsKey("customHeaders");
     }
 
     @Test

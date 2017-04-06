@@ -13,14 +13,20 @@
 package org.camunda.tngp.broker.taskqueue.data;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.ArrayProperty;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
+import org.camunda.tngp.broker.util.msgpack.value.ArrayValue;
+import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
+import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
 public class TaskHeaders extends UnpackedObject
 {
     private static final String EMPTY_STRING = "";
+    private static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
     private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
     private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", EMPTY_STRING);
@@ -28,13 +34,20 @@ public class TaskHeaders extends UnpackedObject
     private final StringProperty activityIdProp = new StringProperty("activityId", EMPTY_STRING);
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
+    private final ArrayProperty<TaskHeader> customHeadersProp = new ArrayProperty<>(
+            "customHeaders",
+            new ArrayValue<>(),
+            new ArrayValue<>(EMPTY_ARRAY, 0, EMPTY_ARRAY.capacity()),
+            new TaskHeader());
+
     public TaskHeaders()
     {
         this.declareProperty(bpmnProcessIdProp)
             .declareProperty(workflowDefinitionVersionProp)
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
-            .declareProperty(activityInstanceKeyProp);
+            .declareProperty(activityInstanceKeyProp)
+            .declareProperty(customHeadersProp);
     }
 
     public long getWorkflowInstanceKey()
@@ -96,4 +109,10 @@ public class TaskHeaders extends UnpackedObject
         this.activityInstanceKeyProp.setValue(activityInstanceKey);
         return this;
     }
+
+    public ArrayValueIterator<TaskHeader> customHeaders()
+    {
+        return customHeadersProp;
+    }
+
 }

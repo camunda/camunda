@@ -42,17 +42,23 @@ public class TaskMetadata
 
     public static class TaskHeader
     {
-        private String name;
+        private String key;
         private String value;
 
-        public String getName()
+        public TaskHeader(String key, String value)
         {
-            return name;
+            this.key = key;
+            this.value = value;
         }
 
-        public void setName(String name)
+        public String getKey()
         {
-            this.name = name;
+            return key;
+        }
+
+        public void setkey(String name)
+        {
+            this.key = name;
         }
 
         public String getValue()

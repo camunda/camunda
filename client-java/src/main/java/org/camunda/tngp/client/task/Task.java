@@ -11,7 +11,6 @@ import java.util.Map;
  */
 public interface Task
 {
-
     /**
      * @return the key of the task
      */
@@ -45,13 +44,6 @@ public interface Task
      *         the task, the related workflow instance or custom data.
      */
     Map<String, Object> getHeaders();
-
-    /**
-     * Sets the new headers of the task. Note that this overrides the existing headers.
-     *
-     * @param newHeaders the new headers of the task
-     */
-    void setHeaders(Map<String, Object> newHeaders);
 
     /**
      * Mark the task as complete. This may continue the workflow instance if the task belongs to one.

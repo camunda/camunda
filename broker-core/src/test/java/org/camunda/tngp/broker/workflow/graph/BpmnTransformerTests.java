@@ -1,11 +1,14 @@
 package org.camunda.tngp.broker.workflow.graph;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -93,12 +96,17 @@ public class BpmnTransformerTests
     public void shouldTransformServiceTask()
     {
         // given
+        final Map<String, String> taskHeaders = new HashMap<>();
+        taskHeaders.put("a", "b");
+        taskHeaders.put("c", "d");
+
         final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
             .startEvent()
             .serviceTask("foo")
                 .name("bar")
             .done())
-                .taskDefinition("foo", "test", 4);
+                .taskDefinition("foo", "test", 4)
+                .taskHeaders("foo", taskHeaders);
 
         // when
         final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
@@ -114,6 +122,10 @@ public class BpmnTransformerTests
         assertThat(serviceTask.getTaskMetadata()).isNotNull();
         assertThatBuffer(serviceTask.getTaskMetadata().getTaskType()).hasBytes("test".getBytes());
         assertThat(serviceTask.getTaskMetadata().getRetries()).isEqualTo(4);
+        assertThat(serviceTask.getTaskMetadata().getHeaders())
+            .hasSize(2)
+            .extracting(h -> tuple(h.getKey(), h.getValue()))
+            .contains(tuple("a", "b"), tuple("c", "d"));
     }
 
     protected ExecutableWorkflow transformSingleProcess(BpmnModelInstance bpmnModelInstance)

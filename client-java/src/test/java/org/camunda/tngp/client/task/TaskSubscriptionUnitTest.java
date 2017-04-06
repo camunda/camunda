@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,6 +51,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -98,7 +100,7 @@ public class TaskSubscriptionUnitTest
     protected SubscribedEventCollector taskCollector;
 
     @Rule
-    public ExpectedException exception = ExpectedException.none();
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void setUp()
@@ -332,8 +334,8 @@ public class TaskSubscriptionUnitTest
         }
 
         // then
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Cannot add any more events. Event queue saturated.");
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Cannot add any more events. Event queue saturated.");
 
         // when
         acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
@@ -418,24 +420,46 @@ public class TaskSubscriptionUnitTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        final Map<String, Object> headers = new HashMap<>();
+        headers.put(TaskHeaders.WORKFLOW_INSTANCE_KEY, 2);
+        headers.put(TaskHeaders.ACTIVITY_ID, "foo");
+        headers.put(TaskHeaders.CUSTOM, Arrays.asList(customHeader("cust1", "a"), customHeader("cust2", "b")));
+
+        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L, headers));
 
         // when
         subscription.poll(taskHandler);
 
         // then
-        verify(taskHandler).handle(argThat(new ArgumentMatcher<Task>()
-        {
-            @Override
-            public boolean matches(Object argument)
-            {
-                final Task task = (Task) argument;
-                return task.getKey() == 1L && TASK_TYPE.equals(task.getType());
-            }
-        }));
+        final ArgumentCaptor<Task> argCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(taskHandler).handle(argCaptor.capture());
+
+        final Task task = argCaptor.getValue();
+        assertThat(task.getKey()).isEqualTo(1L);
+        assertThat(task.getType()).isEqualTo(TASK_TYPE);
+        assertThat(task.getHeaders())
+            .containsEntry(TaskHeaders.WORKFLOW_INSTANCE_KEY, 2)
+            .containsEntry(TaskHeaders.ACTIVITY_ID, "foo")
+            .containsEntry("cust1", "a")
+            .containsEntry("cust2", "b");
     }
 
     protected TopicEventImpl task(long position, long key)
+    {
+        return task(position, key, new HashMap<>());
+    }
+
+    protected Map<String, String> customHeader(String key, String value)
+    {
+        final Map<String, String> header = new HashMap<>();
+
+        header.put(TaskHeaders.CUSTOM_HEADER_KEY, key);
+        header.put(TaskHeaders.CUSTOM_HEADER_VALUE, value);
+
+        return header;
+    }
+
+    protected TopicEventImpl task(long position, long key, Map<String, Object> headers)
     {
         final Map<String, Object> taskEvent = new HashMap<>();
         taskEvent.put("eventType", TaskEventType.LOCKED.toString());
@@ -443,7 +467,7 @@ public class TaskSubscriptionUnitTest
         taskEvent.put("lockOwner", LOCK_OWNER);
         taskEvent.put("retries", 3);
         taskEvent.put("payload", msgPackConverter.convertToMsgPack("{}"));
-        taskEvent.put("headers", new HashMap<>());
+        taskEvent.put("headers", headers);
         taskEvent.put("type", TASK_TYPE);
 
         final byte[] encodedEvent;

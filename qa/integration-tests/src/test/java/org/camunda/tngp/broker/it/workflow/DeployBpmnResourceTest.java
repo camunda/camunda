@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.it.process;
+package org.camunda.tngp.broker.it.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

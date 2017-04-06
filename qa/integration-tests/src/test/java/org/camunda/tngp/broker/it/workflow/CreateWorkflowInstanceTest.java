@@ -1,4 +1,4 @@
-package org.camunda.tngp.broker.it.process;
+package org.camunda.tngp.broker.it.workflow;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
@@ -16,7 +16,7 @@ import org.junit.rules.RuleChain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CreateProcessInstanceTest
+public class CreateWorkflowInstanceTest
 {
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();

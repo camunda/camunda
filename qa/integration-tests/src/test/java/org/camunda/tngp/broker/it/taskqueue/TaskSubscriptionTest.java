@@ -1,7 +1,6 @@
 package org.camunda.tngp.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.eventType;
 import static org.camunda.tngp.broker.it.util.RecordingTaskEventHandler.retries;
 import static org.camunda.tngp.test.util.TestUtil.doRepeatedly;
@@ -9,15 +8,12 @@ import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
+import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.TngpClient;
@@ -25,7 +21,6 @@ import org.camunda.tngp.client.event.TaskEvent;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
-import org.camunda.tngp.client.task.TaskHandler;
 import org.camunda.tngp.client.task.TaskSubscription;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
@@ -90,10 +85,10 @@ public class TaskSubscriptionTest
             .open();
 
         // then
-        waitUntil(() -> !taskHandler.handledTasks.isEmpty());
+        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
 
-        assertThat(taskHandler.handledTasks).hasSize(1);
-        assertThat(taskHandler.handledTasks.get(0).getKey()).isEqualTo(taskKey);
+        assertThat(taskHandler.getHandledTasks()).hasSize(1);
+        assertThat(taskHandler.getHandledTasks().get(0).getKey()).isEqualTo(taskKey);
     }
 
     @Test
@@ -118,7 +113,7 @@ public class TaskSubscriptionTest
             .lockOwner(5)
             .open();
 
-        waitUntil(() -> !taskHandler.handledTasks.isEmpty());
+        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
 
         // when
         final Long result = topicClient.complete()
@@ -163,13 +158,7 @@ public class TaskSubscriptionTest
         // when
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(task ->
         {
-            final Map<String, Object> headers = task.getHeaders();
-            headers.put("b", "4");
-            headers.put("c", "5");
-
-            task.setHeaders(headers);
             task.setPayload("{\"a\":3}");
-
             task.complete();
         });
 
@@ -181,9 +170,9 @@ public class TaskSubscriptionTest
             .open();
 
         // then
-        waitUntil(() -> !taskHandler.handledTasks.isEmpty());
+        waitUntil(() -> !taskHandler.getHandledTasks().isEmpty());
 
-        assertThat(taskHandler.handledTasks).hasSize(1);
+        assertThat(taskHandler.getHandledTasks()).hasSize(1);
 
         final Task task = taskHandler.getHandledTasks().get(0);
         assertThat(task.getKey()).isEqualTo(taskKey);
@@ -194,7 +183,7 @@ public class TaskSubscriptionTest
 
         final TaskEvent taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.COMPLETED)).get(0);
         assertThat(taskEvent.getPayload()).isEqualTo("{\"a\":3}");
-        assertThat(task.getHeaders()).hasSize(2).contains(entry("b", "4"), entry("c", "5"));
+        assertThat(task.getHeaders()).hasSize(1).containsEntry("b", "2");
     }
 
     @Test
@@ -223,7 +212,7 @@ public class TaskSubscriptionTest
 
         waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.CREATED)));
 
-        assertThat(taskHandler.handledTasks).isEmpty();
+        assertThat(taskHandler.getHandledTasks()).isEmpty();
         assertThat(recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.LOCK))).isFalse();
     }
 
@@ -252,10 +241,10 @@ public class TaskSubscriptionTest
             .open();
 
         // when
-        waitUntil(() -> handler.handledTasks.size() == numTasks);
+        waitUntil(() -> handler.getHandledTasks().size() == numTasks);
 
         // then
-        assertThat(handler.handledTasks).hasSize(numTasks);
+        assertThat(handler.getHandledTasks()).hasSize(numTasks);
     }
 
     @Test
@@ -390,15 +379,15 @@ public class TaskSubscriptionTest
             .lockOwner(5)
             .open();
 
-        waitUntil(() -> taskHandler.handledTasks.size() == 1);
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
 
         // when
         ClockUtil.setCurrentTime(Instant.now().plus(Duration.ofMinutes(5)));
 
         // then
-        waitUntil(() -> taskHandler.handledTasks.size() == 2);
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
 
-        assertThat(taskHandler.handledTasks)
+        assertThat(taskHandler.getHandledTasks())
             .hasSize(2)
             .extracting("key").contains(taskKey, taskKey);
 
@@ -463,10 +452,10 @@ public class TaskSubscriptionTest
             .taskType("foo")
             .execute();
 
-        waitUntil(() -> taskHandler.handledTasks.size() == 1);
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 1);
 
         // then
-        assertThat(taskHandler.handledTasks).hasSize(1);
+        assertThat(taskHandler.getHandledTasks()).hasSize(1);
     }
 
     @Test
@@ -494,7 +483,7 @@ public class TaskSubscriptionTest
         doRepeatedly(() -> subscription.poll(taskHandler))
             .until((workCount) -> workCount == 1);
 
-        assertThat(taskHandler.handledTasks).hasSize(1);
+        assertThat(taskHandler.getHandledTasks()).hasSize(1);
 
         final Task task = taskHandler.getHandledTasks().get(0);
         assertThat(task.getKey()).isEqualTo(taskKey);
@@ -537,53 +526,7 @@ public class TaskSubscriptionTest
             .lockOwner(5)
             .open();
 
-        waitUntil(() -> taskHandler.handledTasks.size() == 2);
-    }
-
-    public static class RecordingTaskHandler implements TaskHandler
-    {
-        protected List<Task> handledTasks = Collections.synchronizedList(new ArrayList<>());
-        protected int nextTaskHandler = 0;
-        protected final TaskHandler[] taskHandlers;
-
-        public RecordingTaskHandler()
-        {
-            this(task ->
-            {
-                // do nothing
-            });
-        }
-
-        public RecordingTaskHandler(TaskHandler... taskHandlers)
-        {
-            this.taskHandlers = taskHandlers;
-        }
-
-        @Override
-        public void handle(Task task)
-        {
-            final TaskHandler handler = taskHandlers[nextTaskHandler];
-            nextTaskHandler = Math.min(nextTaskHandler + 1, taskHandlers.length - 1);
-
-            try
-            {
-                handler.handle(task);
-            }
-            finally
-            {
-                handledTasks.add(task);
-            }
-        }
-
-        public List<Task> getHandledTasks()
-        {
-            return handledTasks;
-        }
-
-        public void clear()
-        {
-            handledTasks.clear();
-        }
+        waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
     }
 
 }

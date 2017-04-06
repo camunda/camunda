@@ -14,7 +14,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.broker.it.taskqueue.TaskSubscriptionTest.RecordingTaskHandler;
+import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;

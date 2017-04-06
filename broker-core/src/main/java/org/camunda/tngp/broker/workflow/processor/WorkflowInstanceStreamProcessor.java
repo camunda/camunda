@@ -30,6 +30,7 @@ import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
+import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
@@ -522,6 +523,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
                     .setActivityId(serviceTask.getId())
                     .setActivityInstanceKey(eventKey);
+
+                final TaskHeader[] customHeaders = taskMetadata.getHeaders();
+                for (int i = 0; i < customHeaders.length; i++)
+                {
+                    final TaskHeader customHeader = customHeaders[i];
+
+                    taskHeaders.customHeaders().add()
+                        .setKey(customHeader.getKey())
+                        .setValue(customHeader.getValue());
+                }
 
                 taskEvent
                     .setEventType(TaskEventType.CREATE)
