@@ -32,7 +32,7 @@ public final class LogStreamImpl implements LogStream
 {
     public static final String EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL = "Can't truncate the log storage and have a log stream controller active at the same time.";
 
-    private static final int DEFAULT_INDEX_BLOCK_SIZE = 1024 * 4;
+    private static final int DEFAULT_INDEX_BLOCK_SIZE = 1024 * 1024 * 4;
     private static final int DEFAULT_READ_BLOCK_SIZE = 1024;
 
     protected volatile int term = 0;

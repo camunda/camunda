@@ -129,6 +129,7 @@ public class LogRecoveryTest
             .deleteOnClose(false)
             .logSegmentSize(LOG_SEGMENT_SIZE)
             .indexBlockSize(INDEX_BLOCK_SIZE)
+            .readBlockSize(INDEX_BLOCK_SIZE)
             .agentRunnerService(agentRunnerService)
             .snapshotPolicy(pos -> isSnapshotPoint.getAndSet(false))
             .writeBufferAgentRunnerService(agentRunnerService)
