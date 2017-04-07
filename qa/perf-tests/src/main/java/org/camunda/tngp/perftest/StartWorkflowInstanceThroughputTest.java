@@ -17,14 +17,6 @@ import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.
 public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
 {
 
-
-    @Override
-    protected void setDefaultProperties(Properties properties)
-    {
-        properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "10000");
-        super.setDefaultProperties(properties);
-    }
-
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
