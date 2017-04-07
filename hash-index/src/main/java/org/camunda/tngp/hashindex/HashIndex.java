@@ -74,7 +74,23 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     }
 
     /**
+     *
+     * @param indexSize
+     *
+     *
+     */
+
+    /**
      * Create a new index
+     *
+     * @param indexStore the index store which is used to store the index
+     * @param keyHandlerType the key handler type, which generates the hash for the key
+     * @param valueHandlerType the value handler type
+     * @param indexSize the size of the index (max count of bucket's),
+     *                  if the size is not a power of two it will be round to the next power of two
+     * @param blockSize the block size indicates how many entries on bucket can contain
+     * @param keyLength the length of the key
+     * @param valueLength the length of each value in the bucket
      */
     public HashIndex(
             IndexStore indexStore,
@@ -89,11 +105,10 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         this.splitVisitor = new SplitVisitor(crateKeyHandlerInstance(keyHandlerType, keyLength));
         this.keyHandler = crateKeyHandlerInstance(keyHandlerType, keyLength);
         this.valueHandler = createInstance(valueHandlerType);
-
         final int blockLength = BLOCK_DATA_OFFSET  + blockSize * framedRecordLength(keyLength, valueLength);
 
         this.blockLength = blockLength;
-        this.indexSize = indexSize;
+        this.indexSize = getIndexSizePowerOfTwo(indexSize);
         this.recordKeyLength = keyLength;
         this.recordValueLength = valueLength;
         this.recordLength = framedRecordLength(keyLength, valueLength);
@@ -102,6 +117,22 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         this.bufferCache = new BufferCache(indexStore, BUFFER_CACHE_SIZE, this.blockLength);
 
         init();
+    }
+
+    protected int getIndexSizePowerOfTwo(int indexSize)
+    {
+        final boolean isPowerOfTwo = (indexSize & (indexSize - 1)) == 0;
+        if (!isPowerOfTwo)
+        {
+            --indexSize;
+            indexSize |= indexSize >> 1;
+            indexSize |= indexSize >> 2;
+            indexSize |= indexSize >> 4;
+            indexSize |= indexSize >> 8;
+            indexSize |= indexSize >> 16;
+            ++indexSize;
+        }
+        return indexSize;
     }
 
     protected void init()
