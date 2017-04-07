@@ -20,6 +20,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceDto;
+import org.camunda.optimize.rest.engine.dto.TaskDto;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -103,6 +104,54 @@ public class EngineIntegrationRule extends TestWatcher {
       logger.error("Error during purge request", e);
     }
   }
+
+  public void finishAllUserTasks() {
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    HttpGet get = new HttpGet(getTaskListUri());
+    try {
+      CloseableHttpResponse response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
+      });
+      for (TaskDto task : tasks) {
+        claimAndCompleteUserTask(client, task);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to finish the user task!!");
+      e.printStackTrace();
+    }
+  }
+
+  private String getTaskListUri() {
+    return getEngineUrl() + "/task";
+  }
+
+  private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) throws IOException {
+    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"admin\"" + "}"));
+    claimPost.addHeader("content-type", "application/json");
+    CloseableHttpResponse response = client.execute(claimPost);
+    if (response.getStatusLine().getStatusCode() != 204) {
+      throw new RuntimeException("Could not claim user task!");
+    }
+
+    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
+    completePost.setEntity(new StringEntity("{}"));
+    completePost.addHeader("content-type", "application/json");
+    response = client.execute(completePost);
+    if (response.getStatusLine().getStatusCode() != 204) {
+      throw new RuntimeException("Could not complete user task!");
+    }
+  }
+
+  private String getClaimTaskUri(String taskId) {
+    return getEngineUrl() + "/task/" + taskId + "/claim";
+  }
+
+  private String getCompleteTaskUri(String taskId) {
+    return getEngineUrl() + "/task/" + taskId + "/complete";
+  }
+
 
   public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
     CloseableHttpClient client = HttpClientBuilder.create().build();

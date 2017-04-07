@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
@@ -28,8 +29,8 @@ import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_BY;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
+import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_END_TIME;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_ID;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_START_TIME;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.TRUE;
 
 @Component
@@ -49,7 +50,7 @@ public class EngineEntityFetcher {
       entries = client
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
         .path(configurationService.getHistoricActivityInstanceEndpoint())
-        .queryParam(SORT_BY, SORT_TYPE_START_TIME)
+        .queryParam(SORT_BY, SORT_TYPE_END_TIME)
         .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
         .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
         .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
@@ -145,7 +146,7 @@ public class EngineEntityFetcher {
 
   public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {
     List<HistoricProcessInstanceDto> entries;
-    HashMap pids = new HashMap();
+    Map<String, Set<String>> pids = new HashMap<>();
     pids.put("processInstanceIds", processInstanceIds);
     try {
       WebTarget baseRequest = client

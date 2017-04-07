@@ -113,6 +113,29 @@ public class ImportIT  {
   }
 
   @Test
+  public void unfinishedActivitiesAreNotSkippedDuringImport() {
+    // given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+        .startEvent()
+        .userTask()
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+    embeddedOptimizeRule.importEngineEntities();
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.importEngineEntities();
+
+    // when
+    engineRule.finishAllUserTasks();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getEventType());
+    assertThat(idsResp.getHits().getTotalHits(), is(6L));
+  }
+
+  @Test
   public void importOnlyFinishedHistoricActivityInstances() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
