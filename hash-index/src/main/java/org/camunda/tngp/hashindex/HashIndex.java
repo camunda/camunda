@@ -88,6 +88,9 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
      * @param valueHandlerType the value handler type
      * @param indexSize the size of the index (max count of bucket's),
      *                  if the size is not a power of two it will be round to the next power of two
+     *                  The maximum size is 1 << 27 because this index size is also used to allocate the corresponding buffer
+     *                  The index size will be multiplied by the size of long. 1 << 27 is the last power of two which fits
+     *                  into an int with the multiplication of the size of long.
      * @param blockSize the block size indicates how many entries on bucket can contain
      * @param keyLength the length of the key
      * @param valueLength the length of each value in the bucket
@@ -124,13 +127,21 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
         final boolean isPowerOfTwo = (indexSize & (indexSize - 1)) == 0;
         if (!isPowerOfTwo)
         {
-            --indexSize;
-            indexSize |= indexSize >> 1;
-            indexSize |= indexSize >> 2;
-            indexSize |= indexSize >> 4;
-            indexSize |= indexSize >> 8;
-            indexSize |= indexSize >> 16;
-            ++indexSize;
+            final int maxPowerOfTwo = 1 << 27;
+            if (indexSize > maxPowerOfTwo)
+            {
+                indexSize = maxPowerOfTwo;
+            }
+            else
+            {
+                --indexSize;
+                indexSize |= indexSize >> 1;
+                indexSize |= indexSize >> 2;
+                indexSize |= indexSize >> 4;
+                indexSize |= indexSize >> 8;
+                indexSize |= indexSize >> 16;
+                ++indexSize;
+            }
         }
         return indexSize;
     }

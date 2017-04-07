@@ -54,11 +54,13 @@ public class FileChannelIndexStore implements IndexStore, Closeable
     {
         try
         {
+            int bytes;
             do
             {
-                position += fileChannel.read(buffer, position);
+                bytes = fileChannel.read(buffer, position);
+                position += bytes;
             }
-            while (buffer.hasRemaining());
+            while (buffer.hasRemaining() && bytes > 0);
         }
         catch (IOException e)
         {

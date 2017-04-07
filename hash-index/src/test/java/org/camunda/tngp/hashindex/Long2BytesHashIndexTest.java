@@ -36,11 +36,12 @@ public class Long2BytesHashIndexTest
     @Before
     public void createIndex()
     {
-        final int indexSize = 16;
+        final int indexSize = 15;
         final int valueLength = 3 * SIZE_OF_BYTE;
 
         indexStore = FileChannelIndexStore.tempFileIndexStore();
         index = new Long2BytesHashIndex(indexStore, indexSize, 1, valueLength);
+        assertThat(index.indexSize).isEqualTo(16);
     }
 
     @After
@@ -48,6 +49,7 @@ public class Long2BytesHashIndexTest
     {
         indexStore.close();
     }
+
 
     @Test
     public void shouldReturnNullForEmptyMap()
