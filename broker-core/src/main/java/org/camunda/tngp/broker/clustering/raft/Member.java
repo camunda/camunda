@@ -78,15 +78,23 @@ public class Member
         currentEntryTerm = -1;
         matchPosition = -1L;
 
-        logStreamReader.seekToLastEvent();
+//      Changed following line
+//      logStreamReader.seekToLastEvent();
+//      to the following:
 
-        if (logStreamReader.hasNext())
+        LoggedEvent lastEntry = null;
+        while (logStreamReader.hasNext())
         {
-            final LoggedEvent lastEntry = logStreamReader.next();
+            lastEntry = logStreamReader.next();
+        }
+
+        if (lastEntry != null)
+        {
             metadata.wrap(lastEntry.getMetadata(), lastEntry.getMetadataOffset(), lastEntry.getMetadataLength());
 
             currentEntryPosition = lastEntry.getPosition();
             currentEntryTerm = metadata.getRaftTermId();
+
         }
     }
 
