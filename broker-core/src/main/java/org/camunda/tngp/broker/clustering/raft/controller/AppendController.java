@@ -9,6 +9,7 @@ import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -175,7 +176,7 @@ public class AppendController
             super(stateMachine);
             this.metadata =  new BrokerEventMetadata();
             this.raft = raftContext.getRaft();
-            this.logStreamWriter = new LogStreamWriter();
+            this.logStreamWriter = new LogStreamWriterImpl();
             this.listener = new LogStreamListener();
         }
 

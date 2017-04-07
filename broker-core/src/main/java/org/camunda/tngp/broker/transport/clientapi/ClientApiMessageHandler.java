@@ -19,6 +19,7 @@ import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
 import org.camunda.tngp.protocol.clientapi.ControlMessageRequestDecoder;
 import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.EventType;
@@ -47,7 +48,7 @@ public class ClientApiMessageHandler
 
     protected final Long2ObjectHashMap<LogStream> logStreamsById = new Long2ObjectHashMap<>();
     protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
-    protected final LogStreamWriter logStreamWriter = new LogStreamWriter();
+    protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
 
     protected final Dispatcher sendBuffer;
     protected final ErrorResponseWriter errorResponseWriter;

@@ -24,10 +24,7 @@ import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
@@ -149,7 +146,7 @@ public class TaskStreamProcessorIntegrationTest
         taskSubscriptionStreamProcessorController.openAsync();
         taskExpireLockStreamProcessorController.openAsync();
 
-        logStreamWriter = new LogStreamWriter(logStream);
+        logStreamWriter = new LogStreamWriterImpl(logStream);
         defaultBrokerEventMetadata.eventType(TASK_EVENT);
 
         agentRunnerService.waitUntilDone();

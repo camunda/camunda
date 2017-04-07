@@ -12,7 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <util.version>1.0.0-alpha4</util.version>
+    <util.version>1.0.0-SNAPSHOT</util.version>
     <msgpack.version>0.8.11</msgpack.version>
     <sbe.version>1.5.6</sbe.version>
     <agrona.version>0.9.2</agrona.version>
@@ -58,7 +58,7 @@
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>log</artifactId>
-        <version>1.0.0-alpha3</version>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
