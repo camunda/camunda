@@ -22,43 +22,47 @@ port = 51017
 receiveBufferSize = 16
 
 [network.gossip]
-useTempFile = true
+peersStorageFile = "../data/gossip-state.data"
+
+[network.management]
+metaDirectory = "../data/meta"
 
 # System Configuration --------------------------------
 
 [threading]
 # numberOfThreads = 2
-maxIdleTimeMs = 100
+maxIdleTimeMs = 10
 idleStrategy = "BACKOFF"
 
 [metrics]
-useTempCountersFile = true
+countersFileName = "../data/counters.data"
 
 # Log Configuration -----------------------------------
 
 [logs]
-logWriteBufferSize = 256
+logDirectories = [ "../data/logstreams" ]
 defaultLogSegmentSize = 512
 
 [[log]]
 name = "default-task-queue-log"
 id = 0
-useTempLogDirectory = true
 
 [snapshot]
-useTempSnapshotDirectory = true
+snapshotDirectory = "../data/index/snapshots"
 
 # Task Queues ------------------------------------------
 
-[task-queues]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
 [[task-queue]]
 logName = "default-task-queue-log"
-useTempIndexFile = true
+indexDirectory = "../data/index/task"
+
+# Workflow Queues ------------------------------------------
+
+[[workflow-queue]]
+logName = "default-task-queue-log"
+indexDirectory = "../data/index/workflow"
 
 # Topic Subscriptions ------------------------------------------
 
 [subscriptions]
-useTempSnapshotFile = true
+snapshotDirectory = "../data/snapshots/subscriptions"

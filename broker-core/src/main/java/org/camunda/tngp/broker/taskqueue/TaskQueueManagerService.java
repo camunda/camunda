@@ -17,6 +17,7 @@ import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.*;
 import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
 
+import java.io.File;
 import java.nio.channels.FileChannel;
 import java.time.Duration;
 import java.util.List;
@@ -86,13 +87,14 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
         final IndexStore indexStore;
 
-        final String indexFile = taskQueueCfg.indexFile;
+        final String indexDirectory = taskQueueCfg.indexDirectory;
         if (taskQueueCfg.useTempIndexFile)
         {
             indexStore = FileChannelIndexStore.tempFileIndexStore();
         }
-        else if (indexFile != null && !indexFile.isEmpty())
+        else if (indexDirectory != null && !indexDirectory.isEmpty())
         {
+            final String indexFile = indexDirectory + File.separator + "default.idx";
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
             indexStore = new FileChannelIndexStore(indexFileChannel);
         }

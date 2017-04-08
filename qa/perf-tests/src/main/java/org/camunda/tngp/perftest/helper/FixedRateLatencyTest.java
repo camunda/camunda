@@ -70,7 +70,7 @@ public abstract class FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected void executeWarmup(Properties properties, TngpClient client)
     {
-        try (final TransportConnection conection = client.getConnectionPool().openConnection())
+        try (TransportConnection conection = client.getConnectionPool().openConnection())
         {
             System.out.format("Executing warmup\n");
 
@@ -95,7 +95,7 @@ public abstract class FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected void executeTest(Properties properties, TngpClient client)
     {
-        try (final TransportConnection conection = client.getConnectionPool().openConnection())
+        try (TransportConnection conection = client.getConnectionPool().openConnection())
         {
             System.out.format("Executing test\n");
 
