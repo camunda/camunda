@@ -1,6 +1,6 @@
 package org.camunda.tngp.perftest;
 
-import static org.camunda.tngp.test.util.bpmn.TngpModelInstance.wrap;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -26,8 +26,9 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
                 .endEvent()
                 .done();
 
-        wrap(processModel).taskAttributes("serviceTask", "foo", 3);
+        wrap(processModel).taskDefinition("serviceTask", "foo", 3);
 
+        // create deployment
         workflowsClient
             .deploy()
             .bpmnModelInstance(processModel)
