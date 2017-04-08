@@ -26,7 +26,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
                 .endEvent()
                 .done();
 
-        wrap(processModel).taskAttributes("serviceTask", "foo", 0);
+        wrap(processModel).taskAttributes("serviceTask", "foo", 3);
 
         workflowsClient
             .deploy()
