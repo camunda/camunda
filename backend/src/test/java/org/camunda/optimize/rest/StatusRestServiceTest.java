@@ -1,8 +1,8 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.ProgressDto;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
@@ -67,7 +67,7 @@ public class StatusRestServiceTest {
   }
 
   @Test
-  public void getImportProgressStatus() {
+  public void getImportProgressStatus() throws OptimizeException {
     // given
     int expectedCount = 80;
     Mockito.when(importProgressReporter.computeImportProgress()).thenReturn(expectedCount);
@@ -83,5 +83,21 @@ public class StatusRestServiceTest {
       response.readEntity(ProgressDto.class);
     assertThat(actual, is(notNullValue()));
     assertThat(actual.getProgress(), is(expectedCount));
+  }
+
+  @Test
+  public void getImportProgressThrowsErrorIfNoConnectionAvailable() throws OptimizeException {
+    // given
+    String errorMessage = "Error";
+    Mockito.when(importProgressReporter.computeImportProgress()).thenThrow(new OptimizeException(errorMessage));
+
+    // when
+    Response response = embeddedOptimizeRule.target("status/import-progress")
+      .request()
+      .get();
+
+    // then
+    assertThat(response.getStatus(), is(500));
+    assertThat(response.readEntity(String.class).contains("It was not possible to compute the import progress"), is(true));
   }
 }

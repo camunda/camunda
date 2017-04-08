@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class EngineEntityFetcher {
     return entries;
   }
 
-  public Integer fetchHistoricActivityInstanceCount() {
+  public Integer fetchHistoricActivityInstanceCount() throws OptimizeException {
     CountDto count;
     try {
       count = client
@@ -75,8 +76,7 @@ public class EngineEntityFetcher {
         .request()
         .get(CountDto.class);
     } catch (RuntimeException e) {
-      logger.error("Could not fetch historic activity instance count from engine. Please check the connection!");
-      count = new CountDto();
+      throw new OptimizeException("Could not fetch historic activity instance count from engine. Please check the connection!", e);
     }
 
     return count.getCount();
@@ -128,7 +128,7 @@ public class EngineEntityFetcher {
     return entries;
   }
 
-  public Integer fetchProcessDefinitionCount() {
+  public Integer fetchProcessDefinitionCount() throws OptimizeException {
     CountDto count;
     try {
       count = client
@@ -137,8 +137,7 @@ public class EngineEntityFetcher {
         .request()
         .get(CountDto.class);
     } catch (RuntimeException e) {
-      logger.error("Could not fetch process definition count from engine. Please check the connection!");
-      count = new CountDto();
+      throw new OptimizeException("Could not fetch process definition count from engine. Please check the connection!", e);
     }
 
     return count.getCount();

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.status;
 
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
@@ -16,14 +17,20 @@ public class ImportProgressReporter {
   private ImportServiceProvider importServiceProvider;
 
   public boolean allEntitiesAreImported() {
-    return computeImportProgress() == 100;
+    try {
+      return computeImportProgress() == 100;
+    } catch (OptimizeException e) {
+      return false;
+    }
   }
 
   /**
    * @return an integer representing the progress of the import. The number states a
    * percentage value in range [0, 100] rounded to next whole number.
+   * @throws OptimizeException if there were problems while trying to fetch the historic activity instance count
+   * or the process definition count from the engine.
    */
-  public int computeImportProgress() {
+  public int computeImportProgress() throws OptimizeException {
     int totalEngineEntityCount =
       engineEntityFetcher.fetchHistoricActivityInstanceCount() +
         2 * engineEntityFetcher.fetchProcessDefinitionCount();

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.junit.Before;
@@ -59,7 +60,7 @@ public class ImportProgressReporterTest {
   }
 
   @Test
-  public void testImportProgressReporter() {
+  public void testImportProgressReporter() throws OptimizeException {
     // given
     initializeMocks();
 
@@ -71,7 +72,7 @@ public class ImportProgressReporterTest {
 
   }
 
-  private void initializeMocks() {
+  private void initializeMocks() throws OptimizeException {
     Mockito.when(engineEntityFetcher.fetchHistoricActivityInstanceCount()).thenReturn(totalEngineEntityCount);
     Mockito.when(engineEntityFetcher.fetchProcessDefinitionCount()).thenReturn(0);
     ActivityImportService importService = Mockito.mock(ActivityImportService.class);
