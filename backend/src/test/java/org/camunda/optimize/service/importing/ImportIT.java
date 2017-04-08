@@ -87,6 +87,25 @@ public class ImportIT  {
   }
 
   @Test
+  public void importProgressReporterConsidersOnlyFinishedHistoricalActivityInstances() {
+    // given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+        .startEvent()
+        .userTask()
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+    embeddedOptimizeRule.importEngineEntities();
+
+    // when
+    int importProgress = embeddedOptimizeRule.getProgressValue();
+
+    // then
+    assertThat(importProgress, is(100));
+  }
+
+  @Test
   public void allProcessDefinitionXmlFieldDataOfImportIsAvailable() throws Exception {
     //given
     deployAndStartSimpleServiceTask();

@@ -73,6 +73,7 @@ public class EngineEntityFetcher {
       count = client
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
         .path(configurationService.getHistoricActivityInstanceCountEndpoint())
+        .queryParam(INCLUDE_ONLY_FINISHED_INSTANCES, TRUE)
         .request()
         .get(CountDto.class);
     } catch (RuntimeException e) {
