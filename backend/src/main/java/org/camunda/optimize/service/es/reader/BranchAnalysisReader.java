@@ -48,9 +48,8 @@ public class BranchAnalysisReader {
       result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
     }
 
-    BranchAnalysisOutcomeDto end = branchAnalysis(request.getEnd(), request);
     result.setEndEvent(request.getEnd());
-    result.setTotal(end.getActivityCount());
+    result.setTotal(calculateActivityCount(request.getEnd(), request));
 
     return result;
   }
@@ -60,36 +59,31 @@ public class BranchAnalysisReader {
     BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
     result.setActivityId(activityId);
     result.setActivityCount(calculateActivityCount(activityId, request));
-    result.setActivitiesReached(calculateActivitiesReachedEndEvent(activityId, request));
+    result.setActivitiesReached(calculateReachedEndEventActivityCount(activityId, request));
 
     return result;
   }
 
-  private long calculateActivitiesReachedEndEvent(String activityId, BranchAnalysisQueryDto request) {
+  private long calculateReachedEndEventActivityCount(String activityId, BranchAnalysisQueryDto request) {
     BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(QueryBuilders.matchQuery("processDefinitionId", request.getProcessDefinitionId()))
+      .must(QueryBuilders.termQuery("activityList", request.getGateway()))
       .must(QueryBuilders.termQuery("activityList", activityId))
       .must(QueryBuilders.termQuery("activityList", request.getEnd()));
 
-    if (request.getFilter() != null) {
-      query = dateFilterHelper.addFilters(query, request.getFilter());
-    }
-
-    SearchResponse sr = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getBranchAnalysisDataType())
-      .setQuery(query)
-      .setSize(0)
-      .get();
-
-    return sr.getHits().totalHits();
+    return executeQuery(request, query);
   }
 
   private long calculateActivityCount(String activityId, BranchAnalysisQueryDto request) {
     BoolQueryBuilder query = QueryBuilders.boolQuery()
         .must(QueryBuilders.matchQuery("processDefinitionId", request.getProcessDefinitionId()))
+        .must(QueryBuilders.termQuery("activityList", request.getGateway()))
         .must(QueryBuilders.termQuery("activityList", activityId ));
 
+    return executeQuery(request, query);
+  }
+
+  private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
     if (request.getFilter() != null) {
       query = dateFilterHelper.addFilters(query, request.getFilter());
     }

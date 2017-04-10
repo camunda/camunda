@@ -35,15 +35,23 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
 public class BranchAnalysisReaderES_IT {
+  private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
-  private static final String END_ACTIVITY = "endActivity";
-  private static final String GATEWAY_ACTIVITY = "gw_1";
   private static final String PROCESS_INSTANCE_ID = "processInstanceId";
   private static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
-  private static final String DIAGRAM = "gateway_process.bpmn";
+  private static final String GATEWAY_ACTIVITY = "gw_1";
   private static final String TASK = "task_1";
   private static final String TASK_2 = "task_2";
+  private static final String END_ACTIVITY = "endActivity";
+
+  private static final String DIAGRAM_WITH_BYPASS = "org/camunda/optimize/service/es/reader/gatewayWithBypass.bpmn";
+  private static final String PROCESS_DEFINITION_ID_BY_PASS = "procDefBypass";
+  private static final String GATEWAY_B = "gw_b";
+  private static final String GATEWAY_C = "gw_c";
+  private static final String GATEWAY_D = "gw_d";
+  private static final String GATEWAY_F = "gw_f";
+  private static final String PROCESS_INSTANCE_ID_BY_PASS = PROCESS_INSTANCE_ID + "Bypass";
 
   @Rule
   public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
@@ -62,14 +70,14 @@ public class BranchAnalysisReaderES_IT {
     // given
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
-    processDefinitionXmlDto.setBpmn20Xml(readDiagram());
+    processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
   }
 
-  private String readDiagram() throws IOException {
-    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(DIAGRAM));
+  private String readDiagram(String diagramPath) throws IOException {
+    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(diagramPath));
   }
 
   public static String read(InputStream input) throws IOException {
@@ -269,6 +277,53 @@ public class BranchAnalysisReaderES_IT {
 
   private Date nowPlusTimeInMs(int timeInMs) {
     return new Date(new Date().getTime() + timeInMs);
+  }
+
+  @Test
+  public void bypassOfGatewayDoesNotDistortResult() throws Exception {
+    //given
+    setupFullGatewayWithBypassFlow();
+    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
+    dto.setProcessDefinitionId(PROCESS_DEFINITION_ID_BY_PASS);
+    dto.setGateway(GATEWAY_C);
+    dto.setEnd(END_ACTIVITY);
+
+    //when
+    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_ACTIVITY));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto gatewayD = result.getFollowingNodes().get(GATEWAY_D);
+    assertThat(gatewayD.getActivityId(), is(GATEWAY_D));
+    assertThat(gatewayD.getActivitiesReached(), is(1L));
+    assertThat(gatewayD.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task = result.getFollowingNodes().get(TASK);
+    assertThat(task.getActivityId(), is(TASK));
+    assertThat(task.getActivitiesReached(), is(1L));
+    assertThat(task.getActivityCount(), is(1L));
+  }
+
+  private void setupFullGatewayWithBypassFlow() throws IOException {
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
+    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_BY_PASS);
+    processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM_WITH_BYPASS));
+    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_BY_PASS, processDefinitionXmlDto);
+
+    ActivityListDto actList = new ActivityListDto();
+    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID_BY_PASS);
+    actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_D, GATEWAY_F, END_ACTIVITY});
+    actList.setProcessInstanceStartDate(new Date());
+    actList.setProcessInstanceEndDate(new Date());
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
+    actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_C, GATEWAY_D, GATEWAY_F, END_ACTIVITY});
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
+    actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_C, TASK, GATEWAY_F, END_ACTIVITY});
+    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_BY_PASS, actList);
   }
 
   @Test
