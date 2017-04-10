@@ -1,6 +1,7 @@
 package org.camunda.tngp.perftest;
 
 import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
 import static org.camunda.tngp.perftest.helper.TestHelper.printProperties;
 
@@ -36,6 +37,7 @@ public class TaskSubscriptionThroughputTest
         final Properties properties = System.getProperties();
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "2048");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "8");
+        properties.putIfAbsent(CLIENT_MAXCONNECTIONS, "16");
         ClientProperties.setDefaults(properties);
         setDefaultProperties(properties);
 
