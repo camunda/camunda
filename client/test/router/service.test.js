@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {getRouter, __set__, __ResetDependency__} from 'router/service';
+import {getRouter, createUrlTestForRoute, createUrlConstructForRoute, __set__, __ResetDependency__} from 'router/service';
 
 describe('Router service', () => {
   describe('getRouter', () => {
@@ -46,7 +46,7 @@ describe('Router service', () => {
 
       const route = {
         name: 'ala',
-        url: '/ala/:ala?b=:b'
+        url: '/ala/:ala'
       };
 
       router.addRoutes(route);
@@ -112,12 +112,12 @@ describe('Router service', () => {
       it('should allow routes to be added', () => {
         const route = {
           name: 'd1',
-          url: '/bbb/:a?b=:b',
+          url: '/bbb/:a',
           reducer: () => 'reducer'
         };
         const route2 = {
           name: 'd1-2',
-          url: '/aaa/:a?b=:b'
+          url: '/aaa/:a'
         };
 
         router.addRoutes(route, route2);
@@ -248,6 +248,103 @@ describe('Router service', () => {
           }
         })).to.eql(true, 'expect action to be dispatched');
       });
+    });
+  });
+
+  describe('createUrlTestForRoute', () => {
+    let test;
+
+    beforeEach(() => {
+      test = createUrlTestForRoute('/url/:param/d/:other', {
+        other: 'default',
+        name: 'name2'
+      });
+    });
+
+    it('should return matched params and defaults', () => {
+      expect(test('/url/value1/d/value2', '')).to.eql({
+        param: 'value1',
+        other: 'value2',
+        name: 'name2'
+      });
+    });
+
+    it('should return undefined on missmatch', () => {
+      expect(test('/url/value1/f/value2', '')).to.eql(undefined);
+      expect(test('/url/value1/', '')).to.eql(undefined);
+    });
+
+    it('should add query parameters', () => {
+      expect(test('/url/value1/d/value2', '?q1=value3')).to.eql({
+        param: 'value1',
+        other: 'value2',
+        name: 'name2',
+        q1: 'value3'
+      });
+    });
+
+    it('should add override default with query parameter', () => {
+      expect(test('/url/value1/d/value2', '?name=value3')).to.eql({
+        param: 'value1',
+        other: 'value2',
+        name: 'value3',
+      });
+    });
+
+    it('should match without part of url if there is default given', () => {
+      expect(test('/url/value1/d', '?name=value3')).to.eql({
+        param: 'value1',
+        other: 'default',
+        name: 'value3',
+      });
+    });
+  });
+  describe('createUrlConstructForRoute', () => {
+    let construct;
+
+    beforeEach(() => {
+      construct = createUrlConstructForRoute('/url/:first/some/:second', {
+        second: 'def1'
+      });
+    });
+
+    it('should construct url with given params', () => {
+      expect(construct({
+        first: 'value1',
+        second: 'value2'
+      })).to.eql('/url/value1/some/value2');
+    });
+
+    it('should construct url with given default parameter', () => {
+      expect(construct({
+        first: 'value1'
+      })).to.eql('/url/value1/some/def1');
+    });
+
+    it('should use extra parameters as query', () => {
+      expect(construct({
+        first: 'value1',
+        other: 'value2'
+      })).to.eql('/url/value1/some/def1?other=value2');
+
+      expect(construct({
+        first: 'value1',
+        other: 'value2',
+        other2: 'value3'
+      })).to.eql('/url/value1/some/def1?other=value2&other2=value3');
+    });
+
+    it('should use extra parameters as query with constant urls', () => {
+      construct = createUrlConstructForRoute('/url', {});
+
+      expect(construct({
+        other: 'value2'
+      })).to.eql('/url?other=value2');
+
+      expect(construct({
+        other: 'value2',
+        other2: 'value3'
+      })).to.eql('/url?other=value2&other2=value3');
     });
   });
 });

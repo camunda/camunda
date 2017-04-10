@@ -1,4 +1,4 @@
-import {$window, $document, dispatchAction} from 'view-utils';
+import {$window, $document, dispatchAction, includes} from 'view-utils';
 import {createRouteAction} from './reducer';
 
 let router;
@@ -27,11 +27,12 @@ function createNewRouter() {
   return router;
 
   function onUrlChange() {
-    const path = $document.location.pathname + $document.location.search;
+    const path = $document.location.pathname;
+    const query = $document.location.search;
 
     for (let i = 0; i < routes.length; i++) {
       const {name, test} = routes[i];
-      const params = test(path);
+      const params = test(path, query);
 
       if (params) {
         dispatchAction(createRouteAction(name, params));
@@ -97,19 +98,19 @@ function createRoute({name, url, test, construct, reducer, defaults = {}}) {
 }
 
 export function createUrlTestForRoute(patternUrl, defaults) {
-  const splitingRegExp = /[\/?&=]/;
+  const splitingRegExp = /[\/]/;
   const patternParts = patternUrl.split(splitingRegExp);
 
-  return matchFunction;
-
-  function matchFunction(url, restrictive) {
+  return (url, query) => {
     const urlParts = url.split(splitingRegExp);
 
+    // There shouldn't be more url parts than pattern parts, so it is
+    // quick way to skip obviously wrong patterns without much computation
     if (urlParts.length > patternParts.length) {
       return;
     }
 
-    return patternParts.reduce((params, patternPart, index) => {
+    const pathParams =  patternParts.reduce((params, patternPart, index) => {
       if (!params) {
         return null;
       }
@@ -126,7 +127,36 @@ export function createUrlTestForRoute(patternUrl, defaults) {
 
       return params;
     }, {});
-  }
+
+    if (!pathParams) {
+      return;
+    }
+
+    if (query === '') {
+      return {
+        ...defaults,
+        ...pathParams
+      };
+    }
+
+    const queryParams = query
+      .slice(1)
+      .split('&')
+      .reduce((params, part) => {
+        const [name, value] = part.split('=');
+
+        return {
+          ...params,
+          [name]: value
+        };
+      }, {});
+
+    return {
+      ...defaults,
+      ...queryParams,
+      ...pathParams
+    };
+  };
 }
 
 export function createUrlConstructForRoute(patternUrl, defaults) {
@@ -137,14 +167,45 @@ export function createUrlConstructForRoute(patternUrl, defaults) {
     .match(/:\w+/g);
 
   return (params = {}) => {
-    if (!variableParts) {
-      return patternUrl; //it is just an constant url
+    const {usedNames, path} = getPath(params);
+
+    const search = Object
+      .keys(params)
+      .filter(name => !includes(usedNames, name))
+      .reduce((search, name) => {
+        const value = params[name];
+
+        return `${search === '' ? '' : search + '&'}${name}=${value}`;
+      }, '');
+
+    if (search === '') {
+      return path;
     }
 
-    return constantParts.reduce((url, constantPart, index) => {
+    return path + '?' + search;
+  };
+
+  function getPath(params) {
+    const usedNames = [];
+
+    if (!variableParts) {
+      return {
+        usedNames,
+        path: patternUrl
+      };
+    }
+
+    const path = constantParts.reduce((url, constantPart, index) => {
       const name = variableParts[index] ? variableParts[index].substr(1) : null;
+
+      usedNames.push(name);
 
       return url + constantPart + (name ? params[name] || defaults[name] : '');
     }, '');
-  };
+
+    return {
+      usedNames,
+      path
+    };
+  }
 }
