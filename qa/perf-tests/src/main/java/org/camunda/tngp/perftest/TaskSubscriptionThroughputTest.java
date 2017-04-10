@@ -67,7 +67,7 @@ public class TaskSubscriptionThroughputTest
     {
         properties.putIfAbsent(CommonProperties.TEST_OUTPUT_FILE_NAME, "data/output.txt");
         properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "30000");
-        properties.putIfAbsent(TEST_NUM_TASKS, "10000");
+        properties.putIfAbsent(TEST_NUM_TASKS, "25000");
         properties.putIfAbsent(TEST_SETUP_TIMEMS, "10000");
     }
 
@@ -96,6 +96,7 @@ public class TaskSubscriptionThroughputTest
         final TaskSubscription subscription = client.taskTopic(0).newTaskSubscription()
             .lockTime(10000)
             .lockOwner(0)
+            .taskFetchSize(10000)
             .taskType(TASK_TYPE)
             .handler((t) ->
             {
