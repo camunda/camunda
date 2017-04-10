@@ -47,5 +47,24 @@ public class HashIndexConsistencyTest
         }
     }
 
+    @Test
+    public void shouldNotOccurIllegalArgumentException()
+    {
+        final int numEntries = 3 * BLOCK_LENGTH;
+
+        for (int i = 0; i < numEntries; i++)
+        {
+            index.flush();
+            index.put(i, VALUE);
+        }
+
+
+        for (int i = 0; i < numEntries; i++)
+        {
+            final byte[] result = index.get(i);
+            assertThat(result).isNotNull();
+        }
+    }
+
 
 }
