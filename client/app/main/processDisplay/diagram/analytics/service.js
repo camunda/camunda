@@ -1,23 +1,23 @@
 import {dispatchAction} from 'view-utils';
 import {updateOverlayVisibility, isBpmnType} from 'utils';
-import {createSetElementAction} from './reducer';
+import {createUnsetElementAction, createToggleElementAction} from './reducer';
 
 export const BRANCH_OVERLAY = 'BRANCH_OVERLAY';
 
-export function setEndEvent({id}) {
-  dispatchAction(createSetElementAction(id, 'endEvent'));
+export function toggleEndEvent({id}) {
+  dispatchAction(createToggleElementAction(id, 'endEvent'));
 }
 
 export function unsetEndEvent() {
-  dispatchAction(createSetElementAction(null, 'endEvent'));
+  dispatchAction(createUnsetElementAction('endEvent'));
 }
 
-export function setGateway({id}) {
-  dispatchAction(createSetElementAction(id, 'gateway'));
+export function toggleGateway({id}) {
+  dispatchAction(createToggleElementAction(id, 'gateway'));
 }
 
 export function unsetGateway() {
-  dispatchAction(createSetElementAction(null, 'gateway'));
+  dispatchAction(createUnsetElementAction('gateway'));
 }
 
 export function leaveGatewayAnalysisMode() {

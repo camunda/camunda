@@ -1,4 +1,4 @@
-import {setEndEvent, setGateway, hoverElement, addBranchOverlay, showSelectedOverlay, isValidElement} from './service';
+import {toggleEndEvent, toggleGateway, hoverElement, addBranchOverlay, showSelectedOverlay, isValidElement} from './service';
 import {removeOverlays} from 'utils';
 import {resetStatisticData} from 'main/processDisplay/statistics';
 
@@ -24,10 +24,10 @@ export function createCreateAnalyticsRendererFunction(integrator) {
     viewer.get('eventBus').on('element.click', ({element}) => {
       if (isValidElement(element, 'EndEvent')) {
         resetStatisticData();
-        setEndEvent(element);
+        toggleEndEvent(element);
       } else if (isValidElement(element, 'Gateway')) {
         resetStatisticData();
-        setGateway(element);
+        toggleGateway(element);
       }
     });
 

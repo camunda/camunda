@@ -1,14 +1,23 @@
 import {CHANGE_ROUTE_ACTION} from 'router';
 
-export const SET_ELEMENT = 'SET_ELEMENT';
+export const UNSET_ELEMENT = 'UNSET_ELEMENT';
+export const TOGGLE_ELEMENT = 'TOGGLE_ELEMENT';
 
 export const reducer = (state = {selection: {}}, action) => {
-  if (action.type === SET_ELEMENT) {
+  if (action.type === UNSET_ELEMENT) {
     return {
       ...state,
       selection: {
         ...state.selection,
-        [action.elementType]: action.id
+        [action.elementType]: null
+      }
+    };
+  } else if (action.type === TOGGLE_ELEMENT) {
+    return {
+      ...state,
+      selection: {
+        ...state.selection,
+        [action.elementType]: state.selection[action.elementType] ? null : action.id
       }
     };
   } else if (action.type === CHANGE_ROUTE_ACTION && action.route.params.view !== 'branch_analysis') {
@@ -21,9 +30,16 @@ export const reducer = (state = {selection: {}}, action) => {
   return state;
 };
 
-export function createSetElementAction(id, elementType) {
+export function createUnsetElementAction(elementType) {
   return {
-    type: SET_ELEMENT,
+    type: UNSET_ELEMENT,
+    elementType
+  };
+}
+
+export function createToggleElementAction(id, elementType) {
+  return {
+    type: TOGGLE_ELEMENT,
     id,
     elementType
   };

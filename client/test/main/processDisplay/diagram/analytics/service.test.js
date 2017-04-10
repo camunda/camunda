@@ -1,17 +1,19 @@
 import {expect} from 'chai';
-import {setEndEvent, unsetEndEvent, setGateway, unsetGateway, leaveGatewayAnalysisMode,
+import {toggleEndEvent, unsetEndEvent, toggleGateway, unsetGateway, leaveGatewayAnalysisMode,
         hoverElement, addBranchOverlay, BRANCH_OVERLAY, showSelectedOverlay, isValidElement,
         __set__, __ResetDependency__} from 'main/processDisplay/diagram/analytics/service';
 import sinon from 'sinon';
 
 describe('Analytics service', () => {
   const ENTER_GATEWAY_ANALYSIS_MODE = 'ENTER_GATEWAY_ANALYSIS_MODE';
-  const SET_ELEMENT = 'SET_ELEMENT';
+  const UNSET_ELEMENT = 'UNSET_ELEMENT';
+  const TOGGLE_ELEMENT = 'TOGGLE_ELEMENT';
 
   let heatmapData;
   let dispatchAction;
   let createEnterGatewayAnalysisModeAction;
-  let createSetElementAction;
+  let createUnsetElementAction;
+  let createToggleElementAction;
   let updateOverlayVisibility;
   let isBpmnType;
   let overlayNode;
@@ -38,8 +40,11 @@ describe('Analytics service', () => {
     isBpmnType = sinon.stub().returns(true);
     __set__('isBpmnType', isBpmnType);
 
-    createSetElementAction = sinon.stub().returns(SET_ELEMENT);
-    __set__('createSetElementAction', createSetElementAction);
+    createUnsetElementAction = sinon.stub().returns(UNSET_ELEMENT);
+    __set__('createUnsetElementAction', createUnsetElementAction);
+
+    createToggleElementAction = sinon.stub().returns(TOGGLE_ELEMENT);
+    __set__('createToggleElementAction', createToggleElementAction);
 
     overlayNode = {
       html: document.createElement('div')
@@ -57,47 +62,48 @@ describe('Analytics service', () => {
     __ResetDependency__('updateOverlayVisibility');
     __ResetDependency__('isBpmnType');
     __ResetDependency__('createEnterGatewayAnalysisModeAction');
-    __ResetDependency__('createSetElementAction');
+    __ResetDependency__('createUnsetElementAction');
+    __ResetDependency__('createToggleElementAction');
   });
 
-  it('should set the end event', () => {
+  it('should toggle the end event', () => {
     const element = {id: 'element'};
 
-    setEndEvent(element);
+    toggleEndEvent(element);
 
-    expect(dispatchAction.calledWith(SET_ELEMENT)).to.eql(true);
-    expect(createSetElementAction.calledWith('element', 'endEvent')).to.eql(true);
+    expect(dispatchAction.calledWith(TOGGLE_ELEMENT)).to.eql(true);
+    expect(createToggleElementAction.calledWith('element', 'endEvent')).to.eql(true);
   });
 
-  it('should set the gateway', () => {
+  it('should toggle the gateway', () => {
     const element = {id: 'element'};
 
-    setGateway(element);
+    toggleGateway(element);
 
-    expect(dispatchAction.calledWith(SET_ELEMENT)).to.eql(true);
-    expect(createSetElementAction.calledWith('element', 'gateway')).to.eql(true);
+    expect(dispatchAction.calledWith(TOGGLE_ELEMENT)).to.eql(true);
+    expect(createToggleElementAction.calledWith('element', 'gateway')).to.eql(true);
   });
 
   it('should unset the end event', () => {
     unsetEndEvent();
 
-    expect(dispatchAction.calledWith(SET_ELEMENT)).to.eql(true);
-    expect(createSetElementAction.calledWith(null, 'endEvent')).to.eql(true);
+    expect(dispatchAction.calledWith(UNSET_ELEMENT)).to.eql(true);
+    expect(createUnsetElementAction.calledWith('endEvent')).to.eql(true);
   });
 
   it('should unset the gateway', () => {
     unsetGateway();
 
-    expect(dispatchAction.calledWith(SET_ELEMENT)).to.eql(true);
-    expect(createSetElementAction.calledWith(null, 'gateway')).to.eql(true);
+    expect(dispatchAction.calledWith(UNSET_ELEMENT)).to.eql(true);
+    expect(createUnsetElementAction.calledWith('gateway')).to.eql(true);
   });
 
   it('should unset the gateway and end event when leaving the gateway analysis mode', () => {
     leaveGatewayAnalysisMode();
 
     expect(dispatchAction.calledTwice).to.eql(true);
-    expect(createSetElementAction.calledWith(null, 'endEvent')).to.eql(true);
-    expect(createSetElementAction.calledWith(null, 'gateway')).to.eql(true);
+    expect(createUnsetElementAction.calledWith('endEvent')).to.eql(true);
+    expect(createUnsetElementAction.calledWith('gateway')).to.eql(true);
   });
 
   describe('hover overlays', () => {

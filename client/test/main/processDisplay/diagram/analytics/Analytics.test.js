@@ -6,8 +6,8 @@ import {createCreateAnalyticsRendererFunction,
 describe('<Analytics>', () => {
   let viewer;
   let update;
-  let setEndEvent;
-  let setGateway;
+  let toggleEndEvent;
+  let toggleGateway;
   let resetStatisticData;
   let leaveGatewayAnalysisMode;
   let addBranchOverlay;
@@ -84,14 +84,14 @@ describe('<Analytics>', () => {
     addBranchOverlay = sinon.spy();
     __set__('addBranchOverlay', addBranchOverlay);
 
-    setEndEvent = sinon.spy();
-    __set__('setEndEvent', setEndEvent);
+    toggleEndEvent = sinon.spy();
+    __set__('toggleEndEvent', toggleEndEvent);
 
     hoverElement = sinon.spy();
     __set__('hoverElement', hoverElement);
 
-    setGateway = sinon.spy();
-    __set__('setGateway', setGateway);
+    toggleGateway = sinon.spy();
+    __set__('toggleGateway', toggleGateway);
 
     resetStatisticData = sinon.spy();
     __set__('resetStatisticData', resetStatisticData);
@@ -132,8 +132,8 @@ describe('<Analytics>', () => {
     __ResetDependency__('removeOverlays');
     __ResetDependency__('showSelectedOverlay');
     __ResetDependency__('addBranchOverlay');
-    __ResetDependency__('setEndEvent');
-    __ResetDependency__('setGateway');
+    __ResetDependency__('toggleEndEvent');
+    __ResetDependency__('toggleGateway');
     __ResetDependency__('hoverElement');
     __ResetDependency__('leaveGatewayAnalysisMode');
     __ResetDependency__('GATEWAY_ANALYSIS_MODE');
@@ -173,22 +173,22 @@ describe('<Analytics>', () => {
     update(initialState);
     viewer.on.secondCall.args[1]({element: diagramElement});
 
-    expect(setGateway.called).to.eql(false);
-    expect(setEndEvent.called).to.eql(false);
+    expect(toggleGateway.called).to.eql(false);
+    expect(toggleEndEvent.called).to.eql(false);
   });
 
-  it('should set the end event when an end event is clicked', () => {
+  it('should toggle end event when an end event is clicked', () => {
     update(initialState);
     viewer.on.secondCall.args[1]({element: endEvent});
 
-    expect(setEndEvent.calledWith(endEvent)).to.eql(true);
+    expect(toggleEndEvent.calledWith(endEvent)).to.eql(true);
   });
 
-  it('should set a gateway when a gateway is clicked', () => {
+  it('should toggle gateway when a gateway is clicked', () => {
     update(gatewayAnalysisState);
     viewer.on.secondCall.args[1]({element: gateway});
 
-    expect(setGateway.calledWith(gateway)).to.eql(true);
+    expect(toggleGateway.calledWith(gateway)).to.eql(true);
   });
 
   it('should reset potentially existing statistics data when a gateway is selected', () => {
