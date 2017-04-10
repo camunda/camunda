@@ -13,8 +13,9 @@ import org.camunda.tngp.util.state.WaitState;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getFragmentLength;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
@@ -28,6 +29,7 @@ public class LogBlockIndexController implements Agent
     private static final int ILLEGAL_ADDRESS = -1;
     protected static final int TRANSITION_SNAPSHOT = 3;
     protected static final int TRANSITION_TRUNCATE = 4;
+    private static final int POSITION_LENGTH = positionOffset(messageOffset(0)) + SIZE_OF_LONG;
 
     // STATES /////////////////////////////////////////////////////////
 
@@ -392,17 +394,14 @@ public class LogBlockIndexController implements Agent
             try
             {
                 long truncateAddress = blockIndex.size() > 0
-                                     ? blockIndex.lookupBlockAddress(truncatePosition)
-                                     : logStorage.getFirstBlockAddress();
+                    ? blockIndex.lookupBlockAddress(truncatePosition)
+                    : logStorage.getFirstBlockAddress();
 
                 // find event with given position to calculate address
-                ioBuffer.clear();
-                logStorage.read(ioBuffer, truncateAddress);
-
-                truncateAddress = findAddressForTruncateEvent(truncateAddress);
+                truncateAddress = readTillTruncatePosition(truncateAddress);
 
                 // truncate
-                transition = truncate(logContext, transition, truncateAddress);
+                transition = truncate(logContext, truncateAddress);
             }
             finally
             {
@@ -414,8 +413,58 @@ public class LogBlockIndexController implements Agent
             return 0;
         }
 
-        private int truncate(LogContext logContext, int transition, long truncateAddress)
+        private long readTillTruncatePosition(long truncateAddress)
         {
+            long currentAddress = truncateAddress;
+            boolean foundPosition = false;
+
+            while (currentAddress > 0 && !foundPosition)
+            {
+                ioBuffer.clear();
+                currentAddress = logStorage.read(ioBuffer, currentAddress);
+
+                int remainingBytes = ioBuffer.position();
+                int position = 0;
+                buffer.wrap(ioBuffer);
+
+                while (remainingBytes >= POSITION_LENGTH)
+                {
+                    final int messageLength = getFragmentLength(buffer, position);
+                    final long loggedEventPosition = getPosition(buffer, position);
+                    if (loggedEventPosition == truncatePosition)
+                    {
+                        foundPosition = true;
+                        currentAddress -= remainingBytes;
+                        remainingBytes = 0;
+                    }
+                    else if (messageLength <= remainingBytes)
+                    {
+                        remainingBytes -= messageLength;
+                        position += messageLength;
+                    }
+                    else
+                    {
+                        currentAddress -= remainingBytes;
+                        remainingBytes = 0;
+                    }
+                }
+
+                if (remainingBytes < POSITION_LENGTH)
+                {
+                    currentAddress -= remainingBytes;
+                }
+            }
+
+            if (!foundPosition)
+            {
+                currentAddress = ILLEGAL_ADDRESS;
+            }
+            return currentAddress;
+        }
+
+        private int truncate(LogContext logContext, long truncateAddress)
+        {
+            int transition = TRANSITION_DEFAULT;
             if (truncateAddress != ILLEGAL_ADDRESS)
             {
                 blockIndex.truncate(truncatePosition);
@@ -435,38 +484,13 @@ public class LogBlockIndexController implements Agent
                     // if all blocks are deleted we need to clean up the snapshots as well
                     snapshotStorage.purgeSnapshot(name);
                 }
+                nextAddress = truncateAddress;
             }
             else
             {
                 truncateFuture.completeExceptionally(new IllegalArgumentException(String.format(EXCEPTION_MSG_TRUNCATE_FAILED, truncatePosition)));
             }
             return transition;
-        }
-
-        private long findAddressForTruncateEvent(long truncateAddress)
-        {
-            buffer.wrap(ioBuffer);
-
-            int offset = 0;
-            boolean foundAddress = false;
-            while (!foundAddress)
-            {
-                if (offset >= buffer.capacity())
-                {
-                    return ILLEGAL_ADDRESS;
-                }
-
-                final long position = getPosition(buffer, offset);
-                if (position == truncatePosition)
-                {
-                    foundAddress = true;
-                }
-                else
-                {
-                    offset += getFragmentLength(buffer, offset);
-                }
-            }
-            return truncateAddress + offset;
         }
     }
 }

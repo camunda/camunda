@@ -143,10 +143,10 @@ public class LogBlockIndexControllerTest
 
         final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockSnapshotPolicy.apply(LOG_POSITION)).thenReturn(true);
 
@@ -171,10 +171,10 @@ public class LogBlockIndexControllerTest
     {
         final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
@@ -199,7 +199,7 @@ public class LogBlockIndexControllerTest
     {
         final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE - 1 + LOG_ADDRESS, READ_BLOCK_SIZE - 1));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE - 1 + LOG_ADDRESS, READ_BLOCK_SIZE - 1));
 
         blockIdxController.openAsync();
         // -> opening
@@ -216,10 +216,10 @@ public class LogBlockIndexControllerTest
     {
         final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         blockIdxController.openAsync();
         // -> opening
@@ -238,13 +238,13 @@ public class LogBlockIndexControllerTest
         // given
         final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
         when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(INDEX_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(INDEX_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readAndProcessLog(INDEX_BLOCK_SIZE + 2 * LOG_ADDRESS, (int) LOG_ADDRESS));
+            .thenAnswer(readTwoEvents(INDEX_BLOCK_SIZE + 2 * LOG_ADDRESS, (int) LOG_ADDRESS));
 
         blockIdxController.openAsync();
         // opening
@@ -266,7 +266,8 @@ public class LogBlockIndexControllerTest
     {
         // read block which should be truncated
         when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
         when(mockLogStorage.getFirstBlockAddress()).thenReturn(LOG_ADDRESS);
 
         // given open block index controller and empty block index
@@ -288,6 +289,54 @@ public class LogBlockIndexControllerTest
         // at first, address is looked up and correct address is resolved
         verify(mockLogStorage, atLeast(2)).getFirstBlockAddress();
 
+        // read is called once, since position is found in first block
+        verify(mockLogStorage, times(1)).read(any(ByteBuffer.class), anyLong());
+
+        // at second, block index and log storage from resolved address is truncated
+        verify(mockBlockIndex).truncate(TRUNCATE_POSITION);
+        verify(mockLogStorage).truncate(LOG_ADDRESS + alignedLength((911)));
+
+        // snapshot is deleted if exist, since no block index exist anymore
+        verify(mockSnapshotStorage).purgeSnapshot(LOG_NAME);
+    }
+
+    @Test
+    public void shouldTruncateLogStorageFromStartAndRepeatRead()
+    {
+        // read two single block's
+        // first one contains not the event
+        final int alignedLength = alignedLength(911);
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS)))
+            .thenAnswer(readSingleEvent(LOG_ADDRESS + alignedLength, alignedLength(911)));
+
+        // second one contains event on which the truncation should be started
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(LOG_ADDRESS + alignedLength)))
+            .thenAnswer(readTruncateLog(LOG_ADDRESS + 2 * alignedLength, alignedLength(911)));
+
+        when(mockLogStorage.getFirstBlockAddress()).thenReturn(LOG_ADDRESS);
+
+        // given open block index controller and empty block index
+        blockIdxController.openAsync();
+        // -> opening
+        blockIdxController.doWork();
+
+        // when truncate is called
+        final CompletableFuture<Void> truncateFuture = blockIdxController.truncate(TRUNCATE_POSITION);
+
+        // truncate state
+        blockIdxController.doWork();
+
+        // then truncate was successful
+        assertThat(truncateFuture.isDone()).isTrue();
+        // and controller is again in open state
+        assertThat(blockIdxController.isOpen()).isTrue();
+
+        // at first, address is looked up and correct address is resolved
+        verify(mockLogStorage, atLeast(2)).getFirstBlockAddress();
+
+        // read is called two times since position is searched and found in second block
+        verify(mockLogStorage, times(2)).read(any(ByteBuffer.class), anyLong());
+
         // at second, block index and log storage from resolved address is truncated
         verify(mockBlockIndex).truncate(TRUNCATE_POSITION);
         verify(mockLogStorage).truncate(LOG_ADDRESS + alignedLength((911)));
@@ -301,7 +350,8 @@ public class LogBlockIndexControllerTest
     {
         // read block which should be truncated
         when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
-            .thenAnswer(readAndProcessLog(READ_BLOCK_SIZE + TRUNCATE_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + TRUNCATE_ADDRESS, READ_BLOCK_SIZE));
+
         when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_ADDRESS);
         when(mockBlockIndex.size()).thenReturn(1, 0);
 
@@ -335,9 +385,14 @@ public class LogBlockIndexControllerTest
     @Test
     public void shouldTruncateAndWriteSnapshot() throws Exception
     {
+        final int alignedLength = alignedLength(911);
         when(mockBlockIndex.size()).thenReturn(2, 1);
         when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
-            .thenAnswer(readAndProcessLog(TRUNCATE_ADDRESS + READ_BLOCK_SIZE, READ_BLOCK_SIZE));
+            .thenAnswer(readSingleEvent(TRUNCATE_ADDRESS + alignedLength, alignedLength));
+
+        when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS + alignedLength)))
+            .thenAnswer(readTruncateLog(TRUNCATE_ADDRESS + 2 * alignedLength, alignedLength));
+
         when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION)).thenReturn(TRUNCATE_ADDRESS);
 
         // given open block index controller with written block index
@@ -381,6 +436,7 @@ public class LogBlockIndexControllerTest
     @Test
     public void shouldNotTruncateIfPositionWasNotFound()
     {
+        final long wrongTruncatePosition = TRUNCATE_POSITION + 1;
         // given custom log block index controller
         // which ioBuffer can only contain two event's
         final int alignedLength = 2 * alignedLength(911);
@@ -397,8 +453,8 @@ public class LogBlockIndexControllerTest
         final LogBlockIndexController controller = new LogBlockIndexController(builder);
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(TRUNCATE_ADDRESS)))
-            .thenAnswer(readAndProcessLog(TRUNCATE_ADDRESS + alignedLength, alignedLength));
-        when(mockBlockIndex.lookupBlockAddress(TRUNCATE_POSITION + 1)).thenReturn(TRUNCATE_ADDRESS);
+            .thenAnswer(readTwoEvents(TRUNCATE_ADDRESS + alignedLength, alignedLength));
+        when(mockBlockIndex.lookupBlockAddress(wrongTruncatePosition)).thenReturn(TRUNCATE_ADDRESS);
         when(mockBlockIndex.size()).thenReturn(1);
 
         // given open custom block index controller
@@ -407,20 +463,23 @@ public class LogBlockIndexControllerTest
         controller.doWork();
 
         // when truncate is called
-        final CompletableFuture<Void> truncateFuture = controller.truncate(TRUNCATE_POSITION + 1);
+        final CompletableFuture<Void> truncateFuture = controller.truncate(wrongTruncatePosition);
 
         // truncate state
         controller.doWork();
 
         // then truncate was completed exceptionally
         assertThat(truncateFuture.isCompletedExceptionally()).isTrue();
-        assertThat(truncateFuture).hasFailedWithThrowableThat().hasMessage("Truncation failed! Position 102 was not found.");
+        assertThat(truncateFuture).hasFailedWithThrowableThat().hasMessage("Truncation failed! Position " + wrongTruncatePosition + " was not found.");
 
         // and controller is again in open state
         assertThat(controller.isOpen()).isTrue();
+
+        // read is called two times, since truncation tries to find the event with the given position
+        verify(mockLogStorage, times(2)).read(any(ByteBuffer.class), anyLong());
     }
 
-    private Answer<Object> readAndProcessLog(long nextAddr, int blockSize)
+    private Answer<Object> readTwoEvents(long nextAddr, int blockSize)
     {
         return (InvocationOnMock invocationOnMock) ->
         {
@@ -437,6 +496,39 @@ public class LogBlockIndexControllerTest
             final int alignedLength = alignedLength(911);
             unsafeBuffer.putLong(lengthOffset(alignedLength), 911);
             unsafeBuffer.putLong(positionOffset(messageOffset(alignedLength)), TRUNCATE_POSITION);
+
+            argBuffer.position(blockSize);
+            return nextAddr;
+        };
+    }
+
+    private Answer<Object> readSingleEvent(long nextAddr, int blockSize)
+    {
+        return (InvocationOnMock invocationOnMock) ->
+        {
+            final ByteBuffer argBuffer = (ByteBuffer) invocationOnMock.getArguments()[0];
+            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
+            unsafeBuffer.wrap(argBuffer);
+
+            unsafeBuffer.putLong(lengthOffset(0), 911);
+            unsafeBuffer.putLong(positionOffset(messageOffset(0)), LOG_POSITION);
+
+            argBuffer.position(blockSize);
+            return nextAddr;
+        };
+    }
+
+    private Answer<Object> readTruncateLog(long nextAddr, int blockSize)
+    {
+        return (InvocationOnMock invocationOnMock) ->
+        {
+            final ByteBuffer argBuffer = (ByteBuffer) invocationOnMock.getArguments()[0];
+            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
+            unsafeBuffer.wrap(argBuffer);
+
+            // set position
+            unsafeBuffer.putLong(lengthOffset(0), 911);
+            unsafeBuffer.putLong(positionOffset(messageOffset(0)), TRUNCATE_POSITION);
 
             argBuffer.position(blockSize);
             return nextAddr;
