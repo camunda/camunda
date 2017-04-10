@@ -16,11 +16,10 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadingExceptionTest
+public class MsgPackReadingBoundaryCheckingExceptionTest
 {
 
-    protected static final DirectBuffer NEVER_USED_BUF = new UnsafeBuffer(new byte[]{ (byte) 0xc1 });
-    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative buffer size";
+    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative value should not be accepted by size value and unsiged 64bit integer";
 
 
     @Rule
@@ -31,42 +30,33 @@ public class MsgPackReadingExceptionTest
     {
         return Arrays.asList(new Object[][] {
             {
-                "Not a long",
-                codeUnderTest((r) -> r.readInteger())
-            },
-            {
-                "Not an array",
+                new byte[]{(byte) ARRAY32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
                 codeUnderTest((r) -> r.readArrayHeader())
             },
             {
-                "Not binary",
+                new byte[]{(byte) BIN32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
                 codeUnderTest((r) -> r.readBinaryLength())
             },
             {
-                "Not a boolean",
-                codeUnderTest((r) -> r.readBoolean())
-            },
-            {
-                "Not a float",
-                codeUnderTest((r) -> r.readFloat())
-            },
-            {
-                "Not a map",
+                new byte[]{(byte) MAP32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
                 codeUnderTest((r) -> r.readMapHeader())
             },
             {
-                "Not a string",
+                new byte[]{(byte) STR32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
                 codeUnderTest((r) -> r.readStringLength())
             },
             {
-                "Unsupported token format",
-                codeUnderTest((r) -> r.readToken())
+                new byte[]{(byte) UINT64, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
+                codeUnderTest((r) -> r.readInteger())
             }
         });
     }
 
+
+
     @Parameter(0)
-    public String expectedExceptionMessage;
+
+    public byte[] testingBuf;
 
     @Parameter(1)
     public Consumer<MsgPackReader> codeUnderTest;
@@ -80,14 +70,15 @@ public class MsgPackReadingExceptionTest
     }
 
     @Test
-    public void shouldNotReadInvalidSequence()
+    public void shouldNotReadNegativeValue()
     {
         // given
-        reader.wrap(NEVER_USED_BUF, 0, NEVER_USED_BUF.capacity());
+        final DirectBuffer negativeTestingBuf = new UnsafeBuffer(testingBuf);
+        reader.wrap(negativeTestingBuf, 0, negativeTestingBuf.capacity());
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage(expectedExceptionMessage);
+        exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
 
         // when
         codeUnderTest.accept(reader);

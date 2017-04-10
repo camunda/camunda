@@ -2,7 +2,7 @@ package org.camunda.tngp.msgpack.spec;
 
 import static org.agrona.BitUtil.*;
 import static org.camunda.tngp.msgpack.spec.MsgPackCodes.*;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.ensurePositiveSize;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.ensurePositive;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -41,7 +41,7 @@ public class MsgPackReader
                     break;
 
                 case MAP32:
-                    mapSize = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
+                    mapSize = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
                     offset += SIZE_OF_INT;
                     break;
 
@@ -74,7 +74,7 @@ public class MsgPackReader
                     break;
 
                 case ARRAY32:
-                    mapSize = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
+                    mapSize = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
                     offset += SIZE_OF_INT;
                     break;
 
@@ -112,7 +112,7 @@ public class MsgPackReader
                     break;
 
                 case STR32:
-                    stringLength = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
+                    stringLength = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
                     offset += SIZE_OF_INT;
                     break;
 
@@ -143,7 +143,7 @@ public class MsgPackReader
                 break;
 
             case BIN32:
-                length = ensurePositiveSize(buffer.getInt(offset, BYTE_ORDER));
+                length = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
                 offset += SIZE_OF_INT;
                 break;
 
@@ -189,7 +189,7 @@ public class MsgPackReader
                     break;
 
                 case UINT64:
-                    val = buffer.getLong(offset, BYTE_ORDER);
+                    val = ensurePositive(buffer.getLong(offset, BYTE_ORDER));
                     offset += 8;
                     break;
 

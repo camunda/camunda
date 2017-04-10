@@ -19,7 +19,7 @@ public class MsgPackWritingExceptionTest
     protected static final int BUFFER_CAPACITY = 1024;
     protected static final int WRITE_OFFSET = 123;
     protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
-    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative buffer size";
+    protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative value should not be accepted by size value and unsiged 64bit integer";
 
 
     @Rule
