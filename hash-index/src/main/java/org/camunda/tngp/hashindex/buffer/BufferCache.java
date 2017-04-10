@@ -16,7 +16,7 @@ public class BufferCache implements BufferCacheMetrics
 
     public BufferCache(IndexStore indexStore, int cacheCapacity, int bufferCapacity)
     {
-        cache = new LongLruCache<LoadedBuffer>(cacheCapacity, this::getRecycledBuffer, this::recycle);
+        cache = new LongLruCache<>(cacheCapacity, this::getRecycledBuffer, this::recycle);
         recycledBuffers = new LoadedBuffer[cacheCapacity + 1];
 
         for (int i = 0; i < recycledBuffers.length; i++)
@@ -66,6 +66,7 @@ public class BufferCache implements BufferCacheMetrics
             if (recycledBuffers[i] == null)
             {
                 recycledBuffers[i] = bufferToRecycle;
+                return;
             }
         }
     }
@@ -73,7 +74,7 @@ public class BufferCache implements BufferCacheMetrics
     public void flush()
     {
         cache.close();
-        cache = new LongLruCache<LoadedBuffer>(cache.capacity(), this::getRecycledBuffer, this::recycle);
+        cache = new LongLruCache<>(cache.capacity(), this::getRecycledBuffer, this::recycle);
         cacheMisses = 0;
     }
 

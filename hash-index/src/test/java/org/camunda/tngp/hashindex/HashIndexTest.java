@@ -3,6 +3,7 @@ package org.camunda.tngp.hashindex;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.hashindex.types.LongKeyHandler;
 import org.camunda.tngp.hashindex.types.LongValueHandler;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,6 +22,12 @@ public class HashIndexTest
     public void init()
     {
         indexStore = FileChannelIndexStore.tempFileIndexStore();
+    }
+
+    @After
+    public void tearDown()
+    {
+        indexStore.close();
     }
 
     @Test
