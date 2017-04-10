@@ -6,6 +6,7 @@ import org.camunda.tngp.dispatcher.BlockPeek;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
+import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
@@ -39,7 +40,10 @@ public class LogStreamController implements Agent
     protected final LogStateMachineAgent stateMachine;
 
     //  MANDATORY //////////////////////////////////////////////////
-    protected final LogControllerContext logControllerContext;
+    protected final String name;
+    protected final LogStorage logStorage;
+    protected final AgentRunnerService agentRunnerService;
+
     protected final BlockPeek blockPeek = new BlockPeek();
     protected final int maxAppendBlockSize;
     protected final Dispatcher writeBuffer;
@@ -52,13 +56,16 @@ public class LogStreamController implements Agent
 
     public LogStreamController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
-        this.logControllerContext = logStreamBuilder.getLogControllerContext();
+        this.name = logStreamBuilder.getLogName();
+        this.logStorage = logStreamBuilder.getLogStorage();
+        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+
         this.maxAppendBlockSize = logStreamBuilder.getMaxAppendBlockSize();
         this.writeBuffer = logStreamBuilder.getWriteBuffer();
         this.writeBufferAgentRunnerService = logStreamBuilder.getWriteBufferAgentRunnerService();
 
-        this.openStateRunnable = () -> logControllerContext.agentRunnerServiceRun(this);
-        this.closedStateRunnable = () -> logControllerContext.agentRunnerServiceRemove(this);
+        this.openStateRunnable = () -> agentRunnerService.run(this);
+        this.closedStateRunnable = () -> agentRunnerService.remove(this);
         this.stateMachine = new LogStateMachineAgent(
             StateMachine.<LogContext>builder(s -> new LogContext(s))
                 .initialState(closedState)
@@ -84,7 +91,7 @@ public class LogStreamController implements Agent
     @Override
     public String roleName()
     {
-        return logControllerContext.getName();
+        return name;
     }
 
     protected LogStateMachineAgent getStateMachine()
@@ -99,7 +106,10 @@ public class LogStreamController implements Agent
         {
             try
             {
-                logControllerContext.logStorageOpen();
+                if (!logStorage.isOpen())
+                {
+                    logStorage.open();
+                }
 
                 writeBufferSubscription = writeBuffer.getSubscriptionByName("log-appender");
                 writeBufferAgentRunnerService.run(writeBuffer.getConductorAgent());
@@ -130,7 +140,7 @@ public class LogStreamController implements Agent
                 final long position = buffer.getLong(positionOffset(messageOffset(0)));
                 context.setLastPosition(position);
 
-                final long address = logControllerContext.logStorageAppend(nioBuffer);
+                final long address = logStorage.append(nioBuffer);
 
                 if (address >= 0)
                 {

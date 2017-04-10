@@ -2,7 +2,9 @@ package org.camunda.tngp.logstreams.impl;
 
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.*;
+import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
 import org.camunda.tngp.util.state.TransitionState;
@@ -11,9 +13,9 @@ import org.camunda.tngp.util.state.WaitState;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getFragmentLength;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.getPosition;
+import static org.camunda.tngp.logstreams.impl.LogStateMachineAgent.*;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
@@ -38,7 +40,11 @@ public class LogBlockIndexController implements Agent
 
     //  MANDATORY //////////////////////////////////////////////////
 
-    protected final LogControllerContext controllerContext;
+    protected final String name;
+    protected final LogStorage logStorage;
+    protected final LogBlockIndex blockIndex;
+    protected final AgentRunnerService agentRunnerService;
+
     protected final int indexBlockSize;
     protected final SnapshotStorage snapshotStorage;
     protected final SnapshotPolicy snapshotPolicy;
@@ -57,7 +63,11 @@ public class LogBlockIndexController implements Agent
 
     public LogBlockIndexController(LogStreamImpl.LogStreamBuilder logStreamBuilder)
     {
-        this.controllerContext = logStreamBuilder.getLogControllerContext();
+        this.name = logStreamBuilder.getLogName();
+        this.logStorage = logStreamBuilder.getLogStorage();
+        this.blockIndex = logStreamBuilder.getBlockIndex();
+        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+
         this.indexBlockSize = logStreamBuilder.getIndexBlockSize();
         this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
         this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
@@ -65,8 +75,8 @@ public class LogBlockIndexController implements Agent
         ioBuffer = ByteBuffer.allocateDirect(bufferSize);
         buffer.wrap(ioBuffer);
 
-        this.openStateRunnable = () -> controllerContext.agentRunnerServiceRun(this);
-        this.closedStateRunnable = () -> controllerContext.agentRunnerServiceRemove(this);
+        this.openStateRunnable = () -> agentRunnerService.run(this);
+        this.closedStateRunnable = () -> agentRunnerService.remove(this);
         this.stateMachine = new LogStateMachineAgent(
             StateMachine.<LogContext>builder(s -> new LogContext(s))
                 .initialState(closedState)
@@ -90,7 +100,7 @@ public class LogBlockIndexController implements Agent
     @Override
     public String roleName()
     {
-        return controllerContext.getName();
+        return name;
     }
 
     protected LogStateMachineAgent getStateMachine()
@@ -105,14 +115,17 @@ public class LogBlockIndexController implements Agent
         {
             try
             {
-                controllerContext.logStorageOpen();
+                if (!logStorage.isOpen())
+                {
+                    logStorage.open();
+                }
 
                 recoverBlockIndex();
             }
             catch (Exception e)
             {
                 // snapshot could not been read - so we start with the first block
-                nextAddress = controllerContext.logStorageFirstBlockAddress();
+                nextAddress = logStorage.getFirstBlockAddress();
             }
             finally
             {
@@ -124,12 +137,12 @@ public class LogBlockIndexController implements Agent
 
         protected void recoverBlockIndex() throws Exception
         {
-            final long recoveredAddress = controllerContext.logStorageFirstBlockAddress();
-            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(controllerContext.getName());
+            final long recoveredAddress = logStorage.getFirstBlockAddress();
+            final ReadableSnapshot lastSnapshot = snapshotStorage.getLastSnapshot(name);
             if (lastSnapshot != null)
             {
-                lastSnapshot.recoverFromSnapshot(controllerContext.getBlockIndex());
-                nextAddress = Math.max(controllerContext.logBlockIndexLookupBlockAddress(lastSnapshot.getPosition()),
+                lastSnapshot.recoverFromSnapshot(blockIndex);
+                nextAddress = Math.max(blockIndex.lookupBlockAddress(lastSnapshot.getPosition()),
                     recoveredAddress);
             }
             else
@@ -150,7 +163,7 @@ public class LogBlockIndexController implements Agent
             // open state
             if (nextAddress == ILLEGAL_ADDRESS)
             {
-                nextAddress = controllerContext.logStorageFirstBlockAddress();
+                nextAddress = logStorage.getFirstBlockAddress();
             }
 
             int result = 0;
@@ -159,7 +172,7 @@ public class LogBlockIndexController implements Agent
                 final long currentAddress = nextAddress;
 
                 // read buffer with only complete events
-                final long opResult = controllerContext.logStorageRead(ioBuffer, currentAddress, readResultProcessor);
+                final long opResult = logStorage.read(ioBuffer, currentAddress, readResultProcessor);
                 if (opResult == OP_RESULT_INVALID_ADDR)
                 {
                     System.err.println(String.format("Can't read from illegal address: %d", currentAddress));
@@ -237,7 +250,7 @@ public class LogBlockIndexController implements Agent
             final long position = contextPosition == 0
                 ? getPosition(buffer, 0)
                 : contextPosition;
-            controllerContext.logBlockIndexAddBlock(position, addressOfFirstEventInBlock);
+            blockIndex.addBlock(position, addressOfFirstEventInBlock);
 
             // check if snapshot should be created
             if (snapshotPolicy.apply(position))
@@ -264,13 +277,11 @@ public class LogBlockIndexController implements Agent
                 // should do recovery if fails to flush because of corrupted block index - see #8
 
                 // flush the log to ensure that the snapshot doesn't contains indexes of unwritten events
-                controllerContext.logStorageFlush();
+                logStorage.flush();
 
-                snapshotWriter = snapshotStorage.createSnapshot(
-                    controllerContext.getName(),
-                    logContext.getLastPosition());
+                snapshotWriter = snapshotStorage.createSnapshot(name, logContext.getLastPosition());
 
-                snapshotWriter.writeSnapshot(controllerContext.getBlockIndex());
+                snapshotWriter.writeSnapshot(blockIndex);
                 snapshotWriter.commit();
             }
             catch (Exception e)
@@ -380,11 +391,13 @@ public class LogBlockIndexController implements Agent
             int transition = TRANSITION_DEFAULT;
             try
             {
-                long truncateAddress = controllerContext.logBlockIndexTryLookupBlockAddress(truncatePosition);
+                long truncateAddress = blockIndex.size() > 0
+                                     ? blockIndex.lookupBlockAddress(truncatePosition)
+                                     : logStorage.getFirstBlockAddress();
 
                 // find event with given position to calculate address
                 ioBuffer.clear();
-                controllerContext.logStorageRead(ioBuffer, truncateAddress);
+                logStorage.read(ioBuffer, truncateAddress);
 
                 truncateAddress = findAddressForTruncateEvent(truncateAddress);
 
@@ -405,13 +418,14 @@ public class LogBlockIndexController implements Agent
         {
             if (truncateAddress != ILLEGAL_ADDRESS)
             {
-                controllerContext.truncateLogBlockIndexAndLogStorage(truncatePosition, truncateAddress);
+                blockIndex.truncate(truncatePosition);
+                logStorage.truncate(truncateAddress);
 
                 // write new snapshot
-                final int lastIdx = controllerContext.logBlockIndexLastIndex();
+                final int lastIdx = blockIndex.size() - 1;
                 if (lastIdx >= 0)
                 {
-                    final long lastBlockPosition = controllerContext.logBlockIndexLogPosition(lastIdx);
+                    final long lastBlockPosition = blockIndex.getLogPosition(lastIdx);
 
                     logContext.setLastPosition(lastBlockPosition);
                     transition = TRANSITION_SNAPSHOT;
@@ -419,7 +433,7 @@ public class LogBlockIndexController implements Agent
                 else
                 {
                     // if all blocks are deleted we need to clean up the snapshots as well
-                    snapshotStorage.purgeSnapshot(controllerContext.getName());
+                    snapshotStorage.purgeSnapshot(name);
                 }
             }
             else

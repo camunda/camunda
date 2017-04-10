@@ -38,7 +38,10 @@ public final class LogStreamImpl implements LogStream
     protected volatile int term = 0;
     protected Position commitPosition;
 
-    protected final LogControllerContext controllerContext;
+    protected final String name;
+    protected final LogStorage logStorage;
+    protected final LogBlockIndex blockIndex;
+    protected final AgentRunnerService agentRunnerService;
     protected final int logId;
 
 
@@ -51,8 +54,12 @@ public final class LogStreamImpl implements LogStream
 
     private LogStreamImpl(LogStreamBuilder logStreamBuilder)
     {
-        this.controllerContext = logStreamBuilder.getLogControllerContext();
         this.logId = logStreamBuilder.getLogId();
+        this.name = logStreamBuilder.getLogName();
+        this.logStorage = logStreamBuilder.getLogStorage();
+        this.blockIndex = logStreamBuilder.getBlockIndex();
+        this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder);
 
         this.commitPosition = new AtomicLongPosition();
@@ -86,7 +93,7 @@ public final class LogStreamImpl implements LogStream
     @Override
     public String getLogName()
     {
-        return controllerContext.getName();
+        return name;
     }
 
     @Override
@@ -147,7 +154,7 @@ public final class LogStreamImpl implements LogStream
         final CompletableFuture<Void> future = new CompletableFuture<>();
         final BiConsumer<Void, Throwable> closeLogStorage = (n, e) ->
         {
-            controllerContext.logStorageClose();
+            logStorage.close();
             future.complete(null);
         };
 
@@ -221,13 +228,13 @@ public final class LogStreamImpl implements LogStream
     @Override
     public LogStorage getLogStorage()
     {
-        return controllerContext.getLogStorage();
+        return logStorage;
     }
 
     @Override
     public LogBlockIndex getLogBlockIndex()
     {
-        return controllerContext.getBlockIndex();
+        return blockIndex;
     }
 
     @Override
@@ -281,8 +288,10 @@ public final class LogStreamImpl implements LogStream
     public CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService,
                                                            int maxAppendBlockSize)
     {
-        final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(controllerContext.getName(), logId)
-            .logControllerContext(controllerContext)
+        final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(name, logId)
+            .logStorage(logStorage)
+            .logBlockIndex(blockIndex)
+            .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(writeBufferAgentRunnerService)
             .maxAppendBlockSize(maxAppendBlockSize);
 
@@ -317,8 +326,6 @@ public final class LogStreamImpl implements LogStream
         protected AgentRunnerService agentRunnerService;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
-
-        protected LogControllerContext logControllerContext;
 
         protected String logRootPath;
         protected String logDirectory;
@@ -430,12 +437,6 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
-        public T logControllerContext(LogControllerContext logControllerContext)
-        {
-            this.logControllerContext = logControllerContext;
-            return self();
-        }
-
         public T logStreamControllerDisabled(boolean logStreamControllerDisabled)
         {
             this.logStreamControllerDisabled = logStreamControllerDisabled;
@@ -482,14 +483,7 @@ public final class LogStreamImpl implements LogStream
         {
             if (agentRunnerService == null)
             {
-                if (logControllerContext == null)
-                {
-                    Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
-                }
-                else
-                {
-                    agentRunnerService = logControllerContext.getAgentRunnerService();
-                }
+                Objects.requireNonNull(agentRunnerService, "No agent runner service provided.");
             }
 
             return agentRunnerService;
@@ -503,14 +497,7 @@ public final class LogStreamImpl implements LogStream
         {
             if (logStorage == null)
             {
-                if (logControllerContext == null)
-                {
-                    initLogStorage();
-                }
-                else
-                {
-                    logStorage = logControllerContext.getLogStorage();
-                }
+                initLogStorage();
             }
             return logStorage;
         }
@@ -519,29 +506,9 @@ public final class LogStreamImpl implements LogStream
         {
             if (logBlockIndex == null)
             {
-                if (logControllerContext == null)
-                {
-                    this.logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
-                }
-                else
-                {
-                    this.logBlockIndex = logControllerContext.getBlockIndex();
-                }
+                this.logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
             }
             return logBlockIndex;
-        }
-
-        public LogControllerContext getLogControllerContext()
-        {
-            if (logControllerContext == null)
-            {
-                logControllerContext = new LogControllerContext(
-                    getLogName(),
-                    getLogStorage(),
-                    getBlockIndex(),
-                    getAgentRunnerService());
-            }
-            return logControllerContext;
         }
 
         public int getMaxAppendBlockSize()
@@ -637,7 +604,13 @@ public final class LogStreamImpl implements LogStream
 
         public LogStream build()
         {
+            Objects.requireNonNull(getLogName(), "name");
+            Objects.requireNonNull(getLogStorage(), "logStorage");
+            Objects.requireNonNull(getBlockIndex(), "blockIndex");
+            Objects.requireNonNull(getAgentRunnerService(), "agentRunnerService");
+
             return new LogStreamImpl(this);
         }
     }
+
 }
