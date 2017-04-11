@@ -4,8 +4,6 @@ import static org.camunda.tngp.broker.clustering.raft.Raft.State.*;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
 import static org.camunda.tngp.broker.system.SystemServiceNames.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -127,13 +125,13 @@ public class LeaderState extends ActiveState
 
     private final ConfigurationController configurationController;
 
-    private long commitPosition;
+    private long leaderPosition;
 
     public LeaderState(final RaftContext context)
     {
         super(context);
 
-        this.commitPosition = -1L;
+        this.leaderPosition = -1L;
 
         this.configuringMembers = new CopyOnWriteArrayList<>();
         this.configuringMember = new Member();
@@ -308,7 +306,9 @@ public class LeaderState extends ActiveState
                 if (succeeded)
                 {
                     member.failures(0);
-                    member.matchPosition(appendResponse.entryPosition());
+                    member.matchPosition(entryPosition);
+
+                    commitEntry(entryPosition);
                 }
                 else
                 {
@@ -317,6 +317,43 @@ public class LeaderState extends ActiveState
                 }
             }
         }
+    }
+
+    protected void commitEntry(final long position)
+    {
+        final List<Member> members = raft.members();
+        final Member self = raft.member();
+
+        if (canCommitPosition(position))
+        {
+            int replicas = 1;
+
+            if (members.size() > 1)
+            {
+                for (int i = 0; i < members.size(); i++)
+                {
+                    final Member member = members.get(i);
+                    final long matchPosition = member.matchPosition();
+
+                    if (!self.equals(member) && position >= matchPosition)
+                    {
+                        replicas += 1;
+                    }
+                }
+            }
+
+            final int quorum = raft.quorum();
+            if (replicas >= quorum)
+            {
+                raft.commitPosition(position);
+            }
+        }
+    }
+
+    protected boolean canCommitPosition(final long position)
+    {
+        final long previousCommitPosition = raft.commitPosition();
+        return leaderPosition > -1 && position > -1 && position > previousCommitPosition && position >= leaderPosition;
     }
 
     @Override
@@ -515,7 +552,7 @@ public class LeaderState extends ActiveState
         configureStateMachine.addCommand(CLOSE_CONFIGURE_STATE_MACHINE_COMMAND);
         configurationController.close();
 
-        commitPosition = -1L;
+        leaderPosition = -1L;
     }
 
     @Override
@@ -649,7 +686,7 @@ public class LeaderState extends ActiveState
 
             if (appendController.isAppended())
             {
-                commitPosition = appendController.entryPosition();
+                leaderPosition = appendController.entryPosition();
                 workcount += 1;
                 context.take(TRANSITION_DEFAULT);
             }
@@ -835,53 +872,41 @@ public class LeaderState extends ActiveState
         {
             final RaftContext raftContext = context.raftContext;
             final Raft raft = raftContext.getRaft();
+            final LogStream stream = raft.stream();
 
             final List<Member> members = raft.members();
             final Member self = raft.member();
+            final int size = members.size();
 
             int workcount = 0;
 
-            for (int i = 0; i < members.size(); i++)
+            if (size > 1)
             {
-                final Member member = members.get(i);
-                final ReplicationController replicationController = member.getReplicationController();
-
-                if (!self.equals(member) && replicationController != null)
+                for (int i = 0; i < members.size(); i++)
                 {
-                    if (replicationController.isClosed())
-                    {
-                        member.resetReaderToLastEntry();
-                        replicationController.open();
-                        workcount += 1;
-                    }
+                    final Member member = members.get(i);
+                    final ReplicationController replicationController = member.getReplicationController();
 
-                    workcount += replicationController.doWork();
+                    if (!self.equals(member) && replicationController != null)
+                    {
+                        if (replicationController.isClosed())
+                        {
+                            member.resetReaderToLastEntry();
+                            replicationController.open();
+                            workcount += 1;
+                        }
+
+                        workcount += replicationController.doWork();
+                    }
                 }
             }
-
-
-            // TODO: rework commit
-            if (commitPosition >= 0)
+            else
             {
-                if (members.size() <= 1)
+                final long appenderPosition = stream.getCurrentAppenderPosition();
+                if (canCommitPosition(appenderPosition))
                 {
-                    self.resetReaderToLastEntry();
-                    if (self.currentEntryPosition() > raft.commitPosition())
-                    {
-                        raft.commitPosition(self.currentEntryPosition());
-                    }
-                }
-                else
-                {
-                    final int quorum = raft.quorum();
-                    final List<Member> copy = new ArrayList<>(members);
-                    Collections.sort(copy, (m1, m2) -> Long.compare(m2.matchPosition() != 0 ? m2.matchPosition() : 0L, m1.matchPosition() != 0 ? m1.matchPosition() : 0L));
-                    final long matchPosition = copy.get(quorum - 2).matchPosition();
-
-                    if (matchPosition > 0 && matchPosition > raft.commitPosition())
-                    {
-                        raft.commitPosition(matchPosition);
-                    }
+                    raft.commitPosition(appenderPosition);
+                    workcount += 1;
                 }
             }
 

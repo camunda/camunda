@@ -46,15 +46,11 @@ public class Raft implements Agent
     private final CandidateState candidateState;
     private final LeaderState leaderState;
 
-    private volatile int term = 0;
-
     private boolean lastVotedForAvailable;
     private final Endpoint lastVotedFor;
 
     private boolean leaderAvailable;
     private final Endpoint leader;
-
-    private long commitPosition = -1L;
 
     protected long lastContact;
 
@@ -104,7 +100,7 @@ public class Raft implements Agent
 
         this.stateChangeListeners = new CopyOnWriteArrayList<>();
 
-        this.term = meta.loadTerm();
+        this.stream.setTerm(meta.loadTerm());
 
         final Endpoint vote = meta.loadVote();
         if (vote != null)
@@ -193,14 +189,14 @@ public class Raft implements Agent
 
     public int term()
     {
-        return term;
+        return stream.getTerm();
     }
 
     public Raft term(final int term)
     {
-        if (term > this.term)
+        if (term > term())
         {
-            this.term = term;
+            stream.setTerm(term);
             leader(null);
             lastVotedFor(null);
             meta.storeTermAndVote(term, null);
@@ -210,15 +206,15 @@ public class Raft implements Agent
 
     public long commitPosition()
     {
-        return commitPosition;
+        return stream.getCommitPosition();
     }
 
     public Raft commitPosition(final long commitPosition)
     {
-        final long previousCommitPosition = this.commitPosition;
+        final long previousCommitPosition = commitPosition();
         if (previousCommitPosition < commitPosition)
         {
-            this.commitPosition = commitPosition;
+            stream.setCommitPosition(commitPosition);
             final long configurationPosition = configuration().configurationEntryPosition();
             if (configurationPosition > previousCommitPosition && configurationPosition <= commitPosition)
             {
@@ -291,7 +287,7 @@ public class Raft implements Agent
 
     public int quorum()
     {
-        return (int) Math.floor((members().size() + 1) / 2.0) + 1;
+        return (int) Math.floor(members().size() / 2.0) + 1;
     }
 
     public Member getMemberByEndpoint(final Endpoint endpoint)
