@@ -7,6 +7,7 @@ export {
 export {onNextTick} from './onNextTick';
 export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';
 export {formatTime} from './formatTime';
+export {formatNumber} from './formatNumber';
 export {getFilterQuery} from './query';
 export {runOnce} from './runOnce';
 export {createQueue} from './createQueue';

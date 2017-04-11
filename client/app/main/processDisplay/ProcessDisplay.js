@@ -6,6 +6,7 @@ import {loadData, loadDiagram} from './service';
 import {isViewSelected} from './controls';
 import {LoadingIndicator} from 'widgets';
 import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
+import {ProcessInstanceCount} from './ProcessInstanceCount';
 
 export const ProcessDisplay = withSelector(Process);
 
@@ -25,12 +26,15 @@ function Process() {
           </Case>
           <Case predicate={shouldDisplay('frequency')}>
             <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
+            <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
             <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(formatTime)} />
+            <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
+            <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
           <Default>
             <Diagram selector="diagram" />
@@ -40,6 +44,10 @@ function Process() {
     </div>
     <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
+
+  function getProcessInstanceCount({diagram:{heatmap:{data:{piCount}}}}) {
+    return piCount;
+  }
 
   function hasNoData({controls, diagram:{heatmap:{data}}}) {
     return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis']);

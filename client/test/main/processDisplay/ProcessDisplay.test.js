@@ -1,4 +1,4 @@
-import {jsx, includes} from 'view-utils';
+import {jsx, includes, withSelector} from 'view-utils';
 import {mountTemplate, createMockComponent, observeFunction} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
@@ -12,6 +12,7 @@ describe('<ProcessDisplay>', () => {
   let createCreateAnalyticsRendererFunction;
   let createDiagramControlsIntegrator;
   let Statistics;
+  let ProcessInstanceCount;
   let loadData;
   let Diagram;
   let node;
@@ -52,6 +53,9 @@ describe('<ProcessDisplay>', () => {
     Statistics = createMockComponent('Statistics');
     __set__('Statistics', Statistics);
 
+    ProcessInstanceCount = createMockComponent('ProcessInstanceCount');
+    __set__('ProcessInstanceCount', withSelector(ProcessInstanceCount));
+
     loadData = 'load-data';
     __set__('loadData', loadData);
 
@@ -71,6 +75,7 @@ describe('<ProcessDisplay>', () => {
 
   afterEach(() => {
     __ResetDependency__('Statistics');
+    __ResetDependency__('ProcessInstanceCount');
     __ResetDependency__('createHeatmapDiagram');
     __ResetDependency__('createHeatmapRendererFunction');
     __ResetDependency__('createCreateAnalyticsRendererFunction');
@@ -86,6 +91,26 @@ describe('<ProcessDisplay>', () => {
 
   it('should contain diagram section', () => {
     expect(node.querySelector('.diagram')).to.exist;
+  });
+
+  it('should not contain the processInstanceCount by default', () => {
+    expect(node.textContent).to.not.contain('ProcessInstanceCount');
+  });
+
+  it('should contain the processInstanceCount when heatmap mode is selected', () => {
+    selectedView = 'frequency';
+
+    update(state);
+
+    expect(node.textContent).to.contain('ProcessInstanceCount');
+  });
+
+  it('should pass the processInstanceCount to the ProcessInstanceCount component', () => {
+    selectedView = 'frequency';
+
+    update(state);
+
+    expect(ProcessInstanceCount.mocks.update.calledWith(33)).to.eql(true);
   });
 
   it('should pass loadData to Controls component as onCriteriaChanged attribute', () => {
