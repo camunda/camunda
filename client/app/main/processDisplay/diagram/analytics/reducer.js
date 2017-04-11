@@ -17,7 +17,7 @@ export const reducer = (state = {selection: {}}, action) => {
       ...state,
       selection: {
         ...state.selection,
-        [action.elementType]: state.selection[action.elementType] ? null : action.id
+        [action.elementType]: state.selection[action.elementType] === action.id ? null : action.id
       }
     };
   } else if (action.type === CHANGE_ROUTE_ACTION && action.route.params.view !== 'branch_analysis') {

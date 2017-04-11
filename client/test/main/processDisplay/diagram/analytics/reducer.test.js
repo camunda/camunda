@@ -13,9 +13,15 @@ describe('Analytics reducer', () => {
   });
 
   it('should unset the element id on toggle if element was set previously', () => {
-    const {selection: {gateway}} = reducer({selection: {gateway: 'foobar'}}, createToggleElementAction(elementId, elementType));
+    const {selection: {gateway}} = reducer({selection: {gateway: elementId}}, createToggleElementAction(elementId, elementType));
 
     expect(gateway).to.be.null;
+  });
+
+  it('should replace a selected element', () => {
+    const {selection: {gateway}} = reducer({selection: {gateway: 'foobar'}}, createToggleElementAction(elementId, elementType));
+
+    expect(gateway).to.eql(elementId);
   });
 
   it('should unset an element', () => {
