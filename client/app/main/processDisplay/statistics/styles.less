@@ -30,7 +30,12 @@
       height: ~"calc(100% - 50px)";
 
       .bar {
-        fill: steelblue;
+        fill: rgba(181, 21, 43, .6);
+        stroke: rgb(181, 21, 43);
+
+        &:hover {
+          fill: rgb(181, 21, 43);
+        }
       }
 
       .axis-x path {
@@ -71,4 +76,9 @@
     top: 100%;
     left: 0;
   }
+}
+
+.diagram .djs-container g.chart-hover path {
+  stroke: #b5152b !important;
+  stroke-width: 3px !important;
 }

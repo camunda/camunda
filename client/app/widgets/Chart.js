@@ -1,4 +1,4 @@
-import {withSelector, DESTROY_EVENT} from 'view-utils';
+import {withSelector, DESTROY_EVENT, noop} from 'view-utils';
 import {getChartDimensions, createScales, createAxes, createTooltip, createChartOn, createContainer,
         updateScales, updateAxes, collectBars, updateBars, createNewBars, removeOldBars} from 'utils/chart-utils';
 
@@ -25,7 +25,7 @@ export const Chart = withSelector(({config}) => {
       const bars = collectBars({container, data});
 
       updateBars({bars, x, y, height});
-      createNewBars({bars, x, y, height, tooltip});
+      createNewBars({bars, x, y, height, tooltip, onHover: config.onHover || noop});
       removeOldBars(bars);
     };
   };

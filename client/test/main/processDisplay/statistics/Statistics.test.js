@@ -11,6 +11,10 @@ describe('<Statistics>', () => {
   let unopenedState;
   let openedState;
   let StatisticChart;
+  let getBpmnViewer;
+  let viewer;
+  let findSequenceFlowBetweenGatewayAndActivity;
+  const sequenceFlow = 'SEQUENCE_FLOW';
 
   beforeEach(() => {
     unopenedState = {
@@ -30,9 +34,27 @@ describe('<Statistics>', () => {
         }
       },
       statistics: {
-        correlation: {}
+        correlation: {
+          data: {
+            followingNodes: {
+              foo: 12,
+              bar: 1
+            }
+          }
+        }
       }
     };
+
+    viewer = {
+      get: sinon.stub().returnsThis(),
+      forEach: sinon.stub().callsArgWith(0, sequenceFlow),
+      removeMarker: sinon.spy(),
+      addMarker: sinon.spy()
+    };
+    getBpmnViewer = sinon.stub().returns(viewer);
+
+    findSequenceFlowBetweenGatewayAndActivity = sinon.stub().returns(sequenceFlow);
+    __set__('findSequenceFlowBetweenGatewayAndActivity', findSequenceFlowBetweenGatewayAndActivity);
 
     StatisticChart = createMockComponent('StatisticChart');
     __set__('StatisticChart', StatisticChart);
@@ -40,12 +62,13 @@ describe('<Statistics>', () => {
     leaveGatewayAnalysisMode = sinon.spy();
     __set__('leaveGatewayAnalysisMode', leaveGatewayAnalysisMode);
 
-    ({node, update} = mountTemplate(<Statistics />));
+    ({node, update} = mountTemplate(<Statistics getBpmnViewer={getBpmnViewer} />));
   });
 
   afterEach(() => {
     __ResetDependency__('leaveGatewayAnalysisMode');
     __ResetDependency__('StatisticChart');
+    __ResetDependency__('findSequenceFlowBetweenGatewayAndActivity');
   });
 
   it('should not have the open class if gateway is not set', () => {
@@ -80,5 +103,21 @@ describe('<Statistics>', () => {
     update(openedState);
 
     expect(node.textContent).to.contain('StatisticChart');
+  });
+
+  it('should highlight sequence flows on hover', () => {
+    update(openedState);
+
+    StatisticChart.getAttribute('chartConfig').onHover(true)({}, 0);
+
+    expect(viewer.addMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
+  });
+
+  it('should clear all highlights on any hover action', () => {
+    update(openedState);
+
+    StatisticChart.getAttribute('chartConfig').onHover(false)({}, 0);
+
+    expect(viewer.removeMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
   });
 });
