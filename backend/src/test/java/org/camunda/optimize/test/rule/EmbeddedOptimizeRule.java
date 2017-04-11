@@ -20,6 +20,8 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -67,6 +69,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   protected void starting(Description description) {
+    startOptimize();
+  }
+
+  public void startOptimize() {
     if (camundaOptimize == null) {
       camundaOptimize = new TestEmbeddedCamundaOptimize(contextLocation);
       init();
@@ -130,10 +136,20 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return properties.getProperty("camunda.optimize.test.embedded-optimize.process-definition");
   }
 
-  public void resetImportStartIndex() {
+  public List<Integer> getImportIndexes() {
+    List<Integer> indexes = new LinkedList<>();
+    for (ImportService importService : getServiceProvider().getServices()) {
+      indexes.add(importService.getImportStartIndex());
+    }
+    return indexes;
+  }
+
+  public void resetImportStartIndexes() {
+    getJobExecutor().startExecutingImportJobs();
     for (ImportService importService : getServiceProvider().getServices()) {
       importService.resetImportStartIndex();
     }
+    getJobExecutor().stopExecutingImportJobs();
   }
 
   public void initializeSchema() {

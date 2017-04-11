@@ -26,7 +26,7 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,8 +80,7 @@ public class ActivityImportServiceTest {
 
   private void ensureThatAJobWithCorrectIdWasCreated() throws InterruptedException {
     ArgumentCaptor<EventImportJob> eventCaptor = ArgumentCaptor.forClass(EventImportJob.class);
-    verify(importJobExecutor, times(2)).executeImportJob(eventCaptor.capture());
-    assertThat(eventCaptor.getAllValues().size(), is(2));
+    verify(importJobExecutor, atLeast(1)).executeImportJob(eventCaptor.capture());
     assertThat(eventCaptor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
     EventDto eventDto = eventCaptor.getAllValues().get(0).getEntitiesToImport().get(0);
     assertThat(eventDto.getId(), is(TEST_ID));

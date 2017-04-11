@@ -1,6 +1,8 @@
 package org.camunda.optimize.test.factory;
 
 import org.camunda.optimize.service.util.ConfigurationService;
+import org.elasticsearch.action.get.GetRequestBuilder;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -8,14 +10,15 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.mockito.AdditionalMatchers;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -33,14 +36,24 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
 
   @Override
   public TransportClient getObject() throws Exception {
-    TransportClient transportClientMock = Mockito.mock(TransportClient.class);
-    SearchRequestBuilder optimizeSearchRequestBuilder = Mockito.mock(SearchRequestBuilder.class);
+    TransportClient transportClientMock = mock(TransportClient.class);
+    SearchRequestBuilder optimizeSearchRequestBuilder = mock(SearchRequestBuilder.class);
     when(transportClientMock.prepareSearch(configurationService.getOptimizeIndex())).thenReturn(optimizeSearchRequestBuilder);
 
     setUpSearchRequestBuilderForAuthenticationTest(optimizeSearchRequestBuilder);
     setUpSearchRequestBuilderForImportTests(optimizeSearchRequestBuilder);
+    setUpGetRequestBuilderForWriterTests(transportClientMock);
 
     return transportClientMock;
+  }
+
+  private void setUpGetRequestBuilderForWriterTests(TransportClient transportClientMock) {
+    GetResponse response = mock(GetResponse.class);
+    GetRequestBuilder builder = mock(GetRequestBuilder.class);
+    when(transportClientMock.prepareGet(anyString(), anyString(), anyString())).thenReturn(builder);
+    when(builder.setRealtime(anyBoolean())).thenReturn(builder);
+    when(builder.get()).thenReturn(response);
+    when(response.isExists()).thenReturn(false);
   }
 
   private void setUpSearchRequestBuilderForAuthenticationTest(SearchRequestBuilder positiveAuthenticationSearch) {
@@ -54,8 +67,8 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
   }
 
   private SearchResponse setUpSearchResponse() {
-    SearchResponse responseWithOneHit = Mockito.mock(SearchResponse.class);
-    SearchHits searchHitsMock = Mockito.mock(SearchHits.class);
+    SearchResponse responseWithOneHit = mock(SearchResponse.class);
+    SearchHits searchHitsMock = mock(SearchHits.class);
     when(searchHitsMock.getTotalHits()).thenReturn(1L);
     when(searchHitsMock.totalHits()).thenReturn(1L);
     when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);
@@ -63,7 +76,7 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
   }
 
   private void setUpSearchRequestBuilderForImportTests(SearchRequestBuilder builder) {
-    SearchRequestBuilder newBuilder = Mockito.mock(SearchRequestBuilder.class);
+    SearchRequestBuilder newBuilder = mock(SearchRequestBuilder.class);
     when(
       builder.setTypes(AdditionalMatchers.not(eq(configurationService.getElasticSearchUsersType())))
     ).thenReturn(newBuilder);
@@ -75,8 +88,8 @@ public class MockTransportClientFactory implements FactoryBean<TransportClient> 
   }
 
   private SearchResponse createImportTestSearchResponse() {
-    SearchResponse responseWithOneHit = Mockito.mock(SearchResponse.class);
-    SearchHits searchHitsMock = Mockito.mock(SearchHits.class);
+    SearchResponse responseWithOneHit = mock(SearchResponse.class);
+    SearchHits searchHitsMock = mock(SearchHits.class);
     SearchHit[] searchHits = {};
     when(searchHitsMock.getTotalHits()).thenReturn(0L);
     when(responseWithOneHit.getHits()).thenReturn(searchHitsMock);

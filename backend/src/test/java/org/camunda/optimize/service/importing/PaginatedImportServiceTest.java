@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
-import org.camunda.optimize.service.importing.job.ImportJob;
+import org.camunda.optimize.service.importing.job.impl.EventImportJob;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.junit.Before;
 import org.junit.Rule;
@@ -22,11 +22,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -94,12 +96,11 @@ public class PaginatedImportServiceTest {
     // then
     verify(engineEntityFetcher, times(4))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
-    ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
-    verify(importJobExecutor, times(6)).executeImportJob(captor.capture());
-    assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(4).getEntitiesToImport().size(), is(1));
-
+    List<EventImportJob> eventImportJobs = getEventImportJobs();
+    assertThat(eventImportJobs.size(), is(3));
+    assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(2));
+    assertThat(eventImportJobs.get(1).getEntitiesToImport().size(), is(2));
+    assertThat(eventImportJobs.get(2).getEntitiesToImport().size(), is(1));
   }
 
   @Test
@@ -124,11 +125,11 @@ public class PaginatedImportServiceTest {
     // then
     verify(engineEntityFetcher, times(5))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
-    ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
-    verify(importJobExecutor, times(6)).executeImportJob(captor.capture());
-    assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(4).getEntitiesToImport().size(), is(1));
+    List<EventImportJob> eventImportJobs = getEventImportJobs();
+    assertThat(eventImportJobs.size(), is(3));
+    assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(2));
+    assertThat(eventImportJobs.get(1).getEntitiesToImport().size(), is(2));
+    assertThat(eventImportJobs.get(2).getEntitiesToImport().size(), is(1));
   }
 
   @Test
@@ -154,11 +155,24 @@ public class PaginatedImportServiceTest {
     // then
     verify(engineEntityFetcher, times(5))
       .fetchHistoricActivityInstances(anyInt(), anyInt());
-    ArgumentCaptor<ImportJob> captor = ArgumentCaptor.forClass(ImportJob.class);
-    verify(importJobExecutor, times(6)).executeImportJob(captor.capture());
-    assertThat(captor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
-    assertThat(captor.getAllValues().get(2).getEntitiesToImport().size(), is(2));
-    assertThat(captor.getAllValues().get(4).getEntitiesToImport().size(), is(2));
+    List<EventImportJob> eventImportJobs = getEventImportJobs();
+    assertThat(eventImportJobs.size(), is(3));
+    assertThat(eventImportJobs.get(0).getEntitiesToImport().size(), is(1));
+    assertThat(eventImportJobs.get(1).getEntitiesToImport().size(), is(2));
+    assertThat(eventImportJobs.get(2).getEntitiesToImport().size(), is(2));
+  }
+
+  private List<EventImportJob> getEventImportJobs() throws InterruptedException {
+    ArgumentCaptor<EventImportJob> captor = ArgumentCaptor.forClass(EventImportJob.class);
+    verify(importJobExecutor, atLeast(3)).executeImportJob(captor.capture());
+    List<EventImportJob> eventImportJobs = new LinkedList<>();
+    for (int i=0; i<captor.getAllValues().size(); i++) {
+      Object value = captor.getAllValues().get(i);
+      if (value instanceof EventImportJob) {
+        eventImportJobs.add((EventImportJob) value);
+      }
+    }
+    return eventImportJobs;
   }
 
   private List<HistoricActivityInstanceEngineDto> setupInputData() {

@@ -56,6 +56,8 @@ public class ConfigurationService {
   private String processDefinitionXmlType;
   @Value("${camunda.optimize.es.users.type}")
   private String elasticSearchUsersType;
+  @Value("${camunda.optimize.es.importIndex.type}")
+  private String importIndexType;
 
   @Value("${camunda.optimize.engine.rest}")
   private String engineRestApiEndpoint;
@@ -260,5 +262,9 @@ public class ConfigurationService {
 
   public boolean isEngineConnected() {
     return engineConnected;
+  }
+
+  public String getImportIndexType() {
+    return importIndexType;
   }
 }

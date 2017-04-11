@@ -65,4 +65,9 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
     optimizeDto.setVersion(dto.getVersion());
     return optimizeDto;
   }
+
+  @Override
+  protected String getElasticsearchType() {
+    return configurationService.getProcessDefinitionType();
+  }
 }

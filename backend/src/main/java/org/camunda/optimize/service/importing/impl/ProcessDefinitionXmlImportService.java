@@ -64,4 +64,8 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
     return optimizeDto;
   }
 
+  @Override
+  protected String getElasticsearchType() {
+    return configurationService.getProcessDefinitionXmlType();
+  }
 }

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class BranchAnalysisImportJob extends ImportJob<EventDto> {
 
-    private Logger logger = LoggerFactory.getLogger(BranchAnalysisImportJob.class);
+  private Logger logger = LoggerFactory.getLogger(BranchAnalysisImportJob.class);
   private BranchAnalysisDataWriter branchAnalysisDataWriter;
 
   public BranchAnalysisImportJob(BranchAnalysisDataWriter branchAnalysisDataWriter) {

@@ -29,6 +29,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
@@ -172,6 +173,54 @@ public class ImportIT  {
     //then only the start event should be imported as the user task is not finished yet
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getEventType());
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
+  }
+
+  @Test
+  public void importIndexIsZeroIfNothingIsImportedYet() {
+    // when
+    List<Integer> indexes = embeddedOptimizeRule.getImportIndexes();
+
+    // then
+    for (Integer index : indexes) {
+      assertThat(index, is(0));
+    }
+  }
+
+  @Test
+  public void latestImportIndexAfterRestartOfOptimize() {
+    // given
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+    List<Integer> indexes = embeddedOptimizeRule.getImportIndexes();
+
+    // then
+    for (Integer index : indexes) {
+      assertThat(index, greaterThan(0));
+    }
+  }
+
+  @Test
+  public void itIsPossibleToResetTheImportIndex() {
+    // given
+    deployAndStartSimpleServiceTask();
+    embeddedOptimizeRule.importEngineEntities();
+    embeddedOptimizeRule.resetImportStartIndexes();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeRule.startOptimize();
+    List<Integer> indexes = embeddedOptimizeRule.getImportIndexes();
+
+    // then
+    for (Integer index : indexes) {
+      assertThat(index, is(0));
+    }
   }
 
   @Test

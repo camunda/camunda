@@ -81,4 +81,8 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
     createEvent.setDurationInMs(dto.getDurationInMillis());
   }
 
+  @Override
+  protected String getElasticsearchType() {
+    return configurationService.getEventType();
+  }
 }

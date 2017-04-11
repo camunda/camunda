@@ -51,7 +51,7 @@ public class MissingEntriesFinderIT {
 
     // given
     deployImportAndDeployAgainProcess();
-    embeddedOptimizeRule.resetImportStartIndex();
+    embeddedOptimizeRule.resetImportStartIndexes();
 
     // when I trigger the import a second time
     embeddedOptimizeRule.importEngineEntities();
@@ -74,12 +74,16 @@ public class MissingEntriesFinderIT {
 
     assertThat(idsResp.getHits().getTotalHits(), greaterThan(0L));
     for (SearchHit searchHitFields : idsResp.getHits().getHits()) {
-      if (searchHitFields.getType().equals(elasticSearchRule.getBranchAnalysisDataType())) {
-        assertThat(searchHitFields.getVersion(), is(3L));
-      } else {
+      if (isOfImportEntityType(searchHitFields.getType())) {
         assertThat(searchHitFields.getVersion(), is(1L));
       }
     }
+  }
+
+  private boolean isOfImportEntityType(String elasticsearchType) {
+    return elasticsearchType.equals(elasticSearchRule.getEventType()) ||
+      elasticsearchType.equals(elasticSearchRule.getProcessDefinitionType()) ||
+      elasticsearchType.equals(elasticSearchRule.getProcessDefinitionXmlType());
   }
 
   private void deployImportAndDeployAgainProcess() throws InterruptedException {

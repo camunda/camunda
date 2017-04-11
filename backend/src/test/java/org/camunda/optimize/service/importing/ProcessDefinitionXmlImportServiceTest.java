@@ -26,6 +26,7 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -83,8 +84,7 @@ public class ProcessDefinitionXmlImportServiceTest {
 
   private void ensureThatAJobWithCorrectIdWasCreated() throws InterruptedException {
     ArgumentCaptor<ProcessDefinitionXmlImportJob> procDefXmlCaptor = ArgumentCaptor.forClass(ProcessDefinitionXmlImportJob.class);
-    verify(importJobExecutor).executeImportJob(procDefXmlCaptor.capture());
-    assertThat(procDefXmlCaptor.getAllValues().size(), is(1));
+    verify(importJobExecutor, atLeast(1)).executeImportJob(procDefXmlCaptor.capture());
     assertThat(procDefXmlCaptor.getAllValues().get(0).getEntitiesToImport().size(), is(1));
     ProcessDefinitionXmlOptimizeDto procDefXmlDto = procDefXmlCaptor.getAllValues().get(0).getEntitiesToImport().get(0);
     assertThat(procDefXmlDto.getId(), is(TEST_PROCESS_DEFINITION_ID));
