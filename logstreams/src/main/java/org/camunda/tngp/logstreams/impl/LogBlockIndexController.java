@@ -26,6 +26,12 @@ import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
  */
 public class LogBlockIndexController implements Agent
 {
+    /**
+     * The default deviation is 10%. That means for blocks which are filled 90%
+     * a block index will be created.
+     */
+    public static final float DEFAULT_DEVIATION = 0.1f;
+
     private static final int ILLEGAL_ADDRESS = -1;
     protected static final int TRANSITION_SNAPSHOT = 3;
     protected static final int TRANSITION_TRUNCATE = 4;
@@ -47,11 +53,22 @@ public class LogBlockIndexController implements Agent
     protected final LogBlockIndex blockIndex;
     protected final AgentRunnerService agentRunnerService;
 
+    /**
+     * Defines the block size for which an index will be created.
+     */
     protected final int indexBlockSize;
+
+    /**
+     * The deviation which will be used in calculation of the index block size.
+     * It defines the allowable tolerance. That means if the deviation is set to 0.1f (10%),
+     * an index will be created if the block is 90 % filled.
+     */
+    protected final float deviation;
+
     protected final SnapshotStorage snapshotStorage;
     protected final SnapshotPolicy snapshotPolicy;
     protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
-    protected final ReadResultProcessor readResultProcessor = new CompleteEventsInBlockProcessor();
+    protected final CompleteAndCommittedEventsInBlockProcessor readResultProcessor = new CompleteAndCommittedEventsInBlockProcessor();
     protected final Runnable openStateRunnable;
     protected final Runnable closedStateRunnable;
 
@@ -69,8 +86,10 @@ public class LogBlockIndexController implements Agent
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
         this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
+        this.readResultProcessor.setCommitPosition(logStreamBuilder.getCommitPosition().get());
 
-        this.indexBlockSize = logStreamBuilder.getIndexBlockSize();
+        this.deviation = logStreamBuilder.getDeviation();
+        this.indexBlockSize = (int) ((float) logStreamBuilder.getIndexBlockSize() * (1f - deviation));
         this.snapshotStorage = logStreamBuilder.getSnapshotStorage();
         this.snapshotPolicy = logStreamBuilder.getSnapshotPolicy();
         this.bufferSize = logStreamBuilder.getReadBlockSize();
@@ -186,7 +205,7 @@ public class LogBlockIndexController implements Agent
                         increaseBufferSize();
                         result = 1;
                     }
-                    else if (opResult > 0)
+                    else if (opResult > currentAddress)
                     {
                         tryToCreateBlockIndex(logContext, currentAddress, opResult);
                         // set next address
@@ -201,7 +220,6 @@ public class LogBlockIndexController implements Agent
         private void tryToCreateBlockIndex(LogContext logContext, long currentAddress, long opResult)
         {
             currentBlockSize += ioBuffer.position();
-
             // if block size is greater then or equals to index block size we will create an index
             if (currentBlockSize >= indexBlockSize)
             {
@@ -348,7 +366,6 @@ public class LogBlockIndexController implements Agent
         return getStateMachine().closeAsync();
     }
 
-
     public long getNextAddress()
     {
         return nextAddress;
@@ -357,6 +374,16 @@ public class LogBlockIndexController implements Agent
     public int getIndexBlockSize()
     {
         return indexBlockSize;
+    }
+
+    public long getCommitPosition()
+    {
+        return this.readResultProcessor.getCommitPosition();
+    }
+
+    public void setCommitPosition(long commitPosition)
+    {
+        readResultProcessor.setCommitPosition(commitPosition);
     }
 
     public CompletableFuture<Void> truncate(long position)

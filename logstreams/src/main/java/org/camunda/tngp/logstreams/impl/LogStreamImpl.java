@@ -25,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
+import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
+
 /**
  * Represents the implementation of the LogStream interface.
  */
@@ -36,7 +38,6 @@ public final class LogStreamImpl implements LogStream
     private static final int DEFAULT_READ_BLOCK_SIZE = 1024;
 
     protected volatile int term = 0;
-    protected Position commitPosition;
 
     protected final String name;
     protected final LogStorage logStorage;
@@ -61,9 +62,6 @@ public final class LogStreamImpl implements LogStream
         this.agentRunnerService = logStreamBuilder.getAgentRunnerService();
 
         this.logBlockIndexController = new LogBlockIndexController(logStreamBuilder);
-
-        this.commitPosition = new AtomicLongPosition();
-        this.commitPosition.setOrdered(-1L);
 
         if (!logStreamBuilder.isLogStreamControllerDisabled())
         {
@@ -186,13 +184,13 @@ public final class LogStreamImpl implements LogStream
     @Override
     public long getCommitPosition()
     {
-        return commitPosition.get();
+        return logBlockIndexController.getCommitPosition();
     }
 
     @Override
     public void setCommitPosition(long commitPosition)
     {
-        this.commitPosition.setOrdered(commitPosition);
+        logBlockIndexController.setCommitPosition(commitPosition);
     }
 
     @Override
@@ -326,6 +324,7 @@ public final class LogStreamImpl implements LogStream
         protected AgentRunnerService agentRunnerService;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
+        protected Position commitPosition;
 
         protected String logRootPath;
         protected String logDirectory;
@@ -340,6 +339,7 @@ public final class LogStreamImpl implements LogStream
         protected int writeBufferSize = 1024 * 1024 * 16;
         protected int logSegmentSize = 1024 * 1024 * 128;
         protected int indexBlockSize = DEFAULT_INDEX_BLOCK_SIZE;
+        protected float deviation = LogBlockIndexController.DEFAULT_DEVIATION;
         protected int readBlockSize = DEFAULT_READ_BLOCK_SIZE;
         protected SnapshotPolicy snapshotPolicy;
         protected SnapshotStorage snapshotStorage;
@@ -425,6 +425,12 @@ public final class LogStreamImpl implements LogStream
             return self();
         }
 
+        public T deviation(float deviation)
+        {
+            this.deviation = deviation;
+            return self();
+        }
+
         public T logStorage(LogStorage logStorage)
         {
             this.logStorage = logStorage;
@@ -464,6 +470,12 @@ public final class LogStreamImpl implements LogStream
         public T readBlockSize(int readBlockSize)
         {
             this.readBlockSize = readBlockSize;
+            return self();
+        }
+
+        public T commitPosition(Position commitPosition)
+        {
+            this.commitPosition = commitPosition;
             return self();
         }
 
@@ -509,6 +521,16 @@ public final class LogStreamImpl implements LogStream
                 this.logBlockIndex = new LogBlockIndex(100000, (c) -> new UnsafeBuffer(ByteBuffer.allocate(c)));
             }
             return logBlockIndex;
+        }
+
+        public Position getCommitPosition()
+        {
+            if (commitPosition == null)
+            {
+                commitPosition = new AtomicLongPosition();
+                commitPosition.setOrdered(-1);
+            }
+            return commitPosition;
         }
 
         public int getMaxAppendBlockSize()
@@ -602,12 +624,18 @@ public final class LogStreamImpl implements LogStream
             return snapshotStorage;
         }
 
+        public float getDeviation()
+        {
+            return deviation;
+        }
+
         public LogStream build()
         {
             Objects.requireNonNull(getLogName(), "name");
             Objects.requireNonNull(getLogStorage(), "logStorage");
             Objects.requireNonNull(getBlockIndex(), "blockIndex");
             Objects.requireNonNull(getAgentRunnerService(), "agentRunnerService");
+            ensureFalse("deviation", deviation <= 0f || deviation > 1f);
 
             return new LogStreamImpl(this);
         }

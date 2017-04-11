@@ -66,9 +66,8 @@ public class LogBlockIndexControllerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
-
-        builder.agentRunnerService(mockAgentRunnerService)
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0)
+            .agentRunnerService(mockAgentRunnerService)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage)
             .snapshotStorage(mockSnapshotStorage)
@@ -146,7 +145,7 @@ public class LogBlockIndexControllerTest
             .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockLogStorage.read(any(ByteBuffer.class), eq(READ_BLOCK_SIZE + LOG_ADDRESS), any(ReadResultProcessor.class)))
-            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+            .thenAnswer(readTwoEvents(2 * READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
 
         when(mockSnapshotPolicy.apply(LOG_POSITION)).thenReturn(true);
 
@@ -230,6 +229,70 @@ public class LogBlockIndexControllerTest
 
         // idx for block should be created
         verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
+    }
+
+    @Test
+    public void shouldAddHalfFullBlockForHalfDeviation() throws Exception
+    {
+        // given log block index controller with half deviation
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0)
+            .agentRunnerService(mockAgentRunnerService)
+            .logStreamControllerDisabled(true)
+            .logStorage(mockLogStorage)
+            .snapshotStorage(mockSnapshotStorage)
+            .snapshotPolicy(mockSnapshotPolicy)
+            .logBlockIndex(mockBlockIndex)
+            .readBlockSize(READ_BLOCK_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .deviation(0.5f);
+
+        final LogBlockIndexController blockIndexController = new LogBlockIndexController(builder);
+
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
+        when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        blockIndexController.openAsync();
+        // -> opening
+        blockIndexController.doWork();
+        // -> open
+        blockIndexController.doWork();
+        blockIndexController.doWork();
+
+        // idx for block should be created
+        verify(mockBlockIndex).addBlock(LOG_POSITION, LOG_ADDRESS);
+    }
+
+    @Test
+    public void shouldNotAddHalfFullBlockForQuarterDeviation() throws Exception
+    {
+        // given log block index controller with half deviation
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0)
+            .agentRunnerService(mockAgentRunnerService)
+            .logStreamControllerDisabled(true)
+            .logStorage(mockLogStorage)
+            .snapshotStorage(mockSnapshotStorage)
+            .snapshotPolicy(mockSnapshotPolicy)
+            .logBlockIndex(mockBlockIndex)
+            .readBlockSize(READ_BLOCK_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE)
+            .deviation(0.25f);
+
+        final LogBlockIndexController blockIndexController = new LogBlockIndexController(builder);
+
+        final ByteBuffer buffer = ByteBuffer.allocate(READ_BLOCK_SIZE);
+        when(mockLogStorage.read(eq(buffer), eq(LOG_ADDRESS), any(ReadResultProcessor.class)))
+            .thenAnswer(readTwoEvents(READ_BLOCK_SIZE + LOG_ADDRESS, READ_BLOCK_SIZE));
+
+        blockIndexController.openAsync();
+        // -> opening
+        blockIndexController.doWork();
+        // -> open
+        blockIndexController.doWork();
+        blockIndexController.doWork();
+
+        // idx for block should be created
+        verify(mockBlockIndex, never()).addBlock(LOG_POSITION, LOG_ADDRESS);
     }
 
     @Test
@@ -507,13 +570,7 @@ public class LogBlockIndexControllerTest
         return (InvocationOnMock invocationOnMock) ->
         {
             final ByteBuffer argBuffer = (ByteBuffer) invocationOnMock.getArguments()[0];
-            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
-            unsafeBuffer.wrap(argBuffer);
-
-            unsafeBuffer.putLong(lengthOffset(0), 911);
-            unsafeBuffer.putLong(positionOffset(messageOffset(0)), LOG_POSITION);
-
-            argBuffer.position(blockSize);
+            putEventToBuffer(blockSize, argBuffer, LOG_POSITION);
             return nextAddr;
         };
     }
@@ -523,15 +580,19 @@ public class LogBlockIndexControllerTest
         return (InvocationOnMock invocationOnMock) ->
         {
             final ByteBuffer argBuffer = (ByteBuffer) invocationOnMock.getArguments()[0];
-            final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
-            unsafeBuffer.wrap(argBuffer);
-
-            // set position
-            unsafeBuffer.putLong(lengthOffset(0), 911);
-            unsafeBuffer.putLong(positionOffset(messageOffset(0)), TRUNCATE_POSITION);
-
-            argBuffer.position(blockSize);
+            putEventToBuffer(blockSize, argBuffer, TRUNCATE_POSITION);
             return nextAddr;
         };
+    }
+
+    private void putEventToBuffer(int blockSize, ByteBuffer argBuffer, long logPosition)
+    {
+        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(0, 0);
+        unsafeBuffer.wrap(argBuffer);
+
+        unsafeBuffer.putLong(lengthOffset(0), 911);
+        unsafeBuffer.putLong(positionOffset(messageOffset(0)), logPosition);
+
+        argBuffer.position(blockSize);
     }
 }
