@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.hashindex.buffer.BufferCache;
 import org.camunda.tngp.hashindex.buffer.BufferCacheMetrics;
@@ -18,6 +19,13 @@ import org.camunda.tngp.hashindex.store.IndexStore;
  */
 public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 {
+    /**
+     * Represents the maximum index size. The index is limited to 2^27, because
+     * with the given index size we have to create an buffer of longs. Since
+     * the data type long has a size of 8 bytes and the index size has to fit into an integer
+     * the 2^27 is the last possible power of two.
+     */
+    public static final int MAX_INDEX_SIZE = 1 << 27;
     private static final int BUFFER_CACHE_SIZE = Integer.parseInt(System.getProperty("org.camunda.tngp.hashindex.bufferCacheSize", "32"));
 
     protected final IndexStore indexStore;
@@ -124,23 +132,16 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
 
     protected int getIndexSizePowerOfTwo(int indexSize)
     {
-        final boolean isPowerOfTwo = (indexSize & (indexSize - 1)) == 0;
-        if (!isPowerOfTwo)
+        if (!BitUtil.isPowerOfTwo(indexSize))
         {
-            final int maxPowerOfTwo = 1 << 27;
+            final int maxPowerOfTwo = MAX_INDEX_SIZE;
             if (indexSize > maxPowerOfTwo)
             {
                 indexSize = maxPowerOfTwo;
             }
             else
             {
-                --indexSize;
-                indexSize |= indexSize >> 1;
-                indexSize |= indexSize >> 2;
-                indexSize |= indexSize >> 4;
-                indexSize |= indexSize >> 8;
-                indexSize |= indexSize >> 16;
-                ++indexSize;
+                indexSize = BitUtil.findNextPositivePowerOfTwo(indexSize);
             }
         }
         return indexSize;

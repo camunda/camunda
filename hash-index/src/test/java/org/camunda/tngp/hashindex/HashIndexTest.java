@@ -1,14 +1,16 @@
 package org.camunda.tngp.hashindex;
 
-import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
+import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.hashindex.types.LongKeyHandler;
 import org.camunda.tngp.hashindex.types.LongValueHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 /**
  *
@@ -16,12 +18,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HashIndexTest
 {
 
-    private FileChannelIndexStore indexStore;
+    @Mock
+    private IndexStore indexStore;
 
     @Before
     public void init()
     {
-        indexStore = FileChannelIndexStore.tempFileIndexStore();
+        initMocks(this);
     }
 
     @After
