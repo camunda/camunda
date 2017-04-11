@@ -4,3 +4,4 @@ export {Router, getLastRoute} from './Router';
 export {RouteView} from './RouteView';
 export {StaticLink} from './StaticLink';
 export {Link} from './Link';
+export {addRouteReducer} from './addRouteReducer';

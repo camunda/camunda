@@ -13,18 +13,35 @@ export function getRouter() {
 
 function createNewRouter() {
   let routes = [];
+  let listeners = [];
+  let listenersWaiting = false;
   const history = $window.history;
   const router = {
     addRoutes,
     goTo,
     getUrl,
     getRouteReducer,
-    onUrlChange
+    onUrlChange,
+    addHistoryListener,
+    fireHistoryListeners
   };
 
   $window.onpopstate = onUrlChange;
 
   return router;
+
+  function addHistoryListener(listener) {
+    listeners.push(listener);
+
+    return () => listeners = listeners.filter(other => other !== listener);
+  }
+
+  function fireHistoryListeners(route) {
+    if (listenersWaiting) {
+      listenersWaiting = false;
+      listeners.forEach(listener => listener(route));
+    }
+  }
 
   function onUrlChange() {
     const path = $document.location.pathname;
@@ -36,6 +53,7 @@ function createNewRouter() {
 
       if (params) {
         dispatchAction(createRouteAction(name, params));
+        listenersWaiting = true;
 
         break;
       }
@@ -51,6 +69,7 @@ function createNewRouter() {
   }
 
   function goTo(routeName, params, replace) {
+    const {defaults} = findRoute(routeName);
     const url = getUrl(routeName, params);
 
     if (!url) {
@@ -63,7 +82,10 @@ function createNewRouter() {
       history.pushState(null, null, url);
     }
 
-    dispatchAction(createRouteAction(routeName, params));
+    dispatchAction(createRouteAction(routeName, {
+      ...defaults,
+      ...params
+    }));
   }
 
   function getUrl(routeName, params) {
@@ -92,6 +114,7 @@ function createRoute({name, url, test, construct, reducer, defaults = {}}) {
     name,
     url,
     reducer,
+    defaults,
     test: typeof test === 'function' ? test : createUrlTestForRoute(url, defaults),
     construct: typeof construct === 'function' ? construct : createUrlConstructForRoute(url, defaults)
   };

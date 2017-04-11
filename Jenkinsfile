@@ -38,16 +38,6 @@ pipeline {
         ]) {}
       }
     }
-    stage('Unit') {
-      steps {
-        sh 'mvn -s settings.xml clean install'
-      }
-      post {
-        always {
-          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-        }
-      }
-    }
     stage('Linting') {
       steps {
         sh '''
@@ -57,17 +47,15 @@ pipeline {
         '''
       }
     }
-    stage('IT') {
+    stage('Unit') {
       steps {
-        sh 'mvn -s settings.xml -Pit  -f ' + backendModuleName + '/pom.xml clean verify'
+        sh 'mvn -s settings.xml clean install'
       }
       post {
         always {
-          junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-          archiveArtifacts artifacts:  backendModuleName + '/target/elasticsearch*/logs/*.log', onlyIfSuccessful: false
+          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
         }
       }
-
     }
     stage('E2E') {
       steps {
@@ -81,6 +69,18 @@ pipeline {
           archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
         }
       }
+    }
+    stage('IT') {
+      steps {
+        sh 'mvn -s settings.xml -Pit  -f ' + backendModuleName + '/pom.xml clean verify'
+      }
+      post {
+        always {
+          junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
+          archiveArtifacts artifacts:  backendModuleName + '/target/elasticsearch*/logs/*.log', onlyIfSuccessful: false
+        }
+      }
+
     }
     stage('Docs') {
       steps {

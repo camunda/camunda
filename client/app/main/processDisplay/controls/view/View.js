@@ -3,6 +3,7 @@ import {Select, Option} from 'widgets';
 import {Link} from 'router';
 import {getDefinitionId} from 'main/processDisplay/service';
 import {getView} from './service';
+import {getLastRoute} from 'router';
 
 export function View({onViewChanged}) {
   return <td>
@@ -34,9 +35,12 @@ export function View({onViewChanged}) {
 
   function createRouteSelectorForView(view) {
     return () => {
+      const {params: {filter}} = getLastRoute();
+
       return {
         name: 'processDisplay',
         params: {
+          filter,
           view: view,
           definition: getDefinitionId()
         }

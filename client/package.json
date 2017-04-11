@@ -81,6 +81,7 @@
     "deep-copy": "^1.2.0",
     "heatmap.js": "^2.0.5",
     "jquery": "2.2.4",
+    "jsurl": "^0.1.5",
     "lodash.isequal": "^4.4.0",
     "redux": "^3.6.0"
   }

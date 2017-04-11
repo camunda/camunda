@@ -27,8 +27,14 @@ export const Dropdown = withSockets(({sockets: {label, list}}) => {
 export function DropdownItem({children, listener}) {
   return <li>
     <a href="#">
-      <OnEvent event={['click']} listener={listener} />
+      <OnEvent event="click" listener={onClick} />
       <Children children={children} />
     </a>
   </li>;
+
+  function onClick(params) {
+    params.event.preventDefault();
+
+    listener(params);
+  }
 }

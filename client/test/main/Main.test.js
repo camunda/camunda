@@ -32,7 +32,7 @@ describe('<Main>', () => {
     ({node, update} = mountTemplate(<Main />));
 
     router = getRouter();
-    sinon.spy(router, 'goTo');
+    sinon.stub(router, 'goTo');
   });
 
   afterEach(() => {

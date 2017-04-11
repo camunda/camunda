@@ -4,12 +4,14 @@ import {post} from 'http';
 import {getFilterQuery} from 'utils';
 import {addNotification} from 'notifications';
 import {getDefinitionId} from '../service';
+import {getFilter} from 'main/processDisplay/controls/filter';
 
 export function resetStatisticData() {
   dispatchAction(createResetCorrelationAction());
 }
 
-export function loadStatisticData({endEvent, gateway}, {filter}) {
+export function loadStatisticData({endEvent, gateway}) {
+  const filter = getFilter();
   const query = {
     end: endEvent,
     gateway,

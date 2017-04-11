@@ -1,32 +1,29 @@
-import {jsx, Scope, List, Match, Case} from 'view-utils';
-import {onNextTick} from 'utils';
-import {DateFilter} from './DateFilter';
-import {deleteFilter as deleteFilterService} from './service';
+import {jsx, Scope, DESTROY_EVENT} from 'view-utils';
+import {FilterBar} from './FilterBar';
+import {CreateFilter} from './CreateFilter';
+import {getFilter} from './service';
+import {onHistoryStateChange} from './store';
 
-export function Filter({onFilterDeleted}) {
-  return <td>
-    <ul className="list-group filter-list">
-      <Scope selector="filter">
-        <List>
-          <li className="list-group-item">
-            <Match>
-              <Case predicate={isType('startDate')}>
-                <DateFilter selector="data" onDelete={deleteFilter}/>
-              </Case>
-            </Match>
-          </li>
-        </List>
-      </Scope>
-    </ul>
-  </td>;
+export const Filter = ({onFilterChanged}) => {
+  const template = <Scope selector={createFilterState}>
+    <FilterBar onFilterDeleted={onFilterChanged}  />
+    <CreateFilter onFilterAdded={onFilterChanged}  />
+  </Scope>;
 
-  function deleteFilter({state}) {
-    deleteFilterService(state);
+  return (node, eventsBus) => {
+    const removeHistoryListener = onHistoryStateChange(onFilterChanged);
 
-    onNextTick(onFilterDeleted);
+    eventsBus.on(DESTROY_EVENT, removeHistoryListener);
+
+    return template(node, eventsBus);
+  };
+
+  function createFilterState(state) {
+    const filter = getFilter();
+
+    return {
+      ...state,
+      filter
+    };
   }
-
-  function isType(targetType) {
-    return ({type}) => type === targetType;
-  }
-}
+};

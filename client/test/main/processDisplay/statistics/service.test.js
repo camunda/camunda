@@ -18,6 +18,7 @@ describe('Statistics service', () => {
   let createLoadCorrelationAction;
   let createLoadCorrelationResultAction;
   let createResetCorrelationAction;
+  let getFilter;
 
   const LOAD_ACTION = 'LOAD_CORRELATION';
   const RESULT_ACTION = 'CORRELATION_RESULT';
@@ -66,6 +67,9 @@ describe('Statistics service', () => {
 
     createResetCorrelationAction = sinon.stub().returns(RESET_ACTION);
     __set__('createResetCorrelationAction', createResetCorrelationAction);
+
+    getFilter = sinon.stub().returns([]);
+    __set__('getFilter', getFilter);
   });
 
   afterEach(() => {
@@ -76,6 +80,7 @@ describe('Statistics service', () => {
     __ResetDependency__('createLoadCorrelationAction');
     __ResetDependency__('createLoadCorrelationResultAction');
     __ResetDependency__('createResetCorrelationAction');
+    __ResetDependency__('getFilter');
   });
 
   describe('reset statistic data', () => {
@@ -89,16 +94,11 @@ describe('Statistics service', () => {
   describe('load statistic data', () => {
     let post;
     let selection;
-    let controls;
 
     beforeEach(() => {
       selection = {
         endEvent: 'EndEvent_0ip3gsn',
         gateway: 'Gateway_2jc2dh3'
-      };
-
-      controls = {
-        filter: []
       };
     });
 
@@ -111,7 +111,7 @@ describe('Statistics service', () => {
         }));
         __set__('post', post);
 
-        loadStatisticData(selection, controls);
+        loadStatisticData(selection);
         Promise.runAll();
       });
 
@@ -146,7 +146,7 @@ describe('Statistics service', () => {
         post = sinon.stub().returns(Promise.reject('I AM ERROR'));
         __set__('post', post);
 
-        loadStatisticData(selection, controls);
+        loadStatisticData(selection);
         Promise.runAll();
       });
 

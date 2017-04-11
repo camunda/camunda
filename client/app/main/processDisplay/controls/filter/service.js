@@ -1,15 +1,23 @@
-import {dispatchAction} from 'view-utils';
-import {createDeleteFilterAction,
-        createCreateStartDateFilterAction} from './reducer';
+import {getLastRoute} from 'router';
+import {
+  createDeleteFilterAction, createCreateStartDateFilterAction
+} from './reducer';
+import {dispatch, parse} from './store';
 
 export function deleteFilter(filter) {
-  dispatchAction(createDeleteFilterAction(filter));
+  dispatch(createDeleteFilterAction(filter));
 }
 
 export function createStartDateFilter(startDate, endDate) {
-  dispatchAction(createCreateStartDateFilterAction(startDate, endDate));
+  dispatch(createCreateStartDateFilterAction(startDate, endDate));
 }
 
 export function formatDate(dateObj) {
   return dateObj.toISOString().substr(0, 10);
+}
+
+export function getFilter() {
+  const {params} = getLastRoute();
+
+  return parse(params);
 }

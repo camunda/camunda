@@ -1,4 +1,7 @@
 import {withChildren, withSelector} from 'view-utils';
+import {getRouter} from './service';
+
+const router = getRouter();
 
 let lastRoute;
 
@@ -10,6 +13,7 @@ function RouterRoot() {
   return () => {
     return ({route}) => {
       lastRoute = route;
+      router.fireHistoryListeners(route);
     };
   };
 }

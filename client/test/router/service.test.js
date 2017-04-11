@@ -64,6 +64,31 @@ describe('Router service', () => {
       expect(router2).to.equal(router);
     });
 
+    describe('addHistoryListener and fireHistoryListeners', () => {
+      let listener;
+
+      beforeEach(() => {
+        listener = sinon.spy();
+
+        router.addHistoryListener(listener);
+      });
+
+      it('should not fire listener when url did not change', () => {
+        router.fireHistoryListeners();
+
+        expect(listener.called)
+          .to.eql(false, 'expected listener to not have been called');
+      });
+
+      it('should fire listener when url did change', () => {
+        router.onUrlChange();
+        router.fireHistoryListeners();
+
+        expect(listener.called)
+          .to.eql(true, 'expected listener to have been called');
+      });
+    });
+
     describe('with default parameters', () => {
       let route;
 

@@ -1,11 +1,30 @@
 const {expect} = require('chai');
 
-describe('Gateway Analysis', () => {
+describe('Branch Analysis', () => {
   afterEach(() => {
     browser.localStorage('DELETE');
   });
 
   it('should open the analysis diagram section', () => {
+    openBranchAnalysis();
+    selectGatewayAndEndEvent();
+
+    // EXPECT STATISTICS
+    browser.waitForVisible('.statisticsContainer');
+    expect(browser.isVisible('.statisticsContainer')).to.eql(true);
+  });
+
+  it('should preserve branch analysis section after refresh', () => {
+    openBranchAnalysis();
+    browser.refresh();
+    selectGatewayAndEndEvent();
+
+    // EXPECT STATISTICS
+    browser.waitForVisible('.statisticsContainer');
+    expect(browser.isVisible('.statisticsContainer')).to.eql(true);
+  });
+
+  function openBranchAnalysis() {
     // LOGIN
     browser.url('/');
     browser.waitForEnabled('input[type="text"]');
@@ -21,7 +40,9 @@ describe('Gateway Analysis', () => {
     browser.waitForExist('.dropdown*=None');
     browser.click('.dropdown*=None');
     browser.click('a*=Branch');
+  }
 
+  function selectGatewayAndEndEvent() {
     // SELECT PROCESS DEFINITION
     const endEventSelector = '.djs-element.djs-shape.highlight[data-element-id*="EndEvent"]';
     const gatewaySelector = '.djs-element.djs-shape.highlight[data-element-id*="Gateway"]';
@@ -31,9 +52,5 @@ describe('Gateway Analysis', () => {
     // CLICK THE END EVENT AND THE GATEWAY
     browser.click(endEventSelector);
     browser.click(gatewaySelector);
-
-    // EXPECT STATISTICS
-    browser.waitForVisible('.statisticsContainer');
-    expect(browser.isVisible('.statisticsContainer')).to.eql(true);
-  });
+  }
 });

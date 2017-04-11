@@ -7,27 +7,28 @@ import {createControls, __set__, __ResetDependency__} from 'main/processDisplay/
 describe('<Controls>', () => {
   let Controls;
   let Filter;
-  let CreateFilter;
   let View;
   let AnalysisSelection;
   let onCriteriaChanged;
   let node;
   let update;
   let getView;
+  let getFilter;
 
   beforeEach(() => {
     Filter = createMockComponent('Filter');
-    CreateFilter = createMockComponent('CreateFilter');
     View = createMockComponent('View');
     AnalysisSelection = createMockComponent('AnalysisSelection');
 
     __set__('Filter', Filter);
-    __set__('CreateFilter', CreateFilter);
     __set__('View', View);
     __set__('AnalysisSelection', AnalysisSelection);
 
     getView = sinon.stub().returns('view');
     __set__('getView', getView);
+
+    getFilter = sinon.stub().returns('filter');
+    __set__('getFilter', getFilter);
 
     onCriteriaChanged = sinon.spy();
 
@@ -38,10 +39,10 @@ describe('<Controls>', () => {
 
   afterEach(() => {
     __ResetDependency__('Filter');
-    __ResetDependency__('CreateFilter');
     __ResetDependency__('View');
     __ResetDependency__('AnalysisSelection');
     __ResetDependency__('getView');
+    __ResetDependency__('getFilter');
   });
 
   it('should call the change callback initially', () => {
@@ -52,14 +53,6 @@ describe('<Controls>', () => {
 
   it('should display Filter', () => {
     expect(node).to.contain.text(Filter.text);
-  });
-
-  it('should display CreateFilter', () => {
-    expect(node).to.contain.text(CreateFilter.text);
-  });
-
-  it('should pass onFilterAdded to CreateFilter', () => {
-    expect(CreateFilter.getAttribute('onFilterAdded')).to.be.ok;
   });
 
   it('should display View', () => {
@@ -92,27 +85,21 @@ describe('<Controls>', () => {
 
   describe('onViewChanged', () => {
     let onViewChanged;
-    let state;
 
     beforeEach(() => {
       onViewChanged = View.getAttribute('onViewChanged');
-      state = {
-        filter: [],
-        view: 'view'
-      };
-      update(state);
     });
 
     it('should create filter object and call onCriteriaChanged with it', () => {
-      onViewChanged();
+      onViewChanged('view');
 
       expect(onCriteriaChanged.called).to.eql(true, 'expected onCriteriaChanged to be called');
       expect(
         onCriteriaChanged.calledWith({
-          query: [],
+          query: 'filter',
           view: 'view'
         })
-      ).to.eql(true, 'expected onFilterChanged to be called with right filter');
+      ).to.eql(true, 'expected onCriteriaChanged to be called with right filter');
     });
   });
 });

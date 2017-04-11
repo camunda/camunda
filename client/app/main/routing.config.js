@@ -11,7 +11,8 @@ router.addRoutes(
     name: 'processDisplay',
     url: '/process/:definition/:view',
     defaults: {
-      view: 'none'
+      view: 'none',
+      filter: '~(~)'
     }
   },
   {

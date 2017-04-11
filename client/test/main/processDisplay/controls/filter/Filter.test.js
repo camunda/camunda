@@ -1,39 +1,74 @@
-import {jsx} from 'view-utils';
-import {mountTemplate, createMockComponent} from 'testHelpers';
 import {expect} from 'chai';
+import sinon from 'sinon';
+import {mountTemplate, createMockComponent} from 'testHelpers';
+import {jsx, DESTROY_EVENT} from 'view-utils';
 import {Filter, __set__, __ResetDependency__} from 'main/processDisplay/controls/filter/Filter';
 
 describe('<Filter>', () => {
+  let CreateFilter;
+  let FilterBar;
+  let getFilter;
+  let onFilterChanged;
+  let onHistoryStateChange;
+  let removeHistoryListener;
   let node;
   let update;
-  let DateFilter;
+  let eventsBus;
 
   beforeEach(() => {
-    DateFilter = createMockComponent('DateFilter');
-    __set__('DateFilter', DateFilter);
+    CreateFilter = createMockComponent('CreateFilter');
+    __set__('CreateFilter', CreateFilter);
 
-    ({node, update} = mountTemplate(<Filter />));
+    FilterBar = createMockComponent('FilterBar');
+    __set__('FilterBar', FilterBar);
+
+    getFilter = sinon.stub().returns('filter');
+    __set__('getFilter', getFilter);
+
+    removeHistoryListener = sinon.spy();
+
+    onHistoryStateChange = sinon.stub().returns(removeHistoryListener);
+    __set__('onHistoryStateChange', onHistoryStateChange);
+
+    onFilterChanged = sinon.spy();
+
+    ({node, update, eventsBus} = mountTemplate(<Filter onFilterChanged={onFilterChanged} />));
   });
 
   afterEach(() => {
-    __ResetDependency__('DateFilter');
+    __ResetDependency__('CreateFilter');
+    __ResetDependency__('FilterBar');
+    __ResetDependency__('getFilter');
+    __ResetDependency__('onHistoryStateChange');
   });
 
-  it('should contain a filter list', () => {
-    expect(node.querySelector('ul')).to.exist;
+  it('should display FilterBar', () => {
+    expect(node).to.contain.text(FilterBar.text);
   });
 
-  it('should be empty by default', () => {
-    update({filter: []});
-
-    expect(node.querySelector('ul').textContent).to.be.empty;
+  it('should display CreateFilter', () => {
+    expect(node).to.contain.text(CreateFilter.text);
   });
 
-  it('should contain a representation of the filter', () => {
-    update({filter: [
-      {type: 'startDate'}
-    ]});
+  it('should add filter to state on update', () => {
+    const state = {a: 1};
 
-    expect(node.querySelector('ul').textContent).to.eql('DateFilter');
+    update(state);
+
+    expect(FilterBar.mocks.update.calledWith({
+      ...state,
+      filter: 'filter'
+    })).to.eql(true);
+  });
+
+  it('should add history listener', () => {
+    expect(onHistoryStateChange.calledOnce).to.eql(true);
+    expect(onHistoryStateChange.calledWith(onFilterChanged)).to.eql(true);
+  });
+
+  it('should remove history listener on destroy event', () => {
+    eventsBus.fireEvent(DESTROY_EVENT, {});
+
+    expect(removeHistoryListener.calledOnce).to.eql(true);
   });
 });

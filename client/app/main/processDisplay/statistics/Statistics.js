@@ -44,12 +44,12 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
 
     const templateUpdate = template(parentNode, eventsBus);
 
-    return [templateUpdate, ({diagram, statistics: {correlation}, controls}) => {
+    return [templateUpdate, ({diagram, statistics: {correlation}}) => {
       if (!isSelectionComplete(diagram) && !isInitial(correlation)) {
         resetStatisticData();
       }
       if (isSelectionComplete(diagram) && isInitial(correlation)) {
-        loadStatisticData(getSelection(diagram), controls);
+        loadStatisticData(getSelection(diagram));
       }
     }];
 

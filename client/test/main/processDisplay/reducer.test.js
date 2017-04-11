@@ -7,6 +7,5 @@ describe('processDisplay reducer', () => {
 
     expect(state.diagram).to.exist;
     expect(state.statistics).to.exist;
-    expect(state.controls).to.exist;
   });
 });
