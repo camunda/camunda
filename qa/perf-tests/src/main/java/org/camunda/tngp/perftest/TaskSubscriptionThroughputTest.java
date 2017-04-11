@@ -67,8 +67,8 @@ public class TaskSubscriptionThroughputTest
     {
         properties.putIfAbsent(CommonProperties.TEST_OUTPUT_FILE_NAME, "data/output.txt");
         properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "30000");
-        properties.putIfAbsent(TEST_NUM_TASKS, "25000");
-        properties.putIfAbsent(TEST_SETUP_TIMEMS, "10000");
+        properties.putIfAbsent(TEST_NUM_TASKS, "50000");
+        properties.putIfAbsent(TEST_SETUP_TIMEMS, "15000");
     }
 
     private void executeTest(Properties properties, TngpClient client) throws InterruptedException
