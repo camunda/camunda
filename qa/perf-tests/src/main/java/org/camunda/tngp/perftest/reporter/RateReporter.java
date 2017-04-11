@@ -1,11 +1,12 @@
 package org.camunda.tngp.perftest.reporter;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 public class RateReporter
 {
-    protected volatile long value = 0;
+    protected AtomicLong value = new AtomicLong(0);
 
     protected long lastReportedValue = 0;
     protected long startTime = 0;
@@ -28,7 +29,7 @@ public class RateReporter
         do
         {
             final long now = System.nanoTime();
-            final long currentValue = value;
+            final long currentValue = value.get();
             final long intervalValue = currentValue - lastReportedValue;
             final long timestamp = now - startTime;
 
@@ -43,7 +44,7 @@ public class RateReporter
 
     public void increment()
     {
-        ++value;
+        value.incrementAndGet();
     }
 
     public void exit()
