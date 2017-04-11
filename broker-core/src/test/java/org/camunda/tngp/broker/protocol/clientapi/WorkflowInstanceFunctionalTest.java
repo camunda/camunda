@@ -1,16 +1,5 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
@@ -20,6 +9,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.*;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
 public class WorkflowInstanceFunctionalTest
 {
@@ -54,10 +55,10 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
-            .containsEntry("bpmnProcessId", "process")
-            .containsEntry("version", 1)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "foo");
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
     }
 
     @Test
@@ -78,10 +79,10 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
-            .containsEntry("bpmnProcessId", "process")
-            .containsEntry("version", 1)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "foo");
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
     }
 
     @Test
@@ -101,10 +102,10 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
-            .containsEntry("bpmnProcessId", "process")
-            .containsEntry("version", 1)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "foo");
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
     }
 
     @Test
@@ -124,10 +125,10 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(event.longKey()).isEqualTo(workflowInstanceKey);
         assertThat(event.event())
-            .containsEntry("bpmnProcessId", "process")
-            .containsEntry("version", 1)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "");
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
     }
 
     @Test
@@ -150,10 +151,10 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
-            .containsEntry("bpmnProcessId", "process")
-            .containsEntry("version", 1)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "foo");
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
     }
 
     @Test
@@ -206,10 +207,10 @@ public class WorkflowInstanceFunctionalTest
         @SuppressWarnings("unchecked")
         final Map<String, Object> headers = (Map<String, Object>) event.event().get("headers");
         assertThat(headers)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("bpmnProcessId", "process")
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry("workflowDefinitionVersion", 1)
-            .containsEntry("activityId", "foo")
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo")
             .containsKey("activityInstanceKey")
             .containsKey("customHeaders");
 
@@ -246,10 +247,10 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
         assertThat(activityCompletedEvent.event())
-            .containsEntry("bpmnProcessId", "process")
-            .containsEntry("version", 1)
-            .containsEntry("workflowInstanceKey", workflowInstanceKey)
-            .containsEntry("activityId", "foo");
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "foo");
     }
 
     @Test
@@ -277,7 +278,8 @@ public class WorkflowInstanceFunctionalTest
                 .limit(9)
                 .collect(Collectors.toList());
 
-        assertThat(workflowEvents).extracting(e -> e.event().get("eventType")).containsExactly(
+        assertThat(workflowEvents).extracting(e -> e.event().get(PROP_EVENT_TYPE)).containsExactly(
+
                 "CREATE_WORKFLOW_INSTANCE",
                 "WORKFLOW_INSTANCE_CREATED",
                 "START_EVENT_OCCURRED",

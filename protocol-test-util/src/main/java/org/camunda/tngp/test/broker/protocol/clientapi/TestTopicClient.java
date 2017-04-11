@@ -23,6 +23,15 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 
 public class TestTopicClient
 {
+
+    public static final String PROP_EVENT = "eventType";
+
+    // workflow related properties
+
+    public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
+    public static final String PROP_WORKFLOW_BPMN_XML = "bpmnXml";
+    public static final String PROP_WORKFLOW_VERSION = "version";
+
     private final ClientApiRule apiRule;
     private final int topicId;
 
@@ -40,30 +49,48 @@ public class TestTopicClient
                 .topicId(topicId)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put("eventType", "CREATE_DEPLOYMENT")
-                    .put("bpmnXml", Bpmn.convertToString(modelInstance))
+                    .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+                    .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
                 .done()
                 .sendAndAwait();
 
-        assertThat(response.getEvent().get("eventType")).isEqualTo("DEPLOYMENT_CREATED");
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_CREATED");
 
         return response.key();
     }
 
     public long createWorkflowInstance(String bpmnProcessId)
     {
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+        final ExecuteCommandResponse response = sendCreateWorkflowInstanceRequest(bpmnProcessId);
+
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+
+        return response.key();
+    }
+
+    public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId)
+    {
+        return apiRule.createCmdRequest()
                 .topicId(topicId)
                 .eventTypeWorkflow()
                 .command()
-                    .put("eventType", "CREATE_WORKFLOW_INSTANCE")
-                    .put("bpmnProcessId", bpmnProcessId)
+                    .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                 .done()
                 .sendAndAwait();
+    }
 
-        assertThat(response.getEvent().get("eventType")).isEqualTo("WORKFLOW_INSTANCE_CREATED");
-
-        return response.key();
+    public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, int version)
+    {
+        return apiRule.createCmdRequest()
+            .topicId(topicId)
+            .eventTypeWorkflow()
+            .command()
+            .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
+            .put(PROP_WORKFLOW_VERSION, version)
+            .done()
+            .sendAndAwait();
     }
 
     public void completeTaskOfType(String taskType)
@@ -81,14 +108,14 @@ public class TestTopicClient
             .key(taskEvent.longKey())
             .eventTypeTask()
             .command()
-                .put("eventType", "COMPLETE")
+                .put(PROP_EVENT, "COMPLETE")
                 .put("type", taskType)
                 .put("lockOwner", taskEvent.event().get("lockOwner"))
                 .put("headers", taskEvent.event().get("headers"))
                 .done()
             .sendAndAwait();
 
-        assertThat(response.getEvent().get("eventType")).isEqualTo("COMPLETED");
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
     }
 
     /**
@@ -125,7 +152,7 @@ public class TestTopicClient
 
     public static Predicate<SubscribedEvent> eventType(String eventType)
     {
-        return e -> e.event().get("eventType").equals(eventType);
+        return e -> e.event().get(PROP_EVENT).equals(eventType);
     }
 
     public static Predicate<SubscribedEvent> workflowInstanceEvents()

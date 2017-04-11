@@ -7,7 +7,6 @@ import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
-import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,19 +38,19 @@ public class CreateWorkflowInstanceTest
 
         workflowService.deploy()
             .bpmnModelInstance(
-                    Bpmn.createExecutableProcess("anId")
-                        .startEvent()
-                        .endEvent()
-                        .done())
+                Bpmn.createExecutableProcess("anId")
+                    .startEvent()
+                    .endEvent()
+                    .done())
             .execute();
 
         workflowService.deploy()
-                .bpmnModelInstance(
-                        Bpmn.createExecutableProcess("anId")
-                                .startEvent()
-                                .endEvent()
-                                .done())
-                .execute();
+            .bpmnModelInstance(
+                Bpmn.createExecutableProcess("anId")
+                    .startEvent()
+                    .endEvent()
+                    .done())
+            .execute();
     }
 
     @Test
@@ -61,14 +60,11 @@ public class CreateWorkflowInstanceTest
         final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // when
-        final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
+        final WorkflowInstance workflowInstance =
             workflowService
                 .create()
                 .bpmnProcessId("anId")
-                .execute())
-            .until(
-                (wfInstance) -> wfInstance != null,
-                (exception) -> !exception.getMessage().contains("Creation of workflow instance with id 0 and version -1 was rejected."));
+                .execute();
 
         // then instance of latest of workflow version is created
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
@@ -84,17 +80,13 @@ public class CreateWorkflowInstanceTest
         final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
 
-
         // when
-        final WorkflowInstance workflowInstance = TestUtil.doRepeatedly(() ->
-                workflowService
-                    .create()
-                    .bpmnProcessId("anId")
-                    .version(1)
-                    .execute())
-                .until(
-                    (wfInstance) -> wfInstance != null,
-                    (exception) -> !exception.getMessage().contains("Creation of workflow instance with id 0 and version -1 was rejected."));
+        final WorkflowInstance workflowInstance =
+            workflowService
+                .create()
+                .bpmnProcessId("anId")
+                .version(1)
+                .execute();
 
         // then instance is created of first workflow version
         assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
@@ -113,35 +105,61 @@ public class CreateWorkflowInstanceTest
         exception.expectMessage("Creation of workflow instance with id illegal and version -1 was rejected.");
 
         // when
-        TestUtil.doRepeatedly(() ->
-                workflowService
-                    .create()
-                    .bpmnProcessId("illegal")
-                    .execute())
-                .until(
-                    (wfInstance) -> wfInstance != null,
-                    (exception) -> true);
+        workflowService
+            .create()
+            .bpmnProcessId("illegal")
+            .execute();
     }
 
     @Test
-    public void shouldRejectCreateBpmnProcessByIllegalVersion()
+    public void shouldThrowExceptionForCreateBpmnProcessByNullBpmnProcessId()
     {
         final TngpClient client = clientRule.getClient();
         final WorkflowTopicClient workflowService = client.workflowTopic(0);
 
         // expected
-        exception.expect(WorkflowInstanceRejectedException.class);
-        exception.expectMessage("Creation of workflow instance with id anId and version -10 was rejected.");
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("bpmnProcessId must not be null");
 
         // when
-        TestUtil.doRepeatedly(() ->
-                workflowService
-                    .create()
-                    .bpmnProcessId("anId")
-                    .version(-10)
-                    .execute())
-                .until(
-                    (wfInstance) -> wfInstance != null,
-                    (exception) -> true);
+        workflowService
+            .create()
+            .bpmnProcessId(null)
+            .execute();
+    }
+
+    @Test
+    public void shouldThrowExceptionForCreateBpmnProcessByEmptyBpmnProcessId()
+    {
+        final TngpClient client = clientRule.getClient();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+
+        // expected
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("bpmnProcessId must not be empty");
+
+        // when
+        workflowService
+            .create()
+            .bpmnProcessId("")
+            .execute();
+    }
+
+    @Test
+    public void shouldThrowExceptionForCreateBpmnProcessByIllegalVersion()
+    {
+        final TngpClient client = clientRule.getClient();
+        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+
+        // expected
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("version must be greater than or equal to -1");
+
+        // when
+        workflowService
+            .create()
+            .bpmnProcessId("anId")
+            .version(-10)
+            .execute();
     }
 }

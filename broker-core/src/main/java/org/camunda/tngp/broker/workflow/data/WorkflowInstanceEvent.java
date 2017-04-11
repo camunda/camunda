@@ -9,11 +9,17 @@ import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class WorkflowInstanceEvent extends UnpackedObject
 {
-    private final EnumProperty<WorkflowInstanceEventType> eventTypeProp = new EnumProperty<>("eventType", WorkflowInstanceEventType.class);
-    private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
-    private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
-    private final StringProperty activityIdProp = new StringProperty("activityId", "");
-    private final IntegerProperty versionProp = new IntegerProperty("version", -1);
+    public static final String PROP_EVENT_TYPE = "eventType";
+    public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
+    public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
+    public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
+    public static final String PROP_WORKFLOW_VERSION = "version";
+
+    private final EnumProperty<WorkflowInstanceEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowInstanceEventType.class);
+    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
+    private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
+    private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
+    private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
 
     public WorkflowInstanceEvent()
     {

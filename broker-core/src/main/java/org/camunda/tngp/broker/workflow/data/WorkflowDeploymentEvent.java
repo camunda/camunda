@@ -10,11 +10,13 @@ import org.camunda.tngp.broker.util.msgpack.value.ArrayValue;
 import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+
 public class WorkflowDeploymentEvent extends UnpackedObject
 {
     protected static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    private final EnumProperty<WorkflowDeploymentEventType> eventTypeProp = new EnumProperty<>("eventType", WorkflowDeploymentEventType.class);
+    private final EnumProperty<WorkflowDeploymentEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowDeploymentEventType.class);
     private final StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
 
     private final ArrayProperty<DeployedWorkflow> deployedWorkflowsProp = new ArrayProperty<>(

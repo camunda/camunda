@@ -23,15 +23,19 @@ import org.camunda.tngp.broker.util.msgpack.value.ArrayValue;
 import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
+
 public class TaskHeaders extends UnpackedObject
 {
     private static final String EMPTY_STRING = "";
     private static final DirectBuffer EMPTY_ARRAY = new UnsafeBuffer(MsgPackHelper.EMPTY_ARRAY);
 
-    private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
-    private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", EMPTY_STRING);
+    private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
+    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, EMPTY_STRING);
     private final IntegerProperty workflowDefinitionVersionProp = new IntegerProperty("workflowDefinitionVersion", -1);
-    private final StringProperty activityIdProp = new StringProperty("activityId", EMPTY_STRING);
+    private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, EMPTY_STRING);
     private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
     private final ArrayProperty<TaskHeader> customHeadersProp = new ArrayProperty<>(

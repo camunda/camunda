@@ -10,14 +10,14 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 
 import java.io.InputStream;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
+import static org.camunda.tngp.util.EnsureUtil.*;
 
 /**
- *
+ * Represents a command to create a workflow instance.
  */
 public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanceEvent, WorkflowInstance> implements CreateWorkflowInstanceCmd
 {
-    private WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
+    private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
 
     public CreateWorkflowInstanceCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
     {
@@ -53,6 +53,12 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     }
 
     @Override
+    public CreateWorkflowInstanceCmd latestVersion()
+    {
+        return version(LATEST_VERSION);
+    }
+
+    @Override
     protected Object writeCommand()
     {
         this.workflowInstanceEvent.setEventType(WorkflowInstanceEventType.CREATE_WORKFLOW_INSTANCE);
@@ -84,6 +90,7 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     @Override
     public void validate()
     {
-        ensureNotNull("bpmnProcessId", workflowInstanceEvent.getBpmnProcessId());
+        ensureNotNullOrEmpty("bpmnProcessId", workflowInstanceEvent.getBpmnProcessId());
+        ensureGreaterThanOrEqual("version", workflowInstanceEvent.getVersion(), LATEST_VERSION);
     }
 }

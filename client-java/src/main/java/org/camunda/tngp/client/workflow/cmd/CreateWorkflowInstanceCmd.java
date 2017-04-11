@@ -8,6 +8,11 @@ import org.camunda.tngp.client.cmd.SetPayloadCmd;
 public interface CreateWorkflowInstanceCmd extends SetPayloadCmd<WorkflowInstance, CreateWorkflowInstanceCmd>
 {
     /**
+     * Represents the latest version of a deployed workflow definition.
+      */
+    int LATEST_VERSION = -1;
+
+    /**
      * Sets the BPMN process id, which identifies the workflow definition.
      *
      * @param id the id which identifies the workflow definition
@@ -18,8 +23,18 @@ public interface CreateWorkflowInstanceCmd extends SetPayloadCmd<WorkflowInstanc
     /**
      * Sets the version, which corresponds to the deployed workflow definition.
      *
+     * If the version is set to {@link #LATEST_VERSION}, the latest version of the deployed workflow definition is used.
+     *
      * @param version the version of the workflow definition
      * @return the current create command
      */
     CreateWorkflowInstanceCmd version(int version);
+
+    /**
+     * Sets the version, which corresponds to the deployed workflow definition, to latest.
+     *
+     * @see {@link #version(int)}
+     * @return the current create command
+     */
+    CreateWorkflowInstanceCmd latestVersion();
 }

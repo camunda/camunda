@@ -1,7 +1,7 @@
 package org.camunda.tngp.client.workflow.cmd.impl;
 
 /**
- *
+ * Represents a event, which is used to create a workflow instance on the broker.
  */
 public class WorkflowInstanceEvent
 {

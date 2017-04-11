@@ -17,10 +17,13 @@ import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+
 public class DeployedWorkflow extends UnpackedObject
 {
-    private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
-    private final IntegerProperty versionProp = new IntegerProperty("version");
+    private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
+    private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
 
     public DeployedWorkflow()
     {

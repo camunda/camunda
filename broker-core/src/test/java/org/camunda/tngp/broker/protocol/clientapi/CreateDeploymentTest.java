@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +40,7 @@ public class CreateDeploymentTest
                 .topicId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put("eventType", "CREATE_DEPLOYMENT")
+                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", Bpmn.convertToString(modelInstance))
                 .done()
                 .sendAndAwait();
@@ -45,7 +48,7 @@ public class CreateDeploymentTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.topicId()).isEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry("eventType", "DEPLOYMENT_CREATED");
+        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_CREATED");
     }
 
     @SuppressWarnings("unchecked")
@@ -63,7 +66,7 @@ public class CreateDeploymentTest
             .topicId(0)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
-                .put("eventType", "CREATE_DEPLOYMENT")
+                .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
                 .put("bpmnXml", Bpmn.convertToString(modelInstance))
             .done()
             .sendAndAwait();
@@ -71,15 +74,15 @@ public class CreateDeploymentTest
         // then
         List<Map<String, Object>> deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
-        assertThat(deployedWorkflows.get(0)).containsEntry("bpmnProcessId", "process");
-        assertThat(deployedWorkflows.get(0)).containsEntry("version", 1);
+        assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+        assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 1);
 
         // when deploy the workflow definition a second time
         resp = apiRule.createCmdRequest()
                 .topicId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put("eventType", "CREATE_DEPLOYMENT")
+                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", Bpmn.convertToString(modelInstance))
                 .done()
                 .sendAndAwait();
@@ -87,8 +90,8 @@ public class CreateDeploymentTest
         // then the workflow definition version is increased
         deployedWorkflows = (List<Map<String, Object>>) resp.getEvent().get("deployedWorkflows");
         assertThat(deployedWorkflows).hasSize(1);
-        assertThat(deployedWorkflows.get(0)).containsEntry("bpmnProcessId", "process");
-        assertThat(deployedWorkflows.get(0)).containsEntry("version", 2);
+        assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+        assertThat(deployedWorkflows.get(0)).containsEntry(PROP_WORKFLOW_VERSION, 2);
     }
 
     @Test
@@ -102,7 +105,7 @@ public class CreateDeploymentTest
                 .topicId(0)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
-                    .put("eventType", "CREATE_DEPLOYMENT")
+                    .put(PROP_EVENT_TYPE, "CREATE_DEPLOYMENT")
                     .put("bpmnXml", Bpmn.convertToString(modelInstance))
                 .done()
                 .sendAndAwait();
@@ -110,7 +113,7 @@ public class CreateDeploymentTest
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
         assertThat(resp.topicId()).isEqualTo(0L);
-        assertThat(resp.getEvent()).containsEntry("eventType", "DEPLOYMENT_REJECTED");
+        assertThat(resp.getEvent()).containsEntry(PROP_EVENT_TYPE, "DEPLOYMENT_REJECTED");
         assertThat((String) resp.getEvent().get("errorMessage")).contains("The process must contain at least one none start event.");
     }
 

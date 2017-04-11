@@ -3,7 +3,7 @@ package org.camunda.tngp.client.workflow.cmd.impl;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 
 /**
- *
+ * Represents an instance of an deployed workflow, also called workflow instance.
  */
 public class WorkflowInstanceImpl implements WorkflowInstance
 {
