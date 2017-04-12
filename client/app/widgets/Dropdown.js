@@ -9,6 +9,7 @@ export const Dropdown = withSockets(({sockets: {label, list}}) => {
     <button type="button" className="btn btn-default dropdown-toggle" data-toggle="dropdown">
       <Reference name="dropdown" />
       <Children children={label} />
+      {' '}<span className="caret"></span>
     </button>
     <ul className="dropdown-menu">
       <Children children={list} />

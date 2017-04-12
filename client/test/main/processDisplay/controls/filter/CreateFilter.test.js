@@ -85,7 +85,6 @@ describe('<CreateFilter>', () => {
         Dropdown.getChildTemplate({attributes: {name: 'label'}, text: 'Socket'})
       ).to.exist;
       expect(labelNode).to.contain.text('+');
-      expect(labelNode.querySelector('.caret')).to.exist;
     });
 
     it('should contain list socket', () => {

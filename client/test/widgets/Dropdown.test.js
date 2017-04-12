@@ -42,6 +42,12 @@ describe('<Dropdown>', () => {
     expect(label.parentNode.tagName).to.eql('BUTTON');
   });
 
+  it('should contain an arrow to indicate that it is a dropdown', () => {
+    const arrow = node.querySelector('.caret');
+
+    expect(arrow).to.exist;
+  });
+
   it('should put the list in an ul', () => {
     const list = node.querySelector('.list');
 
