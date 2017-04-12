@@ -1,7 +1,8 @@
 var xml2js = require('xml2js');
 var fs = require('fs');
 var path = require('path');
-var ignoredActivities = ['$', 'bpmn:sequenceFlow'];
+var ignoredActivities = ['$', 'bpmn:sequenceFlow', 'bpmn:incoming', 'bpmn:outgoing'];
+var recursiveActivities = ['bpmn:subProcess'];
 var utils =  require('./utils');
 
 var readdir = utils.readdir;
@@ -33,26 +34,38 @@ function getBpmnEntries() {
     });
 }
 
+function parseProcess(process) {
+  return Object
+    .keys(process)
+    .filter(function(key) {
+      return ignoredActivities.indexOf(key) === -1;
+    })
+    .reduce(function(activities, key) {
+      var tasks = process[key];
+
+      activities = activities.concat(
+        tasks.map(function(task) {
+          return task.$.id
+        })
+      );
+
+      if(recursiveActivities.indexOf(key) !== -1) {
+        tasks.forEach(function(task) {
+          activities = activities.concat(parseProcess(task));
+        });
+      }
+
+      return activities;
+    }, []);
+}
+
 function describeBpmn(text) {
   return parseXmlString(text)
     .then(function(parsed) {
       var process = parsed['bpmn:definitions']['bpmn:process'][0];
       var processKey = process.$.id;
 
-      var activities = Object
-        .keys(process)
-        .filter(function(key) {
-          return ignoredActivities.indexOf(key) === -1;
-        })
-        .reduce(function(activities, key) {
-          var tasks = process[key];
-
-          return activities.concat(
-            tasks.map(function(task) {
-              return task.$.id
-            })
-          );
-        }, []);
+      var activities = parseProcess(process);
 
       return {
         xml: text.toString(),
