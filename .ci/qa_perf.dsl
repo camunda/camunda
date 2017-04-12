@@ -30,6 +30,10 @@ def TESTS = [
     [
         name: 'task-subscription-throughput',
         target: 'test-task-subscription-throughput'
+    ],
+    [
+        name: 'topic-subscription-throughput',
+        target: 'test-topic-subscription-throughput'
     ]
 ]
 
