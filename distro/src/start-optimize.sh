@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "starting Camunda Optimize with Elasticsearch";
+echo "Starting Camunda Optimize with Elasticsearch";
 
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 PROGRAM="optimize"
@@ -31,5 +31,5 @@ until ${COMMAND};
   fi
 done
 
-echo -e "\nStaring jetty"
+echo -e "\nStarting jetty"
 nohup java -Dpidfile=$PID_FILE -jar $BASEDIR/optimize-backend-${project.version}.jar </dev/null > $LOG_FILE 2>&1

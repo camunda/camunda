@@ -1,5 +1,8 @@
 package org.camunda.optimize.jetty;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
@@ -19,8 +22,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Properties;
 
 /**
@@ -54,6 +59,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   private Server setUpEmbeddedJetty(SpringAwareServletConfiguration jerseyCamundaOptimize) {
+    defineLogbackLoggingConfiguration();
     Properties properties = getProperties();
 
     Server jettyServer = initServer(properties);
@@ -64,6 +70,36 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return jettyServer;
   }
 
+  private void defineLogbackLoggingConfiguration() {
+    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+    loggerContext.reset();
+    JoranConfigurator configurator = new JoranConfigurator();
+    try {
+      InputStream configStream = new FileInputStream(getLogbackConfigurationFilePath());
+      configurator.setContext(loggerContext);
+      configurator.doConfigure(configStream); // loads logback file
+      configStream.close();
+    } catch (JoranException | IOException e) {
+      e.printStackTrace();
+      logger.warn("Can't read log configuration file. Using basic logback configuration instead!", e);
+    }
+  }
+
+  private String getLogbackConfigurationFilePath() {
+    URL url  = this.getClass().getClassLoader().getResource("environment-logback.xml");
+    if(url != null) {
+      return url.getFile();
+    }
+    url = this.getClass().getClassLoader().getResource("logback-test.xml");
+    if(url != null) {
+      return url.getFile();
+    }
+    url = this.getClass().getClassLoader().getResource("logback.xml");
+    if(url != null) {
+      return url.getFile();
+    }
+    return "";
+  }
 
 
   private Server initServer(Properties properties) {

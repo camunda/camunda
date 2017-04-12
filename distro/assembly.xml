@@ -65,6 +65,10 @@
       <filtered>true</filtered>
       <outputDirectory>environment/</outputDirectory>
     </file>
+    <file>
+      <source>src/environment/environment-logback.xml</source>
+      <outputDirectory>environment/</outputDirectory>
+    </file>
 
     <file>
       <source>src/config/.java.policy</source>
