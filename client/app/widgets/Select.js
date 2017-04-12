@@ -47,9 +47,7 @@ export function Select({onValueSelected, getSelectValue, children}) {
     }
 
     function updateLabelNode() {
-      if (typeof getSelectValue === 'function') {
-        currentItem = getSelectItem() || currentItem;
-      }
+      currentItem = getSelectItem() || currentItem;
 
       const labelNode = Reference.getNode('label');
       const text = currentItem && currentItem.name ? currentItem.name : currentItem;
@@ -60,19 +58,21 @@ export function Select({onValueSelected, getSelectValue, children}) {
     }
 
     function getSelectItem() {
-      const value = getSelectValue();
-      const valueNodes = Reference.getNode('list').querySelectorAll('[select-value]');
-      const [valueNode] = Array.prototype.filter.call(valueNodes, (valueNode) => {
-        const valueAttribute = valueNode.getAttribute('select-value');
+      if (typeof getSelectValue === 'function') {
+        const value = getSelectValue();
+        const valueNodes = Reference.getNode('list').querySelectorAll('[select-value]');
+        const [valueNode] = Array.prototype.filter.call(valueNodes, (valueNode) => {
+          const valueAttribute = valueNode.getAttribute('select-value');
 
-        return isEqual(JSON.parse(valueAttribute), value);
-      });
+          return isEqual(JSON.parse(valueAttribute), value);
+        });
 
-      if (valueNode) {
-        return {
-          value,
-          name: valueNode.innerText.trim()
-        };
+        if (valueNode) {
+          return {
+            value,
+            name: valueNode.innerText.trim()
+          };
+        }
       }
     }
   };
