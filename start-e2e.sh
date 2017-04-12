@@ -25,3 +25,4 @@ done
 
 node ./client/scripts/add_demo_data.js
 ./client/node_modules/.bin/wdio ./client/wdio-ci.conf.js
+pkill -f optimize
