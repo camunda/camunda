@@ -10,6 +10,6 @@ export const ProcessInstanceCount = withSelector(() => {
   </div>;
 
   function formatData(instanceCount) {
-    return {data: formatNumber(instanceCount, '.')};
+    return {data: formatNumber(instanceCount, '\u2009')};
   }
 });

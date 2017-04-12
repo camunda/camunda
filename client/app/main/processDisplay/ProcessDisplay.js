@@ -1,5 +1,5 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
-import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction} from './diagram';
+import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount} from './diagram';
 import {Statistics} from './statistics';
 import {isLoading, formatTime} from 'utils';
 import {loadData, loadDiagram} from './service';
@@ -26,31 +26,37 @@ function Process() {
           </Case>
           <Case predicate={shouldDisplay('frequency')}>
             <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
-            <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
             <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(formatTime)} />
-            <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
-            <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
           <Default>
             <Diagram selector="diagram" />
           </Default>
+        </Match>
+        <Match>
+          <Case predicate={shouldDisplayOneOf(['frequency', 'duration', 'branch_analysis'])}>
+            <ProcessInstanceCount selector={getProcessInstanceCount} />
+          </Case>
         </Match>
       </LoadingIndicator>
     </div>
     <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
 
-  function getProcessInstanceCount({diagram:{heatmap:{data:{piCount}}}}) {
-    return piCount;
+  function getProcessInstanceCount({diagram}) {
+    return getInstanceCount(diagram);
   }
 
   function hasNoData({controls, diagram:{heatmap:{data}}}) {
     return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis']);
+  }
+
+  function shouldDisplayOneOf(targetViews) {
+    return () => targetViews.filter(isViewSelected).length;
   }
 
   function shouldDisplay(targetView) {
