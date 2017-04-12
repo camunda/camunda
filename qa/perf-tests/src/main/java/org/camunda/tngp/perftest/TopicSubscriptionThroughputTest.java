@@ -30,7 +30,7 @@ public class TopicSubscriptionThroughputTest
 
     public static void main(String[] args)
     {
-        new TaskSubscriptionThroughputTest().run();
+        new TopicSubscriptionThroughputTest().run();
     }
 
     public void run()
@@ -69,8 +69,8 @@ public class TopicSubscriptionThroughputTest
     {
         properties.putIfAbsent(CommonProperties.TEST_OUTPUT_FILE_NAME, "data/output.txt");
         properties.putIfAbsent(CommonProperties.TEST_TIMEMS, "30000");
-        properties.putIfAbsent(TEST_NUM_TASKS, "50000");
-        properties.putIfAbsent(TEST_SETUP_TIMEMS, "15000");
+        properties.putIfAbsent(TEST_NUM_TASKS, "150000");
+        properties.putIfAbsent(TEST_SETUP_TIMEMS, "30000");
     }
 
     private void executeTest(Properties properties, TngpClient client) throws InterruptedException
