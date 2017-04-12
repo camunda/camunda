@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 
@@ -15,6 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.CreditsRequest;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
@@ -301,7 +303,7 @@ public class LockTaskStreamProcessorTest
         });
 
         // when increase credits by 1
-        streamProcessor.increaseSubscriptionCredits(subscription.getSubscriberKey(), 1);
+        streamProcessor.increaseSubscriptionCreditsAsync(new CreditsRequest(subscription.getSubscriberKey(), 1));
 
         Stream.of(3, 4, 5).forEach(key ->
         {
@@ -369,7 +371,7 @@ public class LockTaskStreamProcessorTest
         assertThat(streamProcessor.isSuspended()).isTrue();
 
         // when
-        streamProcessor.increaseSubscriptionCredits(subscription.getSubscriberKey(), 2);
+        streamProcessor.increaseSubscriptionCreditsAsync(new CreditsRequest(subscription.getSubscriberKey(), 2));
 
         // then
         mockController.processEvent(4L, event -> event
@@ -456,32 +458,23 @@ public class LockTaskStreamProcessorTest
     }
 
     @Test
-    public void shouldFailToIncreaseSubscriptionCreditsIfZero()
+    public void shouldIgnoreCreditsIfNotExist()
     {
         // given
-        streamProcessor.addSubscription(subscription);
+        streamProcessor.increaseSubscriptionCreditsAsync(new CreditsRequest(123L, 5));
 
+        try
+        {
+            // when
+            mockController.processEvent(2L, event -> event
+                    .setEventType(TaskEventType.CREATED)
+                    .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
+        }
         // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("subscription credits must be greater than 0");
-
-        streamProcessor.increaseSubscriptionCredits(subscription.getSubscriberKey(), 0);
-    }
-
-    @Test
-    public void shouldFailToIncreaseSubscriptionCreditsIfNotExist()
-    {
-        // when
-        final CompletableFuture<Void> future = streamProcessor.increaseSubscriptionCredits(123L, 5);
-
-        mockController.processEvent(2L, event -> event
-                .setEventType(TaskEventType.CREATED)
-                .setType(TASK_TYPE_BUFFER, 0, TASK_TYPE_BUFFER.capacity()));
-
-        // then
-        assertThat(future).hasFailedWithThrowableThat()
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("Subscription with id '123' not found.");
+        catch (Exception e)
+        {
+            fail("nothing bad should happen");
+        }
     }
 
     @Test

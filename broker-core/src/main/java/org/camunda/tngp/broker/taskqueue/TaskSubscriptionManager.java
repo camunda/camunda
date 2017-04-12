@@ -18,6 +18,7 @@ import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SER
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNull;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
+import org.camunda.tngp.list.CompactList;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.servicecontainer.ServiceName;
@@ -44,6 +46,7 @@ import org.camunda.tngp.util.buffer.BufferUtil;
 public class TaskSubscriptionManager implements Agent
 {
     protected static final String NAME = "taskqueue.subscription.manager";
+    public static final int NUM_CONCURRENT_REQUESTS = 1_024;
 
     protected final ServiceStartContext serviceContext;
     protected final Function<DirectBuffer, LockTaskStreamProcessor> streamProcessorSupplier;
@@ -51,9 +54,26 @@ public class TaskSubscriptionManager implements Agent
     protected final Long2ObjectHashMap<LogStreamBucket> logStreamBucketById = new Long2ObjectHashMap<>();
     protected final Long2ObjectHashMap<LockTaskStreamProcessor> streamProcessorBySubscriptionId = new Long2ObjectHashMap<>();
 
-    protected final DeferredCommandContext asyncContext = new DeferredCommandContext(1_000);
+    protected final DeferredCommandContext asyncContext = new DeferredCommandContext(NUM_CONCURRENT_REQUESTS);
+
+    /*
+     * For credits handling, we use two datastructures here:
+     *   * a one-to-one thread-safe ring buffer for ingestion of requests
+     *   * a non-thread-safe list for requests that could not be successfully dispatched to the corresponding stream processor
+     *
+     * Note: we could also use a single data structure, if the thread-safe buffer allowed us to decide in the consuming
+     *   handler whether we actually want to consume an item off of it; then, we could simply leave a request
+     *   if it cannot be dispatched.
+     *   afaik there is no such datastructure available out of the box, so we are going with two datastructures
+     *   see also https://github.com/real-logic/Agrona/issues/96
+     */
+    protected final CreditsRequestBuffer creditRequestBuffer;
+    protected final CompactList backPressuredCreditsRequests;
+    protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected long nextSubscriptionId = 0;
+
+
 
     public TaskSubscriptionManager(ServiceStartContext serviceContext)
     {
@@ -66,6 +86,17 @@ public class TaskSubscriptionManager implements Agent
     {
         this.serviceContext = serviceContext;
         this.streamProcessorSupplier = streamProcessorBuilder;
+        this.creditRequestBuffer = new CreditsRequestBuffer(
+            NUM_CONCURRENT_REQUESTS,
+            (r) ->
+            {
+                final boolean dispatched = dispatchSubscriptionCredits(r);
+                if (!dispatched)
+                {
+                    backpressureRequest(r);
+                }
+            });
+        this.backPressuredCreditsRequests = new CompactList(CreditsRequest.LENGTH, creditRequestBuffer.getCapacityUpperBound(), (size) -> ByteBuffer.allocate(size));
     }
 
     @Override
@@ -77,7 +108,22 @@ public class TaskSubscriptionManager implements Agent
     @Override
     public int doWork() throws Exception
     {
-        return asyncContext.doWork();
+        final int asyncWork = asyncContext.doWork();
+
+        final int backpressuredWork = dispatchBackpressuredSubscriptionCredits();
+        final int creditsRequests;
+        if (backPressuredCreditsRequests.size() == 0)
+        {
+            // only accept new requests when backpressured ones have been processed
+            // this is required to guarantee that backPressuredCreditsRequests won't overflow
+            creditsRequests = creditRequestBuffer.handleRequests();
+        }
+        else
+        {
+            creditsRequests = 0;
+        }
+
+        return asyncWork + backpressuredWork + creditsRequests;
     }
 
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)
@@ -191,23 +237,58 @@ public class TaskSubscriptionManager implements Agent
         return serviceContext.removeService(streamProcessorServiceName);
     }
 
-    public CompletableFuture<Void> increaseSubscriptionCredits(long subscriptionId, int credits)
+    public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
     {
-        return asyncContext.runAsync(future ->
+        return creditRequestBuffer.offerRequest(request);
+    }
+
+    /**
+     * @param request
+     * @return if request was handled
+     */
+    protected boolean dispatchSubscriptionCredits(CreditsRequest request)
+    {
+        final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.get(request.getSubscriberKey());
+
+        if (streamProcessor != null)
         {
-            final LockTaskStreamProcessor streamProcessor = streamProcessorBySubscriptionId.get(subscriptionId);
-            if (streamProcessor != null)
+            return streamProcessor.increaseSubscriptionCreditsAsync(request);
+        }
+        else
+        {
+            // ignore
+            return true;
+        }
+    }
+
+    protected void backpressureRequest(CreditsRequest request)
+    {
+        request.appendTo(backPressuredCreditsRequests);
+    }
+
+    protected int dispatchBackpressuredSubscriptionCredits()
+    {
+        int nextRequestToConsume = backPressuredCreditsRequests.size() - 1;
+        int numSuccessfulRequests = 0;
+
+        while (nextRequestToConsume >= 0)
+        {
+            creditsRequest.wrapListElement(backPressuredCreditsRequests, nextRequestToConsume);
+            final boolean success = dispatchSubscriptionCredits(creditsRequest);
+
+            if (success)
             {
-                streamProcessor
-                    .increaseSubscriptionCredits(subscriptionId, credits)
-                    .handle((r, t) -> t == null ? future.complete(null) : future.completeExceptionally(t));
+                backPressuredCreditsRequests.remove(nextRequestToConsume);
+                numSuccessfulRequests++;
+                nextRequestToConsume--;
             }
             else
             {
-                final String errorMessage = String.format("Subscription with id '%s' not found.", subscriptionId);
-                future.completeExceptionally(new RuntimeException(errorMessage));
+                break;
             }
-        });
+        }
+
+        return numSuccessfulRequests;
     }
 
     public void addStream(LogStream logStream, ServiceName<LogStream> logStreamServiceName)
@@ -256,6 +337,11 @@ public class TaskSubscriptionManager implements Agent
                     .thenCompose(hasSubscriptions -> !hasSubscriptions ? removeStreamProcessorService(processor) : CompletableFuture.completedFuture(null));
             }
         });
+    }
+
+    public int getCreditRequestCapacityUpperBound()
+    {
+        return creditRequestBuffer.getCapacityUpperBound();
     }
 
     static class LogStreamBucket

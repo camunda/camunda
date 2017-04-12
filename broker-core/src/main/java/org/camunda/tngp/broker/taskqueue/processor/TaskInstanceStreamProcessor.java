@@ -10,6 +10,7 @@ import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
+import org.camunda.tngp.broker.taskqueue.CreditsRequest;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
@@ -55,6 +56,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final IndexWriter indexWriter = new IndexWriter();
 
     protected final TaskEvent taskEvent = new TaskEvent();
+    protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected int streamId;
 
@@ -245,9 +247,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             {
                 final long subscriptionId = sourceEventMetadata.getSubscriberKey();
 
-                taskSubscriptionManager.increaseSubscriptionCredits(subscriptionId, 1);
-
-                success = true;
+                creditsRequest.setSubscriberKey(subscriptionId);
+                creditsRequest.setCredits(1);
+                success = taskSubscriptionManager.increaseSubscriptionCreditsAsync(creditsRequest);
             }
 
             return success;

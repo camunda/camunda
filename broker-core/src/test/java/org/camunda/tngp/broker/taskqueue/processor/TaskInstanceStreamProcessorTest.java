@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.taskqueue.CreditsRequest;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
@@ -371,7 +372,7 @@ public class TaskInstanceStreamProcessorTest
         // then
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.LOCK_REJECTED);
 
-        verify(mockTaskSubscriptionManager, times(1)).increaseSubscriptionCredits(2L, 1);
+        verify(mockTaskSubscriptionManager, times(1)).increaseSubscriptionCreditsAsync(new CreditsRequest(2L, 1));
     }
 
     @Test

@@ -182,7 +182,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     public abstract int poll();
 
-    @SuppressWarnings("unchecked")
     protected int pollEvents(CheckedConsumer<TopicEventImpl> pollHandler)
     {
         final int currentlyAvailableEvents = size();

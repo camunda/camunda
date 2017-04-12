@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.CreditsRequest;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
 import org.camunda.tngp.broker.transport.clientapi.ErrorResponseWriter;
@@ -24,12 +25,16 @@ import org.camunda.tngp.protocol.clientapi.ErrorCode;
 
 public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHandler
 {
+    protected static final CompletableFuture<Void> COMPLETED_FUTURE = CompletableFuture.completedFuture(null);
+
     protected final TaskSubscription subscription = new TaskSubscription();
+    protected final CreditsRequest creditsRequest = new CreditsRequest();
 
     protected final TaskSubscriptionManager manager;
 
     protected final ControlMessageResponseWriter responseWriter;
     protected final ErrorResponseWriter errorResponseWriter;
+
 
     public IncreaseTaskSubscriptionCreditsHandler(TaskSubscriptionManager manager, ControlMessageResponseWriter responseWriter, ErrorResponseWriter errorResponseWriter)
     {
@@ -51,28 +56,40 @@ public class IncreaseTaskSubscriptionCreditsHandler implements ControlMessageHan
 
         subscription.wrap(buffer);
 
-        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(subscription.getSubscriberKey(), subscription.getCredits());
+        creditsRequest.setCredits(subscription.getCredits());
+        creditsRequest.setSubscriberKey(subscription.getSubscriberKey());
 
-        return future.handle((v, failure) ->
+        if (subscription.getCredits() <= 0)
         {
-            if (failure == null)
-            {
-                responseWriter
-                    .brokerEventMetadata(eventMetada)
-                    .dataWriter(subscription)
-                    .tryWriteResponse();
-            }
-            else
-            {
-                errorResponseWriter
-                    .metadata(eventMetada)
-                    .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-                    .errorMessage("Cannot increase task subscription credits. %s", failure.getMessage())
-                    .failedRequest(buffer, 0, buffer.capacity())
-                    .tryWriteResponseOrLogFailure();
-            }
-            return null;
-        });
+            sendError(eventMetada, buffer, "Cannot increase task subscription credits. Credits must be positive.");
+            return COMPLETED_FUTURE;
+        }
+
+        final boolean success = manager.increaseSubscriptionCreditsAsync(creditsRequest);
+
+        if (success)
+        {
+            responseWriter
+                .brokerEventMetadata(eventMetada)
+                .dataWriter(subscription)
+                .tryWriteResponse();
+            return COMPLETED_FUTURE;
+        }
+        else
+        {
+            sendError(eventMetada, buffer, "Cannot increase task subscription credits. Capacities exhausted.");
+            return COMPLETED_FUTURE;
+        }
+    }
+
+    protected void sendError(BrokerEventMetadata metadata, DirectBuffer request, String errorMessage)
+    {
+        errorResponseWriter
+            .metadata(metadata)
+            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+            .errorMessage(errorMessage)
+            .failedRequest(request, 0, request.capacity())
+            .tryWriteResponseOrLogFailure();
     }
 
 }

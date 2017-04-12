@@ -26,6 +26,9 @@ import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
+import org.camunda.tngp.broker.taskqueue.CreditsRequest;
+import org.camunda.tngp.broker.taskqueue.CreditsRequestBuffer;
+import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
@@ -46,6 +49,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
 
     protected final NoopSnapshotSupport noopSnapshotSupport = new NoopSnapshotSupport();
     protected DeferredCommandContext cmdQueue;
+    protected CreditsRequestBuffer creditsBuffer = new CreditsRequestBuffer(TaskSubscriptionManager.NUM_CONCURRENT_REQUESTS, this::increaseSubscriptionCredits);
 
     protected final Long2ObjectHashMap<TaskSubscription> subscriptionsById = new Long2ObjectHashMap<>();
     protected Iterator<TaskSubscription> subscriptionIterator;
@@ -80,6 +84,8 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     @Override
     public boolean isSuspended()
     {
+        creditsBuffer.handleRequests();
+
         return isSuspended;
     }
 
@@ -175,28 +181,24 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         });
     }
 
-    public CompletableFuture<Void> increaseSubscriptionCredits(long subscriptionId, int credits)
+    public boolean increaseSubscriptionCreditsAsync(CreditsRequest request)
     {
-        ensureGreaterThan("subscription credits", credits, 0);
+        return this.creditsBuffer.offerRequest(request);
+    }
 
-        return cmdQueue.runAsync(future ->
+    protected void increaseSubscriptionCredits(CreditsRequest request)
+    {
+        final long subscriberKey = request.getSubscriberKey();
+        final int credits = request.getCredits();
+        final TaskSubscription subscription = subscriptionsById.get(subscriberKey);
+
+        if (subscription != null)
         {
-            final TaskSubscription subscription = subscriptionsById.get(subscriptionId);
-            if (subscription != null)
-            {
-                availableSubscriptionCredits += credits;
-                subscription.setCredits(subscription.getCredits() + credits);
+            availableSubscriptionCredits += credits;
+            subscription.setCredits(subscription.getCredits() + credits);
 
-                isSuspended = false;
-
-                future.complete(null);
-            }
-            else
-            {
-                final String errorMessage = String.format("Subscription with id '%s' not found.", subscriptionId);
-                future.completeExceptionally(new RuntimeException(errorMessage));
-            }
-        });
+            isSuspended = false;
+        }
     }
 
     protected TaskSubscription getNextAvailableSubscription()

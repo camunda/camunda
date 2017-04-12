@@ -16,7 +16,6 @@ import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
-import org.camunda.tngp.util.DeferredCommandContext;
 import org.camunda.tngp.util.collection.LongRingBuffer;
 
 public class TopicSubscriptionPushProcessor implements StreamProcessor, EventProcessor
@@ -36,9 +35,9 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
     protected final SubscribedEventWriter channelWriter;
-    protected DeferredCommandContext cmdQueue;
 
     protected LongRingBuffer pendingEvents;
+    protected LongRingBuffer pendingAcks;
     protected AtomicBoolean enabled;
 
     public TopicSubscriptionPushProcessor(
@@ -62,6 +61,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         if (prefetchCapacity > 0)
         {
             this.pendingEvents = new LongRingBuffer(prefetchCapacity);
+            this.pendingAcks = new LongRingBuffer(prefetchCapacity);
         }
     }
 
@@ -69,7 +69,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     public void onOpen(StreamProcessorContext context)
     {
 
-        this.cmdQueue = context.getStreamProcessorCmdQueue();
         final LogStreamReader logReader = context.getSourceLogStreamReader();
         this.logStreamId = context.getSourceStream().getId();
         setToStartPosition(logReader);
@@ -137,7 +136,11 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
         if (success && recordsPendingEvents())
         {
-            pendingEvents.addElementToHead(event.getPosition());
+            final boolean elementAdded = pendingEvents.addElementToHead(event.getPosition());
+            if (!elementAdded)
+            {
+                throw new RuntimeException("Cannot record pending event " + elementAdded);
+            }
         }
 
         return success;
@@ -146,7 +149,21 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     @Override
     public boolean isSuspended()
     {
-        return !enabled.get() || (recordsPendingEvents() && pendingEvents.isSaturated());
+        if (!enabled.get())
+        {
+            return true;
+        }
+
+        if (recordsPendingEvents())
+        {
+            // first, process any ACKs if there are any pending
+            pendingAcks.consume((ackedPosition) -> pendingEvents.consumeAscendingUntilInclusive(ackedPosition));
+            return pendingEvents.isSaturated();
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public int getLogStreamId()
@@ -171,13 +188,15 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
     public void onAck(long eventPosition)
     {
-        cmdQueue.runAsync(() ->
+        if (recordsPendingEvents())
         {
-            if (recordsPendingEvents())
+            final boolean elementAdded = pendingAcks.addElementToHead(eventPosition);
+
+            if (!elementAdded)
             {
-                pendingEvents.consumeAscendingUntilInclusive(eventPosition);
+                throw new RuntimeException("Could not acknowledge event at position " + eventPosition + "; ACK capacity saturated");
             }
-        });
+        }
     }
 
     /**

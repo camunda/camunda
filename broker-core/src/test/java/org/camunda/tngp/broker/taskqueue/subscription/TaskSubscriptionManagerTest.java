@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,6 +29,7 @@ import java.util.function.Function;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.broker.taskqueue.CreditsRequest;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskSubscription;
@@ -106,7 +106,7 @@ public class TaskSubscriptionManagerTest
         when(mockStreamProcessor.getSubscriptedTaskType()).thenReturn(taskTypeBuffer);
 
         when(mockStreamProcessor.addSubscription(any())).thenReturn(CompletableFuture.completedFuture(null));
-        when(mockStreamProcessor.increaseSubscriptionCredits(anyLong(), anyInt())).thenReturn(CompletableFuture.completedFuture(null));
+        when(mockStreamProcessor.increaseSubscriptionCreditsAsync(any())).thenReturn(true);
         when(mockStreamProcessor.removeSubscription(anyLong())).thenReturn(CompletableFuture.completedFuture(false));
 
         return mockStreamProcessor;
@@ -239,14 +239,12 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(0L, 5);
+        manager.increaseSubscriptionCreditsAsync(new CreditsRequest(0L, 5));
 
         manager.doWork();
 
         // then
-        assertThat(future).isCompleted();
-
-        verify(mockStreamProcessor).increaseSubscriptionCredits(0L, 5);
+        verify(mockStreamProcessor).increaseSubscriptionCreditsAsync(new CreditsRequest(0L, 5));
     }
 
     @Test
@@ -392,15 +390,11 @@ public class TaskSubscriptionManagerTest
         manager.addSubscription(subscription);
 
         // when
-        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(3L, 2);
+        manager.increaseSubscriptionCreditsAsync(new CreditsRequest(3L, 2));
         manager.doWork();
 
         // then
-        assertThat(future).hasFailedWithThrowableThat()
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("Subscription with id '3' not found.");
-
-        verify(mockStreamProcessor, never()).increaseSubscriptionCredits(anyLong(), anyInt());
+        verify(mockStreamProcessor, never()).increaseSubscriptionCreditsAsync(any());
     }
 
     @Test
@@ -413,34 +407,48 @@ public class TaskSubscriptionManagerTest
         manager.removeStream(mockLogStream);
 
         // when
-        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(0L, 5);
+        manager.increaseSubscriptionCreditsAsync(new CreditsRequest(0L, 5));
         manager.doWork();
 
         // then
-        assertThat(future).hasFailedWithThrowableThat()
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("Subscription with id '0' not found.");
-
-        verify(mockStreamProcessor, never()).increaseSubscriptionCredits(anyLong(), anyInt());
+        verify(mockStreamProcessor, never()).increaseSubscriptionCreditsAsync(any());
     }
 
     @Test
-    public void shouldPropagateFailureWhileIncreaseSubscriptionCredits() throws Exception
+    public void shouldSignalBackpressure() throws Exception
+    {
+        // given
+        for (int i = 0; i < manager.getCreditRequestCapacityUpperBound() - 1; i++)
+        {
+            manager.increaseSubscriptionCreditsAsync(new CreditsRequest(0L, 5));
+        }
+
+        // when exhausting the capacity
+        final boolean success = manager.increaseSubscriptionCreditsAsync(new CreditsRequest(0L, 5));
+
+        // then
+        assertThat(success).isFalse();
+    }
+
+    @Test
+    public void shouldRetrySchedulingCreditsWhenStreamProcessorIsBusy() throws Exception
     {
         // given
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addSubscription(subscription);
 
-        when(mockStreamProcessor.increaseSubscriptionCredits(anyLong(), anyInt())).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
+        when(mockStreamProcessor.increaseSubscriptionCreditsAsync(any())).thenReturn(false, false, true);
 
-        // when
-        final CompletableFuture<Void> future = manager.increaseSubscriptionCredits(0L, 5);
+        manager.increaseSubscriptionCreditsAsync(new CreditsRequest(0L, 5));
+
+        // when four work loops are made
+        manager.doWork();
+        manager.doWork();
+        manager.doWork();
         manager.doWork();
 
-        // then
-        assertThat(future).hasFailedWithThrowableThat()
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("foo");
+        // then the submission was successful the third time
+        verify(mockStreamProcessor, times(3)).increaseSubscriptionCreditsAsync(any());
     }
 
     @Test

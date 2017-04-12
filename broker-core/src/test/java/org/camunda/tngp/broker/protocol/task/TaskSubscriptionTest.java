@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Optional;
 
 import org.camunda.tngp.broker.protocol.clientapi.EmbeddedBrokerRule;
+import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
 import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
+import org.camunda.tngp.test.broker.protocol.clientapi.ErrorResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
 import org.junit.Rule;
@@ -61,6 +64,24 @@ public class TaskSubscriptionTest
 
         assertThat(taskEvent).isPresent();
         assertThat(taskEvent.get().subscriberKey()).isEqualTo(secondSubscriberKey);
+    }
+
+    @Test
+    public void shouldRejectCreditsEqualToZero()
+    {
+        // when
+        final ErrorResponse error = apiRule.createControlMessageRequest()
+            .messageType(ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+            .data()
+                .put("subscriberKey", 1)
+                .put("credits", 0)
+                .put("topicId", 0)
+                .done()
+            .send().awaitError();
+
+        // then
+        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+        assertThat(error.getErrorData()).isEqualTo("Cannot increase task subscription credits. Credits must be positive.");
     }
 
 }
