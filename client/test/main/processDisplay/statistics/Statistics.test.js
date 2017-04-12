@@ -108,7 +108,7 @@ describe('<Statistics>', () => {
   it('should highlight sequence flows on hover', () => {
     update(openedState);
 
-    StatisticChart.getAttribute('chartConfig').onHover(true)({}, 0);
+    StatisticChart.getAttribute('chartConfig').onHoverChange(true)({}, 0);
 
     expect(viewer.addMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
   });
@@ -116,7 +116,7 @@ describe('<Statistics>', () => {
   it('should clear all highlights on any hover action', () => {
     update(openedState);
 
-    StatisticChart.getAttribute('chartConfig').onHover(false)({}, 0);
+    StatisticChart.getAttribute('chartConfig').onHoverChange(false)({}, 0);
 
     expect(viewer.removeMarker.calledWith(sequenceFlow, 'chart-hover')).to.eql(true);
   });

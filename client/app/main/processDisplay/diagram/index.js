@@ -1,5 +1,5 @@
 export {reducer, createLoadingDiagramAction, createLoadingDiagramResultAction,
         createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './reducer';
 export {createHeatmapRendererFunction} from './heatmap';
-export {createCreateAnalyticsRendererFunction} from './analytics';
-export {getInstanceCount} from './selectors';
+export {createCreateAnalyticsRendererFunction, leaveGatewayAnalysisMode} from './analytics';
+export {getInstanceCount, getSelection} from './selectors';

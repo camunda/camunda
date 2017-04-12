@@ -75,14 +75,14 @@ export function updateBars({bars, x, y, height}) {
     .attr('height', function({value}) { return height - y(value); });
 }
 
-export function createNewBars({bars, x, y, height, tooltip, onHover}) {
+export function createNewBars({bars, x, y, height, tooltip, onHoverChange}) {
   const newBars = bars.enter()
     .append('rect')
     .attr('class', 'bar')
     .on('mouseover', tooltip.show)
-    .on('mouseover', onHover(true))
+    .on('mouseover', onHoverChange(true))
     .on('mouseout', tooltip.hide)
-    .on('mouseout', onHover(false));
+    .on('mouseout', onHoverChange(false));
 
   updateBars({bars: newBars, x, y, height});
 }

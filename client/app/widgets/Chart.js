@@ -25,7 +25,7 @@ export const Chart = withSelector(({config}) => {
       const bars = collectBars({container, data});
 
       updateBars({bars, x, y, height});
-      createNewBars({bars, x, y, height, tooltip, onHover: config.onHover || noop});
+      createNewBars({bars, x, y, height, tooltip, onHoverChange: config.onHoverChange || noop});
       removeOldBars(bars);
     };
   };

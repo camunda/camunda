@@ -38,7 +38,7 @@ function Process() {
           </Default>
         </Match>
         <Match>
-          <Case predicate={shouldDisplayOneOf(['frequency', 'duration', 'branch_analysis'])}>
+          <Case predicate={shouldDisplay(['frequency', 'duration', 'branch_analysis'])}>
             <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
         </Match>
@@ -53,10 +53,6 @@ function Process() {
 
   function hasNoData({controls, diagram:{heatmap:{data}}}) {
     return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis']);
-  }
-
-  function shouldDisplayOneOf(targetViews) {
-    return () => targetViews.filter(isViewSelected).length;
   }
 
   function shouldDisplay(targetView) {
