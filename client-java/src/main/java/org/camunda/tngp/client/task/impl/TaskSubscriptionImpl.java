@@ -1,7 +1,5 @@
 package org.camunda.tngp.client.task.impl;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.camunda.tngp.client.event.impl.EventAcquisition;
 import org.camunda.tngp.client.event.impl.EventSubscription;
 import org.camunda.tngp.client.impl.Loggers;
@@ -25,7 +23,6 @@ public class TaskSubscriptionImpl
     protected final String taskType;
     protected final long lockTime;
     protected final int lockOwner;
-    protected final AtomicInteger remainingCapacity = new AtomicInteger(0);
 
     protected boolean autoComplete;
     protected MsgPackMapper msgPackMapper;
@@ -36,12 +33,12 @@ public class TaskSubscriptionImpl
             String taskType,
             long lockTime,
             int lockOwner,
-            int upperBoundCapacity,
+            int capacity,
             EventAcquisition<TaskSubscriptionImpl> acquisition,
             MsgPackMapper msgPackMapper,
             boolean autoComplete)
     {
-        super(acquisition, upperBoundCapacity);
+        super(acquisition, capacity);
         this.taskClient = client;
         this.taskHandler = taskHandler;
         this.taskType = taskType;
@@ -95,8 +92,6 @@ public class TaskSubscriptionImpl
                 LOGGER.info("An error ocurred when handling task " + task.getKey() + ". Reporting to broker.", ex);
                 task.fail(ex);
             }
-
-            remainingCapacity.incrementAndGet();
         });
 
         return polledEvents;
@@ -108,13 +103,13 @@ public class TaskSubscriptionImpl
         return taskHandler != null;
     }
 
-    public int getAndDecrementRemainingCapacity()
+    @Override
+    protected void requestEventSourceReplenishment(int eventsProcessed)
     {
-        final int capacity = remainingCapacity.get();
-
-        remainingCapacity.addAndGet(-capacity);
-
-        return capacity;
+        taskClient.increaseSubscriptionCredits()
+            .subscriptionId(subscriberKey)
+            .credits(eventsProcessed)
+            .execute();
     }
 
     @Override
@@ -135,23 +130,6 @@ public class TaskSubscriptionImpl
             .subscriptionId(subscriberKey)
             .execute();
 
-    }
-
-    @Override
-    public void onEventsPolled(int numEvents)
-    {
-        if (isOpen())
-        {
-            final int credits = getAndDecrementRemainingCapacity();
-
-            if (credits > 0)
-            {
-                taskClient.increaseSubscriptionCredits()
-                    .subscriptionId(subscriberKey)
-                    .credits(credits)
-                    .execute();
-            }
-        }
     }
 
     @Override

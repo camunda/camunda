@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.subscription.RecordingEventHandler.RecordedEvent;
+import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.event.EventMetadata;
 import org.camunda.tngp.client.event.PollableTopicSubscription;
@@ -582,6 +584,35 @@ public class TopicSubscriptionTest
         assertThat(recordingHandler.getRecordedEvents())
             .filteredOn((re) -> re.getMetadata().getEventType() == TopicEventType.UNKNOWN)
             .isEmpty();
+    }
+
+    @Test
+    public void shouldReceiveMoreEventsThanSubscriptionCapacity()
+    {
+        // given
+        final Properties properties = new Properties();
+        ClientProperties.setDefaults(properties);
+        final int subscriptionCapacity = Integer.parseInt(
+                properties.getProperty(ClientProperties.CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY));
+
+        for (int i = 0; i < subscriptionCapacity + 1; i++)
+        {
+            client.taskTopic(0).create()
+                .addHeader("key", "value")
+                .payload("{}")
+                .taskType("foo")
+                .execute();
+        }
+
+        // when
+        client.topic(0).newSubscription()
+            .handler(recordingHandler)
+            .startAtHeadOfTopic()
+            .name(SUBSCRIPTION_NAME)
+            .open();
+
+        // then
+        TestUtil.waitUntil(() -> recordingHandler.numRecordedEvents() > subscriptionCapacity);
     }
 
 }

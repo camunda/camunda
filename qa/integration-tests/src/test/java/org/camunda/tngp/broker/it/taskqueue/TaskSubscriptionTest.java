@@ -22,6 +22,7 @@ import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.PollableTaskSubscription;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskSubscription;
+import org.camunda.tngp.test.util.TestUtil;
 import org.camunda.tngp.util.time.ClockUtil;
 import org.junit.After;
 import org.junit.Rule;
@@ -527,6 +528,35 @@ public class TaskSubscriptionTest
             .open();
 
         waitUntil(() -> taskHandler.getHandledTasks().size() == 2);
+    }
+
+    @Test
+    public void shouldHandleMoreTasksThanPrefetchCapacity()
+    {
+        // given
+        final TngpClient tngpClient = clientRule.getClient();
+        final int subscriptionCapacity = 16;
+
+        for (int i = 0; i < subscriptionCapacity + 1; i++)
+        {
+            tngpClient.taskTopic(0).create()
+                .addHeader("key", "value")
+                .payload("{}")
+                .taskType("foo")
+                .execute();
+        }
+        final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
+
+        // when
+        tngpClient.taskTopic(0).newTaskSubscription()
+            .handler(taskHandler)
+            .taskType("foo")
+            .lockTime(Duration.ofMinutes(5))
+            .lockOwner(5)
+            .open();
+
+        // then
+        TestUtil.waitUntil(() -> taskHandler.getHandledTasks().size() > subscriptionCapacity);
     }
 
 }

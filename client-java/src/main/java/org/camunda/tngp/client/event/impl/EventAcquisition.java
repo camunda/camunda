@@ -71,6 +71,7 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         }
         catch (Exception e)
         {
+            LOGGER.warn("Exception when closing subscription", e);
             subscription.onCloseFailed(e);
         }
     }
@@ -80,15 +81,6 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
         // don't try to send any further requests regarding this subscription
         subscriptions.removeSubscription(subscription);
         subscription.onAbort();
-    }
-
-    public CompletableFuture<Void> onEventsPolledAsync(T subscription, int numEvents)
-    {
-        return asyncContext.runAsync((future) ->
-        {
-            subscription.onEventsPolled(numEvents);
-            future.complete(null);
-        });
     }
 
     @Override
@@ -126,6 +118,17 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
             {
                 closeSubscription(subscription);
                 workCount++;
+            }
+            if (subscription.isOpen())
+            {
+                try
+                {
+                    subscription.replenishEventSource();
+                }
+                catch (Exception e)
+                {
+                    LOGGER.warn("Could not replenish subscription event source", e);
+                }
             }
         }
 

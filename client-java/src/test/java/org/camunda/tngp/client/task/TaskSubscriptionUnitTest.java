@@ -18,7 +18,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -317,28 +316,6 @@ public class TaskSubscriptionUnitTest
 
         // then
         assertThat(subscription1.size() + subscription2.size()).isEqualTo(1);
-    }
-
-    @Test
-    public void shouldNotDistributeMoreThanSubscriptionCapacity() throws Exception
-    {
-        // given
-        final TaskSubscriptionImpl subscription = newDefaultSubscription();
-
-        subscription.openAsync();
-        acquisition.doWork();
-
-        for (int i = 0; i < subscription.capacity(); i++)
-        {
-            subscription.addEvent(mock(TopicEventImpl.class));
-        }
-
-        // then
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Cannot add any more events. Event queue saturated.");
-
-        // when
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
     }
 
     @Test

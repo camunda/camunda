@@ -142,12 +142,9 @@ public class TopicSubscriptionImpl
     }
 
     @Override
-    protected void onEventsPolled(int numEvents)
+    protected void requestEventSourceReplenishment(int eventsProcessed)
     {
-        if (isOpen())
-        {
-            acknowledgeLastProcessedEvent();
-        }
+        acknowledgeLastProcessedEvent();
     }
 
     protected void acknowledgeLastProcessedEvent()

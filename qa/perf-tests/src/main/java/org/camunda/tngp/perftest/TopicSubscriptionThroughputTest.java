@@ -39,7 +39,7 @@ public class TopicSubscriptionThroughputTest
         properties.putIfAbsent(CLIENT_MAXREQUESTS, "2048");
         properties.putIfAbsent(CLIENT_TASK_EXECUTION_THREADS, "8");
         properties.putIfAbsent(CLIENT_MAXCONNECTIONS, "16");
-        properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "10000");
+        properties.putIfAbsent(CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY, "12000");
         ClientProperties.setDefaults(properties);
         setDefaultProperties(properties);
 

@@ -11,6 +11,9 @@ import org.slf4j.Logger;
 
 public abstract class EventSubscription<T extends EventSubscription<T>>
 {
+    // TODO: could become configurable in the future
+    protected static final double REPLENISHMENT_THRESHOLD = 0.3d;
+
     protected static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
     public static final int STATE_NEW = 0;
@@ -36,14 +39,16 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
     protected int receiveChannelId;
 
     protected final AtomicInteger state = new AtomicInteger(STATE_NEW);
+
     protected final AtomicInteger eventsInProcessing = new AtomicInteger(0);
+    protected final AtomicInteger eventsProcessedSinceLastReplenishment = new AtomicInteger(0);
     protected CompletableFuture<Void> closeFuture;
 
-    public EventSubscription(EventAcquisition<T> eventAcquisition, int upperBoundCapacity)
+    public EventSubscription(EventAcquisition<T> eventAcquisition, int capacity)
     {
         this.eventAcquisition = eventAcquisition;
-        this.pendingEvents = new ManyToManyConcurrentArrayQueue<>(upperBoundCapacity);
-        this.capacity = pendingEvents.capacity();
+        this.pendingEvents = new ManyToManyConcurrentArrayQueue<>(capacity);
+        this.capacity = capacity;
     }
 
     public long getSubscriberKey()
@@ -221,13 +226,14 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             finally
             {
                 eventsInProcessing.decrementAndGet();
+                eventsProcessedSinceLastReplenishment.incrementAndGet();
             }
         }
 
-        if (handledEvents > 0)
-        {
-            eventAcquisition.onEventsPolledAsync((T) this, handledEvents);
-        }
+//        if (handledEvents > 0)
+//        {
+//            eventAcquisition.onEventsPolledAsync((T) this, handledEvents);
+//        }
 
         return handledEvents;
     }
@@ -255,11 +261,23 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         state.compareAndSet(STATE_ABORTING, STATE_ABORTED);
     }
 
+    public void replenishEventSource()
+    {
+        final int eventsProcessed = eventsProcessedSinceLastReplenishment.get();
+        final int remainingCapacity = capacity - eventsProcessed;
+
+        if (remainingCapacity < capacity * REPLENISHMENT_THRESHOLD)
+        {
+            requestEventSourceReplenishment(eventsProcessed);
+            eventsProcessedSinceLastReplenishment.addAndGet(-eventsProcessed);
+        }
+    }
+
+    protected abstract void requestEventSourceReplenishment(int eventsProcessed);
+
     protected abstract EventSubscriptionCreationResult requestNewSubscription();
 
     protected abstract void requestSubscriptionClose();
-
-    protected abstract void onEventsPolled(int numEvents);
 
     public abstract int getTopicId();
 
