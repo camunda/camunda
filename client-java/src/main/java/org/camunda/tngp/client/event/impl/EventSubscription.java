@@ -230,11 +230,6 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
             }
         }
 
-//        if (handledEvents > 0)
-//        {
-//            eventAcquisition.onEventsPolledAsync((T) this, handledEvents);
-//        }
-
         return handledEvents;
     }
 
