@@ -22,7 +22,8 @@ deploy-broker: undeploy-broker
 
 undeploy-broker:
 	-scripts/undeploy-broker.sh ${WORKDIR} ${BROKER_HOST} ${BROKER_USERNAME}
-
+local: $(eval BROKER_HOST = localhost)
+ 
 test-start-wf-instance-latency:
 	$(JAVA) -Dtngp.client.broker.contactPoint=$(BROKER_HOST):51015 \
 		 -Dtest.outputFileName=data/test-start-wf-instance-latency.txt \
@@ -92,4 +93,4 @@ all-tests: test-create-task-throughput test-create-task-latency test-start-wf-in
 
 jenkins: build deploy-broker all-tests clean
 
-.PHONY: deploy-broker undeploy-broker clean build test-start-wf-instance-latency test-create-task-throughput test-start-wf-instance-throughput all-tests jenkins
+.PHONY: local deploy-broker undeploy-broker clean build test-start-wf-instance-latency test-create-task-throughput test-start-wf-instance-throughput all-tests jenkins
