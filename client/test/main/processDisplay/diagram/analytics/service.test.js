@@ -20,6 +20,9 @@ describe('Analytics service', () => {
 
   let viewer;
 
+  let overlaysMock;
+  let elementRegistryMock;
+
   beforeEach(() => {
     heatmapData = {
       piCount: 10,
@@ -49,12 +52,20 @@ describe('Analytics service', () => {
     overlayNode = {
       html: document.createElement('div')
     };
-    viewer = {
+
+    elementRegistryMock = [{id: 'a1'}];
+    overlaysMock = {
       get: sinon.stub().returnsThis(),
-      add: sinon.spy(),
       filter: sinon.stub().returnsThis(),
-      forEach: sinon.stub().callsArgWith(0, overlayNode)
+      forEach: sinon.stub().callsArgWith(0, overlayNode),
+      add: sinon.spy()
     };
+
+    viewer = {
+      get: sinon.stub()
+    };
+    viewer.get.withArgs('elementRegistry').returns(elementRegistryMock);
+    viewer.get.withArgs('overlays').returns(overlaysMock);
   });
 
   afterEach(() => {
@@ -110,13 +121,13 @@ describe('Analytics service', () => {
     it('should add overlays on the elements', () => {
       addBranchOverlay(viewer, heatmapData);
 
-      expect(viewer.add.calledWith('a1')).to.eql(true);
+      expect(overlaysMock.add.calledWith('a1')).to.eql(true);
     });
 
     it('should add an overlay with the piCount, element value and percentage as text content', () => {
       addBranchOverlay(viewer, heatmapData);
 
-      const node = viewer.add.getCall(0).args[2].html;
+      const node = overlaysMock.add.getCall(0).args[2].html;
 
       expect(node.textContent).to.contain('10');
       expect(node.textContent).to.contain('5');
@@ -126,9 +137,16 @@ describe('Analytics service', () => {
     it('should add the overlay with the correct type', () => {
       addBranchOverlay(viewer, heatmapData);
 
-      const type = viewer.add.getCall(0).args[1];
+      const type = overlaysMock.add.getCall(0).args[1];
 
       expect(type).to.eql(BRANCH_OVERLAY);
+    });
+
+    it('should add an overlay for endEvents without reached instances', () => {
+      heatmapData.flowNodes.a1 = 0;
+      addBranchOverlay(viewer, heatmapData);
+
+      expect(overlaysMock.add.calledWith('a1')).to.eql(true);
     });
 
     it('should update the overlay visibility on hover', () => {
