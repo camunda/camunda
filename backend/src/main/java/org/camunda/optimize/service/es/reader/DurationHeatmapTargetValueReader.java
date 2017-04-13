@@ -31,6 +31,7 @@ public class DurationHeatmapTargetValueReader {
   private ConfigurationService configurationService;
 
   public DurationHeatmapTargetValueDto getTargetValues(String processDefinitionId) {
+    logger.debug("Fetching duration heatmap target value for process definition: " + processDefinitionId);
     DurationHeatmapTargetValueDto dto = new DurationHeatmapTargetValueDto();
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setTargetValues(Collections.emptyMap());
@@ -45,7 +46,8 @@ public class DurationHeatmapTargetValueReader {
       dto.setTargetValues(targetValueMap);
 
     } catch (RuntimeException e) {
-      logger.warn("Could not retrieve the duration heatmap target values from elasticsearch!");
+      logger.warn("Could not retrieve the duration heatmap target values for process definition " +
+        processDefinitionId + " from elasticsearch!");
     }
 
     return dto;

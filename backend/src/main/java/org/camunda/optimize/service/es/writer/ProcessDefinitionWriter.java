@@ -27,7 +27,7 @@ public class ProcessDefinitionWriter {
   private ObjectMapper objectMapper;
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) throws Exception {
-    logger.debug("writing [" + procDefs.size() + "] process definitions to ES");
+    logger.debug("Writing [" + procDefs.size() + "] process definitions to elasticsearch");
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       String id = procDef.getId();

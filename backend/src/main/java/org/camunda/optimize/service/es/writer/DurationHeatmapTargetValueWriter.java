@@ -31,7 +31,7 @@ public class DurationHeatmapTargetValueWriter {
     source.put(DurationHeatmapTargetValueType.PROCESS_DEFINITION_ID, dto.getProcessDefinitionId());
     source.put(DurationHeatmapTargetValueType.TARGET_VALUE_LIST, createActivityTargetValueMap(dto));
 
-    logger.debug("writing target value of process definition " + dto.getProcessDefinitionId() + " to ES");
+    logger.debug("Writing target value of process definition " + dto.getProcessDefinitionId() + " to elasticsearch");
     esclient
       .prepareIndex(configurationService.getOptimizeIndex(), configurationService.getDurationHeatmapTargetValueType(), dto.getProcessDefinitionId())
       .setSource(source)

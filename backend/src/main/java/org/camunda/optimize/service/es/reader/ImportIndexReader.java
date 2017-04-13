@@ -21,6 +21,7 @@ public class ImportIndexReader {
   private ConfigurationService configurationService;
 
   public int getImportIndex(String typeIndexComesFrom) {
+    logger.debug("Fetching import index of type '" + typeIndexComesFrom + "'");
     GetResponse getResponse = null;
     try {
       getResponse = esclient

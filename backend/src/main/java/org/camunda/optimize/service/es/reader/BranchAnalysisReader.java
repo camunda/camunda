@@ -14,6 +14,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +28,8 @@ import java.util.List;
  */
 @Component
 public class BranchAnalysisReader {
+
+  private final Logger logger = LoggerFactory.getLogger(BranchAnalysisReader.class);
 
   @Autowired
   private TransportClient esclient;
@@ -40,6 +44,8 @@ public class BranchAnalysisReader {
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
+    logger.debug("Performing branch analysis on process definition: " + request.getProcessDefinitionId());
+    
     BranchAnalysisDto result = new BranchAnalysisDto();
     List<String> gatewayOutcomes = fetchGatewayOutcomes(request.getProcessDefinitionId(), request.getGateway());
 

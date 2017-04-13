@@ -49,6 +49,8 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
     int searchedSize;
     int maxPageSize = configurationService.getEngineImportMaxPageSize();
     ensureGreaterThanZero(maxPageSize);
+    logger.debug("Importing page with index starting from '" + importIndex +
+      "' and max page size '" + maxPageSize + "' from type " + getElasticsearchType());
 
     List<ENG> pageOfEngineEntities = queryEngineRestPoint(importIndex, maxPageSize);
     List<ENG> newEngineEntities =

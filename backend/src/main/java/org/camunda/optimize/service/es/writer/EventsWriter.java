@@ -28,7 +28,7 @@ public class EventsWriter {
   private ObjectMapper objectMapper;
 
   public void importEvents(List<EventDto> events) throws Exception {
-    logger.debug("writing [" + events.size() + "] events to ES");
+    logger.debug("Writing [" + events.size() + "] events to elasticsearch");
 
     BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
     for (EventDto e : events) {

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -27,6 +28,9 @@ public class ImportScheduler extends Thread {
   @Autowired
   protected ImportJobExecutor importJobExecutor;
 
+  @Autowired
+  protected ImportProgressReporter importProgressReporter;
+
   protected long backoffCounter = STARTING_BACKOFF;
 
   private boolean enabled = true;
@@ -45,7 +49,18 @@ public class ImportScheduler extends Thread {
   public void run() {
     while (isEnabled()) {
       checkAndResetImportIndexing();
+      logger.debug("Executing import round");
       executeJob();
+      logger.debug("Finished import round. Progress of the import: " + getImportProgress() + "%");
+    }
+  }
+
+  private String getImportProgress() {
+    try {
+      return Integer.toString(importProgressReporter.computeImportProgress());
+    } catch (OptimizeException e) {
+      logger.debug("Could not fetch import progress", e);
+      return "";
     }
   }
 
@@ -53,6 +68,7 @@ public class ImportScheduler extends Thread {
     long castToLong = Double.valueOf(configurationService.getImportResetInterval()).longValue();
     LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
     if (LocalDateTime.now().isAfter(resetDueDate)) {
+      logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
       for (ImportService importService : importServiceProvider.getServices()) {
         importService.resetImportStartIndex();
       }
@@ -71,7 +87,6 @@ public class ImportScheduler extends Thread {
 
 
   protected void executeJob() {
-    logger.debug("executing import round");
     int pagesPassed = 0;
 
     if (!importScheduleJobs.isEmpty()) {

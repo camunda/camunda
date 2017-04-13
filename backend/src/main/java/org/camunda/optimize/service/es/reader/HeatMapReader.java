@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
+import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
@@ -9,6 +10,8 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
@@ -17,6 +20,8 @@ import java.util.Map;
 public abstract class HeatMapReader {
 
   static final String MI_BODY = "multiInstanceBody";
+
+  private final Logger logger = LoggerFactory.getLogger(HeatMapReader.class);
 
   @Autowired
   private TransportClient esclient;
@@ -27,19 +32,10 @@ public abstract class HeatMapReader {
   private DateFilterHelper dateFilterHelper;
 
   public HeatMapResponseDto getHeatMap(String processDefinitionId) {
-    HeatMapResponseDto result = new HeatMapResponseDto();
-    Map<String, Long> flowNodes = new HashMap<>();
-    result.setFlowNodes(flowNodes);
-
-    SearchRequestBuilder srb = esclient
-      .prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getEventType());
-
-    BoolQueryBuilder query = setupBaseQuery(processDefinitionId);
-
-    srb = srb.setQuery(query);
-    processAggregations(result, srb);
-    return result;
+    HeatMapQueryDto dto = new HeatMapQueryDto();
+    dto.setProcessDefinitionId(processDefinitionId);
+    dto.setFilter(new FilterMapDto());
+    return getHeatMap(dto);
   }
 
   private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
@@ -51,8 +47,10 @@ public abstract class HeatMapReader {
   }
 
   public HeatMapResponseDto getHeatMap(HeatMapQueryDto dto) {
-    HeatMapResponseDto result = new HeatMapResponseDto();
     ValidationHelper.validate(dto);
+    logger.debug("Fetching heat map for process definition: " + dto.getProcessDefinitionId());
+
+    HeatMapResponseDto result = new HeatMapResponseDto();
     Map<String, Long> flowNodes = new HashMap<>();
     result.setFlowNodes(flowNodes);
 

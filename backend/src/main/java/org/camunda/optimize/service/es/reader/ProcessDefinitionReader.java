@@ -40,6 +40,7 @@ public class ProcessDefinitionReader {
   }
 
   public List<ExtendedProcessDefinitionOptimizeDto> getProcessDefinitions(boolean withXml) {
+    logger.debug("Fetching process definitions");
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
 
