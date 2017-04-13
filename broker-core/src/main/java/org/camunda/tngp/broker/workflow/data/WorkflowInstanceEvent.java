@@ -1,25 +1,28 @@
 package org.camunda.tngp.broker.workflow.data;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
-import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
-import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
-import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
-import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
+import org.camunda.tngp.broker.util.msgpack.property.*;
+import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
 public class WorkflowInstanceEvent extends UnpackedObject
 {
+    protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+
     public static final String PROP_EVENT_TYPE = "eventType";
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
     public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
     public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
     public static final String PROP_WORKFLOW_VERSION = "version";
+    public static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
     private final EnumProperty<WorkflowInstanceEventType> eventTypeProp = new EnumProperty<>(PROP_EVENT_TYPE, WorkflowInstanceEventType.class);
     private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
     private final LongProperty workflowInstanceKeyProp = new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
     private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
     private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
+    private final BinaryProperty payloadProp = new BinaryProperty(PROP_WORKFLOW_PAYLOAD, EMPTY_PAYLOAD);
 
     public WorkflowInstanceEvent()
     {
@@ -28,7 +31,8 @@ public class WorkflowInstanceEvent extends UnpackedObject
             .declareProperty(bpmnProcessIdProp)
             .declareProperty(workflowInstanceKeyProp)
             .declareProperty(activityIdProp)
-            .declareProperty(versionProp);
+            .declareProperty(versionProp)
+            .declareProperty(payloadProp);
     }
 
     public WorkflowInstanceEventType getEventType()
@@ -100,6 +104,23 @@ public class WorkflowInstanceEvent extends UnpackedObject
     public WorkflowInstanceEvent setVersion(int version)
     {
         this.versionProp.setValue(version);
+        return this;
+    }
+
+    public DirectBuffer getPayload()
+    {
+        return payloadProp.getValue();
+    }
+
+    public WorkflowInstanceEvent setPayload(DirectBuffer payload)
+    {
+        payloadProp.setValue(payload);
+        return this;
+    }
+
+    public WorkflowInstanceEvent setPayload(DirectBuffer payload, int offset, int length)
+    {
+        payloadProp.setValue(payload, offset, length);
         return this;
     }
 

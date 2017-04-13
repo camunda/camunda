@@ -3,6 +3,7 @@ package org.camunda.tngp.client.workflow.cmd.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
+import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.client.workflow.cmd.CreateWorkflowInstanceCmd;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
@@ -18,6 +19,7 @@ import static org.camunda.tngp.util.EnsureUtil.*;
 public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<WorkflowInstanceEvent, WorkflowInstance> implements CreateWorkflowInstanceCmd
 {
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
+    protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     public CreateWorkflowInstanceCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
     {
@@ -27,15 +29,15 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     @Override
     public CreateWorkflowInstanceCmd payload(InputStream payload)
     {
-        // not supported yet
-        return null;
+        this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
+        return this;
     }
 
     @Override
     public CreateWorkflowInstanceCmd payload(String payload)
     {
-        // not supported yet
-        return null;
+        this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
+        return this;
     }
 
     @Override

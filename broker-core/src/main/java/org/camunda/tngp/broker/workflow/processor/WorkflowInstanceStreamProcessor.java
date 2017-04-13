@@ -1,13 +1,7 @@
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
-
-import java.nio.ByteOrder;
-
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
@@ -23,13 +17,7 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
+import org.camunda.tngp.broker.workflow.graph.model.*;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
@@ -46,7 +34,17 @@ import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
+import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
+import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
+import org.camunda.tngp.msgpack.query.MsgPackTraverser;
 import org.camunda.tngp.protocol.clientapi.EventType;
+
+import java.nio.ByteOrder;
+
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -78,6 +76,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     // internal //////////////////////////////////////
 
     protected final CommandResponseWriter responseWriter;
+    protected final MsgPackTraverser traverser = new MsgPackTraverser();
+    protected final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
 
     /**
      * An hash index which contains as key the BPMN process id and as value the corresponding latest definition version.
@@ -156,11 +156,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         eventKey = event.getLongKey();
         eventPosition = event.getPosition();
-
         event.readMetadata(sourceEventMetadata);
 
         EventProcessor eventProcessor = null;
-
         switch (sourceEventMetadata.getEventType())
         {
             case DEPLOYMENT_EVENT:
@@ -203,10 +201,9 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected EventProcessor onWorkflowEvent(LoggedEvent event)
     {
-        EventProcessor eventProcessor = null;
-
         event.readValue(workflowInstanceEvent);
 
+        EventProcessor eventProcessor = null;
         switch (workflowInstanceEvent.getEventType())
         {
             case CREATE_WORKFLOW_INSTANCE:
@@ -536,6 +533,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     private final class ActivityActivatedEventProcessor implements EventProcessor
     {
+
         @Override
         public void processEvent()
         {
@@ -546,33 +544,41 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 final ExecutableServiceTask serviceTask = (ExecutableServiceTask) activty;
                 final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
 
-                final TaskHeaders taskHeaders = taskEvent.getHeaders()
-                    .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
-                    .setWorkflowDefinitionVersion(workflowInstanceEvent.getVersion())
-                    .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-                    .setActivityId(serviceTask.getId())
-                    .setActivityInstanceKey(eventKey);
-
-                final TaskHeader[] customHeaders = taskMetadata.getHeaders();
-                for (int i = 0; i < customHeaders.length; i++)
-                {
-                    final TaskHeader customHeader = customHeaders[i];
-
-                    taskHeaders.customHeaders().add()
-                        .setKey(customHeader.getKey())
-                        .setValue(customHeader.getValue());
-                }
-
                 taskEvent
                     .setEventType(TaskEventType.CREATE)
                     .setType(taskMetadata.getTaskType())
-                    .setRetries(taskMetadata.getRetries())
-                    .setHeaders(taskHeaders);
+                    .setRetries(taskMetadata.getRetries());
+
+                setTaskHeaders(serviceTask, taskMetadata);
+                final JsonPathQuery inputQuery = serviceTask.getIoMapping().getInputQuery();
+                taskEvent.setPayload(mapPayload(inputQuery, workflowInstanceEvent.getPayload()));
             }
             else
             {
                 throw new RuntimeException("Currently not supported. An activity must be of type service task.");
             }
+        }
+
+        public void setTaskHeaders(ExecutableServiceTask serviceTask, TaskMetadata taskMetadata)
+        {
+            final TaskHeaders taskHeaders = taskEvent.getHeaders()
+                .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
+                .setWorkflowDefinitionVersion(workflowInstanceEvent.getVersion())
+                .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
+                .setActivityId(serviceTask.getId())
+                .setActivityInstanceKey(eventKey);
+
+            final TaskHeader[] customHeaders = taskMetadata.getHeaders();
+            for (int i = 0; i < customHeaders.length; i++)
+            {
+                final TaskHeader customHeader = customHeaders[i];
+
+                taskHeaders.customHeaders().add()
+                    .setKey(customHeader.getKey())
+                    .setValue(customHeader.getValue());
+            }
+
+            taskEvent.setHeaders(taskHeaders);
         }
 
         @Override
@@ -632,6 +638,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
             if (taskHeaders.getWorkflowInstanceKey() > 0)
             {
+
                 // assuming that the workflow instance is still in this activity
                 workflowInstanceEvent
                     .setEventType(WorkflowInstanceEventType.ACTIVITY_COMPLETED)
@@ -639,6 +646,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setVersion(taskHeaders.getWorkflowDefinitionVersion())
                     .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
                     .setActivityId(taskHeaders.getActivityId());
+
+                final ExecutableFlowNode currentActivity = getCurrentActivity();
+                final ExecutableServiceTask serviceTask = (ExecutableServiceTask) currentActivity;
+                final JsonPathQuery outputQuery = serviceTask.getIoMapping().getOutputQuery();
+                workflowInstanceEvent.setPayload(mapPayload(outputQuery, taskEvent.getPayload()));
 
                 isActivityCompleted = true;
             }
@@ -656,6 +668,32 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
             return position;
         }
+    }
+
+    private MutableDirectBuffer mapPayload(JsonPathQuery mapQuery, DirectBuffer payload)
+    {
+        final MutableDirectBuffer resultBuffer;
+        queryExecutor.init(mapQuery.getFilters(), mapQuery.getFilterInstances());
+
+        traverser.wrap(payload, 0, payload.capacity());
+        traverser.traverse(queryExecutor);
+
+        if (queryExecutor.numResults() > 0)
+        {
+            // currently only first result is supported
+            queryExecutor.moveToResult(0);
+
+            final int resultLength = queryExecutor.currentResultLength();
+            final byte[] result = new byte[resultLength];
+            resultBuffer = new UnsafeBuffer(0, 0);
+            resultBuffer.wrap(result);
+            payload.getBytes(queryExecutor.currentResultPosition(), resultBuffer, 0, resultLength);
+        }
+        else
+        {
+            resultBuffer = TaskEvent.EMPTY_MAP;
+        }
+        return resultBuffer;
     }
 
     private final class WorkflowPositionIndexAccessor

@@ -30,6 +30,10 @@ public class TngpExtensions
 {
     public static final String TNGP_NAMESPACE = "http://camunda.org/schema/tngp/1.0";
 
+    public static final String IO_MAPPING_ELEMENT = "ioMapping";
+    public static final String IO_MAPPING_INPUT_ATTRIBUTE = "input";
+    public static final String IO_MAPPING_OUTPUT_ATTRIBUTE = "output";
+
     public static final String TASK_DEFINITION_ELEMENT = "taskDefinition";
     public static final String TASK_HEADERS_ELEMENT = "taskHeaders";
     public static final String TASK_HEADER_ELEMENT = "header";
@@ -157,6 +161,17 @@ public class TngpExtensions
 
                 taskHeaders.getDomElement().appendChild(taskHeader);
             });
+
+            return this;
+        }
+
+        public TngpModelInstance ioMapping(String activityId, String inputMapping, String outputMapping)
+        {
+            final ExtensionElements extensionElements = getExtensionElements(activityId);
+            final ModelElementInstance ioMapping = extensionElements.addExtensionElement(TNGP_NAMESPACE, IO_MAPPING_ELEMENT);
+
+            ioMapping.setAttributeValue(IO_MAPPING_INPUT_ATTRIBUTE, inputMapping);
+            ioMapping.setAttributeValue(IO_MAPPING_OUTPUT_ATTRIBUTE, outputMapping);
 
             return this;
         }

@@ -24,6 +24,9 @@ import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.wo
 
 public class WorkflowInstanceFunctionalTest
 {
+    private static final String PROP_TASK_TYPE = "type";
+    private static final String PROP_TASK_RETRIES = "retries";
+
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
 
@@ -177,8 +180,8 @@ public class WorkflowInstanceFunctionalTest
 
         assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
-            .containsEntry("type", "bar")
-            .containsEntry("retries", 5);
+            .containsEntry(PROP_TASK_TYPE, "bar")
+            .containsEntry(PROP_TASK_RETRIES, 5);
     }
 
     @Test

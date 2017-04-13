@@ -1,18 +1,19 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
-
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
+import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 import org.camunda.tngp.transport.ServerSocketBinding;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.Transports;
 import org.junit.rules.ExternalResource;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -89,6 +90,23 @@ public class StubBrokerRule extends ExternalResource
             .bind();
     }
 
+    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith()
+    {
+        return onWorkflowRequestRespondWith(0, 123);
+    }
+
+    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(int topicId, long longkey)
+    {
+        final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_EVENT &&
+            "CREATE_WORKFLOW_INSTANCE".equals(ecr.getCommand().get("eventType")))
+            .respondWith()
+            .topicId(topicId)
+            .longKey(longkey).event().allOf((r) -> r.getCommand());
+        return eventType;
+//            .event(workflowInstanceEvent)
+//            .register();
+    }
+
     public ExecuteCommandResponseBuilder onExecuteCommandRequest()
     {
         return onExecuteCommandRequest((r) -> true);
@@ -98,6 +116,9 @@ public class StubBrokerRule extends ExternalResource
     {
         return new ExecuteCommandResponseBuilder(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction);
     }
+
+
+
 
     public ControlMessageResponseBuilder onControlMessageRequest()
     {

@@ -22,4 +22,10 @@ public interface WorkflowInstance
      * @return the version of the workflow definition
      */
     int getVersion();
+
+    /**
+     * The payload of the current running workflow instance.
+     * @return the payload of the workflow instance
+     */
+    byte[] getPayload();
 }

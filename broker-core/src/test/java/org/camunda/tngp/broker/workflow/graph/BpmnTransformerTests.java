@@ -1,29 +1,29 @@
 package org.camunda.tngp.broker.workflow.graph;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.tngp.broker.workflow.graph.model.*;
+import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
-import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
-import org.junit.Test;
-
 public class BpmnTransformerTests
 {
     private BpmnTransformer bpmnTransformer = new BpmnTransformer();
+
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none();
 
     @Test
     public void shouldTransformStartEvent()
@@ -126,6 +126,53 @@ public class BpmnTransformerTests
             .hasSize(2)
             .extracting(h -> tuple(h.getKey(), h.getValue()))
             .contains(tuple("a", "b"), tuple("c", "d"));
+    }
+
+    @Test
+    public void shouldTransformTaskMapping()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+            .name("bar")
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo", "$", "$.*");
+
+        // when
+        final ExecutableWorkflow process = transformSingleProcess(bpmnModelInstance);
+
+        // then
+        final ExecutableFlowElement element = process.findFlowElementById(wrapString("foo"));
+        final ExecutableServiceTask serviceTask = (ExecutableServiceTask) element;
+
+        assertThat(serviceTask.getIoMapping()).isNotNull();
+        assertThat(serviceTask.getIoMapping().getInputQuery()).isNotNull();
+        assertThat(serviceTask.getIoMapping().getInputQuery().isValid()).isTrue();
+
+        assertThat(serviceTask.getIoMapping().getOutputQuery()).isNotNull();
+        assertThat(serviceTask.getIoMapping().getOutputQuery().isValid()).isTrue();
+    }
+
+    @Test
+    public void shouldNotTransformForInvalidTaskMapping()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+            .name("bar")
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo", "foo", "$.*");
+
+        // expect
+        exceptionRule.expect(RuntimeException.class);
+        exceptionRule.expectMessage("Mapping failed JSON Path Query is not valid! Reason: Unexpected json-path token LITERAL");
+
+        // when
+        transformSingleProcess(bpmnModelInstance);
     }
 
     protected ExecutableWorkflow transformSingleProcess(BpmnModelInstance bpmnModelInstance)

@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.test.util.collection.MapBuilder;
 
 public class TestTopicClient
 {
@@ -31,6 +32,7 @@ public class TestTopicClient
     public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
     public static final String PROP_WORKFLOW_BPMN_XML = "bpmnXml";
     public static final String PROP_WORKFLOW_VERSION = "version";
+    private static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
     private final ClientApiRule apiRule;
     private final int topicId;
@@ -68,6 +70,15 @@ public class TestTopicClient
         return response.key();
     }
 
+    public long createWorkflowInstance(String bpmnProcessId, byte[] payload)
+    {
+        final ExecuteCommandResponse response = sendCreateWorkflowInstanceRequest(bpmnProcessId, payload);
+
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("WORKFLOW_INSTANCE_CREATED");
+
+        return response.key();
+    }
+
     public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId)
     {
         return apiRule.createCmdRequest()
@@ -78,6 +89,19 @@ public class TestTopicClient
                     .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
                 .done()
                 .sendAndAwait();
+    }
+
+    public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, byte[] payload)
+    {
+        return apiRule.createCmdRequest()
+            .topicId(topicId)
+            .eventTypeWorkflow()
+            .command()
+            .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
+            .put(PROP_WORKFLOW_PAYLOAD, payload)
+            .done()
+            .sendAndAwait();
     }
 
     public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, int version)
@@ -95,28 +119,39 @@ public class TestTopicClient
 
     public void completeTaskOfType(String taskType)
     {
+        completeTaskOfType(taskType, null);
+    }
+
+    public void completeTaskOfType(String taskType, byte[] payload)
+    {
         apiRule.openTaskSubscription(topicId, taskType).await();
 
         final SubscribedEvent taskEvent = apiRule
-                .subscribedEvents()
-                .filter(taskEvents("LOCKED"))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
+            .subscribedEvents()
+            .filter(taskEvents("LOCKED"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
-        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+        final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
             .topicId(topicId)
             .key(taskEvent.longKey())
             .eventTypeTask()
             .command()
-                .put(PROP_EVENT, "COMPLETE")
-                .put("type", taskType)
-                .put("lockOwner", taskEvent.event().get("lockOwner"))
-                .put("headers", taskEvent.event().get("headers"))
-                .done()
-            .sendAndAwait();
+            .put(PROP_EVENT, "COMPLETE")
+            .put("type", taskType)
+            .put("lockOwner", taskEvent.event().get("lockOwner"))
+            .put("headers", taskEvent.event().get("headers"));
+
+        if (payload != null)
+        {
+            mapBuilder.put("payload", payload);
+        }
+
+        final ExecuteCommandResponse response = mapBuilder.done().sendAndAwait();
 
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
     }
+
 
     /**
      * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations

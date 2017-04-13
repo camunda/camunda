@@ -10,6 +10,7 @@ public class WorkflowInstanceEvent
     protected long workflowInstanceKey;
     protected WorkflowInstanceEventType eventType;
     protected String activityId;
+    protected byte[] payload;
 
     public String getBpmnProcessId()
     {
@@ -61,6 +62,16 @@ public class WorkflowInstanceEvent
         this.activityId = activityId;
     }
 
+    public byte[] getPayload()
+    {
+        return payload;
+    }
+
+    public void setPayload(byte[] payload)
+    {
+        this.payload = payload;
+    }
+
     public void reset()
     {
         bpmnProcessId = null;
@@ -68,6 +79,6 @@ public class WorkflowInstanceEvent
         workflowInstanceKey = -1;
         eventType = null;
         activityId = null;
+        payload = null;
     }
-
 }
