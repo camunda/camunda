@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.transport.cfg;
 
-public class SocketBindingCfg
+import org.camunda.tngp.broker.system.ComponentConfiguration;
+
+public class SocketBindingCfg extends ComponentConfiguration
 {
     public String host;
     public int port = -1;

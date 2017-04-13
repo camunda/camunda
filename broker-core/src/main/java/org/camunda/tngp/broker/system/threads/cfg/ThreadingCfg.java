@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.system.threads.cfg;
 
-public class ThreadingCfg
+import org.camunda.tngp.broker.system.ComponentConfiguration;
+
+public class ThreadingCfg extends ComponentConfiguration
 {
     public enum BrokerIdleStrategy
     {

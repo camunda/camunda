@@ -1,5 +1,11 @@
 # Default TNGP Config File. Used if no config file is provided to the broker.
 
+# Global Configuration --------------------------------
+
+[global]
+globalDataDirectory = "correctPath/"
+globalUseTemp = true
+
 # Networking configuration ----------------------------
 
 [network]
@@ -22,10 +28,10 @@ port = 51017
 receiveBufferSize = 16
 
 [network.gossip]
-peersStorageFile = "/tmp/tngp/51015/gossip/51016.tngp"
+#peersStorageFile = "/tmp/tngp/51015/gossip/51016.tngp"
 
 [network.management]
-metaDirectory = "/tmp/tngp/51015/meta"
+#metaDirectory = "/tmp/tngp/51015/meta"
 
 # System Configuration --------------------------------
 
@@ -35,7 +41,7 @@ maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
 [metrics]
-useTempCountersFile = true
+#useTempCountersFile = false
 
 # Log Configuration -----------------------------------
 
@@ -48,7 +54,7 @@ name = "test"
 id = 0
 
 [snapshot]
-useTempSnapshotDirectory = true
+#useTempSnapshotDirectory = true
 
 # Task Queues ------------------------------------------
 
@@ -57,16 +63,17 @@ numberOfWorkers = 1
 perWorkerResponsePoolCapacity = 32
 
 [[task-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
+logName = "test"
+
+
 
 # Workflow Queues ------------------------------------------
 
 [[workflow-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
+logName = "test"
+
 
 # Topic Subscriptions ------------------------------------------
 
 [subscriptions]
-useTempSnapshotFile = true
+#useTempSnapshotFile = true

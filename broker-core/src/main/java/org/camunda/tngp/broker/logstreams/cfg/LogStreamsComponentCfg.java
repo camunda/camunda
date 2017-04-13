@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.logstreams.cfg;
 
-public class LogStreamsComponentCfg
+import org.camunda.tngp.broker.system.ComponentConfiguration;
+
+public class LogStreamsComponentCfg extends ComponentConfiguration
 {
     public String[] logDirectories = new String[0];
 
