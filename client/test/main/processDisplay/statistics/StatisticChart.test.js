@@ -9,10 +9,13 @@ describe('<StatisticChart>', () => {
   let update;
   let Chart;
   let isLoading;
+  let data;
 
   beforeEach(() => {
     Chart = createMockComponent('Chart');
     __set__('Chart', Chart);
+
+    data = sinon.stub().returns([]);
   });
 
   afterEach(() => {
@@ -25,6 +28,7 @@ describe('<StatisticChart>', () => {
 
       ({node, update} = mountTemplate(<StatisticChart
         isLoading={isLoading}
+        data={data}
       >some header text</StatisticChart>));
       update({});
     });
@@ -41,6 +45,7 @@ describe('<StatisticChart>', () => {
 
       ({node, update} = mountTemplate(<StatisticChart
         isLoading={isLoading}
+        data={data}
       >some header text</StatisticChart>));
       update({});
     });
@@ -55,6 +60,10 @@ describe('<StatisticChart>', () => {
 
     it('should display a chart', () => {
       expect(node.querySelector('.chart')).to.exist;
+    });
+
+    it('should show a no data indicator if there is no data', () => {
+      expect(node.querySelector('.no-data-indicator')).to.exist;
     });
   });
 });

@@ -28,6 +28,24 @@
 
     .chart {
       height: ~"calc(100% - 50px)";
+      position: relative;
+
+      .no-data-indicator {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        pointer-events: none;
+
+        div {
+          background-color: rgba(212, 212, 212, 0.7);
+          margin-left: 20px;
+          text-align: center;
+          font-size: 3em;
+          padding-top: 2em;
+          margin-right: 20px;
+          height: 100%;
+        }
+      }
 
       .bar {
         fill: rgba(181, 21, 43, .6);
