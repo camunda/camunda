@@ -186,6 +186,44 @@ describe('ProcessDisplay service', () => {
     });
   });
 
+  describe('load heatmap failure', () => {
+    const ERROR_MSG ='I_AM_ERROR';
+    const ERROR_ACTION = 'ERROR_ACTION';
+
+    let addNotification;
+    let createLoadingHeatmapErrorAction;
+
+    beforeEach(() => {
+      post = sinon.stub().returns(Promise.reject(ERROR_MSG));
+      __set__('post', post);
+
+      addNotification = sinon.spy();
+      __set__('addNotification', addNotification);
+
+      createLoadingHeatmapErrorAction = sinon.stub().returns(ERROR_ACTION);
+      __set__('createLoadingHeatmapErrorAction', createLoadingHeatmapErrorAction);
+
+      loadHeatmap('frequency', filter);
+      Promise.runAll();
+    });
+
+    afterEach(() => {
+      __ResetDependency__('addNotification');
+      __ResetDependency__('createLoadingHeatmapErrorAction');
+    });
+
+    it('should show an error notification', () => {
+      expect(addNotification.calledOnce).to.eql(true);
+      expect(addNotification.args[0][0].text).to.eql(ERROR_MSG);
+    });
+
+    it('should create and dispatch a loading error action', () => {
+      expect(createLoadingHeatmapErrorAction.calledOnce).to.eql(true);
+      expect(createLoadingHeatmapErrorAction.calledWith(ERROR_MSG)).to.eql(true);
+      expect(dispatchAction.calledWith(ERROR_ACTION)).to.eql(true);
+    });
+  });
+
   describe('load diagram', () => {
     beforeEach(() => {
       get = sinon.stub().returns(Promise.resolve({
@@ -220,6 +258,44 @@ describe('ProcessDisplay service', () => {
       Promise.runAll();
 
       expect(createLoadingDiagramResultAction.calledWith(xml)).to.eql(true);
+    });
+  });
+
+  describe('load diagram failure', () => {
+    const ERROR_MSG ='I_AM_ERROR';
+    const ERROR_ACTION = 'ERROR_ACTION';
+
+    let addNotification;
+    let createLoadingDiagramErrorAction;
+
+    beforeEach(() => {
+      get = sinon.stub().returns(Promise.reject(ERROR_MSG));
+      __set__('get', get);
+
+      addNotification = sinon.spy();
+      __set__('addNotification', addNotification);
+
+      createLoadingDiagramErrorAction = sinon.stub().returns(ERROR_ACTION);
+      __set__('createLoadingDiagramErrorAction', createLoadingDiagramErrorAction);
+
+      loadDiagram();
+      Promise.runAll();
+    });
+
+    afterEach(() => {
+      __ResetDependency__('addNotification');
+      __ResetDependency__('createLoadingDiagramErrorAction');
+    });
+
+    it('should show an error notification', () => {
+      expect(addNotification.calledOnce).to.eql(true);
+      expect(addNotification.args[0][0].text).to.eql(ERROR_MSG);
+    });
+
+    it('should create and dispatch a loading error action', () => {
+      expect(createLoadingDiagramErrorAction.calledOnce).to.eql(true);
+      expect(createLoadingDiagramErrorAction.calledWith(ERROR_MSG)).to.eql(true);
+      expect(dispatchAction.calledWith(ERROR_ACTION)).to.eql(true);
     });
   });
 

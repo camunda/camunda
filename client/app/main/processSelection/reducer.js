@@ -1,4 +1,4 @@
-import {addLoading, createLoadingActionFunction, createResultActionFunction} from 'utils';
+import {addLoading, createLoadingActionFunction, createResultActionFunction, createErrorActionFunction} from 'utils';
 
 export const SET_VERSION = 'SET_VERSION';
 export const LOAD_PROCESSDEFINITIONS = 'LOAD_PROCESSDEFINITIONS';
@@ -33,3 +33,4 @@ export function createSetVersionAction(key, version) {
 
 export const createLoadProcessDefinitionsAction = createLoadingActionFunction('processDefinitions');
 export const createLoadProcessDefinitionsResultAction = createResultActionFunction('processDefinitions');
+export const createLoadProcessDefinitionsErrorAction = createErrorActionFunction('processDefinitions');

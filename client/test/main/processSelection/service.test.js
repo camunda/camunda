@@ -75,6 +75,43 @@ describe('ProcessSelection service', () => {
     });
   });
 
+  describe('request failure', () => {
+    const ERROR_MSG ='I_AM_ERROR';
+    const ERROR_ACTION = 'ERROR_ACTION';
+
+    let addNotification;
+    let createLoadProcessDefinitionsErrorAction;
+
+    beforeEach(() => {
+      get.returns(Promise.reject(ERROR_MSG));
+
+      addNotification = sinon.spy();
+      __set__('addNotification', addNotification);
+
+      createLoadProcessDefinitionsErrorAction = sinon.stub().returns(ERROR_ACTION);
+      __set__('createLoadProcessDefinitionsErrorAction', createLoadProcessDefinitionsErrorAction);
+
+      loadProcessDefinitions();
+      Promise.runAll();
+    });
+
+    afterEach(() => {
+      __ResetDependency__('addNotification');
+      __ResetDependency__('createLoadProcessDefinitionsErrorAction');
+    });
+
+    it('should show an error notification', () => {
+      expect(addNotification.calledOnce).to.eql(true);
+      expect(addNotification.args[0][0].text).to.eql(ERROR_MSG);
+    });
+
+    it('should create and dispatch a loading error action', () => {
+      expect(createLoadProcessDefinitionsErrorAction.calledOnce).to.eql(true);
+      expect(createLoadProcessDefinitionsErrorAction.calledWith(ERROR_MSG)).to.eql(true);
+      expect(dispatchAction.calledWith(ERROR_ACTION)).to.eql(true);
+    });
+  });
+
   describe('openDefinition', () => {
     it('should go to the process display route', () => {
       openDefinition('a');

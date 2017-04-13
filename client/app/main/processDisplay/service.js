@@ -1,9 +1,10 @@
 import {dispatchAction, includes} from 'view-utils';
 import {get, post} from 'http';
-import {createLoadingDiagramAction, createLoadingDiagramResultAction,
-        createLoadingHeatmapAction, createLoadingHeatmapResultAction} from './diagram';
+import {createLoadingDiagramAction, createLoadingDiagramResultAction, createLoadingDiagramErrorAction,
+        createLoadingHeatmapAction, createLoadingHeatmapResultAction, createLoadingHeatmapErrorAction} from './diagram';
 import {getFilterQuery} from 'utils';
 import {getLastRoute} from 'router';
+import {addNotification} from 'notifications';
 
 const viewHeatmapEndpoints = {
   branch_analysis: 'frequency',
@@ -36,7 +37,12 @@ export function loadHeatmap(view, filter) {
       dispatchAction(createLoadingHeatmapResultAction(result));
     })
     .catch(err => {
-      //TODO: Add error handling with notifications
+      addNotification({
+        status: 'Could not load heatmap data',
+        text: err,
+        isError: true
+      });
+      dispatchAction(createLoadingHeatmapErrorAction(err));
     });
 }
 
@@ -46,6 +52,14 @@ export function loadDiagram(processDefinitionId = getDefinitionId()) {
     .then(response => response.text())
     .then(result => {
       dispatchAction(createLoadingDiagramResultAction(result));
+    })
+    .catch(err => {
+      addNotification({
+        status: 'Could not load diagram',
+        text: err,
+        isError: true
+      });
+      dispatchAction(createLoadingDiagramErrorAction(err));
     });
 }
 

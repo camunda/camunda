@@ -2,6 +2,7 @@ import {dispatchAction} from 'view-utils';
 import {getRouter, getLastRoute} from 'router';
 import {login} from 'login';
 import {createLoginErrorAction, createLoginInProgressAction} from './reducer';
+import {addNotification} from 'notifications';
 
 const router = getRouter();
 
@@ -24,7 +25,12 @@ export function performLogin(user, password) {
 
       router.goTo(name, params);
     })
-    .catch(() => {
+    .catch(err => {
+      addNotification({
+        status: 'Could not login',
+        text: err,
+        isError: true
+      });
       dispatchAction(createLoginErrorAction(true));
     });
 }

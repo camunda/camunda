@@ -1,15 +1,18 @@
 export const INITIAL_STATE = 'INITIAL';
 export const LOADING_STATE = 'LOADING';
 export const LOADED_STATE = 'LOADED';
+export const ERROR_STATE = 'ERROR';
 
 export function addLoading(next, ...properties) {
   const loadTypes = getLoadTypes(properties);
   const loadedTypes = getLoadedTypes(properties);
   const resetTypes = getResetTypes(properties);
+  const errorTypes = getErrorTypes(properties);
 
   return (state, action) => {
     const loadIdx = loadTypes.indexOf(action.type);
     const loadedIdx = loadedTypes.indexOf(action.type);
+    const errorIdx = errorTypes.indexOf(action.type);
     const resetIdx = resetTypes.indexOf(action.type);
 
     let newState = next(state, action) || {};
@@ -47,6 +50,14 @@ export function addLoading(next, ...properties) {
           state: INITIAL_STATE
         }
       };
+    } else if (errorIdx !== -1) {
+      return {
+        ...newState,
+        [properties[errorIdx]]: {
+          state: ERROR_STATE,
+          error: action.error
+        }
+      };
     }
 
     return newState;
@@ -61,6 +72,9 @@ function getResetTypes(properties) {
 }
 function getLoadedTypes(properties) {
   return properties.map(prop => 'LOADED_' + prop.toUpperCase());
+}
+function getErrorTypes(properties) {
+  return properties.map(prop => 'ERROR_' + prop.toUpperCase());
 }
 
 export function createResetActionFunction(name) {
@@ -88,6 +102,15 @@ export function createResultActionFunction(name) {
   };
 }
 
+export function createErrorActionFunction(name) {
+  return error => {
+    return {
+      type: 'ERROR_' + name.toUpperCase(),
+      error
+    };
+  };
+}
+
 export function isInitial({state}) {
   return state === INITIAL_STATE;
 }
@@ -98,4 +121,8 @@ export function isLoading({state}) {
 
 export function isLoaded({state}) {
   return state === LOADED_STATE;
+}
+
+export function isError({state}) {
+  return state === ERROR_STATE;
 }

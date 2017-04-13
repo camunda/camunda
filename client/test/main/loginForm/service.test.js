@@ -108,18 +108,36 @@ describe('loginForm service', () => {
     });
 
     describe('on failed login', () => {
-      it('should dispatch error action with error flag set to true', () => {
+      const ERROR_MSG ='I_AM_ERROR';
+      const ERROR_ACTION = 'ERROR_ACTION';
+
+      let addNotification;
+      beforeEach(() => {
         login.returns(
-          Promise.reject('err')
+          Promise.reject(ERROR_MSG)
         );
+
+        addNotification = sinon.spy();
+        __set__('addNotification', addNotification);
 
         performLogin(user, password);
         Promise.runAll();
+      });
 
+      afterEach(() => {
+        __ResetDependency__('addNotification');
+      });
+
+      it('should dispatch error action with error flag set to true', () => {
         expect(dispatchAction.calledWith(errorChangeAction))
           .to.eql(true, 'expected error action to be dispatched');
         expect(createLoginErrorAction.calledWith(true))
           .to.eql(true, 'expected error action to be created with true error flag');
+      });
+
+      it('should add an error notification', () => {
+        expect(addNotification.calledOnce).to.eql(true);
+        expect(addNotification.args[0][0].text).to.eql(ERROR_MSG);
       });
     });
   });
