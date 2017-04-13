@@ -34,21 +34,15 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private ObjectMapper objectMapper;
   private Properties properties;
   private TransportClient esclient;
-  private boolean cleanUp = true;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
-    this(true);
-  }
-
-  public ElasticSearchIntegrationTestRule(boolean cleanUp) {
-    this.cleanUp = cleanUp;
     properties = PropertyUtil.loadProperties("it/it-test.properties");
   }
 
-  public void init() {
+  private void init() {
     initObjectMapper();
     initTransport();
   }
@@ -149,16 +143,14 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    if (cleanUp) {
-      try {
-        DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-            .refresh(true)
-            .filter(matchAllQuery())
-            .source("optimize")
-            .get();
-      } catch (IndexNotFoundException e) {
-        //nothing to do
-      }
+    try {
+      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+        .refresh(true)
+        .filter(matchAllQuery())
+        .source("optimize")
+        .get();
+    } catch (IndexNotFoundException e) {
+      //nothing to do
     }
   }
 
@@ -198,10 +190,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public String getEventType() {
     return properties.getProperty("camunda.optimize.es.event.type");
-  }
-
-  public String getBranchAnalysisDataType() {
-    return properties.getProperty("camunda.optimize.es.branchAnalysisData.type");
   }
 
 }

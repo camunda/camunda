@@ -14,6 +14,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
+
 @Path("/status")
 @Component
 public class StatusRestService {
@@ -53,10 +55,7 @@ public class StatusRestService {
       progressDto.setProgress(importProgressReporter.computeImportProgress());
       return Response.ok(objectMapper.writeValueAsString(progressDto), MediaType.APPLICATION_JSON).build();
     } catch (Exception e) {
-      return Response
-        .serverError()
-        .entity("{ \"errorMessage\" : \"It was not possible to compute the import progress. Reason: " +
-          e.getMessage() + "\"}").build();
+      return buildServerErrorResponse(e);
     }
   }
 

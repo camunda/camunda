@@ -49,7 +49,7 @@ public class ImportPerformanceTest {
   private boolean generateData;
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule("import-performance-test.properties");
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule(true);
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule

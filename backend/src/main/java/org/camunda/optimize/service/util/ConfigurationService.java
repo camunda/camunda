@@ -38,18 +38,14 @@ public class ConfigurationService {
   @Value(("${camunda.optimize.es.scroll.timeout.ms}"))
   private int elasticsearchScrollTimeout;
 
-  @Value("${camunda.optimize.es.correlation.init}")
-  private String correlationInitScriptPath;
-  @Value("${camunda.optimize.es.correlation.map}")
-  private String correlationMapScriptPath;
-  @Value("${camunda.optimize.es.correlation.reduce}")
-  private String correlationReduceScriptPath;
   @Value("${camunda.optimize.es.index}")
   private String optimizeIndex;
   @Value("${camunda.optimize.es.event.type}")
   private String eventType;
   @Value("${camunda.optimize.es.branchAnalysisData.type}")
   private String branchAnalysisDataType;
+  @Value("${camunda.optimize.es.heatmap.duration.targetValue.type}")
+  private String durationHeatmapTargetValueType;
   @Value("${camunda.optimize.es.procdef.type}")
   private String processDefinitionType;
   @Value("${camunda.optimize.es.procdef.xml.type}")
@@ -120,18 +116,6 @@ public class ConfigurationService {
 
   public String getEngineRestApiEndpointOfCustomEngine() {
     return engineRestApiEndpoint + engineName;
-  }
-
-  public String getCorrelationInitScriptPath() {
-    return correlationInitScriptPath;
-  }
-
-  public String getCorrelationMapScriptPath() {
-    return correlationMapScriptPath;
-  }
-
-  public String getCorrelationReduceScriptPath() {
-    return correlationReduceScriptPath;
   }
 
   public String getOptimizeIndex() {
@@ -266,5 +250,9 @@ public class ConfigurationService {
 
   public String getImportIndexType() {
     return importIndexType;
+  }
+
+  public String getDurationHeatmapTargetValueType() {
+    return durationHeatmapTargetValueType;
   }
 }

@@ -2,8 +2,6 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -20,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -64,7 +61,7 @@ public class ProcessDefinitionReader {
     do {
       for (SearchHit hit : scrollResp.getHits().getHits()) {
         if (configurationService.getProcessDefinitionType().equals(hit.getType())) {
-          addFullDefintion(definitionsResult, hit);
+          addFullDefinition(definitionsResult, hit);
         } else if (configurationService.getProcessDefinitionXmlType().equals(hit.getType())) {
           addPartialDefinition(definitionsResult, hit);
         } else {
@@ -80,7 +77,7 @@ public class ProcessDefinitionReader {
     return new ArrayList<>(definitionsResult.values());
   }
 
-  private void addFullDefintion(HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult, SearchHit hit) {
+  private void addFullDefinition(HashMap<String, ExtendedProcessDefinitionOptimizeDto> definitionsResult, SearchHit hit) {
     ExtendedProcessDefinitionOptimizeDto mapped = mapSearchToProcessDefinition(hit);
     if (definitionsResult.containsKey(mapped.getId())) {
       mapped.setBpmn20Xml(definitionsResult.get(mapped.getId()).getBpmn20Xml());

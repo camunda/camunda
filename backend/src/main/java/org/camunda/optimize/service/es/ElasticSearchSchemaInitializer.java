@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.BranchAnalysisDataType;
+import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.es.schema.type.ImportIndexType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
@@ -21,6 +22,9 @@ public class ElasticSearchSchemaInitializer {
 
   @Autowired
   private BranchAnalysisDataType branchAnalysisDataType;
+
+  @Autowired
+  private DurationHeatmapTargetValueType targetValueType;
 
   @Autowired
   private ProcessDefinitionType processDefinitionType;
@@ -50,6 +54,7 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(processDefinitionXmlType);
     schemaManager.addMapping(usersType);
     schemaManager.addMapping(importIndexType);
+    schemaManager.addMapping(targetValueType);
   }
 
 }
