@@ -1,9 +1,6 @@
 package org.camunda.tngp.broker.clustering.gossip.config;
 
-import org.camunda.tngp.broker.system.ComponentConfiguration;
-import org.camunda.tngp.broker.system.GlobalConfiguration;
-
-public class GossipConfiguration extends ComponentConfiguration
+public class GossipConfiguration
 {
     public String[] initialContactPoints = new String[0];
 
@@ -27,22 +24,4 @@ public class GossipConfiguration extends ComponentConfiguration
     public int suspicionTimeout = 10;
 
     public int numClientChannelMax = disseminatorCapacity + (failureDetectionCapacity * failureDetectionProbeCapacity) + 1;
-
-    @Override
-    protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
-    {
-        this.peersStorageFile = (String) new Rules("first")
-             .setGlobalObj(global.globalDataDirectory)
-             .setLocalObj(peersStorageFile, "peersStorageFile")
-             .setRule((r) ->
-             { return r + "gossip/tngp.cluster"; }).execute();
-
-        this.useTempFile = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempFile, "useTempFile")
-                .setRule((r) ->
-                { return r; }).execute();
-
-    }
-
 }

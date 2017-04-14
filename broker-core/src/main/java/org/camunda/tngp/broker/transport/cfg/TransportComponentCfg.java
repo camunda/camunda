@@ -2,9 +2,8 @@ package org.camunda.tngp.broker.transport.cfg;
 
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.management.config.ClusterManagementConfig;
-import org.camunda.tngp.broker.system.ComponentConfiguration;
 
-public class TransportComponentCfg extends ComponentConfiguration
+public class TransportComponentCfg
 {
     public String host = "0.0.0.0";
     public int sendBufferSize = 16;
@@ -16,12 +15,5 @@ public class TransportComponentCfg extends ComponentConfiguration
 
     public GossipConfiguration gossip = new GossipConfiguration();
     public ClusterManagementConfig management = new ClusterManagementConfig();
-
-    @Override
-    public void afterApplyingGlobalConfiguration()
-    {
-        gossip.applyGlobalConfiguration(this.tomlHandler.getTable("gossip"), this.globalConfiguration);
-        management.applyGlobalConfiguration(this.tomlHandler.getTable("management"), this.globalConfiguration);
-    }
 
 }
