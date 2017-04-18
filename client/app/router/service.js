@@ -1,5 +1,6 @@
-import {$window, $document, dispatchAction, includes} from 'view-utils';
+import {$window, $document, dispatchAction} from 'view-utils';
 import {createRouteAction} from './reducer';
+import {parseParams, stringifyParams} from 'utils';
 
 let router;
 
@@ -162,17 +163,7 @@ export function createUrlTestForRoute(patternUrl, defaults) {
       };
     }
 
-    const queryParams = query
-      .slice(1)
-      .split('&')
-      .reduce((params, part) => {
-        const [name, value] = part.split('=');
-
-        return {
-          ...params,
-          [name]: value
-        };
-      }, {});
+    const queryParams = parseParams(query);
 
     return {
       ...defaults,
@@ -192,14 +183,7 @@ export function createUrlConstructForRoute(patternUrl, defaults) {
   return (params = {}) => {
     const {usedNames, path} = getPath(params);
 
-    const search = Object
-      .keys(params)
-      .filter(name => !includes(usedNames, name))
-      .reduce((search, name) => {
-        const value = params[name];
-
-        return `${search === '' ? '' : search + '&'}${name}=${value}`;
-      }, '');
+    const search = stringifyParams(params, usedNames);
 
     if (search === '') {
       return path;
