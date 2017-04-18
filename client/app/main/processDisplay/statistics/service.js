@@ -28,7 +28,6 @@ export function loadStatisticData({endEvent, gateway}) {
     .catch(err => {
       addNotification({
         status: 'Could not load statistics data',
-        text: err,
         isError: true
       });
       dispatchAction(createLoadCorrelationResultAction(null));

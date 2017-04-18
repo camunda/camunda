@@ -110,15 +110,10 @@ describe('loginForm service', () => {
     describe('on failed login', () => {
       const ERROR_MSG ='I_AM_ERROR';
 
-      let addNotification;
-
       beforeEach(() => {
         login.returns(
           Promise.reject(ERROR_MSG)
         );
-
-        addNotification = sinon.spy();
-        __set__('addNotification', addNotification);
 
         performLogin(user, password);
         Promise.runAll();
@@ -133,11 +128,6 @@ describe('loginForm service', () => {
           .to.eql(true, 'expected error action to be dispatched');
         expect(createLoginErrorAction.calledWith(true))
           .to.eql(true, 'expected error action to be created with true error flag');
-      });
-
-      it('should add an error notification', () => {
-        expect(addNotification.calledOnce).to.eql(true);
-        expect(addNotification.args[0][0].text).to.eql(ERROR_MSG);
       });
     });
   });

@@ -39,7 +39,6 @@ export function loadHeatmap(view, filter) {
     .catch(err => {
       addNotification({
         status: 'Could not load heatmap data',
-        text: err,
         isError: true
       });
       dispatchAction(createLoadingHeatmapErrorAction(err));
@@ -56,7 +55,6 @@ export function loadDiagram(processDefinitionId = getDefinitionId()) {
     .catch(err => {
       addNotification({
         status: 'Could not load diagram',
-        text: err,
         isError: true
       });
       dispatchAction(createLoadingDiagramErrorAction(err));

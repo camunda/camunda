@@ -102,7 +102,6 @@ describe('ProcessSelection service', () => {
 
     it('should show an error notification', () => {
       expect(addNotification.calledOnce).to.eql(true);
-      expect(addNotification.args[0][0].text).to.eql(ERROR_MSG);
     });
 
     it('should create and dispatch a loading error action', () => {

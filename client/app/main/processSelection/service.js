@@ -17,7 +17,6 @@ export function loadProcessDefinitions() {
     .catch(err => {
       addNotification({
         status: 'Could not load process definitions',
-        text: err,
         isError: true
       });
       dispatchAction(createLoadProcessDefinitionsErrorAction(err));

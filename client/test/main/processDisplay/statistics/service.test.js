@@ -157,9 +157,8 @@ describe('Statistics service', () => {
       it('should show an error message when the request fails', () => {
         expect(addNotification.calledOnce).to.eql(true);
 
-        const {text, isError} = addNotification.args[0][0];
+        const {isError} = addNotification.args[0][0];
 
-        expect(text).to.eql('I AM ERROR');
         expect(isError).to.eql(true);
       });
     });

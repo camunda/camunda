@@ -1,4 +1,4 @@
-import {jsx, Text, OnEvent, Class, isFalsy} from 'view-utils';
+import {jsx, Text, OnEvent, Class, isFalsy, Match, Case} from 'view-utils';
 import {removeNotification} from './service';
 
 export function Notification() {
@@ -12,11 +12,19 @@ export function Notification() {
     <strong class="status">
       <Text property="status" />
     </strong>
-    :
+    <Match>
+      <Case predicate={hasText}>
+        :
+      </Case>
+    </Match>
     <div class="message">
       <Text property="text" />
     </div>
   </div>;
+
+  function hasText({text}) {
+    return text;
+  }
 
   function close({state: notification}) {
     removeNotification(notification);
