@@ -1,4 +1,5 @@
 import HeatmapJS from 'heatmap.js';
+import {isBpmnType} from 'utils';
 
 const SEQUENCEFLOW_RADIUS = 30;
 const SEQUENCEFLOW_STEPWIDTH = 10;
@@ -72,8 +73,8 @@ function createMap(dimensions) {
   return map;
 }
 
-function isExcluded({type, collapsed}) {
-  return type === 'bpmn:SubProcess' && !collapsed;
+function isExcluded(element) {
+  return isBpmnType(element, 'SubProcess') && !element.collapsed;
 }
 
 function generateData(values, viewer, {x: xOffset, y: yOffset}) {
