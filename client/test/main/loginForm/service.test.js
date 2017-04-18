@@ -109,9 +109,9 @@ describe('loginForm service', () => {
 
     describe('on failed login', () => {
       const ERROR_MSG ='I_AM_ERROR';
-      const ERROR_ACTION = 'ERROR_ACTION';
 
       let addNotification;
+
       beforeEach(() => {
         login.returns(
           Promise.reject(ERROR_MSG)
