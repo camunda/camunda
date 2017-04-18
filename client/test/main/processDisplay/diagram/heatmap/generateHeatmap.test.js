@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
-import generateHeatmap from 'main/processDisplay/diagram/heatmap/generateHeatmap';
+import {default as generateHeatmap, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/generateHeatmap';
 
 describe('Heatmap Generator', () => {
   const BOUNDING_BOX = {
@@ -34,9 +34,17 @@ describe('Heatmap Generator', () => {
 
   let dimensions;
   let img;
+  let isBpmnType;
 
   beforeEach(() => {
+    isBpmnType = sinon.stub().returns(true);
+    __set__('isBpmnType', isBpmnType);
+
     ({dimensions, img} = generateHeatmap(viewer, heatmapData));
+  });
+
+  afterEach(() => {
+    __ResetDependency__('isBpmnType');
   });
 
   it('should return an image and a dimensions object', () => {
