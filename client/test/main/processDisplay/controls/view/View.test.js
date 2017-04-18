@@ -17,7 +17,7 @@ describe('<View>', () => {
     onNextTick = sinon.stub().callsArg(0);
     __set__('onNextTick', onNextTick);
 
-    Select = createMockComponent('Select');
+    Select = createMockComponent('Select', true);
     __set__('Select', Select);
 
     Link = createMockComponent('Link');
@@ -45,5 +45,9 @@ describe('<View>', () => {
     onValueSelected({value: 'frequency'});
 
     expect(onViewChanged.calledWith('frequency')).to.eql(true);
+  });
+
+  it('should contains a targetValueComparison option', () => {
+    expect(node.textContent).to.contain('Target Value Comparison');
   });
 });

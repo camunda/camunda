@@ -25,6 +25,10 @@ export function View({onViewChanged}) {
           <Link selector={createRouteSelectorForView('branch_analysis')} />
           Branch Analysis
         </Option>
+        <Option value="target_value">
+          <Link selector={createRouteSelectorForView('target_value')} />
+          Target Value Comparison
+        </Option>
       </Select>
     </div>
   </td>;

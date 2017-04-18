@@ -1,8 +1,8 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
-import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount} from './diagram';
+import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount, TargetValueDisplay} from './diagram';
 import {Statistics} from './statistics';
 import {isLoading, formatTime} from 'utils';
-import {loadData, loadDiagram} from './service';
+import {loadData, loadDiagram, getDefinitionId} from './service';
 import {isViewSelected} from './controls';
 import {LoadingIndicator} from 'widgets';
 import {createDiagramControlsIntegrator} from './diagramControlsIntegrator';
@@ -33,12 +33,15 @@ function Process() {
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
           </Case>
+          <Case predicate={shouldDisplay('target_value')}>
+            <TargetValueDisplay selector="diagram" processDefinition={getDefinitionId()} Diagram={Diagram} />
+          </Case>
           <Default>
             <Diagram selector="diagram" />
           </Default>
         </Match>
         <Match>
-          <Case predicate={shouldDisplay(['frequency', 'duration', 'branch_analysis'])}>
+          <Case predicate={shouldDisplay(['frequency', 'duration', 'branch_analysis', 'target_value'])}>
             <ProcessInstanceCount selector={getProcessInstanceCount} />
           </Case>
         </Match>
@@ -52,7 +55,7 @@ function Process() {
   }
 
   function hasNoData({controls, diagram:{heatmap:{data}}}) {
-    return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis']);
+    return (!data || !data.piCount) && isViewSelected(['frequency', 'duration', 'branch_analysis', 'target_value']);
   }
 
   function shouldDisplay(targetView) {
@@ -85,8 +88,8 @@ function Process() {
     }
   }
 
-  function isLoadingSomething({diagram: {bpmnXml, heatmap}, controls}) {
-    return isLoading(bpmnXml) || isLoading(heatmap);
+  function isLoadingSomething({diagram: {bpmnXml, heatmap, targetValue}, controls}) {
+    return isLoading(bpmnXml) || isLoading(heatmap) || isLoading(targetValue);
   }
 
   return (node, eventsBus) => {

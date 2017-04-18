@@ -13,6 +13,8 @@ describe('<ProcessDisplay>', () => {
   let createDiagramControlsIntegrator;
   let Statistics;
   let ProcessInstanceCount;
+  let TargetValueDisplay;
+  let getDefinitionId;
   let loadData;
   let Diagram;
   let node;
@@ -28,6 +30,7 @@ describe('<ProcessDisplay>', () => {
         view: 'none'
       },
       diagram: {
+        targetValue: {state: LOADED_STATE},
         bpmnXml: {state: LOADED_STATE},
         heatmap: {state: LOADED_STATE, data: {
           piCount: 33
@@ -53,11 +56,17 @@ describe('<ProcessDisplay>', () => {
     Statistics = createMockComponent('Statistics');
     __set__('Statistics', Statistics);
 
+    TargetValueDisplay = createMockComponent('TargetValueDisplay');
+    __set__('TargetValueDisplay', TargetValueDisplay);
+
     ProcessInstanceCount = createMockComponent('ProcessInstanceCount');
     __set__('ProcessInstanceCount', withSelector(ProcessInstanceCount));
 
     loadData = 'load-data';
     __set__('loadData', loadData);
+
+    getDefinitionId = sinon.stub().returns('abc');
+    __set__('getDefinitionId', getDefinitionId);
 
     loadDiagram = sinon.spy();
     __set__('loadDiagram', loadDiagram);
@@ -75,6 +84,7 @@ describe('<ProcessDisplay>', () => {
 
   afterEach(() => {
     __ResetDependency__('Statistics');
+    __ResetDependency__('TargetValueDisplay');
     __ResetDependency__('ProcessInstanceCount');
     __ResetDependency__('createHeatmapDiagram');
     __ResetDependency__('createHeatmapRendererFunction');
@@ -83,9 +93,10 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('loadData');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('isViewSelected');
+    __ResetDependency__('getDefinitionId');
   });
 
-  it('should load diagram xml on starup', () => {
+  it('should load diagram xml on startup', () => {
     expect(loadDiagram.calledOnce).to.eql(true);
   });
 
@@ -105,6 +116,14 @@ describe('<ProcessDisplay>', () => {
     expect(node.textContent).to.contain('ProcessInstanceCount');
   });
 
+  it('should contain process instance count for target value view', () => {
+    selectedView = 'target_value';
+
+    update(state);
+
+    expect(node.textContent).to.contain(ProcessInstanceCount.text);
+  });
+
   it('should pass the processInstanceCount to the ProcessInstanceCount component', () => {
     selectedView = 'frequency';
 
@@ -120,6 +139,14 @@ describe('<ProcessDisplay>', () => {
   it('should display a loading indicator while loading', () => {
     state.diagram.bpmnXml.state = LOADING_STATE;
     state.diagram.heatmap.state = LOADING_STATE;
+    update(state);
+
+    expect(node.querySelector('.loading_indicator')).to.not.be.null;
+  });
+
+  it('should display a loading indicator while loading target value', () => {
+    state.diagram.targetValue.state = LOADING_STATE;
+
     update(state);
 
     expect(node.querySelector('.loading_indicator')).to.not.be.null;

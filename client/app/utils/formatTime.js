@@ -12,7 +12,7 @@ const units = Object
   .reduce((entries, key) => entries.concat({name: key, value: unitsMap[key]}), [])
   .sort(({value: valueA}, {value: valueB}) => valueB - valueA);
 
-export function formatTime(time) {
+export function formatTime(time, returnRaw) {
   if (time === 0) {
     return '0ms';
   }
@@ -36,6 +36,10 @@ export function formatTime(time) {
 
     return {parts, time};
   }, {parts: [], time});
+
+  if (returnRaw) {
+    return parts;
+  }
 
   // Take two biggest non-empty units of time and construct string out of them
   return parts

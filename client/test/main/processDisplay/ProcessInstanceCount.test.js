@@ -21,6 +21,6 @@ describe('<ProcessInstanceCount>', () => {
   it('should have a thousands separator', () => {
     update(12345);
 
-    expect(node.querySelector('.count').textContent).to.eql('12\u2009345');
+    expect(node.querySelector('.count').textContent).to.eql('12\u202F345');
   });
 });

@@ -7,31 +7,31 @@ describe('Analytics reducer', () => {
   const CHANGE_ROUTE_ACTION = 'CHANGE_ROUTE_ACTION';
 
   it('should set the element id on toggle if nothing was set previously', () => {
-    const {selection: {gateway}} = reducer(undefined, createToggleElementAction(elementId, elementType));
+    const {gateway} = reducer(undefined, createToggleElementAction(elementId, elementType));
 
     expect(gateway).to.eql(elementId);
   });
 
   it('should unset the element id on toggle if element was set previously', () => {
-    const {selection: {gateway}} = reducer({selection: {gateway: elementId}}, createToggleElementAction(elementId, elementType));
+    const {gateway} = reducer({gateway: elementId}, createToggleElementAction(elementId, elementType));
 
     expect(gateway).to.be.null;
   });
 
   it('should replace a selected element', () => {
-    const {selection: {gateway}} = reducer({selection: {gateway: 'foobar'}}, createToggleElementAction(elementId, elementType));
+    const {gateway} = reducer({gateway: 'foobar'}, createToggleElementAction(elementId, elementType));
 
     expect(gateway).to.eql(elementId);
   });
 
   it('should unset an element', () => {
-    const {selection: {gateway}} = reducer({selection: {gateway: 'foobar'}}, createUnsetElementAction(elementType));
+    const {gateway} = reducer({gateway: 'foobar'}, createUnsetElementAction(elementType));
 
     expect(gateway).to.be.null;
   });
 
   it('should unset selected elements when the view is switched', () => {
-    const {selection: {gateway, endEvent}} = reducer(
+    const {gateway, endEvent} = reducer(
       {
         gateway: 'g1',
         endEvent: 'e2'

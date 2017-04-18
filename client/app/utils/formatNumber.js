@@ -1,4 +1,4 @@
-export function formatNumber(number, separator = ' ') {
+export function formatNumber(number, separator = '\u202F') {
   const numberString = '' + number;
   const formattedNumberString = numberString
     // first separators position depends on the total number of digits, add space as separator

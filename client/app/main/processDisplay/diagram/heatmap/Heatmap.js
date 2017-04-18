@@ -24,7 +24,7 @@ export function createHeatmapRendererFunction(formatTooltip) {
     function renderHeatmap({heatmap: {data: {flowNodes}}}) {
       // add heatmap
       if (!heatmapRendered) {
-        removeHeatmap(viewer);
+        removeHeatmap();
         heatmap = getHeatmap(viewer, flowNodes);
         viewer.get('canvas')._viewport.appendChild(heatmap);
         heatmapRendered = true;

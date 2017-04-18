@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {loadHeatmap, loadDiagram, loadData, getDefinitionId,
+import {loadHeatmap, loadDiagram, loadData, getDefinitionId, loadTargetValue,
         __set__, __ResetDependency__} from 'main/processDisplay/service';
 
 describe('ProcessDisplay service', () => {
@@ -9,6 +9,8 @@ describe('ProcessDisplay service', () => {
   const STOP_ACTION_DIAGRAM = 'STOP_LOADING_DIAGRAM';
   const START_ACTION_HEATMAP = 'START_LOADING_HEATMAP';
   const STOP_ACTION_HEATMAP = 'STOP_LOADING_HEATMAP';
+  const START_ACTION_TARGET_VALUE = 'START_LOADING_TARGET_VALUE';
+  const STOP_ACTION_TARGET_VALUE = 'STOP_LOADING_TARGET_VALUE';
 
   const xml = 'some process xml';
 
@@ -20,7 +22,11 @@ describe('ProcessDisplay service', () => {
   let createLoadingDiagramResultAction;
   let createLoadingHeatmapAction;
   let createLoadingHeatmapResultAction;
+  let createLoadingTargetValueAction;
+  let createLoadingTargetValueResultAction;
   let heatmapData;
+  let targetValueData;
+  let addNotification;
   let filter;
   let get;
   let post;
@@ -33,12 +39,20 @@ describe('ProcessDisplay service', () => {
       act2: 8
     }};
 
+    targetValueData = {targetValues: {
+      act1: 5,
+      act2: 5
+    }};
+
     filter = {
       processDefinitionId: processId
     };
 
     dispatchAction = sinon.spy();
     __set__('dispatchAction', dispatchAction);
+
+    addNotification = sinon.spy();
+    __set__('addNotification', addNotification);
 
     createLoadingDiagramAction = sinon.stub().returns(START_ACTION_DIAGRAM);
     __set__('createLoadingDiagramAction', createLoadingDiagramAction);
@@ -52,6 +66,12 @@ describe('ProcessDisplay service', () => {
     createLoadingHeatmapResultAction = sinon.stub().returns(STOP_ACTION_HEATMAP);
     __set__('createLoadingHeatmapResultAction', createLoadingHeatmapResultAction);
 
+    createLoadingTargetValueAction = sinon.stub().returns(START_ACTION_TARGET_VALUE);
+    __set__('createLoadingTargetValueAction', createLoadingTargetValueAction);
+
+    createLoadingTargetValueResultAction = sinon.stub().returns(STOP_ACTION_TARGET_VALUE);
+    __set__('createLoadingTargetValueResultAction', createLoadingTargetValueResultAction);
+
     getLastRoute = sinon.stub().returns({
       params: {
         definition: processId
@@ -62,28 +82,35 @@ describe('ProcessDisplay service', () => {
 
   afterEach(() => {
     __ResetDependency__('dispatchAction');
+    __ResetDependency__('addNotification');
     __ResetDependency__('createLoadingDiagramAction');
     __ResetDependency__('createLoadingDiagramResultAction');
     __ResetDependency__('createLoadingHeatmapAction');
     __ResetDependency__('createLoadingHeatmapResultAction');
+    __ResetDependency__('createLoadingTargetValueAction');
+    __ResetDependency__('createLoadingTargetValueResultAction');
     __ResetDependency__('getLastRoute');
   });
 
   describe('loadData', () => {
     let loadHeatmap;
     let loadDiagram;
+    let loadTargetValue;
 
     beforeEach(() => {
       loadHeatmap = sinon.spy();
       loadDiagram = sinon.spy();
+      loadTargetValue = sinon.spy();
 
       __set__('loadHeatmap', loadHeatmap);
       __set__('loadDiagram', loadDiagram);
+      __set__('loadTargetValue', loadTargetValue);
     });
 
     afterEach(() => {
       __ResetDependency__('loadHeatmap');
       __ResetDependency__('loadDiagram');
+      __ResetDependency__('loadTargetValue');
     });
 
     it('should load heatmap when view is duration or frequency', () => {
@@ -141,6 +168,59 @@ describe('ProcessDisplay service', () => {
 
       expect(loadHeatmap.calledWith('duration', expectedQuery)).to.eql(true, 'expected heatmap to be loaded with correct query');
     });
+
+    it('should load target value when view is target_value', () => {
+      loadData({
+        query: [],
+        view: 'target_value'
+      });
+
+      expect(loadTargetValue.calledWith(processId)).to.eql(true);
+    });
+  });
+
+  describe('load target value', () => {
+    beforeEach(() => {
+      get = sinon.stub().returns(Promise.resolve({
+        json: sinon.stub().returns(
+          Promise.resolve(targetValueData)
+        )
+      }));
+      __set__('get', get);
+
+      loadTargetValue(processId);
+
+      Promise.runAll();
+    });
+
+    afterEach(() => {
+      __ResetDependency__('get');
+    });
+
+    it('should create and dispatch a result action with response from backend', () => {
+      expect(createLoadingTargetValueResultAction.calledWith(targetValueData.targetValues)).to.eql(true);
+      expect(dispatchAction.calledWith(STOP_ACTION_TARGET_VALUE)).to.eql(true);
+    });
+  });
+
+  describe('load target value failure', () => {
+    beforeEach(() => {
+      get = sinon.stub().returns(Promise.reject());
+      __set__('get', get);
+
+      loadTargetValue(processId);
+
+      Promise.runAll();
+    });
+
+    afterEach(() => {
+      __ResetDependency__('get');
+    });
+
+    it('should show an error message', () => {
+      expect(addNotification.calledOnce).to.eql(true);
+      expect(addNotification.firstCall.args[0].isError).to.eql(true);
+    });
   });
 
   describe('load heatmap', () => {
@@ -190,15 +270,11 @@ describe('ProcessDisplay service', () => {
     const ERROR_MSG ='I_AM_ERROR';
     const ERROR_ACTION = 'ERROR_ACTION';
 
-    let addNotification;
     let createLoadingHeatmapErrorAction;
 
     beforeEach(() => {
       post = sinon.stub().returns(Promise.reject(ERROR_MSG));
       __set__('post', post);
-
-      addNotification = sinon.spy();
-      __set__('addNotification', addNotification);
 
       createLoadingHeatmapErrorAction = sinon.stub().returns(ERROR_ACTION);
       __set__('createLoadingHeatmapErrorAction', createLoadingHeatmapErrorAction);
@@ -208,7 +284,6 @@ describe('ProcessDisplay service', () => {
     });
 
     afterEach(() => {
-      __ResetDependency__('addNotification');
       __ResetDependency__('createLoadingHeatmapErrorAction');
     });
 
@@ -264,15 +339,11 @@ describe('ProcessDisplay service', () => {
     const ERROR_MSG ='I_AM_ERROR';
     const ERROR_ACTION = 'ERROR_ACTION';
 
-    let addNotification;
     let createLoadingDiagramErrorAction;
 
     beforeEach(() => {
       get = sinon.stub().returns(Promise.reject(ERROR_MSG));
       __set__('get', get);
-
-      addNotification = sinon.spy();
-      __set__('addNotification', addNotification);
 
       createLoadingDiagramErrorAction = sinon.stub().returns(ERROR_ACTION);
       __set__('createLoadingDiagramErrorAction', createLoadingDiagramErrorAction);
@@ -282,7 +353,6 @@ describe('ProcessDisplay service', () => {
     });
 
     afterEach(() => {
-      __ResetDependency__('addNotification');
       __ResetDependency__('createLoadingDiagramErrorAction');
     });
 

@@ -21,4 +21,12 @@ describe('formatTime', () => {
   it('should single unit well', () => {
     expect(formatTime(5 * h)).to.eql('5h');
   });
+
+  it('should return raw values if requested', () => {
+    const result = formatTime(400, true);
+
+    expect(result).to.be.an('array');
+    expect(result[0].howMuch).to.eql(400);
+    expect(result[0].name).to.eql('ms');
+  });
 });

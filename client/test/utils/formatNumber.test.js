@@ -1,6 +1,8 @@
 import {expect} from 'chai';
 import {formatNumber} from 'utils/formatNumber';
 
+const separator = '\u202F';
+
 describe('formatNumber', () => {
   it('should return a string when given a number', () => {
     const result = formatNumber(32);
@@ -18,13 +20,13 @@ describe('formatNumber', () => {
   });
 
   it('should add thousand separator at correct position', () => {
-    expect(formatNumber(6934)).to.eql('6 934');
-    expect(formatNumber(61934)).to.eql('61 934');
-    expect(formatNumber(761934)).to.eql('761 934');
+    expect(formatNumber(6934)).to.eql(`6${separator}934`);
+    expect(formatNumber(61934)).to.eql(`61${separator}934`);
+    expect(formatNumber(761934)).to.eql(`761${separator}934`);
   });
 
   it('should add multiple thousand separators', () => {
-    expect(formatNumber(2349875982)).to.eql('2 349 875 982');
+    expect(formatNumber(2349875982)).to.eql(`2${separator}349${separator}875${separator}982`);
   });
 
   it('should allow using a custom separator', () => {
