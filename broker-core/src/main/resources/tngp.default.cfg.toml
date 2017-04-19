@@ -40,32 +40,12 @@ useTempCountersFile = true
 # Log Configuration -----------------------------------
 
 [logs]
-logWriteBufferSize = 256
 defaultLogSegmentSize = 512
-
-[[log]]
-name = "default-task-queue-log"
-id = 0
-logDirectory = "/tmp/tngp/51015/logs/default-task-queue"
+useTempLogDirectory = true
+useTempIndexFile = true
 
 [snapshot]
 useTempSnapshotDirectory = true
-
-# Task Queues ------------------------------------------
-
-[task-queues]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
-[[task-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
-
-# Workflow Queues ------------------------------------------
-
-[[workflow-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
 
 # Topic Subscriptions ------------------------------------------
 

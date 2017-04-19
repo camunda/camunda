@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.protocol.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg.DEFAULT_LOG_NAME;
 
 import java.util.Arrays;
 import java.util.List;
@@ -390,7 +391,8 @@ public class TopicSubscriptionTest
         final long subscriberKey = subscriptionResponse.key();
 
         // and the subscription service has abnormally closed
-        final ServiceName<Object> subscriptionServiceName = ServiceName.newServiceName("log.log.default-task-queue-log.subscription.push.foo", Object.class);
+        final String name = "log.log." + DEFAULT_LOG_NAME +  ".subscription.push.foo";
+        final ServiceName<Object> subscriptionServiceName = ServiceName.newServiceName(name, Object.class);
         brokerRule.removeService(subscriptionServiceName);
 
         // when

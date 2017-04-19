@@ -37,41 +37,12 @@ useTempCountersFile = true
 # Log Configuration -----------------------------------
 
 [logs]
-logWriteBufferSize = 256
 defaultLogSegmentSize = 512
-
-[[log]]
-name = "default-task-queue-log"
-id = 0
 useTempLogDirectory = true
-
-[[log]]
-name = "task-queue-2"
-id = 1
-useTempLogDirectory = true
+useTempIndexFile = true
 
 [snapshot]
 useTempSnapshotDirectory = true
-
-# Task Queues ------------------------------------------
-
-[task-queues]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
-[[task-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
-
-[[task-queue]]
-logName = "task-queue-2"
-useTempIndexFile = true
-
-# Workflow Queues ------------------------------------------
-
-[[workflow-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
 
 # Topic Subscriptions ------------------------------------------
 

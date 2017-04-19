@@ -12,9 +12,7 @@
  */
 package org.camunda.tngp.broker.taskqueue;
 
-import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
-
 public interface TaskQueueManager
 {
-    void startTaskQueue(TaskQueueCfg taskQueueCfg);
+    void startTaskQueue(String logName);
 }

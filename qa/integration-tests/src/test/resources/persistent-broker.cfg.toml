@@ -37,26 +37,12 @@ countersFileName = "${brokerFolder}/persistent-broker/metrics/"
 # Log Configuration -----------------------------------
 
 [logs]
-logWriteBufferSize = 64
 defaultLogSegmentSize = 512
 logDirectories = [ "${brokerFolder}/persistent-broker/logs/" ]
-
-[[log]]
-name = "default-task-queue-log"
-id = 0
+indexDirectory = "${brokerFolder}/persistent-broker/index/"
 
 [snapshot]
 snapshotDirectory = "${brokerFolder}/persistent-broker/snapshots/"
-
-# Task Queues ------------------------------------------
-
-[task-queues]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
-[[task-queue]]
-logName = "default-task-queue-log"
-indexDirectory = "${brokerFolder}/persistent-broker/task-logs/default-task-queue-log"
 
 # Topic Subscriptions ------------------------------------------
 

@@ -12,23 +12,26 @@
  */
 package org.camunda.tngp.broker.taskqueue;
 
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
-import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.*;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_EXPIRE_LOCK_STREAM_PROCESSOR_ID;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.TASK_QUEUE_STREAM_PROCESSOR_ID;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.TASK_QUEUE_STREAM_PROCESSOR_SERVICE_GROUP_NAME;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueExpireLockStreamProcessorServiceName;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
 import java.time.Duration;
-import java.util.List;
 
 import org.agrona.concurrent.Agent;
+import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.executor.ScheduledCommand;
 import org.camunda.tngp.broker.system.executor.ScheduledExecutor;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
-import org.camunda.tngp.broker.taskqueue.cfg.TaskQueueCfg;
 import org.camunda.tngp.broker.taskqueue.processor.TaskExpireLockStreamProcessor;
 import org.camunda.tngp.broker.taskqueue.processor.TaskInstanceStreamProcessor;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
@@ -61,22 +64,20 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
             .onAdd((name, stream) -> addStream(stream, name))
             .build();
 
-    protected final List<TaskQueueCfg> taskQueueCfgs;
-
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
+    protected LogStreamsCfg logStreamsCfg;
 
     protected ScheduledCommand scheduledCheckExpirationCmd;
 
-    public TaskQueueManagerService(ConfigurationManager configurationManager)
+    public TaskQueueManagerService(final ConfigurationManager configurationManager)
     {
-        taskQueueCfgs = configurationManager.readList("task-queue", TaskQueueCfg.class);
+        logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
     }
 
     @Override
-    public void startTaskQueue(TaskQueueCfg taskQueueCfg)
+    public void startTaskQueue(final String logName)
     {
-        final String logName = taskQueueCfg.logName;
         if (logName == null || logName.isEmpty())
         {
             throw new RuntimeException("Cannot start task queue: Mandatory configuration property 'logName' is not set.");
@@ -87,20 +88,23 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
         final IndexStore indexStore;
 
-        final String indexDirectory = taskQueueCfg.indexDirectory;
-        if (taskQueueCfg.useTempIndexFile)
+        if (logStreamsCfg.useTempIndexFile)
         {
             indexStore = FileChannelIndexStore.tempFileIndexStore();
         }
-        else if (indexDirectory != null && !indexDirectory.isEmpty())
-        {
-            final String indexFile = indexDirectory + File.separator + "default.idx";
-            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-            indexStore = new FileChannelIndexStore(indexFileChannel);
-        }
         else
         {
-            throw new RuntimeException(String.format("Cannot create task stream processor index, no index file name provided."));
+            final String indexDirectory = logStreamsCfg.indexDirectory;
+            if (indexDirectory != null && !indexDirectory.isEmpty())
+            {
+                final String indexFile = indexDirectory + File.separator + "default.idx";
+                final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
+                indexStore = new FileChannelIndexStore(indexFileChannel);
+            }
+            else
+            {
+                throw new RuntimeException("Cannot create task stream processor index, no index file name provided.");
+            }
         }
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
@@ -213,16 +217,7 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
     {
         asyncContext.runAsync((r) ->
         {
-            for (int i = 0; i < taskQueueCfgs.size(); i++)
-            {
-                final String logName = logStream.getLogName();
-                final TaskQueueCfg cfg = taskQueueCfgs.get(i);
-                if (logName.equals(cfg.logName))
-                {
-                    startTaskQueue(cfg);
-                    break;
-                }
-            }
+            startTaskQueue(logStream.getLogName());
         });
     }
 

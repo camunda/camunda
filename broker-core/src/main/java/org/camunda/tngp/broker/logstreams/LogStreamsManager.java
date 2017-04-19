@@ -7,21 +7,20 @@ import java.util.Collection;
 import java.util.Random;
 
 import org.agrona.collections.Int2ObjectHashMap;
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamCfg;
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamsComponentCfg;
+import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.LogStream;
 
 public class LogStreamsManager
 {
-    protected LogStreamsComponentCfg logComponentConfig;
+    protected LogStreamsCfg logStreamsCfg;
     protected AgentRunnerServices agentRunner;
     protected Int2ObjectHashMap<LogStream> logStreams;
 
-    public LogStreamsManager(final LogStreamsComponentCfg logComponentConfig, final AgentRunnerServices agentRunner)
+    public LogStreamsManager(final LogStreamsCfg logStreamsCfg, final AgentRunnerServices agentRunner)
     {
-        this.logComponentConfig = logComponentConfig;
+        this.logStreamsCfg = logStreamsCfg;
         this.agentRunner = agentRunner;
         this.logStreams = new Int2ObjectHashMap<>();
     }
@@ -36,23 +35,21 @@ public class LogStreamsManager
         return logStreams.get(id);
     }
 
-    public LogStream createLogStream(LogStreamCfg config)
+    public LogStream createLogStream(final int logId, final String logName)
     {
-        final String logName = config.name;
         if (logName == null || logName.isEmpty())
         {
             throw new IllegalArgumentException("logName cannot be null");
         }
 
-        final int logId = config.id;
         if (logId < 0 || logId > Short.MAX_VALUE)
         {
             throw new IllegalArgumentException("log id cannot be null or greater than " + Short.MAX_VALUE);
         }
 
-        String logDirectory = config.logDirectory;
+        String logDirectory;
         boolean deleteOnExit = false;
-        if (config.useTempLogDirectory)
+        if (logStreamsCfg.useTempLogDirectory)
         {
             deleteOnExit = true;
             try
@@ -68,27 +65,19 @@ public class LogStreamsManager
         }
         else
         {
-            if (logDirectory == null || logDirectory.isEmpty())
+            int assignedLogDirectory = 0;
+            if (logStreamsCfg.logDirectories.length == 0)
             {
-                int assignedLogDirectory = 0;
-                if (logComponentConfig.logDirectories.length == 0)
-                {
-                    throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
-                }
-                else if (logComponentConfig.logDirectories.length > 1)
-                {
-                    assignedLogDirectory = new Random().nextInt(logComponentConfig.logDirectories.length - 1);
-                }
-                logDirectory = logComponentConfig.logDirectories[assignedLogDirectory] + File.separator + logName;
+                throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
             }
+            else if (logStreamsCfg.logDirectories.length > 1)
+            {
+                assignedLogDirectory = new Random().nextInt(logStreamsCfg.logDirectories.length - 1);
+            }
+            logDirectory = logStreamsCfg.logDirectories[assignedLogDirectory] + File.separator + logName;
         }
 
-        int logSegmentSize = config.logSegmentSize;
-        if (logSegmentSize == -1)
-        {
-            logSegmentSize = logComponentConfig.defaultLogSegmentSize;
-        }
-        logSegmentSize = logSegmentSize * 1024 * 1024;
+        final int logSegmentSize = logStreamsCfg.defaultLogSegmentSize * 1024 * 1024;
 
         final LogStream logStream = LogStreams.createFsLogStream(logName, logId)
             .deleteOnClose(deleteOnExit)
@@ -110,7 +99,7 @@ public class LogStreamsManager
                 .deleteOnClose(false)
                 .logDirectory(logDirectory)
                 .agentRunnerService(agentRunner.logAppenderAgentRunnerService())
-                .logSegmentSize(logComponentConfig.defaultLogSegmentSize * 1024 * 1024)
+                .logSegmentSize(logStreamsCfg.defaultLogSegmentSize * 1024 * 1024)
                 .logStreamControllerDisabled(true)
                 .build();
 

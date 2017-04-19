@@ -1,9 +1,9 @@
 package org.camunda.tngp.broker.logstreams;
 
-import java.util.List;
+import static org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg.DEFAULT_LOG_ID;
+import static org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg.DEFAULT_LOG_NAME;
 
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamCfg;
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamsComponentCfg;
+import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -13,18 +13,17 @@ import org.camunda.tngp.servicecontainer.ServiceStopContext;
 
 public class LogStreamsManagerService implements Service<LogStreamsManager>
 {
+
     protected final Injector<AgentRunnerServices> agentRunnerInjector = new Injector<>();
 
     protected ServiceStartContext serviceContext;
-    protected LogStreamsComponentCfg logComponentConfig;
-    protected List<LogStreamCfg> logCfgs;
+    protected LogStreamsCfg logStreamsCfg;
 
     protected LogStreamsManager service;
 
     public LogStreamsManagerService(ConfigurationManager configurationManager)
     {
-        logComponentConfig = configurationManager.readEntry("logs", LogStreamsComponentCfg.class);
-        logCfgs = configurationManager.readList("log", LogStreamCfg.class);
+        logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
     }
 
     @Override
@@ -34,11 +33,9 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
 
         serviceContext.run(() ->
         {
-            service = new LogStreamsManager(logComponentConfig, agentRunnerInjector.getValue());
-            for (LogStreamCfg logCfg : logCfgs)
-            {
-                service.createLogStream(logCfg);
-            }
+            service = new LogStreamsManager(logStreamsCfg, agentRunnerInjector.getValue());
+
+            service.createLogStream(DEFAULT_LOG_ID, DEFAULT_LOG_NAME);
         });
     }
 

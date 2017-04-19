@@ -36,6 +36,7 @@ import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -493,6 +494,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    @Ignore("Requires API to create multiple topics (CAM-222)")
     public void testSubscriptionsWithSameNameOnDifferentTopic()
     {
         // given
@@ -512,6 +514,7 @@ public class TopicSubscriptionTest
     }
 
     @Test
+    @Ignore("Requires API to create multiple topics (#222, #235)")
     public void testSubscriptionsWithSameNameOnDifferentTopicShouldReceiveRespectiveEvents()
     {
         // given

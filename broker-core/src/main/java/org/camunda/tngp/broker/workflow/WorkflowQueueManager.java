@@ -12,9 +12,7 @@
  */
 package org.camunda.tngp.broker.workflow;
 
-import org.camunda.tngp.broker.workflow.cfg.WorkflowQueueCfg;
-
 public interface WorkflowQueueManager
 {
-    void startWorkflowQueue(WorkflowQueueCfg config);
+    void startWorkflowQueue(String logName);
 }

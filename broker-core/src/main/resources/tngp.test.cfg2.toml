@@ -42,24 +42,14 @@ useTempCountersFile = true
 # Log Configuration -----------------------------------
 
 [logs]
-logWriteBufferSize = 256
 defaultLogSegmentSize = 512
 logDirectories = [
     "/tmp/tngp/7777/logs"
 ]
+indexDirectory = "/tmp/tngp/7777/index"
 
 [snapshot]
 useTempSnapshotDirectory = true
-
-# Task Queues ------------------------------------------
-
-[task-queues]
-numberOfWorkers = 1
-perWorkerResponsePoolCapacity = 32
-
-[[task-queue]]
-logName = "default-task-queue-log"
-useTempIndexFile = true
 
 # Topic Subscriptions ------------------------------------------
 

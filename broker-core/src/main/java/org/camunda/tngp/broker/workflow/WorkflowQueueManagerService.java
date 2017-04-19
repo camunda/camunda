@@ -22,14 +22,13 @@ import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.workflo
 
 import java.io.File;
 import java.nio.channels.FileChannel;
-import java.util.List;
 
 import org.agrona.concurrent.Agent;
+import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
-import org.camunda.tngp.broker.workflow.cfg.WorkflowQueueCfg;
 import org.camunda.tngp.broker.workflow.processor.DeploymentStreamProcessor;
 import org.camunda.tngp.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -57,36 +56,34 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
             .onAdd((name, stream) -> addStream(stream, name))
             .build();
 
-    protected final List<WorkflowQueueCfg> queueConfigs;
-
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
+    protected LogStreamsCfg logStreamsCfg;
 
-    public WorkflowQueueManagerService(ConfigurationManager configurationManager)
+    public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
     {
-        this.queueConfigs = configurationManager.readList("workflow-queue", WorkflowQueueCfg.class);
+        logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
     }
 
     @Override
-    public void startWorkflowQueue(WorkflowQueueCfg config)
+    public void startWorkflowQueue(final String logName)
     {
-        final String logName = config.logName;
         if (logName == null || logName.isEmpty())
         {
             throw new RuntimeException("Cannot start workflow queue: Mandatory configuration property 'logName' is not set.");
         }
 
-        installDeploymentStreamProcessor(config, logName);
+        installDeploymentStreamProcessor(logName);
 
-        installWorkflowStreamProcessor(config, logName);
+        installWorkflowStreamProcessor(logName);
     }
 
-    private void installDeploymentStreamProcessor(WorkflowQueueCfg config, String logName)
+    private void installDeploymentStreamProcessor(final String logName)
     {
         final ServiceName<StreamProcessorController> streamProcessorServiceName = deploymentStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final IndexStore indexStore = createIndexStore(config, "workflow.deployment");
+        final IndexStore indexStore = createIndexStore("workflow.deployment");
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
@@ -107,14 +104,14 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .install();
     }
 
-    private void installWorkflowStreamProcessor(WorkflowQueueCfg config, String logName)
+    private void installWorkflowStreamProcessor(final String logName)
     {
         final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logName);
         final String streamProcessorName = streamProcessorServiceName.getName();
 
-        final IndexStore workflowPositionIndexStore = createIndexStore(config, "workflow.instance.position");
-        final IndexStore workflowVersionIndexStore = createIndexStore(config, "workflow.instance.version");
-        final IndexStore workflowInstanceTokenCountIndexStore = createIndexStore(config, "workflow.instance.token");
+        final IndexStore workflowPositionIndexStore = createIndexStore("workflow.instance.position");
+        final IndexStore workflowVersionIndexStore = createIndexStore("workflow.instance.version");
+        final IndexStore workflowInstanceTokenCountIndexStore = createIndexStore("workflow.instance.token");
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
@@ -140,23 +137,27 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .install();
     }
 
-    private IndexStore createIndexStore(WorkflowQueueCfg config, String indexName)
+    private IndexStore createIndexStore(final String indexName)
     {
         final IndexStore indexStore;
 
-        if (config.useTempIndexFile)
+        if (logStreamsCfg.useTempIndexFile)
         {
             indexStore = FileChannelIndexStore.tempFileIndexStore();
         }
-        else if (config.indexDirectory != null && !config.indexDirectory.isEmpty())
-        {
-            final String indexFile = config.indexDirectory + File.separator + indexName + ".idx";
-            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-            indexStore = new FileChannelIndexStore(indexFileChannel);
-        }
         else
         {
-            throw new RuntimeException(String.format("Cannot create stream processor index, no index file name provided."));
+            final String indexDirectory = logStreamsCfg.indexDirectory;
+            if (indexDirectory != null && !indexDirectory.isEmpty())
+            {
+                final String indexFile = indexDirectory + File.separator + indexName + ".idx";
+                final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
+                indexStore = new FileChannelIndexStore(indexFileChannel);
+            }
+            else
+            {
+                throw new RuntimeException("Cannot create stream processor index, no index file name provided.");
+            }
         }
         return indexStore;
     }
@@ -206,16 +207,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         asyncContext.runAsync((r) ->
         {
-            for (int i = 0; i < queueConfigs.size(); i++)
-            {
-                final String logName = logStream.getLogName();
-                final WorkflowQueueCfg config = queueConfigs.get(i);
-                if (logName.equals(config.logName))
-                {
-                    startWorkflowQueue(config);
-                    break;
-                }
-            }
+            startWorkflowQueue(logStream.getLogName());
         });
     }
 

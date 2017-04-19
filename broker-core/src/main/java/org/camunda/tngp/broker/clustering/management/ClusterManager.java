@@ -1,8 +1,17 @@
 package org.camunda.tngp.broker.clustering.management;
 
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.clientChannelManagerName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftContextServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.raftServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.subscriptionServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.transportConnectionPoolName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.REPLICATION_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +44,6 @@ import org.camunda.tngp.broker.clustering.service.TransportConnectionPoolService
 import org.camunda.tngp.broker.clustering.util.MessageWriter;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
 import org.camunda.tngp.broker.logstreams.LogStreamsManager;
-import org.camunda.tngp.broker.logstreams.cfg.LogStreamCfg;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
@@ -309,12 +317,11 @@ public class ClusterManager implements Agent
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
 
-        final LogStreamCfg config = new LogStreamCfg();
-        config.id = invitationRequest.id();
-        config.name = invitationRequest.name();
+        final int logId = invitationRequest.id();
+        final String logName = invitationRequest.name();
 
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
-        final LogStream logStream = logStreamManager.createLogStream(config);
+        final LogStream logStream = logStreamManager.createLogStream(logId, logName);
 
         createRaft(logStream, new ArrayList<>(invitationRequest.members()), false);
 

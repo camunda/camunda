@@ -40,27 +40,12 @@ countersFileName = "../data/counters.data"
 # Log Configuration -----------------------------------
 
 [logs]
-logDirectories = [ "../data/logstreams" ]
 defaultLogSegmentSize = 512
-
-[[log]]
-name = "default-task-queue-log"
-id = 0
+logDirectories = [ "../data/logstreams" ]
+indexDirectory = "../data/index"
 
 [snapshot]
 snapshotDirectory = "../data/index/snapshots"
-
-# Task Queues ------------------------------------------
-
-[[task-queue]]
-logName = "default-task-queue-log"
-indexDirectory = "../data/index/task"
-
-# Workflow Queues ------------------------------------------
-
-[[workflow-queue]]
-logName = "default-task-queue-log"
-indexDirectory = "../data/index/workflow"
 
 # Topic Subscriptions ------------------------------------------
 
