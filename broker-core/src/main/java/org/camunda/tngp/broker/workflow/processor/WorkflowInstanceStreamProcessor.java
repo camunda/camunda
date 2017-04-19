@@ -51,6 +51,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     public static final int SIZE_OF_PROCESS_ID = BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR;
     public static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
+    private static final int WORKFLOW_CACHE_CAPACITY = 1024;
 
     // processors ////////////////////////////////////
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
@@ -107,6 +108,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected long eventKey;
     protected long eventPosition;
 
+
+    /**
+     * The workflow LRU cache, which contains the latest used workflow's.
+     * The cache has a defined capacity, if the capacity is reached a least used workflow
+     * will replaced with a new one. If a workflow is not found in the cache, the deployment id
+     * is used to find the deployment and the workflow is parsed and added to the cache.
+     */
+    protected final LongLruCache<ExecutableWorkflow> workflowCache;
+
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
             IndexStore workflowPositionIndexStore,
@@ -123,6 +133,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 new HashIndexSnapshotSupport<>(workflowPositionIndex, workflowPositionIndexStore),
                 new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex, workflowVersionIndexStore),
                 new HashIndexSnapshotSupport<>(workflowInstanceTokenCountIndex, workflowInstanceTokenCountIndexStore));
+
+        workflowCache = new LongLruCache<>(WORKFLOW_CACHE_CAPACITY, this::lookupWorkflow, (workflow) ->
+        {
+            return;
+        });
     }
 
     @Override
@@ -257,42 +272,21 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         return eventProcessor;
     }
 
-    protected DeploymentWorkflowCache workflowCache = new DeploymentWorkflowCache(1024);
-
-    private final class DeploymentWorkflowCache
+    private ExecutableWorkflow lookupWorkflow(long position)
     {
-        private LongLruCache<ExecutableWorkflow> workflowCache;
+        ExecutableWorkflow workflow = null;
+        final boolean found = deploymentLogStreamReader.seek(position);
 
-        DeploymentWorkflowCache(int cacheCapacity)
+        if (found && deploymentLogStreamReader.hasNext())
         {
-            this.workflowCache = new LongLruCache<>(cacheCapacity, this::lookupWorkflow, (workflow) ->
-            {
-                return;
-            });
+            final LoggedEvent deployedWorkflowEvent = deploymentLogStreamReader.next();
+
+            deployedWorkflowEvent.readValue(deploymentEvent);
+
+            // currently, it can only be one
+            workflow = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
         }
-
-        public ExecutableWorkflow getWorkflow(long position)
-        {
-            return workflowCache.lookup(position);
-        }
-
-        private ExecutableWorkflow lookupWorkflow(long position)
-        {
-            ExecutableWorkflow workflow = null;
-            final boolean found = deploymentLogStreamReader.seek(position);
-
-            if (found && deploymentLogStreamReader.hasNext())
-            {
-                final LoggedEvent deployedWorkflowEvent = deploymentLogStreamReader.next();
-
-                deployedWorkflowEvent.readValue(deploymentEvent);
-
-                // currently, it can only be one
-                workflow = bpmnTransformer.transform(deploymentEvent.getBpmnXml()).get(0);
-            }
-            return workflow;
-        }
-
+        return workflow;
     }
 
     protected ExecutableWorkflow getWorkflow(final DirectBuffer bpmnProcessId, int version)
@@ -303,7 +297,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         if (deploymentEventPosition >= 0)
         {
-            workflow = workflowCache.getWorkflow(deploymentEventPosition);
+            workflow = workflowCache.lookup(deploymentEventPosition);
         }
 
         if (workflow == null)
