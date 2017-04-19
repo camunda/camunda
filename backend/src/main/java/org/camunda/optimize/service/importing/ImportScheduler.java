@@ -51,7 +51,7 @@ public class ImportScheduler extends Thread {
       checkAndResetImportIndexing();
       logger.debug("Executing import round");
       executeJob();
-      logger.debug("Finished import round. Progress of the import: " + getImportProgress() + "%");
+//      logger.debug("Finished import round. Progress of the import: " + getImportProgress() + "%");
     }
   }
 
