@@ -16,6 +16,7 @@ import org.camunda.tngp.util.buffer.BufferReader;
 
 public class SubscribedEvent implements BufferReader
 {
+    protected final RawMessage rawMessage;
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
@@ -23,6 +24,13 @@ public class SubscribedEvent implements BufferReader
     protected Map<String, Object> event;
 
     protected MsgPackHelper msgPackHelper = new MsgPackHelper();
+
+    public SubscribedEvent(RawMessage rawMessage)
+    {
+        this.rawMessage = rawMessage;
+        final DirectBuffer buffer = rawMessage.getMessage();
+        wrap(buffer, 0, buffer.capacity());
+    }
 
     public int topicId()
     {
@@ -57,6 +65,11 @@ public class SubscribedEvent implements BufferReader
     public Map<String, Object> event()
     {
         return event;
+    }
+
+    public RawMessage getRawMessage()
+    {
+        return rawMessage;
     }
 
     @Override

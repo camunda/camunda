@@ -14,10 +14,12 @@ import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
 import org.camunda.tngp.test.broker.protocol.clientapi.ControlMessageResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ErrorResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import org.camunda.tngp.test.broker.protocol.clientapi.RawMessage;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Rule;
@@ -88,7 +90,7 @@ public class TopicSubscriptionTest
                 .done()
             .sendAndAwait();
 
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when creating a task
         apiRule.createCmdRequest()
@@ -302,7 +304,7 @@ public class TopicSubscriptionTest
                 .done()
             .sendAndAwait();
 
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when
         apiRule.createCmdRequest()
@@ -360,7 +362,7 @@ public class TopicSubscriptionTest
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when
         apiRule
@@ -434,11 +436,55 @@ public class TopicSubscriptionTest
         assertThat(secondSubscriberKey).isNotEqualTo(firstSubscriberKey);
     }
 
+    @Test
+    public void shouldNotPushEventsBeforeSubscriptionResponse()
+    {
+        // given
+        apiRule.createCmdRequest()
+            .topicId(0)
+            .eventTypeTask()
+            .command()
+                .put("eventType", "CREATE")
+                .put("type", "foo")
+                .put("retries", 1)
+                .done()
+            .sendAndAwait();
+
+        // when
+        apiRule
+            .openTopicSubscription(0, "foo", 0)
+            .await();
+
+        // then
+        final RawMessage subscriptionResponse = apiRule.commandResponses()
+            .filter((m) -> "SUBSCRIBED".equals(asCommandResponse(m).getEvent().get("eventType")))
+            .findFirst()
+            .get();
+
+        apiRule.moveMessageStreamToHead();
+
+        final RawMessage firstPushedEvent = apiRule.subscribedEvents()
+            .findFirst()
+            .get()
+            .getRawMessage();
+
+        assertThat(firstPushedEvent.getSequenceNumber()).isGreaterThan(subscriptionResponse.getSequenceNumber());
+    }
+
     protected String getStringOfLength(int numCharacters)
     {
         final char[] characters = new char[numCharacters];
         Arrays.fill(characters, 'a');
         return new String(characters);
     }
+
+    protected static ExecuteCommandResponse asCommandResponse(RawMessage message)
+    {
+        final ExecuteCommandResponse response = new ExecuteCommandResponse(new MsgPackHelper());
+        response.wrap(message.getMessage(), 0, message.getMessage().capacity());
+        return response;
+    }
+
+
 
 }

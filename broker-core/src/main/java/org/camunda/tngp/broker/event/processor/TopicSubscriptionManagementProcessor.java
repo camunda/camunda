@@ -340,11 +340,19 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         public boolean executeSideEffects()
         {
 
-            return responseWriter.brokerEventMetadata(metadata)
+            final boolean responseWritten = responseWriter.brokerEventMetadata(metadata)
                     .eventWriter(subscriberEvent)
                     .longKey(currentEvent.getLongKey())
                     .topicId(streamId)
                     .tryWriteResponse();
+
+            if (responseWritten)
+            {
+                final TopicSubscriptionPushProcessor pushProcessor = subscriptionRegistry.getProcessorByName(subscriberEvent.getName());
+                pushProcessor.enable();
+            }
+
+            return responseWritten;
         }
 
         @Override

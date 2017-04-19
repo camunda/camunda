@@ -1,16 +1,25 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder;
+import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
+import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
+import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
+import org.camunda.tngp.transport.requestresponse.client.RequestResponseChannelHandler;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
+import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPoolImpl;
+import org.camunda.tngp.transport.spi.TransportChannelHandler;
 import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
@@ -25,12 +34,12 @@ public class ClientApiRule extends ExternalResource
     protected TransportConnectionPool connectionPool;
 
     protected MsgPackHelper msgPackHelper;
-    protected SubscribedEventCollector subscribedEventCollector;
+    protected RawMessageCollector incomingMessageCollector;
 
     @Override
     protected void before() throws Throwable
     {
-        subscribedEventCollector = new SubscribedEventCollector();
+        incomingMessageCollector = new RawMessageCollector();
         transport = Transports.createTransport("testTransport")
                 .threadingMode(ThreadingMode.SHARED)
                 .build();
@@ -71,30 +80,22 @@ public class ClientApiRule extends ExternalResource
         return new ControlMessageRequestBuilder(connectionPool, clientChannel.getId(), msgPackHelper);
     }
 
-    /**
-     * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations
-     *   to reduce it to a finite stream
-     */
-    public Stream<SubscribedEvent> subscribedEvents()
-    {
-        return Stream.generate(subscribedEventCollector);
-    }
 
-    public ClientApiRule moveSubscribedEventsStreamToTail()
+    public ClientApiRule moveMessageStreamToTail()
     {
-        subscribedEventCollector.moveToTail();
+        incomingMessageCollector.moveToTail();
         return this;
     }
 
-    public ClientApiRule moveSubscribedEventsStreamToHead()
+    public ClientApiRule moveMessageStreamToHead()
     {
-        subscribedEventCollector.moveToHead();
+        incomingMessageCollector.moveToHead();
         return this;
     }
 
     public int numSubscribedEventsAvailable()
     {
-        return subscribedEventCollector.getPendingEvents();
+        return (int) incomingMessageCollector.getNumMessagesFulfilling(this::isSubscribedEvent);
     }
 
     public TestTopicClient topic(int topicId)
@@ -129,6 +130,54 @@ public class ClientApiRule extends ExternalResource
             .send();
     }
 
+    public Stream<RawMessage> incomingMessages()
+    {
+        return Stream.generate(incomingMessageCollector);
+    }
+
+    /**
+     * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations
+     *   to reduce it to a finite stream
+     */
+    public Stream<SubscribedEvent> subscribedEvents()
+    {
+        return incomingMessages().filter(this::isSubscribedEvent)
+                .map(this::asSubscribedEvent);
+    }
+
+    public Stream<RawMessage> commandResponses()
+    {
+        return incomingMessages().filter(this::isCommandResponse);
+    }
+
+    protected SubscribedEvent asSubscribedEvent(RawMessage message)
+    {
+        final SubscribedEvent event = new SubscribedEvent(message);
+        event.wrap(message.getMessage(), 0, message.getMessage().capacity());
+        return event;
+    }
+
+    protected boolean isCommandResponse(RawMessage message)
+    {
+        return message.getProtocolId() == Protocols.REQUEST_RESPONSE &&
+                isMessageOfType(message.getMessage(), ExecuteCommandResponseDecoder.TEMPLATE_ID);
+    }
+
+    protected boolean isSubscribedEvent(RawMessage message)
+    {
+        return message.getProtocolId() == Protocols.FULL_DUPLEX_SINGLE_MESSAGE &&
+                isMessageOfType(message.getMessage(), SubscribedEventDecoder.TEMPLATE_ID);
+
+    }
+
+    protected boolean isMessageOfType(DirectBuffer message, int type)
+    {
+        final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+        headerDecoder.wrap(message, 0);
+
+        return headerDecoder.templateId() == type;
+    }
+
     public void closeChannel()
     {
         if (clientChannel == null)
@@ -147,11 +196,54 @@ public class ClientApiRule extends ExternalResource
             throw new RuntimeException("Cannot open more than one channel at once");
         }
 
+        final TransportChannelHandler requestResponseHandler = broadcastingHandler(
+                incomingMessageCollector,
+                new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
+
         clientChannel = transport
             .createClientChannel(new InetSocketAddress(host, port))
-            .requestResponseProtocol(connectionPool)
-            .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, subscribedEventCollector)
+            .transportChannelHandler(Protocols.REQUEST_RESPONSE, requestResponseHandler)
+            .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, incomingMessageCollector)
             .connect();
+    }
+
+    protected TransportChannelHandler broadcastingHandler(TransportChannelHandler... handlers)
+    {
+        return new TransportChannelHandler()
+        {
+
+            @Override
+            public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            {
+                Arrays.stream(handlers).forEach((h) -> h.onControlFrame(transportChannel, buffer, offset, length));
+            }
+
+            @Override
+            public void onChannelSendError(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            {
+                Arrays.stream(handlers).forEach((h) -> h.onChannelSendError(transportChannel, buffer, offset, length));
+            }
+
+            @Override
+            public boolean onChannelReceive(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            {
+                return Arrays.stream(handlers)
+                        .map((h) -> h.onChannelReceive(transportChannel, buffer, offset, length))
+                        .allMatch((b) -> true);
+            }
+
+            @Override
+            public void onChannelOpened(TransportChannel transportChannel)
+            {
+                Arrays.stream(handlers).forEach((h) -> h.onChannelOpened(transportChannel));
+            }
+
+            @Override
+            public void onChannelClosed(TransportChannel transportChannel)
+            {
+                Arrays.stream(handlers).forEach((h) -> h.onChannelClosed(transportChannel));
+            }
+        };
     }
 
 }

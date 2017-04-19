@@ -75,7 +75,7 @@ public class TopicSubscriptionThrottlingTest
                 .map((e) -> e.position())
                 .collect(Collectors.toList());
 
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when
         apiRule.createCmdRequest()

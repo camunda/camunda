@@ -162,7 +162,7 @@ public class TestTopicClient
         ensureOpenTopicSubscription();
 
         return apiRule
-                .moveSubscribedEventsStreamToHead()
+                .moveMessageStreamToHead()
                 .subscribedEvents()
                 .filter(filter);
     }

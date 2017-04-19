@@ -74,7 +74,6 @@ public class SingleMessageWriter
         offset += SingleMessageHeaderDescriptor.HEADER_LENGTH;
 
         bodyWriter.write(buffer, offset);
-
     }
 
 }

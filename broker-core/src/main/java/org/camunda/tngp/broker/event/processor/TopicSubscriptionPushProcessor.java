@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.event.processor;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -37,6 +39,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected DeferredCommandContext cmdQueue;
 
     protected LongRingBuffer pendingEvents;
+    protected AtomicBoolean enabled;
 
     public TopicSubscriptionPushProcessor(
             int channelId,
@@ -54,6 +57,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         name.getBytes(0, nameBytes);
         this.name = new UnsafeBuffer(nameBytes);
         this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
+        this.enabled = new AtomicBoolean(false);
 
         if (prefetchCapacity > 0)
         {
@@ -142,7 +146,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     @Override
     public boolean isSuspended()
     {
-        return recordsPendingEvents() && pendingEvents.isSaturated();
+        return !enabled.get() || (recordsPendingEvents() && pendingEvents.isSaturated());
     }
 
     public int getLogStreamId()
@@ -199,5 +203,10 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     public long getSubscriptionId()
     {
         return subscriberKey;
+    }
+
+    public void enable()
+    {
+        this.enabled.set(true);
     }
 }

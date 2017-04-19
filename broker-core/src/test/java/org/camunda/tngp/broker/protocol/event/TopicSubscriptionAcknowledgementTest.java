@@ -95,7 +95,7 @@ public class TopicSubscriptionAcknowledgementTest
 
         closeSubscription();
 
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when
         openSubscription();
@@ -125,7 +125,7 @@ public class TopicSubscriptionAcknowledgementTest
 
         closeSubscription();
 
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when
         openSubscription();
@@ -172,7 +172,7 @@ public class TopicSubscriptionAcknowledgementTest
             .collect(Collectors.toList());
 
         closeSubscription();
-        apiRule.moveSubscribedEventsStreamToTail();
+        apiRule.moveMessageStreamToTail();
 
         // when
         openSubscription(taskEventPositions.get(1));

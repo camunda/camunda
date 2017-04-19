@@ -47,13 +47,13 @@ public class ExecuteCommandResponse implements BufferReader
     @Override
     public void wrap(DirectBuffer responseBuffer, int offset, int length)
     {
-        messageHeaderDecoder.wrap(responseBuffer, 0);
+        messageHeaderDecoder.wrap(responseBuffer, offset);
 
         if (messageHeaderDecoder.templateId() != responseDecoder.sbeTemplateId())
         {
             if (messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID)
             {
-                errorResponse.wrap(responseBuffer, offset, length);
+                errorResponse.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), length);
                 throw new RuntimeException("Unexpected error response from broker: " +
                         errorResponse.getErrorCode() + " - " + errorResponse.getErrorData());
             }
@@ -63,10 +63,10 @@ public class ExecuteCommandResponse implements BufferReader
             }
         }
 
-        responseDecoder.wrap(responseBuffer, messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
+        responseDecoder.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
         final int eventLength = responseDecoder.eventLength();
-        final int eventOffset = messageHeaderDecoder.encodedLength() + messageHeaderDecoder.blockLength() + ExecuteCommandResponseDecoder.eventHeaderLength();
+        final int eventOffset = offset + messageHeaderDecoder.encodedLength() + messageHeaderDecoder.blockLength() + ExecuteCommandResponseDecoder.eventHeaderLength();
 
         try (final InputStream is = new DirectBufferInputStream(responseBuffer, eventOffset, eventLength))
         {
