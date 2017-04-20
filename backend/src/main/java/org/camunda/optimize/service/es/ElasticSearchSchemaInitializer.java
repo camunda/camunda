@@ -8,6 +8,7 @@ import org.camunda.optimize.service.es.schema.type.ImportIndexType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
+import org.camunda.optimize.service.es.schema.type.VariableType;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
@@ -19,6 +20,9 @@ public class ElasticSearchSchemaInitializer {
 
   @Autowired
   private EventType eventType;
+
+  @Autowired
+  private VariableType variableType;
 
   @Autowired
   private BranchAnalysisDataType branchAnalysisDataType;
@@ -49,6 +53,7 @@ public class ElasticSearchSchemaInitializer {
 
   private void initializeMappings() {
     schemaManager.addMapping(eventType);
+    schemaManager.addMapping(variableType);
     schemaManager.addMapping(branchAnalysisDataType);
     schemaManager.addMapping(processDefinitionType);
     schemaManager.addMapping(processDefinitionXmlType);

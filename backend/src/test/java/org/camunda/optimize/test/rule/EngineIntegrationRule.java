@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.rule;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +22,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -34,8 +36,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -80,6 +85,8 @@ public class EngineIntegrationRule extends TestWatcher {
     objectMapper = new ObjectMapper();
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+    DateFormat df = new SimpleDateFormat(properties.getProperty("camunda.optimize.serialization.date.format"));
+    objectMapper.setDateFormat(df);
   }
 
   protected void starting(Description description) {
@@ -152,21 +159,42 @@ public class EngineIntegrationRule extends TestWatcher {
     return getEngineUrl() + "/task/" + taskId + "/complete";
   }
 
+  public String getProcessDefinitionId() {
+    CloseableHttpClient client = HttpClientBuilder.create().build();
+    HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
+    CloseableHttpResponse response;
+    try {
+      response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      List<ProcessDefinitionEngineDto> procDefs =
+        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
+      assertThat(procDefs.size(), is(1));
+      client.close();
+      return procDefs.get(0).getId();
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new OptimizeRuntimeException("Could not fetch the process definition!");
+    }
+  }
 
-  public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
+  public String deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance, Map<String, Object> variables) {
     CloseableHttpClient client = HttpClientBuilder.create().build();
     DeploymentDto deployment = deployProcess(bpmnModelInstance, client);
     String processInstanceId = "";
     try {
       List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
       assertThat(procDefs.size(), is(1));
-      processInstanceId = startProcessInstance(procDefs.get(0).getId(), client);
+      processInstanceId = startProcessInstance(procDefs.get(0).getId(), client, variables);
       client.close();
     } catch (IOException e) {
       logger.error("Could not start the given process model!");
       e.printStackTrace();
     }
     return processInstanceId;
+  }
+
+  public String deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
+    return deployAndStartProcessWithVariables(bpmnModelInstance, new HashMap<>());
   }
 
   public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
@@ -240,9 +268,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String startProcessInstance(String procDefId, CloseableHttpClient client) throws IOException {
+    return startProcessInstance(procDefId, client, new HashMap<>());
+  }
+
+  private String startProcessInstance(String procDefId, CloseableHttpClient client, Map<String, Object> variables) throws IOException {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("content-type", "application/json");
-    post.setEntity(new StringEntity("{}"));
+    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables)));
     CloseableHttpResponse response = client.execute(post);
     if (response.getStatusLine().getStatusCode() != 200) {
       throw new RuntimeException("Could not start the process definition " + procDefId +
@@ -252,6 +284,19 @@ public class EngineIntegrationRule extends TestWatcher {
     ProcessInstanceDto instanceDto = objectMapper.readValue(responseString, ProcessInstanceDto.class);
     return instanceDto.getId();
 
+  }
+
+  private String convertVariableMapToJsonString(Map<String, Object> plainVariables) throws JsonProcessingException {
+    Map<String, Object> variables = new HashMap<>();
+    for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
+      Map<String, Object> fields = new HashMap<>();
+      fields.put("value", nameToValue.getValue());
+      fields.put("type", nameToValue.getValue().getClass().getSimpleName());
+      variables.put(nameToValue.getKey(), fields);
+    }
+    Map<String, Object> variableWrapper = new HashMap<>();
+    variableWrapper.put("variables", variables);
+    return objectMapper.writeValueAsString(variableWrapper);
   }
 
   public void waitForAllProcessesToFinish() throws Exception {

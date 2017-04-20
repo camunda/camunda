@@ -5,6 +5,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
@@ -12,6 +13,7 @@ import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.functionscore.RandomScoreFunctionBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,7 +24,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -176,6 +181,48 @@ public class ImportIT  {
   }
 
   @Test
+  public void variableImportWorks() throws Exception {
+    //given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+        .startEvent()
+        .serviceTask()
+          .camundaExpression("${true}")
+        .endEvent()
+      .done();
+
+    Map<String, Object> variables = createPrimitiveTypeVariables();
+    engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    String procDefId = engineRule.getProcessDefinitionId();
+    List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get(new GenericType<List<GetVariablesResponseDto>>(){});
+
+    //then
+    assertThat(variablesResponseDtos.size(),is(variables.size()));
+  }
+
+  private Map<String, Object> createPrimitiveTypeVariables() {
+    Map<String, Object> variables = new HashMap<>();
+    Integer integer = 1;
+    variables.put("stringVar", "aStringValue");
+    variables.put("boolVar", true);
+    variables.put("integerVar", integer);
+    variables.put("shortVar", integer.shortValue());
+    variables.put("longVar", 1L);
+    variables.put("doubleVar", 1.1);
+    variables.put("dateVar", new Date());
+    return variables;
+  }
+
+  @Test
   public void importIndexIsZeroIfNothingIsImportedYet() {
     // when
     List<Integer> indexes = embeddedOptimizeRule.getImportIndexes();
@@ -291,7 +338,9 @@ public class ImportIT  {
           .camundaExpression("${true}")
         .endEvent()
       .done();
-    engineRule.deployAndStartProcess(processModel);
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("aVariable", "aStringVariables");
+    engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType, long responseCount) {

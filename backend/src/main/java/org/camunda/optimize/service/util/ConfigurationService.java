@@ -28,6 +28,8 @@ public class ConfigurationService {
   private int maxJobQueueSize;
   @Value("${camunda.optimize.engine.import.executor.thread.count}")
   private int importExecutorThreadCount;
+  @Value(("${camunda.optimize.variable.max.valueList.size}"))
+  private int maxVariableValueListSize;
 
   @Value("${camunda.optimize.es.host}")
   private String elasticSearchHost;
@@ -42,6 +44,8 @@ public class ConfigurationService {
   private String optimizeIndex;
   @Value("${camunda.optimize.es.event.type}")
   private String eventType;
+  @Value("${camunda.optimize.es.variable.type}")
+  private String variableType;
   @Value("${camunda.optimize.es.branchAnalysisData.type}")
   private String branchAnalysisDataType;
   @Value("${camunda.optimize.es.heatmap.duration.targetValue.type}")
@@ -65,6 +69,10 @@ public class ConfigurationService {
   private String historicActivityInstanceEndpoint;
   @Value("${camunda.optimize.engine.hai.count.endpoint}")
   private String historicActivityInstanceCountEndpoint;
+  @Value("${camunda.optimize.engine.history.variable.endpoint}")
+  private String historicVariableInstanceEndpoint;
+  @Value("${camunda.optimize.engine.history.variable.count.endpoint}")
+  private String historicVariableInstanceCountEndpoint;
   @Value("${camunda.optimize.engine.procdef.endpoint}")
   private String processDefinitionEndpoint;
   @Value("${camunda.optimize.engine.procdef.count.endpoint}")
@@ -254,5 +262,21 @@ public class ConfigurationService {
 
   public String getDurationHeatmapTargetValueType() {
     return durationHeatmapTargetValueType;
+  }
+
+  public String getHistoricVariableInstanceEndpoint() {
+    return historicVariableInstanceEndpoint;
+  }
+
+  public String getVariableType() {
+    return variableType;
+  }
+
+  public int getMaxVariableValueListSize() {
+    return maxVariableValueListSize;
+  }
+
+  public String getHistoricVariableInstanceCountEndpoint() {
+    return historicVariableInstanceCountEndpoint;
   }
 }

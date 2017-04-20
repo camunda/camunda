@@ -12,6 +12,7 @@ public class EngineConstantsUtil {
   public static final String SORT_TYPE_START_TIME = "startTime";
   public static final String SORT_TYPE_END_TIME = "endTime";
   public static final String SORT_TYPE_ID = "id";
+  public static final String SORT_TYPE_INSTANCE_ID = "instanceId";
 
   public static final String SORT_ORDER = "sortOrder";
   public static final String SORT_ORDER_TYPE_ASCENDING = "asc";

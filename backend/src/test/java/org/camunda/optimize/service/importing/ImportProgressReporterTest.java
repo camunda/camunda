@@ -75,6 +75,7 @@ public class ImportProgressReporterTest {
   private void initializeMocks() throws OptimizeException {
     Mockito.when(engineEntityFetcher.fetchHistoricActivityInstanceCount()).thenReturn(totalEngineEntityCount);
     Mockito.when(engineEntityFetcher.fetchProcessDefinitionCount()).thenReturn(0);
+    Mockito.when(engineEntityFetcher.fetchHistoricVariableInstanceCount()).thenReturn(0);
     ActivityImportService importService = Mockito.mock(ActivityImportService.class);
     Mockito.when(importService.getImportStartIndex()).thenReturn(optimizeImportCount);
     Mockito.when(importServiceProvider.getServices()).thenReturn(Collections.singletonList(importService));

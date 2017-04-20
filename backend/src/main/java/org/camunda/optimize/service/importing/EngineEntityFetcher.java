@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -32,6 +33,7 @@ import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_END_TIME;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_ID;
+import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_INSTANCE_ID;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.TRUE;
 
 @Component
@@ -166,6 +168,43 @@ public class EngineEntityFetcher {
       entries = Collections.emptyList();
     }
     return entries;
+  }
+
+  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(int indexOfFirstResult, int maxPageSize) {
+    List<HistoricVariableInstanceDto> entries;
+    try {
+      entries = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getHistoricVariableInstanceEndpoint())
+        .queryParam(SORT_BY, SORT_TYPE_INSTANCE_ID)
+        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+        .queryParam("deserializeValues", "false")
+        .request(MediaType.APPLICATION_JSON)
+        .get(new GenericType<List<HistoricVariableInstanceDto>>() {
+        });
+    } catch (RuntimeException e) {
+      logger.error("Could not fetch historic activity instances from engine. Please check the connection!");
+      entries = Collections.emptyList();
+    }
+
+    return entries;
+  }
+
+  public Integer fetchHistoricVariableInstanceCount() throws OptimizeException {
+    CountDto count;
+    try {
+      count = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getHistoricVariableInstanceCountEndpoint())
+        .request()
+        .get(CountDto.class);
+    } catch (RuntimeException e) {
+      throw new OptimizeException("Could not fetch variable count from engine. Please check the connection!", e);
+    }
+
+    return count.getCount();
   }
 
 }
