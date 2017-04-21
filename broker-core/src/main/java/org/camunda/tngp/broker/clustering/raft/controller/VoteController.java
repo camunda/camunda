@@ -143,7 +143,7 @@ public class VoteController
         return requestVoteStateMachine.doWork();
     }
 
-    class VoteContext extends SimpleStateMachineContext
+    static class VoteContext extends SimpleStateMachineContext
     {
         final RaftContext context;
         final RequestResponseController requestController;
@@ -178,7 +178,7 @@ public class VoteController
         }
     }
 
-    class PrepareVoteRequestState implements TransitionState<VoteContext>
+    static class PrepareVoteRequestState implements TransitionState<VoteContext>
     {
         @Override
         public void work(VoteContext context) throws Exception
@@ -206,7 +206,7 @@ public class VoteController
         }
     }
 
-    class OpenRequestState implements TransitionState<VoteContext>
+    static class OpenRequestState implements TransitionState<VoteContext>
     {
         @Override
         public void work(VoteContext context) throws Exception
@@ -221,7 +221,7 @@ public class VoteController
         }
     }
 
-    class OpenState implements State<VoteContext>
+    static class OpenState implements State<VoteContext>
     {
         @Override
         public int doWork(VoteContext context) throws Exception
@@ -247,7 +247,7 @@ public class VoteController
         }
     }
 
-    class ProcessResponseState implements TransitionState<VoteContext>
+    static class ProcessResponseState implements TransitionState<VoteContext>
     {
         @Override
         public void work(VoteContext context) throws Exception
@@ -292,7 +292,7 @@ public class VoteController
         }
     }
 
-    class CloseRequestState implements TransitionState<VoteContext>
+    static class CloseRequestState implements TransitionState<VoteContext>
     {
         @Override
         public void work(VoteContext context) throws Exception
@@ -308,7 +308,7 @@ public class VoteController
         }
     }
 
-    class ClosingState implements State<VoteContext>
+    static class ClosingState implements State<VoteContext>
     {
         @Override
         public int doWork(VoteContext context) throws Exception

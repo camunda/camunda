@@ -182,7 +182,7 @@ public class ScheduledExecutorImpl implements Agent, ScheduledExecutor
         return NAME;
     }
 
-    class ScheduledCommandImpl implements ScheduledCommand
+    static class ScheduledCommandImpl implements ScheduledCommand
     {
         protected final Runnable command;
         protected final long periodInMillis;

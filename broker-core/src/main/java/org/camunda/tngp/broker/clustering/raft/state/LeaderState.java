@@ -576,7 +576,7 @@ public class LeaderState extends ActiveState
         return configureStateMachine.getCurrentState() == configureClosedState;
     }
 
-    class LeaderContext extends SimpleStateMachineContext
+    static class LeaderContext extends SimpleStateMachineContext
     {
         final RaftContext raftContext;
         final AppendController appendController;
@@ -603,7 +603,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class StartLogStreamControllerState implements State<LeaderContext>
+    static class StartLogStreamControllerState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
@@ -627,7 +627,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class OpeningLogStreamControllerState implements State<LeaderContext>
+    static class OpeningLogStreamControllerState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
@@ -657,7 +657,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class OpenAppendControllerState implements TransitionState<LeaderContext>
+    static class OpenAppendControllerState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
@@ -700,7 +700,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class OpenConfigurationControllerState implements TransitionState<LeaderContext>
+    static class OpenConfigurationControllerState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
@@ -714,7 +714,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class AppendConfigurationEntryState implements State<LeaderContext>
+    static class AppendConfigurationEntryState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
@@ -733,7 +733,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class InstallLogStreamServiceState implements TransitionState<LeaderContext>
+    static class InstallLogStreamServiceState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
@@ -756,7 +756,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class RemoveLogStreamServiceState implements TransitionState<LeaderContext>
+    static class RemoveLogStreamServiceState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
@@ -776,7 +776,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class RemovingLogStreamServiceState implements State<LeaderContext>
+    static class RemovingLogStreamServiceState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
@@ -795,7 +795,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class StopLogStreamControllerState implements TransitionState<LeaderContext>
+    static class StopLogStreamControllerState implements TransitionState<LeaderContext>
     {
         CompletableFuture<Void> completableFuture;
         @Override
@@ -816,7 +816,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class CloseAppendControllerState implements TransitionState<LeaderContext>
+    static class CloseAppendControllerState implements TransitionState<LeaderContext>
     {
         @Override
         public void work(LeaderContext context) throws Exception
@@ -832,7 +832,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class ClosingAppendControllerState implements State<LeaderContext>
+    static class ClosingAppendControllerState implements State<LeaderContext>
     {
         @Override
         public int doWork(LeaderContext context) throws Exception
@@ -853,7 +853,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class ReplicationContext extends SimpleStateMachineContext
+    static class ReplicationContext extends SimpleStateMachineContext
     {
         final RaftContext raftContext;
 
@@ -914,7 +914,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class CloseReplicationsState implements TransitionState<ReplicationContext>
+    static class CloseReplicationsState implements TransitionState<ReplicationContext>
     {
         @Override
         public void work(ReplicationContext context) throws Exception
@@ -942,7 +942,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class ClosingReplicationsState implements State<ReplicationContext>
+    static class ClosingReplicationsState implements State<ReplicationContext>
     {
         @Override
         public int doWork(ReplicationContext context) throws Exception
@@ -982,7 +982,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class ConfigureContext extends SimpleStateMachineContext
+    static class ConfigureContext extends SimpleStateMachineContext
     {
         final RaftContext raftContext;
 
@@ -993,7 +993,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class OpenConfigureState implements State<ConfigureContext>
+    static class OpenConfigureState implements State<ConfigureContext>
     {
 
         @Override
@@ -1028,7 +1028,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class CloseConfigureState implements TransitionState<ConfigureContext>
+    static class CloseConfigureState implements TransitionState<ConfigureContext>
     {
         @Override
         public void work(ConfigureContext context) throws Exception
@@ -1056,7 +1056,7 @@ public class LeaderState extends ActiveState
         }
     }
 
-    class ClosingConfigureState implements State<ConfigureContext>
+    static class ClosingConfigureState implements State<ConfigureContext>
     {
         @Override
         public int doWork(ConfigureContext context) throws Exception

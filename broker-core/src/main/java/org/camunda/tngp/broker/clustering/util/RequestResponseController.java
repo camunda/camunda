@@ -159,7 +159,7 @@ public class RequestResponseController
         return requestResponseContext.getResponseLength();
     }
 
-    class RequestResponseContext extends SimpleStateMachineContext
+    static class RequestResponseContext extends SimpleStateMachineContext
     {
         TransportConnection connection;
         EndpointChannel endpointChannel;
@@ -208,7 +208,7 @@ public class RequestResponseController
         }
     }
 
-    class OpenConnectionState implements State<RequestResponseContext>
+    static class OpenConnectionState implements State<RequestResponseContext>
     {
         @Override
         public int doWork(RequestResponseContext context) throws Exception
@@ -230,7 +230,7 @@ public class RequestResponseController
         }
     }
 
-    class OpenChannelState implements State<RequestResponseContext>
+    static class OpenChannelState implements State<RequestResponseContext>
     {
         @Override
         public int doWork(RequestResponseContext context) throws Exception
@@ -268,7 +268,7 @@ public class RequestResponseController
         }
     }
 
-    class OpenRequestState implements State<RequestResponseContext>
+    static class OpenRequestState implements State<RequestResponseContext>
     {
 
         @Override
@@ -305,7 +305,7 @@ public class RequestResponseController
         }
     }
 
-    class SendRequestState implements TransitionState<RequestResponseContext>
+    static class SendRequestState implements TransitionState<RequestResponseContext>
     {
         @Override
         public void work(RequestResponseContext context) throws Exception
@@ -330,7 +330,7 @@ public class RequestResponseController
         }
     }
 
-    class PollResponseState implements State<RequestResponseContext>
+    static class PollResponseState implements State<RequestResponseContext>
     {
         @Override
         public int doWork(RequestResponseContext context) throws Exception
@@ -355,7 +355,7 @@ public class RequestResponseController
         }
     }
 
-    class ClosingState implements TransitionState<RequestResponseContext>
+    static class ClosingState implements TransitionState<RequestResponseContext>
     {
         @Override
         public void work(RequestResponseContext context) throws Exception

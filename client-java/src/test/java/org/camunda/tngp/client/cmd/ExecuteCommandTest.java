@@ -47,7 +47,7 @@ public class ExecuteCommandTest
         assertThat(cmd.getCommandEventType()).isEqualTo(TASK_EVENT);
     }
 
-    class ClientCommand extends AbstractExecuteCmdImpl<Void, Void>
+    static class ClientCommand extends AbstractExecuteCmdImpl<Void, Void>
     {
         ClientCommand(EventType commandEventType)
         {

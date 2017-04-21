@@ -117,7 +117,7 @@ public class SingleMessageController
         return singleMessageStateMachine.getCurrentState() == sentState;
     }
 
-    class SingleMessageContext extends SimpleStateMachineContext
+    static class SingleMessageContext extends SimpleStateMachineContext
     {
         final ClientChannelManager clientChannelManager;
         final Endpoint receiver;
@@ -136,7 +136,7 @@ public class SingleMessageController
         }
     }
 
-    class OpenChannelState implements State<SingleMessageContext>
+    static class OpenChannelState implements State<SingleMessageContext>
     {
         @Override
         public int doWork(SingleMessageContext context) throws Exception
@@ -174,7 +174,7 @@ public class SingleMessageController
         }
     }
 
-    class SendMessageState implements State<SingleMessageContext>
+    static class SendMessageState implements State<SingleMessageContext>
     {
         @Override
         public int doWork(SingleMessageContext context) throws Exception
@@ -210,7 +210,7 @@ public class SingleMessageController
         }
     }
 
-    class CloseChannelState implements TransitionState<SingleMessageContext>
+    static class CloseChannelState implements TransitionState<SingleMessageContext>
     {
 
         @Override

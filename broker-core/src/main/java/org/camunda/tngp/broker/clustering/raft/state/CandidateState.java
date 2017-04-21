@@ -165,7 +165,7 @@ public class CandidateState extends ActiveState
         }
     }
 
-    class CandidateContext extends SimpleStateMachineContext
+    static class CandidateContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final Quorum quorum;
@@ -189,7 +189,7 @@ public class CandidateState extends ActiveState
         }
     }
 
-    class PrepareState implements TransitionState<CandidateContext>
+    static class PrepareState implements TransitionState<CandidateContext>
     {
         public void work(final CandidateContext context) throws Exception
         {
@@ -244,7 +244,7 @@ public class CandidateState extends ActiveState
         }
     }
 
-    class OpenState implements org.camunda.tngp.util.state.State<CandidateContext>
+    static class OpenState implements org.camunda.tngp.util.state.State<CandidateContext>
     {
         @Override
         public int doWork(CandidateContext context) throws Exception
@@ -306,7 +306,7 @@ public class CandidateState extends ActiveState
         }
     }
 
-    class CloseVoteRequestsState implements org.camunda.tngp.util.state.State<CandidateContext>
+    static class CloseVoteRequestsState implements org.camunda.tngp.util.state.State<CandidateContext>
     {
         @Override
         public int doWork(CandidateContext context) throws Exception
@@ -336,7 +336,7 @@ public class CandidateState extends ActiveState
         }
     }
 
-    class ClosingState implements org.camunda.tngp.util.state.State<CandidateContext>
+    static class ClosingState implements org.camunda.tngp.util.state.State<CandidateContext>
     {
 
         @Override

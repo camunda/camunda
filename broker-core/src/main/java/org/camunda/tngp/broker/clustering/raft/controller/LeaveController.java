@@ -130,7 +130,7 @@ public class LeaveController
         return leaveStateMachine.getCurrentState() == closedState;
     }
 
-    class LeaveContext extends SimpleStateMachineContext
+    static class LeaveContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final RequestResponseController requestController;
@@ -158,7 +158,7 @@ public class LeaveController
         }
     }
 
-    class OpenRequestState implements TransitionState<LeaveContext>
+    static class OpenRequestState implements TransitionState<LeaveContext>
     {
         @Override
         public void work(LeaveContext context) throws Exception
@@ -202,7 +202,7 @@ public class LeaveController
         }
     }
 
-    class LeaveState implements State<LeaveContext>
+    static class LeaveState implements State<LeaveContext>
     {
         @Override
         public int doWork(final LeaveContext context)
@@ -228,7 +228,7 @@ public class LeaveController
         }
     }
 
-    class ConfigureState implements TransitionState<LeaveContext>
+    static class ConfigureState implements TransitionState<LeaveContext>
     {
         @Override
         public void work(LeaveContext context) throws Exception
@@ -262,7 +262,7 @@ public class LeaveController
         }
     }
 
-    class CloseRequestState implements TransitionState<LeaveContext>
+    static class CloseRequestState implements TransitionState<LeaveContext>
     {
         @Override
         public void work(LeaveContext context) throws Exception
@@ -278,7 +278,7 @@ public class LeaveController
         }
     }
 
-    class ClosingState implements State<LeaveContext>
+    static class ClosingState implements State<LeaveContext>
     {
         @Override
         public int doWork(LeaveContext context) throws Exception

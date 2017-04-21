@@ -147,7 +147,7 @@ public class FollowerState extends ActiveState
         return Raft.State.FOLLOWER;
     }
 
-    class FollowerContext extends SimpleStateMachineContext
+    static class FollowerContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final Quorum quorum;
@@ -208,7 +208,7 @@ public class FollowerState extends ActiveState
         }
     }
 
-    class OpenState implements org.camunda.tngp.util.state.State<FollowerContext>
+    static class OpenState implements org.camunda.tngp.util.state.State<FollowerContext>
     {
         @Override
         public int doWork(FollowerContext context) throws Exception
@@ -261,7 +261,7 @@ public class FollowerState extends ActiveState
         }
     }
 
-    class ClosePollRequestsState implements org.camunda.tngp.util.state.State<FollowerContext>
+    static class ClosePollRequestsState implements org.camunda.tngp.util.state.State<FollowerContext>
     {
         @Override
         public int doWork(FollowerContext context) throws Exception
@@ -291,7 +291,7 @@ public class FollowerState extends ActiveState
         }
     }
 
-    class ClosingState implements org.camunda.tngp.util.state.State<FollowerContext>
+    static class ClosingState implements org.camunda.tngp.util.state.State<FollowerContext>
     {
 
         @Override

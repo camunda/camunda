@@ -331,7 +331,7 @@ public class ControlMessageHandlerManager implements Agent
         }
     }
 
-    class Context extends SimpleStateMachineContext
+    static class Context extends SimpleStateMachineContext
     {
         private CompletableFuture<Void> openClosefuture;
         private CompletableFuture<Void> processingFuture;

@@ -123,7 +123,7 @@ public class ReplicationController
         return replicationStateMachine.getCurrentState() == closedState;
     }
 
-    class ReplicationContext extends SimpleStateMachineContext
+    static class ReplicationContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final RaftContext raftContext;
@@ -153,7 +153,7 @@ public class ReplicationController
         }
     }
 
-    class PrepareMessageState implements TransitionState<ReplicationContext>
+    static class PrepareMessageState implements TransitionState<ReplicationContext>
     {
         @Override
         public void work(ReplicationContext context) throws Exception
@@ -192,7 +192,7 @@ public class ReplicationController
         }
     }
 
-    class OpenRequestState implements TransitionState<ReplicationContext>
+    static class OpenRequestState implements TransitionState<ReplicationContext>
     {
         @Override
         public void work(ReplicationContext context) throws Exception
@@ -207,7 +207,7 @@ public class ReplicationController
         }
     }
 
-    class OpenState implements State<ReplicationContext>
+    static class OpenState implements State<ReplicationContext>
     {
         @Override
         public int doWork(ReplicationContext context) throws Exception
@@ -236,7 +236,7 @@ public class ReplicationController
         }
     }
 
-    class CloseRequestState implements TransitionState<ReplicationContext>
+    static class CloseRequestState implements TransitionState<ReplicationContext>
     {
         @Override
         public void work(ReplicationContext context) throws Exception
@@ -252,7 +252,7 @@ public class ReplicationController
         }
     }
 
-    class ClosingRequestState implements State<ReplicationContext>
+    static class ClosingRequestState implements State<ReplicationContext>
     {
         @Override
         public int doWork(ReplicationContext context) throws Exception
@@ -272,7 +272,7 @@ public class ReplicationController
         }
     }
 
-    class ScheduleState implements State<ReplicationContext>
+    static class ScheduleState implements State<ReplicationContext>
     {
         @Override
         public int doWork(ReplicationContext context) throws Exception

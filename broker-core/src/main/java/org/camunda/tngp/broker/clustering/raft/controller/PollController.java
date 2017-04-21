@@ -143,7 +143,7 @@ public class PollController
         return requestPollStateMachine.doWork();
     }
 
-    class PollContext extends SimpleStateMachineContext
+    static class PollContext extends SimpleStateMachineContext
     {
         final RaftContext context;
         final RequestResponseController requestController;
@@ -178,7 +178,7 @@ public class PollController
         }
     }
 
-    class PreparePollRequestState implements TransitionState<PollContext>
+    static class PreparePollRequestState implements TransitionState<PollContext>
     {
         @Override
         public void work(PollContext context) throws Exception
@@ -206,7 +206,7 @@ public class PollController
         }
     }
 
-    class OpenRequestState implements TransitionState<PollContext>
+    static class OpenRequestState implements TransitionState<PollContext>
     {
         @Override
         public void work(PollContext context) throws Exception
@@ -221,7 +221,7 @@ public class PollController
         }
     }
 
-    class OpenState implements State<PollContext>
+    static class OpenState implements State<PollContext>
     {
         @Override
         public int doWork(PollContext context) throws Exception
@@ -247,7 +247,7 @@ public class PollController
         }
     }
 
-    class ProcessResponseState implements TransitionState<PollContext>
+    static class ProcessResponseState implements TransitionState<PollContext>
     {
         @Override
         public void work(PollContext context) throws Exception
@@ -291,7 +291,7 @@ public class PollController
         }
     }
 
-    class CloseRequestState implements TransitionState<PollContext>
+    static class CloseRequestState implements TransitionState<PollContext>
     {
         @Override
         public void work(PollContext context) throws Exception
@@ -307,7 +307,7 @@ public class PollController
         }
     }
 
-    class ClosingState implements State<PollContext>
+    static class ClosingState implements State<PollContext>
     {
         @Override
         public int doWork(PollContext context) throws Exception

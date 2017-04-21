@@ -141,7 +141,7 @@ public class JoinController
         return joinStateMachine.getCurrentState() == closedState;
     }
 
-    class JoinContext extends SimpleStateMachineContext
+    static class JoinContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final RequestResponseController requestController;
@@ -169,7 +169,7 @@ public class JoinController
         }
     }
 
-    class OpenRequestState implements TransitionState<JoinContext>
+    static class OpenRequestState implements TransitionState<JoinContext>
     {
         @Override
         public void work(JoinContext context) throws Exception
@@ -221,7 +221,7 @@ public class JoinController
         }
     }
 
-    class JoinState implements State<JoinContext>
+    static class JoinState implements State<JoinContext>
     {
         @Override
         public int doWork(final JoinContext context)
@@ -247,7 +247,7 @@ public class JoinController
         }
     }
 
-    class ConfigureState implements TransitionState<JoinContext>
+    static class ConfigureState implements TransitionState<JoinContext>
     {
         @Override
         public void work(JoinContext context) throws Exception
@@ -321,7 +321,7 @@ public class JoinController
         }
     }
 
-    class CloseRequestState implements TransitionState<JoinContext>
+    static class CloseRequestState implements TransitionState<JoinContext>
     {
         @Override
         public void work(JoinContext context) throws Exception
@@ -337,7 +337,7 @@ public class JoinController
         }
     }
 
-    class ClosingState implements State<JoinContext>
+    static class ClosingState implements State<JoinContext>
     {
         @Override
         public int doWork(JoinContext context) throws Exception

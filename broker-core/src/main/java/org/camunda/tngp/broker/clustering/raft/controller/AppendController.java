@@ -188,7 +188,7 @@ public class AppendController
         }
     }
 
-    class WriteState implements State<AppendContext>
+    static class WriteState implements State<AppendContext>
     {
         @Override
         public int doWork(AppendContext context) throws Exception
@@ -250,7 +250,7 @@ public class AppendController
         }
     }
 
-    class AppendState implements State<AppendContext>
+    static class AppendState implements State<AppendContext>
     {
         @Override
         public int doWork(AppendContext context) throws Exception
@@ -281,7 +281,7 @@ public class AppendController
         }
     }
 
-    class CommitState implements State<AppendContext>
+    static class CommitState implements State<AppendContext>
     {
         @Override
         public int doWork(AppendContext context) throws Exception
@@ -302,7 +302,7 @@ public class AppendController
         }
     }
 
-    class ClosingState implements TransitionState<AppendContext>
+    static class ClosingState implements TransitionState<AppendContext>
     {
         @Override
         public void work(AppendContext context) throws Exception

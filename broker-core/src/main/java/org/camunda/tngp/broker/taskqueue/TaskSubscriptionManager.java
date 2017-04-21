@@ -258,7 +258,7 @@ public class TaskSubscriptionManager implements Agent
         });
     }
 
-    class LogStreamBucket
+    static class LogStreamBucket
     {
         protected final LogStream logStream;
         protected final String logStreamName;

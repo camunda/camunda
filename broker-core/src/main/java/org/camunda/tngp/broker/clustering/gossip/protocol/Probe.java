@@ -179,7 +179,7 @@ public class Probe
 
     }
 
-    class OpeningState implements TransitionState<ProbeContext>
+    static class OpeningState implements TransitionState<ProbeContext>
     {
         @Override
         public void work(ProbeContext context) throws Exception
@@ -197,7 +197,7 @@ public class Probe
         }
     }
 
-    class OpenState implements State<ProbeContext>
+    static class OpenState implements State<ProbeContext>
     {
         @Override
         public int doWork(ProbeContext context) throws Exception
@@ -223,7 +223,7 @@ public class Probe
         }
     }
 
-    class ProcessResponseState implements TransitionState<ProbeContext>
+    static class ProcessResponseState implements TransitionState<ProbeContext>
     {
         @Override
         public void work(ProbeContext context) throws Exception
@@ -242,7 +242,7 @@ public class Probe
         }
     }
 
-    class ForwardResponseState implements State<ProbeContext>
+    static class ForwardResponseState implements State<ProbeContext>
     {
         @Override
         public int doWork(ProbeContext context) throws Exception
@@ -271,7 +271,7 @@ public class Probe
         }
     }
 
-    class CloseRequestState implements TransitionState<ProbeContext>
+    static class CloseRequestState implements TransitionState<ProbeContext>
     {
         @Override
         public void work(ProbeContext context) throws Exception
@@ -286,7 +286,7 @@ public class Probe
         }
     }
 
-    class ClosingState implements State<ProbeContext>
+    static class ClosingState implements State<ProbeContext>
     {
         @Override
         public int doWork(ProbeContext context) throws Exception

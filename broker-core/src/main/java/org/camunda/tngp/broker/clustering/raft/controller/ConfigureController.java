@@ -119,7 +119,7 @@ public class ConfigureController
         return configureStateMachine.getCurrentState() == closedState;
     }
 
-    class ConfigureContext extends SimpleStateMachineContext
+    static class ConfigureContext extends SimpleStateMachineContext
     {
         final Raft raft;
         final RaftContext raftContext;
@@ -145,7 +145,7 @@ public class ConfigureController
         }
     }
 
-    class ScheduleState implements State<ConfigureContext>
+    static class ScheduleState implements State<ConfigureContext>
     {
         @Override
         public int doWork(ConfigureContext context) throws Exception
@@ -181,7 +181,7 @@ public class ConfigureController
         }
     }
 
-    class OpenRequestState implements TransitionState<ConfigureContext>
+    static class OpenRequestState implements TransitionState<ConfigureContext>
     {
         @Override
         public void work(ConfigureContext context) throws Exception
@@ -196,7 +196,7 @@ public class ConfigureController
         }
     }
 
-    class OpenState implements State<ConfigureContext>
+    static class OpenState implements State<ConfigureContext>
     {
         @Override
         public int doWork(ConfigureContext context) throws Exception
@@ -228,7 +228,7 @@ public class ConfigureController
         }
     }
 
-    class CloseRequestState implements TransitionState<ConfigureContext>
+    static class CloseRequestState implements TransitionState<ConfigureContext>
     {
         @Override
         public void work(ConfigureContext context) throws Exception
@@ -244,7 +244,7 @@ public class ConfigureController
         }
     }
 
-    class ClosingRequestState implements State<ConfigureContext>
+    static class ClosingRequestState implements State<ConfigureContext>
     {
         @Override
         public int doWork(ConfigureContext context) throws Exception

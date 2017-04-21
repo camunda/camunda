@@ -169,7 +169,7 @@ public class ConfigurationController
         return configurationStateMachine.getCurrentState() == configuredState;
     }
 
-    class ConfigurationContext extends SimpleStateMachineContext
+    static class ConfigurationContext extends SimpleStateMachineContext
     {
         final RaftContext raftContext;
         final AppendController appendController;
@@ -195,7 +195,7 @@ public class ConfigurationController
         }
     }
 
-    class PrepareConfigurationEntryState implements TransitionState<ConfigurationContext>
+    static class PrepareConfigurationEntryState implements TransitionState<ConfigurationContext>
     {
         @Override
         public void work(ConfigurationContext context) throws Exception
@@ -218,7 +218,7 @@ public class ConfigurationController
         }
     }
 
-    class OpenAppendControllerState implements TransitionState<ConfigurationContext>
+    static class OpenAppendControllerState implements TransitionState<ConfigurationContext>
     {
         @Override
         public void work(ConfigurationContext context) throws Exception
@@ -232,7 +232,7 @@ public class ConfigurationController
         }
     }
 
-    class AppendConfigurationState implements State<ConfigurationContext>
+    static class AppendConfigurationState implements State<ConfigurationContext>
     {
         @Override
         public int doWork(ConfigurationContext context) throws Exception
@@ -263,7 +263,7 @@ public class ConfigurationController
         }
     }
 
-    class ApplyConfigurationState implements TransitionState<ConfigurationContext>
+    static class ApplyConfigurationState implements TransitionState<ConfigurationContext>
     {
         @Override
         public void work(ConfigurationContext context) throws Exception
@@ -282,7 +282,7 @@ public class ConfigurationController
         }
     }
 
-    class CommitConfigurationState implements State<ConfigurationContext>
+    static class CommitConfigurationState implements State<ConfigurationContext>
     {
         @Override
         public int doWork(ConfigurationContext context) throws Exception
@@ -309,7 +309,7 @@ public class ConfigurationController
         }
     }
 
-    class CloseAppendControllerState implements TransitionState<ConfigurationContext>
+    static class CloseAppendControllerState implements TransitionState<ConfigurationContext>
     {
         @Override
         public void work(ConfigurationContext context) throws Exception
@@ -325,7 +325,7 @@ public class ConfigurationController
         }
     }
 
-    class ClosingState implements State<ConfigurationContext>
+    static class ClosingState implements State<ConfigurationContext>
     {
         @Override
         public int doWork(ConfigurationContext context) throws Exception

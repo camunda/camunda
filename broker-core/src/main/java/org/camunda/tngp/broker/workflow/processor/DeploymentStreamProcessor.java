@@ -235,7 +235,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         }
     }
 
-    private final class DeployedWorkflow
+    private static final class DeployedWorkflow
     {
         private final byte[] bpmnProcessId;
         private final int version;
