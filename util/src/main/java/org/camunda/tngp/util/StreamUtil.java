@@ -1,5 +1,6 @@
 package org.camunda.tngp.util;
 
+import static org.camunda.tngp.util.StringUtil.fromBytes;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.ByteArrayOutputStream;
@@ -9,7 +10,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -58,16 +58,10 @@ public class StreamUtil
 
     public static String digestAsHex(final MessageDigest messageDigest)
     {
-        try
-        {
-            final byte[] digest = messageDigest.digest();
-            final byte[] hexByteArray = BitUtil.toHexByteArray(digest);
-            return new String(hexByteArray, "UTF-8");
-        }
-        catch (final UnsupportedEncodingException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        final byte[] digest = messageDigest.digest();
+        final byte[] hexByteArray = BitUtil.toHexByteArray(digest);
+
+        return fromBytes(hexByteArray);
     }
 
     public static int copy(final InputStream input, final OutputStream output) throws IOException
@@ -123,7 +117,7 @@ public class StreamUtil
             {
                 final byte[] data = new byte[(int) checksum.length()];
                 read(is, data);
-                final String content = new String(data, "UTF-8");
+                final String content = fromBytes(data);
                 final String[] parts = content.split(" ");
                 checksumDigest = parts[0];
                 checksumFileName = parts[1];
