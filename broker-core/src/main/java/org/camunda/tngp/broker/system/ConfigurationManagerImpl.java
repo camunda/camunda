@@ -10,6 +10,7 @@ import com.moandjiezana.toml.Toml;
 public class ConfigurationManagerImpl implements ConfigurationManager
 {
     protected Toml toml;
+    public GlobalConfiguration globalConfiguration;
 
     public ConfigurationManagerImpl(final String filePath)
     {
@@ -23,6 +24,13 @@ public class ConfigurationManagerImpl implements ConfigurationManager
             System.out.println("Using config file " + file.getAbsolutePath());
             toml = new Toml().read(file);
         }
+
+        this.globalConfiguration = readEntry("global", GlobalConfiguration.class);
+        if (this.globalConfiguration == null)
+        {
+            this.globalConfiguration = new GlobalConfiguration();
+        }
+
     }
 
     public ConfigurationManagerImpl(final InputStream configStream)
@@ -35,6 +43,11 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         {
             System.out.println("Using provided configuration stream");
             toml = new Toml().read(configStream);
+        }
+        this.globalConfiguration = readEntry("global", GlobalConfiguration.class);
+        if (this.globalConfiguration == null)
+        {
+            this.globalConfiguration = new GlobalConfiguration();
         }
     }
 
@@ -54,6 +67,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         if (componentConfig != null)
         {
             configObject = componentConfig.to(configObjectType);
+            ((ComponentConfiguration) configObject).applyGlobalConfiguration(componentConfig, this.globalConfiguration);
         }
 
         return configObject;
@@ -68,7 +82,9 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         {
             for (final Toml toml : tables)
             {
-                result.add(toml.to(type));
+                final T configObject = toml.to(type);
+                ((ComponentConfiguration) configObject).applyGlobalConfiguration(toml, this.globalConfiguration);
+                result.add(configObject);
             }
         }
         return result;

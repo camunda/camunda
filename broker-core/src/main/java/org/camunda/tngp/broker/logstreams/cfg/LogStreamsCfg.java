@@ -1,6 +1,9 @@
 package org.camunda.tngp.broker.logstreams.cfg;
 
-public class LogStreamsCfg
+import org.camunda.tngp.broker.system.ComponentConfiguration;
+import org.camunda.tngp.broker.system.GlobalConfiguration;
+
+public class LogStreamsCfg extends ComponentConfiguration
 {
 
     public static final int DEFAULT_LOG_ID = 0;
@@ -13,5 +16,29 @@ public class LogStreamsCfg
 
     public String indexDirectory = null;
     public boolean useTempIndexFile = false;
+
+    @Override
+    protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
+    {
+
+        this.indexDirectory = (String) new Rules("first")
+             .setGlobalObj(global.globalDataDirectory)
+             .setLocalObj(indexDirectory, "indexDirectory")
+             .setRule((r) ->
+             { return r + "logs/"; }).execute();
+
+        this.useTempLogDirectory = (boolean) new Rules("second")
+                .setGlobalObj(global.globalUseTemp)
+                .setLocalObj(useTempLogDirectory, "useTempLogDirectory")
+                .setRule((r) ->
+                { return r; }).execute();
+
+        this.useTempIndexFile = (boolean) new Rules("second")
+                .setGlobalObj(global.globalUseTemp)
+                .setLocalObj(useTempIndexFile, "useTempIndexFile")
+                .setRule((r) ->
+                { return r; }).execute();
+
+    }
 
 }

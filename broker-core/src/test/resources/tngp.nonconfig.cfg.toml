@@ -1,0 +1,48 @@
+# Default TNGP Config File. Used if no config file is provided to the broker.
+
+# Global Configuration --------------------------------
+
+[global]
+
+
+# Networking configuration ----------------------------
+
+[network]
+
+
+[network.clientApi]
+
+
+[network.managementApi]
+
+
+[network.replicationApi]
+
+
+[network.gossip]
+
+
+[network.management]
+
+
+# System Configuration --------------------------------
+
+[threading]
+
+
+[metrics]
+
+
+# Log Configuration -----------------------------------
+
+[logs]
+
+
+
+
+[snapshot]
+
+
+# Topic Subscriptions ------------------------------------------
+
+[subscriptions]
