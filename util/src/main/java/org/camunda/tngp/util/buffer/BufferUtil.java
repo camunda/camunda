@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.util.buffer;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
@@ -35,7 +37,7 @@ public final class BufferUtil
 
     public static DirectBuffer wrapString(String argument)
     {
-        return new UnsafeBuffer(argument.getBytes(StandardCharsets.UTF_8));
+        return new UnsafeBuffer(getBytes(argument));
     }
 
     /**

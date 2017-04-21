@@ -1,6 +1,7 @@
 package org.camunda.tngp.util.buffer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.nio.charset.StandardCharsets;
 
@@ -10,8 +11,8 @@ import org.junit.Test;
 
 public class BufferUtilTest
 {
-    protected static final byte[] BYTES1 = "foo".getBytes(StandardCharsets.UTF_8);
-    protected static final byte[] BYTES2 = "bar".getBytes(StandardCharsets.UTF_8);
+    protected static final byte[] BYTES1 = getBytes("foo");
+    protected static final byte[] BYTES2 = getBytes("bar");
     protected static final byte[] BYTES3 = new byte[BYTES1.length + BYTES2.length];
 
     static

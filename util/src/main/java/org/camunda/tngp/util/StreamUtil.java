@@ -1,5 +1,7 @@
 package org.camunda.tngp.util;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -84,7 +86,7 @@ public class StreamUtil
     {
         try (final FileOutputStream os = new FileOutputStream(file))
         {
-            os.write(data.getBytes("UTF-8"));
+            os.write(getBytes(data));
         }
     }
 
