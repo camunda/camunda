@@ -253,7 +253,7 @@ public class ConfigurationController
                 final CompletableFuture<Void> future = context.configurationFuture;
                 if (future != null)
                 {
-                    future.completeExceptionally(null);
+                    future.completeExceptionally(new RuntimeException("Appending failed!"));
                 }
 
                 context.take(TRANSITION_FAILED);

@@ -130,7 +130,7 @@ public class ClusterManager implements Agent
 
         final File[] metaFiles = dir.listFiles();
 
-        if (metaFiles.length > 0)
+        if (metaFiles != null && metaFiles.length > 0)
         {
             for (int i = 0; i < metaFiles.length; i++)
             {
