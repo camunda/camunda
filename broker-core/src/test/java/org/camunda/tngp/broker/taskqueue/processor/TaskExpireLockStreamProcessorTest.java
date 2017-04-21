@@ -15,10 +15,10 @@ package org.camunda.tngp.broker.taskqueue.processor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 
@@ -50,7 +50,7 @@ public class TaskExpireLockStreamProcessorTest
     private static final int TARGET_LOG_STREAM_ID = 3;
     private static final long INITIAL_POSITION = 10L;
 
-    private static final byte[] TASK_TYPE = "test-task".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] TASK_TYPE = getBytes("test-task");
     private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE);
 
     private static final long LOCK_TIME = ClockUtil.getCurrentTimeInMillis();

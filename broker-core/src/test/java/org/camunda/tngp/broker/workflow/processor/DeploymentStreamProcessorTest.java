@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.workflow.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayOutputStream;
@@ -117,7 +118,7 @@ public class DeploymentStreamProcessorTest
 
             final DeployedWorkflow deployedWorkflow = deployedWorkflows.next();
 
-            assertThatBuffer(deployedWorkflow.getBpmnProcessId()).hasBytes("process".getBytes());
+            assertThatBuffer(deployedWorkflow.getBpmnProcessId()).hasBytes(getBytes("process"));
             assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
         }
 
@@ -152,7 +153,7 @@ public class DeploymentStreamProcessorTest
 
             final DeployedWorkflow deployedWorkflow = deployedWorkflows.next();
 
-            assertThatBuffer(deployedWorkflow.getBpmnProcessId()).hasBytes("process".getBytes());
+            assertThatBuffer(deployedWorkflow.getBpmnProcessId()).hasBytes(getBytes("process"));
             assertThat(deployedWorkflow.getVersion()).isEqualTo(2);
         }
 
@@ -184,7 +185,7 @@ public class DeploymentStreamProcessorTest
     public void shouldRejectCreateDeploymentIfNotParsable()
     {
         // given
-        final DirectBuffer resource = new UnsafeBuffer("foo".getBytes());
+        final DirectBuffer resource = new UnsafeBuffer(getBytes("foo"));
 
         // when
         mockController.processEvent(1L, event -> event

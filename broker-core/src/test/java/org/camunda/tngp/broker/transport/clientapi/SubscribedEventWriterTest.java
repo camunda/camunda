@@ -2,9 +2,8 @@ package org.camunda.tngp.broker.transport.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Mockito.verify;
-
-import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -20,7 +19,7 @@ import org.mockito.MockitoAnnotations;
 public class SubscribedEventWriterTest
 {
 
-    protected static final DirectBuffer BUFFER = new UnsafeBuffer("foo".getBytes(StandardCharsets.UTF_8));
+    protected static final DirectBuffer BUFFER = new UnsafeBuffer(getBytes("foo"));
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();

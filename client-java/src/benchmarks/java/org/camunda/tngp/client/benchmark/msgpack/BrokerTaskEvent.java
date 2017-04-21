@@ -1,5 +1,7 @@
 package org.camunda.tngp.client.benchmark.msgpack;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,8 +99,8 @@ public class BrokerTaskEvent extends UnpackedObject implements TaskEvent
         writer.writeMapHeader(headers.size());
         headers.forEach((k, v) ->
         {
-            writer.writeString(new UnsafeBuffer(k.getBytes(StandardCharsets.UTF_8)));
-            writer.writeString(new UnsafeBuffer(v.getBytes(StandardCharsets.UTF_8)));
+            writer.writeString(new UnsafeBuffer(getBytes(k)));
+            writer.writeString(new UnsafeBuffer(getBytes(v)));
         });
         headersProp.setValue(tempBuffer, 0, writer.getOffset());
     }

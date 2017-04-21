@@ -1,9 +1,11 @@
 package org.camunda.tngp.broker.clustering.management.message;
 
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.*;
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.*;
+import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.logNameHeaderLength;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -99,14 +101,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         if (name != null && !name.isEmpty())
         {
-            try
-            {
-                length += name.getBytes("UTF-8").length;
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                e.printStackTrace();
-            }
+            length += getBytes(name).length;
         }
 
         return length;

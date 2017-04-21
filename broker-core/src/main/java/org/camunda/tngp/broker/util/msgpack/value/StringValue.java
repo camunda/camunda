@@ -1,12 +1,13 @@
 package org.camunda.tngp.broker.util.msgpack.value;
 
-import java.nio.charset.StandardCharsets;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.msgpack.spec.MsgPackReader;
 import org.camunda.tngp.msgpack.spec.MsgPackWriter;
+
 
 public class StringValue extends BaseValue
 {
@@ -23,7 +24,7 @@ public class StringValue extends BaseValue
 
     public StringValue(String string)
     {
-        this(new UnsafeBuffer(string.getBytes(StandardCharsets.UTF_8)));
+        this(new UnsafeBuffer(getBytes(string)));
     }
 
     public StringValue(DirectBuffer buffer)

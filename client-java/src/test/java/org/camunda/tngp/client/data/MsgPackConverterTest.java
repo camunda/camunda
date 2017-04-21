@@ -13,6 +13,7 @@
 package org.camunda.tngp.client.data;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,7 +54,7 @@ public class MsgPackConverterTest
     public void shouldConvertFromJsonStreamToMsgPack() throws Exception
     {
         // given
-        final byte[] json = JSON.getBytes(StandardCharsets.UTF_8);
+        final byte[] json = getBytes(JSON);
         final InputStream inputStream = new ByteArrayInputStream(json);
         // when
         final byte[] msgPack = converter.convertToMsgPack(inputStream);

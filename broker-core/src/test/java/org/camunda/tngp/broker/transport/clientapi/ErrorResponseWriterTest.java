@@ -15,6 +15,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -42,7 +43,7 @@ import org.mockito.stubbing.Answer;
 
 public class ErrorResponseWriterTest
 {
-    private static final byte[] REQUEST = "request".getBytes();
+    private static final byte[] REQUEST = getBytes("request");
     private static final DirectBuffer REQUEST_BUFFER = new UnsafeBuffer(REQUEST);
 
     private final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);

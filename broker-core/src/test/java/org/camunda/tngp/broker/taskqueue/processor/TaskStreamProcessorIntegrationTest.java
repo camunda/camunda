@@ -3,13 +3,13 @@ package org.camunda.tngp.broker.taskqueue.processor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
@@ -24,7 +24,11 @@ import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.store.FileChannelIndexStore;
 import org.camunda.tngp.logstreams.LogStreams;
-import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
@@ -45,8 +49,8 @@ public class TaskStreamProcessorIntegrationTest
 {
     private static final int LOG_ID = 1;
 
-    private static final byte[] TASK_TYPE = "test-task".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] PAYLOAD = "payload".getBytes();
+    private static final byte[] TASK_TYPE = getBytes("test-task");
+    private static final byte[] PAYLOAD = getBytes("payload");
 
     private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE);
 
@@ -272,7 +276,7 @@ public class TaskStreamProcessorIntegrationTest
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
 
         // when
-        final byte[] modifiedPayload = "modified payload".getBytes();
+        final byte[] modifiedPayload = getBytes("modified payload");
 
         taskEvent
             .setEventType(TaskEventType.COMPLETE)

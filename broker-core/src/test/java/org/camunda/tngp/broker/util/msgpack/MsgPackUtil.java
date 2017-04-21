@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.util.msgpack;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,12 +14,13 @@ import org.camunda.tngp.msgpack.spec.MsgPackReader;
 import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackWriter;
 
+
 public class MsgPackUtil
 {
 
     public static DirectBuffer utf8(String value)
     {
-        return new UnsafeBuffer(value.getBytes(StandardCharsets.UTF_8));
+        return new UnsafeBuffer(getBytes(value));
     }
 
     public static String toString(DirectBuffer buf)

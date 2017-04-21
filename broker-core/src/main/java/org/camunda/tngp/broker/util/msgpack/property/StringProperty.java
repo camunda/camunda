@@ -1,9 +1,10 @@
 package org.camunda.tngp.broker.util.msgpack.property;
 
-import java.nio.charset.StandardCharsets;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.value.StringValue;
+
 
 public class StringProperty extends BaseProperty<StringValue>
 {
@@ -25,7 +26,7 @@ public class StringProperty extends BaseProperty<StringValue>
 
     public void setValue(String value)
     {
-        this.value.wrap(value.getBytes(StandardCharsets.UTF_8));
+        this.value.wrap(getBytes(value));
         this.isSet = true;
     }
 

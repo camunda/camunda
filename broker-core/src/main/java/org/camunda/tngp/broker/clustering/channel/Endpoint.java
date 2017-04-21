@@ -1,10 +1,12 @@
 package org.camunda.tngp.broker.clustering.channel;
 
-import java.io.UnsupportedEncodingException;
+import static org.camunda.tngp.util.StringUtil.fromBytes;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
 
 public class Endpoint implements Comparable<Endpoint>
 {
@@ -48,15 +50,7 @@ public class Endpoint implements Comparable<Endpoint>
 
     public Endpoint host(final String host)
     {
-        final byte[] hostBytes;
-        try
-        {
-            hostBytes = host.getBytes("UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
+        final byte[] hostBytes = getBytes(host);
 
         return host(hostBytes, 0, hostBytes.length);
     }
@@ -67,17 +61,7 @@ public class Endpoint implements Comparable<Endpoint>
         final byte[] tmp = new byte[hostLength];
         hostBuffer.getBytes(0, tmp, 0, hostLength);
 
-        final String host;
-        try
-        {
-            host = new String(tmp, "UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        return host;
+        return fromBytes(tmp);
     }
 
     public int hostLength()

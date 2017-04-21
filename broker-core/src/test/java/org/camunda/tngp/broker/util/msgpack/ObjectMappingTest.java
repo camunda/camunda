@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
 import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.utf8;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.agrona.DirectBuffer;
@@ -19,8 +19,8 @@ import org.junit.rules.ExpectedException;
 
 public class ObjectMappingTest
 {
-    public static final DirectBuffer BUF1 = new UnsafeBuffer("foo".getBytes(StandardCharsets.UTF_8));
-    public static final DirectBuffer BUF2 = new UnsafeBuffer("bar".getBytes(StandardCharsets.UTF_8));
+    public static final DirectBuffer BUF1 = new UnsafeBuffer(getBytes("foo"));
+    public static final DirectBuffer BUF2 = new UnsafeBuffer(getBytes("bar"));
     public static final MutableDirectBuffer MSGPACK_BUF;
 
     static

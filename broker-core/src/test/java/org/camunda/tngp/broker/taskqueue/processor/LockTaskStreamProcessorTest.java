@@ -2,8 +2,8 @@ package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -34,10 +34,10 @@ import org.mockito.MockitoAnnotations;
 
 public class LockTaskStreamProcessorTest
 {
-    private static final byte[] TASK_TYPE = "test-task".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] TASK_TYPE = getBytes("test-task");
     private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE);
 
-    private static final byte[] ANOTHER_TASK_TYPE = "another-task".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] ANOTHER_TASK_TYPE = getBytes("another-task");
     private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = new UnsafeBuffer(ANOTHER_TASK_TYPE);
 
     private TaskSubscription subscription;

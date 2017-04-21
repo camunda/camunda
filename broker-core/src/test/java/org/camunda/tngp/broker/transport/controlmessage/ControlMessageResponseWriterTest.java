@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.transport.controlmessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.transport.clientapi.MockDispatcherFactory.dispatcherOn;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,7 +32,7 @@ import org.junit.Test;
 
 public class ControlMessageResponseWriterTest
 {
-    private static final byte[] DATA = "eventType".getBytes();
+    private static final byte[] DATA = getBytes("eventType");
 
     private final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
 

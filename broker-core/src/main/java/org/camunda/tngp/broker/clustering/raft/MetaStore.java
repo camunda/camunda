@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft;
 
-import static java.nio.file.StandardCopyOption.*;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.camunda.tngp.util.StringUtil.fromBytes;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,7 +9,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -70,17 +70,7 @@ public class MetaStore
         final byte[] tmp = new byte[length];
         buffer.getBytes(0, tmp, 0, length);
 
-        final String name;
-        try
-        {
-            name = new String(tmp, "UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        return name;
+        return fromBytes(tmp);
     }
 
     public String loadLogDirectory()
@@ -93,17 +83,7 @@ public class MetaStore
         final byte[] tmp = new byte[length];
         buffer.getBytes(0, tmp, 0, length);
 
-        final String directory;
-        try
-        {
-            directory = new String(tmp, "UTF-8");
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        return directory;
+        return fromBytes(tmp);
     }
 
     public MetaStore storeLogIdAndNameAndDirectory(int id, String name, String directory)

@@ -12,6 +12,22 @@
  */
 package org.camunda.tngp.broker.taskqueue.subscription;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
@@ -29,18 +45,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-
 public class TaskSubscriptionManagerTest
 {
     private static final ServiceName<LogStream> LOG_STREAM_SERVICE_NAME = ServiceName.newServiceName("mock-log-stream", LogStream.class);
@@ -52,10 +56,10 @@ public class TaskSubscriptionManagerTest
     private static final String ANOTHER_LOG_STREAM_NAME = "task-test-log-2";
 
     private static final String TASK_TYPE = "test-task";
-    private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(TASK_TYPE.getBytes(StandardCharsets.UTF_8));
+    private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(getBytes(TASK_TYPE));
 
     private static final String ANOTHER_TASK_TYPE = "another-task";
-    private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = new UnsafeBuffer(ANOTHER_TASK_TYPE.getBytes(StandardCharsets.UTF_8));
+    private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = new UnsafeBuffer(getBytes(ANOTHER_TASK_TYPE));
 
     @FluentMock
     private ServiceStartContext mockServiceContext;

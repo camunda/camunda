@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.client.impl.data;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -19,14 +21,13 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
-
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MsgPackConverter
 {
@@ -38,7 +39,7 @@ public class MsgPackConverter
 
     public byte[] convertToMsgPack(String json)
     {
-        final byte[] jsonBytes = json.getBytes(JSON_CHARSET);
+        final byte[] jsonBytes = getBytes(json, JSON_CHARSET);
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(jsonBytes);
         return convertToMsgPack(inputStream);
     }

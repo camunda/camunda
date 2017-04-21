@@ -1,6 +1,6 @@
 package org.camunda.tngp.client.benchmark.msgpack;
 
-import java.nio.charset.StandardCharsets;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -87,7 +87,7 @@ public class POJODeserializationContext
 
     protected static DirectBuffer utf8(String value)
     {
-        return new UnsafeBuffer(value.getBytes(StandardCharsets.UTF_8));
+        return new UnsafeBuffer(getBytes(value));
     }
 
     public DirectBuffer getMsgpackBuffer()

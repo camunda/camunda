@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.management.gossip;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -47,7 +49,7 @@ public class Foo
     @Test
     public void test1() throws IOException, NoSuchAlgorithmException
     {
-        final byte[] input = "1234567".getBytes();
+        final byte[] input = getBytes("1234567");
 
         final MessageDigest hash = MessageDigest.getInstance("SHA1");
 

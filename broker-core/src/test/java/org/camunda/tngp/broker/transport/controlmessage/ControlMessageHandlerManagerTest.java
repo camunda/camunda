@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.transport.controlmessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
@@ -21,7 +22,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -52,7 +52,7 @@ import org.mockito.stubbing.Answer;
 public class ControlMessageHandlerManagerTest
 {
     private static final ControlMessageType CONTROL_MESSAGE_TYPE = ControlMessageType.ADD_TASK_SUBSCRIPTION;
-    private static final byte[] CONTROL_MESSAGE_DATA = "foo".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] CONTROL_MESSAGE_DATA = getBytes("foo");
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
     private static final int REQ_CHANNEL_ID = 11;

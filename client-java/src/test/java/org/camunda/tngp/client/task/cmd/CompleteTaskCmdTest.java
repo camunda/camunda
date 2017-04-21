@@ -14,6 +14,7 @@ package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
@@ -115,7 +116,7 @@ public class CompleteTaskCmdTest
     public void shouldWriteRequestWithPayloadAsStream() throws JsonParseException, JsonMappingException, IOException
     {
         // given
-        final byte[] payload = "{ \"bar\" : 4 }".getBytes();
+        final byte[] payload = getBytes("{ \"bar\" : 4 }");
 
         final Map<String, Object> headers = new HashMap<>();
         headers.put("a", "b");

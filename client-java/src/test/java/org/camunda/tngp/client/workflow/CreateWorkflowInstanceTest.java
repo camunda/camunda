@@ -1,5 +1,10 @@
 package org.camunda.tngp.client.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
+import java.io.ByteArrayInputStream;
+
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
@@ -11,9 +16,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import java.io.ByteArrayInputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class CreateWorkflowInstanceTest
 {
@@ -63,7 +65,7 @@ public class CreateWorkflowInstanceTest
     public void shouldCreateWorkflowInstanceWithPayload()
     {
         // given
-        final byte[] payload = "{ \"bar\" : 4 }".getBytes();
+        final byte[] payload = getBytes("{ \"bar\" : 4 }");
 
         brokerRule.onWorkflowRequestRespondWith()
             .put("eventType", "WORKFLOW_INSTANCE_CREATED")

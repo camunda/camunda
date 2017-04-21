@@ -1,5 +1,8 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
+import static java.lang.String.format;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
@@ -46,13 +49,13 @@ public class ErrorResponseWriter implements BufferWriter
 
     public ErrorResponseWriter errorMessage(String errorMessage)
     {
-        this.errorMessage = errorMessage.getBytes(StandardCharsets.UTF_8);
+        this.errorMessage = getBytes(errorMessage);
         return this;
     }
 
     public ErrorResponseWriter errorMessage(String errorMessage, Object... args)
     {
-        this.errorMessage = String.format(errorMessage, args).getBytes(StandardCharsets.UTF_8);
+        this.errorMessage = getBytes(format(errorMessage, args));
         return this;
     }
 

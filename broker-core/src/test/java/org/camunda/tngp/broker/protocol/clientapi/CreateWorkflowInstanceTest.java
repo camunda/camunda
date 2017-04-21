@@ -1,5 +1,17 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
 import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
@@ -10,15 +22,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.*;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
 public class CreateWorkflowInstanceTest
 {
-    private static final byte[] PAYLOAD = "payload".getBytes();
+    private static final byte[] PAYLOAD = getBytes("payload");
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 

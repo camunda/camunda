@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -55,7 +56,7 @@ public class ClientApiMessageHandlerTest
     private static final int REQUEST_ID = 5;
 
     protected static final int LOG_STREAM_ID = 1;
-    protected static final byte[] COMMAND = "test-command".getBytes();
+    protected static final byte[] COMMAND = getBytes("test-command");
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
     protected final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);

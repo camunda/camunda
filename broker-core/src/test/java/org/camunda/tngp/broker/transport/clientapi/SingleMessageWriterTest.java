@@ -3,12 +3,11 @@ package org.camunda.tngp.broker.transport.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.transport.clientapi.MockDispatcherFactory.dispatcherOn;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import java.nio.charset.StandardCharsets;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -24,7 +23,7 @@ import org.junit.Test;
 public class SingleMessageWriterTest
 {
 
-    public static final DirectBuffer BUFFER = new UnsafeBuffer("foo".getBytes(StandardCharsets.UTF_8));
+    public static final DirectBuffer BUFFER = new UnsafeBuffer(getBytes("foo"));
     public static final int STREAM_ID = 123;
 
     protected UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024]);

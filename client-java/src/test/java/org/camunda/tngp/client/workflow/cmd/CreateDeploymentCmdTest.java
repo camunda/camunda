@@ -14,6 +14,7 @@ package org.camunda.tngp.client.workflow.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
@@ -23,6 +24,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -40,11 +45,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateDeploymentCmdTest
 {
@@ -130,7 +130,7 @@ public class CreateDeploymentCmdTest
     {
         // given
         final String bpmnXml = Bpmn.convertToString(BPMN_MODEL_INSTANCE);
-        final ByteArrayInputStream resourceStream = new ByteArrayInputStream(bpmnXml.getBytes());
+        final ByteArrayInputStream resourceStream = new ByteArrayInputStream(getBytes(bpmnXml));
 
         command
             .resourceStream(resourceStream);
