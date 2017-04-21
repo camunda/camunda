@@ -12,10 +12,16 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.*;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntries;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.NoSuchElementException;
 
@@ -71,7 +77,7 @@ public class BufferedLogStreamReaderTest
                 .sourceEventLogStreamId(3)
                 .sourceEventPosition(4L)
                 .producerId(5)
-                .value("event".getBytes()));
+                .value(getBytes("event")));
 
         reader.wrap(mockLogStream);
 
@@ -92,7 +98,7 @@ public class BufferedLogStreamReaderTest
         final DirectBufferReader readBuffer = new DirectBufferReader();
         event.readValue(readBuffer);
 
-        assertThat(readBuffer.byteArray()).isEqualTo("event".getBytes());
+        assertThat(readBuffer.byteArray()).isEqualTo(getBytes("event"));
     }
 
     @Test
@@ -102,7 +108,7 @@ public class BufferedLogStreamReaderTest
         when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
         when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
 
-        mockLogStorage.add(newLogEntry().address(10).value("event".getBytes()));
+        mockLogStorage.add(newLogEntry().address(10).value(getBytes("event")));
 
         reader.wrap(mockLogStream);
 
@@ -115,7 +121,7 @@ public class BufferedLogStreamReaderTest
         final byte[] readValueBuffer = new byte[event.getValueLength()];
         valueBuffer.getBytes(event.getValueOffset(), readValueBuffer);
 
-        assertThat(readValueBuffer).isEqualTo("event".getBytes());
+        assertThat(readValueBuffer).isEqualTo(getBytes("event"));
     }
 
     @Test
@@ -125,7 +131,7 @@ public class BufferedLogStreamReaderTest
         when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
         when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
 
-        mockLogStorage.add(newLogEntry().address(10).metadata("metadata".getBytes()).value("event".getBytes()));
+        mockLogStorage.add(newLogEntry().address(10).metadata(getBytes("metadata")).value(getBytes("event")));
 
         reader.wrap(mockLogStream);
 
@@ -138,7 +144,7 @@ public class BufferedLogStreamReaderTest
         final byte[] readMetadataBuffer = new byte[event.getMetadataLength()];
         metadataBuffer.getBytes(event.getMetadataOffset(), readMetadataBuffer);
 
-        assertThat(readMetadataBuffer).isEqualTo("metadata".getBytes());
+        assertThat(readMetadataBuffer).isEqualTo(getBytes("metadata"));
 
         // AND: value can also be read
 
@@ -146,7 +152,7 @@ public class BufferedLogStreamReaderTest
         final byte[] readValueBuffer = new byte[event.getValueLength()];
         valueBuffer.getBytes(event.getValueOffset(), readValueBuffer);
 
-        assertThat(readValueBuffer).isEqualTo("event".getBytes());
+        assertThat(readValueBuffer).isEqualTo(getBytes("event"));
     }
 
     @Test
@@ -518,7 +524,7 @@ public class BufferedLogStreamReaderTest
                 .sourceEventLogStreamId(3)
                 .sourceEventPosition(4L)
                 .producerId(5)
-                .value("event".getBytes()));
+                .value(getBytes("event")));
 
         reader.wrap(mockLogStream);
 

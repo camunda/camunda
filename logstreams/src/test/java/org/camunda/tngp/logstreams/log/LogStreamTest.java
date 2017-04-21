@@ -1,5 +1,22 @@
 package org.camunda.tngp.logstreams.log;
 
+import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.concurrent.CompletableFuture;
+
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
@@ -18,14 +35,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.concurrent.CompletableFuture;
-
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
 
 /**
  * @author Christopher Zell <christopher.zell@camunda.com>
@@ -260,7 +269,7 @@ public class LogStreamTest
             .sourceEventLogStreamId(3)
             .sourceEventPosition(4L)
             .producerId(5)
-            .value("event".getBytes()));
+            .value(getBytes("event")));
 
         // given open log stream with stopped log stream controller
         logStream.openAsync();
@@ -311,7 +320,7 @@ public class LogStreamTest
             .sourceEventLogStreamId(3)
             .sourceEventPosition(4L)
             .producerId(5)
-            .value("event".getBytes()));
+            .value(getBytes("event")));
         final AgentRunnerService secondAgentRunnerService = mock(AgentRunnerService.class);
 
         // given open log stream with stopped log stream controller
@@ -359,7 +368,7 @@ public class LogStreamTest
             .sourceEventLogStreamId(3)
             .sourceEventPosition(4L)
             .producerId(5)
-            .value("event".getBytes()));
+            .value(getBytes("event")));
 
         // given log stream with without flag
         final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);

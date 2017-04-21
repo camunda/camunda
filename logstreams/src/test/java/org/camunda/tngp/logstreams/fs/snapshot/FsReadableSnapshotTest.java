@@ -13,6 +13,7 @@
 package org.camunda.tngp.logstreams.fs.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -33,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FsReadableSnapshotTest
 {
-    protected static final byte[] SNAPSHOT_DATA = "snapshot".getBytes();
+    protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -102,7 +103,7 @@ public class FsReadableSnapshotTest
     @Test
     public void shouldFailToValidateIfChecksumDoesntMatch() throws Exception
     {
-        final File corruptedChecksumFile = createChecksumFile("corrupted-checksum.sha1", "corrupted-data".getBytes(), dataFile.getName());
+        final File corruptedChecksumFile = createChecksumFile("corrupted-checksum.sha1", getBytes("corrupted-data"), dataFile.getName());
 
         final FsReadableSnapshot fsReadableSnapshot = new FsReadableSnapshot(config, dataFile, corruptedChecksumFile, 100);
 
@@ -140,7 +141,7 @@ public class FsReadableSnapshotTest
     public void shouldFailToValidateIfChecksumFileIsInvalid() throws Exception
     {
         final File invalidChecksumFile = tempFolder.newFile("invalid-checksum.sha1");
-        Files.write(invalidChecksumFile.toPath(), "invalid-content".getBytes());
+        Files.write(invalidChecksumFile.toPath(), getBytes("invalid-content"));
 
         thrown.expect(RuntimeException.class);
         thrown.expectMessage("Read invalid checksum file");
@@ -163,7 +164,7 @@ public class FsReadableSnapshotTest
         final String checksumFileContent = config.checksumContent(hexChecksum, dataFileName);
 
         final File checksumFile = tempFolder.newFile(fileName);
-        Files.write(checksumFile.toPath(), checksumFileContent.getBytes());
+        Files.write(checksumFile.toPath(), getBytes(checksumFileContent));
 
         return checksumFile;
     }

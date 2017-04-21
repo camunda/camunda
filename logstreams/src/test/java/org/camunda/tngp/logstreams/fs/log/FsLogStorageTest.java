@@ -12,6 +12,21 @@
  */
 package org.camunda.tngp.logstreams.fs.log;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Random;
+
 import org.camunda.tngp.dispatcher.impl.PositionUtil;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
@@ -24,25 +39,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Random;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.tngp.dispatcher.impl.PositionUtil.partitionOffset;
 
 public class FsLogStorageTest
 {
     private static final int SEGMENT_SIZE = 1024 * 16;
 
-    private static final byte[] MSG = "test".getBytes();
+    private static final byte[] MSG = getBytes("test");
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -408,7 +410,7 @@ public class FsLogStorageTest
 
             // append the underlying file
             fileChannel.position(originalFileSize);
-            fileChannel.write(ByteBuffer.wrap("foo".getBytes()));
+            fileChannel.write(ByteBuffer.wrap(getBytes("foo")));
 
             assertThat(fileChannel.size()).isGreaterThan(originalFileSize);
 

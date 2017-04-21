@@ -14,6 +14,7 @@ package org.camunda.tngp.logstreams.fs.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FsLogSegmentTest
 {
-    private static final byte[] MSG = "test".getBytes();
+    private static final byte[] MSG = getBytes("test");
 
     private static final int CAPACITY = 1024 * 16;
 
@@ -261,7 +262,7 @@ public class FsLogSegmentTest
             final long fileSize = fileChannel.size();
 
             fileChannel.position(fileSize);
-            fileChannel.write(ByteBuffer.wrap("foo".getBytes()));
+            fileChannel.write(ByteBuffer.wrap(getBytes("foo")));
 
             assertThat(fsLogSegment.isConsistent()).isFalse();
         }
@@ -279,7 +280,7 @@ public class FsLogSegmentTest
             final long originalFileSize = fileChannel.size();
 
             fileChannel.position(originalFileSize);
-            fileChannel.write(ByteBuffer.wrap("foo".getBytes()));
+            fileChannel.write(ByteBuffer.wrap(getBytes("foo")));
 
             assertThat(fileChannel.size()).isGreaterThan(originalFileSize);
 

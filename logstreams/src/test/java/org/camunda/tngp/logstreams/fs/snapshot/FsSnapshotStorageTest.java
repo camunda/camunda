@@ -13,6 +13,7 @@
 package org.camunda.tngp.logstreams.fs.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +31,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FsSnapshotStorageTest
 {
-    protected static final byte[] SNAPSHOT_DATA = "snapshot".getBytes();
+    protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();

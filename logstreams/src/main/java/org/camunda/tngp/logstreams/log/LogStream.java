@@ -29,6 +29,7 @@ public interface LogStream extends AutoCloseable
     int DEFAULT_WRITE_BUFFER_SIZE = 1024 * 1024 * 16;
     int DEFAULT_MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 4;
 
+    // TODO(menski): getId -> getPartitionId; getLogName -> getTopicName
     /**
      * @return the log stream's logId
      */

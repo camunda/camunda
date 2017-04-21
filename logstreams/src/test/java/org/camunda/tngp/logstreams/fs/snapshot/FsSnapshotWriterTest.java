@@ -13,6 +13,7 @@
 package org.camunda.tngp.logstreams.fs.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FsSnapshotWriterTest
 {
-    protected static final byte[] SNAPSHOT_DATA = "snapshot".getBytes();
+    protected static final byte[] SNAPSHOT_DATA = getBytes("snapshot");
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();

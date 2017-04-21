@@ -1,10 +1,11 @@
 package org.camunda.tngp.logstreams.impl.snapshot.fs;
 
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 
@@ -12,6 +13,7 @@ import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.FileUtil;
+
 
 public class FsSnapshotWriter implements SnapshotWriter
 {
@@ -73,7 +75,7 @@ public class FsSnapshotWriter implements SnapshotWriter
             final String digestString = BitUtil.toHex(digestBytes);
             final String checksumFileContents = config.checksumContent(digestString, dataFile.getName());
 
-            checksumOutputStream.write(checksumFileContents.getBytes(StandardCharsets.UTF_8));
+            checksumOutputStream.write(getBytes(checksumFileContents));
             checksumOutputStream.close();
 
             if (lastSnapshot != null)

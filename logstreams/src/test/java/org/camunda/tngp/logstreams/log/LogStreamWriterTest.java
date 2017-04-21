@@ -26,6 +26,7 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffs
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -48,8 +49,8 @@ import org.mockito.stubbing.Answer;
 public class LogStreamWriterTest
 {
     private static final int LOG_ID = 1;
-    private static final byte[] EVENT_VALUE = "test".getBytes();
-    private static final byte[] EVENT_METADATA = "metadata".getBytes();
+    private static final byte[] EVENT_VALUE = getBytes("test");
+    private static final byte[] EVENT_METADATA = getBytes("metadata");
 
     private static final int MESSAGE_OFFSET = messageOffset(0);
 

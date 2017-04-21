@@ -20,7 +20,7 @@
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <additionalparam>-Xdoclint:none</additionalparam>
-    <version.util>1.0.0-alpha4</version.util>
+    <version.util>1.0.0-SNAPSHOT</version.util>
   </properties>
 
   <dependencies>
@@ -69,7 +69,7 @@
       <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>test-util</artifactId>
