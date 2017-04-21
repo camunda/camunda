@@ -57,6 +57,16 @@ public class EnsureUtil
         }
     }
 
+    public static void ensureNotNullOrEmpty(String property, byte[] testValue)
+    {
+        ensureNotNull(property, testValue);
+
+        if (testValue.length == 0)
+        {
+            throw new RuntimeException(property + " must not be empty");
+        }
+    }
+
     public static void ensureAtLeastOneNotNull(String property, Object... values)
     {
         for (int i = 0; i < values.length; i++)
