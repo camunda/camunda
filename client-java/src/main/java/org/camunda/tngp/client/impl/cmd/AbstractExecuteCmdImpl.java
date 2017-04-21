@@ -13,6 +13,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 
 import java.io.IOException;
 
@@ -159,8 +160,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
 
         final long key = responseDecoder.longKey();
 
-        final byte[] eventBuffer = new byte[responseDecoder.eventLength()];
-        responseDecoder.getEvent(eventBuffer, 0, eventBuffer.length);
+        final byte[] eventBuffer = readBytes(responseDecoder::getEvent, responseDecoder::eventLength);
 
         final E event = readEvent(eventBuffer);
 

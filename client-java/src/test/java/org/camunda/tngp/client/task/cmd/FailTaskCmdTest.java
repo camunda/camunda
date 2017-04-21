@@ -14,6 +14,7 @@ package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayInputStream;
@@ -99,8 +100,7 @@ public class FailTaskCmdTest
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
         assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
 
-        final byte[] command = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(command, 0, command.length);
+        final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
@@ -133,8 +133,7 @@ public class FailTaskCmdTest
         // then
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
-        final byte[] command = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(command, 0, command.length);
+        final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 

@@ -1,5 +1,7 @@
 package org.camunda.tngp.client.task.impl;
 
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.client.event.impl.EventTypeMapping;
@@ -78,8 +80,7 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
                 final long subscriberKey = subscribedEventDecoder.subscriberKey();
                 final long position = subscribedEventDecoder.position();
                 final int topicId = subscribedEventDecoder.topicId();
-                final byte[] eventBuffer = new byte[subscribedEventDecoder.eventLength()];
-                subscribedEventDecoder.getEvent(eventBuffer, 0, eventBuffer.length);
+                final byte[] eventBuffer = readBytes(subscribedEventDecoder::getEvent, subscribedEventDecoder::eventLength);
 
                 final TopicEventImpl event = new TopicEventImpl(
                         topicId,

@@ -13,6 +13,7 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import static org.camunda.tngp.protocol.clientapi.ControlMessageType.NULL_VAL;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 
 import java.io.IOException;
 
@@ -141,8 +142,7 @@ public abstract class AbstractControlMessageCmd<E, R> extends AbstractCmdImpl<R>
 
         responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
-        final byte[] dataBuffer = new byte[responseDecoder.dataLength()];
-        responseDecoder.getData(dataBuffer, 0, dataBuffer.length);
+        final byte[] dataBuffer = readBytes(responseDecoder::getData, responseDecoder::dataLength);
 
         final E data = readData(dataBuffer);
 

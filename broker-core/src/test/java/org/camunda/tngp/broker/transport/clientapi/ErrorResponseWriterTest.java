@@ -15,6 +15,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -112,9 +113,7 @@ public class ErrorResponseWriterTest
         assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.TOPIC_NOT_FOUND);
         assertThat(responseDecoder.errorData()).isEqualTo("error message");
 
-        final int failedRequestLength = responseDecoder.failedRequestLength();
-        final byte[] failureRequestBuffer = new byte[failedRequestLength];
-        responseDecoder.getFailedRequest(failureRequestBuffer, 0, failedRequestLength);
+        final byte[] failureRequestBuffer = readBytes(responseDecoder::getFailedRequest, responseDecoder::failedRequestLength);
 
         assertThat(failureRequestBuffer).isEqualTo(REQUEST);
     }

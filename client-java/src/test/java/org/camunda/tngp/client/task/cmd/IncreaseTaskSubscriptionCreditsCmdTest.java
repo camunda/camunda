@@ -13,6 +13,7 @@
 package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
@@ -85,8 +86,7 @@ public class IncreaseTaskSubscriptionCreditsCmdTest
 
         assertThat(requestDecoder.messageType()).isEqualTo(ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
 
-        final byte[] data = new byte[requestDecoder.dataLength()];
-        requestDecoder.getData(data, 0, data.length);
+        final byte[] data = readBytes(requestDecoder::getData, requestDecoder::dataLength);
 
         final TaskSubscription taskSubscription = objectMapper.readValue(data, TaskSubscription.class);
 

@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.transport.clientapi.MockDispatcherFactory.dispatcherOn;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -103,8 +104,7 @@ public class CommandResponseWriterTest
 
         assertThat(responseDecoder.eventLength()).isEqualTo(EVENT.length);
 
-        final byte[] event = new byte[responseDecoder.eventLength()];
-        responseDecoder.getEvent(event, 0, responseDecoder.eventLength());
+        final byte[] event = readBytes(responseDecoder::getEvent, responseDecoder::eventLength);
         assertThat(event).isEqualTo(EVENT);
     }
 

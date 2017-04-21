@@ -14,6 +14,7 @@ package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayInputStream;
@@ -21,6 +22,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
@@ -36,11 +41,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CompleteTaskCmdTest
 {
@@ -101,8 +101,7 @@ public class CompleteTaskCmdTest
         assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
         assertThat(requestDecoder.longKey()).isEqualTo(2L);
 
-        final byte[] command = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(command, 0, command.length);
+        final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 
@@ -135,8 +134,7 @@ public class CompleteTaskCmdTest
         // then
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
-        final byte[] command = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(command, 0, command.length);
+        final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
 

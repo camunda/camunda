@@ -47,7 +47,7 @@ public class LogStreamsManager
             throw new IllegalArgumentException("log id cannot be null or greater than " + Short.MAX_VALUE);
         }
 
-        String logDirectory;
+        final String logDirectory;
         boolean deleteOnExit = false;
         if (logStreamsCfg.useTempLogDirectory)
         {

@@ -3,6 +3,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -225,9 +226,7 @@ public class ClientApiMessageHandlerTest
 
         controlRequestDecoder.wrap(sendBuffer, offset, controlRequestDecoder.sbeBlockLength(), controlRequestDecoder.sbeSchemaVersion());
 
-        final int dataLength = controlRequestDecoder.dataLength();
-        final byte[] requestData = new byte[dataLength];
-        controlRequestDecoder.getData(requestData, 0, dataLength);
+        final byte[] requestData = readBytes(controlRequestDecoder::getData, controlRequestDecoder::dataLength);
 
         assertThat(requestData).isEqualTo(COMMAND);
     }

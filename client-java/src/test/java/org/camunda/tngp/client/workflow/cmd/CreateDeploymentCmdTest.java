@@ -14,6 +14,7 @@ package org.camunda.tngp.client.workflow.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
+import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayInputStream;
@@ -102,8 +103,7 @@ public class CreateDeploymentCmdTest
         assertThat(requestDecoder.eventType()).isEqualTo(DEPLOYMENT_EVENT);
         assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
 
-        final byte[] command = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(command, 0, command.length);
+        final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         final DeploymentEvent deploymentEvent = objectMapper.readValue(command, DeploymentEvent.class);
 
@@ -286,8 +286,7 @@ public class CreateDeploymentCmdTest
 
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
-        final byte[] buffer = new byte[requestDecoder.commandLength()];
-        requestDecoder.getCommand(buffer, 0, buffer.length);
+        final byte[] buffer = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         return objectMapper.readValue(buffer, DeploymentEvent.class);
     }
