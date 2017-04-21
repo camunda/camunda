@@ -3,8 +3,6 @@ package org.camunda.tngp.util.buffer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 
-import java.nio.charset.StandardCharsets;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
