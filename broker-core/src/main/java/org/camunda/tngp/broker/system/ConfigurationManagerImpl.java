@@ -25,11 +25,7 @@ public class ConfigurationManagerImpl implements ConfigurationManager
             toml = new Toml().read(file);
         }
 
-        this.globalConfiguration = readEntry("global", GlobalConfiguration.class);
-        if (this.globalConfiguration == null)
-        {
-            this.globalConfiguration = new GlobalConfiguration();
-        }
+        initGlobalConfiguration();
 
     }
 
@@ -44,17 +40,26 @@ public class ConfigurationManagerImpl implements ConfigurationManager
             System.out.println("Using provided configuration stream");
             toml = new Toml().read(configStream);
         }
-        this.globalConfiguration = readEntry("global", GlobalConfiguration.class);
-        if (this.globalConfiguration == null)
-        {
-            this.globalConfiguration = new GlobalConfiguration();
-        }
+
+        initGlobalConfiguration();
+
     }
 
     public void initDefault()
     {
         System.out.println("No configuration provided, using default configuration.");
         toml = new Toml().read(ConfigurationManagerImpl.class.getClassLoader().getResourceAsStream("tngp.default.cfg.toml"));
+    }
+
+    private void initGlobalConfiguration()
+    {
+
+        this.globalConfiguration = readEntry("global", GlobalConfiguration.class);
+        if (this.globalConfiguration == null)
+        {
+            this.globalConfiguration = new GlobalConfiguration();
+        }
+        this.globalConfiguration.init();
     }
 
     @Override
@@ -88,6 +93,12 @@ public class ConfigurationManagerImpl implements ConfigurationManager
             }
         }
         return result;
+    }
+
+    public GlobalConfiguration getGlobalConfiguration()
+    {
+        //for writing test case
+        return this.globalConfiguration;
     }
 
 }

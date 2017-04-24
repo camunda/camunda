@@ -36,7 +36,7 @@ public class ComponentConfiguration
         }
         public Object execute()
         {
-            if (this.globalObj != null && !tomlHandler.containsPrimitive(this.localName))
+            if (this.globalObj != null && !tomlHandler.contains(this.localName))
             {
                 return this.rule.apply(this.globalObj);
             }

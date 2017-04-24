@@ -5,7 +5,6 @@ import org.camunda.tngp.broker.system.GlobalConfiguration;
 
 public class SnapshotStorageCfg extends ComponentConfiguration
 {
-    public boolean useTempSnapshotDirectory = false;
 
     public String snapshotDirectory;
 
@@ -19,11 +18,7 @@ public class SnapshotStorageCfg extends ComponentConfiguration
              .setRule((r) ->
              { return r + "snapshot/"; }).execute();
 
-        this.useTempSnapshotDirectory = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempSnapshotDirectory, "useTempSnapshotDirectory")
-                .setRule((r) ->
-                { return r; }).execute();
+
 
     }
 

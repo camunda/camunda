@@ -179,24 +179,19 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         final IndexStore indexStore;
 
-        if (logStreamsCfg.useTempIndexFile)
+
+        final String indexDirectory = logStreamsCfg.indexDirectory;
+        if (indexDirectory != null && !indexDirectory.isEmpty())
         {
-            indexStore = FileChannelIndexStore.tempFileIndexStore();
+            final String indexFile = indexDirectory + File.separator + indexName + ".idx";
+            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
+            indexStore = new FileChannelIndexStore(indexFileChannel);
         }
         else
         {
-            final String indexDirectory = logStreamsCfg.indexDirectory;
-            if (indexDirectory != null && !indexDirectory.isEmpty())
-            {
-                final String indexFile = indexDirectory + File.separator + indexName + ".idx";
-                final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-                indexStore = new FileChannelIndexStore(indexFileChannel);
-            }
-            else
-            {
-                throw new RuntimeException("Cannot create stream processor index, no index file name provided.");
-            }
+            throw new RuntimeException("Cannot create stream processor index, no index file name provided.");
         }
+
         return indexStore;
     }
 

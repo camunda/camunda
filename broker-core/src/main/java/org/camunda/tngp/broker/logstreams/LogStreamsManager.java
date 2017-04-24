@@ -5,8 +5,6 @@ import static org.camunda.tngp.util.EnsureUtil.ensureLessThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -66,35 +64,19 @@ public class LogStreamsManager
         final String logName = logStreamBuilder.getLogName();
 
         final String logDirectory;
-        boolean deleteOnExit = false;
+        final boolean deleteOnExit = false;
 
-        if (logStreamsCfg.useTempLogDirectory)
+        int assignedLogDirectory = 0;
+        if (logStreamsCfg.logDirectories.length == 0)
         {
-            deleteOnExit = true;
-            try
-            {
-                final File tempDir = Files.createTempDirectory("tngp-log-").toFile();
-                System.out.format("Created temp directory for log %s at location %s. Will be deleted on exit.\n", logName, tempDir);
-                logDirectory = tempDir.getAbsolutePath();
-            }
-            catch (final IOException e)
-            {
-                throw new RuntimeException("Could not create temp directory for log " + logName, e);
-            }
+            throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
         }
-        else
+        else if (logStreamsCfg.logDirectories.length > 1)
         {
-            int assignedLogDirectory = 0;
-            if (logStreamsCfg.logDirectories.length == 0)
-            {
-                throw new RuntimeException(String.format("Cannot start log %s, no log directory provided.", logName));
-            }
-            else if (logStreamsCfg.logDirectories.length > 1)
-            {
-                assignedLogDirectory = new Random().nextInt(logStreamsCfg.logDirectories.length - 1);
-            }
-            logDirectory = logStreamsCfg.logDirectories[assignedLogDirectory] + File.separator + logName;
+            assignedLogDirectory = new Random().nextInt(logStreamsCfg.logDirectories.length - 1);
         }
+        logDirectory = logStreamsCfg.logDirectories[assignedLogDirectory] + File.separator + logName;
+
 
         final int logSegmentSize = logStreamsCfg.defaultLogSegmentSize * 1024 * 1024;
 

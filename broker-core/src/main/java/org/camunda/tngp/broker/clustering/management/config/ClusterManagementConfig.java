@@ -5,7 +5,6 @@ import org.camunda.tngp.broker.system.GlobalConfiguration;
 
 public class ClusterManagementConfig extends ComponentConfiguration
 {
-    public boolean useTempDirectory = false;
     public String metaDirectory;
 
     @Override
@@ -17,12 +16,6 @@ public class ClusterManagementConfig extends ComponentConfiguration
              .setLocalObj(metaDirectory, "metaDirectory")
              .setRule((r) ->
              { return r + "meta/"; }).execute();
-
-        this.useTempDirectory = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempDirectory, "useTempDirectory")
-                .setRule((r) ->
-                { return r; }).execute();
 
     }
 }

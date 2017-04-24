@@ -215,6 +215,15 @@ public class GossipController
             workcount += 1;
 
             final File file = new File(config.peersStorageFile);
+            try
+            {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
+            catch (IOException e1)
+            {
+                e1.printStackTrace();
+            }
             final MessageDigest messageDigest = StreamUtil.getSha1Digest();
 
             try (InputStream is = peers.toInputStream())

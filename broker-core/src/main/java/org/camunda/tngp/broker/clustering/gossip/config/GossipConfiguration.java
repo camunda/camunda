@@ -11,7 +11,6 @@ public class GossipConfiguration extends ComponentConfiguration
 
     public int peersStorageInterval = 1;
     public String peersStorageFile = "/tmp/tngp.cluster";
-    public boolean useTempFile = false;
 
     public int disseminatorCapacity = 16;
     public int disseminationInterval = 1;
@@ -36,12 +35,6 @@ public class GossipConfiguration extends ComponentConfiguration
              .setLocalObj(peersStorageFile, "peersStorageFile")
              .setRule((r) ->
              { return r + "gossip/tngp.cluster"; }).execute();
-
-        this.useTempFile = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempFile, "useTempFile")
-                .setRule((r) ->
-                { return r; }).execute();
 
     }
 

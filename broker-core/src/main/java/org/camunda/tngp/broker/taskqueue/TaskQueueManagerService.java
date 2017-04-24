@@ -88,24 +88,18 @@ public class TaskQueueManagerService implements Service<TaskQueueManager>, TaskQ
 
         final IndexStore indexStore;
 
-        if (logStreamsCfg.useTempIndexFile)
+        final String indexDirectory = logStreamsCfg.indexDirectory;
+        if (indexDirectory != null && !indexDirectory.isEmpty())
         {
-            indexStore = FileChannelIndexStore.tempFileIndexStore();
+            final String indexFile = indexDirectory + File.separator + "default.idx";
+            final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
+            indexStore = new FileChannelIndexStore(indexFileChannel);
         }
         else
         {
-            final String indexDirectory = logStreamsCfg.indexDirectory;
-            if (indexDirectory != null && !indexDirectory.isEmpty())
-            {
-                final String indexFile = indexDirectory + File.separator + "default.idx";
-                final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);
-                indexStore = new FileChannelIndexStore(indexFileChannel);
-            }
-            else
-            {
-                throw new RuntimeException("Cannot create task stream processor index, no index file name provided.");
-            }
+            throw new RuntimeException("Cannot create task stream processor index, no index file name provided.");
         }
+
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);

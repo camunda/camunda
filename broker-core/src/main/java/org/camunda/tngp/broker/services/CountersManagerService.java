@@ -1,9 +1,7 @@
 package org.camunda.tngp.broker.services;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.nio.file.Files;
 
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
@@ -33,23 +31,8 @@ public class CountersManagerService implements Service<Counters>
     {
         final MetricsCfg metricsCfg = configurationManager.readEntry("metrics", MetricsCfg.class);
 
-        if (metricsCfg.useTempCountersFile)
-        {
-            this.deleteCountersFileOnExit = true;
+        countersFileName = metricsCfg.countersFileName;
 
-            try
-            {
-                countersFileName = Files.createTempFile("tngp-counters", ".raw").toFile().getAbsolutePath();
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException("Could not create temp file for counters", e);
-            }
-        }
-        else
-        {
-            countersFileName = metricsCfg.countersFileName;
-        }
 
     }
 

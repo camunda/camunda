@@ -1,8 +1,5 @@
 package org.camunda.tngp.broker.logstreams;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 
 import org.camunda.tngp.broker.logstreams.cfg.SnapshotStorageCfg;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -27,24 +24,7 @@ public class SnapshotStorageService implements Service<SnapshotStorage>
     {
         serviceContext.run(() ->
         {
-            String snapshotDirectory = config.snapshotDirectory;
-            if (config.useTempSnapshotDirectory)
-            {
-                try
-                {
-                    final File tempDir = Files.createTempDirectory("tngp-snapshot-").toFile();
-                    System.out.format("Created temp directory for snapshots at location %s.\n", tempDir);
-                    snapshotDirectory = tempDir.getAbsolutePath();
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException("Could not create temp directory for snapshots ", e);
-                }
-            }
-            else if (snapshotDirectory == null || snapshotDirectory.isEmpty())
-            {
-                throw new RuntimeException(String.format("Cannot create snapshot storage, no snapshot directory provided."));
-            }
+            final String snapshotDirectory = config.snapshotDirectory;
 
             snapshotStorage = LogStreams.createFsSnapshotStore(snapshotDirectory)
                 .build();

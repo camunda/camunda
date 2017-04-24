@@ -8,33 +8,33 @@ public class LogStreamsCfg extends ComponentConfiguration
 
     public int defaultLogSegmentSize = 512;
 
-    public String[] logDirectories = new String[0];
-    public boolean useTempLogDirectory = false;
+    public String[] logDirectories = null;
 
     public String indexDirectory = null;
-    public boolean useTempIndexFile = false;
 
     @Override
     protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
     {
 
+
         this.indexDirectory = (String) new Rules("first")
              .setGlobalObj(global.globalDataDirectory)
              .setLocalObj(indexDirectory, "indexDirectory")
              .setRule((r) ->
-             { return r + "logs/"; }).execute();
+             { return r + "index/"; }).execute();
 
-        this.useTempLogDirectory = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempLogDirectory, "useTempLogDirectory")
+        this.logDirectories = (String[]) new Rules("first")
+                .setGlobalObj(global.globalDataDirectory)
+                .setLocalObj(logDirectories, "logDirectories")
                 .setRule((r) ->
-                { return r; }).execute();
+                {
+                    final String[] ret = new String[1];
+                    ret[0] = r + "logs/";
+                    return ret;
+                }).execute();
 
-        this.useTempIndexFile = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempIndexFile, "useTempIndexFile")
-                .setRule((r) ->
-                { return r; }).execute();
+
+
 
     }
 

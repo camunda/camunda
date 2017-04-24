@@ -6,7 +6,6 @@ import org.camunda.tngp.broker.system.GlobalConfiguration;
 public class MetricsCfg extends ComponentConfiguration
 {
     public String countersFileName;
-    public boolean useTempCountersFile = false;
 
     @Override
     protected  void onApplyingGlobalConfiguration(GlobalConfiguration global)
@@ -18,11 +17,6 @@ public class MetricsCfg extends ComponentConfiguration
              .setRule((r) ->
              { return r + "metrics/tngp.metrics"; }).execute();
 
-        this.useTempCountersFile = (boolean) new Rules("second")
-                .setGlobalObj(global.globalUseTemp)
-                .setLocalObj(useTempCountersFile, "useTempCountersFile")
-                .setRule((r) ->
-                { return r; }).execute();
 
     }
 }

@@ -95,7 +95,7 @@ public class ClusterManager implements Agent
     {
         String metaDirectory = config.metaDirectory;
 
-        if (config.useTempDirectory || metaDirectory == null || metaDirectory.isEmpty())
+        if (metaDirectory == null || metaDirectory.isEmpty())
         {
             try
             {

@@ -6,8 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
@@ -40,22 +38,7 @@ public class PeerListService implements Service<PeerList>
         {
             peers = new PeerList(config.peerCapacity);
 
-            if (config.useTempFile)
-            {
-                try
-                {
-                    final File tempFile = Files.createTempFile("tngp-peer-list-", ".tngp").toFile();
-                    config.peersStorageFile = tempFile.getAbsolutePath();
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException("Could not create temp file for peers ", e);
-                }
-            }
-            else
-            {
-                addStoredPeers(peers, config.peersStorageFile);
-            }
+            addStoredPeers(peers, config.peersStorageFile);
 
             addContacts(peers, config.initialContactPoints);
             addLocalPeer(peers, localPeer);

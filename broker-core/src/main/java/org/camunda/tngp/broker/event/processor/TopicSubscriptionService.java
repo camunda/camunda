@@ -132,11 +132,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
     protected IndexStore newIndexStoreForLog(String logName)
     {
-        if (config.useTempSnapshotFile)
-        {
-            return FileChannelIndexStore.tempFileIndexStore();
-        }
-        else if (config.snapshotDirectory != null && !config.snapshotDirectory.isEmpty())
+        if (config.snapshotDirectory != null && !config.snapshotDirectory.isEmpty())
         {
             final String indexFile = config.snapshotDirectory + File.separator + "ack-index." + logName + ".idx";
             final FileChannel indexFileChannel = FileUtil.openChannel(indexFile, true);

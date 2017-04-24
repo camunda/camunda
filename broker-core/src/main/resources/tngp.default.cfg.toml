@@ -1,5 +1,10 @@
 # Default TNGP Config File. Used if no config file is provided to the broker.
 
+# Global configuration --------------------------------
+
+[global]
+globalUseTemp = true
+
 # Networking configuration ----------------------------
 
 [network]
@@ -22,10 +27,9 @@ port = 51017
 receiveBufferSize = 16
 
 [network.gossip]
-peersStorageFile = "/tmp/tngp/51015/gossip/51016.tngp"
 
 [network.management]
-metaDirectory = "/tmp/tngp/51015/meta"
+
 
 # System Configuration --------------------------------
 
@@ -35,17 +39,13 @@ maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
 [metrics]
-useTempCountersFile = true
 
 # Log Configuration -----------------------------------
 
 [logs]
 defaultLogSegmentSize = 512
-useTempLogDirectory = true
-useTempIndexFile = true
 
 [snapshot]
-useTempSnapshotDirectory = true
 
 # Topic Subscriptions ------------------------------------------
 
