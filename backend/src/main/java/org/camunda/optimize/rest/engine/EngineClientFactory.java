@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest.engine;
 
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.beans.factory.FactoryBean;
@@ -11,6 +12,9 @@ import javax.ws.rs.client.ClientBuilder;
 public class EngineClientFactory implements FactoryBean<Client> {
 
   private Client instance;
+
+  @Autowired
+  private OptimizeObjectMapperProvider optimizeObjectMapperProvider;
 
   @Autowired
   private ConfigurationService configurationService;
@@ -33,6 +37,7 @@ public class EngineClientFactory implements FactoryBean<Client> {
     if(configurationService.isEngineAuthenticationEnabled()) {
       client.register(basicAccessAuthenticationFilter);
     }
+    client.register(optimizeObjectMapperProvider);
     return client;
   }
 

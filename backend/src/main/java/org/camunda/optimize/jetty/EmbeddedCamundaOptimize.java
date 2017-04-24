@@ -147,8 +147,12 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   private Properties getProperties() {
     Properties result = new Properties();
     try {
-      result.load(this.getClass().getClassLoader().getResourceAsStream("service.properties"));
-      InputStream environmentProperties = this.getClass().getClassLoader().getResourceAsStream("environment.properties");
+      result.load(
+          this.getClass().getClassLoader()
+              .getResourceAsStream("service.properties")
+      );
+      InputStream environmentProperties = this.getClass().getClassLoader()
+          .getResourceAsStream("environment.properties");
       if (environmentProperties != null) {
         //overwrites previously loaded properties
         result.load(environmentProperties);
