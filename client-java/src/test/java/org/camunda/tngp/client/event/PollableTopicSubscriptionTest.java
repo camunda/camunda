@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.fail;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
@@ -21,10 +20,10 @@ public class PollableTopicSubscriptionTest
     protected static final String SUBSCRIPTION_NAME = "foo";
 
     public ClientRule clientRule = new ClientRule();
-    public StubBrokerRule brokerRule = new StubBrokerRule();
+    public StubBrokerRule broker = new StubBrokerRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+    public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
     protected TngpClient client;
 
@@ -34,25 +33,11 @@ public class PollableTopicSubscriptionTest
         this.client = clientRule.getClient();
     }
 
-    protected void pushTopicEvent(int channelId, long subscriptionId, long key, long position)
-    {
-        brokerRule.newSubscribedEvent()
-            .topicId(0)
-            .longKey(key)
-            .position(position)
-            .eventType(EventType.RAFT_EVENT)
-            .subscriberKey(subscriptionId)
-            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
-            .event()
-                .done()
-            .push(channelId);
-    }
-
     @Test
     public void shouldOpenSubscription()
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         // when
         client.topic(0).newPollableSubscription()
@@ -61,7 +46,7 @@ public class PollableTopicSubscriptionTest
             .open();
 
         // then
-        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+        final ExecuteCommandRequest subscribeRequest = broker.getReceivedCommandRequests()
             .stream()
             .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
             .findFirst()
@@ -80,7 +65,7 @@ public class PollableTopicSubscriptionTest
     public void shouldOpenSubscriptionAndForceStart()
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         // when
         client.topic(0).newPollableSubscription()
@@ -90,7 +75,7 @@ public class PollableTopicSubscriptionTest
             .open();
 
         // then
-        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+        final ExecuteCommandRequest subscribeRequest = broker.getReceivedCommandRequests()
             .stream()
             .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
             .findFirst()
@@ -106,7 +91,7 @@ public class PollableTopicSubscriptionTest
     public void shouldNotRetryOnHandlerFailure() throws InterruptedException
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
         final PollableTopicSubscription subscription = client.topic(0).newPollableSubscription()
@@ -114,10 +99,10 @@ public class PollableTopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
 
-        pushTopicEvent(clientChannelId, 123L, 1L, 1L);
-        pushTopicEvent(clientChannelId, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
 
         // when
         try
@@ -140,7 +125,7 @@ public class PollableTopicSubscriptionTest
     public void shouldCloseSubscriptionOnChannelClose()
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         final PollableTopicSubscription subscription = client.topic(0).newPollableSubscription()
             .startAtHeadOfTopic()
@@ -148,7 +133,7 @@ public class PollableTopicSubscriptionTest
             .open();
 
         // when
-        brokerRule.closeServerSocketBinding();
+        broker.closeServerSocketBinding();
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());

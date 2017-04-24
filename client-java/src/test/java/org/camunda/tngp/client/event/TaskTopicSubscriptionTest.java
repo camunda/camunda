@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.util.ClientRule;
 import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
@@ -23,10 +22,10 @@ public class TaskTopicSubscriptionTest
     protected static final String SUBSCRIPTION_NAME = "foo";
 
     public ClientRule clientRule = new ClientRule();
-    public StubBrokerRule brokerRule = new StubBrokerRule();
+    public StubBrokerRule broker = new StubBrokerRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+    public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
     protected TngpClient client;
 
@@ -36,26 +35,11 @@ public class TaskTopicSubscriptionTest
         this.client = clientRule.getClient();
     }
 
-    protected void pushTopicEvent(int channelId, long subscriptionId, long key, long position)
-    {
-        brokerRule.newSubscribedEvent()
-            .topicId(0)
-            .longKey(key)
-            .position(position)
-            .eventType(EventType.RAFT_EVENT)
-            .subscriberKey(subscriptionId)
-            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
-            .event()
-                .done()
-            .push(channelId);
-    }
-
-
     @Test
     public void shouldOpenSubscription()
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         final TopicEventHandler noOpHandler = (m, e) ->
         { };
@@ -68,7 +52,7 @@ public class TaskTopicSubscriptionTest
             .open();
 
         // then
-        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+        final ExecuteCommandRequest subscribeRequest = broker.getReceivedCommandRequests()
             .stream()
             .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
             .findFirst()
@@ -87,7 +71,7 @@ public class TaskTopicSubscriptionTest
     public void shouldOpenSubscriptionAndForceStart()
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         final TopicEventHandler noOpHandler = (m, e) ->
         { };
@@ -101,7 +85,7 @@ public class TaskTopicSubscriptionTest
             .open();
 
         // then
-        final ExecuteCommandRequest subscribeRequest = brokerRule.getReceivedCommandRequests()
+        final ExecuteCommandRequest subscribeRequest = broker.getReceivedCommandRequests()
             .stream()
             .filter((e) -> e.eventType() == EventType.SUBSCRIBER_EVENT)
             .findFirst()
@@ -114,7 +98,7 @@ public class TaskTopicSubscriptionTest
     public void shouldRetryThreeTimesOnHandlerFailure() throws InterruptedException
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
         client.taskTopic(0).newSubscription()
@@ -123,11 +107,11 @@ public class TaskTopicSubscriptionTest
             .name(SUBSCRIPTION_NAME)
             .open();
 
-        final int clientChannelId = brokerRule.getReceivedCommandRequests().get(0).getChannelId();
+        final int clientChannelId = broker.getReceivedCommandRequests().get(0).getChannelId();
 
         // when pushing two events
-        pushTopicEvent(clientChannelId, 123L, 1L, 1L);
-        pushTopicEvent(clientChannelId, 123L, 1L, 2L);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 1L);
+        broker.pushTopicEvent(clientChannelId, 123L, 1L, 2L);
 
         // then
         TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 3);
@@ -146,7 +130,7 @@ public class TaskTopicSubscriptionTest
     public void shouldCloseSubscriptionOnChannelClose()
     {
         // given
-        brokerRule.stubTopicSubscriptionApi(123L);
+        broker.stubTopicSubscriptionApi(123L);
 
         final TopicSubscription subscription = client.taskTopic(0).newSubscription()
             .startAtHeadOfTopic()
@@ -157,7 +141,7 @@ public class TaskTopicSubscriptionTest
             .open();
 
         // when
-        brokerRule.closeServerSocketBinding();
+        broker.closeServerSocketBinding();
 
         // then
         TestUtil.waitUntil(() -> subscription.isClosed());

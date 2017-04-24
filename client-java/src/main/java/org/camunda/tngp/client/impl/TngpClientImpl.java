@@ -40,6 +40,8 @@ public class TngpClientImpl implements TngpClient
     public static final int DEFAULT_RESOURCE_ID = 0;
     public static final int DEFAULT_SHARD_ID = 0;
 
+    protected final Properties initializationProperties;
+
     protected final Transport transport;
     protected final TransportConnectionPool connectionPool;
     protected final DataFramePool dataFramePool;
@@ -58,6 +60,7 @@ public class TngpClientImpl implements TngpClient
     public TngpClientImpl(final Properties properties)
     {
         ClientProperties.setDefaults(properties);
+        this.initializationProperties = properties;
 
         final String brokerContactPoint = properties.getProperty(BROKER_CONTACTPOINT);
 
@@ -232,6 +235,11 @@ public class TngpClientImpl implements TngpClient
     public ObjectMapper getObjectMapper()
     {
         return objectMapper;
+    }
+
+    public Properties getInitializationProperties()
+    {
+        return initializationProperties;
     }
 
 }

@@ -84,17 +84,18 @@ public class EventAcquisition<T extends EventSubscription<T>> implements Subscri
     }
 
     @Override
-    public void onEvent(int topicId, long subscriberKey, TopicEventImpl event)
+    public boolean onEvent(int topicId, long subscriberKey, TopicEventImpl event)
     {
         final T subscription = subscriptions.getSubscription(topicId, subscriberKey);
 
         if (subscription != null && subscription.isOpen())
         {
-            subscription.addEvent(event);
+            return subscription.addEvent(event);
         }
         else
         {
             LOGGER.debug(roleName() + ": Ignoring event " + event.toString() + " for subscription " + subscriberKey);
+            return true; // ignoring the event is success; don't want to retry it later
         }
     }
 

@@ -170,14 +170,16 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
-    public void addEvent(TopicEventImpl event)
+    public boolean addEvent(TopicEventImpl event)
     {
         final boolean added = this.pendingEvents.offer(event);
 
         if (!added)
         {
-            throw new RuntimeException("Cannot add any more events. Event queue saturated.");
+            LOGGER.warn("Cannot add any more events. Event queue saturated. Postponing event.");
         }
+
+        return added;
     }
 
     public abstract int poll();

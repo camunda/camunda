@@ -43,7 +43,7 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
     @Override
     public int doWork()
     {
-        return receiveBufferSubscription.poll(this, Integer.MAX_VALUE);
+        return receiveBufferSubscription.peekAndConsume(this, Integer.MAX_VALUE);
     }
 
     @Override
@@ -67,6 +67,8 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
         final int protocolId = transportHeaderDescriptor.protocolId();
         final int templateId = messageHeaderDecoder.templateId();
 
+        final boolean messageHandled;
+
         if (protocolId == Protocols.FULL_DUPLEX_SINGLE_MESSAGE && templateId == SubscribedEventDecoder.TEMPLATE_ID)
         {
             subscribedEventDecoder.wrap(buffer, offset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
@@ -89,15 +91,22 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
                         EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
                         eventBuffer);
 
-                eventHandler.onEvent(topicId, subscriberKey, event);
+                messageHandled = eventHandler.onEvent(topicId, subscriberKey, event);
             }
             else
             {
                 LOGGER.info("Ignoring event for unknown subscription type " + subscriptionType.toString());
+                messageHandled = true;
             }
         }
+        else
+        {
+            // ignoring
+            messageHandled = true;
+        }
 
-        return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+
+        return messageHandled ? FragmentHandler.CONSUME_FRAGMENT_RESULT : FragmentHandler.POSTPONE_FRAGMENT_RESULT;
     }
 
     protected SubscribedEventHandler getHandlerForEvent(SubscriptionType subscriptionType)

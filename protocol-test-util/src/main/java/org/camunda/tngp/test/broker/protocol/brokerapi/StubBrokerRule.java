@@ -1,7 +1,14 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
+
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 import org.camunda.tngp.transport.ServerSocketBinding;
@@ -9,11 +16,6 @@ import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.Transports;
 import org.junit.rules.ExternalResource;
-
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
 
 public class StubBrokerRule extends ExternalResource
 {
@@ -150,9 +152,9 @@ public class StubBrokerRule extends ExternalResource
         return new SubscribedEventBuilder(msgPackHelper, transport.getSendBuffer());
     }
 
-    public void stubTopicSubscriptionApi(long initialId)
+    public void stubTopicSubscriptionApi(long initialSubscriberKey)
     {
-        final AtomicLong subscriberKeyProvider = new AtomicLong(initialId);
+        final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
         final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
         onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT
@@ -183,5 +185,64 @@ public class StubBrokerRule extends ExternalResource
                 .put("eventType", "ACKNOWLEDGED")
                 .done()
             .register();
+    }
+
+    public void stubTaskSubscriptionApi(long initialSubscriberKey)
+    {
+        final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
+
+        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ADD_TASK_SUBSCRIPTION)
+            .respondWith()
+            .data()
+                .allOf((r) -> r.getData())
+                .put("subscriberKey", subscriberKeyProvider.getAndIncrement())
+                .done()
+            .register();
+
+        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.REMOVE_TASK_SUBSCRIPTION)
+            .respondWith()
+            .data()
+                .allOf((r) -> r.getData())
+                .done()
+            .register();
+
+        onControlMessageRequest((r) -> r.messageType() == ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+            .respondWith()
+            .data()
+                .allOf((r) -> r.getData())
+                .done()
+            .register();
+    }
+
+    public void pushTopicEvent(int channelId, long subscriberKey, long key, long position)
+    {
+        newSubscribedEvent()
+            .topicId(0)
+            .longKey(key)
+            .position(position)
+            .eventType(EventType.RAFT_EVENT)
+            .subscriberKey(subscriberKey)
+            .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
+            .event()
+                .done()
+            .push(channelId);
+    }
+
+    public void pushLockedTask(int channelId, long subscriberKey, long key, long position, String taskType)
+    {
+        newSubscribedEvent()
+            .topicId(0)
+            .longKey(key)
+            .position(position)
+            .eventType(EventType.TASK_EVENT)
+            .subscriberKey(subscriberKey)
+            .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
+            .event()
+                .put("type", taskType)
+                .put("lockTime", 1000L)
+                .put("retries", 3)
+                .put("payload", msgPackHelper.encodeAsMsgPack(new HashMap<>()))
+                .done()
+            .push(channelId);
     }
 }
