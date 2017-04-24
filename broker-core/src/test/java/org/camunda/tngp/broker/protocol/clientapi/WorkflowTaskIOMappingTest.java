@@ -1,22 +1,6 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_EVENT;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_XML;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
@@ -27,11 +11,25 @@ import org.camunda.tngp.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import org.camunda.tngp.test.broker.protocol.clientapi.SubscribedEvent;
 import org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_REDUDANT_MAPPING;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.REDUDANT_MAPPING;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
 
 /**
  * Represents a test class to test the input and output mappings for
@@ -42,6 +40,25 @@ public class WorkflowTaskIOMappingTest
     private static final String PROP_TASK_TYPE = "type";
     private static final String PROP_TASK_RETRIES = "retries";
     private static final String PROP_TASK_PAYLOAD = "payload";
+    private static final String PROP_ERRO_MSG = "errorMessage";
+
+    private static final String NODE_JSON_OBJECT_KEY = "jsonObject";
+    private static final String NODE_TEST_ATTR_KEY = "testAttr";
+
+    private static final String NODE_STRING_KEY = "string";
+    private static final String NODE_STRING_VALUE = "value";
+    private static final String NODE_STRING_PATH = "$.string";
+    private static final String NODE_JSON_OBJECT_PATH = "$.jsonObject";
+    private static final String NODE_ROOT_PATH = "$";
+    private static final String NODE_BOOLEAN_KEY = "boolean";
+    private static final String NODE_INTEGER_KEY = "integer";
+    private static final String NODE_LONG_KEY = "long";
+    private static final String NODE_DOUBLE_KEY = "double";
+    private static final boolean NODE_BOOLEAN_VALUE = false;
+    private static final int NODE_INTEGER_VALUE = 1024;
+    private static final long NODE_LONG_VALUE = Long.MAX_VALUE;
+    private static final double NODE_DOUBLE_VALUE = 0.3;
+    private static final String NODE_TEST_ATTR_VALUE = "test";
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientApiRule apiRule = new ClientApiRule();
@@ -60,10 +77,15 @@ public class WorkflowTaskIOMappingTest
     {
         testClient = apiRule.topic();
 
-        jsonPayload.put("foo", "bar");
+        jsonPayload.put(NODE_STRING_KEY, NODE_STRING_VALUE);
+        jsonPayload.put(NODE_BOOLEAN_KEY, NODE_BOOLEAN_VALUE);
+        jsonPayload.put(NODE_INTEGER_KEY, NODE_INTEGER_VALUE);
+        jsonPayload.put(NODE_LONG_KEY, NODE_LONG_VALUE);
+        jsonPayload.put(NODE_DOUBLE_KEY, NODE_DOUBLE_VALUE);
+
         final Map<String, Object> jsonObject = new HashMap<>();
-        jsonObject.put("testAttr", "test");
-        jsonPayload.put("jsonObject", jsonObject);
+        jsonObject.put(NODE_TEST_ATTR_KEY, NODE_TEST_ATTR_VALUE);
+        jsonPayload.put(NODE_JSON_OBJECT_KEY, jsonObject);
         msgPackBytes = objectMapper.writeValueAsBytes(jsonPayload);
     }
 
@@ -71,6 +93,9 @@ public class WorkflowTaskIOMappingTest
     public void shouldNotDeployIfInputMappingIsNotValid() throws Throwable
     {
         // given
+        final HashMap<String, String> map = new HashMap<>();
+        map.put("$.*", NODE_ROOT_PATH);
+
         final TngpExtensions.TngpModelInstance modelInstance = wrap(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
@@ -78,8 +103,9 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", "foo", null);
+            .ioMapping("service", map, null);
 
+        // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .topicName(DEFAULT_TOPIC_NAME)
             .partitionId(DEFAULT_PARTITION_ID)
@@ -90,7 +116,46 @@ public class WorkflowTaskIOMappingTest
             .done()
             .sendAndAwait();
 
+        // then
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
+            .contains(Integer.toString(PROHIBITED_JSON_PATH_EXPRESSION))
+            .contains(ERROR_MSG_PROHIBITED_EXPRESSION);
+    }
+
+    @Test
+    public void shouldNotDeployIfInputMappingMapsRootAndOtherObject() throws Throwable
+    {
+        // given
+        final TngpExtensions.TngpModelInstance modelInstance = wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+                .input(NODE_STRING_PATH, NODE_ROOT_PATH)
+                .input(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH)
+            .done();
+
+
+        // when
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .eventType(EventType.DEPLOYMENT_EVENT)
+            .command()
+            .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+            .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+            .done()
+            .sendAndAwait();
+
+        // then
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
+            .contains(Integer.toString(REDUDANT_MAPPING))
+            .contains(ERROR_MSG_REDUDANT_MAPPING);
     }
 
     @Test
@@ -116,6 +181,203 @@ public class WorkflowTaskIOMappingTest
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
             .containsEntry(PROP_TASK_PAYLOAD, msgPackBytes);
+    }
+
+    @Test
+    public void shouldCreateNewObjectViaInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .input(NODE_STRING_PATH, "$.newFoo")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process", msgPackBytes);
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newFooNode = jsonNode.get("newFoo");
+        assertThat(newFooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+    }
+
+    @Test
+    public void shouldCreateNewDeepObjectViaInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .input(NODE_STRING_PATH, "$.newFoo.newDepth.string")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process", msgPackBytes);
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newFooNode = jsonNode.get("newFoo").get("newDepth").get(NODE_STRING_KEY);
+        assertThat(newFooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+    }
+
+    @Test
+    public void shouldCreateNewJSONObjectViaInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .input(NODE_JSON_OBJECT_PATH, "$.newObj")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process", msgPackBytes);
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newObjNode = jsonNode.get("newObj");
+        assertThat(newObjNode.isObject()).isTrue();
+        assertThat(newObjNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldCreateTwoNewObjectsViaInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .input(NODE_STRING_PATH, "$.newFoo")
+            .input(NODE_JSON_OBJECT_PATH, "$.newObj")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process", msgPackBytes);
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newFooNode = jsonNode.get("newFoo");
+        assertThat(newFooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        final JsonNode newObjNode = jsonNode.get("newObj");
+        assertThat(newObjNode.isObject()).isTrue();
+        assertThat(newObjNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldCreateTwoNewObjectsInSameDepthViaInputMapping() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .input(NODE_STRING_PATH, "$.newDepth.newFoo")
+            .input(NODE_JSON_OBJECT_PATH, "$.newDepth.newObj")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process", msgPackBytes);
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newFooNode = jsonNode.get("newDepth").get("newFoo");
+        assertThat(newFooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        final JsonNode newObjNode = jsonNode.get("newDepth").get("newObj");
+        assertThat(newObjNode.isObject()).isTrue();
+        assertThat(newObjNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldOverwriteObjectIfInputMappingMapsPathTwice() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .input(NODE_STRING_PATH, "$.newObj")
+            .input(NODE_JSON_OBJECT_PATH, "$.newObj")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process", msgPackBytes);
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newObjNode = jsonNode.get("newObj");
+        assertThat(newObjNode.isObject()).isTrue();
+        assertThat(newObjNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldUseEmptyMapIfCreatedWithNoPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .done());
+
+        // when
+        testClient.createWorkflowInstance("process");
+        final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
+
+        // then
+        assertThat(event.event()).containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
     }
 
     @Test
@@ -145,7 +407,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
-    public void shouldUseInputMappingToMapPayloadToTask() throws Throwable
+    public void shouldMapNullForNoMatchOnRootAsTarget() throws Throwable
     {
         // given
         testClient.deploy(wrap(
@@ -155,27 +417,23 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", "$.foo", null));
+            .ioMapping("service")
+                .input("$.notExisting", NODE_ROOT_PATH)
+            .done());
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
-
-        // then
+        testClient.createWorkflowInstance("process", msgPackBytes);
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.event())
-            .containsEntry(PROP_TASK_TYPE, "external")
-            .containsEntry(PROP_TASK_RETRIES, 5)
-            .containsEntry(PROP_TASK_PAYLOAD, objectMapper.writeValueAsBytes("bar"));
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode.isNull()).isTrue();
     }
 
     @Test
-    public void shouldUseInputMappingToMapObjectToTask() throws Throwable
+    public void shouldMapNullOnSubObject() throws Throwable
     {
         // given
-        final Map<String, Object> jsonObject = new HashMap<>();
-        jsonObject.put("testAttr", "test");
         testClient.deploy(wrap(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
@@ -183,23 +441,24 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", "$.jsonObject", null));
+            .ioMapping("service")
+            .input("$.notExisting", "$.nullVal")
+            .done());
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
-
-        // then
+        testClient.createWorkflowInstance("process", msgPackBytes);
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.event())
-            .containsEntry(PROP_TASK_TYPE, "external")
-            .containsEntry(PROP_TASK_RETRIES, 5)
-            .containsEntry(PROP_TASK_PAYLOAD, objectMapper.writeValueAsBytes(jsonObject));
+        // then payload is expected as
+        final JsonNode jsonNode  = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newFooNode = jsonNode.get("nullVal");
+        assertThat(newFooNode.isNull()).isTrue();
     }
 
     @Test
-    public void shouldNotMapPayloadIfJsonPathDoesNotMatch() throws Throwable
+    public void shouldMapNullAndMatchingValue() throws Throwable
     {
         // given
         testClient.deploy(wrap(
@@ -209,24 +468,32 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", "$.notExisting", null));
+            .ioMapping("service")
+            .input("$.notExisting", "$.nullVal")
+            .input(NODE_STRING_PATH, "$.existing")
+            .done());
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
-
-        // then
+        testClient.createWorkflowInstance("process", msgPackBytes);
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.event())
-            .containsEntry(PROP_TASK_TYPE, "external")
-            .containsEntry(PROP_TASK_RETRIES, 5)
-            .containsEntry(PROP_TASK_PAYLOAD, EMTPY_OBJECT);
+        // then payload is expected as
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode newFooNode = jsonNode.get("nullVal");
+        assertThat(newFooNode.isNull()).isTrue();
+
+        final JsonNode newObjNode = jsonNode.get("existing");
+        assertThat(newObjNode.isTextual()).isTrue();
+        assertThat(newObjNode.textValue()).isEqualTo(NODE_STRING_VALUE);
     }
 
     @Test
     public void shouldNotDeployIfOutputMappingIsNotValid() throws Throwable
     {
+        final Map<String, String> outMapping = new HashMap<>();
+        outMapping.put(NODE_STRING_KEY, null);
         // given
         final TngpExtensions.TngpModelInstance modelInstance = wrap(
             Bpmn.createExecutableProcess("process")
@@ -235,7 +502,7 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", null, "foo");
+            .ioMapping("service", null, outMapping);
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .topicName(DEFAULT_TOPIC_NAME)
@@ -261,7 +528,7 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5));
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+        testClient.createWorkflowInstance("process", msgPackBytes);
 
         // when
         testClient.completeTaskOfType("external", msgPackBytes);
@@ -272,17 +539,62 @@ public class WorkflowTaskIOMappingTest
 
         assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
             .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, msgPackBytes);
     }
+
+// TODO two process instances should not see there payloads
+// for that we have to create and complete WF instances
+//    @Test
+//    public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws Throwable
+//    {
+//        // given
+//        final Map<String, Object> jsonObject = new HashMap<>();
+//        jsonObject.put("testAttr", "test");
+//        jsonObject.put("testObj", jsonPayload);
+//        jsonObject.put("a", jsonPayload);
+//        testClient.deploy(wrap(
+//            Bpmn.createExecutableProcess("process")
+//                .startEvent()
+//                .serviceTask("service")
+//                .endEvent()
+//                .done())
+//            .taskDefinition("service", "external", 5));
+//
+//        testClient.createWorkflowInstance("process", objectMapper.writeValueAsBytes(jsonObject));
+//        final Long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+//
+//        // when
+//        testClient.completeAllTaskOfType("external", new byte[][]{ objectMapper.writeValueAsBytes(jsonObject), msgPackBytes});
+//
+//        // then
+//        SubscribedEvent activityActivatedEvent =
+//            testClient.receiveSingleEvent(
+//                workflowInstanceEvents("ACTIVITY_ACTIVATED")
+//                    .and(e -> e.event()
+//                        .get(PROP_WORKFLOW_INSTANCE_KEY)
+//                        .equals(workflowInstanceKey)));
+//        SubscribedEvent activityCompletedEvent =
+//            testClient.receiveSingleEvent(
+//                workflowInstanceEvents("ACTIVITY_COMPLETED")
+//                    .and(e -> e.event()
+//                        .get(PROP_WORKFLOW_INSTANCE_KEY)
+//                        .equals(workflowInstanceKey)));
+//
+//
+//
+//        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+//        assertThat(jsonNode).isNotNull().isNotEmpty();
+//        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+//        assertThat(activityCompletedEvent.event())
+//            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, msgPackBytes);
+//    }
 
     @Test
     public void shouldUseDefaultOutputMappingIfNullSpecified() throws Throwable
     {
         // given
+        final Map<String, String> inputMapping = new HashMap<>();
+        inputMapping.put(NODE_ROOT_PATH, NODE_ROOT_PATH);
         testClient.deploy(wrap(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
@@ -290,9 +602,9 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", "$", null));
+            .ioMapping("service", inputMapping, null));
 
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+        testClient.createWorkflowInstance("process", msgPackBytes);
 
         // when
         testClient.completeTaskOfType("external", msgPackBytes);
@@ -303,10 +615,6 @@ public class WorkflowTaskIOMappingTest
 
         assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
             .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, msgPackBytes);
     }
 
@@ -320,10 +628,9 @@ public class WorkflowTaskIOMappingTest
                 .serviceTask("service")
                 .endEvent()
                 .done())
-            .taskDefinition("service", "external", 5)
-            .ioMapping("service", "$", null));
+            .taskDefinition("service", "external", 5));
 
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+        testClient.createWorkflowInstance("process", msgPackBytes);
 
         // when
         testClient.completeTaskOfType("external");
@@ -334,15 +641,11 @@ public class WorkflowTaskIOMappingTest
 
         assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
             .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
     }
 
     @Test
-    public void shouldUseOutputMappingToMapPayloadToWorkflow() throws Throwable
+    public void shouldUseOutputMappingToAddValueToWorkflowPayload() throws Throwable
     {
         // given
         testClient.deploy(wrap(
@@ -352,31 +655,28 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", null, "$.foo"));
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+            .ioMapping("service")
+                .output(NODE_STRING_PATH, "$.newFoo")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
 
         // when
         testClient.completeTaskOfType("external", msgPackBytes);
-
-        // then
-        final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
-        assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
-            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, objectMapper.writeValueAsBytes("bar"));
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        // and the new one
+        final JsonNode newFooNode = jsonNode.get("newFoo");
+        assertThat(newFooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
     }
 
     @Test
-    public void shouldUseOutputMappingToMapObjectToWorkflow() throws Throwable
+    public void shouldUseOutputMappingToAddJsonObjectToWorkflowPayload() throws Throwable
     {
         // given
-        final Map<String, Object> jsonObject = new HashMap<>();
-        jsonObject.put("testAttr", "test");
         testClient.deploy(wrap(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
@@ -384,23 +684,348 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", null, "$.jsonObject"));
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+            .ioMapping("service")
+            .output(NODE_JSON_OBJECT_PATH, "$.newObj")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
 
         // when
         testClient.completeTaskOfType("external", msgPackBytes);
-
-        // then
-        final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
-        assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
-            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, objectMapper.writeValueAsBytes(jsonObject));
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        // and the new one
+        final JsonNode objNode = jsonNode.get("newObj");
+        assertThat(objNode.isObject()).isTrue();
+        assertThat(objNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_STRING_PATH, "$.newFoo")
+            .output(NODE_JSON_OBJECT_PATH, "$.newObj")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        // and the new ones
+        final JsonNode newFooNode = jsonNode.get("newFoo");
+        assertThat(newFooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        final JsonNode objNode = jsonNode.get("newObj");
+        assertThat(objNode.isObject()).isTrue();
+        assertThat(objNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToMapReplaceObjectWithValueInWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_STRING_PATH, NODE_JSON_OBJECT_PATH)
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode fooNode = jsonNode.get(NODE_STRING_KEY);
+        assertThat(fooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        // and the replaced value
+        final JsonNode objNode = jsonNode.get(NODE_JSON_OBJECT_KEY);
+        assertThat(objNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToMapReplaceValueWithObjectInWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_JSON_OBJECT_PATH, NODE_STRING_PATH)
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode fooNode = jsonNode.get(NODE_STRING_KEY);
+        assertThat(fooNode.isObject()).isTrue();
+        assertThat(fooNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+
+        // and the replaced object
+        final JsonNode objNode = jsonNode.get(NODE_JSON_OBJECT_KEY);
+        assertThat(objNode.isObject()).isTrue();
+        assertThat(objNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    // TODO fails for payload which contains non string objects
+    @Ignore
+    public void shouldUseOutputMappingToReplaceObjectWithComplexObjectInWorkflowPayload() throws Throwable
+    {
+        // given
+        final Map<String, Object> jsonObject = new HashMap<>();
+        jsonObject.put(NODE_TEST_ATTR_KEY, NODE_TEST_ATTR_VALUE);
+        jsonObject.put("testObj", jsonPayload);
+        jsonObject.put("a", jsonPayload);
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_ROOT_PATH, NODE_JSON_OBJECT_PATH)
+            .done());
+
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // to check if the right payload is send
+//        byte[] bytes = objectMapper.writeValueAsBytes(jsonObject);
+//
+//        UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+//        MsgPackReader reader = new MsgPackReader();
+//        reader.wrap(buffer, 0, buffer.capacity());
+//        while (reader.hasNext())
+//        {
+//            MsgPackToken msgPackToken = reader.readToken();
+//            MsgPackType type = msgPackToken.getType();
+//            if (type == MsgPackType.STRING)
+//            {
+//                System.out.println(msgPackToken.getValueBuffer().getStringWithoutLengthUtf8(0, msgPackToken.getValueBuffer().capacity()));
+//            }
+//            else if (type == MsgPackType.INTEGER) {
+//                System.out.println(msgPackToken.getIntegerValue());
+//            }
+//        }
+
+
+        // when
+        testClient.completeTaskOfType("external", objectMapper.writeValueAsBytes(jsonObject));
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode stringNode = jsonNode.get(NODE_STRING_KEY);
+        assertThat(stringNode.isTextual()).isTrue();
+        assertThat(stringNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        // and the replaced object
+        final JsonNode objNode = jsonNode.get(NODE_JSON_OBJECT_KEY);
+        assertThat(objNode.isObject()).isTrue();
+        assertThat(objNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+
+        final JsonNode aNode = objNode.get("a");
+        assertThatNodeContainsTheStartingPayload(aNode);
+
+        final JsonNode testObjNode = objNode.get("testObj");
+        assertThatNodeContainsTheStartingPayload(testObjNode);
+    }
+
+    // TODO json object with the same key and name are not correctly identified
+    @Ignore
+    public void shouldUseOutputMappingToReplaceObjectInComplexObjectWithValueInWorkflowPayload() throws Throwable
+    {
+        // given
+        final Map<String, Object> jsonObject = new HashMap<>();
+        jsonObject.put("value", NODE_TEST_ATTR_VALUE);
+        jsonObject.put("complexObject1", jsonPayload);
+        jsonObject.put("complexObject2", jsonPayload);
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output("$.value", "$.complexObject2.jsonObject")
+            .done());
+
+        testClient.createWorkflowInstance("process", objectMapper.writeValueAsBytes(jsonObject));
+
+        // when
+        testClient.completeTaskOfType("external", objectMapper.writeValueAsBytes(jsonObject));
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode valueNode = jsonNode.get("value");
+        assertThat(valueNode.isTextual()).isTrue();
+        assertThat(valueNode.textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+
+        final JsonNode complexObject1Node = jsonNode.get("complexObject1");
+        assertThatNodeContainsTheStartingPayload(complexObject1Node);
+
+        // and the replaced object
+        final JsonNode complexObject2Node = jsonNode.get("complexObject2");
+        assertThat(complexObject2Node.isObject()).isTrue();
+
+        final JsonNode fooNode = complexObject2Node.get(NODE_STRING_KEY);
+        assertThat(fooNode.isTextual()).isTrue();
+        assertThat(fooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        final JsonNode jsonObjNode = complexObject2Node.get(NODE_JSON_OBJECT_KEY);
+        assertThat(jsonObjNode.isTextual()).isTrue();
+        assertThat(jsonObjNode.textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToAddObjectInOtherObjectInWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_STRING_PATH, "$.jsonObject.newFoo")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        // and the new added value in the existing object
+        assertThat(jsonNode.get(NODE_JSON_OBJECT_KEY).get("newFoo").textValue()).isEqualTo(NODE_STRING_VALUE);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToMapHolePayloadToNewObjectInWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_ROOT_PATH, "$.taskPayload")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains old objects
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        // and the new added task payload
+        final JsonNode taskPayloadNode = jsonNode.get("taskPayload");
+        assertThatNodeContainsTheStartingPayload(taskPayloadNode);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToMapObjectToHoleWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH)
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains jsonobject values
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode.isObject()).isTrue();
+        assertThat(jsonNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldUseOutputMappingToMapValueToHoleWorkflowPayload() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_STRING_PATH, NODE_ROOT_PATH)
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then payload contains jsonobject values
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode.isTextual()).isTrue();
+        assertThat(jsonNode.textValue()).isEqualTo(NODE_STRING_VALUE);
     }
 
     @Test
@@ -414,23 +1039,88 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", null, "$.notExisting"));
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
+            .ioMapping("service")
+                .output("$.notExisting", "$.notExist")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
 
         // when
         testClient.completeTaskOfType("external", msgPackBytes);
-
-        // then
-        final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
+        testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
-        assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
-            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+        // then
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        final JsonNode notExist = jsonNode.get("notExist");
+        assertThat(notExist.isNull()).isTrue();
+    }
+
+    @Test
+    public void shouldOverwriteObjectIfOutputMappingMapsPathTwice() throws Throwable
+    {
+        // given
+        testClient.deploy(wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_STRING_PATH, "$.newObj")
+            .output(NODE_JSON_OBJECT_PATH, "$.newObj")
+            .done());
+        testClient.createWorkflowInstance("process", msgPackBytes);
+
+        // when
+        testClient.completeTaskOfType("external", msgPackBytes);
+        final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
+
+        // then old payload exist
+        final JsonNode jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThatNodeContainsTheStartingPayload(jsonNode);
+
+        // new obj has value of json object
+        final JsonNode newObjNode = jsonNode.get("newObj");
+        assertThat(newObjNode.isObject()).isTrue();
+        assertThat(newObjNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    @Test
+    public void shouldNotMapPayloadToWorkflowIfOutMappingMapsRootAndOtherPath() throws Throwable
+    {
+        // given
+        final TngpExtensions.TngpModelInstance modelInstance = wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service")
+                .endEvent()
+                .done())
+            .taskDefinition("service", "external", 5)
+            .ioMapping("service")
+            .output(NODE_STRING_PATH, NODE_ROOT_PATH)
+            .output(NODE_JSON_OBJECT_PATH, NODE_JSON_OBJECT_PATH)
+            .done();
+
+
+        // when
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
+            .eventType(EventType.DEPLOYMENT_EVENT)
+            .command()
+            .put(PROP_EVENT, "CREATE_DEPLOYMENT")
+            .put(PROP_WORKFLOW_BPMN_XML, Bpmn.convertToString(modelInstance))
+            .done()
+            .sendAndAwait();
+
+        // then
+        assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("DEPLOYMENT_REJECTED");
+        assertThat(response.getEvent().get(PROP_ERRO_MSG).toString())
+            .contains(Integer.toString(REDUDANT_MAPPING))
+            .contains(ERROR_MSG_REDUDANT_MAPPING);
     }
 
     @Test
@@ -446,33 +1136,54 @@ public class WorkflowTaskIOMappingTest
                 .endEvent()
                 .done())
             .taskDefinition("service", "external", 5)
-            .ioMapping("service", "$.jsonObject", "$.testAttr"));
+            .ioMapping("service")
+                .input(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH)
+                .output("$.testAttr", NODE_ROOT_PATH)
+             .done());
 
         // when
-        final long workflowInstanceKey = testClient.createWorkflowInstance("process", msgPackBytes);
-
-        // then
+        testClient.createWorkflowInstance("process", msgPackBytes);
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-        assertThat(event.event())
-            .containsEntry(PROP_TASK_TYPE, "external")
-            .containsEntry(PROP_TASK_RETRIES, 5)
-            .containsEntry(PROP_TASK_PAYLOAD, objectMapper.writeValueAsBytes(jsonObject));
+        // then payload is expected as
+        JsonNode jsonNode = objectMapper.readTree((byte[]) event.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+
+        final JsonNode testAttrNode = jsonNode.get("testAttr");
+        assertThat(testAttrNode.textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
 
         // when
         testClient.completeTaskOfType("external", objectMapper.writeValueAsBytes(jsonObject));
 
         // then
-        final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
-        assertThat(activityCompletedEvent.event())
-            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .containsEntry(PROP_WORKFLOW_VERSION, 1)
-            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "service")
-            .containsEntry(WorkflowInstanceEvent.PROP_WORKFLOW_PAYLOAD, objectMapper.writeValueAsBytes("test"));
+        jsonNode = objectMapper.readTree((byte[]) activityCompletedEvent.event().get(PROP_TASK_PAYLOAD));
+        assertThat(jsonNode).isNotNull();
+        assertThat(jsonNode.isTextual()).isTrue();
+        assertThat(jsonNode.textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
+    }
+
+    private void assertThatNodeContainsTheStartingPayload(JsonNode jsonNode)
+    {
+        assertThat(jsonNode).isNotNull().isNotEmpty();
+        final JsonNode fooNode = jsonNode.get(NODE_STRING_KEY);
+        assertThat(fooNode.textValue()).isEqualTo(NODE_STRING_VALUE);
+
+        final JsonNode booleanNode = jsonNode.get(NODE_BOOLEAN_KEY);
+        assertThat(booleanNode.booleanValue()).isEqualTo(NODE_BOOLEAN_VALUE);
+
+        final JsonNode integerNode = jsonNode.get(NODE_INTEGER_KEY);
+        assertThat(integerNode.intValue()).isEqualTo(NODE_INTEGER_VALUE);
+
+        final JsonNode longNode = jsonNode.get(NODE_LONG_KEY);
+        assertThat(longNode.longValue()).isEqualTo(NODE_LONG_VALUE);
+
+        final JsonNode doubleNode = jsonNode.get(NODE_DOUBLE_KEY);
+        assertThat(doubleNode.doubleValue()).isEqualTo(NODE_DOUBLE_VALUE);
+
+        final JsonNode objNode = jsonNode.get(NODE_JSON_OBJECT_KEY);
+        assertThat(objNode.isObject()).isTrue();
+        assertThat(objNode.get(NODE_TEST_ATTR_KEY).textValue()).isEqualTo(NODE_TEST_ATTR_VALUE);
     }
 }

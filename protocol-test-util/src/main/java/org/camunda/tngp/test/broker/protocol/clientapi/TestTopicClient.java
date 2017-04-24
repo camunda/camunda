@@ -12,16 +12,15 @@
  */
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.util.collection.MapBuilder;
 
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTopicClient
 {
@@ -159,7 +158,6 @@ public class TestTopicClient
 
         assertThat(response.getEvent().get(PROP_EVENT)).isEqualTo("COMPLETED");
     }
-
 
     /**
      * @return an infinite stream of received subscribed events; make sure to use short-circuiting operations

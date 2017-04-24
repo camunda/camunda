@@ -11,12 +11,7 @@ import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.ExecutableProcessRule;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.OutgoingSequenceFlowRule;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.ProcessStartEventRule;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.ServiceTaskRule;
-import org.camunda.tngp.broker.workflow.graph.transformer.validator.TaskTypeRule;
+import org.camunda.tngp.broker.workflow.graph.transformer.validator.*;
 
 public class BpmnTransformer
 {
@@ -31,6 +26,7 @@ public class BpmnTransformer
         BPMN_VALIDATORS.add(new OutgoingSequenceFlowRule());
         BPMN_VALIDATORS.add(new TaskTypeRule());
         BPMN_VALIDATORS.add(new ServiceTaskRule());
+        BPMN_VALIDATORS.add(new IOMappingRule());
     }
 
     public ValidationResults validate(DirectBuffer buffer)

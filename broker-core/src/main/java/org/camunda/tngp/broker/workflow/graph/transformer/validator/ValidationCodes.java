@@ -23,4 +23,8 @@ public class ValidationCodes
     public static final int NO_TASK_HEADER_KEY = 53;
     public static final int NO_TASK_HEADER_VALUE = 54;
 
+    public static final int INVALID_JSON_PATH_EXPRESSION = 60;
+    public static final int PROHIBITED_JSON_PATH_EXPRESSION = 61;
+    public static final int REDUDANT_MAPPING = 62;
+
 }

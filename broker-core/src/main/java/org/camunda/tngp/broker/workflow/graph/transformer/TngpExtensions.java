@@ -12,9 +12,6 @@
  */
 package org.camunda.tngp.broker.workflow.graph.transformer;
 
-import java.util.Collection;
-import java.util.Map;
-
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
@@ -26,13 +23,18 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
+import java.util.Collection;
+import java.util.Map;
+
 public class TngpExtensions
 {
     public static final String TNGP_NAMESPACE = "http://camunda.org/schema/tngp/1.0";
 
     public static final String IO_MAPPING_ELEMENT = "ioMapping";
-    public static final String IO_MAPPING_INPUT_ATTRIBUTE = "input";
-    public static final String IO_MAPPING_OUTPUT_ATTRIBUTE = "output";
+    public static final String INPUT_MAPPING_ELEMENT = "input";
+    public static final String OUTPUT_MAPPING_ELEMENT = "output";
+    public static final String MAPPING_ATTRIBUTE_SOURCE = "source";
+    public static final String MAPPING_ATTRIBUTE_TARGET = "target";
 
     public static final String TASK_DEFINITION_ELEMENT = "taskDefinition";
     public static final String TASK_HEADERS_ELEMENT = "taskHeaders";
@@ -165,15 +167,36 @@ public class TngpExtensions
             return this;
         }
 
-        public TngpModelInstance ioMapping(String activityId, String inputMapping, String outputMapping)
+        public TngpModelInstance ioMapping(String activityId, Map<String, String> inputMappings, Map<String, String> outputMappings)
         {
             final ExtensionElements extensionElements = getExtensionElements(activityId);
             final ModelElementInstance ioMapping = extensionElements.addExtensionElement(TNGP_NAMESPACE, IO_MAPPING_ELEMENT);
 
-            ioMapping.setAttributeValue(IO_MAPPING_INPUT_ATTRIBUTE, inputMapping);
-            ioMapping.setAttributeValue(IO_MAPPING_OUTPUT_ATTRIBUTE, outputMapping);
+            if (inputMappings != null)
+            {
+                inputMappings.forEach((k, v) -> addMappingElement(ioMapping, INPUT_MAPPING_ELEMENT, k, v));
+            }
+            if (outputMappings != null)
+            {
+                outputMappings.forEach((k, v) -> addMappingElement(ioMapping, OUTPUT_MAPPING_ELEMENT, k, v));
+            }
 
             return this;
+        }
+
+        public IOMappingBuilder ioMapping(String activityId)
+        {
+            final ExtensionElements extensionElements = getExtensionElements(activityId);
+            final ModelElementInstance ioMapping = extensionElements.addExtensionElement(TNGP_NAMESPACE, IO_MAPPING_ELEMENT);
+            return new IOMappingBuilder(this, ioMapping);
+        }
+
+        private void addMappingElement(ModelElementInstance ioMapping, String mappingElement, String source, String target)
+        {
+            final DomElement mapping = wrappedInstance.getDocument().createElement(TNGP_NAMESPACE, mappingElement);
+            mapping.setAttribute(MAPPING_ATTRIBUTE_SOURCE, source);
+            mapping.setAttribute(MAPPING_ATTRIBUTE_TARGET, target);
+            ioMapping.getDomElement().appendChild(mapping);
         }
 
         private ExtensionElements getExtensionElements(String activityId)

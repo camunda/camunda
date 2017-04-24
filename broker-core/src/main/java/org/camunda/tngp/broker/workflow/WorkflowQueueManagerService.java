@@ -110,6 +110,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final IndexStore workflowPositionIndexStore = createIndexStore("workflow.instance.position");
         final IndexStore workflowVersionIndexStore = createIndexStore("workflow.instance.version");
         final IndexStore workflowInstanceTokenCountIndexStore = createIndexStore("workflow.instance.token");
+        final IndexStore workflowInstancePayloadIndexStore = createIndexStore("workflow.instance.payload");
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
@@ -122,7 +123,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 responseWriter,
                 workflowPositionIndexStore,
                 workflowVersionIndexStore,
-                workflowInstanceTokenCountIndexStore);
+                workflowInstanceTokenCountIndexStore,
+                workflowInstancePayloadIndexStore);
 
         final StreamProcessorService workflowStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,

@@ -1,14 +1,5 @@
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
-
-import java.nio.ByteOrder;
-import java.util.EnumMap;
-import java.util.Map;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
@@ -27,46 +18,49 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
-import org.camunda.tngp.broker.workflow.graph.model.BpmnAspect;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
+import org.camunda.tngp.broker.workflow.graph.model.*;
+import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
+import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
-import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
-import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
-import org.camunda.tngp.msgpack.query.MsgPackTraverser;
-import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.buffer.BufferUtil;
+
+import java.nio.ByteOrder;
+import java.util.EnumMap;
+import java.util.Map;
+
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
 
     public static final int SIZE_OF_PROCESS_ID = BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR;
     public static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
-    private static final int WORKFLOW_CACHE_CAPACITY = 1024;
 
-    private static final MutableDirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+    /**
+     * The default workflow cache capacity, which is used if no cache capacity is specified via configuration file.
+     */
+    private static final int DEFAULT_WORKFLOW_CACHE_CAPACITY = 1024;
+
+    /**
+     * Currently the payload is limited to 4096 bytes.
+     */
+    private static final int PAYLOAD_MAX_SIZE = 1024 * 4;
 
     // processors ////////////////////////////////////
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
@@ -100,8 +94,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     // internal //////////////////////////////////////
 
     protected final CommandResponseWriter responseWriter;
-    protected final MsgPackTraverser traverser = new MsgPackTraverser();
-    protected final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
 
     /**
      * An hash index which contains as key the BPMN process partitionId and as value the corresponding latest definition version.
@@ -121,6 +113,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final Long2LongHashIndex workflowInstanceTokenCountIndex;
     protected final WorkflowInstanceTokenCountIndexAccessor workflowInstanceIndexAccessor = new WorkflowInstanceTokenCountIndexAccessor();
 
+    /**
+     * An hash index which contains as key the workflow instance key and as value the
+     * last payload.
+     */
+    private final Long2BytesHashIndex workflowInstancePayloadIndex;
+
     protected final ComposedSnapshot composedSnapshot;
 
     protected LogStreamReader deploymentLogStreamReader;
@@ -132,7 +130,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected long eventKey;
     protected long eventPosition;
 
-
     /**
      * The workflow LRU cache, which contains the latest used workflow's.
      * The cache has a defined capacity, if the capacity is reached a least used workflow
@@ -141,27 +138,29 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
      */
     protected final LongLruCache<ExecutableWorkflow> workflowCache;
 
+    protected final PayloadMappingProcessor payloadMappingProcessor = new PayloadMappingProcessor(PAYLOAD_MAX_SIZE);
+
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
             IndexStore workflowPositionIndexStore,
             IndexStore workflowVersionIndexStore,
-            IndexStore workflowInstanceTokenCountIndexStore)
+            IndexStore workflowInstanceTokenCountIndexStore,
+            IndexStore workflowInstancePayloadIndexStore)
     {
         this.responseWriter = responseWriter;
 
         this.workflowPositionIndex = new Bytes2LongHashIndex(workflowPositionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
         this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(workflowVersionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
         this.workflowInstanceTokenCountIndex = new Long2LongHashIndex(workflowInstanceTokenCountIndexStore, Short.MAX_VALUE, 256);
+        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, PAYLOAD_MAX_SIZE);
 
         this.composedSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(workflowPositionIndex, workflowPositionIndexStore),
                 new HashIndexSnapshotSupport<>(latestWorkflowVersionIndex, workflowVersionIndexStore),
-                new HashIndexSnapshotSupport<>(workflowInstanceTokenCountIndex, workflowInstanceTokenCountIndexStore));
+                new HashIndexSnapshotSupport<>(workflowInstanceTokenCountIndex, workflowInstanceTokenCountIndexStore),
+                new HashIndexSnapshotSupport<>(workflowInstancePayloadIndex, workflowInstancePayloadIndexStore));
 
-        workflowCache = new LongLruCache<>(WORKFLOW_CACHE_CAPACITY, this::lookupWorkflow, (workflow) ->
-        {
-            return;
-        });
+        workflowCache = new LongLruCache<>(DEFAULT_WORKFLOW_CACHE_CAPACITY, this::lookupWorkflow, (workflow) -> { });
     }
 
     @Override
@@ -457,6 +456,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             // all tokens are consumed
             workflowInstanceIndexAccessor.remove(workflowInstanceEvent.getWorkflowInstanceKey());
+            // payload is not needed anymore
+            workflowInstancePayloadIndex.remove(workflowInstanceEvent.getWorkflowInstanceKey());
         }
     }
 
@@ -485,13 +486,28 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setRetries(taskMetadata.getRetries());
 
                 setTaskHeaders(serviceTask, taskMetadata);
-                final JsonPathQuery inputQuery = serviceTask.getIoMapping().getInputQuery();
-                taskEvent.setPayload(mapPayload(inputQuery, workflowInstanceEvent.getPayload()));
+
+                setTaskPayload(serviceTask.getIoMapping().getInputMappings());
             }
             else
             {
                 throw new RuntimeException("Currently not supported. An activity must be of type service task.");
             }
+        }
+
+        private final MutableDirectBuffer tempPayload = new UnsafeBuffer(new byte[PAYLOAD_MAX_SIZE]);
+
+        public void setTaskPayload(Mapping[] mappings)
+        {
+
+            final DirectBuffer sourcePayload = workflowInstanceEvent.getPayload();
+            tempPayload.putInt(0, sourcePayload.capacity(), ByteOrder.LITTLE_ENDIAN);
+            sourcePayload.getBytes(0, tempPayload, SIZE_OF_INT, sourcePayload.capacity());
+            workflowInstancePayloadIndex.put(workflowInstanceEvent.getWorkflowInstanceKey(), tempPayload.byteArray());
+
+            final int resultLen = payloadMappingProcessor.extractPayload(mappings, workflowInstanceEvent.getPayload());
+            final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+            taskEvent.setPayload(buffer, 0, resultLen);
         }
 
         public void setTaskHeaders(ExecutableServiceTask serviceTask, TaskMetadata taskMetadata)
@@ -675,11 +691,24 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
                 final ExecutableFlowNode currentActivity = getCurrentActivity();
                 final ExecutableServiceTask serviceTask = (ExecutableServiceTask) currentActivity;
-                final JsonPathQuery outputQuery = serviceTask.getIoMapping().getOutputQuery();
-                workflowInstanceEvent.setPayload(mapPayload(outputQuery, taskEvent.getPayload()));
 
+                setWorkflowInstancePayload(serviceTask.getIoMapping().getOutputMappings());
                 isActivityCompleted = true;
             }
+        }
+
+        protected final DirectBuffer tempPayload = new UnsafeBuffer(0, 0);
+
+        public void setWorkflowInstancePayload(Mapping[] mappings)
+        {
+            final byte payload[] = workflowInstancePayloadIndex.get(taskHeaders.getWorkflowInstanceKey());
+            tempPayload.wrap(payload);
+            final Integer payloadLength = tempPayload.getInt(0);
+            tempPayload.wrap(payload, SIZE_OF_INT, payloadLength);
+
+            final int resultLen = payloadMappingProcessor.mergePayloads(mappings, taskEvent.getPayload(), tempPayload);
+            final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
+            workflowInstanceEvent.setPayload(buffer, 0, resultLen);
         }
 
         @Override
@@ -694,32 +723,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
             return position;
         }
-    }
-
-    private MutableDirectBuffer mapPayload(JsonPathQuery mapQuery, DirectBuffer payload)
-    {
-        final MutableDirectBuffer resultBuffer;
-        queryExecutor.init(mapQuery.getFilters(), mapQuery.getFilterInstances());
-
-        traverser.wrap(payload, 0, payload.capacity());
-        traverser.traverse(queryExecutor);
-
-        if (queryExecutor.numResults() > 0)
-        {
-            // currently only first result is supported
-            queryExecutor.moveToResult(0);
-
-            final int resultLength = queryExecutor.currentResultLength();
-            final byte[] result = new byte[resultLength];
-            resultBuffer = new UnsafeBuffer(0, 0);
-            resultBuffer.wrap(result);
-            payload.getBytes(queryExecutor.currentResultPosition(), resultBuffer, 0, resultLength);
-        }
-        else
-        {
-            resultBuffer = EMPTY_PAYLOAD;
-        }
-        return resultBuffer;
     }
 
     private final class WorkflowPositionIndexAccessor

@@ -1,10 +1,14 @@
 package org.camunda.tngp.broker.workflow.graph.transformer.metadata;
 
+import org.agrona.Strings;
 import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
+import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.IOMapping;
-import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
+import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQueryCompiler;
+
+import java.util.List;
 
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.*;
 
@@ -16,38 +20,72 @@ public class IOMappingTransformer
 {
     private static final String DEFAULT_MAPPING = "$";
 
+    private static final int SINGLE_MAPPING_COUNT = 1;
+    private static final int FIRST_MAPPING_IDX = 0;
+
     public static IOMapping transform(ExtensionElements extensionElements)
     {
         final IOMapping ioMapping = new IOMapping();
 
         final ModelElementInstance ioMappingElement = extensionElements.getUniqueChildElementByNameNs(TNGP_NAMESPACE, IO_MAPPING_ELEMENT);
 
-        ioMapping.setInputQuery(getMappingQuery(ioMappingElement, IO_MAPPING_INPUT_ATTRIBUTE));
-        ioMapping.setOutputQuery(getMappingQuery(ioMappingElement, IO_MAPPING_OUTPUT_ATTRIBUTE));
+        final List<DomElement> inputMappingElements = ioMappingElement != null
+                ? ioMappingElement.getDomElement().getChildElementsByNameNs(TNGP_NAMESPACE, INPUT_MAPPING_ELEMENT)
+                : null;
+        final List<DomElement> outputMappingElements = ioMappingElement != null
+            ? ioMappingElement.getDomElement().getChildElementsByNameNs(TNGP_NAMESPACE, OUTPUT_MAPPING_ELEMENT)
+            : null;
+
+        ioMapping.setInputMappings(createMappings(inputMappingElements));
+        ioMapping.setOutputMappings(createMappings(outputMappingElements));
 
         return ioMapping;
     }
 
-    private static JsonPathQuery getMappingQuery(ModelElementInstance ioMappingElement, String attributeName)
+    private static Mapping[] createMappings(List<DomElement> mappingElements)
     {
-        final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
+        final Mapping mappings[];
 
-        String mappingValue = DEFAULT_MAPPING;
-        if (ioMappingElement != null)
+        if (mappingElements == null || mappingElements.isEmpty())
         {
-            final String attributeValue = ioMappingElement.getAttributeValue(attributeName);
-            if (attributeValue != null && !attributeValue.isEmpty())
+            mappings = new Mapping[SINGLE_MAPPING_COUNT];
+            setMapping(null, mappings, FIRST_MAPPING_IDX);
+        }
+        else
+        {
+            mappings = new Mapping[mappingElements.size()];
+
+            for (int i = 0; i < mappingElements.size(); i++)
             {
-                mappingValue = attributeValue;
+                final DomElement mappingElement = mappingElements.get(i);
+                setMapping(mappingElement, mappings, i);
             }
         }
+        return mappings;
+    }
 
-        final JsonPathQuery jsonPathQuery = jsonPathQueryCompiler.compile(mappingValue);
+    private static void setMapping(DomElement mappingElement, Mapping[] mappings, int index)
+    {
+        final String sourceMapping = getMappingQuery(mappingElement, MAPPING_ATTRIBUTE_SOURCE);
+        final String targetMapping = getMappingQuery(mappingElement, MAPPING_ATTRIBUTE_TARGET);
 
-        if (!jsonPathQuery.isValid())
+        //TODO make json path compiler re-usable!
+        mappings[index] =  new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
+                                       new JsonPathQueryCompiler().compile(targetMapping),
+                                       targetMapping);
+    }
+
+    private static String getMappingQuery(DomElement mappingElement, String attributeName)
+    {
+        String mappingValue = DEFAULT_MAPPING;
+        if (mappingElement != null)
         {
-            throw new RuntimeException("Mapping failed JSON Path Query is not valid! Reason: " + jsonPathQuery.getErrorReason());
+            final String mapping = mappingElement.getAttribute(attributeName);
+            if (!Strings.isEmpty(mapping))
+            {
+                mappingValue = mapping;
+            }
         }
-        return jsonPathQuery;
+        return mappingValue;
     }
 }

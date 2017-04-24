@@ -13,10 +13,8 @@ import java.util.stream.IntStream;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.Definitions;
-import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
+import org.camunda.bpm.model.bpmn.instance.*;
 import org.camunda.bpm.model.bpmn.instance.Process;
-import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
@@ -364,6 +362,140 @@ public class BpmnValidationTests
         assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
             .isNotNull()
             .extracting("code").contains(ValidationCodes.NO_TASK_HEADER_KEY, ValidationCodes.NO_TASK_HEADER_VALUE);
+    }
+
+    @Test
+    public void shouldNotValidIfIOMappingIsInvalid()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+                .name("bar")
+            .endEvent()
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+                .input("foo", "$")
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.INVALID_JSON_PATH_EXPRESSION);
+    }
+
+
+    @Test
+    public void shouldNotTransformForProhibitedTaskMapping()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+            .name("bar")
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+            .input("$.*", "$")
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION);
+    }
+
+    @Test
+    public void shouldNotTransformForOtherProhibitedTaskMapping()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+            .name("bar")
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+                .input("$.[foo,bar]", "$")
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
+            .isNotNull()
+            .extracting("code").contains(ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION);
+    }
+
+    @Test
+    public void shouldNotValidIfIOMappingIsInvalidAndProhibited()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+            .name("bar")
+            .endEvent()
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+                .input("foo", "$")
+                .output("$.*", "$")
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
+            .isNotNull()
+            .extracting("code")
+            .contains(ValidationCodes.INVALID_JSON_PATH_EXPRESSION,
+                      ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION);
+    }
+
+    @Test
+    public void shouldNotValidIfRootAndOtherMappingIsUsed()
+    {
+        // given
+        final BpmnModelInstance bpmnModelInstance = wrap(Bpmn.createExecutableProcess()
+            .startEvent()
+            .serviceTask("foo")
+            .name("bar")
+            .endEvent()
+            .done())
+            .taskDefinition("foo", "test", 4)
+            .ioMapping("foo")
+            .input("$.obj", "$.obj")
+            .input("$.foo", "$")
+            .done();
+
+        // when
+        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
+
+        // then
+        assertThat(validationResults.hasErrors()).isTrue();
+        assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
+            .isNotNull()
+            .extracting("code")
+            .contains(ValidationCodes.REDUDANT_MAPPING);
+    }
+
+    private ExtensionElements getActivityExtensionElements(BpmnModelInstance bpmnModelInstance, String name)
+    {
+        return ((BaseElement) bpmnModelInstance.getModelElementById(name)).getExtensionElements();
     }
 
     private ExtensionElements getExtensionElements(final BpmnModelInstance bpmnModelInstance, String activityId)

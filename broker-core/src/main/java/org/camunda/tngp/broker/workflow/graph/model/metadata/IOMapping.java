@@ -1,33 +1,33 @@
 package org.camunda.tngp.broker.workflow.graph.model.metadata;
 
-import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
-
 /**
- * Represents an input and output mapping for a flow element.
- * As input and output mapping json path queries are used.
+ * Represents an IO mapping structure. The IO mapping can consist
+ * of a list of different input and output mapping's for a flow element.
+ * Each input and output mapping has a source and target. The source and target
+ * are represented via a json path expression.
  */
 public class IOMapping
 {
-    private JsonPathQuery inputQuery;
-    private JsonPathQuery outputQuery;
+    private Mapping inputMappings[];
+    private Mapping outputMappings[];
 
-    public JsonPathQuery getInputQuery()
+    public Mapping[] getInputMappings()
     {
-        return inputQuery;
+        return this.inputMappings;
     }
 
-    public void setInputQuery(JsonPathQuery inputQuery)
+    public void setInputMappings(Mapping[] inputMappings)
     {
-        this.inputQuery = inputQuery;
+        this.inputMappings = inputMappings;
     }
 
-    public JsonPathQuery getOutputQuery()
+    public Mapping[] getOutputMappings()
     {
-        return outputQuery;
+        return this.outputMappings;
     }
 
-    public void setOutputQuery(JsonPathQuery outputQuery)
+    public void setOutputMappings(Mapping[] outputMappings)
     {
-        this.outputQuery = outputQuery;
+        this.outputMappings = outputMappings;
     }
 }
