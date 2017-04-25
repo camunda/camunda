@@ -21,15 +21,23 @@ public class ObjectMappingTest
 {
     public static final DirectBuffer BUF1 = new UnsafeBuffer(getBytes("foo"));
     public static final DirectBuffer BUF2 = new UnsafeBuffer(getBytes("bar"));
-    public static final MutableDirectBuffer MSGPACK_BUF;
+    public static final MutableDirectBuffer MSGPACK_BUF1;
+    public static final MutableDirectBuffer MSGPACK_BUF2;
 
     static
     {
-        MSGPACK_BUF = encodeMsgPack((w) ->
+        MSGPACK_BUF1 = encodeMsgPack((w) ->
         {
             w.writeMapHeader(1);
             w.writeString(BUF1);
             w.writeInteger(123123L);
+        });
+
+        MSGPACK_BUF2 = encodeMsgPack((w) ->
+        {
+            w.writeMapHeader(1);
+            w.writeString(BUF2);
+            w.writeInteger(24L);
         });
     }
 
@@ -46,7 +54,9 @@ public class ObjectMappingTest
         pojo.setInt(123);
         pojo.setString(BUF1);
         pojo.setBinary(BUF2);
-        pojo.setPacked(MSGPACK_BUF);
+        pojo.setPacked(MSGPACK_BUF1);
+
+        pojo.nestedObject().setLong(24L);
 
         final int writeLength = pojo.getLength();
 
@@ -56,7 +66,7 @@ public class ObjectMappingTest
 
         // then
         final Map<String, Object> msgPackMap = MsgPackUtil.asMap(resultBuffer, 0, resultBuffer.capacity());
-        assertThat(msgPackMap).hasSize(6);
+        assertThat(msgPackMap).hasSize(7);
         assertThat(msgPackMap).contains(
                 entry("enumProp", POJOEnum.BAR.toString()),
                 entry("longProp", 456456L),
@@ -68,6 +78,10 @@ public class ObjectMappingTest
         @SuppressWarnings("unchecked")
         final Map<String, Object> packedProp = (Map<String, Object>) msgPackMap.get("packedProp");
         assertThat(packedProp).containsExactly(entry("foo", 123123L));
+
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> objectProp = (Map<String, Object>) msgPackMap.get("objectProp");
+        assertThat(objectProp).containsExactly(entry("foo", 24L));
     }
 
     @Test
@@ -78,7 +92,7 @@ public class ObjectMappingTest
 
         final DirectBuffer buffer = encodeMsgPack((w) ->
         {
-            w.writeMapHeader(6);
+            w.writeMapHeader(7);
 
             w.writeString(utf8("enumProp"));
             w.writeString(utf8(POJOEnum.BAR.toString()));
@@ -90,13 +104,16 @@ public class ObjectMappingTest
             w.writeString(BUF2);
 
             w.writeString(utf8("packedProp"));
-            w.writeRaw(MSGPACK_BUF);
+            w.writeRaw(MSGPACK_BUF1);
 
             w.writeString(utf8("longProp"));
             w.writeInteger(88888L);
 
             w.writeString(utf8("intProp"));
             w.writeInteger(123L);
+
+            w.writeString(utf8("objectProp"));
+            w.writeRaw(MSGPACK_BUF1);
         });
 
         // when
@@ -106,9 +123,10 @@ public class ObjectMappingTest
         assertThat(pojo.getEnum()).isEqualByComparingTo(POJOEnum.BAR);
         assertThat(pojo.getLong()).isEqualTo(88888L);
         assertThat(pojo.getInt()).isEqualTo(123);
-        assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF);
+        assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF1);
         assertThatBuffer(pojo.getBinary()).hasBytes(BUF1);
         assertThatBuffer(pojo.getString()).hasBytes(BUF2);
+        assertThat(pojo.nestedObject().getLong()).isEqualTo(123123L);
     }
 
 
@@ -236,7 +254,7 @@ public class ObjectMappingTest
             w.writeString(BUF2);
 
             w.writeString(utf8("packedProp"));
-            w.writeRaw(MSGPACK_BUF);
+            w.writeRaw(MSGPACK_BUF1);
 
             w.writeString(utf8("longProp"));
             w.writeInteger(88888L);
@@ -290,7 +308,7 @@ public class ObjectMappingTest
 
         final DirectBuffer buf1 = encodeMsgPack((w) ->
         {
-            w.writeMapHeader(5);
+            w.writeMapHeader(7);
 
             w.writeString(utf8("enumProp"));
             w.writeString(utf8(POJOEnum.BAR.toString()));
@@ -302,19 +320,22 @@ public class ObjectMappingTest
             w.writeString(BUF2);
 
             w.writeString(utf8("packedProp"));
-            w.writeRaw(MSGPACK_BUF);
+            w.writeRaw(MSGPACK_BUF1);
 
             w.writeString(utf8("longProp"));
             w.writeInteger(88888L);
 
             w.writeString(utf8("intProp"));
             w.writeInteger(123);
+
+            w.writeString(utf8("objectProp"));
+            w.writeRaw(MSGPACK_BUF1);
         });
         pojo.wrap(buf1);
 
         final DirectBuffer buf2 = encodeMsgPack((w) ->
         {
-            w.writeMapHeader(5);
+            w.writeMapHeader(7);
 
             w.writeString(utf8("enumProp"));
             w.writeString(utf8(POJOEnum.FOO.toString()));
@@ -326,13 +347,16 @@ public class ObjectMappingTest
             w.writeString(BUF1);
 
             w.writeString(utf8("packedProp"));
-            w.writeRaw(MSGPACK_BUF);
+            w.writeRaw(MSGPACK_BUF2);
 
             w.writeString(utf8("longProp"));
             w.writeInteger(7777L);
 
             w.writeString(utf8("intProp"));
             w.writeInteger(456);
+
+            w.writeString(utf8("objectProp"));
+            w.writeRaw(MSGPACK_BUF2);
         });
 
         // when
@@ -343,8 +367,9 @@ public class ObjectMappingTest
         assertThat(pojo.getEnum()).isEqualByComparingTo(POJOEnum.FOO);
         assertThat(pojo.getLong()).isEqualTo(7777L);
         assertThat(pojo.getInt()).isEqualTo(456);
-        assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF);
+        assertThatBuffer(pojo.getPacked()).hasBytes(MSGPACK_BUF2);
         assertThatBuffer(pojo.getBinary()).hasBytes(BUF2);
         assertThatBuffer(pojo.getString()).hasBytes(BUF1);
+        assertThat(pojo.nestedObject().getLong()).isEqualTo(24L);
     }
 }

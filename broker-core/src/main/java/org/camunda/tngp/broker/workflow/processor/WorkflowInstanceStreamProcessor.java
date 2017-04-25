@@ -1,5 +1,12 @@
 package org.camunda.tngp.broker.workflow.processor;
 
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
+
+import java.nio.ByteOrder;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
@@ -17,7 +24,13 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
-import org.camunda.tngp.broker.workflow.graph.model.*;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
 import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
@@ -37,14 +50,8 @@ import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
 import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
 import org.camunda.tngp.msgpack.query.MsgPackTraverser;
+import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.clientapi.EventType;
-
-import java.nio.ByteOrder;
-
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -52,6 +59,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     public static final int SIZE_OF_PROCESS_ID = BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR;
     public static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
     private static final int WORKFLOW_CACHE_CAPACITY = 1024;
+
+    private static final MutableDirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     // processors ////////////////////////////////////
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
@@ -555,7 +564,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
         public void setTaskHeaders(ExecutableServiceTask serviceTask, TaskMetadata taskMetadata)
         {
-            final TaskHeaders taskHeaders = taskEvent.getHeaders()
+            final TaskHeaders taskHeaders = taskEvent.headers()
                 .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
                 .setWorkflowDefinitionVersion(workflowInstanceEvent.getVersion())
                 .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
@@ -571,8 +580,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .setKey(customHeader.getKey())
                     .setValue(customHeader.getValue());
             }
-
-            taskEvent.setHeaders(taskHeaders);
         }
 
         @Override
@@ -628,7 +635,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         public void processEvent()
         {
             isActivityCompleted = false;
-            taskHeaders = taskEvent.getHeaders();
+            taskHeaders = taskEvent.headers();
 
             if (taskHeaders.getWorkflowInstanceKey() > 0)
             {
@@ -685,7 +692,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         }
         else
         {
-            resultBuffer = TaskEvent.EMPTY_MAP;
+            resultBuffer = EMPTY_PAYLOAD;
         }
         return resultBuffer;
     }

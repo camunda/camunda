@@ -138,7 +138,8 @@ public class ObjectMappingDefaultValuesTest
                 123,
                 "defaultString",
                 packedMsgPackBuffer,
-                utf8("defaultBinary")
+                utf8("defaultBinary"),
+                new POJONested().setLong(12L)
                 );
 
         // when
@@ -151,6 +152,7 @@ public class ObjectMappingDefaultValuesTest
         assertThatBuffer(pojo.getString()).hasBytes(utf8("defaultString"));
         assertThatBuffer(pojo.getPacked()).hasBytes(packedMsgPackBuffer);
         assertThatBuffer(pojo.getBinary()).hasBytes(utf8("defaultBinary"));
+        assertThat(pojo.getNestedObject().getLong()).isEqualTo(12L);
     }
 
 }

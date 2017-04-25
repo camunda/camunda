@@ -6,6 +6,7 @@ import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
 import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
+import org.camunda.tngp.broker.util.msgpack.property.ObjectProperty;
 import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
@@ -18,6 +19,7 @@ public class AllTypesDefaultValuesPOJO extends UnpackedObject
     private final StringProperty stringProp;
     private final PackedProperty packedProp;
     private final BinaryProperty binaryProp;
+    private final ObjectProperty<POJONested> objectProp;
 
     public AllTypesDefaultValuesPOJO(
             POJOEnum enumDefault,
@@ -25,7 +27,8 @@ public class AllTypesDefaultValuesPOJO extends UnpackedObject
             int intDefault,
             String stringDefault,
             DirectBuffer packedDefault,
-            DirectBuffer binaryDefault)
+            DirectBuffer binaryDefault,
+            POJONested objectDefault)
     {
         enumProp = new EnumProperty<>("enumProp", POJOEnum.class, enumDefault);
         longProp = new LongProperty("longProp", longDefault);
@@ -33,13 +36,15 @@ public class AllTypesDefaultValuesPOJO extends UnpackedObject
         stringProp = new StringProperty("stringProp", stringDefault);
         packedProp = new PackedProperty("packedProp", packedDefault);
         binaryProp = new BinaryProperty("binaryProp", binaryDefault);
+        objectProp = new ObjectProperty<>("objectProp", objectDefault);
 
         this.declareProperty(enumProp)
             .declareProperty(longProp)
             .declareProperty(intProp)
             .declareProperty(stringProp)
             .declareProperty(packedProp)
-            .declareProperty(binaryProp);
+            .declareProperty(binaryProp)
+            .declareProperty(objectProp);
     }
 
     public POJOEnum getEnum()
@@ -70,6 +75,11 @@ public class AllTypesDefaultValuesPOJO extends UnpackedObject
     public DirectBuffer getBinary()
     {
         return binaryProp.getValue();
+    }
+
+    public POJONested getNestedObject()
+    {
+        return objectProp.getValue();
     }
 
 }

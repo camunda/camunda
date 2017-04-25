@@ -184,7 +184,7 @@ public class TaskSubscriptionTest
 
         final TaskEvent taskEvent = recordingTaskEventHandler.getTaskEvents(eventType(TaskEventType.COMPLETED)).get(0);
         assertThat(taskEvent.getPayload()).isEqualTo("{\"a\":3}");
-        assertThat(task.getHeaders()).hasSize(1).containsEntry("b", "2");
+        assertThat(task.getHeaders()).containsEntry("b", "2");
     }
 
     @Test

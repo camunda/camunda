@@ -57,7 +57,7 @@ public class TaskImpl implements Task
 
             if (taskHeaders.containsKey(TaskHeaders.CUSTOM))
             {
-                final Object customHeadersObject = taskEvent.getHeaders().get(TaskHeaders.CUSTOM);
+                final Object customHeadersObject = taskHeaders.get(TaskHeaders.CUSTOM);
                 try
                 {
                     @SuppressWarnings("unchecked")

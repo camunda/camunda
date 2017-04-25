@@ -5,6 +5,7 @@ import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
 import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
+import org.camunda.tngp.broker.util.msgpack.property.ObjectProperty;
 import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
@@ -17,6 +18,7 @@ public class POJO extends UnpackedObject
     private final StringProperty stringProp = new StringProperty("stringProp");
     private final PackedProperty packedProp = new PackedProperty("packedProp");
     private final BinaryProperty binaryProp = new BinaryProperty("binaryProp");
+    private final ObjectProperty<POJONested> objectProp = new ObjectProperty<>("objectProp", new POJONested());
 
     public POJO()
     {
@@ -25,7 +27,8 @@ public class POJO extends UnpackedObject
             .declareProperty(intProp)
             .declareProperty(stringProp)
             .declareProperty(packedProp)
-            .declareProperty(binaryProp);
+            .declareProperty(binaryProp)
+            .declareProperty(objectProp);
     }
 
     public void setEnum(POJOEnum val)
@@ -86,6 +89,11 @@ public class POJO extends UnpackedObject
     public DirectBuffer getBinary()
     {
         return binaryProp.getValue();
+    }
+
+    public POJONested nestedObject()
+    {
+        return objectProp.getValue();
     }
 
     public enum POJOEnum

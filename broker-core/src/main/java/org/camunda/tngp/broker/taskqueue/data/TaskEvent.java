@@ -1,21 +1,19 @@
 package org.camunda.tngp.broker.taskqueue.data;
 
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
 import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
-import org.camunda.tngp.broker.util.msgpack.property.PackedProperty;
+import org.camunda.tngp.broker.util.msgpack.property.ObjectProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.Protocol;
 
 public class TaskEvent extends UnpackedObject
 {
-    public static final MutableDirectBuffer EMPTY_MAP = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
     protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
     private final EnumProperty<TaskEventType> eventTypeProp = new EnumProperty<>("eventType", TaskEventType.class);
@@ -23,11 +21,8 @@ public class TaskEvent extends UnpackedObject
     private final IntegerProperty lockOwnerProp = new IntegerProperty("lockOwner", -1);
     private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
     private final StringProperty typeProp = new StringProperty("type");
-    private final PackedProperty headersProp = new PackedProperty("headers", EMPTY_MAP);
+    private final ObjectProperty<TaskHeaders> headersProp = new ObjectProperty<>("headers", new TaskHeaders());
     private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
-
-    private final TaskHeaders taskHeaders = new TaskHeaders();
-    private final UnsafeBuffer taskHeadersBuffer = new UnsafeBuffer(0, 0);
 
     public TaskEvent()
     {
@@ -117,22 +112,9 @@ public class TaskEvent extends UnpackedObject
         return this;
     }
 
-    public TaskHeaders getHeaders()
+    public TaskHeaders headers()
     {
-        taskHeaders.wrap(headersProp.getValue());
-        return taskHeaders;
-    }
-
-    public TaskEvent setHeaders(TaskHeaders taskHeaders)
-    {
-        // TODO #203 - replace by general unpack mechanism
-        final int length = taskHeaders.getLength();
-
-        taskHeadersBuffer.wrap(new byte[length]);
-        taskHeaders.write(taskHeadersBuffer, 0);
-
-        headersProp.setValue(taskHeadersBuffer, 0, length);
-        return this;
+        return headersProp.getValue();
     }
 
 }
