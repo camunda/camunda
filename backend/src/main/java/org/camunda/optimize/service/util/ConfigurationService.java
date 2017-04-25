@@ -56,7 +56,7 @@ public class ConfigurationService {
   private String processDefinitionXmlType;
   @Value("${camunda.optimize.es.users.type}")
   private String elasticSearchUsersType;
-  @Value("${camunda.optimize.es.importIndex.type}")
+  @Value("${camunda.optimize.es.import.index.type}")
   private String importIndexType;
 
   @Value("${camunda.optimize.engine.rest}")
