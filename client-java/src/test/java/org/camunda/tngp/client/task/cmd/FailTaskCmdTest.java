@@ -158,7 +158,7 @@ public class FailTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .longKey(2L)
+            .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
@@ -185,7 +185,7 @@ public class FailTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .longKey(2L)
+            .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when

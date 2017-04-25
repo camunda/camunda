@@ -42,9 +42,9 @@ public class SubscribedEvent implements BufferReader
         return bodyDecoder.position();
     }
 
-    public long longKey()
+    public long key()
     {
-        return bodyDecoder.longKey();
+        return bodyDecoder.key();
     }
 
     public long subscriberKey()

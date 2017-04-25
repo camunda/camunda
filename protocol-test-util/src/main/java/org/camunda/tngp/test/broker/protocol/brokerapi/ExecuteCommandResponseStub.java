@@ -85,7 +85,7 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
         bodyEncoder
             .wrap(buffer, offset)
             .topicId(topicId)
-            .longKey(key)
+            .key(key)
             .putEvent(event, 0, event.length);
 
     }

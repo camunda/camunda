@@ -126,7 +126,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
 
         final boolean success = channelWriter.channelId(channelId)
             .eventType(metadata.getEventType())
-            .longKey(event.getLongKey())
+            .key(event.getKey())
             .position(event.getPosition())
             .topicId(logStreamId)
             .subscriberKey(subscriberKey)

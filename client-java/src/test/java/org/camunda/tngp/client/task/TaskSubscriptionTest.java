@@ -83,7 +83,7 @@ public class TaskSubscriptionTest
         broker.onExecuteCommandRequest((r) ->
                 r.eventType() == EventType.TASK_EVENT && "COMPLETE".equals(r.getCommand().get("eventType")))
             .respondWith()
-            .longKey((r) -> r.longKey())
+            .key((r) -> r.key())
             .topicId((r) -> r.topicId())
             .event()
                 .allOf((r) -> r.getCommand())

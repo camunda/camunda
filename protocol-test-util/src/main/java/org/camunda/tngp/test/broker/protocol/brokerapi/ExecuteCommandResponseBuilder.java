@@ -41,12 +41,12 @@ public class ExecuteCommandResponseBuilder
         return this;
     }
 
-    public ExecuteCommandResponseBuilder longKey(long l)
+    public ExecuteCommandResponseBuilder key(long l)
     {
-        return longKey((r) -> l);
+        return key((r) -> l);
     }
 
-    public ExecuteCommandResponseBuilder longKey(Function<ExecuteCommandRequest, Long> keyFunction)
+    public ExecuteCommandResponseBuilder key(Function<ExecuteCommandRequest, Long> keyFunction)
     {
         stub.setKeyFunction(keyFunction);
         return this;

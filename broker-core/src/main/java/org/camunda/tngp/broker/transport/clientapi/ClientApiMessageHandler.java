@@ -155,7 +155,7 @@ public class ClientApiMessageHandler
         executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
         final long topicId = executeCommandRequestDecoder.topicId();
-        final long longKey = executeCommandRequestDecoder.longKey();
+        final long key = executeCommandRequestDecoder.key();
 
         final EventType eventType = executeCommandRequestDecoder.eventType();
         eventMetadata.eventType(eventType);
@@ -171,9 +171,9 @@ public class ClientApiMessageHandler
 
             logStreamWriter.wrap(logStream);
 
-            if (longKey != ExecuteCommandRequestDecoder.longKeyNullValue())
+            if (key != ExecuteCommandRequestDecoder.keyNullValue())
             {
-                logStreamWriter.key(longKey);
+                logStreamWriter.key(key);
             }
             else
             {

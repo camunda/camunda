@@ -99,7 +99,7 @@ public class TaskInstanceStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(TaskEventType.CREATED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter).longKey(2L);
+        verify(mockResponseWriter).key(2L);
         verify(mockResponseWriter).tryWriteResponse();
     }
 

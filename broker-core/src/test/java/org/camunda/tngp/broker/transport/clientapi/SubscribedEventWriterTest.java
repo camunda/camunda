@@ -41,7 +41,7 @@ public class SubscribedEventWriterTest
         eventWriter.channelId(123)
             .event(BUFFER, 1, BUFFER.capacity() - 1)
             .eventType(EventType.RAFT_EVENT)
-            .longKey(123L)
+            .key(123L)
             .position(546L)
             .topicId(876)
             .subscriberKey(4L)
@@ -57,7 +57,7 @@ public class SubscribedEventWriterTest
         bodyDecoder.wrap(buffer, 2 + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
         assertThat(bodyDecoder.eventType()).isEqualTo(EventType.RAFT_EVENT);
-        assertThat(bodyDecoder.longKey()).isEqualTo(123L);
+        assertThat(bodyDecoder.key()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
         assertThat(bodyDecoder.topicId()).isEqualTo(876);
         assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);

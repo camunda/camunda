@@ -102,7 +102,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
@@ -128,7 +128,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
@@ -154,7 +154,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
@@ -182,7 +182,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
@@ -208,7 +208,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
@@ -260,7 +260,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -291,7 +291,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -322,7 +322,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -352,7 +352,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -384,7 +384,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -414,7 +414,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)
@@ -444,7 +444,7 @@ public class WorkflowTaskIOMappingTest
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(taskEvents("CREATE"));
 
-        assertThat(event.longKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+        assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
         assertThat(event.event())
             .containsEntry(PROP_TASK_TYPE, "external")
             .containsEntry(PROP_TASK_RETRIES, 5)
@@ -457,7 +457,7 @@ public class WorkflowTaskIOMappingTest
         final SubscribedEvent activityActivatedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_ACTIVATED"));
         final SubscribedEvent activityCompletedEvent = testClient.receiveSingleEvent(workflowInstanceEvents("ACTIVITY_COMPLETED"));
 
-        assertThat(activityCompletedEvent.longKey()).isEqualTo(activityActivatedEvent.longKey());
+        assertThat(activityCompletedEvent.key()).isEqualTo(activityActivatedEvent.key());
         assertThat(activityCompletedEvent.event())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .containsEntry(PROP_WORKFLOW_VERSION, 1)

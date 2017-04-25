@@ -90,7 +90,7 @@ public class DeploymentStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getEventType()).isEqualTo(WorkflowDeploymentEventType.DEPLOYMENT_CREATED);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter).longKey(1L);
+        verify(mockResponseWriter).key(1L);
         verify(mockResponseWriter).tryWriteResponse();
     }
 
@@ -177,7 +177,7 @@ public class DeploymentStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getErrorMessage().capacity()).isGreaterThan(0);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter).longKey(1L);
+        verify(mockResponseWriter).key(1L);
         verify(mockResponseWriter).tryWriteResponse();
     }
 
@@ -197,7 +197,7 @@ public class DeploymentStreamProcessorTest
         assertThat(mockController.getLastWrittenEventValue().getErrorMessage().capacity()).isGreaterThan(0);
         assertThat(mockController.getLastWrittenEventMetadata().getProtocolVersion()).isEqualTo(Constants.PROTOCOL_VERSION);
 
-        verify(mockResponseWriter).longKey(1L);
+        verify(mockResponseWriter).key(1L);
         verify(mockResponseWriter).tryWriteResponse();
     }
 

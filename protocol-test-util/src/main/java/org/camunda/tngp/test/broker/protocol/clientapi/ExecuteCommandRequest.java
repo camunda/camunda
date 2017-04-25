@@ -17,7 +17,7 @@ public class ExecuteCommandRequest implements BufferWriter
     protected final MsgPackHelper msgPackHelper;
 
     protected int topicId = ExecuteCommandRequestEncoder.topicIdNullValue();
-    protected long longKey = ExecuteCommandRequestEncoder.longKeyNullValue();
+    protected long key = ExecuteCommandRequestEncoder.keyNullValue();
     protected EventType eventType = EventType.NULL_VAL;
     protected byte[] encodedCmd;
 
@@ -38,7 +38,7 @@ public class ExecuteCommandRequest implements BufferWriter
 
     public ExecuteCommandRequest key(long key)
     {
-        this.longKey = key;
+        this.key = key;
         return this;
     }
 
@@ -94,7 +94,7 @@ public class ExecuteCommandRequest implements BufferWriter
 
         requestEncoder.wrap(buffer, offset + messageHeaderEncoder.encodedLength())
             .topicId(topicId)
-            .longKey(longKey)
+            .key(key)
             .eventType(eventType)
             .putCommand(encodedCmd, 0, encodedCmd.length);
     }

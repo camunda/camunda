@@ -100,7 +100,7 @@ public class CompleteTaskCmdTest
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
         assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
-        assertThat(requestDecoder.longKey()).isEqualTo(2L);
+        assertThat(requestDecoder.key()).isEqualTo(2L);
 
         final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
@@ -160,7 +160,7 @@ public class CompleteTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .longKey(2L)
+            .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
@@ -187,7 +187,7 @@ public class CompleteTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .longKey(2L)
+            .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when

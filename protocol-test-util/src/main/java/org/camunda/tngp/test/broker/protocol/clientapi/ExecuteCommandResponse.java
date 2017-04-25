@@ -36,7 +36,7 @@ public class ExecuteCommandResponse implements BufferReader
 
     public long key()
     {
-        return responseDecoder.longKey();
+        return responseDecoder.key();
     }
 
     public long topicId()

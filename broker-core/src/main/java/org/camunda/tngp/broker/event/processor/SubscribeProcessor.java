@@ -120,7 +120,7 @@ public class SubscribeProcessor implements EventProcessor
 
             final CompletableFuture<TopicSubscriptionPushProcessor> processorFuture = manager.openPushProcessorAsync(
                     metadata.getReqChannelId(),
-                    event.getLongKey(),
+                    event.getKey(),
                     resumePosition,
                     subscriptionName,
                     subscriberEvent.getPrefetchCapacity());
@@ -218,7 +218,7 @@ public class SubscribeProcessor implements EventProcessor
             return writer
                 .metadataWriter(metadata)
                 .valueWriter(subscriberEvent)
-                .key(event.getLongKey())
+                .key(event.getKey())
                 .tryWrite();
         }
     }

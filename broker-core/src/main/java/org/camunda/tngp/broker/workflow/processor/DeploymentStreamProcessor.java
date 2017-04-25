@@ -97,7 +97,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
         sourceEventMetadata.reset();
         deploymentEvent.reset();
 
-        eventKey = event.getLongKey();
+        eventKey = event.getKey();
 
         event.readMetadata(sourceEventMetadata);
         event.readValue(deploymentEvent);
@@ -201,7 +201,7 @@ public class DeploymentStreamProcessor implements StreamProcessor
             return responseWriter
                     .brokerEventMetadata(sourceEventMetadata)
                     .topicId(streamId)
-                    .longKey(eventKey)
+                    .key(eventKey)
                     .eventWriter(deploymentEvent)
                     .tryWriteResponse();
         }

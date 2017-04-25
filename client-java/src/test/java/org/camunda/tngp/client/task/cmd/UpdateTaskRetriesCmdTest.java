@@ -130,7 +130,7 @@ public class UpdateTaskRetriesCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .longKey(2L)
+            .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when
@@ -157,7 +157,7 @@ public class UpdateTaskRetriesCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
-            .longKey(2L)
+            .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
         // when

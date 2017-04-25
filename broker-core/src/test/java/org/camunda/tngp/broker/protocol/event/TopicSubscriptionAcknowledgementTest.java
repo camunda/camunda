@@ -148,7 +148,7 @@ public class TopicSubscriptionAcknowledgementTest
                 .findFirst();
 
         assertThat(firstEvent).isPresent();
-        assertThat(firstEvent.get().longKey()).isEqualTo(taskKey);
+        assertThat(firstEvent.get().key()).isEqualTo(taskKey);
     }
 
     @Test

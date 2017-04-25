@@ -268,7 +268,7 @@ public class MockStreamProcessorController<T extends UnpackedObject> extends Ext
 
         final LoggedEvent mockLoggedEvent = mock(LoggedEvent.class);
 
-        when(mockLoggedEvent.getLongKey()).thenReturn(key);
+        when(mockLoggedEvent.getKey()).thenReturn(key);
         when(mockLoggedEvent.getPosition()).thenReturn(position);
         position++;
 

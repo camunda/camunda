@@ -189,7 +189,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         workflowInstanceEvent.reset();
         taskEvent.reset();
 
-        eventKey = event.getLongKey();
+        eventKey = event.getKey();
         eventPosition = event.getPosition();
         event.readMetadata(sourceEventMetadata);
 
@@ -392,7 +392,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             return responseWriter
                     .brokerEventMetadata(sourceEventMetadata)
                     .topicId(streamId)
-                    .longKey(eventKey)
+                    .key(eventKey)
                     .eventWriter(workflowInstanceEvent)
                     .tryWriteResponse();
         }

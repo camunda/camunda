@@ -290,7 +290,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             metadata.protocolVersion(Constants.PROTOCOL_VERSION);
 
             return writer
-                .key(currentEvent.getLongKey())
+                .key(currentEvent.getKey())
                 .metadataWriter(metadata)
                 .valueWriter(subscriptionEvent)
                 .tryWrite();
@@ -311,7 +311,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 return responseWriter
                         .brokerEventMetadata(metadata)
                         .eventWriter(subscriptionEvent)
-                        .longKey(currentEvent.getLongKey())
+                        .key(currentEvent.getKey())
                         .topicId(streamId)
                         .tryWriteResponse();
             }
@@ -342,7 +342,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
             final boolean responseWritten = responseWriter.brokerEventMetadata(metadata)
                     .eventWriter(subscriberEvent)
-                    .longKey(currentEvent.getLongKey())
+                    .key(currentEvent.getKey())
                     .topicId(streamId)
                     .tryWriteResponse();
 
@@ -371,7 +371,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
                 .reqRequestId(-1);
 
             return writer
-                    .key(currentEvent.getLongKey())
+                    .key(currentEvent.getKey())
                     .metadataWriter(metadata)
                     .valueWriter(subscriptionEvent)
                     .tryWrite();

@@ -16,7 +16,7 @@ public class CommandResponseWriter implements BufferWriter
     protected final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
 
     protected int topicId;
-    protected long longKey;
+    protected long key;
 
     protected BufferWriter eventWriter;
     protected BrokerEventMetadata metadata;
@@ -33,9 +33,9 @@ public class CommandResponseWriter implements BufferWriter
         return this;
     }
 
-    public CommandResponseWriter longKey(long key)
+    public CommandResponseWriter key(long key)
     {
-        this.longKey = key;
+        this.key = key;
         return this;
     }
 
@@ -87,7 +87,7 @@ public class CommandResponseWriter implements BufferWriter
         responseEncoder
             .wrap(buffer, offset)
             .topicId(topicId)
-            .longKey(longKey);
+            .key(key);
 
         offset += ExecuteCommandResponseEncoder.BLOCK_LENGTH;
 
@@ -110,7 +110,7 @@ public class CommandResponseWriter implements BufferWriter
     protected void reset()
     {
         topicId = ExecuteCommandResponseEncoder.topicIdNullValue();
-        longKey = ExecuteCommandResponseEncoder.longKeyNullValue();
+        key = ExecuteCommandResponseEncoder.keyNullValue();
         eventWriter = null;
         metadata = null;
     }

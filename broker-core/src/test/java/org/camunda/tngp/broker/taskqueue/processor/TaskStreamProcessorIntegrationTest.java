@@ -194,7 +194,7 @@ public class TaskStreamProcessorIntegrationTest
             .hasBytes(PAYLOAD);
 
         verify(mockResponseWriter).topicId(LOG_ID);
-        verify(mockResponseWriter).longKey(2L);
+        verify(mockResponseWriter).key(2L);
         verify(mockResponseWriter).tryWriteResponse();
     }
 

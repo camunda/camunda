@@ -101,12 +101,12 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         long key = getKey();
         if (key < 0)
         {
-            key = ExecuteCommandRequestEncoder.longKeyNullValue();
+            key = ExecuteCommandRequestEncoder.keyNullValue();
         }
 
         commandRequestEncoder
             .topicId(topicId)
-            .longKey(key)
+            .key(key)
             .eventType(commandEventType)
             .putCommand(serializedCommand, 0, serializedCommand.length);
 
@@ -158,7 +158,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     {
         responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
-        final long key = responseDecoder.longKey();
+        final long key = responseDecoder.key();
 
         final byte[] eventBuffer = readBytes(responseDecoder::getEvent, responseDecoder::eventLength);
 

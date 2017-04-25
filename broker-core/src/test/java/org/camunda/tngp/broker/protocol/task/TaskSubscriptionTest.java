@@ -59,7 +59,7 @@ public class TaskSubscriptionTest
 
         final Optional<SubscribedEvent> taskEvent = apiRule.subscribedEvents()
             .filter((s) -> s.subscriptionType() == SubscriptionType.TASK_SUBSCRIPTION
-                && s.longKey() == taskKey)
+                && s.key() == taskKey)
             .findFirst();
 
         assertThat(taskEvent).isPresent();

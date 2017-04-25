@@ -27,9 +27,9 @@ public class ExecuteCommandRequest implements BufferReader
         this.msgPackHelper = msgPackHelper;
     }
 
-    public long longKey()
+    public long key()
     {
-        return bodyDecoder.longKey();
+        return bodyDecoder.key();
     }
 
     public int topicId()

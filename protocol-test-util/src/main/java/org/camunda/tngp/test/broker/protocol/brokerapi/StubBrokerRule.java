@@ -97,16 +97,17 @@ public class StubBrokerRule extends ExternalResource
         return onWorkflowRequestRespondWith(0, 123);
     }
 
-    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(int topicId, long longkey)
+    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(int topicId, long key)
     {
         final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_EVENT &&
             "CREATE_WORKFLOW_INSTANCE".equals(ecr.getCommand().get("eventType")))
             .respondWith()
             .topicId(topicId)
-            .longKey(longkey).event().allOf((r) -> r.getCommand());
+            .key(key)
+            .event()
+            .allOf((r) -> r.getCommand());
+
         return eventType;
-//            .event(workflowInstanceEvent)
-//            .register();
     }
 
     public ExecuteCommandResponseBuilder onExecuteCommandRequest()
@@ -160,7 +161,7 @@ public class StubBrokerRule extends ExternalResource
         onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIBER_EVENT
                 && "SUBSCRIBE".equals(r.getCommand().get("eventType")))
             .respondWith()
-            .longKey((r) -> subscriberKeyProvider.getAndIncrement())
+            .key((r) -> subscriberKeyProvider.getAndIncrement())
             .topicId((r) -> r.topicId())
             .event()
                 .allOf((r) -> r.getCommand())
@@ -178,7 +179,7 @@ public class StubBrokerRule extends ExternalResource
         onExecuteCommandRequest((r) -> r.eventType() == EventType.SUBSCRIPTION_EVENT
                 && "ACKNOWLEDGE".equals(r.getCommand().get("eventType")))
             .respondWith()
-            .longKey((r) -> subscriptionKeyProvider.getAndIncrement())
+            .key((r) -> subscriptionKeyProvider.getAndIncrement())
             .topicId((r) -> r.topicId())
             .event()
                 .allOf((r) -> r.getCommand())
@@ -218,7 +219,7 @@ public class StubBrokerRule extends ExternalResource
     {
         newSubscribedEvent()
             .topicId(0)
-            .longKey(key)
+            .key(key)
             .position(position)
             .eventType(EventType.RAFT_EVENT)
             .subscriberKey(subscriberKey)
@@ -232,7 +233,7 @@ public class StubBrokerRule extends ExternalResource
     {
         newSubscribedEvent()
             .topicId(0)
-            .longKey(key)
+            .key(key)
             .position(position)
             .eventType(EventType.TASK_EVENT)
             .subscriberKey(subscriberKey)

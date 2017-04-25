@@ -95,7 +95,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     public EventProcessor onEvent(LoggedEvent event)
     {
         eventPosition = event.getPosition();
-        eventKey = event.getLongKey();
+        eventKey = event.getKey();
         sourceEventPosition = event.getSourceEventPosition();
 
         event.readMetadata(sourceEventMetadata);
@@ -144,7 +144,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
         return responseWriter
             .brokerEventMetadata(sourceEventMetadata)
             .topicId(streamId)
-            .longKey(eventKey)
+            .key(eventKey)
             .eventWriter(taskEvent)
             .tryWriteResponse();
     }
@@ -236,7 +236,7 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
                 success = subscribedEventWriter
                         .channelId(sourceEventMetadata.getReqChannelId())
                         .topicId(streamId)
-                        .longKey(eventKey)
+                        .key(eventKey)
                         .subscriberKey(sourceEventMetadata.getSubscriberKey())
                         .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)
                         .eventType(TASK_EVENT)

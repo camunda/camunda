@@ -38,7 +38,7 @@ public class CreateTaskTest
                 "CREATE".equals(ecr.getCommand().get("eventType")))
             .respondWith()
             .topicId(0)
-            .longKey(123)
+            .key(123)
             .event()
               .allOf((r) -> r.getCommand())
               .put("eventType", "CREATED")

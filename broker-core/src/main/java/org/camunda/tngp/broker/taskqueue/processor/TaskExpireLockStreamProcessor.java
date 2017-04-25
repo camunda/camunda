@@ -87,7 +87,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
-        eventKey = event.getLongKey();
+        eventKey = event.getKey();
         eventPosition = event.getPosition();
 
         taskEvent.reset();

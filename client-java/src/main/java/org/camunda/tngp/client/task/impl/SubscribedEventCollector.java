@@ -78,7 +78,7 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
 
             if (eventHandler != null)
             {
-                final long key = subscribedEventDecoder.longKey();
+                final long key = subscribedEventDecoder.key();
                 final long subscriberKey = subscribedEventDecoder.subscriberKey();
                 final long position = subscribedEventDecoder.position();
                 final int topicId = subscribedEventDecoder.topicId();

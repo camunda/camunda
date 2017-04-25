@@ -72,7 +72,7 @@ public class CommandResponseWriterTest
 
         responseWriter
             .topicId(TOPIC_ID)
-            .longKey(KEY)
+            .key(KEY)
             .brokerEventMetadata(metadata)
             .eventWriter(eventWriter)
             .tryWriteResponse();
@@ -101,7 +101,7 @@ public class CommandResponseWriterTest
 
         responseDecoder.wrap(sendBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
         assertThat(responseDecoder.topicId()).isEqualTo(1);
-        assertThat(responseDecoder.longKey()).isEqualTo(2L);
+        assertThat(responseDecoder.key()).isEqualTo(2L);
 
         assertThat(responseDecoder.eventLength()).isEqualTo(EVENT.length);
 
@@ -126,7 +126,7 @@ public class CommandResponseWriterTest
 
         final boolean isSent = responseWriter
             .topicId(TOPIC_ID)
-            .longKey(KEY)
+            .key(KEY)
             .brokerEventMetadata(metadata)
             .eventWriter(eventWriter)
             .tryWriteResponse();
@@ -152,7 +152,7 @@ public class CommandResponseWriterTest
 
         final boolean isSent = responseWriter
             .topicId(TOPIC_ID)
-            .longKey(KEY)
+            .key(KEY)
             .brokerEventMetadata(metadata)
             .eventWriter(eventWriter)
             .tryWriteResponse();

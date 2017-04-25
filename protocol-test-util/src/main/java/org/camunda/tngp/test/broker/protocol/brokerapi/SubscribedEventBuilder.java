@@ -28,7 +28,7 @@ public class SubscribedEventBuilder implements BufferWriter
 
     protected int topicId;
     protected long position;
-    protected long longKey;
+    protected long key;
     protected long subscriberKey;
     protected SubscriptionType subscriptionType;
     protected EventType eventType;
@@ -52,9 +52,9 @@ public class SubscribedEventBuilder implements BufferWriter
         return this;
     }
 
-    public SubscribedEventBuilder longKey(long longKey)
+    public SubscribedEventBuilder key(long key)
     {
-        this.longKey = longKey;
+        this.key = key;
         return this;
     }
 
@@ -139,7 +139,7 @@ public class SubscribedEventBuilder implements BufferWriter
 
         bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength())
             .eventType(eventType)
-            .longKey(longKey)
+            .key(key)
             .position(position)
             .putEvent(event, 0, event.length)
             .subscriberKey(subscriberKey)

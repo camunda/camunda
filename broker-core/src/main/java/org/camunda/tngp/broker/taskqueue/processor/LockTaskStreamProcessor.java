@@ -251,7 +251,7 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     @Override
     public EventProcessor onEvent(LoggedEvent event)
     {
-        eventKey = event.getLongKey();
+        eventKey = event.getKey();
 
         taskEvent.reset();
         event.readValue(taskEvent);

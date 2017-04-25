@@ -134,7 +134,7 @@ public class TestTopicClient
 
         final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
             .topicId(topicId)
-            .key(taskEvent.longKey())
+            .key(taskEvent.key())
             .eventTypeTask()
             .command()
             .put(PROP_EVENT, "COMPLETE")
