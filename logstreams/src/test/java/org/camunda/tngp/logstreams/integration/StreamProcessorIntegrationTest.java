@@ -150,7 +150,7 @@ public class StreamProcessorIntegrationTest
                     @Override
                     public long writeEvent(LogStreamWriter writer)
                     {
-                        final long nextKey = event.getLongKey() + 1;
+                        final long nextKey = event.getKey() + 1;
                         if (nextKey < WORK_COUNT)
                         {
                             return writer.key(nextKey).value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength()).tryWrite();
@@ -519,7 +519,7 @@ public class StreamProcessorIntegrationTest
                 public long writeEvent(LogStreamWriter writer)
                 {
                     return writer
-                            .key(event.getLongKey())
+                            .key(event.getKey())
                             .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
                             .tryWrite();
                 }
@@ -573,7 +573,7 @@ public class StreamProcessorIntegrationTest
                         try
                         {
                             return writer
-                                .key(event.getLongKey())
+                                .key(event.getKey())
                                 .value(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
                                 .tryWrite();
                         }

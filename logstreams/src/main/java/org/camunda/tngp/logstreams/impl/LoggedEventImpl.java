@@ -79,7 +79,7 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
     }
 
     @Override
-    public long getLongKey()
+    public long getKey()
     {
         final int entryHeaderOffset = messageOffset(fragmentOffset);
 
@@ -178,8 +178,8 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent
         builder.append(getStreamId());
         builder.append(", position=");
         builder.append(getPosition());
-        builder.append(", longKey=");
-        builder.append(getLongKey());
+        builder.append(", key=");
+        builder.append(getKey());
         builder.append(", sourceEventLogStreamId=");
         builder.append(getSourceEventLogStreamId());
         builder.append(", sourceEventPosition=");

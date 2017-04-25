@@ -33,7 +33,7 @@ public interface LoggedEvent
     /**
      * @return the key of the event
      */
-    long getLongKey();
+    long getKey();
 
     /**
      * @return a buffer containing the event's metadata at offset

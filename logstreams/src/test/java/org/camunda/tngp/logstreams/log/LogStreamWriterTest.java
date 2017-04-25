@@ -167,7 +167,7 @@ public class LogStreamWriterTest
     }
 
     @Test
-    public void shouldWriteEventWithLongKey()
+    public void shouldWriteEventWithKey()
     {
         when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt())).thenAnswer(claimFragment(0));
 

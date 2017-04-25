@@ -88,7 +88,7 @@ public class BufferedLogStreamReaderTest
 
         assertThat(event).isNotNull();
         assertThat(event.getPosition()).isEqualTo(1L);
-        assertThat(event.getLongKey()).isEqualTo(2L);
+        assertThat(event.getKey()).isEqualTo(2L);
 
         assertThat(event.getSourceEventLogStreamId()).isEqualTo(3);
         assertThat(event.getSourceEventPosition()).isEqualTo(4L);

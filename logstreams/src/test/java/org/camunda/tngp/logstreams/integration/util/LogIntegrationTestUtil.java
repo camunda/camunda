@@ -61,7 +61,7 @@ public class LogIntegrationTestUtil
             if (logReader.hasNext())
             {
                 final LoggedEvent nextEntry = logReader.next();
-                entryKey = nextEntry.getLongKey();
+                entryKey = nextEntry.getKey();
             }
         }
     }
@@ -94,14 +94,14 @@ public class LogIntegrationTestUtil
             {
                 final LoggedEvent entry = logReader.next();
                 final long currentPosition = entry.getPosition();
-                final long currentKey = entry.getLongKey();
+                final long currentKey = entry.getKey();
 
                 assertThat(currentPosition > lastPosition);
                 assertThat(currentKey).isGreaterThan(lastKey);
 
                 final DirectBuffer valueBuffer = entry.getValueBuffer();
                 final long value = valueBuffer.getInt(entry.getValueOffset());
-                assertThat(value).isEqualTo(entry.getLongKey());
+                assertThat(value).isEqualTo(entry.getKey());
                 assertThat(entry.getValueLength()).isEqualTo(messageSize);
 
                 lastPosition = currentPosition;
