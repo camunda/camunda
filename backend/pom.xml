@@ -399,6 +399,7 @@
             <configuration>
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>
+              <timeout>60</timeout>
               <httpPort>9200</httpPort>
               <pathScripts>${project.basedir}/src/main/scripts</pathScripts>
               <skip>${skipTests}</skip>

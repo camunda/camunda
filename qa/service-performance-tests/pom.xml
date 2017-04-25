@@ -144,11 +144,12 @@
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
             <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>5.0</version>
+            <version>5.3</version>
             <configuration>
               <clusterName>elasticsearch</clusterName>
-              <tcpPort>9300</tcpPort>
+              <transportPort>9300</transportPort>
               <httpPort>9200</httpPort>
+              <timeout>60</timeout>
               <pathScripts>${project.basedir}/../../backend/src/main/scripts</pathScripts>
             </configuration>
             <executions>
