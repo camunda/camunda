@@ -12,7 +12,7 @@ public interface LogStreamWriter
 
     LogStreamWriter key(long key);
 
-    LogStreamWriter sourceEvent(int logStreamId, long position);
+    LogStreamWriter sourceEvent(DirectBuffer logStreamTopicName, int logStreamPartitionId, long position);
 
     LogStreamWriter producerId(int producerId);
 

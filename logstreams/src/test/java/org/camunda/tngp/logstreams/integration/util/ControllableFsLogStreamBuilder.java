@@ -12,6 +12,7 @@
  */
 package org.camunda.tngp.logstreams.integration.util;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorageConfiguration;
@@ -21,9 +22,9 @@ import java.io.File;
 public class ControllableFsLogStreamBuilder extends FsLogStreamBuilder
 {
 
-    public ControllableFsLogStreamBuilder(String name, int id)
+    public ControllableFsLogStreamBuilder(final DirectBuffer topicName, final int partitionId)
     {
-        super(name, id);
+        super(topicName, partitionId);
     }
 
     @Override

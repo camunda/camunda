@@ -148,7 +148,7 @@ public class StreamProcessorBuilder
 
         if (snapshotPositionProvider == null)
         {
-            if (sourceStream.getId() == targetStream.getId())
+            if (sourceStream.getPartitionId() == targetStream.getPartitionId())
             {
                 snapshotPositionProvider = new LastProcessedEventPositionProvider();
             }

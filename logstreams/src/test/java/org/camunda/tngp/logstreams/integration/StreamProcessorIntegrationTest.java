@@ -17,6 +17,7 @@ import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUti
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 import java.io.FileNotFoundException;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
-import org.camunda.tngp.logstreams.impl.LogStreamImpl;
 import org.camunda.tngp.logstreams.integration.util.ControllableFsLogStorage;
 import org.camunda.tngp.logstreams.integration.util.ControllableFsLogStreamBuilder;
 import org.camunda.tngp.logstreams.integration.util.Counter;
@@ -79,7 +79,7 @@ public class StreamProcessorIntegrationTest
 
         snapshotStorage = LogStreams.createFsSnapshotStore(logPath).build();
 
-        sourceLogStream = LogStreams.createFsLogStream("source", 0)
+        sourceLogStream = LogStreams.createFsLogStream(wrapString("source"), 0)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
@@ -87,7 +87,7 @@ public class StreamProcessorIntegrationTest
                 .writeBufferAgentRunnerService(agentRunnerService)
                 .build();
 
-        targetLogStream = LogStreams.createFsLogStream("target", 1)
+        targetLogStream = LogStreams.createFsLogStream(wrapString("target"), 1)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
@@ -405,7 +405,7 @@ public class StreamProcessorIntegrationTest
     @Test
     public void shouldRecoverAfterLogStreamFailure() throws InterruptedException, ExecutionException
     {
-        final LogStream controllableTargetLogStream = new ControllableFsLogStreamBuilder("target-controllable", 3)
+        final LogStream controllableTargetLogStream = new ControllableFsLogStreamBuilder(wrapString("target-controllable"), 3)
                 .logRootPath(tempFolder.getRoot().getAbsolutePath())
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)
@@ -414,7 +414,7 @@ public class StreamProcessorIntegrationTest
                 .build();
 
         final ControllableFsLogStorage controllableTargetLogStorage = (ControllableFsLogStorage) controllableTargetLogStream.getLogStorage();
-        final LogStreamController targetLogStreamController = ((LogStreamImpl) controllableTargetLogStream).getLogStreamController();
+        final LogStreamController targetLogStreamController = controllableTargetLogStream.getLogStreamController();
 
         final AtomicBoolean isSnapshotPoint = new AtomicBoolean(false);
 

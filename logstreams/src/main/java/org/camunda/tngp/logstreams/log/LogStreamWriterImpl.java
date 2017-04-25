@@ -26,7 +26,8 @@ public class LogStreamWriterImpl implements LogStreamWriter
     protected long key;
 
     protected long sourceEventPosition = -1L;
-    protected int sourceEventLogStreamId = -1;
+    protected DirectBuffer sourceEventLogStreamTopicName;
+    protected int sourceEventLogStreamPartitionId = -1;
 
     protected int producerId = -1;
 
@@ -49,7 +50,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
     public void wrap(LogStream log)
     {
         this.logWriteBuffer = log.getWriteBuffer();
-        this.logId = log.getId();
+        this.logId = log.getPartitionId();
 
         reset();
     }
@@ -69,9 +70,10 @@ public class LogStreamWriterImpl implements LogStreamWriter
     }
 
     @Override
-    public LogStreamWriter sourceEvent(int logStreamId, long position)
+    public LogStreamWriter sourceEvent(final DirectBuffer logStreamTopicName, int logStreamPartitionId, long position)
     {
-        this.sourceEventLogStreamId = logStreamId;
+        this.sourceEventLogStreamTopicName = logStreamTopicName;
+        this.sourceEventLogStreamPartitionId = logStreamPartitionId;
         this.sourceEventPosition = position;
         return this;
     }
@@ -129,7 +131,8 @@ public class LogStreamWriterImpl implements LogStreamWriter
         key = -1L;
         metadataWriter = metadataWriterInstance;
         valueWriter = null;
-        sourceEventLogStreamId = -1;
+        sourceEventLogStreamTopicName = null;
+        sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
         producerId = -1;
 
@@ -171,7 +174,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
 
                 writeBuffer.putInt(producerIdOffset(bufferOffset), producerId);
 
-                writeBuffer.putInt(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamId);
+                writeBuffer.putInt(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamPartitionId);
                 writeBuffer.putLong(sourceEventPositionOffset(bufferOffset), sourceEventPosition);
 
                 writeBuffer.putShort(keyTypeOffset(bufferOffset), KEY_TYPE_UINT64);

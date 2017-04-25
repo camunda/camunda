@@ -1,5 +1,18 @@
 package org.camunda.tngp.logstreams.impl;
 
+import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
+
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.CountersManager;
@@ -18,14 +31,6 @@ import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
-
-import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
 
 /**
  * Represents the implementation of the LogStream interface.
@@ -39,11 +44,13 @@ public final class LogStreamImpl implements LogStream
 
     protected volatile int term = 0;
 
+    protected final DirectBuffer topicName;
+    protected final int partitionId;
     protected final String name;
+
     protected final LogStorage logStorage;
     protected final LogBlockIndex blockIndex;
     protected final AgentRunnerService agentRunnerService;
-    protected final int logId;
 
 
     protected final LogBlockIndexController logBlockIndexController;
@@ -53,9 +60,10 @@ public final class LogStreamImpl implements LogStream
     protected Dispatcher writeBuffer;
 
 
-    private LogStreamImpl(LogStreamBuilder logStreamBuilder)
+    private LogStreamImpl(final LogStreamBuilder logStreamBuilder)
     {
-        this.logId = logStreamBuilder.getLogId();
+        this.topicName = cloneBuffer(logStreamBuilder.getTopicName());
+        this.partitionId = logStreamBuilder.getPartitionId();
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();
         this.blockIndex = logStreamBuilder.getBlockIndex();
@@ -83,9 +91,15 @@ public final class LogStreamImpl implements LogStream
     }
 
     @Override
-    public int getId()
+    public DirectBuffer getTopicName()
     {
-        return logId;
+        return topicName;
+    }
+
+    @Override
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
     @Override
@@ -286,7 +300,7 @@ public final class LogStreamImpl implements LogStream
     public CompletableFuture<Void> openLogStreamController(AgentRunnerService writeBufferAgentRunnerService,
                                                            int maxAppendBlockSize)
     {
-        final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(name, logId)
+        final LogStreamBuilder logStreamBuilder = new LogStreamBuilder(topicName, partitionId)
             .logStorage(logStorage)
             .logBlockIndex(blockIndex)
             .agentRunnerService(agentRunnerService)
@@ -319,8 +333,9 @@ public final class LogStreamImpl implements LogStream
     {
         // MANDATORY /////
         // LogController Base
+        protected final DirectBuffer topicName;
+        protected final int partitionId;
         protected final String logName;
-        protected final int logId;
         protected AgentRunnerService agentRunnerService;
         protected LogStorage logStorage;
         protected LogBlockIndex logBlockIndex;
@@ -347,10 +362,11 @@ public final class LogStreamImpl implements LogStream
         protected AgentRunnerService writeBufferAgentRunnerService;
         protected Dispatcher writeBuffer;
 
-        public LogStreamBuilder(String logName, int logId)
+        public LogStreamBuilder(final DirectBuffer topicName, final int partitionId)
         {
-            this.logName = logName;
-            this.logId = logId;
+            this.topicName = topicName;
+            this.partitionId = partitionId;
+            this.logName = String.format("%s.%d", bufferAsString(topicName), partitionId);
         }
 
         @SuppressWarnings("unchecked")
@@ -481,14 +497,20 @@ public final class LogStreamImpl implements LogStream
 
         // getter /////////////////
 
+
+        public DirectBuffer getTopicName()
+        {
+            return topicName;
+        }
+
+        public int getPartitionId()
+        {
+            return partitionId;
+        }
+
         public String getLogName()
         {
             return logName;
-        }
-
-        public int getLogId()
-        {
-            return logId;
         }
 
         public AgentRunnerService getAgentRunnerService()
@@ -631,7 +653,8 @@ public final class LogStreamImpl implements LogStream
 
         public LogStream build()
         {
-            Objects.requireNonNull(getLogName(), "name");
+            Objects.requireNonNull(getTopicName(), "topicName");
+            ensureGreaterThanOrEqual("partitionId", partitionId, 0);
             Objects.requireNonNull(getLogStorage(), "logStorage");
             Objects.requireNonNull(getBlockIndex(), "blockIndex");
             Objects.requireNonNull(getAgentRunnerService(), "agentRunnerService");

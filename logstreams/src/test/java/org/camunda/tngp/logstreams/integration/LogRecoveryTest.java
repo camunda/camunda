@@ -1,5 +1,15 @@
 package org.camunda.tngp.logstreams.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
@@ -16,13 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
 
 public class LogRecoveryTest
 {
@@ -36,8 +39,8 @@ public class LogRecoveryTest
 
     private static final int WORK_COUNT_PER_BLOCK_IDX = (INDEX_BLOCK_SIZE / MSG_SIZE);
 
-    private static final String LOG_NAME = "foo";
-    private static final int LOG_ID = 0;
+    private static final DirectBuffer TOPIC_NAME = wrapString("foo");
+    private static final int PARTITION_ID = 0;
 
     @Rule
     public TemporaryFolder temFolder = new TemporaryFolder();
@@ -62,7 +65,7 @@ public class LogRecoveryTest
 
     private FsLogStreamBuilder getLogStreamBuilder()
     {
-        return LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+        return LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
             .logRootPath(logPath)
             .deleteOnClose(false)
             .logSegmentSize(LOG_SEGMENT_SIZE)
@@ -115,7 +118,7 @@ public class LogRecoveryTest
         assertThat(indexSize).isGreaterThan(calculatesIndexSize);
 
         // when new log stream is opened, without a commit position
-        final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+        final LogStream newLog = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
             .logRootPath(logPath)
             .deleteOnClose(true)
             .logSegmentSize(LOG_SEGMENT_SIZE)
@@ -197,7 +200,7 @@ public class LogRecoveryTest
         assertThat(endIndexSize).isGreaterThan(indexSize);
 
         // when new log stream is opened
-        final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+        final LogStream newLog = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
             .logRootPath(logPath)
             .deleteOnClose(true)
             .logSegmentSize(LOG_SEGMENT_SIZE)
@@ -235,7 +238,7 @@ public class LogRecoveryTest
         waitUntilWrittenKey(log, WORK_COUNT);
         log.close();
 
-        final LogStream newLog = LogStreams.createFsLogStream(LOG_NAME, LOG_ID)
+        final LogStream newLog = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
             .logRootPath(logPath)
             .deleteOnClose(true)
             .logSegmentSize(LOG_SEGMENT_SIZE)

@@ -12,6 +12,27 @@
  */
 package org.camunda.tngp.logstreams.log;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
@@ -21,7 +42,10 @@ import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
-import org.camunda.tngp.logstreams.spi.*;
+import org.camunda.tngp.logstreams.spi.LogStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotPolicy;
+import org.camunda.tngp.logstreams.spi.SnapshotStorage;
+import org.camunda.tngp.logstreams.spi.SnapshotWriter;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,22 +53,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
-
 public class LogStreamControllerTest
 {
-    private static final String LOG_NAME = "test";
+    public static final String TOPIC_NAME = "test-topic";
+    private static final DirectBuffer TOPIC_NAME_BUFFER = wrapString(TOPIC_NAME);
+    private static final int PARTITION_ID = 0;
+    private static final String LOG_NAME = String.format("%s.%d", TOPIC_NAME, PARTITION_ID);
 
     private static final long LOG_POSITION = 100L;
     private static final long LOG_ADDRESS = 456L;
@@ -89,7 +103,7 @@ public class LogStreamControllerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
 
         builder.agentRunnerService(mockAgentRunnerService)
             .writeBufferAgentRunnerService(mockConductorAgentRunnerService)

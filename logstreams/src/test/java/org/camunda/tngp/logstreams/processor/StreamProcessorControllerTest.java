@@ -13,6 +13,7 @@
 package org.camunda.tngp.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamFailureListener;
@@ -54,8 +56,10 @@ public class StreamProcessorControllerTest
     private static final String STREAM_PROCESSOR_NAME = "name";
     private static final int STREAM_PROCESSOR_ID = 1;
 
-    private static final int SOURCE_LOG_STREAM_ID = 1;
-    private static final int TARGET_LOG_STREAM_ID = 2;
+    private static final DirectBuffer SOURCE_LOG_STREAM_TOPIC_NAME = wrapString("source-topic");
+    private static final int SOURCE_LOG_STREAM_PARTITION_ID = 1;
+    private static final DirectBuffer TARGET_LOG_STREAM_TOPIC_NAME = wrapString("target-topic");
+    private static final int TARGET_LOG_STREAM_PARTITION_ID = 2;
 
     private StreamProcessorController controller;
 
@@ -144,11 +148,14 @@ public class StreamProcessorControllerTest
         when(mockStreamProcessor.getStateResource()).thenReturn(mockStateResource);
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
-        when(mockSourceLogStream.getId()).thenReturn(SOURCE_LOG_STREAM_ID);
-        when(mockTargetLogStream.getId()).thenReturn(TARGET_LOG_STREAM_ID);
+        when(mockSourceLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
+        when(mockSourceLogStream.getPartitionId()).thenReturn(SOURCE_LOG_STREAM_PARTITION_ID);
+
+        when(mockTargetLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
+        when(mockTargetLogStream.getPartitionId()).thenReturn(TARGET_LOG_STREAM_PARTITION_ID);
 
         when(mockLogStreamWriter.producerId(anyInt())).thenReturn(mockLogStreamWriter);
-        when(mockLogStreamWriter.sourceEvent(anyInt(), anyLong())).thenReturn(mockLogStreamWriter);
+        when(mockLogStreamWriter.sourceEvent(any(DirectBuffer.class), anyInt(), anyLong())).thenReturn(mockLogStreamWriter);
 
         controller = builder.build();
 
@@ -547,7 +554,8 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
 
-        when(mockSourceLogStream.getId()).thenReturn(3);
+        when(mockSourceLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
+        when(mockSourceLogStream.getPartitionId()).thenReturn(SOURCE_LOG_STREAM_PARTITION_ID);
         when(mockSourceEvent.getPosition()).thenReturn(4L);
 
         open();
@@ -557,7 +565,7 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        verify(mockLogStreamWriter).sourceEvent(3, 4L);
+        verify(mockLogStreamWriter).sourceEvent(SOURCE_LOG_STREAM_TOPIC_NAME, SOURCE_LOG_STREAM_PARTITION_ID, 4L);
     }
 
     @Test
@@ -873,7 +881,8 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldRecoverFromSnapshotIfSourceEqualsTargetStream() throws Exception
     {
-        when(mockTargetLogStream.getId()).thenReturn(SOURCE_LOG_STREAM_ID);
+        when(mockSourceLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
+        when(mockTargetLogStream.getPartitionId()).thenReturn(SOURCE_LOG_STREAM_PARTITION_ID);
 
         when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
         when(mockReadableSnapshot.getPosition()).thenReturn(5L);
@@ -973,7 +982,8 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldIgnoreEventsBeforeSnapshotOnRecoveryIfSourceEqualsTargetStream() throws Exception
     {
-        when(mockTargetLogStream.getId()).thenReturn(SOURCE_LOG_STREAM_ID);
+        when(mockSourceLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
+        when(mockTargetLogStream.getPartitionId()).thenReturn(SOURCE_LOG_STREAM_PARTITION_ID);
 
         when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
         when(mockReadableSnapshot.getPosition()).thenReturn(5L);

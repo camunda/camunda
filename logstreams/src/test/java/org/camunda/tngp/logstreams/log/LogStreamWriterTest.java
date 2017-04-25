@@ -27,12 +27,14 @@ import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLog
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.ClaimedFragment;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -48,7 +50,8 @@ import org.mockito.stubbing.Answer;
 
 public class LogStreamWriterTest
 {
-    private static final int LOG_ID = 1;
+    private static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
+    private static final int PARTITION_ID = 1;
     private static final byte[] EVENT_VALUE = getBytes("test");
     private static final byte[] EVENT_METADATA = getBytes("metadata");
 
@@ -79,7 +82,8 @@ public class LogStreamWriterTest
         MockitoAnnotations.initMocks(this);
 
         when(mockLog.getWriteBuffer()).thenReturn(mockWriteBuffer);
-        when(mockLog.getId()).thenReturn(LOG_ID);
+        when(mockLog.getTopicName()).thenReturn(TOPIC_NAME);
+        when(mockLog.getPartitionId()).thenReturn(PARTITION_ID);
 
         writer = new LogStreamWriterImpl(mockLog);
 
@@ -90,7 +94,7 @@ public class LogStreamWriterTest
     public void shouldWriteEvent()
     {
         final long dispatcherPosition = 24L;
-        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), eq(LOG_ID))).thenAnswer(claimFragment(dispatcherPosition));
+        when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), eq(PARTITION_ID))).thenAnswer(claimFragment(dispatcherPosition));
 
         final long position = writer
             .key(4L)
@@ -204,10 +208,10 @@ public class LogStreamWriterTest
         writer
             .positionAsKey()
             .value(new UnsafeBuffer(EVENT_VALUE))
-            .sourceEvent(2, 3L)
+            .sourceEvent(TOPIC_NAME, PARTITION_ID, 3L)
             .tryWrite();
 
-        assertThat(writeBuffer.getInt(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(2);
+        assertThat(writeBuffer.getInt(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(PARTITION_ID);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(3L);
     }
 

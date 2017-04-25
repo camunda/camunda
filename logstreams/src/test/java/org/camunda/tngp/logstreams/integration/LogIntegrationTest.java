@@ -2,9 +2,11 @@ package org.camunda.tngp.logstreams.integration;
 
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
 import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 import java.util.concurrent.ExecutionException;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.logstreams.LogStreams;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
@@ -20,6 +22,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class LogIntegrationTest
 {
+    private static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
     private static final int MSG_SIZE = 911;
 
     @Rule
@@ -44,7 +47,7 @@ public class LogIntegrationTest
     {
         final String logPath = tempFolder.getRoot().getAbsolutePath();
 
-        final LogStream logStream = LogStreams.createFsLogStream("foo", 0)
+        final LogStream logStream = LogStreams.createFsLogStream(TOPIC_NAME, 0)
                 .logRootPath(logPath)
                 .deleteOnClose(true)
                 .logSegmentSize(1024 * 1024 * 16)

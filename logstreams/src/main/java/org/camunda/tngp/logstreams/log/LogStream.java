@@ -1,13 +1,17 @@
 package org.camunda.tngp.logstreams.log;
 
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.logstreams.impl.LogBlockIndexController;
 import org.camunda.tngp.logstreams.impl.LogStreamController;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 import org.camunda.tngp.util.agent.AgentRunnerService;
+
 
 /**
  * Represents a stream of events from a log storage.
@@ -29,14 +33,23 @@ public interface LogStream extends AutoCloseable
     int DEFAULT_WRITE_BUFFER_SIZE = 1024 * 1024 * 16;
     int DEFAULT_MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 4;
 
-    // TODO(menski): getId -> getPartitionId; getLogName -> getTopicName
-    /**
-     * @return the log stream's logId
-     */
-    int getId();
+    String DEFAULT_TOPIC_NAME = "default-topic";
+    DirectBuffer DEFAULT_TOPIC_NAME_BUFFER = wrapString(DEFAULT_TOPIC_NAME);
+    int DEFAULT_PARTITION_ID = 0;
+    String DEFAULT_LOG_NAME = String.format("%s.%d", DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
     /**
-     * Returns the name of the log stream.
+     * @return the topic name of the log stream
+     */
+    DirectBuffer getTopicName();
+
+    /**
+     * @return the partition id of the log stream
+     */
+    int getPartitionId();
+
+    /**
+     * Returns the name of the log stream. Composed from topic name and partition id.
      *
      * @return the log stream name
      */

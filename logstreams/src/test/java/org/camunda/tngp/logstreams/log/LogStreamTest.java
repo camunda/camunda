@@ -2,6 +2,7 @@ package org.camunda.tngp.logstreams.log;
 
 import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
@@ -41,7 +43,9 @@ import org.mockito.MockitoAnnotations;
  */
 public class LogStreamTest
 {
-    private static final String LOG_NAME = "test";
+    private static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
+    private static final int PARTITION_ID = 0;
+
     private static final long LOG_ADDRESS = 456L;
     private static final int MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 6;
     private static final int INDEX_BLOCK_SIZE = 1024 * 1024 * 2;
@@ -85,7 +89,7 @@ public class LogStreamTest
 
         this.mockLogStorage = new MockLogStorage();
 
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME, PARTITION_ID);
 
         builder.agentRunnerService(mockAgentRunnerService)
             .writeBufferAgentRunnerService(mockConductorAgentRunnerService)
@@ -132,7 +136,7 @@ public class LogStreamTest
     public void shouldInitWithoutLogStreamController()
     {
         // when log stream is created with builder and without flag is set
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME, PARTITION_ID);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
@@ -189,7 +193,7 @@ public class LogStreamTest
     {
         // given log stream with without flag
         when(logStream.getLogStorage().isOpen()).thenReturn(true);
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME, PARTITION_ID);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
@@ -371,7 +375,7 @@ public class LogStreamTest
             .value(getBytes("event")));
 
         // given log stream with without flag
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME, PARTITION_ID);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
@@ -434,7 +438,7 @@ public class LogStreamTest
     public void shouldCloseLogBlockIndexController()
     {
         // given open log stream without log stream controller
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME, PARTITION_ID);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())
@@ -495,7 +499,7 @@ public class LogStreamTest
     public void shouldOpenClosedLogBlockIndexController()
     {
         // given open->close log stream without log stream controller
-        final FsLogStreamBuilder builder = new FsLogStreamBuilder(LOG_NAME, 0);
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(TOPIC_NAME, PARTITION_ID);
         final LogStream stream = builder.agentRunnerService(mockAgentRunnerService)
             .logStreamControllerDisabled(true)
             .logStorage(mockLogStorage.getMock())

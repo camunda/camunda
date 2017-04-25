@@ -215,7 +215,7 @@ public class StreamProcessorController implements Agent
 
     protected boolean isSourceStreamWriter()
     {
-        return streamProcessorContext.getTargetStream().getId() == streamProcessorContext.getSourceStream().getId();
+        return streamProcessorContext.getTargetStream().getPartitionId() == streamProcessorContext.getSourceStream().getPartitionId();
     }
 
     public EventFilter getEventFilter()
@@ -329,9 +329,10 @@ public class StreamProcessorController implements Agent
 
         private Step<Context> writeEventStep = context ->
         {
+            final LogStream sourceStream = streamProcessorContext.getSourceStream();
             logStreamWriter
                 .producerId(streamProcessorContext.getId())
-                .sourceEvent(streamProcessorContext.getSourceStream().getId(), context.getEvent().getPosition());
+                .sourceEvent(sourceStream.getTopicName(), sourceStream.getPartitionId(), context.getEvent().getPosition());
 
             eventPosition = eventProcessor.writeEvent(logStreamWriter);
             return eventPosition >= 0;
