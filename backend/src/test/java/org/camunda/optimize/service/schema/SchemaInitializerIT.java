@@ -6,19 +6,27 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.spring.OptimizeAwareDependencyInjectionListener;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.mapper.StrictDynamicMappingException;
 import org.elasticsearch.indices.TypeMissingException;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
+import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
+import org.springframework.test.context.web.ServletTestExecutionListener;
 
 import java.io.IOException;
 
@@ -26,8 +34,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
-public class SchemaInitializerES_IT {
+@ContextConfiguration( locations = {"/rest/restTestApplicationContext.xml"})
+@TestExecutionListeners({
+    ServletTestExecutionListener.class,
+    OptimizeAwareDependencyInjectionListener.class,
+    DirtiesContextTestExecutionListener.class,
+    TransactionalTestExecutionListener.class
+})
+public class SchemaInitializerIT {
 
   @Autowired
   private ConfigurationService configurationService;
@@ -40,13 +54,18 @@ public class SchemaInitializerES_IT {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-  @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
+
+  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
+
+  @ClassRule
+  public static RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
   public void schemaIsNotInitializedTwice() {
     // given
-    rule.cleanAndVerify();
+    elasticSearchRule.cleanAndVerify();
 
     // when I initialize schema twice
     schemaInitializer.initializeSchema();
@@ -58,7 +77,7 @@ public class SchemaInitializerES_IT {
   @Test
   public void optimizeIndexExistsAfterSchemaInitialization() {
     // given
-    rule.cleanAndVerify();
+    elasticSearchRule.cleanAndVerify();
 
     // when
     schemaInitializer.initializeSchema();
@@ -70,7 +89,7 @@ public class SchemaInitializerES_IT {
   @Test
   public void typesExistsAfterSchemaInitialization() {
     // given
-    rule.cleanAndVerify();
+    elasticSearchRule.cleanAndVerify();
 
     // when
     schemaInitializer.initializeSchema();
@@ -96,7 +115,7 @@ public class SchemaInitializerES_IT {
   public void oldMappingsAreUpdated() {
 
     // given schema is created
-    rule.cleanAndVerify();
+    elasticSearchRule.cleanAndVerify();
     schemaInitializer.initializeSchema();
 
     // when there is a new mapping and I update the mapping
@@ -129,7 +148,7 @@ public class SchemaInitializerES_IT {
   @Test
   public void newTypeIsNotAddedDynamically() throws IOException {
     // given schema is created
-    rule.cleanAndVerify();
+    elasticSearchRule.cleanAndVerify();
     schemaInitializer.initializeSchema();
 
     // then an exception is thrown
@@ -137,13 +156,13 @@ public class SchemaInitializerES_IT {
 
     // when I add a document to an unknown type
     EventDto eventDto = new EventDto();
-    rule.addEntryToElasticsearch("myAwesomeNewType", "12312412", eventDto);
+    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewType", "12312412", eventDto);
   }
 
   @Test
   public void onlyAcceptDocumentsThatComplyWithTheSchema() {
     // given schema is created
-    rule.cleanAndVerify();
+    elasticSearchRule.cleanAndVerify();
     schemaInitializer.initializeSchema();
 
     // then
@@ -151,7 +170,7 @@ public class SchemaInitializerES_IT {
 
     // when we add an event with an undefined type in schema
     ExtendedEventDto extendedEventDto = new ExtendedEventDto();
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "12312412", extendedEventDto);
+    elasticSearchRule.addEntryToElasticsearch(configurationService.getEventType(), "12312412", extendedEventDto);
   }
 
 }

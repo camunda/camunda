@@ -71,6 +71,10 @@ public class ElasticAuthenticationProviderImpl implements AuthenticationProvider
           )
           .setSource(objectMapper.writeValueAsString(user)));
       bulkRequest.execute().get();
+
+      client.admin().indices()
+          .prepareRefresh(configurationService.getOptimizeIndex())
+          .get();
     } catch (Exception e) {
       logger.error("Can't write default user to elasticsearch", e);
     }

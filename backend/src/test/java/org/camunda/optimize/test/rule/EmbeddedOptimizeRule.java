@@ -37,6 +37,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private TestEmbeddedCamundaOptimize camundaOptimize;
   private Properties properties;
+  private String propertiesLocation = "it/it-test.properties";
 
   public EmbeddedOptimizeRule(String contextLocation) {
     this.contextLocation = contextLocation;
@@ -47,7 +48,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void init() {
-    properties = PropertyUtil.loadProperties("it/it-test.properties");
+
+    properties = PropertyUtil.loadProperties(propertiesLocation);
   }
 
   public void importEngineEntities() {
@@ -98,15 +100,19 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public String authenticateAdmin() {
+    Response tokenResponse = authenticateAdminRequest();
+
+    return tokenResponse.readEntity(String.class);
+  }
+
+  public Response authenticateAdminRequest() {
     CredentialsDto entity = new CredentialsDto();
     entity.setUsername("admin");
     entity.setPassword("admin");
 
-    Response tokenResponse =  target("authentication")
+    return target("authentication")
         .request()
         .post(Entity.json(entity));
-
-    return tokenResponse.readEntity(String.class);
   }
 
   public final WebTarget target(String path) {
@@ -174,4 +180,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public ApplicationContext getApplicationContext() {
     return camundaOptimize.getApplicationContext();
   }
+
+
 }

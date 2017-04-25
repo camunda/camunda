@@ -192,4 +192,15 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return properties.getProperty("camunda.optimize.es.event.type");
   }
 
+  public String getBranchAnalysisDataType() {
+    return properties.getProperty("camunda.optimize.es.branch.analysis.type");
+  }
+
+  public String getVariableType() {
+    return properties.getProperty("camunda.optimize.es.variable.type");
+  }
+
+  public String getDurationHeatmapTargetValueType() {
+    return properties.getProperty("camunda.optimize.es.heatmap.duration.target.value.type");
+  }
 }

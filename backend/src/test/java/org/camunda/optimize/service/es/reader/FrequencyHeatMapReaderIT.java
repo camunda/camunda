@@ -8,47 +8,51 @@ import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.reader.FrequencyHeatMapReader.MI_BODY;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
-public class FrequencyHeatMapReaderES_IT {
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+public class FrequencyHeatMapReaderIT {
 
   private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_DEFINITION_2 = "testDefinition2";
   private static final String TEST_ACTIVITY = "testActivity";
   private static final String PROCESS_INSTANCE_ID = "testProcessInstanceId";
   private static final String TEST_ACTIVITY_2 = "testActivity_2";
+  private static final long TIME_OFFSET_MILLS = 2000L;
+
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
 
   @Rule
-  public final ExpectedException exception = ExpectedException.none();
-
-  @Autowired
-  private FrequencyHeatMapReader heatMapReader;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
   public void getHeatMapWithMIBody() throws Exception {
@@ -58,20 +62,20 @@ public class FrequencyHeatMapReaderES_IT {
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
 
     event.setActivityId(TEST_ACTIVITY);
     event.setActivityType(MI_BODY);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setActivityId(TEST_ACTIVITY + 3);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto actual = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
-    assertResults(testDefinition, 1, TEST_ACTIVITY, 1L, 1L);
+    assertResults(actual, 1, TEST_ACTIVITY, 1L, 1L);
   }
 
   @Test
@@ -82,10 +86,10 @@ public class FrequencyHeatMapReaderES_IT {
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 1L, 1L);
@@ -99,14 +103,14 @@ public class FrequencyHeatMapReaderES_IT {
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setActivityId(TEST_ACTIVITY_2);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 2, TEST_ACTIVITY, 2L, 1L);
@@ -122,14 +126,24 @@ public class FrequencyHeatMapReaderES_IT {
       event.setProcessInstanceId(PROCESS_INSTANCE_ID);
       int index = 5 + i;
 
-      rule.addEntryToElasticsearch(configurationService.getEventType(), String.valueOf(index), event);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), String.valueOf(index), event);
     }
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 11,1L);
+  }
+
+  private HeatMapResponseDto getHeatMapResponseDto(String id) {
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    Response response =
+        embeddedOptimizeRule.target("process-definition/" + id + "/heatmap/frequency")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .get();
+    return response.readEntity(HeatMapResponseDto.class);
   }
 
   @Test
@@ -139,17 +153,19 @@ public class FrequencyHeatMapReaderES_IT {
     EventDto event = new EventDto();
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event = new EventDto();
     event.setActivityId(TEST_ACTIVITY);
     event.setProcessDefinitionId(TEST_DEFINITION_2);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
 
     // when
-    HeatMapResponseDto testDefinition1 = heatMapReader.getHeatMap(TEST_DEFINITION);
-    HeatMapResponseDto testDefinition2 = heatMapReader.getHeatMap(TEST_DEFINITION_2);
+    HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(TEST_DEFINITION);
+
+    // when
+    HeatMapResponseDto testDefinition2 = getHeatMapResponseDto(TEST_DEFINITION_2);
 
     // then
     assertResults(testDefinition1, 1, TEST_ACTIVITY, 2L, 0L);
@@ -161,29 +177,47 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
 
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0,0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
+  }
+
+  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
+    Response response = getResponse(token, dto);
+
+    // then the status code is okay
+    return response.readEntity(HeatMapResponseDto.class);
+  }
+
+  private Response getResponse(String token, HeatMapQueryDto dto) {
+    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
+    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .post(entity);
   }
 
   @Test
@@ -191,27 +225,29 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">=";
     String type = "start_date";
 
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
   }
@@ -221,27 +257,29 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">=";
     String type = "end_date";
 
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
   }
@@ -251,27 +289,29 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = "<";
     String type = "start_date";
 
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -281,18 +321,20 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
 
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     operator = "<";
     type = "end_date";
-    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 1000), dto);
+    DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS), dto);
+
+    String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, 1L);
@@ -300,13 +342,13 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     operator = ">";
     type = "start_date";
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     operator = "<";
     type = "end_date";
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
 
     //when
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
@@ -317,27 +359,29 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = "<";
     String type = "end_date";
 
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -347,27 +391,29 @@ public class FrequencyHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = "<=";
     String type = "start_date";
 
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -403,26 +449,21 @@ public class FrequencyHeatMapReaderES_IT {
 
   @Test
   public void testValidationExceptionOnNullDto() {
-    //expect
-    exception.expect(OptimizeValidationException.class);
-
     //when
-    heatMapReader.getHeatMap((HeatMapQueryDto) null);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    assertThat(getResponse(token, null).getStatus(),is(500));
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
-    //expect
-    exception.expect(OptimizeValidationException.class);
 
     //when
-    heatMapReader.getHeatMap(new HeatMapQueryDto());
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    assertThat(getResponse(token, new HeatMapQueryDto()).getStatus(),is(500));
   }
 
   @Test
   public void testValidationExceptionOnNullFilterField() {
-    //expect
-    exception.expect(OptimizeValidationException.class);
 
     //when
     HeatMapQueryDto dto = new HeatMapQueryDto();
@@ -434,7 +475,8 @@ public class FrequencyHeatMapReaderES_IT {
     dates.add(dateFilter);
     filter.setDates(dates);
     dto.setFilter(filter);
-    heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    assertThat(getResponse(token, dto).getStatus(),is(500));
   }
 
 }

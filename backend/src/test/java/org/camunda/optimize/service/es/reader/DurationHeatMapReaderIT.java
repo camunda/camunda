@@ -3,17 +3,20 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.Date;
 
 import static org.camunda.optimize.service.es.reader.DurationHeatMapReader.MI_BODY;
@@ -21,8 +24,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
-public class DurationHeatMapReaderES_IT {
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+public class DurationHeatMapReaderIT {
 
   private static final String TEST_DEFINITION = "testDefinition";
   private static final String TEST_DEFINITION_2 = "testDefinition2";
@@ -31,14 +34,12 @@ public class DurationHeatMapReaderES_IT {
   private static final String PROCESS_INSTANCE_ID_2 = "testProcessInstanceId2";
   private static final String TEST_ACTIVITY_2 = "testActivity_2";
 
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
+
   @Rule
-  public final ExpectedException exception = ExpectedException.none();
-  @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
-  @Autowired
-  private DurationHeatMapReader heatMapReader;
-  @Autowired
-  private ConfigurationService configurationService;
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
   public void getHeatMap() throws Exception {
@@ -49,16 +50,41 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(100L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
 
     event.setDurationInMs(300L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 200L, 1L);
+  }
+
+  private HeatMapResponseDto getHeatMapResponseDto(String testDefinition) {
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    Response response =
+        embeddedOptimizeRule.target("process-definition/" + testDefinition + "/heatmap/duration")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .get();
+    return response.readEntity(HeatMapResponseDto.class);
+  }
+
+  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
+    Response response = getResponse(token, dto);
+
+    // then the status code is okay
+    return response.readEntity(HeatMapResponseDto.class);
+  }
+
+  private Response getResponse(String token, HeatMapQueryDto dto) {
+    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
+    return embeddedOptimizeRule.target("process-definition/heatmap/duration")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .post(entity);
   }
 
   @Test
@@ -70,16 +96,16 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(100L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setActivityId(TEST_ACTIVITY_2);
     event.setDurationInMs(200L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "8", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "8", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 2, TEST_ACTIVITY, 100L, 1L);
@@ -95,16 +121,16 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(400L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     event.setDurationInMs(200L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "8", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "8", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 300L, 2L);
@@ -118,17 +144,17 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(400L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setProcessDefinitionId(TEST_DEFINITION_2);
     event.setDurationInMs(200L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "8", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "8", event);
 
     // when
-    HeatMapResponseDto testDefinition1 = heatMapReader.getHeatMap(TEST_DEFINITION);
-    HeatMapResponseDto testDefinition2 = heatMapReader.getHeatMap(TEST_DEFINITION_2);
+    HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition2 = getHeatMapResponseDto(TEST_DEFINITION_2);
 
     // then
     assertResults(testDefinition1, 1, TEST_ACTIVITY, 400L, 1L);
@@ -143,16 +169,16 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(100L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
 
     event.setDurationInMs(300L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setDurationInMs(600L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 333L, 1L);
@@ -166,13 +192,13 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(100L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
 
     event.setDurationInMs(null);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 100L, 1L);
@@ -181,7 +207,7 @@ public class DurationHeatMapReaderES_IT {
   @Test
   public void noEventMatchesReturnEmptyResult() {
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertThat(testDefinition.getPiCount(), is(0L));
@@ -197,19 +223,19 @@ public class DurationHeatMapReaderES_IT {
     event.setProcessDefinitionId(TEST_DEFINITION);
     event.setProcessInstanceId(PROCESS_INSTANCE_ID);
     event.setDurationInMs(100L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "5", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
 
     event.setActivityId(TEST_ACTIVITY);
     event.setActivityType(MI_BODY);
     event.setDurationInMs(1000L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "6", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
 
     event.setActivityId(TEST_ACTIVITY_2);
     event.setDurationInMs(400L);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 100L, 1L);
@@ -220,27 +246,28 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
 
     //when
     HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0,0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
   }
@@ -250,27 +277,28 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">=";
     String type = "start_date";
 
     //when
     HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
   }
@@ -280,27 +308,28 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">=";
     String type = "end_date";
 
     //when
     HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
   }
@@ -310,27 +339,28 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = "<";
     String type = "start_date";
 
     //when
     HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -340,7 +370,7 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
@@ -351,7 +381,8 @@ public class DurationHeatMapReaderES_IT {
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + 1000), dto);
 
     //when
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, 1L);
@@ -365,7 +396,7 @@ public class DurationHeatMapReaderES_IT {
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
 
     //when
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
@@ -376,27 +407,28 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = "<";
     String type = "end_date";
 
     //when
     HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -406,27 +438,28 @@ public class DurationHeatMapReaderES_IT {
     //given
     Date past = new Date();
     EventDto data = prepareESData(past);
-    rule.addEntryToElasticsearch(configurationService.getEventType(), "1", data);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
 
     String operator = "<=";
     String type = "start_date";
 
     //when
     HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + 1000));
-    HeatMapResponseDto resultMap = heatMapReader.getHeatMap(dto);
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, past);
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 100L, 1L);
 
     //when
     dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - 1000));
-    resultMap = heatMapReader.getHeatMap(dto);
+    resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
   }
@@ -442,11 +475,11 @@ public class DurationHeatMapReaderES_IT {
       event.setDurationInMs(100L);
       int index = 5 + i;
 
-      rule.addEntryToElasticsearch(configurationService.getEventType(), String.valueOf(index), event);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), String.valueOf(index), event);
     }
 
     // when
-    HeatMapResponseDto testDefinition = heatMapReader.getHeatMap(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 100L, 1L);

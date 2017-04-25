@@ -2,16 +2,18 @@ package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.VariableDto;
-import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,18 +22,17 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
-public class VariableReaderES_IT {
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+public class VariableReaderIT {
+  
+  private final String PROCESS_DEFINITION_ID = "aProcDefId";
+
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
 
   @Rule
-  public final ExpectedException exception = ExpectedException.none();
-  private final String PROCESS_DEFINITION_ID = "aProcDefId";
-  @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
-  @Autowired
-  private VariableReader variableReader;
-  @Autowired
-  private ConfigurationService configurationService;
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
   public void maxVariableValueListSize() {
@@ -42,14 +43,14 @@ public class VariableReaderES_IT {
     variableDto.setType("String");
     variableDto.setValue("aValue");
     variableDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    int exceededMaxVariableValue = configurationService.getMaxVariableValueListSize() + 1;
+    int exceededMaxVariableValue = 16;
     for (int i = 0; i < exceededMaxVariableValue; i++) {
       variableDto.setValue(String.valueOf(i));
-      rule.addEntryToElasticsearch(configurationService.getVariableType(), String.valueOf(i), variableDto);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getVariableType(), String.valueOf(i), variableDto);
     }
 
     // when
-    List<GetVariablesResponseDto> variables = variableReader.getVariables(PROCESS_DEFINITION_ID);
+    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
@@ -70,10 +71,10 @@ public class VariableReaderES_IT {
       variableDto.setType(typeValueEntry.getKey());
       variableDto.setValue(typeValueEntry.getValue());
       variableDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-      rule.addEntryToElasticsearch(configurationService.getVariableType(), "1", variableDto);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getVariableType(), "1", variableDto);
 
       // when
-      List<GetVariablesResponseDto> variables = variableReader.getVariables(PROCESS_DEFINITION_ID);
+      List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
       // then
       assertThat(variables.size(), is(1));
@@ -83,7 +84,9 @@ public class VariableReaderES_IT {
       assertThat(responseDto.isValuesAreComplete(), is(true));
       assertThat(responseDto.getValues().get(0), is(typeValueEntry.getValue()));
 
-      rule.cleanAndVerify();
+      elasticSearchRule.cleanAndVerify();
+      embeddedOptimizeRule.stopOptimize();
+      embeddedOptimizeRule.startOptimize();
     }
   }
 
@@ -114,15 +117,27 @@ public class VariableReaderES_IT {
       variableDto.setType(typeValueEntry.getKey());
       variableDto.setValue(typeValueEntry.getValue());
       variableDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-      rule.addEntryToElasticsearch(configurationService.getVariableType(), "1", variableDto);
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getVariableType(), "1", variableDto);
 
       // when
-      List<GetVariablesResponseDto> variables = variableReader.getVariables(PROCESS_DEFINITION_ID);
+      List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
       // then
       assertThat(variables.size(), is(0));
-      rule.cleanAndVerify();
+      elasticSearchRule.cleanAndVerify();
+      embeddedOptimizeRule.stopOptimize();
+      embeddedOptimizeRule.startOptimize();
     }
+  }
+
+  private List<GetVariablesResponseDto> getGetVariablesResponseDtos(String processDefinition) {
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    Response response =
+        embeddedOptimizeRule.target("process-definition/" + processDefinition + "/variables")
+            .request()
+            .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+            .get();
+    return response.readEntity(new GenericType<List<GetVariablesResponseDto>> () {});
   }
 
   private Map<String, String> prepareComplexTypeValueMap() {

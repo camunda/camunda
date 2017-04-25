@@ -33,7 +33,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
     DirtiesContextTestExecutionListener.class,
     TransactionalTestExecutionListener.class
 })
-public class StatusRestServiceTest {
+public class StatusRestServiceIT {
 
   @ClassRule
   public static EmbeddedOptimizeRule embeddedOptimizeRule =

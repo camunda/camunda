@@ -1,23 +1,25 @@
 package org.camunda.optimize.service.es.reader;
 
-import org.camunda.optimize.rest.optimize.dto.ActivityListDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.rest.optimize.dto.ActivityListDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,8 +35,8 @@ import static org.junit.Assert.assertThat;
  * @author Askar Akhmerov
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/es/it/es-it-applicationContext.xml"})
-public class BranchAnalysisReaderES_IT {
+@ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
+public class BranchAnalysisReaderIT {
   private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
@@ -53,17 +55,12 @@ public class BranchAnalysisReaderES_IT {
   private static final String GATEWAY_F = "gw_f";
   private static final String PROCESS_INSTANCE_ID_BY_PASS = PROCESS_INSTANCE_ID + "Bypass";
 
-  @Rule
-  public ElasticSearchIntegrationTestRule rule = new ElasticSearchIntegrationTestRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
 
   @Rule
-  public final ExpectedException exception = ExpectedException.none();
-
-  @Autowired
-  private BranchAnalysisReader branchAnalysisReader;
-
-  @Autowired
-  private ConfigurationService configurationService;
+  public RuleChain chain = RuleChain
+      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Before
   public void setUp() throws Exception {
@@ -71,9 +68,9 @@ public class BranchAnalysisReaderES_IT {
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
-    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
-    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
   }
 
   private String readDiagram(String diagramPath) throws IOException {
@@ -93,7 +90,7 @@ public class BranchAnalysisReaderES_IT {
     BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -121,14 +118,14 @@ public class BranchAnalysisReaderES_IT {
     actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK_2});
     actList.setProcessInstanceStartDate(new Date());
     actList.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), "radnomProcInstId1", actList);
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), "radnomProcInstId2", actList);
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), "radnomProcInstId3", actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), "radnomProcInstId1", actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), "radnomProcInstId2", actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), "radnomProcInstId3", actList);
     BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
     dto.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -161,9 +158,9 @@ public class BranchAnalysisReaderES_IT {
     actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK});
     actList.setProcessInstanceStartDate(new Date());
     actList.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
     actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY});
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
   }
 
   @Test
@@ -174,7 +171,7 @@ public class BranchAnalysisReaderES_IT {
     DataUtilHelper.addDateFilter("<=", "start_date", new Date(), dto);
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -201,7 +198,7 @@ public class BranchAnalysisReaderES_IT {
     DataUtilHelper.addDateFilter(">", "start_date", new Date(), dto);
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -228,7 +225,7 @@ public class BranchAnalysisReaderES_IT {
     DataUtilHelper.addDateFilter("<", "end_date", nowPlusTimeInMs(1000), dto);
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -256,7 +253,7 @@ public class BranchAnalysisReaderES_IT {
     DataUtilHelper.addDateFilter(">", "start_date", nowPlusTimeInMs(-2000), dto);
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -275,10 +272,6 @@ public class BranchAnalysisReaderES_IT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
-  private Date nowPlusTimeInMs(int timeInMs) {
-    return new Date(new Date().getTime() + timeInMs);
-  }
-
   @Test
   public void bypassOfGatewayDoesNotDistortResult() throws Exception {
     //given
@@ -289,7 +282,7 @@ public class BranchAnalysisReaderES_IT {
     dto.setEnd(END_ACTIVITY);
 
     //when
-    BranchAnalysisDto result = branchAnalysisReader.branchAnalysis(dto);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -312,60 +305,83 @@ public class BranchAnalysisReaderES_IT {
     ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_BY_PASS);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM_WITH_BYPASS));
-    rule.addEntryToElasticsearch(configurationService.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_BY_PASS, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_BY_PASS, processDefinitionXmlDto);
 
     ActivityListDto actList = new ActivityListDto();
     actList.setProcessDefinitionId(PROCESS_DEFINITION_ID_BY_PASS);
     actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_D, GATEWAY_F, END_ACTIVITY});
     actList.setProcessInstanceStartDate(new Date());
     actList.setProcessInstanceEndDate(new Date());
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
     actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_C, GATEWAY_D, GATEWAY_F, END_ACTIVITY});
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
     actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_C, TASK, GATEWAY_F, END_ACTIVITY});
-    rule.addEntryToElasticsearch(configurationService.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_BY_PASS, actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_BY_PASS, actList);
   }
 
   @Test
   public void testValidationExceptionOnNullDto () {
-    //expect
-    exception.expect(OptimizeValidationException.class);
 
     //when
-    branchAnalysisReader.branchAnalysis(null);
+    Response response = getResponse(null);
+    assertThat(response.getStatus(),is(500));
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition () {
-    //expect
-    exception.expect(OptimizeValidationException.class);
 
     //when
-    branchAnalysisReader.branchAnalysis(new BranchAnalysisQueryDto());
+    Response response = getResponse(new BranchAnalysisQueryDto());
+    assertThat(response.getStatus(),is(500));
   }
 
   @Test
   public void testValidationExceptionOnNullGateway () {
-    //expect
-    exception.expect(OptimizeValidationException.class);
     //given
     BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
     request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     //when
-    branchAnalysisReader.branchAnalysis(request);
+    Response response = getResponse(request);
+
+    assertThat(response.getStatus(),is(500));
   }
 
   @Test
   public void testValidationExceptionOnNullEndActivity () {
-    //expect
-    exception.expect(OptimizeValidationException.class);
 
     BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
     request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     request.setEnd(GATEWAY_ACTIVITY);
     //when
-    branchAnalysisReader.branchAnalysis(new BranchAnalysisQueryDto());
+    Response response = getResponse(request);
+
+    assertThat(response.getStatus(),is(500));
   }
 
+
+  private BranchAnalysisDto getBranchAnalysisDto(BranchAnalysisQueryDto dto) {
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    Response response = getResponse(token, dto);
+
+    // then the status code is okay
+    return response.readEntity(BranchAnalysisDto.class);
+  }
+
+  private Response getResponse(String token, BranchAnalysisQueryDto dto) {
+    Entity<BranchAnalysisQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
+    return embeddedOptimizeRule.target("process-definition/correlation")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .post(entity);
+  }
+
+  private Response getResponse(BranchAnalysisQueryDto request) {
+    String token = embeddedOptimizeRule.authenticateAdmin();
+    return getResponse(token, request);
+  }
+
+  private Date nowPlusTimeInMs(int timeInMs) {
+    return new Date(new Date().getTime() + timeInMs);
+  }
 
 }

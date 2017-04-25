@@ -8,7 +8,7 @@ import java.io.Serializable;
 public class HeatMapQueryDto implements Serializable {
 
   protected String processDefinitionId;
-  protected FilterMapDto filter;
+  protected FilterMapDto filter = new FilterMapDto();
 
   public FilterMapDto getFilter() {
     return filter;

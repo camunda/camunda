@@ -35,18 +35,18 @@ public class VariableReader {
     logger.debug("Fetching variables for process definition: {}", processDefinitionId);
     QueryBuilder query;
     query = QueryBuilders.boolQuery()
-      .must(QueryBuilders.termsQuery(VariableType.PROCESS_DEFINITION_ID, processDefinitionId))
-      .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "Object"))
-      .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "File"))
-      .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "Json"))
-      .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "Xml"));
+        .must(QueryBuilders.termsQuery(VariableType.PROCESS_DEFINITION_ID, processDefinitionId))
+        .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "Object"))
+        .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "File"))
+        .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "Json"))
+        .mustNot(QueryBuilders.termsQuery(VariableType.TYPE, "Xml"));
 
     SearchResponse scrollResp = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
         .setTypes(configurationService.getVariableType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
-        .setSize(configurationService.getMaxVariableValueListSize()+1) // +1 to see if the limit was exceeded
+        .setSize(configurationService.getMaxVariableValueListSize() + 1) // +1 to see if the limit was exceeded
         .get();
 
     Map<String, GetVariablesResponseDto> nameToResponse = new HashMap<>();
