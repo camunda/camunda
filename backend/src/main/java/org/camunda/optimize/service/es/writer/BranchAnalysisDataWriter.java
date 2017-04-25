@@ -52,7 +52,7 @@ public class BranchAnalysisDataWriter {
   private void addToActivityListRequest(BulkRequestBuilder activityListBulkRequest, EventDto e) throws IOException {
     String activityId = e.getActivityId();
     String startDate = sdf.format(e.getProcessInstanceStartDate());
-    String endDate = (e.getProcessInstanceEndDate()!=null)? sdf.format(e.getProcessInstanceEndDate()) : null;
+    String endDate = (e.getProcessInstanceEndDate() != null) ? sdf.format(e.getProcessInstanceEndDate()) : null;
     Map<String, Object> params = new HashMap<>();
     params.put("activityList", activityId);
 
@@ -75,7 +75,10 @@ public class BranchAnalysisDataWriter {
 
     activityListBulkRequest.add(
       esclient
-      .prepareUpdate(configurationService.getOptimizeIndex(), configurationService.getBranchAnalysisDataType(), e.getProcessInstanceId())
+      .prepareUpdate(
+        configurationService.getOptimizeIndex(),
+        configurationService.getBranchAnalysisDataType(),
+        e.getProcessInstanceId())
       .setScript(updateScript)
       .setUpsert(newEntryIfAbsent)
     );
