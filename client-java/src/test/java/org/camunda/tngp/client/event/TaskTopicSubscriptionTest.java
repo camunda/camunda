@@ -45,7 +45,7 @@ public class TaskTopicSubscriptionTest
         { };
 
         // when
-        client.taskTopic(0).newSubscription()
+        clientRule.taskTopic().newSubscription()
             .startAtHeadOfTopic()
             .defaultHandler(noOpHandler)
             .name(SUBSCRIPTION_NAME)
@@ -77,7 +77,7 @@ public class TaskTopicSubscriptionTest
         { };
 
         // when
-        client.taskTopic(0).newSubscription()
+        clientRule.taskTopic().newSubscription()
             .startAtHeadOfTopic()
             .defaultHandler(noOpHandler)
             .forcedStart()
@@ -101,7 +101,7 @@ public class TaskTopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
-        client.taskTopic(0).newSubscription()
+        clientRule.taskTopic().newSubscription()
             .startAtHeadOfTopic()
             .defaultHandler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -132,7 +132,7 @@ public class TaskTopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscription subscription = client.taskTopic(0).newSubscription()
+        final TopicSubscription subscription = clientRule.taskTopic().newSubscription()
             .startAtHeadOfTopic()
             .defaultHandler((m, t) ->
             {

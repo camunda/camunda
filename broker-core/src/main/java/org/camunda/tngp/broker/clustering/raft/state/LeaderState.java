@@ -237,7 +237,7 @@ public class LeaderState extends ActiveState
     public PollResponse poll(PollRequest pollRequest)
     {
         pollResponse.reset();
-        return pollResponse.id(raft.id())
+        return pollResponse
                 .term(raft.term())
                 .granted(false);
     }
@@ -252,7 +252,7 @@ public class LeaderState extends ActiveState
         }
 
         voteResponse.reset();
-        return voteResponse.id(raft.id())
+        return voteResponse
                 .term(raft.term())
                 .granted(false);
     }
@@ -260,7 +260,7 @@ public class LeaderState extends ActiveState
     @Override
     public AppendResponse append(AppendRequest appendRequest)
     {
-        final int id = raft.id();
+        final LogStream logStream = raft.stream();
         final int currentTerm = raft.term();
 
         final Member leader = appendRequest.leader();
@@ -275,7 +275,9 @@ public class LeaderState extends ActiveState
         if (appendRequestTerm < currentTerm)
         {
             appendResponse.reset();
-            return appendResponse.id(id)
+            return appendResponse
+                .topicName(logStream.getTopicName())
+                .partitionId(logStream.getPartitionId())
                 .term(currentTerm)
                 .succeeded(false);
         }
@@ -359,7 +361,6 @@ public class LeaderState extends ActiveState
     @Override
     public CompletableFuture<JoinResponse> join(final JoinRequest joinRequest)
     {
-        final int id = raft.id();
         final int term = raft.term();
 
         final List<Member> members = raft.members();
@@ -367,19 +368,23 @@ public class LeaderState extends ActiveState
         if (initializing() || configuring())
         {
             joinResponse.reset();
-            return CompletableFuture.completedFuture(joinResponse.id(id)
+            return CompletableFuture.completedFuture(
+                joinResponse
                     .term(term)
                     .succeeded(false)
-                    .members(members));
+                    .members(members)
+            );
         }
 
         if (members.contains(joinRequest.member()))
         {
             joinResponse.reset();
-            return CompletableFuture.completedFuture(joinResponse.id(id)
+            return CompletableFuture.completedFuture(
+                joinResponse
                     .term(term)
                     .succeeded(true)
-                    .members(members));
+                    .members(members)
+            );
         }
 
         final Endpoint endpoint = joinRequest.member().endpoint();
@@ -394,7 +399,7 @@ public class LeaderState extends ActiveState
                 {
                     final Configuration configuration = raft.configuration();
                     joinResponse.reset();
-                    joinResponse.id(id)
+                    joinResponse
                         .term(term)
                         .succeeded(true)
                         .configurationEntryPosition(configuration.configurationEntryPosition())
@@ -404,7 +409,7 @@ public class LeaderState extends ActiveState
                 .exceptionally((e) ->
                 {
                     joinResponse.reset();
-                    joinResponse.id(id)
+                    joinResponse
                         .term(term)
                         .succeeded(false)
                         .members(raft.configuration().members());
@@ -419,7 +424,6 @@ public class LeaderState extends ActiveState
     @Override
     public CompletableFuture<LeaveResponse> leave(final LeaveRequest leaveRequest)
     {
-        final int id = raft.id();
         final int term = raft.term();
 
         final List<Member> members = raft.members();
@@ -427,19 +431,23 @@ public class LeaderState extends ActiveState
         if (initializing() || configuring())
         {
             leaveResponse.reset();
-            return CompletableFuture.completedFuture(leaveResponse.id(id)
+            return CompletableFuture.completedFuture(
+                leaveResponse
                     .term(term)
                     .succeeded(false)
-                    .members(members));
+                    .members(members)
+            );
         }
 
         if (!members.contains(leaveRequest.member()))
         {
             leaveResponse.reset();
-            return CompletableFuture.completedFuture(leaveResponse.id(id)
+            return CompletableFuture.completedFuture(
+                leaveResponse
                     .term(term)
                     .succeeded(true)
-                    .members(members));
+                    .members(members)
+            );
         }
 
         final Endpoint endpoint = leaveRequest.member().endpoint();
@@ -454,7 +462,7 @@ public class LeaderState extends ActiveState
                 {
                     final Configuration configuration = raft.configuration();
                     leaveResponse.reset();
-                    leaveResponse.id(id)
+                    leaveResponse
                         .term(term)
                         .succeeded(true)
                         .configurationEntryPosition(configuration.configurationEntryPosition())
@@ -464,16 +472,14 @@ public class LeaderState extends ActiveState
                 .exceptionally((e) ->
                 {
                     leaveResponse.reset();
-                    leaveResponse.id(id)
+                    leaveResponse
                         .term(term)
                         .succeeded(false)
                         .members(raft.configuration().members());
                     return null;
                 })
-                .<LeaveResponse> thenCompose((c) ->
-                {
-                    return CompletableFuture.completedFuture(leaveResponse);
-                });
+                .thenCompose((c) ->
+                    CompletableFuture.completedFuture(leaveResponse));
     }
 
     protected boolean initializing()

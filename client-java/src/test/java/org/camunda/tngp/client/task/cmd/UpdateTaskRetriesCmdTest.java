@@ -14,6 +14,8 @@ package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
@@ -21,6 +23,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.ClientResponseHandler;
@@ -37,14 +43,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class UpdateTaskRetriesCmdTest
 {
-    protected static final int TOPIC_ID = 1;
+    protected static final String TOPIC_NAME = "test-topic";
+    protected static final int PARTITION_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -67,7 +69,7 @@ public class UpdateTaskRetriesCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new UpdateTaskRetriesCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
+        command = new UpdateTaskRetriesCmdImpl(clientCmdExecutor, objectMapper, TOPIC_NAME, PARTITION_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -100,7 +102,8 @@ public class UpdateTaskRetriesCmdTest
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
-        assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
+        assertThat(requestDecoder.topicName()).isEqualTo(TOPIC_NAME);
+        assertThat(requestDecoder.partitionId()).isEqualTo(PARTITION_ID);
 
         final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
@@ -130,6 +133,8 @@ public class UpdateTaskRetriesCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
@@ -157,6 +162,8 @@ public class UpdateTaskRetriesCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 

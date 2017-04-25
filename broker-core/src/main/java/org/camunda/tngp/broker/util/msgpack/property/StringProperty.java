@@ -9,12 +9,12 @@ import org.camunda.tngp.broker.util.msgpack.value.StringValue;
 public class StringProperty extends BaseProperty<StringValue>
 {
 
-    public StringProperty(String key)
+    public StringProperty(final String key)
     {
         super(key, new StringValue());
     }
 
-    public StringProperty(String key, String defaultValue)
+    public StringProperty(final String key, final String defaultValue)
     {
         super(key, new StringValue(), new StringValue(defaultValue));
     }
@@ -24,13 +24,18 @@ public class StringProperty extends BaseProperty<StringValue>
         return resolveValue().getValue();
     }
 
-    public void setValue(String value)
+    public void setValue(final String value)
     {
         this.value.wrap(getBytes(value));
         this.isSet = true;
     }
 
-    public void setValue(DirectBuffer buffer, int offset, int length)
+    public void setValue(final DirectBuffer buffer)
+    {
+        setValue(buffer, 0, buffer.capacity());
+    }
+
+    public void setValue(final DirectBuffer buffer, final int offset, final int length)
     {
         this.value.wrap(buffer, offset, length);
         this.isSet = true;

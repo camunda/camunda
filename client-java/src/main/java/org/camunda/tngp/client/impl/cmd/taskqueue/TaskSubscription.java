@@ -16,7 +16,8 @@ public class TaskSubscription
 {
     private long subscriberKey;
 
-    private long topicId;
+    private String topicName;
+    private int partitionId;
     private String taskType;
 
     private long lockDuration;
@@ -28,19 +29,29 @@ public class TaskSubscription
         return subscriberKey;
     }
 
-    public void setSubscriberKey(long subscriberKey)
+    public void setSubscriberKey(final long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
     }
 
-    public long getTopicId()
+    public String getTopicName()
     {
-        return topicId;
+        return topicName;
     }
 
-    public void setTopicId(long topicId)
+    public void setTopicName(final String topicName)
     {
-        this.topicId = topicId;
+        this.topicName = topicName;
+    }
+
+    public long getPartitionId()
+    {
+        return partitionId;
+    }
+
+    public void setPartitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
     }
 
     public String getTaskType()
@@ -48,7 +59,7 @@ public class TaskSubscription
         return taskType;
     }
 
-    public void setTaskType(String taskType)
+    public void setTaskType(final String taskType)
     {
         this.taskType = taskType;
     }
@@ -58,7 +69,7 @@ public class TaskSubscription
         return lockDuration;
     }
 
-    public void setLockDuration(long lockDuration)
+    public void setLockDuration(final long lockDuration)
     {
         this.lockDuration = lockDuration;
     }
@@ -68,7 +79,7 @@ public class TaskSubscription
         return credits;
     }
 
-    public void setCredits(int credits)
+    public void setCredits(final int credits)
     {
         this.credits = credits;
     }
@@ -78,7 +89,7 @@ public class TaskSubscription
         return lockOwner;
     }
 
-    public void setLockOwner(long lockOwner)
+    public void setLockOwner(final long lockOwner)
     {
         this.lockOwner = lockOwner;
     }

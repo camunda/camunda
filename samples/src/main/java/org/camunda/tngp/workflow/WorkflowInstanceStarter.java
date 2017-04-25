@@ -29,7 +29,8 @@ public class WorkflowInstanceStarter
         final String brokerContactPoint = "127.0.0.1:51015";
         final InputStream bpmnStream = WorkflowInstanceStarter.class.getResourceAsStream("/demoProcess.bpmn");
         final String bpmnProcessId = "demoProcess";
-        final int topicId = 0;
+        final String topicName = "default-topic";
+        final int partitionId = 0;
 
         final Properties clientProperties = new Properties();
         clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, brokerContactPoint);
@@ -41,9 +42,9 @@ public class WorkflowInstanceStarter
 
         System.out.println("> Connected.");
 
-        System.out.println(String.format("> Deploying workflow '%d'", topicId));
+        System.out.println(String.format("> Deploying workflow to topic '%s' and partition '%d'", topicName, partitionId));
 
-        final DeploymentResult deploymentResult = tngpClient.workflowTopic(topicId)
+        final DeploymentResult deploymentResult = tngpClient.workflowTopic(topicName, partitionId)
             .deploy()
             .resourceStream(bpmnStream)
             .execute();
@@ -58,7 +59,7 @@ public class WorkflowInstanceStarter
 
             System.out.println(String.format("> Create workflow instance for workflow: %s", bpmnProcessId));
 
-            tngpClient.workflowTopic(topicId)
+            tngpClient.workflowTopic(topicName, partitionId)
                 .create()
                 .bpmnProcessId(bpmnProcessId)
                 .execute();

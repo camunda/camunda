@@ -83,7 +83,7 @@ public class TaskHeaders extends UnpackedObject
 
     public TaskHeaders setBpmnProcessId(DirectBuffer bpmnProcessId)
     {
-        this.bpmnProcessIdProp.setValue(bpmnProcessId, 0, bpmnProcessId.capacity());
+        this.bpmnProcessIdProp.setValue(bpmnProcessId);
         return this;
     }
 

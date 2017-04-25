@@ -1,19 +1,23 @@
 package org.camunda.tngp.broker.event.processor;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
+import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 
 public class CloseSubscriptionRequest extends UnpackedObject
 {
 
-    protected IntegerProperty topicIdProp = new IntegerProperty("topicId");
+    protected StringProperty topicNameProp = new StringProperty("topicName");
+    protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey");
 
     public CloseSubscriptionRequest()
     {
         this.declareProperty(subscriberKeyProp)
-            .declareProperty(topicIdProp);
+            .declareProperty(topicNameProp)
+            .declareProperty(partitionIdProp);
     }
 
     public long getSubscriberKey()
@@ -27,14 +31,25 @@ public class CloseSubscriptionRequest extends UnpackedObject
         return this;
     }
 
-    public int getTopicId()
+    public DirectBuffer getTopicName()
     {
-        return topicIdProp.getValue();
+        return topicNameProp.getValue();
     }
 
-    public CloseSubscriptionRequest setTopicId(int topicId)
+    public CloseSubscriptionRequest setTopicName(final DirectBuffer topicName)
     {
-        this.topicIdProp.setValue(topicId);
+        this.topicNameProp.setValue(topicName);
+        return this;
+    }
+
+    public int getPartitionId()
+    {
+        return partitionIdProp.getValue();
+    }
+
+    public CloseSubscriptionRequest setPartitionId(int partitionId)
+    {
+        this.partitionIdProp.setValue(partitionId);
         return this;
     }
 }

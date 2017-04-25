@@ -1,6 +1,8 @@
 package org.camunda.tngp.perftest;
 
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -18,7 +20,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
-        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
+        final WorkflowTopicClient workflowsClient = client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         final BpmnModelInstance processModel = Bpmn.createExecutableProcess("process")
                 .startEvent()
@@ -49,7 +51,7 @@ public class StartWorkflowInstanceLatencyTest extends FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
+        final WorkflowTopicClient workflowsClient = client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         return () ->
         {

@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.clustering.management.message;
 
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.termNullValue;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.clustering.management.InvitationResponseDecoder;
@@ -17,19 +19,7 @@ public class InvitationResponse implements BufferWriter, BufferReader
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final InvitationResponseEncoder bodyEncoder = new InvitationResponseEncoder();
 
-    protected int id;
-    protected int term;
-
-    public int id()
-    {
-        return id;
-    }
-
-    public InvitationResponse id(final int id)
-    {
-        this.id = id;
-        return this;
-    }
+    protected int term = termNullValue();
 
     public int term()
     {
@@ -50,7 +40,6 @@ public class InvitationResponse implements BufferWriter, BufferReader
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
         term = bodyDecoder.term();
     }
 
@@ -72,11 +61,11 @@ public class InvitationResponse implements BufferWriter, BufferReader
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
             .term(term);
     }
 
     public void reset()
     {
+        term = termNullValue();
     }
 }

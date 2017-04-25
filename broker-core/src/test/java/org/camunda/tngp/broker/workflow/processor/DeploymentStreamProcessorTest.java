@@ -15,6 +15,7 @@ package org.camunda.tngp.broker.workflow.processor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayOutputStream;
@@ -185,7 +186,7 @@ public class DeploymentStreamProcessorTest
     public void shouldRejectCreateDeploymentIfNotParsable()
     {
         // given
-        final DirectBuffer resource = new UnsafeBuffer(getBytes("foo"));
+        final DirectBuffer resource = wrapString("foo");
 
         // when
         mockController.processEvent(1L, event -> event

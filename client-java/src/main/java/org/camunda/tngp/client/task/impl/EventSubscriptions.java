@@ -1,6 +1,8 @@
 package org.camunda.tngp.client.task.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.collections.Int2ObjectHashMap;
@@ -9,29 +11,13 @@ import org.camunda.tngp.client.event.impl.EventSubscription;
 
 public class EventSubscriptions<T extends EventSubscription<T>>
 {
-    // topicId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
-    protected Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptions = new Int2ObjectHashMap<>();
+    // topicName => partitionId => subscriberKey => subscription (subscriber keys are not guaranteed to be globally unique)
+    protected Map<String, Int2ObjectHashMap<Long2ObjectHashMap<T>>> subscriptions = new HashMap<>();
 
     protected final List<T> pollableSubscriptions = new CopyOnWriteArrayList<>();
     protected final List<T> managedSubscriptions = new CopyOnWriteArrayList<>();
 
-    protected void addPollableSubscription(T subscription)
-    {
-        this.subscriptions
-            .computeIfAbsent(subscription.getTopicId(), (i) -> new Long2ObjectHashMap<>())
-            .put(subscription.getSubscriberKey(), subscription);
-        this.pollableSubscriptions.add(subscription);
-    }
-
-    protected void addManagedSubscription(T subscription)
-    {
-        this.subscriptions
-            .computeIfAbsent(subscription.getTopicId(), (i) -> new Long2ObjectHashMap<>())
-            .put(subscription.getSubscriberKey(), subscription);
-        this.managedSubscriptions.add(subscription);
-    }
-
-    public void addSubscription(T subscription)
+    public void addSubscription(final T subscription)
     {
         if (subscription.isManagedSubscription())
         {
@@ -43,22 +29,42 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         }
     }
 
+    protected void addPollableSubscription(final T subscription)
+    {
+        addSubscriptionForTopic(subscription);
+        this.pollableSubscriptions.add(subscription);
+    }
+
+    protected void addManagedSubscription(final T subscription)
+    {
+        addSubscriptionForTopic(subscription);
+        this.managedSubscriptions.add(subscription);
+    }
+
+    protected void addSubscriptionForTopic(final T subscription)
+    {
+        this.subscriptions
+            .computeIfAbsent(subscription.getTopicName(), topicName -> new Int2ObjectHashMap<>())
+            .computeIfAbsent(subscription.getPartitionId(), partitionId -> new Long2ObjectHashMap<>())
+            .put(subscription.getSubscriberKey(), subscription);
+    }
+
     public void closeAll()
     {
-        for (T subscription : pollableSubscriptions)
+        for (final T subscription : pollableSubscriptions)
         {
             subscription.close();
         }
 
-        for (T subscription : managedSubscriptions)
+        for (final T subscription : managedSubscriptions)
         {
             subscription.close();
         }
     }
 
-    public void abortSubscriptionsOnChannel(int channelId)
+    public void abortSubscriptionsOnChannel(final int channelId)
     {
-        for (T subscription : pollableSubscriptions)
+        for (final T subscription : pollableSubscriptions)
         {
             if (subscription.getReceiveChannelId() == channelId)
             {
@@ -66,7 +72,7 @@ public class EventSubscriptions<T extends EventSubscription<T>>
             }
         }
 
-        for (T subscription : managedSubscriptions)
+        for (final T subscription : managedSubscriptions)
         {
             if (subscription.getReceiveChannelId() == channelId)
             {
@@ -85,16 +91,28 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         return pollableSubscriptions;
     }
 
-    public void removeSubscription(T subscription)
+    public void removeSubscription(final T subscription)
     {
-        final Long2ObjectHashMap<T> subscriptionsForTopic = subscriptions.get(subscription.getTopicId());
+        final String topicName = subscription.getTopicName();
+        final int partitionId = subscription.getPartitionId();
+
+        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = subscriptions.get(topicName);
         if (subscriptionsForTopic != null)
         {
-            subscriptionsForTopic.remove(subscription.getSubscriberKey());
-
-            if (subscriptionsForTopic.isEmpty())
+            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
+            if (subscriptionsForPartition != null)
             {
-                subscriptions.remove(subscription.getTopicId());
+                subscriptionsForPartition.remove(subscription.getSubscriberKey());
+
+                if (subscriptionsForPartition.isEmpty())
+                {
+                    subscriptionsForTopic.remove(partitionId);
+                }
+
+                if (subscriptionsForTopic.isEmpty())
+                {
+                    subscriptions.remove(topicName);
+                }
             }
         }
 
@@ -102,17 +120,22 @@ public class EventSubscriptions<T extends EventSubscription<T>>
         managedSubscriptions.remove(subscription);
     }
 
-    public T getSubscription(int topicId, long subscriberKey)
+    public T getSubscription(final String topicName, final int partitionId, final long subscriberKey)
     {
-        final Long2ObjectHashMap<T> subscriptionsForTopic = subscriptions.get(topicId);
+        final Int2ObjectHashMap<Long2ObjectHashMap<T>> subscriptionsForTopic = subscriptions.get(topicName);
+
         if (subscriptionsForTopic != null)
         {
-            return subscriptionsForTopic.get(subscriberKey);
+            final Long2ObjectHashMap<T> subscriptionsForPartition = subscriptionsForTopic.get(partitionId);
+
+            if (subscriptionsForPartition != null)
+            {
+                return subscriptionsForPartition.get(subscriberKey);
+            }
+
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
 
 

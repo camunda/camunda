@@ -1,7 +1,7 @@
 package org.camunda.tngp.broker.logstreams;
 
-import static org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg.DEFAULT_LOG_ID;
-import static org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg.DEFAULT_LOG_NAME;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
 
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -35,7 +35,7 @@ public class LogStreamsManagerService implements Service<LogStreamsManager>
         {
             service = new LogStreamsManager(logStreamsCfg, agentRunnerInjector.getValue());
 
-            service.createLogStream(DEFAULT_LOG_ID, DEFAULT_LOG_NAME);
+            service.createLogStream(DEFAULT_TOPIC_NAME_BUFFER, DEFAULT_PARTITION_ID);
         });
     }
 

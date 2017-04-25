@@ -53,7 +53,7 @@ public class WorkflowInstanceEvent extends UnpackedObject
 
     public WorkflowInstanceEvent setBpmnProcessId(DirectBuffer directBuffer)
     {
-        bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
+        bpmnProcessIdProp.setValue(directBuffer);
         return this;
     }
 

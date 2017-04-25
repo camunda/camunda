@@ -76,7 +76,7 @@ public class FollowerState extends ActiveState
     public void open()
     {
         context.getLogStreamState().reset();
-        raft.lastContact(System.currentTimeMillis());
+        raft.lastContactNow();
         heartbeatTimeout = randomTimeout(heartbeatTimeoutConfig);
         open = true;
     }
@@ -243,14 +243,14 @@ public class FollowerState extends ActiveState
                 }
                 else
                 {
-                    raft.lastContact(System.currentTimeMillis());
+                    raft.lastContactNow();
                 }
 
                 context.take(TRANSITION_CLOSE);
             }
             else if (System.currentTimeMillis() >= electionTime + electionTimeout)
             {
-                raft.lastContact(System.currentTimeMillis());
+                raft.lastContactNow();
                 quorum.close();
 
                 workcount += 1;

@@ -1,5 +1,9 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.topicNameHeaderLength;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
@@ -26,7 +30,8 @@ public class SubscribedEventBuilder implements BufferWriter
     protected final Dispatcher sendBuffer;
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
-    protected int topicId;
+    protected String topicName;
+    protected int partitionId;
     protected long position;
     protected long key;
     protected long subscriberKey;
@@ -40,9 +45,15 @@ public class SubscribedEventBuilder implements BufferWriter
         this.sendBuffer = sendBuffer;
     }
 
-    public SubscribedEventBuilder topicId(int topicId)
+    public SubscribedEventBuilder topicName(final String topicName)
     {
-        this.topicId = topicId;
+        this.topicName = topicName;
+        return this;
+    }
+
+    public SubscribedEventBuilder partitionId(int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -124,7 +135,9 @@ public class SubscribedEventBuilder implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedEventEncoder.BLOCK_LENGTH +
-                SubscribedEventEncoder.eventHeaderLength() +
+                topicNameHeaderLength() +
+                getBytes(topicName).length +
+                eventHeaderLength() +
                 event.length;
     }
 
@@ -141,10 +154,11 @@ public class SubscribedEventBuilder implements BufferWriter
             .eventType(eventType)
             .key(key)
             .position(position)
-            .putEvent(event, 0, event.length)
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
-            .topicId(topicId);
+            .partitionId(partitionId)
+            .topicName(topicName)
+            .putEvent(event, 0, event.length);
     }
 
 

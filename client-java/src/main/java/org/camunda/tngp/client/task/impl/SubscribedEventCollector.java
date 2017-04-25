@@ -81,17 +81,19 @@ public class SubscribedEventCollector implements Agent, FragmentHandler
                 final long key = subscribedEventDecoder.key();
                 final long subscriberKey = subscribedEventDecoder.subscriberKey();
                 final long position = subscribedEventDecoder.position();
-                final int topicId = subscribedEventDecoder.topicId();
+                final int partitionId = subscribedEventDecoder.partitionId();
+                final String topicName = subscribedEventDecoder.topicName();
                 final byte[] eventBuffer = readBytes(subscribedEventDecoder::getEvent, subscribedEventDecoder::eventLength);
 
                 final TopicEventImpl event = new TopicEventImpl(
-                        topicId,
+                        topicName,
+                        partitionId,
                         key,
                         position,
                         EventTypeMapping.mapEventType(subscribedEventDecoder.eventType()),
                         eventBuffer);
 
-                messageHandled = eventHandler.onEvent(topicId, subscriberKey, event);
+                messageHandled = eventHandler.onEvent(subscriberKey, event);
             }
             else
             {

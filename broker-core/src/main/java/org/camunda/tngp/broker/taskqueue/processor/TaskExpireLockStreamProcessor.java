@@ -17,11 +17,13 @@ import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.util.HashMap;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
@@ -53,7 +55,8 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
     protected LogStreamReader targetLogStreamReader;
     protected LogStreamWriter targetLogStreamWriter;
 
-    protected int targetLogStreamId;
+    protected DirectBuffer targetLogStreamTopicName;
+    protected int targetLogStreamPartitionId;
     protected int streamProcessorId;
 
     protected final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -76,7 +79,10 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
         cmdQueue = context.getStreamProcessorCmdQueue();
         targetLogStreamReader = context.getTargetLogStreamReader();
         targetLogStreamWriter = context.getLogStreamWriter();
-        targetLogStreamId = context.getTargetStream().getId();
+
+        final LogStream targetStream = context.getTargetStream();
+        targetLogStreamTopicName = targetStream.getTopicName();
+        targetLogStreamPartitionId = targetStream.getPartitionId();
     }
 
     public static MetadataFilter eventFilter()
@@ -227,7 +233,7 @@ public class TaskExpireLockStreamProcessor implements StreamProcessor
 
             final long position = targetLogStreamWriter
                     .producerId(streamProcessorId)
-                    .sourceEvent(targetLogStreamId, eventPosition)
+                    .sourceEvent(targetLogStreamTopicName, targetLogStreamPartitionId, eventPosition)
                     .key(eventKey)
                     .metadataWriter(targetEventMetadata)
                     .valueWriter(taskEvent)

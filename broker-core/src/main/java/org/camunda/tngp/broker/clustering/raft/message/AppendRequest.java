@@ -1,19 +1,27 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.commitPositionNullValue;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.dataHeaderLength;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.previousEntryPositionNullValue;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.previousEntryTermNullValue;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.termNullValue;
+import static org.camunda.tngp.clustering.raft.AppendRequestEncoder.topicNameHeaderLength;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.AppendRequestDecoder;
 import org.camunda.tngp.clustering.raft.AppendRequestEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
-import static org.camunda.tngp.clustering.raft.AppendRequestDecoder.dataHeaderLength;
-import static org.camunda.tngp.clustering.raft.AppendRequestDecoder.hostHeaderLength;
 
 public class AppendRequest implements BufferReader, BufferWriter
 {
@@ -23,13 +31,14 @@ public class AppendRequest implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final AppendRequestEncoder bodyEncoder = new AppendRequestEncoder();
 
-    protected int id;
-    protected int term;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected int term = termNullValue();
 
-    protected long previousEntryPosition;
-    protected int previousEntryTerm;
+    protected long previousEntryPosition = previousEntryPositionNullValue();
+    protected int previousEntryTerm = previousEntryTermNullValue();
 
-    protected long commitPosition;
+    protected long commitPosition = commitPositionNullValue();
 
     protected final Member leader = new Member();
     protected final LoggedEventImpl readableEntry = new LoggedEventImpl();
@@ -38,14 +47,25 @@ public class AppendRequest implements BufferReader, BufferWriter
     protected boolean isLeaderAvailable = false;
     protected boolean isReadableEntryAvailable = false;
 
-    public int id()
+    public DirectBuffer topicName()
     {
-        return id;
+        return topicName;
     }
 
-    public AppendRequest id(final int id)
+    public AppendRequest topicName(final DirectBuffer topicName)
     {
-        this.id = id;
+        this.topicName.wrap(topicName);
+        return this;
+    }
+
+    public int partitionId()
+    {
+        return partitionId;
+    }
+
+    public AppendRequest partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -131,12 +151,18 @@ public class AppendRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
+        partitionId = bodyDecoder.partitionId();
         term = bodyDecoder.term();
 
         previousEntryPosition = bodyDecoder.previousEntryPosition();
         previousEntryTerm = bodyDecoder.previousEntryTerm();
         commitPosition = bodyDecoder.commitPosition();
+
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        final int topicNameOffset = bodyDecoder.limit();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+
+        bodyDecoder.limit(topicNameOffset + topicNameLength);
 
         isLeaderAvailable = false;
         leader.endpoint().reset();
@@ -172,6 +198,8 @@ public class AppendRequest implements BufferReader, BufferWriter
         int size = headerEncoder.encodedLength() +
                 bodyEncoder.sbeBlockLength() +
                 dataHeaderLength() +
+                topicNameHeaderLength() +
+                topicName.capacity() +
                 hostHeaderLength();
 
         if (isLeaderAvailable)
@@ -199,12 +227,13 @@ public class AppendRequest implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
+            .partitionId(partitionId)
             .term(term)
             .previousEntryPosition(previousEntryPosition)
             .previousEntryTerm(previousEntryTerm)
             .commitPosition(commitPosition)
             .port(leader.endpoint().port())
+            .putTopicName(topicName, 0, topicName.capacity())
             .putHost(leader.endpoint().getHostBuffer(), 0, leader.endpoint().hostLength());
 
         if (writeableEntry != null)
@@ -218,10 +247,12 @@ public class AppendRequest implements BufferReader, BufferWriter
 
     public void reset()
     {
-        id = -1;
-        term = -1;
-        previousEntryPosition = -1L;
-        previousEntryTerm = -1;
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
+        term = termNullValue();
+        previousEntryPosition = previousEntryPositionNullValue();
+        previousEntryTerm = previousEntryTermNullValue();
+        commitPosition = commitPositionNullValue();
         leader.endpoint().reset();
         isLeaderAvailable = false;
         isReadableEntryAvailable = false;

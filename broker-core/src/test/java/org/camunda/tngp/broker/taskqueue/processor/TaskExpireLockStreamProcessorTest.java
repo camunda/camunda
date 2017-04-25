@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +48,8 @@ import org.mockito.MockitoAnnotations;
 public class TaskExpireLockStreamProcessorTest
 {
     private static final int STREAM_PROCESSOR_ID = 2;
-    private static final int TARGET_LOG_STREAM_ID = 3;
+    private static final DirectBuffer TARGET_LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
+    private static final int TARGET_LOG_STREAM_PARTITION_ID = 3;
     private static final long INITIAL_POSITION = 10L;
 
     private static final byte[] TASK_TYPE = getBytes("test-task");
@@ -86,7 +88,8 @@ public class TaskExpireLockStreamProcessorTest
     {
         MockitoAnnotations.initMocks(this);
 
-        when(mockTargetLogStream.getId()).thenReturn(TARGET_LOG_STREAM_ID);
+        when(mockTargetLogStream.getTopicName()).thenReturn(TARGET_LOG_STREAM_TOPIC_NAME);
+        when(mockTargetLogStream.getPartitionId()).thenReturn(TARGET_LOG_STREAM_PARTITION_ID);
 
         streamProcessor = new TaskExpireLockStreamProcessor();
 
@@ -139,7 +142,7 @@ public class TaskExpireLockStreamProcessorTest
 
         verify(mockLogStreamWriter).key(2L);
         verify(mockLogStreamWriter).producerId(STREAM_PROCESSOR_ID);
-        verify(mockLogStreamWriter).sourceEvent(TARGET_LOG_STREAM_ID, INITIAL_POSITION);
+        verify(mockLogStreamWriter).sourceEvent(TARGET_LOG_STREAM_TOPIC_NAME, TARGET_LOG_STREAM_PARTITION_ID, INITIAL_POSITION);
     }
 
     @Test

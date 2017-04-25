@@ -44,7 +44,7 @@ public class TaskSubscriptionTest
         return properties;
     });
 
-    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule, 0);
+    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -68,8 +68,7 @@ public class TaskSubscriptionTest
     public void shouldOpenSubscription() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
             .taskType("foo")
@@ -96,8 +95,7 @@ public class TaskSubscriptionTest
     public void shouldCompleteTask() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
             .taskType("foo")
@@ -147,8 +145,7 @@ public class TaskSubscriptionTest
     public void shouldCompletionTaskInHandler() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
             .taskType("foo")
@@ -191,8 +188,7 @@ public class TaskSubscriptionTest
     public void shouldCloseSubscription() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
@@ -221,19 +217,18 @@ public class TaskSubscriptionTest
     public void shouldFetchAndHandleTasks()
     {
         // given
-        final TngpClient client = clientRule.getClient();
 
         final int numTasks = 50;
         for (int i = 0; i < numTasks; i++)
         {
-            client.taskTopic(0).create()
+            clientRule.taskTopic().create()
                 .taskType("foo")
                 .execute();
         }
 
         final RecordingTaskHandler handler = new RecordingTaskHandler(Task::complete);
 
-        client.taskTopic(0).newTaskSubscription()
+        clientRule.taskTopic().newTaskSubscription()
             .handler(handler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))
@@ -252,8 +247,7 @@ public class TaskSubscriptionTest
     public void shouldMarkTaskAsFailedAndRetryIfHandlerThrowsException()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
             .taskType("foo")
@@ -287,8 +281,7 @@ public class TaskSubscriptionTest
     public void shouldNotLockTaskIfRetriesAreExhausted()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         topicClient.create()
             .taskType("foo")
@@ -318,8 +311,7 @@ public class TaskSubscriptionTest
     public void shouldUpdateTaskRetries()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
             .taskType("foo")
@@ -361,8 +353,7 @@ public class TaskSubscriptionTest
     public void shouldExpireTaskLock() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskKey = topicClient.create()
             .taskType("foo")
@@ -401,7 +392,7 @@ public class TaskSubscriptionTest
         // given
         final TngpClient client = clientRule.getClient();
 
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .taskType("foo")
             .execute();
 
@@ -412,7 +403,7 @@ public class TaskSubscriptionTest
         // then
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
-        client.taskTopic(0).newTaskSubscription()
+        clientRule.taskTopic().newTaskSubscription()
                 .taskType("foo")
                 .lockTime(Duration.ofMinutes(5))
                 .lockOwner(1)
@@ -428,18 +419,16 @@ public class TaskSubscriptionTest
     public void shouldGiveTaskToSingleSubscription()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler(Task::complete);
 
-        client.taskTopic(0).newTaskSubscription()
+        clientRule.taskTopic().newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofHours(1))
             .lockOwner(1)
             .handler(taskHandler)
             .open();
 
-        client.taskTopic(0).newTaskSubscription()
+        clientRule.taskTopic().newTaskSubscription()
             .taskType("foo")
             .lockTime(Duration.ofHours(2))
             .lockOwner(1)
@@ -447,8 +436,7 @@ public class TaskSubscriptionTest
             .open();
 
         // when
-        client
-            .taskTopic(0)
+        clientRule.taskTopic()
             .create()
             .taskType("foo")
             .execute();
@@ -463,8 +451,7 @@ public class TaskSubscriptionTest
     public void shouldPollTasks()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final PollableTaskSubscription subscription = topicClient.newPollableTaskSubscription()
             .taskType("foo")
@@ -500,8 +487,7 @@ public class TaskSubscriptionTest
     public void shouldSubscribeToMultipleTypes() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         topicClient.create()
             .taskType("foo")
@@ -534,12 +520,11 @@ public class TaskSubscriptionTest
     public void shouldHandleMoreTasksThanPrefetchCapacity()
     {
         // given
-        final TngpClient tngpClient = clientRule.getClient();
         final int subscriptionCapacity = 16;
 
         for (int i = 0; i < subscriptionCapacity + 1; i++)
         {
-            tngpClient.taskTopic(0).create()
+            clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -548,7 +533,7 @@ public class TaskSubscriptionTest
         final RecordingTaskHandler taskHandler = new RecordingTaskHandler();
 
         // when
-        tngpClient.taskTopic(0).newTaskSubscription()
+        clientRule.taskTopic().newTaskSubscription()
             .handler(taskHandler)
             .taskType("foo")
             .lockTime(Duration.ofMinutes(5))

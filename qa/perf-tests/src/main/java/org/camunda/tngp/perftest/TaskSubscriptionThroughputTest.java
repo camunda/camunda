@@ -1,8 +1,10 @@
 package org.camunda.tngp.perftest;
 
-import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXCONNECTIONS;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_MAXREQUESTS;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.perftest.helper.TestHelper.printProperties;
 
 import java.util.Properties;
@@ -93,7 +95,7 @@ public class TaskSubscriptionThroughputTest
 
         final long testTimeNanos = TimeUnit.MILLISECONDS.toNanos(testTimeMs);
 
-        final TaskSubscription subscription = client.taskTopic(0).newTaskSubscription()
+        final TaskSubscription subscription = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).newTaskSubscription()
             .lockTime(10000)
             .lockOwner(0)
             .taskFetchSize(10000)
@@ -120,7 +122,7 @@ public class TaskSubscriptionThroughputTest
 
         try (TransportConnection connection = client.getConnectionPool().openConnection())
         {
-            final Supplier<Future> request = () -> client.taskTopic(0).create()
+            final Supplier<Future> request = () -> client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).create()
                     .taskType(TASK_TYPE)
                     .executeAsync(connection);
 

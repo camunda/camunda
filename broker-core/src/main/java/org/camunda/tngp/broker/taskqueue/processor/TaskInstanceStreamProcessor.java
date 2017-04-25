@@ -5,6 +5,7 @@ import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 
 import java.nio.ByteOrder;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
@@ -18,6 +19,7 @@ import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
@@ -58,7 +60,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     protected final TaskEvent taskEvent = new TaskEvent();
     protected final CreditsRequest creditsRequest = new CreditsRequest();
 
-    protected int streamId;
+    protected DirectBuffer logStreamTopicName;
+    protected int logStreamPartitionId;
 
     protected long eventPosition = 0;
     protected long eventKey = 0;
@@ -83,7 +86,9 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
 
     public void onOpen(StreamProcessorContext context)
     {
-        streamId = context.getSourceStream().getId();
+        final LogStream sourceStream = context.getSourceStream();
+        logStreamTopicName = sourceStream.getTopicName();
+        logStreamPartitionId = sourceStream.getPartitionId();
     }
 
     public static MetadataFilter eventFilter()
@@ -143,7 +148,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
     {
         return responseWriter
             .brokerEventMetadata(sourceEventMetadata)
-            .topicId(streamId)
+            .topicName(logStreamTopicName)
+            .partitionId(logStreamPartitionId)
             .key(eventKey)
             .eventWriter(taskEvent)
             .tryWriteResponse();
@@ -235,7 +241,8 @@ public class TaskInstanceStreamProcessor implements StreamProcessor
             {
                 success = subscribedEventWriter
                         .channelId(sourceEventMetadata.getReqChannelId())
-                        .topicId(streamId)
+                        .topicName(logStreamTopicName)
+                        .partitionId(logStreamPartitionId)
                         .key(eventKey)
                         .subscriberKey(sourceEventMetadata.getSubscriberKey())
                         .subscriptionType(SubscriptionType.TASK_SUBSCRIPTION)

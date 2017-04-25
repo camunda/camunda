@@ -14,7 +14,7 @@ package org.camunda.tngp.broker.logstreams.processor;
 
 public class StreamProcessorIds
 {
-    // a stream processor id should be unique to distinguish event producers
+    // a stream processor partitionId should be unique to distinguish event producers
 
     public static final int TASK_QUEUE_STREAM_PROCESSOR_ID = 10;
 

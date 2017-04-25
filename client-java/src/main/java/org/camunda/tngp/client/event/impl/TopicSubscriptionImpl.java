@@ -182,9 +182,15 @@ public class TopicSubscriptionImpl
     }
 
     @Override
-    public int getTopicId()
+    public String getTopicName()
     {
-        return client.getTopicId();
+        return client.getTopicName();
+    }
+
+    @Override
+    public int getPartitionId()
+    {
+        return client.getPartitionId();
     }
 
 }

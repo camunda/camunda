@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
-import static org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg.DEFAULT_LOG_NAME;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_LOG_NAME;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueInstanceStreamProcessorServiceName;
 
 import java.io.InputStream;

@@ -14,6 +14,8 @@ package org.camunda.tngp.client.workflow.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.DEPLOYMENT_EVENT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
@@ -48,7 +50,8 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class CreateDeploymentCmdTest
 {
-    private static final int TOPIC_ID = 1;
+    protected static final String TOPIC_NAME = "test-topic";
+    private static final int PARTITION_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private static final BpmnModelInstance BPMN_MODEL_INSTANCE = Bpmn.createExecutableProcess("process")
@@ -75,7 +78,7 @@ public class CreateDeploymentCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CreateDeploymentCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
+        command = new CreateDeploymentCmdImpl(clientCmdExecutor, objectMapper, TOPIC_NAME, PARTITION_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -101,7 +104,8 @@ public class CreateDeploymentCmdTest
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
         assertThat(requestDecoder.eventType()).isEqualTo(DEPLOYMENT_EVENT);
-        assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
+        assertThat(requestDecoder.topicName()).isEqualTo(TOPIC_NAME);
+        assertThat(requestDecoder.partitionId()).isEqualTo(PARTITION_ID);
 
         final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
@@ -201,6 +205,8 @@ public class CreateDeploymentCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(deploymentEvent);
 
         responseEncoder
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
@@ -230,6 +236,8 @@ public class CreateDeploymentCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(deploymentEvent);
 
         responseEncoder
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
@@ -285,6 +293,9 @@ public class CreateDeploymentCmdTest
         command.getRequestWriter().write(writeBuffer, 0);
 
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
+
+        // skip topic name
+        requestDecoder.topicName();
 
         final byte[] buffer = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 

@@ -38,9 +38,9 @@ public class BpmnTransformer
         return validate(readModelFromBuffer(buffer));
     }
 
-    public ValidationResults validate(BpmnModelInstance modelInstnace)
+    public ValidationResults validate(BpmnModelInstance modelInstance)
     {
-        return modelInstnace.validate(BPMN_VALIDATORS);
+        return modelInstance.validate(BPMN_VALIDATORS);
     }
 
     public List<ExecutableWorkflow> transform(DirectBuffer buffer)

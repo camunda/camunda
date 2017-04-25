@@ -3,7 +3,8 @@ package org.camunda.tngp.client.impl.cmd;
 public class CloseSubscriptionRequest
 {
 
-    protected int topicId;
+    protected String topicName;
+    protected int partitionId;
     protected long subscriberKey;
 
     public long getSubscriberKey()
@@ -11,24 +12,35 @@ public class CloseSubscriptionRequest
         return subscriberKey;
     }
 
-    public void setSubscriberKey(long id)
+    public void setSubscriberKey(final long subscriberKey)
     {
-        this.subscriberKey = id;
+        this.subscriberKey = subscriberKey;
     }
 
-    public int getTopicId()
+    public String getTopicName()
     {
-        return topicId;
+        return topicName;
     }
 
-    public void setTopicId(int topicId)
+    public void setTopicName(final String topicName)
     {
-        this.topicId = topicId;
+        this.topicName = topicName;
+    }
+
+    public int getPartitionId()
+    {
+        return partitionId;
+    }
+
+    public void setPartitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
     }
 
     public void reset()
     {
         this.subscriberKey = -1L;
-        this.topicId = -1;
+        this.topicName = null;
+        this.partitionId = -1;
     }
 }

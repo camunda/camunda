@@ -14,7 +14,8 @@ package org.camunda.tngp.broker.taskqueue.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.taskqueue.TaskQueueServiceNames.taskQueueLockStreamProcessorServiceName;
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -28,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.taskqueue.CreditsRequest;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.processor.LockTaskStreamProcessor;
@@ -49,17 +49,21 @@ public class TaskSubscriptionManagerTest
 {
     private static final ServiceName<LogStream> LOG_STREAM_SERVICE_NAME = ServiceName.newServiceName("mock-log-stream", LogStream.class);
 
-    private static final int LOG_STREAM_ID = 2;
-    private static final int ANOTHER_LOG_STREAM_ID = 3;
+    public static final String LOG_STREAM_TOPIC_NAME = "task-test-topic";
+    private static final DirectBuffer LOG_STREAM_TOPIC_NAME_BUFFER = wrapString(LOG_STREAM_TOPIC_NAME);
+    private static final int LOG_STREAM_PARTITION_ID = 2;
+    private static final String LOG_STREAM_LOG_NAME = String.format("%s.%d", LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID);
 
-    private static final String LOG_STREAM_NAME = "task-test-log";
-    private static final String ANOTHER_LOG_STREAM_NAME = "task-test-log-2";
+    public static final String ANOTHER_LOG_STREAM_TOPIC_NAME = "task-test-topic-2";
+    private static final DirectBuffer ANOTHER_LOG_STREAM_TOPIC_NAME_BUFFER = wrapString(ANOTHER_LOG_STREAM_TOPIC_NAME);
+    private static final int ANOTHER_LOG_STREAM_PARTITION_ID = 3;
+    private static final String ANOTHER_LOG_STREAM_LOG_NAME = String.format("%s.%d", ANOTHER_LOG_STREAM_TOPIC_NAME, ANOTHER_LOG_STREAM_PARTITION_ID);
 
     private static final String TASK_TYPE = "test-task";
-    private static final DirectBuffer TASK_TYPE_BUFFER = new UnsafeBuffer(getBytes(TASK_TYPE));
+    private static final DirectBuffer TASK_TYPE_BUFFER = wrapString(TASK_TYPE);
 
     private static final String ANOTHER_TASK_TYPE = "another-task";
-    private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = new UnsafeBuffer(getBytes(ANOTHER_TASK_TYPE));
+    private static final DirectBuffer ANOTHER_TASK_TYPE_BUFFER = wrapString(ANOTHER_TASK_TYPE);
 
     @FluentMock
     private ServiceStartContext mockServiceContext;
@@ -84,25 +88,27 @@ public class TaskSubscriptionManagerTest
     {
         MockitoAnnotations.initMocks(this);
 
-        mockLogStream = createMockLogStream(LOG_STREAM_ID, LOG_STREAM_NAME);
+        mockLogStream = createMockLogStream(LOG_STREAM_TOPIC_NAME_BUFFER, LOG_STREAM_PARTITION_ID);
 
         when(mockServiceBuilder.install()).thenReturn(CompletableFuture.completedFuture(null));
         when(mockServiceContext.createService(any(), any())).thenReturn(mockServiceBuilder);
         when(mockServiceContext.removeService(any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        mockStreamProcessor = createMockStreamProcessor(LOG_STREAM_ID, TASK_TYPE_BUFFER);
+        mockStreamProcessor = createMockStreamProcessor(LOG_STREAM_TOPIC_NAME_BUFFER, LOG_STREAM_PARTITION_ID, TASK_TYPE_BUFFER);
 
         manager = new TaskSubscriptionManager(mockServiceContext, mockStreamProcessorBuilder);
 
-        subscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
+        subscription = new TaskSubscription()
+            .setTopicName(LOG_STREAM_TOPIC_NAME_BUFFER).setPartitionId(LOG_STREAM_PARTITION_ID).setTaskType(TASK_TYPE_BUFFER);
     }
 
-    private LockTaskStreamProcessor createMockStreamProcessor(long logStreamId, DirectBuffer taskTypeBuffer)
+    private LockTaskStreamProcessor createMockStreamProcessor(DirectBuffer logStreamTopicName, int logStreamPartitionId, DirectBuffer taskTypeBuffer)
     {
         final LockTaskStreamProcessor mockStreamProcessor = mock(LockTaskStreamProcessor.class);
 
         when(mockStreamProcessorBuilder.apply(taskTypeBuffer)).thenReturn(mockStreamProcessor);
-        when(mockStreamProcessor.getLogStreamId()).thenReturn(logStreamId);
+        when(mockStreamProcessor.getLogStreamTopicName()).thenReturn(logStreamTopicName);
+        when(mockStreamProcessor.getLogStreamPartitionId()).thenReturn(logStreamPartitionId);
         when(mockStreamProcessor.getSubscriptedTaskType()).thenReturn(taskTypeBuffer);
 
         when(mockStreamProcessor.addSubscription(any())).thenReturn(CompletableFuture.completedFuture(null));
@@ -112,12 +118,15 @@ public class TaskSubscriptionManagerTest
         return mockStreamProcessor;
     }
 
-    private LogStream createMockLogStream(int logStreamId, String logStreamName)
+    private LogStream createMockLogStream(DirectBuffer logStreamTopicName, int logStreamPartitionId)
     {
         final LogStream mockLogStream = mock(LogStream.class);
 
+        final String logStreamName = String.format("%s.%d", bufferAsString(logStreamTopicName), logStreamPartitionId);
+
+        when(mockLogStream.getTopicName()).thenReturn(logStreamTopicName);
+        when(mockLogStream.getPartitionId()).thenReturn(logStreamPartitionId);
         when(mockLogStream.getLogName()).thenReturn(logStreamName);
-        when(mockLogStream.getId()).thenReturn(logStreamId);
 
         return mockLogStream;
     }
@@ -139,7 +148,7 @@ public class TaskSubscriptionManagerTest
         verify(mockStreamProcessorBuilder).apply(TASK_TYPE_BUFFER);
         verify(mockStreamProcessor).addSubscription(subscription);
 
-        verify(mockServiceContext).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, TASK_TYPE)), any());
+        verify(mockServiceContext).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, TASK_TYPE)), any());
         verify(mockServiceBuilder).install();
     }
 
@@ -147,7 +156,8 @@ public class TaskSubscriptionManagerTest
     public void shouldAddSubscription() throws Exception
     {
         // given
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
+        final TaskSubscription anotherSubscription = new TaskSubscription()
+            .setTopicName(LOG_STREAM_TOPIC_NAME_BUFFER).setPartitionId(LOG_STREAM_PARTITION_ID).setTaskType(TASK_TYPE_BUFFER);
 
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addSubscription(subscription);
@@ -165,7 +175,7 @@ public class TaskSubscriptionManagerTest
         verify(mockStreamProcessor).addSubscription(subscription);
         verify(mockStreamProcessor).addSubscription(anotherSubscription);
 
-        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, TASK_TYPE)), any());
+        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, TASK_TYPE)), any());
         verify(mockServiceBuilder, times(1)).install();
     }
 
@@ -173,9 +183,10 @@ public class TaskSubscriptionManagerTest
     public void shouldCreateServiceForEachLogStream() throws Exception
     {
         // given
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(ANOTHER_LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
+        final TaskSubscription anotherSubscription = new TaskSubscription()
+            .setTopicName(ANOTHER_LOG_STREAM_TOPIC_NAME_BUFFER).setPartitionId(ANOTHER_LOG_STREAM_PARTITION_ID).setTaskType(TASK_TYPE_BUFFER);
 
-        final LogStream anotherMockLogStream = createMockLogStream(ANOTHER_LOG_STREAM_ID, ANOTHER_LOG_STREAM_NAME);
+        final LogStream anotherMockLogStream = createMockLogStream(ANOTHER_LOG_STREAM_TOPIC_NAME_BUFFER, ANOTHER_LOG_STREAM_PARTITION_ID);
 
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addStream(anotherMockLogStream, LOG_STREAM_SERVICE_NAME);
@@ -194,8 +205,8 @@ public class TaskSubscriptionManagerTest
         verify(mockStreamProcessor).addSubscription(subscription);
         verify(mockStreamProcessor).addSubscription(anotherSubscription);
 
-        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, TASK_TYPE)), any());
-        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(ANOTHER_LOG_STREAM_NAME, TASK_TYPE)), any());
+        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, TASK_TYPE)), any());
+        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(ANOTHER_LOG_STREAM_LOG_NAME, TASK_TYPE)), any());
         verify(mockServiceBuilder, times(2)).install();
     }
 
@@ -203,9 +214,10 @@ public class TaskSubscriptionManagerTest
     public void shouldCreateServiceForEachTaskType() throws Exception
     {
         // given
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(ANOTHER_TASK_TYPE_BUFFER);
+        final TaskSubscription anotherSubscription = new TaskSubscription()
+            .setTopicName(LOG_STREAM_TOPIC_NAME_BUFFER).setPartitionId(LOG_STREAM_PARTITION_ID).setTaskType(ANOTHER_TASK_TYPE_BUFFER);
 
-        final LockTaskStreamProcessor anotherMockStreamProcessor = createMockStreamProcessor(LOG_STREAM_ID, ANOTHER_TASK_TYPE_BUFFER);
+        final LockTaskStreamProcessor anotherMockStreamProcessor = createMockStreamProcessor(LOG_STREAM_TOPIC_NAME_BUFFER, LOG_STREAM_PARTITION_ID, ANOTHER_TASK_TYPE_BUFFER);
 
         manager.addStream(mockLogStream, LOG_STREAM_SERVICE_NAME);
         manager.addSubscription(subscription);
@@ -224,8 +236,8 @@ public class TaskSubscriptionManagerTest
         verify(mockStreamProcessor).addSubscription(subscription);
         verify(anotherMockStreamProcessor).addSubscription(anotherSubscription);
 
-        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, TASK_TYPE)), any());
-        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, ANOTHER_TASK_TYPE)), any());
+        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, TASK_TYPE)), any());
+        verify(mockServiceContext, times(1)).createService(eq(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, ANOTHER_TASK_TYPE)), any());
         verify(mockServiceBuilder, times(2)).install();
     }
 
@@ -266,7 +278,7 @@ public class TaskSubscriptionManagerTest
 
         verify(mockStreamProcessor).removeSubscription(0L);
 
-        verify(mockServiceContext).removeService(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, TASK_TYPE));
+        verify(mockServiceContext).removeService(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, TASK_TYPE));
     }
 
     @Test
@@ -288,14 +300,15 @@ public class TaskSubscriptionManagerTest
 
         verify(mockStreamProcessor).removeSubscription(0L);
 
-        verify(mockServiceContext, never()).removeService(taskQueueLockStreamProcessorServiceName(LOG_STREAM_NAME, TASK_TYPE));
+        verify(mockServiceContext, never()).removeService(taskQueueLockStreamProcessorServiceName(LOG_STREAM_LOG_NAME, TASK_TYPE));
     }
 
     @Test
     public void shouldIgnoreRemoveSubscriptionIfNotExist() throws Exception
     {
         // given
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(ANOTHER_LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
+        final TaskSubscription anotherSubscription = new TaskSubscription()
+            .setTopicName(ANOTHER_LOG_STREAM_TOPIC_NAME_BUFFER).setPartitionId(ANOTHER_LOG_STREAM_PARTITION_ID).setTaskType(TASK_TYPE_BUFFER);
 
         manager.addSubscription(anotherSubscription);
 
@@ -318,7 +331,7 @@ public class TaskSubscriptionManagerTest
         // then
         assertThat(future).hasFailedWithThrowableThat()
             .isInstanceOf(RuntimeException.class)
-            .hasMessage("Topic with id '2' not found.");
+            .hasMessage("Topic with name '%s' and partition id '%d' not found.", LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID);
 
         verify(mockStreamProcessor, never()).addSubscription(subscription);
 
@@ -348,7 +361,8 @@ public class TaskSubscriptionManagerTest
     public void shouldPropagateFailureWhileAddSubscription() throws Exception
     {
         // given
-        final TaskSubscription anotherSubscription = new TaskSubscription().setTopicId(LOG_STREAM_ID).setTaskType(TASK_TYPE_BUFFER);
+        final TaskSubscription anotherSubscription = new TaskSubscription()
+            .setTopicName(LOG_STREAM_TOPIC_NAME_BUFFER).setPartitionId(LOG_STREAM_PARTITION_ID).setTaskType(TASK_TYPE_BUFFER);
 
         when(mockStreamProcessor.addSubscription(anotherSubscription)).thenReturn(completedExceptionallyFuture(new RuntimeException("foo")));
 

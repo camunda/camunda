@@ -8,15 +8,17 @@ import org.camunda.tngp.client.task.impl.MsgPackField;
 public class TopicEventImpl implements TopicEvent, EventMetadata
 {
 
-    protected final int topicId;
+    protected final String topicName;
+    protected final int partitionId;
     protected final long key;
     protected final long position;
     protected final TopicEventType eventType;
     protected final MsgPackField content;
 
-    public TopicEventImpl(int topicId, long key, long position, TopicEventType eventType, byte[] rawContent)
+    public TopicEventImpl(final String topicName, final int partitionId, final long key, final long position, final TopicEventType eventType, final byte[] rawContent)
     {
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
         this.position = position;
         this.key = key;
         this.eventType = eventType;
@@ -24,10 +26,15 @@ public class TopicEventImpl implements TopicEvent, EventMetadata
         this.content.setMsgPack(rawContent);
     }
 
-    @Override
-    public int getTopicId()
+    public String getTopicName()
     {
-        return topicId;
+        return topicName;
+    }
+
+    @Override
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
     @Override

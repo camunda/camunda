@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -137,14 +136,15 @@ public class ClusterManager implements Agent
                 final File file = metaFiles[i];
                 final MetaStore meta = new MetaStore(file.getAbsolutePath());
 
-                final int id = meta.loadLogId();
-                LogStream logStream = logStreamManager.getLogStream(id);
+                final int partitionId = meta.loadPartitionId();
+                final DirectBuffer topicName = meta.loadTopicName();
+
+                LogStream logStream = logStreamManager.getLogStream(topicName, partitionId);
 
                 if (logStream == null)
                 {
-                    final String name = meta.loadLogName();
                     final String directory = meta.loadLogDirectory();
-                    logStream = logStreamManager.createLogStream(id, name, directory);
+                    logStream = logStreamManager.createLogStream(topicName, partitionId, directory);
                 }
 
                 createRaft(logStream, meta, Collections.emptyList(), false);
@@ -152,11 +152,7 @@ public class ClusterManager implements Agent
         }
         else if (context.getPeers().sizeVolatile() == 1)
         {
-            final Collection<LogStream> logStreams = logStreamManager.getLogStreams();
-            for (final LogStream logStream : logStreams)
-            {
-                createRaft(logStream, Collections.emptyList(), true);
-            }
+            logStreamManager.forEachLogStream(logStream -> createRaft(logStream, Collections.emptyList(), true));
         }
     }
 
@@ -212,9 +208,10 @@ public class ClusterManager implements Agent
                 {
                     // TODO: if this should be garbage free, we have to limit
                     // the number of concurrent invitations.
-                    final InvitationRequest invitationRequest = new InvitationRequest();
-                    invitationRequest.id(raft.id())
-                        .name(raft.stream().getLogName())
+                    final LogStream logStream = raft.stream();
+                    final InvitationRequest invitationRequest = new InvitationRequest()
+                        .topicName(logStream.getTopicName())
+                        .partitionId(logStream.getPartitionId())
                         .term(raft.term())
                         .members(raft.configuration().members());
 
@@ -239,12 +236,17 @@ public class ClusterManager implements Agent
 
     public void removeRaft(final Raft raft)
     {
+        final LogStream logStream = raft.stream();
+        final DirectBuffer topicName = logStream.getTopicName();
+        final int partitionId = logStream.getPartitionId();
+
         managementCmdQueue.add(() ->
         {
             for (int i = 0; i < rafts.size(); i++)
             {
                 final Raft r = rafts.get(i);
-                if (r.id() == raft.id())
+                final LogStream stream = r.stream();
+                if (topicName.equals(stream.getTopicName()) && partitionId == stream.getPartitionId())
                 {
                     rafts.remove(i);
                     break;
@@ -258,16 +260,16 @@ public class ClusterManager implements Agent
         final FsLogStorage logStorage = (FsLogStorage) logStream.getLogStorage();
         final String path = logStorage.getConfig().getPath();
 
-        final MetaStore meta = new MetaStore(this.config.metaDirectory + File.separator + String.format("%d-%s.meta", logStream.getId(), logStream.getLogName()));
-        meta.storeLogIdAndNameAndDirectory(logStream.getId(), logStream.getLogName(), path);
+        final MetaStore meta = new MetaStore(this.config.metaDirectory + File.separator + String.format("%s.meta", logStream.getLogName()));
+        meta.storeTopicNameAndPartitionIdAndDirectory(logStream.getTopicName(), logStream.getPartitionId(), path);
 
         createRaft(logStream, meta, members, bootstrap);
     }
 
     public void createRaft(LogStream logStream, MetaStore meta, List<Member> members, boolean bootstrap)
     {
-        final int id = logStream.getId();
-        final String component = String.format("raft.%d", id);
+        final String logName = logStream.getLogName();
+        final String component = String.format("raft.%s", logName);
 
         final TransportConnectionPoolService transportConnectionPoolService = new TransportConnectionPoolService();
 
@@ -293,7 +295,7 @@ public class ClusterManager implements Agent
 
         // TODO: provide raft configuration
         final RaftContextService raftContextService = new RaftContextService(serviceContainer);
-        final ServiceName<RaftContext> raftContextServiceName = raftContextServiceName(String.valueOf(id));
+        final ServiceName<RaftContext> raftContextServiceName = raftContextServiceName(logName);
         serviceContainer.createService(raftContextServiceName, raftContextService)
             .dependency(PEER_LOCAL_SERVICE, raftContextService.getLocalPeerInjector())
             .dependency(TRANSPORT_SEND_BUFFER, raftContextService.getSendBufferInjector())
@@ -304,7 +306,7 @@ public class ClusterManager implements Agent
             .install();
 
         final RaftService raftService = new RaftService(logStream, meta, new CopyOnWriteArrayList<>(members), bootstrap);
-        final ServiceName<Raft> raftServiceName = raftServiceName(String.valueOf(id));
+        final ServiceName<Raft> raftServiceName = raftServiceName(logName);
         serviceContainer.createService(raftServiceName, raftService)
             .group(RAFT_SERVICE_GROUP)
             .dependency(AGENT_RUNNER_SERVICE, raftService.getAgentRunnerInjector())
@@ -317,11 +319,11 @@ public class ClusterManager implements Agent
         invitationRequest.reset();
         invitationRequest.wrap(buffer, offset, length);
 
-        final int logId = invitationRequest.id();
-        final String logName = invitationRequest.name();
+        final DirectBuffer topicName = invitationRequest.topicName();
+        final int partitionId = invitationRequest.partitionId();
 
         final LogStreamsManager logStreamManager = context.getLogStreamsManager();
-        final LogStream logStream = logStreamManager.createLogStream(logId, logName);
+        final LogStream logStream = logStreamManager.createLogStream(topicName, partitionId);
 
         createRaft(logStream, new ArrayList<>(invitationRequest.members()), false);
 

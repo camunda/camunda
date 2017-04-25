@@ -36,6 +36,7 @@ import org.camunda.tngp.broker.workflow.graph.transformer.BpmnTransformer;
 import org.camunda.tngp.broker.workflow.graph.transformer.validator.BpmnProcessIdRule;
 import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
@@ -62,7 +63,8 @@ public class DeploymentStreamProcessor implements StreamProcessor
 
     protected final ArrayList<DeployedWorkflow> deployedWorkflows = new ArrayList<>();
 
-    protected int streamId;
+    protected DirectBuffer logStreamTopicName;
+    protected int logStreamPartitionId;
 
     protected long eventKey;
 
@@ -83,7 +85,9 @@ public class DeploymentStreamProcessor implements StreamProcessor
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-        streamId = context.getSourceStream().getId();
+        final LogStream sourceStream = context.getSourceStream();
+        logStreamTopicName = sourceStream.getTopicName();
+        logStreamPartitionId = sourceStream.getPartitionId();
     }
 
     public static MetadataFilter eventFilter()
@@ -200,7 +204,8 @@ public class DeploymentStreamProcessor implements StreamProcessor
         {
             return responseWriter
                     .brokerEventMetadata(sourceEventMetadata)
-                    .topicId(streamId)
+                    .topicName(logStreamTopicName)
+                    .partitionId(logStreamPartitionId)
                     .key(eventKey)
                     .eventWriter(deploymentEvent)
                     .tryWriteResponse();

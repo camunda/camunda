@@ -1,5 +1,7 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder.commandHeaderLength;
+
 import java.util.Map;
 
 import org.agrona.DirectBuffer;
@@ -18,6 +20,7 @@ public class ExecuteCommandRequest implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
+    protected String topicName;
     protected Map<String, Object> command;
     protected int channelId;
 
@@ -32,9 +35,14 @@ public class ExecuteCommandRequest implements BufferReader
         return bodyDecoder.key();
     }
 
-    public int topicId()
+    public String topicName()
     {
-        return bodyDecoder.topicId();
+        return topicName;
+    }
+
+    public int partitionId()
+    {
+        return bodyDecoder.partitionId();
     }
 
     public EventType eventType()
@@ -59,10 +67,14 @@ public class ExecuteCommandRequest implements BufferReader
 
         bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
+        topicName = bodyDecoder.topicName();
+
         final int commandLength = bodyDecoder.commandLength();
+        final int commandOffset = bodyDecoder.limit() + commandHeaderLength();
+
         command = msgPackHelper.readMsgPack(new DirectBufferInputStream(
                 buffer,
-                bodyDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength(),
+                commandOffset,
                 commandLength));
     }
 

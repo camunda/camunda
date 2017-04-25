@@ -1,7 +1,14 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
+import static org.camunda.tngp.clustering.raft.AppendResponseEncoder.entryPositionNullValue;
+import static org.camunda.tngp.clustering.raft.AppendResponseEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.AppendResponseEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.raft.AppendResponseEncoder.termNullValue;
+import static org.camunda.tngp.clustering.raft.AppendResponseEncoder.topicNameHeaderLength;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.AppendResponseDecoder;
 import org.camunda.tngp.clustering.raft.AppendResponseEncoder;
@@ -19,23 +26,35 @@ public class AppendResponse implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final AppendResponseEncoder bodyEncoder = new AppendResponseEncoder();
 
-    protected int id;
-    protected int term;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected int term = termNullValue();
 
     protected boolean succeeded;
-    protected long entryPosition;
+    protected long entryPosition = entryPositionNullValue();
 
     protected final Member member = new Member();
     protected boolean isMemberAvailable = false;
 
-    public int id()
+    public DirectBuffer topicName()
     {
-        return id;
+        return topicName;
     }
 
-    public AppendResponse id(final int id)
+    public AppendResponse topicName(final DirectBuffer topicName)
     {
-        this.id = id;
+        this.topicName.wrap(topicName);
+        return this;
+    }
+
+    public int partitionId()
+    {
+        return partitionId;
+    }
+
+    public AppendResponse partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -99,10 +118,16 @@ public class AppendResponse implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
+        partitionId = bodyDecoder.partitionId();
         term = bodyDecoder.term();
         succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
         entryPosition = bodyDecoder.entryPosition();
+
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        final int topicNameOffset = bodyDecoder.limit();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+
+        bodyDecoder.limit(topicNameOffset + topicNameLength);
 
         isMemberAvailable = false;
         member.endpoint().reset();
@@ -125,7 +150,9 @@ public class AppendResponse implements BufferReader, BufferWriter
     {
         int size = headerEncoder.encodedLength() +
                 bodyEncoder.sbeBlockLength() +
-                AppendResponseEncoder.hostHeaderLength();
+                topicNameHeaderLength() +
+                topicName.capacity() +
+                hostHeaderLength();
 
         if (isMemberAvailable)
         {
@@ -147,21 +174,23 @@ public class AppendResponse implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
+            .partitionId(partitionId)
             .term(term)
             .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
             .entryPosition(entryPosition)
             .port(member.endpoint().port())
+            .putTopicName(topicName, 0, topicName.capacity())
             .putHost(member.endpoint().getHostBuffer(), 0, member.endpoint().hostLength());
 
     }
 
     public void reset()
     {
-        id = -1;
-        term = -1;
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
+        term = termNullValue();
         succeeded = false;
-        entryPosition = -1L;
+        entryPosition = entryPositionNullValue();
         member.endpoint().reset();
         isMemberAvailable = false;
     }

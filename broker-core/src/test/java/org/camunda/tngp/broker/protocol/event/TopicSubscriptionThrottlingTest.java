@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.protocol.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,7 +29,8 @@ public class TopicSubscriptionThrottlingTest
     public void openSubscription(int prefetchCapacity)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(0)
             .eventTypeSubscriber()
             .command()
                 .put("startPosition", 0)
@@ -79,7 +81,8 @@ public class TopicSubscriptionThrottlingTest
 
         // when
         apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(0)
             .eventTypeSubscription()
             .command()
                 .put("name", SUBSCRIPTION_NAME)
@@ -126,7 +129,8 @@ public class TopicSubscriptionThrottlingTest
         for (int i = 0; i < nrOfTasks; i++)
         {
             apiRule.createCmdRequest()
-                .topicId(0)
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
                 .eventTypeTask()
                 .command()
                     .put("eventType", "CREATE")

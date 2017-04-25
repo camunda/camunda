@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.protocol.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +40,7 @@ public class TopicSubscriptionAcknowledgementTest
     public void openSubscription(long startPosition)
     {
         final ExecuteCommandResponse response = apiRule
-                .openTopicSubscription(0, SUBSCRIPTION_NAME, startPosition)
+                .openTopicSubscription(SUBSCRIPTION_NAME, startPosition)
                 .await();
         subscriberKey = response.key();
     }
@@ -49,7 +51,8 @@ public class TopicSubscriptionAcknowledgementTest
         apiRule.createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
             .data()
-                .put("topicId", 0)
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", DEFAULT_PARTITION_ID)
                 .put("subscriberKey", subscriberKey)
                 .done()
             .sendAndAwait();
@@ -61,7 +64,8 @@ public class TopicSubscriptionAcknowledgementTest
         // when
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("eventType", "ACKNOWLEDGE")
@@ -85,7 +89,8 @@ public class TopicSubscriptionAcknowledgementTest
 
         apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("eventType", "ACKNOWLEDGE")
@@ -115,7 +120,8 @@ public class TopicSubscriptionAcknowledgementTest
         // given
         apiRule.createCmdRequest()
             .eventTypeSubscription()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .command()
                 .put("name", SUBSCRIPTION_NAME)
                 .put("eventType", "ACKNOWLEDGE")
@@ -132,7 +138,8 @@ public class TopicSubscriptionAcknowledgementTest
 
         // and
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("eventType", "CREATE")
@@ -156,7 +163,8 @@ public class TopicSubscriptionAcknowledgementTest
     {
         // given
         apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .eventTypeTask()
             .command()
                 .put("eventType", "CREATE")

@@ -48,8 +48,7 @@ public class CreateWorkflowInstanceTest
                 .register();
 
         // when
-        final WorkflowInstance workflowInstance = client
-                .workflowTopic(0)
+        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
                 .create()
                 .bpmnProcessId("foo")
                 .execute();
@@ -76,8 +75,7 @@ public class CreateWorkflowInstanceTest
             .register();
 
         // when
-        final WorkflowInstance workflowInstance = client
-            .workflowTopic(0)
+        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
             .create()
             .bpmnProcessId("foo")
             .payload(new ByteArrayInputStream(payload))
@@ -99,7 +97,7 @@ public class CreateWorkflowInstanceTest
         expectedException.expectMessage("bpmnProcessId must not be null");
 
         // when create command is executed without BPMN process id
-        client.workflowTopic(0)
+        clientRule.workflowTopic()
                 .create()
                 .execute();
     }
@@ -121,11 +119,10 @@ public class CreateWorkflowInstanceTest
         expectedException.expectMessage("Creation of workflow instance with id foo and version 1 was rejected.");
 
         // when
-        client
-                .workflowTopic(0)
-                .create()
-                .bpmnProcessId("foo")
-                .execute();
+        clientRule.workflowTopic()
+            .create()
+            .bpmnProcessId("foo")
+            .execute();
     }
 
     @Test
@@ -139,8 +136,7 @@ public class CreateWorkflowInstanceTest
                 .register();
 
         // when
-        final WorkflowInstance workflowInstance = client
-                .workflowTopic(0)
+        final WorkflowInstance workflowInstance = clientRule.workflowTopic()
                 .create()
                 .bpmnProcessId("foo")
                 .version(2)

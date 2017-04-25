@@ -23,12 +23,14 @@ import org.camunda.tngp.client.impl.cmd.CreateTopicSubscriptionCmdImpl;
 public class TopicClientImpl implements TopicClient
 {
     protected final TngpClientImpl client;
-    protected final int topicId;
+    protected final String topicName;
+    protected final int partitionId;
 
-    public TopicClientImpl(TngpClientImpl client, int topicId)
+    public TopicClientImpl(TngpClientImpl client, final String topicName, int partitionId)
     {
         this.client = client;
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
     @Override
@@ -45,22 +47,27 @@ public class TopicClientImpl implements TopicClient
 
     public CreateTopicSubscriptionCmdImpl createTopicSubscription()
     {
-        return new CreateTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new CreateTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     public CloseTopicSubscriptionCmdImpl closeTopicSubscription()
     {
-        return new CloseTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new CloseTopicSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     public AcknowledgeSubscribedEventCmdImpl acknowledgeEvent()
     {
-        return new AcknowledgeSubscribedEventCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new AcknowledgeSubscribedEventCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
-    public int getTopicId()
+    public String getTopicName()
     {
-        return topicId;
+        return topicName;
+    }
+
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
 }

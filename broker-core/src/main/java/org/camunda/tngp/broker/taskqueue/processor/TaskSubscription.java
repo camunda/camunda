@@ -22,7 +22,8 @@ public class TaskSubscription extends UnpackedObject
 {
     protected LongProperty subscriberKeyProp = new LongProperty("subscriberKey", -1);
 
-    protected LongProperty topicIdProp = new LongProperty("topicId");
+    protected StringProperty topicNameProp = new StringProperty("topicName");
+    protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     protected StringProperty taskTypeProp = new StringProperty("taskType", "");
 
     protected LongProperty lockDurationProp = new LongProperty("lockDuration", -1);
@@ -36,7 +37,8 @@ public class TaskSubscription extends UnpackedObject
     public TaskSubscription()
     {
         this.declareProperty(subscriberKeyProp)
-            .declareProperty(topicIdProp)
+            .declareProperty(topicNameProp)
+            .declareProperty(partitionIdProp)
             .declareProperty(taskTypeProp)
             .declareProperty(lockDurationProp)
             .declareProperty(lockOwnerProp)
@@ -55,15 +57,21 @@ public class TaskSubscription extends UnpackedObject
         return this;
     }
 
-    public TaskSubscription setTopicId(long topicId)
+    public TaskSubscription setTopicName(final DirectBuffer topicName)
     {
-        this.topicIdProp.setValue(topicId);
+        this.topicNameProp.setValue(topicName);
+        return this;
+    }
+
+    public TaskSubscription setPartitionId(final int partitionId)
+    {
+        this.partitionIdProp.setValue(partitionId);
         return this;
     }
 
     public TaskSubscription setTaskType(DirectBuffer taskType)
     {
-        this.taskTypeProp.setValue(taskType, 0, taskType.capacity());
+        this.taskTypeProp.setValue(taskType);
         return this;
     }
 
@@ -110,9 +118,14 @@ public class TaskSubscription extends UnpackedObject
         return channelId;
     }
 
-    public long getTopicId()
+    public DirectBuffer getTopicName()
     {
-        return topicIdProp.getValue();
+        return topicNameProp.getValue();
+    }
+
+    public int getPartitionId()
+    {
+        return partitionIdProp.getValue();
     }
 
     public int getLockOwner()

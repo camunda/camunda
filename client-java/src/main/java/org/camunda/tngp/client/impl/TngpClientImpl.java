@@ -7,10 +7,15 @@ import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
@@ -28,12 +33,7 @@ import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.transport.singlemessage.DataFramePool;
-import org.camunda.tngp.util.EnsureUtil;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TngpClientImpl implements TngpClient
 {
@@ -202,24 +202,27 @@ public class TngpClientImpl implements TngpClient
     }
 
     @Override
-    public TaskTopicClientImpl taskTopic(int id)
+    public TaskTopicClientImpl taskTopic(final String topicName, final int partitionId)
     {
-        EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
-        return new TaskTopicClientImpl(this, id);
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
+        return new TaskTopicClientImpl(this, topicName, partitionId);
     }
 
     @Override
-    public WorkflowTopicClient workflowTopic(int id)
+    public WorkflowTopicClient workflowTopic(final String topicName, final int partitionId)
     {
-        EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
-        return new WorkflowTopicClientImpl(this, id);
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
+        return new WorkflowTopicClientImpl(this, topicName, partitionId);
     }
 
     @Override
-    public TopicClientImpl topic(int id)
+    public TopicClientImpl topic(final String topicName, final int partitionId)
     {
-        EnsureUtil.ensureGreaterThanOrEqual("id", id, 0);
-        return new TopicClientImpl(this, id);
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
+        return new TopicClientImpl(this, topicName, partitionId);
     }
 
     public ClientCmdExecutor getCmdExecutor()

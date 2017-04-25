@@ -54,23 +54,16 @@ public class MetaStore
         readBuffer.wrap(new byte[1024]);
     }
 
-    public int loadLogId()
+    public DirectBuffer loadTopicName()
     {
         load();
-        return meta.idProp.getValue();
+        return meta.topicNameProp.getValue();
     }
 
-    public String loadLogName()
+    public int loadPartitionId()
     {
         load();
-
-        final DirectBuffer buffer = meta.nameProp.getValue();
-        final int length = buffer.capacity();
-
-        final byte[] tmp = new byte[length];
-        buffer.getBytes(0, tmp, 0, length);
-
-        return fromBytes(tmp);
+        return meta.partitionIdProp.getValue();
     }
 
     public String loadLogDirectory()
@@ -86,10 +79,10 @@ public class MetaStore
         return fromBytes(tmp);
     }
 
-    public MetaStore storeLogIdAndNameAndDirectory(int id, String name, String directory)
+    public MetaStore storeTopicNameAndPartitionIdAndDirectory(final DirectBuffer topicName, final int partitionId, final String directory)
     {
-        meta.idProp.setValue(id);
-        meta.nameProp.setValue(name);
+        meta.topicNameProp.setValue(topicName);
+        meta.partitionIdProp.setValue(partitionId);
         meta.directoryProp.setValue(directory);
         store();
         return this;
@@ -278,7 +271,7 @@ public class MetaStore
             os.flush();
 
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             LangUtil.rethrowUnchecked(e);
         }
@@ -289,7 +282,7 @@ public class MetaStore
             final Path backupPath = Paths.get(String.format("%s.bak", file));
             Files.move(backupPath, sourcePath, REPLACE_EXISTING);
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             LangUtil.rethrowUnchecked(e);
         }
@@ -297,8 +290,8 @@ public class MetaStore
 
     private static class Meta extends UnpackedObject
     {
-        protected IntegerProperty idProp = new IntegerProperty("id", -1);
-        protected StringProperty nameProp = new StringProperty("logName", "");
+        protected StringProperty topicNameProp = new StringProperty("topicName", "");
+        protected IntegerProperty partitionIdProp = new IntegerProperty("partitionId", -1);
         protected StringProperty directoryProp = new StringProperty("logDirectory", "");
         protected IntegerProperty termProp = new IntegerProperty("term", 0);
         protected StringProperty voteHostProp = new StringProperty("voteHost", "");
@@ -315,8 +308,8 @@ public class MetaStore
 
         Meta()
         {
-            declareProperty(idProp);
-            declareProperty(nameProp);
+            declareProperty(partitionIdProp);
+            declareProperty(topicNameProp);
             declareProperty(directoryProp);
             declareProperty(termProp);
             declareProperty(voteHostProp);

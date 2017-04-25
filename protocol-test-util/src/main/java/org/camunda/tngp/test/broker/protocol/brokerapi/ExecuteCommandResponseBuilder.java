@@ -29,15 +29,27 @@ public class ExecuteCommandResponseBuilder
         return this;
     }
 
-    public ExecuteCommandResponseBuilder topicId(int i)
+    public ExecuteCommandResponseBuilder topicName(final String topicName)
     {
-        return topicId((r) -> i);
+        return topicName((r) -> topicName);
     }
 
 
-    public ExecuteCommandResponseBuilder topicId(Function<ExecuteCommandRequest, Integer> topicIdFunction)
+    public ExecuteCommandResponseBuilder topicName(Function<ExecuteCommandRequest, String> topicNameFunction)
     {
-        stub.setTopicIdFunction(topicIdFunction);
+        stub.setTopicNameFunction(topicNameFunction);
+        return this;
+    }
+
+    public ExecuteCommandResponseBuilder partitionId(final int partitionId)
+    {
+        return partitionId((r) -> partitionId);
+    }
+
+
+    public ExecuteCommandResponseBuilder partitionId(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
+    {
+        stub.setPartitionIdFunction(partitionIdFunction);
         return this;
     }
 

@@ -13,14 +13,18 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
+
 
 public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
 {
 
+
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
-        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
+        final WorkflowTopicClient workflowsClient = client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         final BpmnModelInstance processModel = Bpmn.createExecutableProcess("process")
                 .startEvent()
@@ -50,7 +54,7 @@ public class StartWorkflowInstanceThroughputTest extends MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final WorkflowTopicClient workflows = client.workflowTopic(0);
+        final WorkflowTopicClient workflows = client.workflowTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         return () ->
         {

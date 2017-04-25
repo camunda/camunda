@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
 import org.camunda.tngp.client.workflow.cmd.WorkflowDefinition;
@@ -28,8 +27,7 @@ public class DeployBpmnResourceTest
     public void shouldDeployModelInstance()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // when
         final DeploymentResult result = workflowService.deploy()
@@ -53,8 +51,7 @@ public class DeployBpmnResourceTest
     public void shouldNotDeployUnparsableModel()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // when
         final DeploymentResult result = workflowService.deploy()
@@ -71,8 +68,7 @@ public class DeployBpmnResourceTest
     public void shouldNotDeployInvalidModel()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // when
         final DeploymentResult result = workflowService.deploy()
@@ -89,8 +85,7 @@ public class DeployBpmnResourceTest
     public void shouldNotDeployNonExecutableModel()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // when
         final DeploymentResult result = workflowService.deploy()

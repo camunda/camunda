@@ -11,6 +11,7 @@ import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -188,15 +189,18 @@ public class VoteController
             final Raft raft = raftContext.getRaft();
             final LogStreamState logStreamState = raftContext.getLogStreamState();
 
+            final LogStream logStream = raft.stream();
+
             final Member self = raft.member();
 
-            final int id = raft.id();
             final int term = raft.term();
             final long lastReceivedPosition = logStreamState.lastReceivedPosition();
             final int lastReceivedTerm = logStreamState.lastReceivedTerm();
 
             voteRequest.reset();
-            voteRequest.id(id)
+            voteRequest
+                .topicName(logStream.getTopicName())
+                .partitionId(logStream.getPartitionId())
                 .term(term)
                 .lastEntryPosition(lastReceivedPosition)
                 .lastEntryTerm(lastReceivedTerm)

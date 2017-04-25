@@ -1,5 +1,8 @@
 package org.camunda.tngp.perftest;
 
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
+
 import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -25,7 +28,7 @@ public class CreateTaskLatencyTest extends FixedRateLatencyTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final TaskTopicClient taskClient = client.taskTopic(0);
+        final TaskTopicClient taskClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         return () ->
         {

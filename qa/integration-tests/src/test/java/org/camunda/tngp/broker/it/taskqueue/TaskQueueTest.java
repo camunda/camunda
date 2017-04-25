@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.it.taskqueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -48,9 +50,7 @@ public class TaskQueueTest
     @Test
     public void shouldCreateTask()
     {
-        final TngpClient client = clientRule.getClient();
-
-        final Long taskKey = client.taskTopic(0).create()
+        final Long taskKey = clientRule.taskTopic().create()
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
@@ -61,14 +61,30 @@ public class TaskQueueTest
     }
 
     @Test
-    public void shouldFailCreateTaskIfTopicIdIsNotValid()
+    public void shouldFailCreateTaskIfTopicNameIsNotValid()
     {
         final TngpClient client = clientRule.getClient();
 
         thrown.expect(BrokerRequestException.class);
-        thrown.expectMessage("Cannot execute command. Topic with id '999' not found");
+        thrown.expectMessage(String.format("Cannot execute command. Topic with name '%s' and partition id '%d' not found", "unknown-topic", DEFAULT_PARTITION_ID));
 
-        client.taskTopic(999).create()
+        client.taskTopic("unknown-topic", DEFAULT_PARTITION_ID).create()
+            .taskType("foo")
+            .addHeader("k1", "a")
+            .addHeader("k2", "b")
+            .payload("{ \"payload\" : 123 }")
+            .execute();
+    }
+
+    @Test
+    public void shouldFailCreateTaskIfPartitionIdIsNotValid()
+    {
+        final TngpClient client = clientRule.getClient();
+
+        thrown.expect(BrokerRequestException.class);
+        thrown.expectMessage(String.format("Cannot execute command. Topic with name '%s' and partition id '%d' not found", DEFAULT_TOPIC_NAME, 999));
+
+        client.taskTopic(DEFAULT_TOPIC_NAME, 999).create()
             .taskType("foo")
             .addHeader("k1", "a")
             .addHeader("k2", "b")
@@ -80,8 +96,7 @@ public class TaskQueueTest
     @Ignore
     public void testCycle()
     {
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         System.out.println("Creating task");
 
@@ -117,8 +132,7 @@ public class TaskQueueTest
     @Ignore
     public void testCannotCompleteUnlockedTask()
     {
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskId = topicClient.create()
             .payload("{}")
@@ -140,8 +154,7 @@ public class TaskQueueTest
     public void testCannotCompleteTaskTwiceInParallel()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         final Long taskId = topicClient.create()
             .payload("foo")
@@ -182,7 +195,7 @@ public class TaskQueueTest
     public void testLockZeroTasks()
     {
         // given
-        final TaskTopicClient topicClient = clientRule.getClient().taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         // when
         final LockedTasksBatch lockedTasksBatch = topicClient.pollAndLock()
@@ -199,8 +212,7 @@ public class TaskQueueTest
     public void testLockTaskWithPayload()
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient topicClient = client.taskTopic(0);
+        final TaskTopicClient topicClient = clientRule.taskTopic();
 
         System.out.println("Creating task");
 
@@ -226,17 +238,45 @@ public class TaskQueueTest
     }
 
     @Test
-    public void testValidateTopicId()
+    public void testValidateTopicNameNotEmpty()
     {
         // given
         final TngpClient client = clientRule.getClient();
 
         // then
         thrown.expect(RuntimeException.class);
-        thrown.expectMessage("id must be greater than or equal to 0");
+        thrown.expectMessage("topic name must not be empty");
 
         // when
-        client.taskTopic(-1);
+        client.taskTopic("", DEFAULT_PARTITION_ID);
+    }
+
+    @Test
+    public void testValidateTopicNameNotNull()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        // then
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("topic name must not be null");
+
+        // when
+        client.taskTopic(null, DEFAULT_PARTITION_ID);
+    }
+
+    @Test
+    public void testValidatePartitionId()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        // then
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("partition id must be greater than or equal to 0");
+
+        // when
+        client.taskTopic(DEFAULT_TOPIC_NAME, -1);
     }
 
 }

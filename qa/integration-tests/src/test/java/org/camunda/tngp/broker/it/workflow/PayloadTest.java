@@ -8,7 +8,6 @@ import java.util.List;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.client.TaskTopicClient;
-import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.task.TaskHandler;
@@ -34,9 +33,8 @@ public class PayloadTest
     public void testPayloadModification() throws InterruptedException
     {
         // given
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient taskService = client.taskTopic(0);
-        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
+        final TaskTopicClient taskService = clientRule.taskTopic();
+        final WorkflowTopicClient workflowsClient = clientRule.workflowTopic();
 
         workflowsClient.deploy()
             .bpmnModelInstance(ProcessModels.TWO_TASKS_PROCESS)

@@ -13,10 +13,17 @@
 package org.camunda.tngp.client.impl.cmd;
 
 import static org.camunda.tngp.protocol.clientapi.EventType.NULL_VAL;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.commandHeaderLength;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.topicNameHeaderLength;
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
@@ -28,9 +35,6 @@ import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.util.buffer.RequestWriter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> implements RequestWriter, ClientResponseHandler<R>
 {
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -41,16 +45,18 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     protected final ObjectMapper objectMapper;
     protected final Class<E> eventType;
     protected final EventType commandEventType;
-    protected final int topicId;
+    protected final String topicName;
+    protected final int partitionId;
 
     protected byte[] serializedCommand;
 
     public AbstractExecuteCmdImpl(
-            ClientCmdExecutor cmdExecutor,
-            ObjectMapper objectMapper,
-            Class<E> eventType,
-            int topicId,
-            EventType commandEventType)
+        final ClientCmdExecutor cmdExecutor,
+        final ObjectMapper objectMapper,
+        final Class<E> eventType,
+        final String topicName,
+        final int partitionId,
+        final EventType commandEventType)
     {
         super(cmdExecutor);
 
@@ -62,7 +68,8 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         this.objectMapper = objectMapper;
         this.eventType = eventType;
         this.commandEventType = commandEventType;
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
     @Override
@@ -80,11 +87,14 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
                 RequestResponseProtocolHeaderDescriptor.headerLength() +
                 headerEncoder.encodedLength() +
                 commandRequestEncoder.sbeBlockLength() +
+                topicNameHeaderLength() +
+                getBytes(topicName).length +
+                commandHeaderLength() +
                 serializedCommand.length;
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    public void write(final MutableDirectBuffer buffer, int offset)
     {
         ensureCommandInitialized();
 
@@ -105,9 +115,10 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         }
 
         commandRequestEncoder
-            .topicId(topicId)
+            .partitionId(partitionId)
             .key(key)
             .eventType(commandEventType)
+            .topicName(topicName)
             .putCommand(serializedCommand, 0, serializedCommand.length);
 
         serializedCommand = null;
@@ -122,7 +133,7 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
             {
                 serializedCommand = objectMapper.writeValueAsBytes(writeCommand());
             }
-            catch (JsonProcessingException e)
+            catch (final JsonProcessingException e)
             {
                 throw new RuntimeException("Failed to serialize command", e);
             }
@@ -154,11 +165,14 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
     }
 
     @Override
-    public R readResponse(int channelId, DirectBuffer responseBuffer, int offset, int blockLength, int version)
+    public R readResponse(final int channelId, final DirectBuffer responseBuffer, final int offset, final int blockLength, final int version)
     {
         responseDecoder.wrap(responseBuffer, offset, blockLength, version);
 
         final long key = responseDecoder.key();
+
+        // skip topic name
+        responseDecoder.topicName();
 
         final byte[] eventBuffer = readBytes(responseDecoder::getEvent, responseDecoder::eventLength);
 
@@ -167,16 +181,23 @@ public abstract class AbstractExecuteCmdImpl<E, R> extends AbstractCmdImpl<R> im
         return getResponseValue(channelId, key, event);
     }
 
-    protected E readEvent(byte[] buffer)
+    protected E readEvent(final byte[] buffer)
     {
         try
         {
             return objectMapper.readValue(buffer, eventType);
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             throw new RuntimeException("Failed to deserialize command", e);
         }
+    }
+
+    @Override
+    public void validate()
+    {
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
     }
 
     protected abstract R getResponseValue(int channelId, long key, E event);

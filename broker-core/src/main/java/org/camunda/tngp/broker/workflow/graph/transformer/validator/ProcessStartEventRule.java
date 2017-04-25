@@ -46,7 +46,7 @@ public class ProcessStartEventRule implements ModelElementValidator<Process>
             }
             else
             {
-                final String errorMessage = String.format("Ignore start event with id '%s'. Event type is not supported.", startEvent.getId());
+                final String errorMessage = String.format("Ignore start event with partitionId '%s'. Event type is not supported.", startEvent.getId());
                 validationResultCollector.addWarning(ValidationCodes.NOT_SUPPORTED_START_EVENT, errorMessage);
             }
         }

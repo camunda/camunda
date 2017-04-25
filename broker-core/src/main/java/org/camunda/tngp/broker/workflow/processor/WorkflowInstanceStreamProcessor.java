@@ -42,6 +42,7 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
@@ -101,12 +102,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
 
     /**
-     * An hash index which contains as key the BPMN process id and as value the corresponding latest definition version.
+     * An hash index which contains as key the BPMN process partitionId and as value the corresponding latest definition version.
      */
     protected final Bytes2LongHashIndex latestWorkflowVersionIndex;
 
     /**
-     * An hash index which contains as key the BPMN process id and definition version concatenated
+     * An hash index which contains as key the BPMN process partitionId and definition version concatenated
      * and as value the position of the deployment event.
      */
     protected final Bytes2LongHashIndex workflowPositionIndex;
@@ -124,7 +125,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
-    protected int streamId;
+    protected DirectBuffer logStreamTopicName;
+    protected int logStreamPartitionId;
     protected long eventKey;
     protected long eventPosition;
 
@@ -132,7 +134,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     /**
      * The workflow LRU cache, which contains the latest used workflow's.
      * The cache has a defined capacity, if the capacity is reached a least used workflow
-     * will replaced with a new one. If a workflow is not found in the cache, the deployment id
+     * will replaced with a new one. If a workflow is not found in the cache, the deployment partitionId
      * is used to find the deployment and the workflow is parsed and added to the cache.
      */
     protected final LongLruCache<ExecutableWorkflow> workflowCache;
@@ -169,9 +171,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     @Override
     public void onOpen(StreamProcessorContext context)
     {
-        this.streamId = context.getSourceStream().getId();
+        final LogStream sourceStream = context.getSourceStream();
+        this.logStreamTopicName = sourceStream.getTopicName();
+        this.logStreamPartitionId = sourceStream.getPartitionId();
 
-        this.deploymentLogStreamReader = new BufferedLogStreamReader(context.getSourceStream());
+        this.deploymentLogStreamReader = new BufferedLogStreamReader(sourceStream);
     }
 
     public static MetadataFilter eventFilter()
@@ -391,7 +395,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         {
             return responseWriter
                     .brokerEventMetadata(sourceEventMetadata)
-                    .topicId(streamId)
+                    .topicName(logStreamTopicName)
+                    .partitionId(logStreamPartitionId)
                     .key(eventKey)
                     .eventWriter(workflowInstanceEvent)
                     .tryWriteResponse();

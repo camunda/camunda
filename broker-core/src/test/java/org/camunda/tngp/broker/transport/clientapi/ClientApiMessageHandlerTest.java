@@ -5,6 +5,7 @@ import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLe
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.ExecutionException;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
 import org.camunda.tngp.broker.event.processor.TopicSubscriptionService;
@@ -55,7 +57,8 @@ public class ClientApiMessageHandlerTest
     private static final int CONNECTION_ID = 4;
     private static final int REQUEST_ID = 5;
 
-    protected static final int LOG_STREAM_ID = 1;
+    protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
+    protected static final int LOG_STREAM_PARTITION_ID = 1;
     protected static final byte[] COMMAND = getBytes("test-command");
 
     protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -99,7 +102,7 @@ public class ClientApiMessageHandlerTest
 
         final AgentRunnerService agentRunnerService = new SharedAgentRunnerService(new SimpleAgentRunnerFactory(), "test");
 
-        logStream = LogStreams.createFsLogStream("test-log", LOG_STREAM_ID)
+        logStream = LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService)
@@ -127,7 +130,7 @@ public class ClientApiMessageHandlerTest
     public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID);
 
         // when
         final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
@@ -159,7 +162,7 @@ public class ClientApiMessageHandlerTest
     {
         // given
         final short clientProtocolVersion = Constants.PROTOCOL_VERSION - 1;
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID, clientProtocolVersion);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, clientProtocolVersion);
 
         // when
         final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
@@ -181,7 +184,7 @@ public class ClientApiMessageHandlerTest
     public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID, null, TASK_EVENT);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, null, TASK_EVENT);
 
         // when
         final boolean isHandled = messageHandler.handleMessage(mockTransportChannel, buffer, 0, writtenLength);
@@ -236,7 +239,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageIfTopicNotFound()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, 9);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, wrapString("unknown-topic"), LOG_STREAM_PARTITION_ID);
 
         when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
 
@@ -249,7 +252,7 @@ public class ClientApiMessageHandlerTest
         assertThat(isHandled).isTrue();
 
         verify(mockErrorResponseWriter).errorCode(ErrorCode.TOPIC_NOT_FOUND);
-        verify(mockErrorResponseWriter).errorMessage("Cannot execute command. Topic with id '%d' not found", 9L);
+        verify(mockErrorResponseWriter).errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", "unknown-topic", LOG_STREAM_PARTITION_ID);
         verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
     }
 
@@ -285,7 +288,7 @@ public class ClientApiMessageHandlerTest
         assertThat(isHandled).isTrue();
 
         verify(mockErrorResponseWriter).errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED);
-        verify(mockErrorResponseWriter).errorMessage("Cannot handle message. Template id '%d' is not supported.", 999);
+        verify(mockErrorResponseWriter).errorMessage("Cannot handle message. Template partitionId '%d' is not supported.", 999);
         verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
     }
 
@@ -293,7 +296,7 @@ public class ClientApiMessageHandlerTest
     public void shouldSendErrorMessageOnRequestWithNewerProtocolVersion()
     {
         // given
-        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_ID, Short.MAX_VALUE);
+        final int writtenLength = writeCommandRequestToBuffer(buffer, LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, Short.MAX_VALUE);
 
         when(mockSendBuffer.claim(any(ClaimedFragment.class), anyInt())).thenAnswer(claimFragment(0));
         when(mockErrorResponseWriter.tryWriteResponseOrLogFailure()).thenReturn(true);
@@ -309,17 +312,17 @@ public class ClientApiMessageHandlerTest
         verify(mockErrorResponseWriter).tryWriteResponseOrLogFailure();
     }
 
-    private int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId)
+    private int writeCommandRequestToBuffer(UnsafeBuffer buffer, DirectBuffer topicName, int partitionId)
     {
-        return writeCommandRequestToBuffer(buffer, topicId, null);
+        return writeCommandRequestToBuffer(buffer, topicName, partitionId, null);
     }
 
-    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId, Short protocolVersion)
+    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, DirectBuffer topicName, int partitionId, Short protocolVersion)
     {
-        return writeCommandRequestToBuffer(buffer, topicId, protocolVersion, null);
+        return writeCommandRequestToBuffer(buffer, topicName, partitionId, protocolVersion, null);
     }
 
-    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, int topicId, Short protocolVersion, EventType eventType)
+    protected int writeCommandRequestToBuffer(UnsafeBuffer buffer, DirectBuffer topicName, int partitionId, Short protocolVersion, EventType eventType)
     {
         int offset = 0;
 
@@ -349,8 +352,9 @@ public class ClientApiMessageHandlerTest
         commandRequestEncoder.wrap(buffer, offset);
 
         commandRequestEncoder
-            .topicId(topicId)
+            .partitionId(partitionId)
             .eventType(eventTypeToWrite)
+            .putTopicName(topicName, 0, topicName.capacity())
             .putCommand(COMMAND, 0, COMMAND.length);
 
         return TransportHeaderDescriptor.headerLength() +

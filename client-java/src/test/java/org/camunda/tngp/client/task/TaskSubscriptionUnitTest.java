@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.cmd.FailTaskCmd;
 import org.camunda.tngp.client.event.TopicEventType;
@@ -56,12 +57,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class TaskSubscriptionUnitTest
 {
 
-    public static final int TOPIC_ID = 0;
+    public static final String TOPIC_NAME = "test-topic";
+    public static final int PARTITION_ID = 3;
     public static final long SUBSCRIPTION_ID = 123L;
     private static final String TASK_TYPE = "foo";
     private static final int LOCK_OWNER = 1;
@@ -105,6 +105,8 @@ public class TaskSubscriptionUnitTest
     public void setUp()
     {
         MockitoAnnotations.initMocks(this);
+        when(client.getTopicName()).thenReturn(TOPIC_NAME);
+        when(client.getPartitionId()).thenReturn(PARTITION_ID);
         when(client.brokerTaskSubscription()).thenReturn(createSubscriptionCmd);
         when(createSubscriptionCmd.execute()).thenReturn(new EventSubscriptionCreationResult(SUBSCRIPTION_ID, 5));
         when(client.closeBrokerTaskSubscription()).thenReturn(closeSubscriptionCmd);
@@ -184,8 +186,8 @@ public class TaskSubscriptionUnitTest
         acquisition.doWork();
 
         // two subscribed tasks
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 2L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 2L));
 
         // when
         final int workCount = subscription.poll();
@@ -208,7 +210,7 @@ public class TaskSubscriptionUnitTest
         acquisition.doWork();
 
         final TopicEventImpl event = task(1L, 1L);
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, event);
+        acquisition.onEvent(SUBSCRIPTION_ID, event);
 
         // when
         subscription.poll();
@@ -233,7 +235,7 @@ public class TaskSubscriptionUnitTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
 
         // when
         subscription.poll();
@@ -256,7 +258,7 @@ public class TaskSubscriptionUnitTest
 
         final TopicEventImpl event = task(1L, 1L);
 
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, event);
+        acquisition.onEvent(SUBSCRIPTION_ID, event);
 
         // when
         try
@@ -292,9 +294,9 @@ public class TaskSubscriptionUnitTest
         acquisition.doWork();
 
         // when
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(3L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(3L, 1L));
 
         // then
         assertThat(subscription.size()).isEqualTo(3);
@@ -312,7 +314,7 @@ public class TaskSubscriptionUnitTest
         acquisition.doWork();
 
         // when
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
 
         // then
         assertThat(subscription1.size() + subscription2.size()).isEqualTo(1);
@@ -344,8 +346,8 @@ public class TaskSubscriptionUnitTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 2L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 2L));
 
         // when
         int workCount = subscription.poll(taskHandler);
@@ -372,10 +374,10 @@ public class TaskSubscriptionUnitTest
         subscription.openAsync();
         acquisition.doWork();
 
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(2L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(3L, 1L));
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(4L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(2L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(3L, 1L));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(4L, 1L));
 
         // when
         subscription.poll(taskHandler);
@@ -402,7 +404,7 @@ public class TaskSubscriptionUnitTest
         headers.put(TaskHeaders.ACTIVITY_ID, "foo");
         headers.put(TaskHeaders.CUSTOM, Arrays.asList(customHeader("cust1", "a"), customHeader("cust2", "b")));
 
-        acquisition.onEvent(TOPIC_ID, SUBSCRIPTION_ID, task(1L, 1L, headers));
+        acquisition.onEvent(SUBSCRIPTION_ID, task(1L, 1L, headers));
 
         // when
         subscription.poll(taskHandler);
@@ -457,7 +459,7 @@ public class TaskSubscriptionUnitTest
             throw new RuntimeException(e);
         }
 
-        return new TopicEventImpl(TOPIC_ID, key, position, TopicEventType.TASK, encodedEvent);
+        return new TopicEventImpl(TOPIC_NAME, PARTITION_ID, key, position, TopicEventType.TASK, encodedEvent);
     }
 
     protected static ArgumentMatcher<Task> hasKey(final long taskKey)

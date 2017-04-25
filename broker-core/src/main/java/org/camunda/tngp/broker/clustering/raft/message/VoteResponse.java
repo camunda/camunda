@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
+import static org.camunda.tngp.clustering.raft.VoteResponseEncoder.termNullValue;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.clustering.raft.BooleanType;
@@ -18,21 +20,9 @@ public class VoteResponse implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final VoteResponseEncoder bodyEncoder = new VoteResponseEncoder();
 
-    protected int id;
-    protected int term;
+    protected int term = termNullValue();
 
     protected boolean granted;
-
-    public int id()
-    {
-        return id;
-    }
-
-    public VoteResponse id(final int id)
-    {
-        this.id = id;
-        return this;
-    }
 
     public int term()
     {
@@ -64,7 +54,6 @@ public class VoteResponse implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
         term = bodyDecoder.term();
         granted = bodyDecoder.granted() == BooleanType.TRUE;
     }
@@ -87,15 +76,13 @@ public class VoteResponse implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
             .term(term)
             .granted(granted ? BooleanType.TRUE : BooleanType.FALSE);
     }
 
     public void reset()
     {
-        id = -1;
-        term = -1;
+        term = termNullValue();
         granted = false;
     }
 

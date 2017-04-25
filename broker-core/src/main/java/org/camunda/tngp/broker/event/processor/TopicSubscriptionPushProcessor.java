@@ -1,13 +1,15 @@
 package org.camunda.tngp.broker.event.processor;
 
+import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.logstreams.processor.NoopSnapshotSupport;
 import org.camunda.tngp.broker.transport.clientapi.SubscribedEventWriter;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
@@ -31,7 +33,8 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     protected long startPosition;
     protected final DirectBuffer name;
     protected final String nameString;
-    protected int logStreamId;
+    protected DirectBuffer logStreamTopicName;
+    protected int logStreamPartitionId;
 
     protected final SnapshotSupport snapshotSupport = new NoopSnapshotSupport();
     protected final SubscribedEventWriter channelWriter;
@@ -52,9 +55,7 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         this.channelId = channelId;
         this.subscriberKey = subscriberKey;
         this.startPosition = startPosition;
-        final byte[] nameBytes = new byte[name.capacity()];
-        name.getBytes(0, nameBytes);
-        this.name = new UnsafeBuffer(nameBytes);
+        this.name = cloneBuffer(name);
         this.nameString = name.getStringWithoutLengthUtf8(0, name.capacity());
         this.enabled = new AtomicBoolean(false);
 
@@ -70,7 +71,11 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     {
 
         final LogStreamReader logReader = context.getSourceLogStreamReader();
-        this.logStreamId = context.getSourceStream().getId();
+
+        final LogStream sourceStream = context.getSourceStream();
+        this.logStreamTopicName = sourceStream.getTopicName();
+        this.logStreamPartitionId = sourceStream.getPartitionId();
+
         setToStartPosition(logReader);
     }
 
@@ -124,11 +129,13 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
     {
         event.readMetadata(metadata);
 
-        final boolean success = channelWriter.channelId(channelId)
+        final boolean success = channelWriter
+            .channelId(channelId)
+            .topicName(logStreamTopicName)
+            .partitionId(logStreamPartitionId)
             .eventType(metadata.getEventType())
             .key(event.getKey())
             .position(event.getPosition())
-            .topicId(logStreamId)
             .subscriberKey(subscriberKey)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
             .event(event.getValueBuffer(), event.getValueOffset(), event.getValueLength())
@@ -164,11 +171,6 @@ public class TopicSubscriptionPushProcessor implements StreamProcessor, EventPro
         {
             return false;
         }
-    }
-
-    public int getLogStreamId()
-    {
-        return logStreamId;
     }
 
     public int getChannelId()

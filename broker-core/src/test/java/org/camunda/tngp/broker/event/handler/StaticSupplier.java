@@ -7,6 +7,7 @@ public class StaticSupplier<T> implements Supplier<T>
     protected T[] values;
     protected int currentValue;
 
+    @SafeVarargs
     public static <T> StaticSupplier<T> returnInOrder(T... args)
     {
         final StaticSupplier<T> supplier = new StaticSupplier<>();

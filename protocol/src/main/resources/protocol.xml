@@ -67,26 +67,29 @@
   </sbe:message>
 
   <sbe:message name="ExecuteCommandRequest" id="20">
-    <field name="topicId" id="1" type="int32" />
+    <field name="partitionId" id="1" type="uint16" />
     <field name="key" id="2" type="uint64" />
     <field name="eventType" id="3" type="EventType" />
+    <data name="topicName" id="4" type="varDataEncoding" />
     <data name="command" id="5" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">
-    <field name="topicId" id="1" type="int32" />
+    <field name="partitionId" id="1" type="int32" />
     <field name="key" id="2" type="uint64" />
+    <data name="topicName" id="3" type="varDataEncoding" />
     <data name="event" id="4" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="SubscribedEvent" id="30">
-    <field name="topicId" id="1" type="int32" />
+    <field name="partitionId" id="1" type="int32" />
     <field name="position" id="2" type="uint64" />
     <field name="key" id="3" type="uint64" />
     <field name="subscriberKey" id="4" type="uint64" />
     <field name="subscriptionType" id="5" type="SubscriptionType" />
     <field name="eventType" id="6" type="EventType" />
-    <data name="event" id="7" type="varDataEncoding" />
+    <data name="topicName" id="7" type="varDataEncoding" />
+    <data name="event" id="8" type="varDataEncoding" />
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->

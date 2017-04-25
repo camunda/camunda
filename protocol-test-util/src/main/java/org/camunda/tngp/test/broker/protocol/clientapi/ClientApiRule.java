@@ -24,6 +24,9 @@ import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource
 {
+    public static final String DEFAULT_TOPIC_NAME = "default-topic";
+    public static final int DEFAULT_PARTITION_ID = 0;
+
     protected Transport transport;
 
     protected final int port = 51015;
@@ -98,15 +101,26 @@ public class ClientApiRule extends ExternalResource
         return (int) incomingMessageCollector.getNumMessagesFulfilling(this::isSubscribedEvent);
     }
 
-    public TestTopicClient topic(int topicId)
+    public TestTopicClient topic()
     {
-        return new TestTopicClient(this, topicId);
+        return topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
     }
 
-    public ExecuteCommandRequest openTopicSubscription(int topicId, String name, long startPosition)
+    public TestTopicClient topic(final String topicName, final int partitionId)
+    {
+        return new TestTopicClient(this, topicName, partitionId);
+    }
+
+    public ExecuteCommandRequest openTopicSubscription(final String name, final long startPosition)
+    {
+        return openTopicSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, name, startPosition);
+    }
+
+    public ExecuteCommandRequest openTopicSubscription(final String topicName, final int partitionId, final String name, final long startPosition)
     {
         return createCmdRequest()
-            .topicId(topicId)
+            .topicName(topicName)
+            .partitionId(partitionId)
             .eventTypeSubscriber()
             .command()
                 .put("startPosition", startPosition)
@@ -116,12 +130,18 @@ public class ClientApiRule extends ExternalResource
             .send();
     }
 
-    public ControlMessageRequest openTaskSubscription(int topicId, String type)
+    public ControlMessageRequest openTaskSubscription(final String type)
+    {
+        return openTaskSubscription(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID, type);
+    }
+
+    public ControlMessageRequest openTaskSubscription(final String topicName, final int partitionId, final String type)
     {
         return createControlMessageRequest()
             .messageType(ControlMessageType.ADD_TASK_SUBSCRIPTION)
             .data()
-                .put("topicId", topicId)
+                .put("topicName", topicName)
+                .put("partitionId", partitionId)
                 .put("taskType", type)
                 .put("lockDuration", 1000L)
                 .put("lockOwner", 0)

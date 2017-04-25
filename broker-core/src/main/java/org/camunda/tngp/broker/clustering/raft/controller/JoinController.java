@@ -13,6 +13,7 @@ import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.JoinRequest;
 import org.camunda.tngp.broker.clustering.raft.message.JoinResponse;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
@@ -177,6 +178,8 @@ public class JoinController
             final Raft raft = context.raft;
             final RequestResponseController requestController = context.requestController;
 
+            final LogStream logStream = raft.stream();
+
             final List<Member> members = context.members;
             final Member self = raft.member();
 
@@ -184,7 +187,9 @@ public class JoinController
             final JoinRequest joinRequest = context.joinRequest;
 
             joinRequest.reset();
-            joinRequest.id(raft.id())
+            joinRequest
+                .topicName(logStream.getTopicName())
+                .partitionId(logStream.getPartitionId())
                 .member(self);
 
             if (position >= members.size() - 1)

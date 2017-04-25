@@ -4,9 +4,14 @@ public interface EventMetadata
 {
 
     /**
-     * @return the id of the topic this event was published on
+     * @return the name of the topic this event as published on
      */
-    int getTopicId();
+    String getTopicName();
+
+    /**
+     * @return the id of the topic partition this event was published on
+     */
+    int getPartitionId();
 
     /**
      * @return the unique position the event has in the topic. Events are ordered by position.

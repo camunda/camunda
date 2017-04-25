@@ -6,9 +6,6 @@ import org.camunda.tngp.broker.system.GlobalConfiguration;
 public class LogStreamsCfg extends ComponentConfiguration
 {
 
-    public static final int DEFAULT_LOG_ID = 0;
-    public static final String DEFAULT_LOG_NAME = "default-log";
-
     public int defaultLogSegmentSize = 512;
 
     public String[] logDirectories = new String[0];

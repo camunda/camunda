@@ -31,6 +31,7 @@ import org.camunda.tngp.broker.taskqueue.CreditsRequestBuffer;
 import org.camunda.tngp.broker.taskqueue.TaskSubscriptionManager;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
 import org.camunda.tngp.broker.taskqueue.data.TaskEventType;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventFilter;
@@ -55,7 +56,9 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     protected Iterator<TaskSubscription> subscriptionIterator;
 
     protected final DirectBuffer subscriptedTaskType;
-    protected long logStreamId;
+
+    protected DirectBuffer logStreamTopicName;
+    protected int logStreamPartitionId;
 
     protected int availableSubscriptionCredits = 0;
 
@@ -94,9 +97,14 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
         return subscriptedTaskType;
     }
 
-    public long getLogStreamId()
+    public DirectBuffer getLogStreamTopicName()
     {
-        return logStreamId;
+        return logStreamTopicName;
+    }
+
+    public int getLogStreamPartitionId()
+    {
+        return logStreamPartitionId;
     }
 
     @Override
@@ -104,7 +112,10 @@ public class LockTaskStreamProcessor implements StreamProcessor, EventProcessor
     {
         cmdQueue = context.getStreamProcessorCmdQueue();
 
-        logStreamId = context.getSourceStream().getId();
+        final LogStream sourceStream = context.getSourceStream();
+
+        logStreamTopicName = sourceStream.getTopicName();
+        logStreamPartitionId = sourceStream.getPartitionId();
     }
 
     public CompletableFuture<Void> addSubscription(TaskSubscription subscription)

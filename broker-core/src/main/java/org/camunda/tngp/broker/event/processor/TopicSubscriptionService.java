@@ -2,13 +2,16 @@ package org.camunda.tngp.broker.event.processor;
 
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.event.TopicSubscriptionServiceNames;
@@ -45,7 +48,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
     protected AgentRunnerService agentRunnerService;
     protected ServiceStartContext serviceContext;
-    protected Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByLog = new Int2ObjectHashMap<>();
+    protected Map<DirectBuffer, Int2ObjectHashMap<TopicSubscriptionManagementProcessor>> managersByLog = new HashMap<>();
 
     protected DeferredCommandContext asyncContext;
 
@@ -119,7 +122,11 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
                     StreamProcessorIds.TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID,
                     ackProcessor,
                     TopicSubscriptionManagementProcessor.filter())
-                .thenAccept((v) -> managersByLog.put(logStream.getId(), ackProcessor));
+                .thenAccept((v) ->
+                    managersByLog
+                        .computeIfAbsent(logStream.getTopicName(), k -> new Int2ObjectHashMap<>())
+                        .put(logStream.getPartitionId(), ackProcessor)
+                );
         });
     }
 
@@ -137,7 +144,7 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         }
         else
         {
-            throw new RuntimeException(String.format("Cannot create topic subscription processor index, no index file name provided."));
+            throw new RuntimeException("Cannot create topic subscription processor index, no index file name provided.");
         }
     }
 
@@ -168,7 +175,20 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
 
         asyncContext.runAsync(() ->
         {
-            managersByLog.remove(logStream.getId());
+            final DirectBuffer topicName = logStream.getTopicName();
+            final int partitionId = logStream.getPartitionId();
+
+            final Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByPartition = managersByLog.get(topicName);
+
+            if (managersByPartition != null)
+            {
+                managersByPartition.remove(partitionId);
+
+                if (managersByPartition.isEmpty())
+                {
+                    managersByLog.remove(topicName);
+                }
+            }
         });
     }
 
@@ -176,12 +196,12 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
     {
         asyncContext.runAsync(() ->
         {
-            final Iterator<TopicSubscriptionManagementProcessor> managerIt = managersByLog.values().iterator();
-
-            while (managerIt.hasNext())
-            {
-                managerIt.next().onClientChannelCloseAsync(channelId);
-            }
+            // TODO(menski): probably not garbage free
+            managersByLog.forEach((topicName, partitions) ->
+                partitions.forEach((partitionId, manager) ->
+                    manager.onClientChannelCloseAsync(channelId)
+                )
+            );
         });
     }
 
@@ -197,9 +217,9 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         return "subscription-service";
     }
 
-    public CompletableFuture<Void> closeSubscriptionAsync(int topicId, long subscriberKey)
+    public CompletableFuture<Void> closeSubscriptionAsync(final DirectBuffer topicName, final int partitionId, final long subscriberKey)
     {
-        final TopicSubscriptionManagementProcessor managementProcessor = managersByLog.get(topicId);
+        final TopicSubscriptionManagementProcessor managementProcessor = getManager(topicName, partitionId);
 
         if (managementProcessor != null)
         {
@@ -208,9 +228,26 @@ public class TopicSubscriptionService implements Service<TopicSubscriptionServic
         else
         {
             final CompletableFuture<Void> future = new CompletableFuture<>();
-            future.completeExceptionally(new RuntimeException("No subscription management processor registered for topic " + topicId));
+            future.completeExceptionally(
+                new RuntimeException(
+                    String.format("No subscription management processor registered for topic '%s' and partition '%d'",
+                        bufferAsString(topicName), partitionId)
+                )
+            );
             return future;
         }
 
+    }
+
+    private TopicSubscriptionManagementProcessor getManager(final DirectBuffer topicName, final int partitionId)
+    {
+        final Int2ObjectHashMap<TopicSubscriptionManagementProcessor> managersByPartition = managersByLog.get(topicName);
+
+        if (managersByPartition != null)
+        {
+            return managersByPartition.get(partitionId);
+        }
+
+        return null;
     }
 }

@@ -8,12 +8,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.CompleteTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CompleteTaskCmd
 {
@@ -26,9 +25,9 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
 
-    public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
+    public CompleteTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
-        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicId, TASK_EVENT);
+        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicName, partitionId, TASK_EVENT);
     }
 
     @Override
@@ -90,8 +89,8 @@ public class CompleteTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long>
     @Override
     public void validate()
     {
+        super.validate();
         ensureGreaterThanOrEqual("task key", taskKey, 0);
-        ensureGreaterThanOrEqual("topic id", topicId, 0);
         ensureGreaterThanOrEqual("lock owner", lockOwner, 0);
         ensureNotNullOrEmpty("task type", taskType);
     }

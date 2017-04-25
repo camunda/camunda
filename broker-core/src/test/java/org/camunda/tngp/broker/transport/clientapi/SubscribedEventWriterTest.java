@@ -2,7 +2,7 @@ package org.camunda.tngp.broker.transport.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.verify;
 
 import org.agrona.DirectBuffer;
@@ -19,7 +19,7 @@ import org.mockito.MockitoAnnotations;
 public class SubscribedEventWriterTest
 {
 
-    protected static final DirectBuffer BUFFER = new UnsafeBuffer(getBytes("foo"));
+    protected static final DirectBuffer BUFFER = wrapString("foo");
 
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
@@ -43,7 +43,8 @@ public class SubscribedEventWriterTest
             .eventType(EventType.RAFT_EVENT)
             .key(123L)
             .position(546L)
-            .topicId(876)
+            .topicName(wrapString("test-topic"))
+            .partitionId(876)
             .subscriberKey(4L)
             .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
@@ -59,7 +60,8 @@ public class SubscribedEventWriterTest
         assertThat(bodyDecoder.eventType()).isEqualTo(EventType.RAFT_EVENT);
         assertThat(bodyDecoder.key()).isEqualTo(123L);
         assertThat(bodyDecoder.position()).isEqualTo(546L);
-        assertThat(bodyDecoder.topicId()).isEqualTo(876);
+        assertThat(bodyDecoder.topicName()).isEqualTo("test-topic");
+        assertThat(bodyDecoder.partitionId()).isEqualTo(876);
         assertThat(bodyDecoder.subscriberKey()).isEqualTo(4L);
 
         final UnsafeBuffer eventBuffer = new UnsafeBuffer(new byte[bodyDecoder.eventLength()]);

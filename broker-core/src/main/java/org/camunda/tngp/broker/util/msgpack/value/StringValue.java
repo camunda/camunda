@@ -1,6 +1,6 @@
 package org.camunda.tngp.broker.util.msgpack.value;
 
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -24,7 +24,7 @@ public class StringValue extends BaseValue
 
     public StringValue(String string)
     {
-        this(new UnsafeBuffer(getBytes(string)));
+        this(wrapString(string));
     }
 
     public StringValue(DirectBuffer buffer)

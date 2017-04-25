@@ -12,6 +12,7 @@ import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.LeaveRequest;
 import org.camunda.tngp.broker.clustering.raft.message.LeaveResponse;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
@@ -166,6 +167,8 @@ public class LeaveController
             final Raft raft = context.raft;
             final RequestResponseController requestController = context.requestController;
 
+            final LogStream logStream = raft.stream();
+
             final List<Member> members = raft.members();
             final Member self = raft.member();
 
@@ -173,7 +176,9 @@ public class LeaveController
             final LeaveRequest leaveRequest = context.leaveRequest;
 
             leaveRequest.reset();
-            leaveRequest.id(raft.id())
+            leaveRequest
+                .topicName(logStream.getTopicName())
+                .partitionId(logStream.getPartitionId())
                 .member(self);
 
             if (position >= members.size() - 1)

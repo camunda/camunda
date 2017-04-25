@@ -1,9 +1,15 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.raft.PollRequestDecoder.*;
+import static org.camunda.tngp.clustering.raft.PollRequestEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.PollRequestEncoder.lastEntryPositionNullValue;
+import static org.camunda.tngp.clustering.raft.PollRequestEncoder.lastEntryTermNullValue;
+import static org.camunda.tngp.clustering.raft.PollRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.raft.PollRequestEncoder.termNullValue;
+import static org.camunda.tngp.clustering.raft.PollRequestEncoder.topicNameHeaderLength;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
@@ -20,22 +26,34 @@ public class PollRequest implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final PollRequestEncoder bodyEncoder = new PollRequestEncoder();
 
-    protected int id;
-    protected int term;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected int term = termNullValue();
 
-    protected long lastEntryPosition;
-    protected int lastEntryTerm;
+    protected long lastEntryPosition = lastEntryPositionNullValue();
+    protected int lastEntryTerm = lastEntryTermNullValue();
 
     protected final Member candidate = new Member();
 
-    public int id()
+    public DirectBuffer topicName()
     {
-        return id;
+        return topicName;
     }
 
-    public PollRequest id(final int id)
+    public PollRequest topicName(final DirectBuffer topicName)
     {
-        this.id = id;
+        this.topicName.wrap(topicName);
+        return this;
+    }
+
+    public int partitionId()
+    {
+        return partitionId;
+    }
+
+    public PollRequest partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -92,12 +110,18 @@ public class PollRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
+        partitionId = bodyDecoder.partitionId();
         term = bodyDecoder.term();
         lastEntryPosition = bodyDecoder.lastEntryPosition();
         lastEntryTerm = bodyDecoder.lastEntryTerm();
 
         candidate.endpoint().port(bodyDecoder.port());
+
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        final int topicNameOffset = bodyDecoder.limit();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+
+        bodyDecoder.limit(topicNameOffset + topicNameLength);
 
         final int hostLength = bodyDecoder.hostLength();
         final MutableDirectBuffer endpointBuffer = candidate.endpoint().getHostBuffer();
@@ -110,6 +134,8 @@ public class PollRequest implements BufferReader, BufferWriter
     {
         return headerEncoder.encodedLength() +
                 bodyEncoder.sbeBlockLength() +
+                topicNameHeaderLength() +
+                topicName.capacity() +
                 hostHeaderLength() +
                 candidate.endpoint().hostLength();
     }
@@ -126,21 +152,22 @@ public class PollRequest implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
+            .partitionId(partitionId)
             .term(term)
             .lastEntryPosition(lastEntryPosition)
-            .lastEntryTerm(lastEntryTerm);
-
-        bodyEncoder.port(candidate.endpoint().port());
-        bodyEncoder.putHost(candidate.endpoint().getHostBuffer(), 0, candidate.endpoint().hostLength());
+            .lastEntryTerm(lastEntryTerm)
+            .port(candidate.endpoint().port())
+            .putTopicName(topicName, 0, topicName.capacity())
+            .putHost(candidate.endpoint().getHostBuffer(), 0, candidate.endpoint().hostLength());
     }
 
     public void reset()
     {
-        id = -1;
-        term = -1;
-        lastEntryPosition = -1L;
-        lastEntryTerm = -1;
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
+        term = termNullValue();
+        lastEntryPosition = lastEntryPositionNullValue();
+        lastEntryTerm = lastEntryTermNullValue();
         candidate.endpoint().reset();
     }
 }

@@ -150,16 +150,14 @@ public class CandidateState extends ActiveState
         if (self.equals(candidate))
         {
             voteResponse.reset();
-            return voteResponse.id(raft.id())
-                    .id(raft.id())
+            return voteResponse
                     .term(raft.term())
                     .granted(true);
         }
         else
         {
             voteResponse.reset();
-            return voteResponse.id(raft.id())
-                    .id(raft.id())
+            return voteResponse
                     .term(raft.term())
                     .granted(false);
         }

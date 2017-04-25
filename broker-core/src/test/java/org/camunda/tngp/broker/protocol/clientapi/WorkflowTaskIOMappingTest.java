@@ -1,5 +1,22 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_EVENT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_XML;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
@@ -15,15 +32,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
 
 /**
  * Represents a test class to test the input and output mappings for
@@ -50,7 +58,7 @@ public class WorkflowTaskIOMappingTest
     @Before
     public void init() throws Throwable
     {
-        testClient = apiRule.topic(0);
+        testClient = apiRule.topic();
 
         jsonPayload.put("foo", "bar");
         final Map<String, Object> jsonObject = new HashMap<>();
@@ -73,7 +81,8 @@ public class WorkflowTaskIOMappingTest
             .ioMapping("service", "foo", null);
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
                 .put(PROP_EVENT, "CREATE_DEPLOYMENT")
@@ -229,7 +238,8 @@ public class WorkflowTaskIOMappingTest
             .ioMapping("service", null, "foo");
 
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .eventType(EventType.DEPLOYMENT_EVENT)
             .command()
             .put(PROP_EVENT, "CREATE_DEPLOYMENT")

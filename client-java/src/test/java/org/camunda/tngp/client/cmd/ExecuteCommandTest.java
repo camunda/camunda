@@ -51,12 +51,7 @@ public class ExecuteCommandTest
     {
         ClientCommand(EventType commandEventType)
         {
-            super(null, null, Void.class, 0, commandEventType);
-        }
-
-        @Override
-        public void validate()
-        {
+            super(null, null, Void.class, "test-topic", 0, commandEventType);
         }
 
         @Override

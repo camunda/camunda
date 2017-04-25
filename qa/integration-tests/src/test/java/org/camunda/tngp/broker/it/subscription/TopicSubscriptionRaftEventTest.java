@@ -57,7 +57,7 @@ public class TopicSubscriptionRaftEventTest
     public void shouldReceiveRaftEvents()
     {
         // given
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)

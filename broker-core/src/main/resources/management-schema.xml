@@ -26,19 +26,18 @@
     </types>
 
     <sbe:message name="InvitationRequest" id="0">
-        <field name="id" id="0" type="uint16"/>
+        <field name="partitionId" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
         <field name="name" id="2" type="uint16"/>
         <!-- TODO: provide more details to raft -->
-        <group name="members" id="2" dimensionType="groupSizeEncoding">
-            <field name="port" id="3" type="uint16"/>
-            <data name="host" id="4" type="varDataEncoding"/>
+        <group name="members" id="3" dimensionType="groupSizeEncoding">
+            <field name="port" id="4" type="uint16"/>
+            <data name="host" id="5" type="varDataEncoding"/>
         </group>
-        <data name="logName" id="5" type="varDataEncoding" />
+        <data name="topicName" id="6" type="varDataEncoding" />
     </sbe:message>
 
     <sbe:message name="InvitationResponse" id="1">
-        <field name="id" id="0" type="uint16"/>
         <field name="term" id="1" type="uint16"/>
     </sbe:message>
 

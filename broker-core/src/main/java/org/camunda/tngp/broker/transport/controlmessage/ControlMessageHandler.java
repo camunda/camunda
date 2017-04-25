@@ -35,7 +35,7 @@ public interface ControlMessageHandler
      * @param buffer
      *            the buffer which contains the control message as MsgPack-JSON
      * @param metadata
-     *            the metadata (channel id, connection id, request id) of the
+     *            the metadata (channel partitionId, connection partitionId, request partitionId) of the
      *            request
      * @return a future which indicates when the control message is handled
      *         completely

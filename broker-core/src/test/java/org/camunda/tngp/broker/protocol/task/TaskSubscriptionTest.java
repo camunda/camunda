@@ -1,6 +1,8 @@
 package org.camunda.tngp.broker.protocol.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.Optional;
 
@@ -17,6 +19,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+
 public class TaskSubscriptionTest
 {
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -30,7 +33,7 @@ public class TaskSubscriptionTest
     {
         // given
         apiRule
-            .openTaskSubscription(0, "foo")
+            .openTaskSubscription("foo")
             .await();
 
         // when the transport channel is closed
@@ -41,7 +44,8 @@ public class TaskSubscriptionTest
         Thread.sleep(1000L); // closing subscriptions happens asynchronously
 
         final ExecuteCommandResponse createTaskResponse = apiRule.createCmdRequest()
-                .topicId(0)
+                .topicName(DEFAULT_TOPIC_NAME)
+                .partitionId(0)
                 .eventTypeTask()
                 .command()
                 .put("eventType", "CREATE")
@@ -53,7 +57,7 @@ public class TaskSubscriptionTest
         final long taskKey = createTaskResponse.key();
 
         final ControlMessageResponse subscriptionResponse = apiRule
-            .openTaskSubscription(0, "foo")
+            .openTaskSubscription("foo")
             .await();
         final int secondSubscriberKey = (int) subscriptionResponse.getData().get("subscriberKey");
 
@@ -75,7 +79,8 @@ public class TaskSubscriptionTest
             .data()
                 .put("subscriberKey", 1)
                 .put("credits", 0)
-                .put("topicId", 0)
+                .put("topicName", DEFAULT_TOPIC_NAME)
+                .put("partitionId", DEFAULT_PARTITION_ID)
                 .done()
             .send().awaitError();
 

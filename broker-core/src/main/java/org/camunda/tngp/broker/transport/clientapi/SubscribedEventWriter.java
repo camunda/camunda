@@ -1,9 +1,17 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.eventHeaderLength;
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.keyNullValue;
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.partitionIdNullValue;
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.positionNullValue;
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.subscriberKeyNullValue;
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventEncoder.topicNameHeaderLength;
+
 import java.util.Objects;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.protocol.Protocol;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
@@ -19,10 +27,11 @@ public class SubscribedEventWriter implements BufferWriter
 
     protected int channelId;
 
-    protected int topicId;
-    protected long position;
-    protected long key;
-    protected long subscriberKey;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected long position = positionNullValue();
+    protected long key = keyNullValue();
+    protected long subscriberKey = subscriberKeyNullValue();
     protected SubscriptionType subscriptionType;
     protected EventType eventType;
     protected DirectBufferWriter eventBuffer = new DirectBufferWriter();
@@ -30,61 +39,67 @@ public class SubscribedEventWriter implements BufferWriter
 
     protected final SingleMessageWriter singleMessageWriter;
 
-    public SubscribedEventWriter(SingleMessageWriter singleMessageWriter)
+    public SubscribedEventWriter(final SingleMessageWriter singleMessageWriter)
     {
         this.singleMessageWriter = singleMessageWriter;
     }
 
-    public SubscribedEventWriter channelId(int channelId)
+    public SubscribedEventWriter channelId(final int channelId)
     {
         this.channelId = channelId;
         return this;
     }
 
-    public SubscribedEventWriter topicId(int topicId)
+    public SubscribedEventWriter topicName(final DirectBuffer topicName)
     {
-        this.topicId = topicId;
+        this.topicName.wrap(topicName);
         return this;
     }
 
-    public SubscribedEventWriter position(long position)
+    public SubscribedEventWriter partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
+        return this;
+    }
+
+    public SubscribedEventWriter position(final long position)
     {
         this.position = position;
         return this;
     }
 
-    public SubscribedEventWriter key(long key)
+    public SubscribedEventWriter key(final long key)
     {
         this.key = key;
         return this;
     }
 
-    public SubscribedEventWriter subscriberKey(long subscriberKey)
+    public SubscribedEventWriter subscriberKey(final long subscriberKey)
     {
         this.subscriberKey = subscriberKey;
         return this;
     }
 
-    public SubscribedEventWriter subscriptionType(SubscriptionType subscriptionType)
+    public SubscribedEventWriter subscriptionType(final SubscriptionType subscriptionType)
     {
         this.subscriptionType = subscriptionType;
         return this;
     }
 
-    public SubscribedEventWriter eventType(EventType eventType)
+    public SubscribedEventWriter eventType(final EventType eventType)
     {
         this.eventType = eventType;
         return this;
     }
 
-    public SubscribedEventWriter event(DirectBuffer buffer, int offset, int length)
+    public SubscribedEventWriter event(final DirectBuffer buffer, final int offset, final int length)
     {
         this.eventBuffer.wrap(buffer, offset, length);
         this.eventWriter = eventBuffer;
         return this;
     }
 
-    public SubscribedEventWriter eventWriter(BufferWriter eventWriter)
+    public SubscribedEventWriter eventWriter(final BufferWriter eventWriter)
     {
         this.eventWriter = eventWriter;
         return this;
@@ -95,12 +110,14 @@ public class SubscribedEventWriter implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 SubscribedEventEncoder.BLOCK_LENGTH +
-                SubscribedEventEncoder.eventHeaderLength() +
+                topicNameHeaderLength() +
+                topicName.capacity() +
+                eventHeaderLength() +
                 eventWriter.getLength();
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    public void write(final MutableDirectBuffer buffer, int offset)
     {
         headerEncoder
             .wrap(buffer, offset)
@@ -113,19 +130,20 @@ public class SubscribedEventWriter implements BufferWriter
 
         bodyEncoder
             .wrap(buffer, offset)
-            .topicId(topicId)
+            .partitionId(partitionId)
+            .putTopicName(topicName, 0, topicName.capacity())
             .position(position)
             .key(key)
             .subscriberKey(subscriberKey)
             .subscriptionType(subscriptionType)
             .eventType(eventType);
 
-        offset += SubscribedEventEncoder.BLOCK_LENGTH;
+        offset += SubscribedEventEncoder.BLOCK_LENGTH + topicNameHeaderLength() + topicName.capacity();
 
         final int eventLength = eventWriter.getLength();
         buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
 
-        offset += SubscribedEventEncoder.eventHeaderLength();
+        offset += eventHeaderLength();
         eventWriter.write(buffer, offset);
     }
 
@@ -146,10 +164,11 @@ public class SubscribedEventWriter implements BufferWriter
     protected void reset()
     {
         this.channelId = -1;
-        this.topicId = SubscribedEventEncoder.topicIdNullValue();
-        this.position = SubscribedEventEncoder.positionNullValue();
-        this.key = SubscribedEventEncoder.keyNullValue();
-        this.subscriberKey = SubscribedEventEncoder.subscriberKeyNullValue();
+        this.partitionId = partitionIdNullValue();
+        this.topicName.wrap(0, 0);
+        this.position = positionNullValue();
+        this.key = keyNullValue();
+        this.subscriberKey = subscriberKeyNullValue();
         this.subscriptionType = SubscriptionType.NULL_VAL;
         this.eventType = EventType.NULL_VAL;
         this.eventWriter = null;

@@ -1,6 +1,11 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.raft.JoinResponseDecoder.MembersDecoder.*;
+import static org.camunda.tngp.clustering.raft.LeaveResponseEncoder.MembersEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.LeaveResponseEncoder.MembersEncoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.raft.LeaveResponseEncoder.MembersEncoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.raft.LeaveResponseEncoder.configurationEntryPositionNullValue;
+import static org.camunda.tngp.clustering.raft.LeaveResponseEncoder.configurationEntryTermNullValue;
+import static org.camunda.tngp.clustering.raft.LeaveResponseEncoder.termNullValue;
 
 import java.util.Iterator;
 import java.util.List;
@@ -28,24 +33,12 @@ public class LeaveResponse implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final LeaveResponseEncoder bodyEncoder = new LeaveResponseEncoder();
 
-    protected int id = -1;
-    protected int term = -1;
+    protected int term = termNullValue();
 
-    protected long configurationEntryPosition = -1L;
-    protected int configurationEntryTerm = -1;
+    protected long configurationEntryPosition = configurationEntryPositionNullValue();
+    protected int configurationEntryTerm = configurationEntryTermNullValue();
     protected boolean succeeded;
     protected List<Member> members = new CopyOnWriteArrayList<>();
-
-    public int id()
-    {
-        return id;
-    }
-
-    public LeaveResponse id(final int id)
-    {
-        this.id = id;
-        return this;
-    }
 
     public int term()
     {
@@ -132,7 +125,6 @@ public class LeaveResponse implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
             .term(term)
             .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
             .configurationEntryPosition(configurationEntryPosition)
@@ -160,7 +152,6 @@ public class LeaveResponse implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
         term = bodyDecoder.term();
         succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
         configurationEntryPosition = bodyDecoder.configurationEntryPosition();
@@ -188,10 +179,9 @@ public class LeaveResponse implements BufferReader, BufferWriter
 
     public void reset()
     {
-        id = -1;
-        term = -1;
-        configurationEntryPosition = -1L;
-        configurationEntryTerm = -1;
+        term = termNullValue();
+        configurationEntryPosition = configurationEntryPositionNullValue();
+        configurationEntryTerm = configurationEntryTermNullValue();
         succeeded = false;
         members.clear();
     }

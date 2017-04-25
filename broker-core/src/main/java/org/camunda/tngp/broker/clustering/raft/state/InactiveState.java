@@ -111,7 +111,6 @@ public class InactiveState extends RaftState
 
         configureResponse.reset();
         return configureResponse
-            .id(raft.id())
             .term(raft.term());
     }
 

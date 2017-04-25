@@ -13,11 +13,16 @@
 package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.taskqueue.CloseTaskSubscriptionCmdImpl;
@@ -31,13 +36,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class CloseTaskSubscriptionCmdTest
 {
-    protected static final int TOPIC_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -58,7 +58,7 @@ public class CloseTaskSubscriptionCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        command = new CloseTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
+        command = new CloseTaskSubscriptionCmdImpl(clientCmdExecutor, objectMapper, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -90,7 +90,8 @@ public class CloseTaskSubscriptionCmdTest
         final TaskSubscription taskSubscription = objectMapper.readValue(data, TaskSubscription.class);
 
         assertThat(taskSubscription.getSubscriberKey()).isEqualTo(2L);
-        assertThat(taskSubscription.getTopicId()).isEqualTo(TOPIC_ID);
+        assertThat(taskSubscription.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(taskSubscription.getPartitionId()).isEqualTo(DEFAULT_PARTITION_ID);
     }
 
     @Test

@@ -1,10 +1,11 @@
 package org.camunda.tngp.broker.clustering.management.message;
 
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.sbeHeaderSize;
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.logNameHeaderLength;
-import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.termNullValue;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.topicNameHeaderLength;
 
 import java.util.Iterator;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.management.InvitationRequestDecoder;
@@ -31,30 +33,30 @@ public class InvitationRequest implements BufferWriter, BufferReader
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final InvitationRequestEncoder bodyEncoder = new InvitationRequestEncoder();
 
-    protected int id;
-    protected String name;
-    protected int term;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected int term = termNullValue();
     protected List<Member> members = new CopyOnWriteArrayList<>();
 
-    public int id()
+    public int partitionId()
     {
-        return id;
+        return partitionId;
     }
 
-    public InvitationRequest id(final int id)
+    public InvitationRequest partitionId(final int partitionId)
     {
-        this.id = id;
+        this.partitionId = partitionId;
         return this;
     }
 
-    public String name()
+    public DirectBuffer topicName()
     {
-        return name;
+        return topicName;
     }
 
-    public InvitationRequest name(final String name)
+    public InvitationRequest topicName(final DirectBuffer topicName)
     {
-        this.name = name;
+        this.topicName.wrap(topicName);
         return this;
     }
 
@@ -97,11 +99,11 @@ public class InvitationRequest implements BufferWriter, BufferReader
             length += endpoint.hostLength();
         }
 
-        length += logNameHeaderLength();
+        length += topicNameHeaderLength();
 
-        if (name != null && !name.isEmpty())
+        if (topicName != null)
         {
-            length += getBytes(name).length;
+            length += topicName.capacity();
         }
 
         return length;
@@ -121,7 +123,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
         final int size = members.size();
 
         final MembersEncoder encoder = bodyEncoder.wrap(buffer, offset)
-            .id(id)
+            .partitionId(partitionId)
             .term(term)
             .membersCount(size);
 
@@ -135,7 +137,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
                 .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
 
-        bodyEncoder.logName(name);
+        bodyEncoder.putTopicName(topicName, 0, topicName.capacity());
     }
 
     @Override
@@ -146,7 +148,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
+        partitionId = bodyDecoder.partitionId();
         term = bodyDecoder.term();
 
         members.clear();
@@ -168,15 +170,15 @@ public class InvitationRequest implements BufferWriter, BufferReader
             members.add(member);
         }
 
-        name = bodyDecoder.logName();
+        topicName.wrap(buffer, bodyDecoder.limit() + topicNameHeaderLength(), bodyDecoder.topicNameLength());
     }
 
     public void reset()
     {
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
+        term = termNullValue();
         members.clear();
-        id = -1;
-        term = -1;
-        name = null;
     }
 
 }

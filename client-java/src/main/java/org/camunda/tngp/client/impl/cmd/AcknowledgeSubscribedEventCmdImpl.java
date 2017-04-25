@@ -1,23 +1,23 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.EnsureUtil;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AcknowledgeSubscribedEventCmdImpl extends AbstractExecuteCmdImpl<TopicSubscriptionEvent, Long>
 {
     protected final TopicSubscriptionEvent ack = new TopicSubscriptionEvent();
 
-    public AcknowledgeSubscribedEventCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, final int topicId)
+    public AcknowledgeSubscribedEventCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
-        super(cmdExecutor, objectMapper, TopicSubscriptionEvent.class, topicId, EventType.SUBSCRIPTION_EVENT);
+        super(cmdExecutor, objectMapper, TopicSubscriptionEvent.class, topicName, partitionId, EventType.SUBSCRIPTION_EVENT);
     }
 
     @Override
     public void validate()
     {
+        super.validate();
         EnsureUtil.ensureGreaterThanOrEqual("ackPosition", ack.getAckPosition(), 0L);
         EnsureUtil.ensureNotNull("subscriptionName", ack.getName());
     }

@@ -1,13 +1,17 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestDecoder.topicNameHeaderLength;
 import static org.camunda.tngp.transport.protocol.Protocols.FULL_DUPLEX_SINGLE_MESSAGE;
 import static org.camunda.tngp.transport.protocol.Protocols.REQUEST_RESPONSE;
+import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
@@ -31,6 +35,7 @@ import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.transport.singlemessage.SingleMessageHeaderDescriptor;
 
+
 public class ClientApiMessageHandler
 {
 
@@ -43,10 +48,12 @@ public class ClientApiMessageHandler
 
     protected final UnsafeBuffer writeControlMessageRequestBufferView = new UnsafeBuffer(0, 0);
 
+    protected final DirectBuffer topicName = new UnsafeBuffer(0, 0);
+
     protected final ManyToOneConcurrentArrayQueue<Runnable> cmdQueue = new ManyToOneConcurrentArrayQueue<>(100);
     protected final Consumer<Runnable> cmdConsumer = (c) -> c.run();
 
-    protected final Long2ObjectHashMap<LogStream> logStreamsById = new Long2ObjectHashMap<>();
+    protected final Map<DirectBuffer, Int2ObjectHashMap<LogStream>> logStreamsByTopic = new HashMap<>();
     protected final BrokerEventMetadata eventMetadata = new BrokerEventMetadata();
     protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
 
@@ -59,11 +66,11 @@ public class ClientApiMessageHandler
     protected final TaskSubscriptionManager taskSubscriptionManager;
 
     public ClientApiMessageHandler(
-            Dispatcher sendBuffer,
-            Dispatcher controlMessageDispatcher,
-            ErrorResponseWriter errorResponseWriter,
-            TopicSubscriptionService topicSubscriptionService,
-            TaskSubscriptionManager taskSubscriptionManager)
+        final Dispatcher sendBuffer,
+        final Dispatcher controlMessageDispatcher,
+        final ErrorResponseWriter errorResponseWriter,
+        final TopicSubscriptionService topicSubscriptionService,
+        final TaskSubscriptionManager taskSubscriptionManager)
     {
         this.sendBuffer = sendBuffer;
         this.controlMessageDispatcher = controlMessageDispatcher;
@@ -72,7 +79,7 @@ public class ClientApiMessageHandler
         this.taskSubscriptionManager = taskSubscriptionManager;
     }
 
-    public boolean handleMessage(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean handleMessage(final TransportChannel transportChannel, final DirectBuffer buffer, final int offset, final int length)
     {
         boolean isHandled = false;
 
@@ -139,7 +146,7 @@ public class ClientApiMessageHandler
                 isHandled = errorResponseWriter
                         .metadata(eventMetadata)
                         .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
-                        .errorMessage("Cannot handle message. Template id '%d' is not supported.", templateId)
+                        .errorMessage("Cannot handle message. Template partitionId '%d' is not supported.", templateId)
                         .failedRequest(buffer, messageOffset, messageLength)
                         .tryWriteResponseOrLogFailure();
                 break;
@@ -148,13 +155,18 @@ public class ClientApiMessageHandler
         return isHandled;
     }
 
-    protected boolean handleExecuteCommandRequest(BrokerEventMetadata eventMetadata, DirectBuffer buffer, int messageOffset, int messageLength)
+    protected boolean handleExecuteCommandRequest(final BrokerEventMetadata eventMetadata, final DirectBuffer buffer, final int messageOffset, final int messageLength)
     {
         boolean isHandled = false;
 
         executeCommandRequestDecoder.wrap(buffer, messageOffset, messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
-        final long topicId = executeCommandRequestDecoder.topicId();
+        final int topicNameOffset = executeCommandRequestDecoder.limit() + topicNameHeaderLength();
+        final int topicNameLength = executeCommandRequestDecoder.topicNameLength();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+        executeCommandRequestDecoder.limit(topicNameOffset + topicNameLength);
+
+        final int partitionId = executeCommandRequestDecoder.partitionId();
         final long key = executeCommandRequestDecoder.key();
 
         final EventType eventType = executeCommandRequestDecoder.eventType();
@@ -163,7 +175,7 @@ public class ClientApiMessageHandler
         final int eventOffset = executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.commandHeaderLength();
         final int eventLength = executeCommandRequestDecoder.commandLength();
 
-        final LogStream logStream = logStreamsById.get(topicId);
+        final LogStream logStream = getLogStream(topicName, partitionId);
 
         if (logStream != null)
         {
@@ -192,14 +204,26 @@ public class ClientApiMessageHandler
             isHandled = errorResponseWriter
                     .metadata(eventMetadata)
                     .errorCode(ErrorCode.TOPIC_NOT_FOUND)
-                    .errorMessage("Cannot execute command. Topic with id '%d' not found", topicId)
+                    .errorMessage("Cannot execute command. Topic with name '%s' and partition id '%d' not found", bufferAsString(topicName), partitionId)
                     .failedRequest(buffer, eventOffset, eventLength)
                     .tryWriteResponseOrLogFailure();
         }
         return isHandled;
     }
 
-    protected boolean handleControlMessageRequest(BrokerEventMetadata eventMetadata, DirectBuffer buffer, int messageOffset, int messageLength)
+    private LogStream getLogStream(final DirectBuffer topicName, final int partitionId)
+    {
+        final Int2ObjectHashMap<LogStream> logStreamPartitions = logStreamsByTopic.get(topicName);
+
+        if (logStreamPartitions != null)
+        {
+            return logStreamPartitions.get(partitionId);
+        }
+
+        return null;
+    }
+
+    protected boolean handleControlMessageRequest(final BrokerEventMetadata eventMetadata, final DirectBuffer buffer, final int messageOffset, final int messageLength)
     {
         boolean isHandled = false;
         long publishPosition = -1;
@@ -233,17 +257,37 @@ public class ClientApiMessageHandler
         return isHandled;
     }
 
-    public void addStream(LogStream logStream)
+    public void addStream(final LogStream logStream)
     {
-        cmdQueue.add(() -> logStreamsById.put(logStream.getId(), logStream));
+        cmdQueue.add(() ->
+            logStreamsByTopic
+                .computeIfAbsent(logStream.getTopicName(), topicName -> new Int2ObjectHashMap<>())
+                .put(logStream.getPartitionId(), logStream)
+        );
     }
 
-    public void removeStream(LogStream logStream)
+    public void removeStream(final LogStream logStream)
     {
-        cmdQueue.add(() -> logStreamsById.remove(logStream.getId()));
+        cmdQueue.add(() ->
+        {
+            final DirectBuffer topicName = logStream.getTopicName();
+            final int partitionId = logStream.getPartitionId();
+
+            final Int2ObjectHashMap<LogStream> logStreamPartitions = logStreamsByTopic.get(topicName);
+
+            if (logStreamPartitions != null)
+            {
+                logStreamPartitions.remove(partitionId);
+
+                if (logStreamPartitions.isEmpty())
+                {
+                    logStreamsByTopic.remove(topicName);
+                }
+            }
+        });
     }
 
-    public void onChannelClose(int channelId)
+    public void onChannelClose(final int channelId)
     {
         topicSubscriptionService.onClientChannelCloseAsync(channelId);
         taskSubscriptionManager.onClientChannelCloseAsync(channelId);

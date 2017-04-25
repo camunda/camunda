@@ -26,6 +26,7 @@ import org.camunda.tngp.clustering.raft.PollRequestDecoder;
 import org.camunda.tngp.clustering.raft.VoteRequestDecoder;
 import org.camunda.tngp.dispatcher.FragmentHandler;
 import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
 import org.camunda.tngp.transport.requestresponse.RequestResponseProtocolHeaderDescriptor;
 import org.camunda.tngp.transport.singlemessage.SingleMessageHeaderDescriptor;
@@ -122,42 +123,48 @@ public class RaftMessageHandler implements FragmentHandler
 
         if (AppendRequestDecoder.SCHEMA_ID == schemaId)
         {
-            final int id = buffer.getShort(offset + headerDecoder.encodedLength());
+            final int templateId = headerDecoder.templateId();
 
-            if (raft.id() == id)
+            switch (templateId)
             {
-                raft.lastContact(System.currentTimeMillis());
-
-                final int templateId = headerDecoder.templateId();
-
-                switch (templateId)
+                case AppendRequestDecoder.TEMPLATE_ID:
                 {
-                    case AppendRequestDecoder.TEMPLATE_ID:
+                    appendRequest.reset();
+                    appendRequest.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(appendRequest.topicName(), appendRequest.partitionId()))
                     {
-                        appendRequest.reset();
-                        appendRequest.wrap(buffer, offset, length);
+                        raft.lastContactNow();
+
                         final AppendResponse appendResponse = raft.handleAppendRequest(appendRequest);
 
                         messageWriter.protocol(FULL_DUPLEX_SINGLE_MESSAGE)
                             .channelId(channeldId)
                             .message(appendResponse)
                             .tryWriteMessage();
-                        break;
                     }
 
-                    case AppendResponseDecoder.TEMPLATE_ID:
-                    {
-                        appendResponse.reset();
-                        appendResponse.wrap(buffer, offset, length);
-                        raft.handleAppendResponse(appendResponse);
-                        break;
-                    }
-                    default:
-                    {
-                        // TODO: respond with an error
-                    }
+                    break;
                 }
 
+                case AppendResponseDecoder.TEMPLATE_ID:
+                {
+                    appendResponse.reset();
+                    appendResponse.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(appendResponse.topicName(), appendResponse.partitionId()))
+                    {
+                        raft.lastContactNow();
+
+                        raft.handleAppendResponse(appendResponse);
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    // TODO: respond with an error
+                }
             }
         }
 
@@ -174,20 +181,19 @@ public class RaftMessageHandler implements FragmentHandler
 
         if (AppendRequestDecoder.SCHEMA_ID == schemaId)
         {
-            final int id = buffer.getShort(offset + headerDecoder.encodedLength());
+            final int templateId = headerDecoder.templateId();
 
-            if (raft.id() == id)
+            switch (templateId)
             {
-                raft.lastContact(System.currentTimeMillis());
-
-                final int templateId = headerDecoder.templateId();
-
-                switch (templateId)
+                case VoteRequestDecoder.TEMPLATE_ID:
                 {
-                    case VoteRequestDecoder.TEMPLATE_ID:
+                    voteRequest.reset();
+                    voteRequest.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(voteRequest.topicName(), voteRequest.partitionId()))
                     {
-                        voteRequest.reset();
-                        voteRequest.wrap(buffer, offset, length);
+                        raft.lastContactNow();
+
                         final VoteResponse voteResponse = raft.handleVoteRequest(voteRequest);
 
                         messageWriter.protocol(REQUEST_RESPONSE)
@@ -196,13 +202,20 @@ public class RaftMessageHandler implements FragmentHandler
                             .requestId(requestId)
                             .message(voteResponse)
                             .tryWriteMessage();
-                        break;
                     }
 
-                    case PollRequestDecoder.TEMPLATE_ID:
+                    break;
+                }
+
+                case PollRequestDecoder.TEMPLATE_ID:
+                {
+                    pollRequest.reset();
+                    pollRequest.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(pollRequest.topicName(), pollRequest.partitionId()))
                     {
-                        pollRequest.reset();
-                        pollRequest.wrap(buffer, offset, length);
+                        raft.lastContactNow();
+
                         final PollResponse pollResponse = raft.handlePollRequest(pollRequest);
 
                         messageWriter.protocol(REQUEST_RESPONSE)
@@ -211,13 +224,20 @@ public class RaftMessageHandler implements FragmentHandler
                             .requestId(requestId)
                             .message(pollResponse)
                             .tryWriteMessage();
-                        break;
                     }
 
-                    case JoinRequestDecoder.TEMPLATE_ID:
+                    break;
+                }
+
+                case JoinRequestDecoder.TEMPLATE_ID:
+                {
+                    joinRequest.reset();
+                    joinRequest.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(joinRequest.topicName(), joinRequest.partitionId()))
                     {
-                        joinRequest.reset();
-                        joinRequest.wrap(buffer, offset, length);
+                        raft.lastContactNow();
+
                         raft.handleJoinRequest(joinRequest)
                             .thenAccept((response) ->
                             {
@@ -228,13 +248,20 @@ public class RaftMessageHandler implements FragmentHandler
                                     .message(response)
                                     .tryWriteMessage();
                             });
-                        break;
                     }
 
-                    case LeaveRequestDecoder.TEMPLATE_ID:
+                    break;
+                }
+
+                case LeaveRequestDecoder.TEMPLATE_ID:
+                {
+                    leaveRequest.reset();
+                    leaveRequest.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(leaveRequest.topicName(), leaveRequest.partitionId()))
                     {
-                        leaveRequest.reset();
-                        leaveRequest.wrap(buffer, offset, length);
+                        raft.lastContactNow();
+
                         raft.handleLeaveRequest(leaveRequest)
                             .thenAccept((response) ->
                             {
@@ -245,13 +272,20 @@ public class RaftMessageHandler implements FragmentHandler
                                     .message(response)
                                     .tryWriteMessage();
                             });
-                        break;
-                    }
 
-                    case ConfigureRequestDecoder.TEMPLATE_ID:
+                    }
+                    break;
+                }
+
+                case ConfigureRequestDecoder.TEMPLATE_ID:
+                {
+                    configureRequest.reset();
+                    configureRequest.wrap(buffer, offset, length);
+
+                    if (canHandleMessage(configureRequest.topicName(), configureRequest.partitionId()))
                     {
-                        configureRequest.reset();
-                        configureRequest.wrap(buffer, offset, length);
+                        raft.lastContactNow();
+
                         final ConfigureResponse response = raft.handleConfigureRequest(configureRequest);
                         messageWriter.protocol(REQUEST_RESPONSE)
                             .channelId(channeldId)
@@ -259,17 +293,25 @@ public class RaftMessageHandler implements FragmentHandler
                             .requestId(requestId)
                             .message(response)
                             .tryWriteMessage();
-                        break;
                     }
-                    default:
-                    {
-                        // TODO: respond with an error
-                    }
+
+                    break;
+                }
+                default:
+                {
+                    // TODO: respond with an error
                 }
             }
         }
 
         return result;
+    }
+
+    protected boolean canHandleMessage(final DirectBuffer topicName, final int partitionId)
+    {
+        final LogStream logStream = raft.stream();
+
+        return logStream.getTopicName().equals(topicName) && logStream.getPartitionId() == partitionId;
     }
 
 }

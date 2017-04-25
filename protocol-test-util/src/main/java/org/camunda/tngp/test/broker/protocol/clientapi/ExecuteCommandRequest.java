@@ -1,10 +1,15 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.util.Map;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandRequestEncoder;
+import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -16,39 +21,46 @@ public class ExecuteCommandRequest implements BufferWriter
     protected final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
     protected final MsgPackHelper msgPackHelper;
 
-    protected int topicId = ExecuteCommandRequestEncoder.topicIdNullValue();
-    protected long key = ExecuteCommandRequestEncoder.keyNullValue();
+    protected String topicName;
+    protected int partitionId = partitionIdNullValue();
+    protected long key = keyNullValue();
     protected EventType eventType = EventType.NULL_VAL;
     protected byte[] encodedCmd;
 
     protected final RequestResponseExchange requestResponseExchange;
 
 
-    public ExecuteCommandRequest(TransportConnectionPool connectionPool, int channelId, MsgPackHelper msgPackHelper)
+    public ExecuteCommandRequest(final TransportConnectionPool connectionPool, final int channelId, final MsgPackHelper msgPackHelper)
     {
         this.requestResponseExchange = new RequestResponseExchange(connectionPool, channelId);
         this.msgPackHelper = msgPackHelper;
     }
 
-    public ExecuteCommandRequest topicId(int topicId)
+    public ExecuteCommandRequest topicName(final String topicName)
     {
-        this.topicId = topicId;
+        this.topicName = topicName;
         return this;
     }
 
-    public ExecuteCommandRequest key(long key)
+    public ExecuteCommandRequest partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
+        return this;
+    }
+
+    public ExecuteCommandRequest key(final long key)
     {
         this.key = key;
         return this;
     }
 
-    public ExecuteCommandRequest eventType(EventType eventType)
+    public ExecuteCommandRequest eventType(final EventType eventType)
     {
         this.eventType = eventType;
         return this;
     }
 
-    public ExecuteCommandRequest command(Map<String, Object> command)
+    public ExecuteCommandRequest command(final Map<String, Object> command)
     {
         this.encodedCmd = msgPackHelper.encodeAsMsgPack(command);
         return this;
@@ -79,12 +91,14 @@ public class ExecuteCommandRequest implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandRequestEncoder.BLOCK_LENGTH +
+                ExecuteCommandResponseEncoder.topicNameHeaderLength() +
+                getBytes(topicName).length +
                 ExecuteCommandRequestEncoder.commandHeaderLength() +
                 encodedCmd.length;
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    public void write(final MutableDirectBuffer buffer, final int offset)
     {
         messageHeaderEncoder.wrap(buffer, offset)
             .schemaId(requestEncoder.sbeSchemaId())
@@ -93,9 +107,10 @@ public class ExecuteCommandRequest implements BufferWriter
             .version(requestEncoder.sbeSchemaVersion());
 
         requestEncoder.wrap(buffer, offset + messageHeaderEncoder.encodedLength())
-            .topicId(topicId)
+            .partitionId(partitionId)
             .key(key)
             .eventType(eventType)
+            .topicName(topicName)
             .putCommand(encodedCmd, 0, encodedCmd.length);
     }
 

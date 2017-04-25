@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
@@ -19,17 +20,15 @@ import org.camunda.tngp.client.workflow.cmd.WorkflowDefinition;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.util.StreamUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEvent, DeploymentResult> implements CreateDeploymentCmd
 {
     protected final DeploymentEvent deploymentEvent = new DeploymentEvent();
 
     protected String resource;
 
-    public CreateDeploymentCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
+    public CreateDeploymentCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, final String topicName, int partitionId)
     {
-        super(cmdExecutor, objectMapper, DeploymentEvent.class, topicId, EventType.DEPLOYMENT_EVENT);
+        super(cmdExecutor, objectMapper, DeploymentEvent.class, topicName, partitionId, EventType.DEPLOYMENT_EVENT);
     }
 
     @Override
@@ -108,6 +107,7 @@ public class CreateDeploymentCmdImpl extends AbstractExecuteCmdImpl<DeploymentEv
     @Override
     public void validate()
     {
+        super.validate();
         ensureNotNull("resource", resource);
     }
 

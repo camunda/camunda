@@ -5,6 +5,7 @@ import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
 import org.camunda.tngp.broker.clustering.util.SingleMessageController;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -159,7 +160,7 @@ public class ReplicationController
         public void work(ReplicationContext context) throws Exception
         {
             final Raft raft = context.raft;
-            final int id = raft.id();
+            final LogStream logStream = raft.stream();
             final int term = raft.term();
             final Member self = raft.member();
 
@@ -172,7 +173,8 @@ public class ReplicationController
 
             appendRequest.reset();
             appendRequest
-                .id(id)
+                .topicName(logStream.getTopicName())
+                .partitionId(logStream.getPartitionId())
                 .term(term)
                 .previousEntryPosition(previousEntryPosition)
                 .previousEntryTerm(previousEntryTerm)

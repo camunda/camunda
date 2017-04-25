@@ -1,13 +1,13 @@
 package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
@@ -15,12 +15,14 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
     private long subscriptionId = -1L;
-    private final int topicId;
+    private final String topicName;
+    private final int partitionId;
 
-    public CloseTaskSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
+    public CloseTaskSubscriptionCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
         super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.REMOVE_TASK_SUBSCRIPTION);
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
     public CloseTaskSubscriptionCmdImpl subscriptionId(long subscriptionId)
@@ -33,7 +35,8 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
     public void validate()
     {
         ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);
-        ensureGreaterThanOrEqual("topic id", topicId, 0);
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
     }
 
     @Override
@@ -46,7 +49,8 @@ public class CloseTaskSubscriptionCmdImpl extends AbstractControlMessageWithoutR
     protected Object writeCommand()
     {
         subscription.setSubscriberKey(subscriptionId);
-        subscription.setTopicId(topicId);
+        subscription.setTopicName(topicName);
+        subscription.setPartitionId(partitionId);
 
         return subscription;
     }

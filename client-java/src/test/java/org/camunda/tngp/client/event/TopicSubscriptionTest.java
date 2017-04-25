@@ -54,7 +54,7 @@ public class TopicSubscriptionTest
         { };
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(noOpHandler)
             .name(SUBSCRIPTION_NAME)
@@ -86,7 +86,7 @@ public class TopicSubscriptionTest
         { };
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .forcedStart()
             .handler(noOpHandler)
@@ -110,7 +110,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler();
-        final TopicSubscription subscription = client.topic(0).newSubscription()
+        final TopicSubscription subscription = clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -143,7 +143,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         final FailingHandler handler = new FailingHandler((m, e) -> m.getEventPosition() == 2L);
-        final TopicSubscription subscription = client.topic(0).newSubscription()
+        final TopicSubscription subscription = clientRule.topic().newSubscription()
                 .startAtHeadOfTopic()
                 .handler(handler)
                 .name(SUBSCRIPTION_NAME)
@@ -192,7 +192,7 @@ public class TopicSubscriptionTest
                 m.getEventPosition() == 1L &&
                 counter.decrementAndGet() > 0);
 
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -226,7 +226,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler((m, e) ->
             {
@@ -251,7 +251,7 @@ public class TopicSubscriptionTest
         broker.stubTopicSubscriptionApi(123L);
         final ControllableHandler handler = new ControllableHandler();
 
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) client.topic(0).newSubscription()
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -297,7 +297,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) client.topic(0).newSubscription()
+        final TopicSubscriptionImpl subscription = (TopicSubscriptionImpl) clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler((m, e) ->
             {
@@ -318,7 +318,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscription subscription = client.topic(0).newSubscription()
+        final TopicSubscription subscription = clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler((m, e) ->
             {
@@ -340,7 +340,7 @@ public class TopicSubscriptionTest
         // given
         broker.stubTopicSubscriptionApi(123L);
 
-        final TopicSubscription firstSubscription = client.topic(0).newSubscription()
+        final TopicSubscription firstSubscription = clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler((m, e) ->
             {
@@ -356,7 +356,7 @@ public class TopicSubscriptionTest
         client.connect();
 
         // when
-        final TopicSubscription secondSubscription = client.topic(0).newSubscription()
+        final TopicSubscription secondSubscription = clientRule.topic().newSubscription()
                 .startAtHeadOfTopic()
                 .handler((m, e) ->
                 {

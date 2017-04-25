@@ -42,7 +42,7 @@ public class WorkflowInstanceFunctionalTest
     @Before
     public void init()
     {
-        testClient = apiRule.topic(0);
+        testClient = apiRule.topic();
     }
 
     @Test

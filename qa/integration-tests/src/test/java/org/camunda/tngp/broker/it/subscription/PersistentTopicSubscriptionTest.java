@@ -65,7 +65,7 @@ public class PersistentTopicSubscriptionTest
     public void shouldResumeSubscriptionOnRestart()
     {
         // given a first task
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -73,7 +73,7 @@ public class PersistentTopicSubscriptionTest
 
         final String subscriptionName = "foo";
 
-        final TopicSubscription subscription = client.topic(0)
+        final TopicSubscription subscription = clientRule.topic()
             .newSubscription()
             .handler(recordingHandler)
             .name(subscriptionName)
@@ -93,7 +93,7 @@ public class PersistentTopicSubscriptionTest
         recordingHandler.reset();
 
         // and a second not-yet-received task
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -102,7 +102,7 @@ public class PersistentTopicSubscriptionTest
         // when
         restartBroker();
 
-        client.topic(0)
+        clientRule.topic()
                 .newSubscription()
                 .handler(recordingHandler)
                 .name(subscriptionName)

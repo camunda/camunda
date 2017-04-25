@@ -27,7 +27,8 @@ public class WorkflowInstanceWorker
     public static void main(String[] args)
     {
         final String brokerContactPoint = "127.0.0.1:51015";
-        final int topicId = 0;
+        final String topicName = "default-topic";
+        final int partitionId = 0;
         final String taskType = "foo";
         final int lockOwner = 24;
 
@@ -41,9 +42,9 @@ public class WorkflowInstanceWorker
 
         System.out.println("> Connected.");
 
-        System.out.println(String.format("> Open task subscription for topic '%d' and type '%s'", topicId, taskType));
+        System.out.println(String.format("> Open task subscription for topic '%s', partition '%d' and type '%s'", topicName, partitionId, taskType));
 
-        final TaskSubscription subscription = tngpClient.taskTopic(topicId)
+        final TaskSubscription subscription = tngpClient.taskTopic(topicName, partitionId)
             .newTaskSubscription()
             .taskType(taskType)
             .lockOwner(lockOwner)

@@ -13,6 +13,8 @@
 package org.camunda.tngp.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -82,7 +84,7 @@ public class TopicSubscriptionTest
     public void shouldOpenSubscription()
     {
         // when
-        final TopicSubscription subscription = client.topic(0).newSubscription()
+        final TopicSubscription subscription = clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -96,13 +98,13 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsCreatedAfterSubscription() throws IOException
     {
         // given
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
-        final Long taskKey = client.taskTopic(0).create()
+        final Long taskKey = clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -121,14 +123,14 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsCreatedBeforeSubscription() throws IOException
     {
         // given
-        final Long taskKey = client.taskTopic(0).create()
+        final Long taskKey = clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
                 .execute();
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
@@ -147,20 +149,20 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsFromTailOfLog() throws IOException
     {
         // given
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
                 .execute();
 
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .startAtTailOfTopic()
             .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
-        final Long task2Key = client.taskTopic(0).create()
+        final Long task2Key = clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -181,13 +183,13 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsFromPosition() throws IOException
     {
         // given
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
                 .execute();
 
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
@@ -203,7 +205,7 @@ public class TopicSubscriptionTest
         final long secondTaskEventPosition = recordedTaskEvents.get(1).getMetadata().getEventPosition();
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(subscription2Handler)
             .startAtPosition(secondTaskEventPosition)
             .name("another" + SUBSCRIPTION_NAME)
@@ -222,14 +224,14 @@ public class TopicSubscriptionTest
     public void shouldReceiveEventsFromPositionBeyondTail()
     {
         // given
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .startAtPosition(Long.MAX_VALUE)
             .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -246,7 +248,7 @@ public class TopicSubscriptionTest
     public void shouldCloseSubscription() throws InterruptedException
     {
         // given
-        final TopicSubscription subscription = client.topic(0).newSubscription()
+        final TopicSubscription subscription = clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -257,7 +259,7 @@ public class TopicSubscriptionTest
         // then
         assertThat(subscription.isOpen()).isFalse();
 
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -271,13 +273,13 @@ public class TopicSubscriptionTest
     public void shouldOpenMultipleSubscriptionsOnSameTopic() throws IOException
     {
         // given
-        final Long taskKey = client.taskTopic(0).create()
+        final Long taskKey = clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
             .execute();
 
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
@@ -285,7 +287,7 @@ public class TopicSubscriptionTest
 
 
         final RecordingEventHandler secondEventHandler = new RecordingEventHandler();
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(secondEventHandler)
             .name("another" + SUBSCRIPTION_NAME)
@@ -306,7 +308,7 @@ public class TopicSubscriptionTest
     public void shouldHandleOneEventAtATime() throws InterruptedException
     {
         // given
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -316,7 +318,7 @@ public class TopicSubscriptionTest
         final ParallelismDetectionHandler handler = new ParallelismDetectionHandler(handlingIntervalLength);
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .startAtHeadOfTopic()
             .handler(handler)
             .name(SUBSCRIPTION_NAME)
@@ -334,13 +336,13 @@ public class TopicSubscriptionTest
     public void shouldCreatePollableSubscription() throws IOException
     {
         // given
-        final Long taskKey = client.taskTopic(0).create()
+        final Long taskKey = clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
                 .execute();
 
-        final PollableTopicSubscription subscription = client.topic(0)
+        final PollableTopicSubscription subscription = clientRule.topic()
             .newPollableSubscription()
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)
@@ -360,7 +362,7 @@ public class TopicSubscriptionTest
     public void shouldResumeSubscription()
     {
         // given a first task
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -368,7 +370,7 @@ public class TopicSubscriptionTest
 
         final String subscriptionName = "foo";
 
-        final TopicSubscription subscription = client.topic(0)
+        final TopicSubscription subscription = clientRule.topic()
             .newSubscription()
             .handler(recordingHandler)
             .name(subscriptionName)
@@ -388,14 +390,14 @@ public class TopicSubscriptionTest
         recordingHandler.reset();
 
         // and a second not-yet-received task
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("bar")
             .execute();
 
         // when
-        client.topic(0)
+        clientRule.topic()
                 .newSubscription()
                 .handler(recordingHandler)
                 .name(subscriptionName)
@@ -460,24 +462,52 @@ public class TopicSubscriptionTest
     }
 
     @Test
-    public void testValidateTopicId()
+    public void testValidateTopicNameNotNull()
     {
         // given
         final TngpClient client = clientRule.getClient();
 
         // then
         exception.expect(RuntimeException.class);
-        exception.expectMessage("id must be greater than or equal to 0");
+        exception.expectMessage("topic name must not be null");
 
         // when
-        client.topic(-1);
+        client.topic(null, DEFAULT_PARTITION_ID);
+    }
+
+    @Test
+    public void testValidateTopicNameNotEmpty()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("topic name must not be empty");
+
+        // when
+        client.topic("", DEFAULT_PARTITION_ID);
+    }
+
+    @Test
+    public void testValidatePartitionId()
+    {
+        // given
+        final TngpClient client = clientRule.getClient();
+
+        // then
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("partition id must be greater than or equal to 0");
+
+        // when
+        client.topic(DEFAULT_TOPIC_NAME, -1);
     }
 
     @Test
     public void testNameUniqueness()
     {
         // given
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
                 .handler(recordingHandler)
                 .name(SUBSCRIPTION_NAME)
                 .open();
@@ -487,7 +517,7 @@ public class TopicSubscriptionTest
         exception.expectMessage("Exception while opening subscription");
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -498,13 +528,13 @@ public class TopicSubscriptionTest
     public void testSubscriptionsWithSameNameOnDifferentTopic()
     {
         // given
-        client.topic(0).newSubscription()
+        client.topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
-        final TopicSubscription topic2Subscription = client.topic(1).newSubscription()
+        final TopicSubscription topic2Subscription = client.topic("another-topic", DEFAULT_PARTITION_ID).newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
@@ -518,48 +548,64 @@ public class TopicSubscriptionTest
     public void testSubscriptionsWithSameNameOnDifferentTopicShouldReceiveRespectiveEvents()
     {
         // given
-        final TopicSubscription topic0subscription = client.topic(0).newSubscription()
+        final String anotherTopicName = "another-topic";
+        final int anotherPartitionId = 2;
+
+        final TopicSubscription topic0subscription = client.topic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).newSubscription()
                 .startAtHeadOfTopic()
                 .handler(recordingHandler)
                 .name(SUBSCRIPTION_NAME)
                 .open();
 
-        final RecordingEventHandler topic1Handler = new RecordingEventHandler();
-        final TopicSubscription topic1Subscription = client.topic(1).newSubscription()
+        final RecordingEventHandler anotherRecordingHandler = new RecordingEventHandler();
+        final TopicSubscription topic1Subscription = client.topic(anotherTopicName, anotherPartitionId).newSubscription()
                 .startAtHeadOfTopic()
-                .handler(topic1Handler)
+                .handler(anotherRecordingHandler)
                 .name(SUBSCRIPTION_NAME)
                 .open();
 
 
         // when
-        client.taskTopic(0).create()
+        client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).create()
             .taskType("foo")
             .execute();
 
-        client.taskTopic(1).create()
+        client.taskTopic(anotherTopicName, anotherPartitionId).create()
             .taskType("bar")
             .execute();
 
         // then
         TestUtil.waitUntil(() -> recordingHandler.numRecordedTaskEvents() >= 2);
-        TestUtil.waitUntil(() -> topic1Handler.numRecordedTaskEvents() >= 2);
+        TestUtil.waitUntil(() -> anotherRecordingHandler.numRecordedTaskEvents() >= 2);
 
         topic0subscription.close();
         topic1Subscription.close();
 
-        final Set<Integer> receivedTopicIdsSubscription0 = recordingHandler.getRecordedEvents().stream()
+        Set<String> receivedTopicNamesSubscription = recordingHandler.getRecordedEvents().stream()
             .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
-            .map((re) -> re.getMetadata().getTopicId())
+            .map((re) -> re.getMetadata().getTopicName())
             .collect(Collectors.toSet());
 
-        final Set<Integer> receivedTopicIdsSubscription1 = topic1Handler.getRecordedEvents().stream()
+        Set<Integer> receivedPartitionIdsSubscription = recordingHandler.getRecordedEvents().stream()
             .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
-            .map((re) -> re.getMetadata().getTopicId())
+            .map((re) -> re.getMetadata().getPartitionId())
             .collect(Collectors.toSet());
 
-        assertThat(receivedTopicIdsSubscription0).containsExactly(0);
-        assertThat(receivedTopicIdsSubscription1).containsExactly(1);
+        assertThat(receivedTopicNamesSubscription).containsExactly(DEFAULT_TOPIC_NAME);
+        assertThat(receivedPartitionIdsSubscription).containsExactly(DEFAULT_PARTITION_ID);
+
+        receivedTopicNamesSubscription = anotherRecordingHandler.getRecordedEvents().stream()
+            .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
+            .map((re) -> re.getMetadata().getTopicName())
+            .collect(Collectors.toSet());
+
+        receivedPartitionIdsSubscription = anotherRecordingHandler.getRecordedEvents().stream()
+            .filter((re) -> re.getMetadata().getEventType() == TopicEventType.TASK)
+            .map((re) -> re.getMetadata().getPartitionId())
+            .collect(Collectors.toSet());
+
+        assertThat(receivedTopicNamesSubscription).containsExactly(anotherTopicName);
+        assertThat(receivedPartitionIdsSubscription).containsExactly(anotherPartitionId);
     }
 
     /**
@@ -569,13 +615,13 @@ public class TopicSubscriptionTest
     public void shouldNotPushAnySubscriptionEvents()
     {
         // given
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .name(SUBSCRIPTION_NAME)
             .open();
 
         // when
-        client.taskTopic(0).create()
+        clientRule.taskTopic().create()
             .addHeader("key", "value")
             .payload("{}")
             .taskType("foo")
@@ -600,7 +646,7 @@ public class TopicSubscriptionTest
 
         for (int i = 0; i < subscriptionCapacity + 1; i++)
         {
-            client.taskTopic(0).create()
+            clientRule.taskTopic().create()
                 .addHeader("key", "value")
                 .payload("{}")
                 .taskType("foo")
@@ -608,7 +654,7 @@ public class TopicSubscriptionTest
         }
 
         // when
-        client.topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .handler(recordingHandler)
             .startAtHeadOfTopic()
             .name(SUBSCRIPTION_NAME)

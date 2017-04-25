@@ -1,5 +1,7 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseDecoder.eventHeaderLength;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -21,6 +23,7 @@ public class ExecuteCommandResponse implements BufferReader
 
     protected final MsgPackHelper msgPackHelper;
 
+    protected String topicName;
     protected Map<String, Object> event;
 
     public ExecuteCommandResponse(MsgPackHelper msgPackHelper)
@@ -39,9 +42,14 @@ public class ExecuteCommandResponse implements BufferReader
         return responseDecoder.key();
     }
 
-    public long topicId()
+    public String getTopicName()
     {
-        return responseDecoder.topicId();
+        return topicName;
+    }
+
+    public int partitionId()
+    {
+        return responseDecoder.partitionId();
     }
 
     @Override
@@ -65,8 +73,10 @@ public class ExecuteCommandResponse implements BufferReader
 
         responseDecoder.wrap(responseBuffer, offset + messageHeaderDecoder.encodedLength(), messageHeaderDecoder.blockLength(), messageHeaderDecoder.version());
 
+        topicName = responseDecoder.topicName();
+
         final int eventLength = responseDecoder.eventLength();
-        final int eventOffset = offset + messageHeaderDecoder.encodedLength() + messageHeaderDecoder.blockLength() + ExecuteCommandResponseDecoder.eventHeaderLength();
+        final int eventOffset = responseDecoder.limit() + eventHeaderLength();
 
         try (final InputStream is = new DirectBufferInputStream(responseBuffer, eventOffset, eventLength))
         {

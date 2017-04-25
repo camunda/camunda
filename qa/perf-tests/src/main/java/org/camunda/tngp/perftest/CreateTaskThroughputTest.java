@@ -1,5 +1,8 @@
 package org.camunda.tngp.perftest;
 
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
+
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
@@ -21,7 +24,7 @@ public class CreateTaskThroughputTest extends MaxRateThroughputTest
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final TaskTopicClient tasksClient = client.taskTopic(0);
+        final TaskTopicClient tasksClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         return () ->
         {

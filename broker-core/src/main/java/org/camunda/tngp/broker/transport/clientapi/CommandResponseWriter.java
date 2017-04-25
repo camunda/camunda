@@ -1,8 +1,15 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder.eventHeaderLength;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder.topicNameHeaderLength;
+
 import java.util.Objects;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.protocol.Protocol;
@@ -15,37 +22,44 @@ public class CommandResponseWriter implements BufferWriter
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
 
-    protected int topicId;
-    protected long key;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected long key = keyNullValue();
 
     protected BufferWriter eventWriter;
     protected BrokerEventMetadata metadata;
     protected final ResponseWriter responseWriter;
 
-    public CommandResponseWriter(Dispatcher sendBuffer)
+    public CommandResponseWriter(final Dispatcher sendBuffer)
     {
         this.responseWriter = new ResponseWriter(sendBuffer);
     }
 
-    public CommandResponseWriter topicId(int topicId)
+    public CommandResponseWriter topicName(final DirectBuffer topicName)
     {
-        this.topicId = topicId;
+        this.topicName.wrap(topicName);
         return this;
     }
 
-    public CommandResponseWriter key(long key)
+    public CommandResponseWriter partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
+        return this;
+    }
+
+    public CommandResponseWriter key(final long key)
     {
         this.key = key;
         return this;
     }
 
-    public CommandResponseWriter brokerEventMetadata(BrokerEventMetadata metadata)
+    public CommandResponseWriter brokerEventMetadata(final BrokerEventMetadata metadata)
     {
         this.metadata = metadata;
         return this;
     }
 
-    public CommandResponseWriter eventWriter(BufferWriter writer)
+    public CommandResponseWriter eventWriter(final BufferWriter writer)
     {
         this.eventWriter = writer;
         return this;
@@ -71,7 +85,7 @@ public class CommandResponseWriter implements BufferWriter
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    public void write(final MutableDirectBuffer buffer, int offset)
     {
         // protocol header
         messageHeaderEncoder
@@ -86,15 +100,16 @@ public class CommandResponseWriter implements BufferWriter
         // protocol message
         responseEncoder
             .wrap(buffer, offset)
-            .topicId(topicId)
+            .putTopicName(topicName, 0, topicName.capacity())
+            .partitionId(partitionId)
             .key(key);
 
-        offset += ExecuteCommandResponseEncoder.BLOCK_LENGTH;
+        offset = responseEncoder.limit();
 
         final int eventLength = eventWriter.getLength();
         buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
 
-        offset += ExecuteCommandResponseEncoder.eventHeaderLength();
+        offset += eventHeaderLength();
         eventWriter.write(buffer, offset);
     }
 
@@ -103,14 +118,17 @@ public class CommandResponseWriter implements BufferWriter
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                ExecuteCommandResponseEncoder.eventHeaderLength() +
+                topicNameHeaderLength() +
+                topicName.capacity() +
+                eventHeaderLength() +
                 eventWriter.getLength();
     }
 
     protected void reset()
     {
-        topicId = ExecuteCommandResponseEncoder.topicIdNullValue();
-        key = ExecuteCommandResponseEncoder.keyNullValue();
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
+        key = keyNullValue();
         eventWriter = null;
         metadata = null;
     }

@@ -1,5 +1,9 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
+
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +23,10 @@ import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource
 {
+
+    public static final String TEST_TOPIC_NAME = "test-topic";
+    public static final int TEST_PARTITION_ID = 0;
+
     protected final String host;
     protected final int port;
 
@@ -94,15 +102,16 @@ public class StubBrokerRule extends ExternalResource
 
     public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith()
     {
-        return onWorkflowRequestRespondWith(0, 123);
+        return onWorkflowRequestRespondWith(TEST_TOPIC_NAME, TEST_PARTITION_ID, 123);
     }
 
-    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(int topicId, long key)
+    public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> onWorkflowRequestRespondWith(final String topicName, final int partitionId, final long key)
     {
         final MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> eventType = onExecuteCommandRequest(ecr -> ecr.eventType() == EventType.WORKFLOW_EVENT &&
             "CREATE_WORKFLOW_INSTANCE".equals(ecr.getCommand().get("eventType")))
             .respondWith()
-            .topicId(topicId)
+            .topicName(topicName)
+            .partitionId(partitionId)
             .key(key)
             .event()
             .allOf((r) -> r.getCommand());
@@ -162,7 +171,8 @@ public class StubBrokerRule extends ExternalResource
                 && "SUBSCRIBE".equals(r.getCommand().get("eventType")))
             .respondWith()
             .key((r) -> subscriberKeyProvider.getAndIncrement())
-            .topicId((r) -> r.topicId())
+            .topicName((r) -> r.topicName())
+            .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
                 .put("eventType", "SUBSCRIBED")
@@ -180,7 +190,8 @@ public class StubBrokerRule extends ExternalResource
                 && "ACKNOWLEDGE".equals(r.getCommand().get("eventType")))
             .respondWith()
             .key((r) -> subscriptionKeyProvider.getAndIncrement())
-            .topicId((r) -> r.topicId())
+            .topicName((r) -> r.topicName())
+            .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
                 .put("eventType", "ACKNOWLEDGED")
@@ -218,7 +229,8 @@ public class StubBrokerRule extends ExternalResource
     public void pushTopicEvent(int channelId, long subscriberKey, long key, long position)
     {
         newSubscribedEvent()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(key)
             .position(position)
             .eventType(EventType.RAFT_EVENT)
@@ -232,7 +244,8 @@ public class StubBrokerRule extends ExternalResource
     public void pushLockedTask(int channelId, long subscriberKey, long key, long position, String taskType)
     {
         newSubscribedEvent()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(key)
             .position(position)
             .eventType(EventType.TASK_EVENT)

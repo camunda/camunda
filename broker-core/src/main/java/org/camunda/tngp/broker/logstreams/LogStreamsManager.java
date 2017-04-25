@@ -1,54 +1,73 @@
 package org.camunda.tngp.broker.logstreams;
 
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureLessThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
 
+import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.logstreams.LogStreams;
+import org.camunda.tngp.logstreams.fs.FsLogStreamBuilder;
 import org.camunda.tngp.logstreams.log.LogStream;
+
 
 public class LogStreamsManager
 {
     protected LogStreamsCfg logStreamsCfg;
     protected AgentRunnerServices agentRunner;
-    protected Int2ObjectHashMap<LogStream> logStreams;
+    protected Map<DirectBuffer, Int2ObjectHashMap<LogStream>> logStreams;
 
     public LogStreamsManager(final LogStreamsCfg logStreamsCfg, final AgentRunnerServices agentRunner)
     {
         this.logStreamsCfg = logStreamsCfg;
         this.agentRunner = agentRunner;
-        this.logStreams = new Int2ObjectHashMap<>();
+        this.logStreams = new HashMap<>();
     }
 
-    public Collection<LogStream> getLogStreams()
+    public void forEachLogStream(Consumer<LogStream> consumer)
     {
-        return logStreams.values();
+        // TODO(menski): probably not garbage free
+        logStreams.forEach((topicName, partitions) ->
+            partitions.forEach((partitionId, logStream) ->
+                consumer.accept(logStream))
+        );
     }
 
-    public LogStream getLogStream(final int id)
-    {
-        return logStreams.get(id);
-    }
 
-    public LogStream createLogStream(final int logId, final String logName)
+    public LogStream getLogStream(final DirectBuffer topicName, final int partitionId)
     {
-        if (logName == null || logName.isEmpty())
+        final Int2ObjectHashMap<LogStream> logStreamPartitions = logStreams.get(topicName);
+
+        if (logStreamPartitions != null)
         {
-            throw new IllegalArgumentException("logName cannot be null");
+            return logStreamPartitions.get(partitionId);
         }
 
-        if (logId < 0 || logId > Short.MAX_VALUE)
-        {
-            throw new IllegalArgumentException("log id cannot be null or greater than " + Short.MAX_VALUE);
-        }
+        return null;
+    }
+
+    public LogStream createLogStream(final DirectBuffer topicName, final int partitionId)
+    {
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
+        ensureLessThanOrEqual("partition id", partitionId, Short.MAX_VALUE);
+
+        final FsLogStreamBuilder logStreamBuilder = LogStreams.createFsLogStream(topicName, partitionId);
+        final String logName = logStreamBuilder.getLogName();
 
         final String logDirectory;
         boolean deleteOnExit = false;
+
         if (logStreamsCfg.useTempLogDirectory)
         {
             deleteOnExit = true;
@@ -58,7 +77,7 @@ public class LogStreamsManager
                 System.out.format("Created temp directory for log %s at location %s. Will be deleted on exit.\n", logName, tempDir);
                 logDirectory = tempDir.getAbsolutePath();
             }
-            catch (IOException e)
+            catch (final IOException e)
             {
                 throw new RuntimeException("Could not create temp directory for log " + logName, e);
             }
@@ -79,7 +98,7 @@ public class LogStreamsManager
 
         final int logSegmentSize = logStreamsCfg.defaultLogSegmentSize * 1024 * 1024;
 
-        final LogStream logStream = LogStreams.createFsLogStream(logName, logId)
+        final LogStream logStream = logStreamBuilder
             .deleteOnClose(deleteOnExit)
             .logDirectory(logDirectory)
             .agentRunnerService(agentRunner.logAppenderAgentRunnerService())
@@ -87,15 +106,16 @@ public class LogStreamsManager
             .logStreamControllerDisabled(true)
             .build();
 
-        logStreams.put(logId, logStream);
+        addLogStream(logStream);
+
         logStream.open();
 
         return logStream;
     }
 
-    public LogStream createLogStream(int id, String name, String logDirectory)
+    public LogStream createLogStream(final DirectBuffer topicName, final int partitionId, final String logDirectory)
     {
-        final LogStream logStream = LogStreams.createFsLogStream(name, id)
+        final LogStream logStream = LogStreams.createFsLogStream(topicName, partitionId)
                 .deleteOnClose(false)
                 .logDirectory(logDirectory)
                 .agentRunnerService(agentRunner.logAppenderAgentRunnerService())
@@ -103,9 +123,17 @@ public class LogStreamsManager
                 .logStreamControllerDisabled(true)
                 .build();
 
-        logStreams.put(id, logStream);
+        addLogStream(logStream);
+
         logStream.open();
 
         return logStream;
+    }
+
+    private void addLogStream(final LogStream logStream)
+    {
+        logStreams
+            .computeIfAbsent(logStream.getTopicName(), k -> new Int2ObjectHashMap<>())
+            .put(logStream.getPartitionId(), logStream);
     }
 }

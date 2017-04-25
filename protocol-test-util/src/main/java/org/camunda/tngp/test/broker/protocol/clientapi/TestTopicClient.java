@@ -22,6 +22,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.protocol.clientapi.EventType;
 import org.camunda.tngp.test.util.collection.MapBuilder;
 
+
 public class TestTopicClient
 {
 
@@ -35,20 +36,23 @@ public class TestTopicClient
     private static final String PROP_WORKFLOW_PAYLOAD = "payload";
 
     private final ClientApiRule apiRule;
-    private final int topicId;
+    private final String topicName;
+    private final int partitionId;
 
     private boolean isTopicSubscriptionOpen = false;
 
-    public TestTopicClient(ClientApiRule apiRule, int topicId)
+    public TestTopicClient(final ClientApiRule apiRule, final String topicName, final int partitionId)
     {
         this.apiRule = apiRule;
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
     public long deploy(final BpmnModelInstance modelInstance)
     {
         final ExecuteCommandResponse response = apiRule.createCmdRequest()
-                .topicId(topicId)
+                .topicName(topicName)
+                .partitionId(partitionId)
                 .eventType(EventType.DEPLOYMENT_EVENT)
                 .command()
                     .put(PROP_EVENT, "CREATE_DEPLOYMENT")
@@ -82,7 +86,8 @@ public class TestTopicClient
     public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId)
     {
         return apiRule.createCmdRequest()
-                .topicId(topicId)
+                .topicName(topicName)
+                .partitionId(partitionId)
                 .eventTypeWorkflow()
                 .command()
                     .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
@@ -94,7 +99,8 @@ public class TestTopicClient
     public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, byte[] payload)
     {
         return apiRule.createCmdRequest()
-            .topicId(topicId)
+            .topicName(topicName)
+            .partitionId(partitionId)
             .eventTypeWorkflow()
             .command()
             .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
@@ -107,7 +113,8 @@ public class TestTopicClient
     public ExecuteCommandResponse sendCreateWorkflowInstanceRequest(String bpmnProcessId, int version)
     {
         return apiRule.createCmdRequest()
-            .topicId(topicId)
+            .topicName(topicName)
+            .partitionId(partitionId)
             .eventTypeWorkflow()
             .command()
             .put(PROP_EVENT, "CREATE_WORKFLOW_INSTANCE")
@@ -124,7 +131,7 @@ public class TestTopicClient
 
     public void completeTaskOfType(String taskType, byte[] payload)
     {
-        apiRule.openTaskSubscription(topicId, taskType).await();
+        apiRule.openTaskSubscription(topicName, partitionId, taskType).await();
 
         final SubscribedEvent taskEvent = apiRule
             .subscribedEvents()
@@ -133,7 +140,8 @@ public class TestTopicClient
             .orElseThrow(() -> new AssertionError("Expected task locked event but not found."));
 
         final MapBuilder<ExecuteCommandRequestBuilder> mapBuilder = apiRule.createCmdRequest()
-            .topicId(topicId)
+            .topicName(topicName)
+            .partitionId(partitionId)
             .key(taskEvent.key())
             .eventTypeTask()
             .command()
@@ -178,7 +186,7 @@ public class TestTopicClient
     {
         if (!isTopicSubscriptionOpen)
         {
-            final ExecuteCommandResponse response = apiRule.openTopicSubscription(topicId, "test", 0).await();
+            final ExecuteCommandResponse response = apiRule.openTopicSubscription(topicName, partitionId, "test", 0).await();
             assertThat(response.key()).isGreaterThanOrEqualTo(0);
 
             isTopicSubscriptionOpen = true;

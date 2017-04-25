@@ -2,6 +2,7 @@ package org.camunda.tngp.broker.taskqueue.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -70,7 +71,8 @@ public class TaskInstanceStreamProcessorTest
     {
         MockitoAnnotations.initMocks(this);
 
-        when(mockLogStream.getId()).thenReturn(1);
+        when(mockLogStream.getTopicName()).thenReturn(wrapString("test-topic"));
+        when(mockLogStream.getPartitionId()).thenReturn(1);
 
         streamProcessor = new TaskInstanceStreamProcessor(mockResponseWriter, mockSubscribedEventWriter, mockIndexStore, mockTaskSubscriptionManager);
 

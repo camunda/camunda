@@ -1,6 +1,13 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder.*;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.sbeHeaderSize;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.configurationEntryPositionNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.configurationEntryTermNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.termNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.topicNameHeaderLength;
 
 import java.util.Iterator;
 import java.util.List;
@@ -8,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder;
@@ -27,22 +35,34 @@ public class ConfigureRequest implements BufferReader, BufferWriter
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ConfigureRequestDecoder bodyDecoder = new ConfigureRequestDecoder();
 
-    protected int id;
-    protected int term;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
+    protected int term = termNullValue();
 
-    protected long configurationEntryPosition;
-    protected int configurationEntryTerm;
+    protected long configurationEntryPosition = configurationEntryPositionNullValue();
+    protected int configurationEntryTerm = configurationEntryTermNullValue();
 
     protected List<Member> members = new CopyOnWriteArrayList<>();
 
-    public int id()
+    public DirectBuffer topicName()
     {
-        return id;
+        return topicName;
     }
 
-    public ConfigureRequest id(final int id)
+    public ConfigureRequest topicName(final DirectBuffer topicName)
     {
-        this.id = id;
+        this.topicName.wrap(topicName);
+        return this;
+    }
+
+    public int partitionId()
+    {
+        return partitionId;
+    }
+
+    public ConfigureRequest partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -105,6 +125,8 @@ public class ConfigureRequest implements BufferReader, BufferWriter
             length += member.endpoint().hostLength();
         }
 
+        length += topicNameHeaderLength() + topicName.capacity();
+
         return length;
     }
 
@@ -120,7 +142,7 @@ public class ConfigureRequest implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
+            .partitionId(partitionId)
             .term(term)
             .configurationEntryPosition(configurationEntryPosition)
             .configurationEntryTerm(configurationEntryTerm);
@@ -137,6 +159,8 @@ public class ConfigureRequest implements BufferReader, BufferWriter
                 .port(endpoint.port())
                 .putHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());
         }
+
+        bodyEncoder.putTopicName(topicName, 0, topicName.capacity());
     }
 
     @Override
@@ -147,7 +171,7 @@ public class ConfigureRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
+        partitionId = bodyDecoder.partitionId();
         term = bodyDecoder.term();
         configurationEntryPosition = bodyDecoder.configurationEntryPosition();
         configurationEntryTerm = bodyDecoder.configurationEntryTerm();
@@ -170,14 +194,18 @@ public class ConfigureRequest implements BufferReader, BufferWriter
             // TODO: make this garbage free
             members.add(member);
         }
+
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        topicName.wrap(buffer, bodyDecoder.limit(), topicNameLength);
     }
 
     public void reset()
     {
-        id = -1;
-        term = -1;
-        configurationEntryPosition = -1L;
-        configurationEntryTerm = -1;
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
+        term = termNullValue();
+        configurationEntryPosition = configurationEntryPositionNullValue();
+        configurationEntryTerm = configurationEntryTermNullValue();
         members.clear();
     }
 

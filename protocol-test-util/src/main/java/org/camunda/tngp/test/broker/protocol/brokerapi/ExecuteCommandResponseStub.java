@@ -1,5 +1,9 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder.eventHeaderLength;
+import static org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder.topicNameHeaderLength;
+import static org.camunda.tngp.util.StringUtil.getBytes;
+
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -18,11 +22,13 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
 
     protected Predicate<ExecuteCommandRequest> activationFunction;
     protected Function<ExecuteCommandRequest, Long> keyFunction;
-    protected Function<ExecuteCommandRequest, Integer> topicIdFunction;
+    protected Function<ExecuteCommandRequest, String> topicNameFunction;
+    protected Function<ExecuteCommandRequest, Integer> partitionIdFunction;
     protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
 
     protected long key;
-    protected int topicId;
+    protected String topicName;
+    protected int partitionId;
     protected byte[] event;
 
     public ExecuteCommandResponseStub(MsgPackHelper msgPackHelper, Predicate<ExecuteCommandRequest> activationFunction)
@@ -39,14 +45,20 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
     public void initiateFrom(ExecuteCommandRequest request)
     {
         key = keyFunction.apply(request);
-        topicId = topicIdFunction.apply(request);
+        topicName = topicNameFunction.apply(request);
+        partitionId = partitionIdFunction.apply(request);
         final Map<String, Object> deserializedEvent = eventFunction.apply(request);
         event = msgPackHelper.encodeAsMsgPack(deserializedEvent);
     }
 
-    public void setTopicIdFunction(Function<ExecuteCommandRequest, Integer> topicIdFunction)
+    public void setTopicNameFunction(final Function<ExecuteCommandRequest, String> topicNameFunction)
     {
-        this.topicIdFunction = topicIdFunction;
+        this.topicNameFunction = topicNameFunction;
+    }
+
+    public void setPartitionIdFunction(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
+    {
+        this.partitionIdFunction = partitionIdFunction;
     }
 
     public void setEventFunction(Function<ExecuteCommandRequest, Map<String, Object>> eventFunction)
@@ -64,7 +76,9 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
     {
         return MessageHeaderEncoder.ENCODED_LENGTH +
                 ExecuteCommandResponseEncoder.BLOCK_LENGTH +
-                ExecuteCommandResponseEncoder.eventHeaderLength() +
+                topicNameHeaderLength() +
+                getBytes(topicName).length +
+                eventHeaderLength() +
                 event.length;
     }
 
@@ -84,8 +98,9 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
         // protocol message
         bodyEncoder
             .wrap(buffer, offset)
-            .topicId(topicId)
+            .partitionId(partitionId)
             .key(key)
+            .topicName(topicName)
             .putEvent(event, 0, event.length);
 
     }

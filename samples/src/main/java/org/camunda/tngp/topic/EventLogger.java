@@ -37,11 +37,12 @@ public class EventLogger
 
         System.out.println("> Connected.");
 
-        final int topicId = 0;
+        final String topicName = "default-topic";
+        final int partitionid = 0;
 
-        System.out.println(String.format("> Open event subscription from topic '%d'", topicId));
+        System.out.println(String.format("> Open event subscription from topic '%s' and partition '%d'", topicName, partitionid));
 
-        final TopicSubscription subscription = tngpClient.topic(topicId)
+        final TopicSubscription subscription = tngpClient.topic(topicName, partitionid)
             .newSubscription()
             .startAtHeadOfTopic()
             .forcedStart()
@@ -49,7 +50,7 @@ public class EventLogger
             .handler((meta, event) ->
             {
                 System.out.println(String.format(">>> [topic: %d, position: %d, key: %d, type: %s]\n%s\n===",
-                        meta.getTopicId(),
+                        meta.getPartitionId(),
                         meta.getEventPosition(),
                         meta.getEventKey(),
                         meta.getEventType(),

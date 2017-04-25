@@ -7,6 +7,7 @@ import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.util.collection.MapBuilder;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
+
 public class ExecuteCommandRequestBuilder
 {
     protected ExecuteCommandRequest request;
@@ -26,9 +27,15 @@ public class ExecuteCommandRequestBuilder
         return request.send();
     }
 
-    public ExecuteCommandRequestBuilder topicId(int topicId)
+    public ExecuteCommandRequestBuilder topicName(String topicName)
     {
-        request.topicId(topicId);
+        request.topicName(topicName);
+        return this;
+    }
+
+    public ExecuteCommandRequestBuilder partitionId(int partitionId)
+    {
+        request.partitionId(partitionId);
         return this;
     }
 

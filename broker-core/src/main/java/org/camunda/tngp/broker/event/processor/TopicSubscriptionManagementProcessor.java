@@ -41,7 +41,8 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
 
     protected final SnapshotSupport snapshotResource;
 
-    protected int streamId;
+    protected DirectBuffer logStreamTopicName;
+    protected int logStreamPartitionId;
     protected final ServiceName<LogStream> streamServiceName;
 
     protected final SubscriptionRegistry subscriptionRegistry = new SubscriptionRegistry();
@@ -84,7 +85,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
     public void onOpen(StreamProcessorContext context)
     {
         this.cmdContext = context.getStreamProcessorCmdQueue();
-        this.streamId = context.getSourceStream().getId();
+
+        final LogStream sourceStream = context.getSourceStream();
+        this.logStreamTopicName = sourceStream.getTopicName();
+        this.logStreamPartitionId = sourceStream.getPartitionId();
     }
 
     @Override
@@ -309,10 +313,11 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
             if (metadata.getReqRequestId() >= 0)
             {
                 return responseWriter
+                        .topicName(logStreamTopicName)
+                        .partitionId(logStreamPartitionId)
                         .brokerEventMetadata(metadata)
                         .eventWriter(subscriptionEvent)
                         .key(currentEvent.getKey())
-                        .topicId(streamId)
                         .tryWriteResponse();
             }
             else
@@ -340,10 +345,12 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor
         public boolean executeSideEffects()
         {
 
-            final boolean responseWritten = responseWriter.brokerEventMetadata(metadata)
+            final boolean responseWritten = responseWriter
+                    .topicName(logStreamTopicName)
+                    .partitionId(logStreamPartitionId)
+                    .brokerEventMetadata(metadata)
                     .eventWriter(subscriberEvent)
                     .key(currentEvent.getKey())
-                    .topicId(streamId)
                     .tryWriteResponse();
 
             if (responseWritten)

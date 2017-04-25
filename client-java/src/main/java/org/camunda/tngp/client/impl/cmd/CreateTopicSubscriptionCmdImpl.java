@@ -1,25 +1,17 @@
 package org.camunda.tngp.client.impl.cmd;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.task.impl.EventSubscriptionCreationResult;
 import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.util.EnsureUtil;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateTopicSubscriptionCmdImpl extends AbstractExecuteCmdImpl<TopicSubscriberEvent, EventSubscriptionCreationResult>
 {
     protected final TopicSubscriberEvent subscription = new TopicSubscriberEvent();
 
-    public CreateTopicSubscriptionCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
+    public CreateTopicSubscriptionCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
-        super(cmdExecutor, objectMapper, TopicSubscriberEvent.class, topicId, EventType.SUBSCRIBER_EVENT);
-    }
-
-    @Override
-    public void validate()
-    {
-        EnsureUtil.ensureGreaterThanOrEqual("topicId", topicId, 0);
+        super(cmdExecutor, objectMapper, TopicSubscriberEvent.class, topicName, partitionId, EventType.SUBSCRIBER_EVENT);
     }
 
     public CreateTopicSubscriptionCmdImpl startPosition(long startPosition)

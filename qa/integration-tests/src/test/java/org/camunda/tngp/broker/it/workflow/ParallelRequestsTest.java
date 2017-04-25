@@ -9,7 +9,6 @@ import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.ParallelRequests;
 import org.camunda.tngp.broker.it.util.ParallelRequests.SilentFuture;
 import org.camunda.tngp.client.TaskTopicClient;
-import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.cmd.LockedTasksBatch;
 import org.camunda.tngp.client.workflow.cmd.DeploymentResult;
@@ -39,8 +38,7 @@ public class ParallelRequestsTest
     @Before
     public void deployModelInstance()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         workflowService.deploy()
             .bpmnModelInstance(MODEL)
@@ -56,14 +54,13 @@ public class ParallelRequestsTest
         // given
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowsClient = client.workflowTopic(0);
+        final WorkflowTopicClient workflowsClient = clientRule.workflowTopic();
 
         final SilentFuture<WorkflowInstance> instantiationFuture =
                 parallelRequests.submitRequest(
                     () ->
                     TestUtil.doRepeatedly(() ->
-                        client.workflowTopic(0)
+                        clientRule.workflowTopic()
                             .create()
                             .bpmnProcessId("foo")
                             .execute())
@@ -101,8 +98,7 @@ public class ParallelRequestsTest
         // given
         final ParallelRequests parallelRequests = ParallelRequests.prepare();
 
-        final TngpClient client = clientRule.getClient();
-        final TaskTopicClient tasksClient = client.taskTopic(0);
+        final TaskTopicClient tasksClient = clientRule.taskTopic();
 
         final Long task1Id = tasksClient.create()
             .taskType("foo")

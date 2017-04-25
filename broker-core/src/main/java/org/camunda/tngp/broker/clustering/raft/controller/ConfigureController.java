@@ -6,6 +6,7 @@ import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.ConfigureRequest;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
@@ -159,7 +160,7 @@ public class ConfigureController
             final int configEntryTerm = member.configEntryTerm();
             final long configEntryPosition = member.configEntryPosition();
 
-            final int id = raft.id();
+            final LogStream logStream = raft.stream();
             final int term = raft.term();
             final Configuration configuration = raft.configuration();
 
@@ -167,7 +168,8 @@ public class ConfigureController
             {
                 configureRequest.reset();
                 configureRequest
-                    .id(id)
+                    .topicName(logStream.getTopicName())
+                    .partitionId(logStream.getPartitionId())
                     .term(term)
                     .configurationEntryTerm(configuration.configurationEntryTerm())
                     .configurationEntryPosition(configuration.configurationEntryPosition())

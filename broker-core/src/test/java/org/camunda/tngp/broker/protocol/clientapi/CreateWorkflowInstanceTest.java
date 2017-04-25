@@ -9,6 +9,8 @@ import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_W
 import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
 import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.START_EVENT_OCCURRED;
 import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType.WORKFLOW_INSTANCE_CREATED;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 
@@ -35,7 +37,7 @@ public class CreateWorkflowInstanceTest
     @Before
     public void init()
     {
-        testClient = apiRule.topic(0);
+        testClient = apiRule.topic();
     }
 
     @Rule
@@ -49,7 +51,8 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.topicId()).isEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
             .containsEntry(PROP_EVENT_TYPE, "WORKFLOW_INSTANCE_REJECTED")
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
@@ -70,7 +73,8 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.topicId()).isEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
             .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
@@ -147,7 +151,8 @@ public class CreateWorkflowInstanceTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.topicId()).isEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(DEFAULT_PARTITION_ID);
         assertThat(resp.getEvent())
             .containsEntry(PROP_EVENT_TYPE, WORKFLOW_INSTANCE_CREATED.name())
             .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")

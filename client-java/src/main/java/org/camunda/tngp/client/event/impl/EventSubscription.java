@@ -162,6 +162,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void abortAsync()
     {
         if (state.compareAndSet(STATE_OPEN, STATE_ABORTING))
@@ -275,7 +276,9 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
 
     protected abstract void requestSubscriptionClose();
 
-    public abstract int getTopicId();
+    public abstract String getTopicName();
+
+    public abstract int getPartitionId();
 
 
 }

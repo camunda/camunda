@@ -34,4 +34,5 @@ The file `${BROKER_HOME}/conf/tngp.conf.toml` contains the broker's configuratio
 The default configuration should be good to go:
 
 * It uses temporary files for persistence, so a broker restart effectively resets broker state
-* It creates a default topic with id `0`
+* It creates a default topic with name `default-topic` and a single partition
+  with id `0`

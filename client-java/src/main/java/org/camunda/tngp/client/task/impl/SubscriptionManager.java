@@ -155,9 +155,9 @@ public class SubscriptionManager
         return new PollableTopicSubscriptionBuilderImpl(client, topicSubscriptionAcquisition, topicSubscriptionPrefetchCapacity);
     }
 
-    public TaskTopicSubscriptionBuilder newTaskTopicSubscription(int topicId)
+    public TaskTopicSubscriptionBuilder newTaskTopicSubscription(final String topicName, final int partitionId)
     {
-        return new TaskTopicSubscriptionBuilderImpl(client.topic(topicId), topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
+        return new TaskTopicSubscriptionBuilderImpl(client.topic(topicName, partitionId), topicSubscriptionAcquisition, msgPackMapper, topicSubscriptionPrefetchCapacity);
     }
 
     public void onChannelClosed(int channelId)

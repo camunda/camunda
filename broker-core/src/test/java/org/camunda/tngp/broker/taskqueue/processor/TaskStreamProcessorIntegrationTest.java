@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
@@ -47,7 +48,8 @@ import org.mockito.MockitoAnnotations;
 
 public class TaskStreamProcessorIntegrationTest
 {
-    private static final int LOG_ID = 1;
+    private static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
+    private static final int PARTITION_ID = 1;
 
     private static final byte[] TASK_TYPE = getBytes("test-task");
     private static final byte[] PAYLOAD = getBytes("payload");
@@ -110,7 +112,7 @@ public class TaskStreamProcessorIntegrationTest
 
         final String rootPath = tempFolder.getRoot().getAbsolutePath();
 
-        logStream = LogStreams.createFsLogStream("test-log", LOG_ID)
+        logStream = LogStreams.createFsLogStream(TOPIC_NAME, PARTITION_ID)
             .logRootPath(rootPath)
             .agentRunnerService(agentRunnerService)
             .writeBufferAgentRunnerService(agentRunnerService)
@@ -193,7 +195,8 @@ public class TaskStreamProcessorIntegrationTest
             .hasCapacity(PAYLOAD.length)
             .hasBytes(PAYLOAD);
 
-        verify(mockResponseWriter).topicId(LOG_ID);
+        verify(mockResponseWriter).topicName(TOPIC_NAME);
+        verify(mockResponseWriter).partitionId(PARTITION_ID);
         verify(mockResponseWriter).key(2L);
         verify(mockResponseWriter).tryWriteResponse();
     }

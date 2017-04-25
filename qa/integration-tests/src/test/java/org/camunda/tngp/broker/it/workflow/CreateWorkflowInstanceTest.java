@@ -1,9 +1,10 @@
 package org.camunda.tngp.broker.it.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
-import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
@@ -12,8 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class CreateWorkflowInstanceTest
 {
@@ -33,8 +32,7 @@ public class CreateWorkflowInstanceTest
     @Before
     public void deployProcess()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         workflowService.deploy()
             .bpmnModelInstance(
@@ -56,8 +54,7 @@ public class CreateWorkflowInstanceTest
     @Test
     public void shouldCreateBpmnProcessById()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // when
         final WorkflowInstance workflowInstance =
@@ -76,8 +73,7 @@ public class CreateWorkflowInstanceTest
     @Test
     public void shouldCreateBpmnProcessByIdAndVersion()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
 
         // when
@@ -97,8 +93,7 @@ public class CreateWorkflowInstanceTest
     @Test
     public void shouldRejectCreateBpmnProcessByIllegalId()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // expected
         exception.expect(WorkflowInstanceRejectedException.class);
@@ -114,8 +109,7 @@ public class CreateWorkflowInstanceTest
     @Test
     public void shouldThrowExceptionForCreateBpmnProcessByNullBpmnProcessId()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // expected
         exception.expect(RuntimeException.class);
@@ -131,8 +125,7 @@ public class CreateWorkflowInstanceTest
     @Test
     public void shouldThrowExceptionForCreateBpmnProcessByEmptyBpmnProcessId()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // expected
         exception.expect(RuntimeException.class);
@@ -148,8 +141,7 @@ public class CreateWorkflowInstanceTest
     @Test
     public void shouldThrowExceptionForCreateBpmnProcessByIllegalVersion()
     {
-        final TngpClient client = clientRule.getClient();
-        final WorkflowTopicClient workflowService = client.workflowTopic(0);
+        final WorkflowTopicClient workflowService = clientRule.workflowTopic();
 
         // expected
         exception.expect(RuntimeException.class);

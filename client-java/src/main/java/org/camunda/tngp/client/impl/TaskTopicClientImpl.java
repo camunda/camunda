@@ -21,31 +21,33 @@ import org.camunda.tngp.client.task.TaskSubscriptionBuilder;
 public class TaskTopicClientImpl implements TaskTopicClient
 {
 
-    protected final int topicId;
     protected final TngpClientImpl client;
+    protected final String topicName;
+    protected final int partitionId;
 
-    public TaskTopicClientImpl(TngpClientImpl client, int topicId)
+    public TaskTopicClientImpl(final TngpClientImpl client, final String topicName, final int partitionId)
     {
         this.client = client;
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
     @Override
     public CreateTaskCmd create()
     {
-        return new CreateTaskCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new CreateTaskCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     @Override
     public FailTaskCmd fail()
     {
-        return new FailTaskCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new FailTaskCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     @Override
     public UpdateTaskRetriesCmd updateRetries()
     {
-        return new UpdateTaskRetriesCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new UpdateTaskRetriesCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     @Override
@@ -57,7 +59,7 @@ public class TaskTopicClientImpl implements TaskTopicClient
     @Override
     public CompleteTaskCmd complete()
     {
-        return new CompleteTaskCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new CompleteTaskCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     @Override
@@ -75,27 +77,32 @@ public class TaskTopicClientImpl implements TaskTopicClient
     @Override
     public TaskTopicSubscriptionBuilder newSubscription()
     {
-        return client.getSubscriptionManager().newTaskTopicSubscription(topicId);
+        return client.getSubscriptionManager().newTaskTopicSubscription(topicName, partitionId);
     }
 
     public CreateTaskSubscriptionCmdImpl brokerTaskSubscription()
     {
-        return new CreateTaskSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new CreateTaskSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     public CloseTaskSubscriptionCmdImpl closeBrokerTaskSubscription()
     {
-        return new CloseTaskSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new CloseTaskSubscriptionCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
     public IncreaseTaskSubscriptionCreditsCmdImpl increaseSubscriptionCredits()
     {
-        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicId);
+        return new IncreaseTaskSubscriptionCreditsCmdImpl(client.getCmdExecutor(), client.getObjectMapper(), topicName, partitionId);
     }
 
-    public int getTopicId()
+    public String getTopicName()
     {
-        return topicId;
+        return topicName;
+    }
+
+    public int getPartitionId()
+    {
+        return partitionId;
     }
 
 }

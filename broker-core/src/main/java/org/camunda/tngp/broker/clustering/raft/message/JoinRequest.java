@@ -1,7 +1,12 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
+import static org.camunda.tngp.clustering.raft.JoinRequestEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.JoinRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.raft.JoinRequestEncoder.topicNameHeaderLength;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.JoinRequestDecoder;
 import org.camunda.tngp.clustering.raft.JoinRequestEncoder;
@@ -18,19 +23,31 @@ public class JoinRequest implements BufferReader, BufferWriter
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final JoinRequestDecoder bodyDecoder = new JoinRequestDecoder();
 
-    protected int id;
+    protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
+    protected int partitionId = partitionIdNullValue();
 
     protected final Member member = new Member();
     protected boolean isMemberAvailable = false;
 
-    public int id()
+    public DirectBuffer topicName()
     {
-        return id;
+        return topicName;
     }
 
-    public JoinRequest id(final int id)
+    public JoinRequest topicName(final DirectBuffer topicName)
     {
-        this.id = id;
+        this.topicName.wrap(topicName);
+        return this;
+    }
+
+    public int partitionId()
+    {
+        return partitionId;
+    }
+
+    public JoinRequest partitionId(final int partitionId)
+    {
+        this.partitionId = partitionId;
         return this;
     }
 
@@ -48,9 +65,6 @@ public class JoinRequest implements BufferReader, BufferWriter
             this.member.endpoint().wrap(member.endpoint());
             isMemberAvailable = true;
         }
-        else
-        {
-        }
 
         return this;
     }
@@ -60,7 +74,9 @@ public class JoinRequest implements BufferReader, BufferWriter
     {
         int size = headerEncoder.encodedLength() +
                 bodyEncoder.sbeBlockLength() +
-                JoinRequestEncoder.hostHeaderLength();
+                topicNameHeaderLength() +
+                topicName.capacity() +
+                hostHeaderLength();
 
         if (isMemberAvailable)
         {
@@ -82,9 +98,10 @@ public class JoinRequest implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
+            .partitionId(partitionId)
             .term(-1)
             .port(member.endpoint().port())
+            .putTopicName(topicName, 0, topicName.capacity())
             .putHost(member.endpoint().getHostBuffer(), 0, member.endpoint().hostLength());
     }
 
@@ -96,7 +113,13 @@ public class JoinRequest implements BufferReader, BufferWriter
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-        id = bodyDecoder.id();
+        partitionId = bodyDecoder.partitionId();
+
+        final int topicNameLength = bodyDecoder.topicNameLength();
+        final int topicNameOffset = bodyDecoder.limit();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+
+        bodyDecoder.limit(topicNameOffset + topicNameLength);
 
         isMemberAvailable = false;
         member.endpoint().reset();
@@ -116,7 +139,8 @@ public class JoinRequest implements BufferReader, BufferWriter
 
     public void reset()
     {
-        id = -1;
+        topicName.wrap(0, 0);
+        partitionId = partitionIdNullValue();
         isMemberAvailable = false;
         member.endpoint().reset();
     }

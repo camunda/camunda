@@ -12,6 +12,9 @@
  */
 package org.camunda.tngp.broker.it.util;
 
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
@@ -31,20 +34,27 @@ public class RecordingTaskEventHandler extends ExternalResource
     protected final List<TaskEvent> taskEvents = new CopyOnWriteArrayList<>();
 
     protected final ClientRule clientRule;
-    protected final int topicId;
+    protected final String topicName;
+    protected final int partitionId;
 
     protected TopicSubscription subscription;
 
-    public RecordingTaskEventHandler(ClientRule clientRule, int topicId)
+    public RecordingTaskEventHandler(final ClientRule clientRule)
+    {
+        this(clientRule, DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
+    }
+
+    public RecordingTaskEventHandler(final ClientRule clientRule, final String topicName, final int partitionId)
     {
         this.clientRule = clientRule;
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
     @Override
     protected void before() throws Throwable
     {
-        final TaskTopicClient client = clientRule.getClient().taskTopic(topicId);
+        final TaskTopicClient client = clientRule.getClient().taskTopic(topicName, partitionId);
 
         subscription = client.newSubscription()
             .name(subscriptionName)
@@ -58,22 +68,22 @@ public class RecordingTaskEventHandler extends ExternalResource
         subscription.close();
     }
 
-    public boolean hasTaskEvent(Predicate<TaskEvent> matcher)
+    public boolean hasTaskEvent(final Predicate<TaskEvent> matcher)
     {
         return taskEvents.stream().anyMatch(matcher);
     }
 
-    public List<TaskEvent> getTaskEvents(Predicate<TaskEvent> matcher)
+    public List<TaskEvent> getTaskEvents(final Predicate<TaskEvent> matcher)
     {
         return taskEvents.stream().filter(matcher).collect(Collectors.toList());
     }
 
-    public static Predicate<TaskEvent> eventType(TaskEventType type)
+    public static Predicate<TaskEvent> eventType(final TaskEventType type)
     {
         return task -> task.getEventType().equals(type.name());
     }
 
-    public static Predicate<TaskEvent> retries(int retries)
+    public static Predicate<TaskEvent> retries(final int retries)
     {
         return task -> task.getRetries() == retries;
     }

@@ -1,5 +1,10 @@
 package org.camunda.tngp.client.workflow.cmd.impl;
 
+import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
+
+import java.io.InputStream;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
@@ -9,10 +14,6 @@ import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstanceRejectedException;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
-import java.io.InputStream;
-
-import static org.camunda.tngp.util.EnsureUtil.*;
-
 /**
  * Represents a command to create a workflow instance.
  */
@@ -21,34 +22,34 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    public CreateWorkflowInstanceCmdImpl(ClientCmdExecutor cmdExecutor, ObjectMapper objectMapper, int topicId)
+    public CreateWorkflowInstanceCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
-        super(cmdExecutor, objectMapper, WorkflowInstanceEvent.class, topicId, EventType.WORKFLOW_EVENT);
+        super(cmdExecutor, objectMapper, WorkflowInstanceEvent.class, topicName, partitionId, EventType.WORKFLOW_EVENT);
     }
 
     @Override
-    public CreateWorkflowInstanceCmd payload(InputStream payload)
-    {
-        this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
-        return this;
-    }
-
-    @Override
-    public CreateWorkflowInstanceCmd payload(String payload)
+    public CreateWorkflowInstanceCmd payload(final InputStream payload)
     {
         this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
         return this;
     }
 
     @Override
-    public CreateWorkflowInstanceCmd bpmnProcessId(String id)
+    public CreateWorkflowInstanceCmd payload(final String payload)
+    {
+        this.workflowInstanceEvent.setPayload(msgPackConverter.convertToMsgPack(payload));
+        return this;
+    }
+
+    @Override
+    public CreateWorkflowInstanceCmd bpmnProcessId(final String id)
     {
         this.workflowInstanceEvent.setBpmnProcessId(id);
         return this;
     }
 
     @Override
-    public CreateWorkflowInstanceCmd version(int version)
+    public CreateWorkflowInstanceCmd version(final int version)
     {
         this.workflowInstanceEvent.setVersion(version);
         return this;
@@ -80,7 +81,7 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     }
 
     @Override
-    protected WorkflowInstance getResponseValue(int channelId, long key, WorkflowInstanceEvent event)
+    protected WorkflowInstance getResponseValue(final int channelId, final long key, final WorkflowInstanceEvent event)
     {
         if (event.getEventType() == WorkflowInstanceEventType.WORKFLOW_INSTANCE_REJECTED)
         {
@@ -92,6 +93,7 @@ public class CreateWorkflowInstanceCmdImpl extends AbstractExecuteCmdImpl<Workfl
     @Override
     public void validate()
     {
+        super.validate();
         ensureNotNullOrEmpty("bpmnProcessId", workflowInstanceEvent.getBpmnProcessId());
         ensureGreaterThanOrEqual("version", workflowInstanceEvent.getVersion(), LATEST_VERSION);
     }

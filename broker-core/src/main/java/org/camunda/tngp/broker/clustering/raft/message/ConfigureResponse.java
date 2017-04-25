@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
+import static org.camunda.tngp.clustering.raft.ConfigureResponseEncoder.termNullValue;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.clustering.raft.ConfigureResponseDecoder;
@@ -17,19 +19,7 @@ public class ConfigureResponse implements BufferReader, BufferWriter
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected final ConfigureResponseDecoder bodyDecoder = new ConfigureResponseDecoder();
 
-    private int id;
-    private int term;
-
-    public int id()
-    {
-        return id;
-    }
-
-    public ConfigureResponse id(final int id)
-    {
-        this.id = id;
-        return this;
-    }
+    private int term = termNullValue();
 
     public int term()
     {
@@ -61,7 +51,6 @@ public class ConfigureResponse implements BufferReader, BufferWriter
         offset += headerEncoder.encodedLength();
 
         bodyEncoder.wrap(buffer, offset)
-            .id(id)
             .term(term);
     }
 
@@ -73,14 +62,12 @@ public class ConfigureResponse implements BufferReader, BufferWriter
         offset += headerDecoder.encodedLength();
 
         bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
-        id = bodyDecoder.id();
         term = bodyDecoder.term();
     }
 
     public void reset()
     {
-        id = -1;
-        term = -1;
+        term = termNullValue();
     }
 
 }

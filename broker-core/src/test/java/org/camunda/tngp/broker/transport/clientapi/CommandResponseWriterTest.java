@@ -16,7 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.transport.clientapi.MockDispatcherFactory.dispatcherOn;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.dispatcher.Dispatcher;
@@ -32,7 +34,9 @@ import org.junit.Test;
 
 public class CommandResponseWriterTest
 {
-    private static final int TOPIC_ID = 1;
+    public static final String TOPIC_NAME = "test-topic";
+    private static final DirectBuffer TOPIC_NAME_BUFFER = wrapString(TOPIC_NAME);
+    private static final int PARTITION_ID = 1;
     private static final long KEY = 2L;
     private static final byte[] EVENT = getBytes("eventType");
 
@@ -71,7 +75,8 @@ public class CommandResponseWriterTest
         eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
         responseWriter
-            .topicId(TOPIC_ID)
+            .topicName(TOPIC_NAME_BUFFER)
+            .partitionId(PARTITION_ID)
             .key(KEY)
             .brokerEventMetadata(metadata)
             .eventWriter(eventWriter)
@@ -100,7 +105,8 @@ public class CommandResponseWriterTest
         offset += messageHeaderDecoder.encodedLength();
 
         responseDecoder.wrap(sendBuffer, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
-        assertThat(responseDecoder.topicId()).isEqualTo(1);
+        assertThat(responseDecoder.topicName()).isEqualTo(TOPIC_NAME);
+        assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
         assertThat(responseDecoder.key()).isEqualTo(2L);
 
         assertThat(responseDecoder.eventLength()).isEqualTo(EVENT.length);
@@ -125,7 +131,8 @@ public class CommandResponseWriterTest
         eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
         final boolean isSent = responseWriter
-            .topicId(TOPIC_ID)
+            .topicName(TOPIC_NAME_BUFFER)
+            .partitionId(PARTITION_ID)
             .key(KEY)
             .brokerEventMetadata(metadata)
             .eventWriter(eventWriter)
@@ -151,7 +158,8 @@ public class CommandResponseWriterTest
         eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
         final boolean isSent = responseWriter
-            .topicId(TOPIC_ID)
+            .topicName(TOPIC_NAME_BUFFER)
+            .partitionId(PARTITION_ID)
             .key(KEY)
             .brokerEventMetadata(metadata)
             .eventWriter(eventWriter)

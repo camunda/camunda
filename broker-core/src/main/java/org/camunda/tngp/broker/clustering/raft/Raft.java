@@ -126,7 +126,7 @@ public class Raft implements Agent
     @Override
     public String roleName()
     {
-        return String.format("raft.%d", stream.getId());
+        return String.format("raft.%s", stream.getLogName());
     }
 
     @Override
@@ -150,11 +150,6 @@ public class Raft implements Agent
         {
             this.state.doWork();
         }
-    }
-
-    public int id()
-    {
-        return stream.getId();
     }
 
     public LogStream stream()
@@ -234,6 +229,11 @@ public class Raft implements Agent
     {
         this.lastContact = lastContact;
         return this;
+    }
+
+    public Raft lastContactNow()
+    {
+        return lastContact(System.currentTimeMillis());
     }
 
     public Endpoint leader()

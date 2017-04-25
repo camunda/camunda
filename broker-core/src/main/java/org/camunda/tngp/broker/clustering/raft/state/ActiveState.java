@@ -17,6 +17,7 @@ import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
 import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 
 public abstract class ActiveState extends InactiveState
@@ -90,7 +91,6 @@ public abstract class ActiveState extends InactiveState
 
         voteResponse.reset();
         return voteResponse
-                .id(raft.id())
                 .term(currentTerm)
                 .granted(granted);
     }
@@ -132,7 +132,6 @@ public abstract class ActiveState extends InactiveState
 
         pollResponse.reset();
         return pollResponse
-                .id(raft.id())
                 .term(currentTerm)
                 .granted(granted);
     }
@@ -237,20 +236,24 @@ public abstract class ActiveState extends InactiveState
     public CompletableFuture<JoinResponse> join(JoinRequest joinRequest)
     {
         joinResponse.reset();
-        return CompletableFuture.completedFuture(joinResponse.id(raft.id())
-            .term(raft.term())
-            .succeeded(false)
-            .members(raft.members()));
+        return CompletableFuture.completedFuture(
+            joinResponse
+                .term(raft.term())
+                .succeeded(false)
+                .members(raft.members())
+        );
     }
 
     @Override
     public CompletableFuture<LeaveResponse> leave(LeaveRequest leaveRequest)
     {
         leaveResponse.reset();
-        return CompletableFuture.completedFuture(leaveResponse.id(raft.id())
-            .term(raft.term())
-            .succeeded(false)
-            .members(raft.members()));
+        return CompletableFuture.completedFuture(
+            leaveResponse
+                .term(raft.term())
+                .succeeded(false)
+                .members(raft.members())
+        );
     }
 
     protected AppendResponse rejectAppendRequest(final long logPosition)
@@ -268,10 +271,11 @@ public abstract class ActiveState extends InactiveState
         appendResponse.reset();
 
         final int term = raft.term();
-        final int log = raft.stream().getId();
+        final LogStream logStream = raft.stream();
 
         return appendResponse
-                .id(log)
+                .topicName(logStream.getTopicName())
+                .partitionId(logStream.getPartitionId())
                 .term(term)
                 .succeeded(succeeded)
                 .entryPosition(logPosition)

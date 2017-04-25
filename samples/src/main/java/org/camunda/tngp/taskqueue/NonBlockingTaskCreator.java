@@ -36,12 +36,15 @@ public class NonBlockingTaskCreator
         final int numOfRequets = Integer.parseInt(properties.getProperty(SAMPLE_NUMBER_OF_REQUESTS));
         final int maxConcurrentRequests = Integer.parseInt(properties.getProperty(SAMPLE_MAX_CONCURRENT_REQUESTS));
 
+        final String topicName = "default-topic";
+        final int partitionId = 0;
+
         try (final TngpClient client = TngpClient.create(properties))
         {
             client.connect();
 
             final TransportConnectionPool connectionPool = client.getConnectionPool();
-            final TaskTopicClient asyncTaskService = client.taskTopic(0);
+            final TaskTopicClient asyncTaskService = client.taskTopic(topicName, partitionId);
 
             final String payload = "{}";
 

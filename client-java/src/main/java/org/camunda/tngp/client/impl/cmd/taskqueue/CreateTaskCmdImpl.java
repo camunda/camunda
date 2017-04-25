@@ -8,12 +8,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.cmd.CreateTaskCmd;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractExecuteCmdImpl;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> implements CreateTaskCmd
 {
@@ -25,9 +24,9 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     protected byte[] payload;
     protected Map<String, Object> headers = new HashMap<>();
 
-    public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final int topicId)
+    public CreateTaskCmdImpl(final ClientCmdExecutor clientCmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
-        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicId, TASK_EVENT);
+        super(clientCmdExecutor, objectMapper, TaskEvent.class, topicName, partitionId, TASK_EVENT);
     }
 
     @Override
@@ -82,7 +81,7 @@ public class CreateTaskCmdImpl extends AbstractExecuteCmdImpl<TaskEvent, Long> i
     @Override
     public void validate()
     {
-        ensureGreaterThanOrEqual("topic id", topicId, 0);
+        super.validate();
         ensureNotNullOrEmpty("task type", taskType);
         ensureGreaterThanOrEqual("retries", retries, 0);
     }

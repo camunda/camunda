@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME;
 
 import java.util.Map;
 
@@ -10,9 +11,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+
 public class CreateTaskTest
 {
-
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
     public ClientApiRule apiRule = new ClientApiRule();
@@ -25,7 +26,8 @@ public class CreateTaskTest
     {
         // when
         final ExecuteCommandResponse resp = apiRule.createCmdRequest()
-            .topicId(0)
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(0)
             .eventTypeTask()
             .command()
                 .put("eventType", "CREATE")
@@ -35,7 +37,8 @@ public class CreateTaskTest
 
         // then
         assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-        assertThat(resp.topicId()).isEqualTo(0L);
+        assertThat(resp.getTopicName()).isEqualTo(DEFAULT_TOPIC_NAME);
+        assertThat(resp.partitionId()).isEqualTo(0);
 
         final Map<String, Object> event = resp.getEvent();
         assertThat(event).containsEntry("eventType", "CREATED");

@@ -1,5 +1,8 @@
 package org.camunda.tngp.perftest;
 
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.perftest.CommonProperties.DEFAULT_TOPIC_NAME;
+
 import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -21,7 +24,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
     @Override
     protected void executeSetup(Properties properties, TngpClient client)
     {
-        client.taskTopic(0).newTaskSubscription()
+        client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID).newTaskSubscription()
             .taskType("another" + TASK_TYPE)
             .handler((t) ->
             { })
@@ -34,7 +37,7 @@ public class CreateTaskThroughputIdleSubscriptionTest extends MaxRateThroughputT
     @SuppressWarnings("rawtypes")
     protected Supplier<Future> requestFn(TngpClient client, TransportConnection connection)
     {
-        final TaskTopicClient tasksClient = client.taskTopic(0);
+        final TaskTopicClient tasksClient = client.taskTopic(DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
         return () ->
         {

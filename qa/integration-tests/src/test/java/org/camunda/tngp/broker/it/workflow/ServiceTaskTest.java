@@ -20,7 +20,6 @@ import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
 import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
 import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpModelInstance;
 import org.camunda.tngp.client.TaskTopicClient;
-import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.TopicEventType;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
@@ -37,7 +36,7 @@ public class ServiceTaskTest
 
     public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
     public ClientRule clientRule = new ClientRule();
-    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule, 0);
+    public RecordingTaskEventHandler recordingTaskEventHandler = new RecordingTaskEventHandler(clientRule);
 
     @Rule
     public RuleChain ruleChain = RuleChain
@@ -54,10 +53,8 @@ public class ServiceTaskTest
     @Before
     public void init()
     {
-        final TngpClient client = clientRule.getClient();
-
-        workflowClient = client.workflowTopic(0);
-        taskClient = client.taskTopic(0);
+        workflowClient = clientRule.workflowTopic();
+        taskClient = clientRule.taskTopic();
     }
 
     private static TngpModelInstance oneTaskProcess(String taskType)
@@ -159,7 +156,7 @@ public class ServiceTaskTest
 
         // TODO use workflow topic subscription to verify that workflow instance is completed
         final List<String> workflowEventTypes = new ArrayList<>();
-        clientRule.getClient().topic(0).newSubscription()
+        clientRule.topic().newSubscription()
             .name("test")
             .startAtHeadOfTopic()
             .handler((meta, event) ->

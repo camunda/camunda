@@ -1,5 +1,7 @@
 package org.camunda.tngp.broker.event.handler;
 
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.never;
@@ -40,7 +42,7 @@ public class RemoveTopicSubscriptionHandlerTest
     {
         MockitoAnnotations.initMocks(this);
         futurePool = new FuturePool();
-        when(subscriptionService.closeSubscriptionAsync(anyInt(), anyLong())).thenAnswer((invocation) -> futurePool.next());
+        when(subscriptionService.closeSubscriptionAsync(any(DirectBuffer.class), anyInt(), anyLong())).thenAnswer((invocation) -> futurePool.next());
     }
 
     @Test
@@ -57,7 +59,8 @@ public class RemoveTopicSubscriptionHandlerTest
 
         final DirectBuffer request = encode(new CloseSubscriptionRequest()
                 .setSubscriberKey(5L)
-                .setTopicId(0));
+                .setTopicName(DEFAULT_TOPIC_NAME_BUFFER)
+                .setPartitionId(0));
         handler.handle(request, metadata);
 
         // when

@@ -47,7 +47,7 @@ public class TaskSubscriptionTest
         // given
         broker.stubTaskSubscriptionApi(123L);
 
-        final TaskSubscription subscription = client.taskTopic(0).newTaskSubscription()
+        final TaskSubscription subscription = clientRule.taskTopic().newTaskSubscription()
             .handler((t) -> t.complete())
             .lockOwner(0)
             .lockTime(1000L)
@@ -84,7 +84,8 @@ public class TaskSubscriptionTest
                 r.eventType() == EventType.TASK_EVENT && "COMPLETE".equals(r.getCommand().get("eventType")))
             .respondWith()
             .key((r) -> r.key())
-            .topicId((r) -> r.topicId())
+            .topicName((r) -> r.topicName())
+            .partitionId((r) -> r.partitionId())
             .event()
                 .allOf((r) -> r.getCommand())
                 .put("eventType", "COMPLETED")
@@ -96,7 +97,7 @@ public class TaskSubscriptionTest
         final int numExecutionThreads = Integer.parseInt(clientProperties.getProperty(ClientProperties.CLIENT_TASK_EXECUTION_THREADS));
         final int taskCapacity = 4;
 
-        client.taskTopic(0).newTaskSubscription()
+        clientRule.taskTopic().newTaskSubscription()
             .handler(handler)
             .lockOwner(0)
             .lockTime(1000L)

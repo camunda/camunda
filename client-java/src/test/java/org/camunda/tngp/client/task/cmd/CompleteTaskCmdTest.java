@@ -14,6 +14,8 @@ package org.camunda.tngp.client.task.cmd;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.VarDataUtil.readBytes;
 import static org.mockito.Mockito.mock;
@@ -45,7 +47,8 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class CompleteTaskCmdTest
 {
-    protected static final int TOPIC_ID = 1;
+    protected static final String TOPIC_NAME = "test-topic";
+    protected static final int PARTITION_ID = 1;
     private static final byte[] BUFFER = new byte[1014 * 1024];
 
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -68,7 +71,7 @@ public class CompleteTaskCmdTest
 
         objectMapper = new ObjectMapper(new MessagePackFactory());
 
-        completeTaskCommand = new CompleteTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_ID);
+        completeTaskCommand = new CompleteTaskCmdImpl(clientCmdExecutor, objectMapper, TOPIC_NAME, PARTITION_ID);
 
         writeBuffer.wrap(BUFFER);
     }
@@ -99,7 +102,8 @@ public class CompleteTaskCmdTest
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
         assertThat(requestDecoder.eventType()).isEqualTo(TASK_EVENT);
-        assertThat(requestDecoder.topicId()).isEqualTo(TOPIC_ID);
+        assertThat(requestDecoder.topicName()).isEqualTo(TOPIC_NAME);
+        assertThat(requestDecoder.partitionId()).isEqualTo(PARTITION_ID);
         assertThat(requestDecoder.key()).isEqualTo(2L);
 
         final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
@@ -135,6 +139,9 @@ public class CompleteTaskCmdTest
         // then
         requestDecoder.wrap(writeBuffer, headerDecoder.encodedLength(), requestDecoder.sbeBlockLength(), requestDecoder.sbeSchemaVersion());
 
+        // skip topic name
+        requestDecoder.topicName();
+
         final byte[] command = readBytes(requestDecoder::getCommand, requestDecoder::commandLength);
 
         final TaskEvent taskEvent = objectMapper.readValue(command, TaskEvent.class);
@@ -160,6 +167,8 @@ public class CompleteTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 
@@ -187,6 +196,8 @@ public class CompleteTaskCmdTest
         final byte[] jsonEvent = objectMapper.writeValueAsBytes(taskEvent);
 
         responseEncoder
+            .topicName(DEFAULT_TOPIC_NAME)
+            .partitionId(DEFAULT_PARTITION_ID)
             .key(2L)
             .putEvent(jsonEvent, 0, jsonEvent.length);
 

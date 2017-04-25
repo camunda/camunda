@@ -1,5 +1,7 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
+import static org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder.eventHeaderLength;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -21,6 +23,7 @@ public class SubscribedEvent implements BufferReader
     protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     protected SubscribedEventDecoder bodyDecoder = new SubscribedEventDecoder();
 
+    protected String topicName;
     protected Map<String, Object> event;
 
     protected MsgPackHelper msgPackHelper = new MsgPackHelper();
@@ -32,9 +35,14 @@ public class SubscribedEvent implements BufferReader
         wrap(buffer, 0, buffer.capacity());
     }
 
-    public int topicId()
+    public String topicName()
     {
-        return bodyDecoder.topicId();
+        return topicName;
+    }
+
+    public int partitionId()
+    {
+        return bodyDecoder.partitionId();
     }
 
     public long position()
@@ -84,8 +92,10 @@ public class SubscribedEvent implements BufferReader
 
         bodyDecoder.wrap(responseBuffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
+        topicName = bodyDecoder.topicName();
+
         final int eventLength = bodyDecoder.eventLength();
-        final int eventOffset = headerDecoder.encodedLength() + headerDecoder.blockLength() + SubscribedEventDecoder.eventHeaderLength();
+        final int eventOffset = bodyDecoder.limit() + eventHeaderLength();
 
         try (final InputStream is = new DirectBufferInputStream(responseBuffer, offset + eventOffset, eventLength))
         {

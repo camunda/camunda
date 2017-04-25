@@ -2,36 +2,38 @@ package org.camunda.tngp.client.impl.cmd.taskqueue;
 
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThan;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.tngp.client.impl.ClientCmdExecutor;
 import org.camunda.tngp.client.impl.cmd.AbstractControlMessageWithoutResponseCmd;
 import org.camunda.tngp.client.impl.data.MsgPackConverter;
 import org.camunda.tngp.protocol.clientapi.ControlMessageType;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessageWithoutResponseCmd<TaskSubscription>
 {
     protected final TaskSubscription subscription = new TaskSubscription();
     protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
-    private final int topicId;
+    private final String topicName;
+    private final int partitionId;
     private long subscriptionId = -1L;
     private int credits = 0;
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl(ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, int topicId)
+    public IncreaseTaskSubscriptionCreditsCmdImpl(final ClientCmdExecutor cmdExecutor, final ObjectMapper objectMapper, final String topicName, final int partitionId)
     {
         super(cmdExecutor, objectMapper, TaskSubscription.class, ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS);
-        this.topicId = topicId;
+        this.topicName = topicName;
+        this.partitionId = partitionId;
     }
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(long subscriptionId)
+    public IncreaseTaskSubscriptionCreditsCmdImpl subscriptionId(final long subscriptionId)
     {
         this.subscriptionId = subscriptionId;
         return this;
     }
 
-    public IncreaseTaskSubscriptionCreditsCmdImpl credits(int credits)
+    public IncreaseTaskSubscriptionCreditsCmdImpl credits(final int credits)
     {
         this.credits = credits;
         return this;
@@ -41,7 +43,8 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     public void validate()
     {
         ensureGreaterThanOrEqual("subscription id", subscriptionId, 0);
-        ensureGreaterThanOrEqual("topic id", topicId, 0);
+        ensureNotNullOrEmpty("topic name", topicName);
+        ensureGreaterThanOrEqual("partition id", partitionId, 0);
         ensureGreaterThan("credits", credits, 0);
     }
 
@@ -56,7 +59,8 @@ public class IncreaseTaskSubscriptionCreditsCmdImpl extends AbstractControlMessa
     protected Object writeCommand()
     {
         subscription.setSubscriberKey(subscriptionId);
-        subscription.setTopicId(topicId);
+        subscription.setTopicName(topicName);
+        subscription.setPartitionId(partitionId);
         subscription.setCredits(credits);
 
         return subscription;
