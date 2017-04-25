@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -126,6 +128,13 @@ public class EngineIntegrationRule extends TestWatcher {
     } catch (IOException e) {
       logger.error("Error while trying to finish the user task!!");
       e.printStackTrace();
+    } finally {
+      try {
+        client.close();
+      } catch (IOException e) {
+        logger.error("Could not close clien!");
+        e.printStackTrace();
+      }
     }
   }
 
@@ -136,7 +145,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) throws IOException {
     HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
     claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"admin\"" + "}"));
-    claimPost.addHeader("content-type", "application/json");
+    claimPost.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
     CloseableHttpResponse response = client.execute(claimPost);
     if (response.getStatusLine().getStatusCode() != 204) {
       throw new RuntimeException("Could not claim user task!");
@@ -144,7 +153,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
     HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
     completePost.setEntity(new StringEntity("{}"));
-    completePost.addHeader("content-type", "application/json");
+    completePost.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
     response = client.execute(completePost);
     if (response.getStatusLine().getStatusCode() != 204) {
       throw new RuntimeException("Could not complete user task!");
