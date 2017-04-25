@@ -1,5 +1,21 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_EVENT_TYPE;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_ACTIVITY_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_INSTANCE_KEY;
+import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.PROP_WORKFLOW_VERSION;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule;
@@ -9,18 +25,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent.*;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
 public class WorkflowInstanceFunctionalTest
 {
@@ -122,6 +126,57 @@ public class WorkflowInstanceFunctionalTest
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+
+        assertThat(event.longKey()).isEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+    }
+
+    @Test
+    public void shouldConsumeTokenIfEventHasNoOutgoingSequenceflow()
+    {
+        // given
+        testClient.deploy(Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .done());
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        // then
+        final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));
+
+        assertThat(event.longKey()).isEqualTo(workflowInstanceKey);
+        assertThat(event.event())
+            .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .containsEntry(PROP_WORKFLOW_VERSION, 1)
+            .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+            .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "");
+    }
+
+    @Test
+    public void shouldConsumeTokenIfActivityHasNoOutgoingSequenceflow()
+    {
+        // given
+        final BpmnModelInstance modelInstance = wrap(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("foo")
+                    .done())
+                        .taskDefinition("foo", "bar", 5);
+
+        testClient.deploy(modelInstance);
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        testClient.completeTaskOfType("bar");
 
         // then
         final SubscribedEvent event = testClient.receiveSingleEvent(workflowInstanceEvents("WORKFLOW_INSTANCE_COMPLETED"));

@@ -209,24 +209,6 @@ public class BpmnValidationTests
     }
 
     @Test
-    public void shouldNotBeValidIfNoOutgoingSequenceFlow()
-    {
-        // given
-        final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess("process")
-                .startEvent("foo")
-                .done();
-
-        // when
-        final ValidationResults validationResults = bpmnTransformer.validate(bpmnModelInstance);
-
-        // then
-        assertThat(validationResults.hasErrors()).isTrue();
-        assertThat(validationResults.getResults().get(bpmnModelInstance.getModelElementById("foo")))
-            .isNotNull()
-            .extracting("code").contains(ValidationCodes.NO_OUTGOING_SEQUENCE_FLOW);
-    }
-
-    @Test
     public void shouldNotBeValidIfMoreThanOneOutgoingSequenceFlow()
     {
         // given

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+import org.camunda.tngp.broker.workflow.graph.model.BpmnAspect;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableScope;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
@@ -35,6 +36,16 @@ public class FlowNodeTransformer implements BpmnElementTransformer<FlowNode, Exe
 
         bpmnElement.setOutgoingSequenceFlows(outgoingSequenceFlows.toArray(new ExecutableSequenceFlow[outgoingSequenceFlows.size()]));
         bpmnElement.setIncomingSequenceFlows(incomingSequenceFlows.toArray(new ExecutableSequenceFlow[incomingSequenceFlows.size()]));
+
+        // might be extracted later
+        if (outgoingSequenceFlows.isEmpty())
+        {
+            bpmnElement.setBpmnAspect(BpmnAspect.CONSUME_TOKEN);
+        }
+        else if (outgoingSequenceFlows.size() == 1)
+        {
+            bpmnElement.setBpmnAspect(BpmnAspect.TAKE_SEQUENCE_FLOW);
+        }
     }
 
 }

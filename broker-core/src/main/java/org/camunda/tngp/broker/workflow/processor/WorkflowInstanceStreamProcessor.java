@@ -6,6 +6,8 @@ import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
 import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 import java.nio.ByteOrder;
+import java.util.EnumMap;
+import java.util.Map;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -24,6 +26,7 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
+import org.camunda.tngp.broker.workflow.graph.model.BpmnAspect;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
 import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
@@ -67,12 +70,20 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
 
     protected final CreateWorkflowInstanceEventProcessor createWorkflowInstanceEventProcessor = new CreateWorkflowInstanceEventProcessor();
     protected final WorkflowInstanceCreatedEventProcessor workflowInstanceCreatedEventProcessor = new WorkflowInstanceCreatedEventProcessor();
-    protected final ActivityCompletedEventProcessor activityCompletedEventProcessor = new ActivityCompletedEventProcessor();
+    protected final WorkflowInstanceCompletedEventProcessor workflowInstanceCompletedEventProcessor = new WorkflowInstanceCompletedEventProcessor();
+
     protected final SequenceFlowTakenEventProcessor sequenceFlowTakenEventProcessor = new SequenceFlowTakenEventProcessor();
-    protected final EndEventProcessor endEventProcessor = new EndEventProcessor();
     protected final ActivityActivatedEventProcessor activityActivatedEventProcessor = new ActivityActivatedEventProcessor();
 
     protected final TaskCompletedEventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
+
+    protected final Map<BpmnAspect, EventProcessor> aspectHandlers;
+    {
+        aspectHandlers = new EnumMap<>(BpmnAspect.class);
+
+        aspectHandlers.put(BpmnAspect.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowAspectHandler());
+        aspectHandlers.put(BpmnAspect.CONSUME_TOKEN, new ConsumeTokenAspectHandler());
+    }
 
     // data //////////////////////////////////////////
 
@@ -238,9 +249,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 eventProcessor = workflowInstanceCreatedEventProcessor;
                 break;
 
-            case START_EVENT_OCCURRED:
-            case ACTIVITY_COMPLETED:
-                eventProcessor = activityCompletedEventProcessor;
+            case WORKFLOW_INSTANCE_COMPLETED:
+                eventProcessor = workflowInstanceCompletedEventProcessor;
                 break;
 
             case SEQUENCE_FLOW_TAKEN:
@@ -251,9 +261,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 eventProcessor = activityActivatedEventProcessor;
                 break;
 
+            case START_EVENT_OCCURRED:
             case END_EVENT_OCCURRED:
-                eventProcessor = endEventProcessor;
+            case ACTIVITY_COMPLETED:
+            {
+                final ExecutableFlowNode currentActivity = getCurrentActivity();
+                eventProcessor = aspectHandlers.get(currentActivity.getBpmnAspect());
                 break;
+            }
 
             default:
                 break;
@@ -420,117 +435,21 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             // a new token is created
             workflowInstanceTokenCountIndex.put(eventKey, 1L);
         }
-
     }
 
-    private final class ActivityCompletedEventProcessor implements EventProcessor
+    private final class WorkflowInstanceCompletedEventProcessor implements EventProcessor
     {
         @Override
         public void processEvent()
         {
-            final ExecutableFlowNode currentActivity = getCurrentActivity();
-
-            // currently, the activity has exactly one outgoing sequence flow
-            final ExecutableSequenceFlow sequenceFlow = currentActivity.getOutgoingSequenceFlows()[0];
-
-            workflowInstanceEvent
-                .setEventType(WorkflowInstanceEventType.SEQUENCE_FLOW_TAKEN)
-                .setActivityId(sequenceFlow.getId());
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            return writeWorkflowEvent(writer.positionAsKey());
-        }
-    }
-
-    private final class SequenceFlowTakenEventProcessor implements EventProcessor
-    {
-        boolean isTokenConsumed;
-
-        @Override
-        public void processEvent()
-        {
-            isTokenConsumed = false;
-
-            final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
-            final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
-
-            workflowInstanceEvent.setActivityId(targetNode.getId());
-
-            if (targetNode instanceof ExecutableEndEvent)
-            {
-                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.END_EVENT_OCCURRED);
-
-                isTokenConsumed = true;
-            }
-            else if (targetNode instanceof ExecutableServiceTask)
-            {
-                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
-            }
-            else
-            {
-                throw new RuntimeException("Currently not supported. A sequence flow must end in an end event or service task.");
-            }
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            return writeWorkflowEvent(writer.positionAsKey());
+            // do nothing
         }
 
         @Override
         public void updateState()
         {
-            if (isTokenConsumed)
-            {
-                workflowInstanceIndexAccessor.decrementActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
-            }
-        }
-    }
-
-    private final class EndEventProcessor implements EventProcessor
-    {
-        boolean isCompleted;
-
-        @Override
-        public void processEvent()
-        {
-            isCompleted = false;
-
-            final long activeTokenCount = workflowInstanceIndexAccessor.getActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
-            if (activeTokenCount == 0)
-            {
-                workflowInstanceEvent
-                    .setEventType(WorkflowInstanceEventType.WORKFLOW_INSTANCE_COMPLETED)
-                    .setActivityId("");
-
-                isCompleted = true;
-            }
-        }
-
-        @Override
-        public long writeEvent(LogStreamWriter writer)
-        {
-            long position = 0L;
-
-            if (isCompleted)
-            {
-                position = writeWorkflowEvent(
-                        writer.key(workflowInstanceEvent.getWorkflowInstanceKey()));
-            }
-            return position;
-        }
-
-        @Override
-        public void updateState()
-        {
-            if (isCompleted)
-            {
-                workflowInstanceIndexAccessor.remove(workflowInstanceEvent.getWorkflowInstanceKey());
-            }
+            // all tokens are consumed
+            workflowInstanceIndexAccessor.remove(workflowInstanceEvent.getWorkflowInstanceKey());
         }
     }
 
@@ -597,6 +516,99 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                     .metadataWriter(targetEventMetadata)
                     .valueWriter(taskEvent)
                     .tryWrite();
+        }
+    }
+
+    private final class SequenceFlowTakenEventProcessor implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            final ExecutableSequenceFlow sequenceFlow = getCurrentActivity();
+            final ExecutableFlowNode targetNode = sequenceFlow.getTargetNode();
+
+            workflowInstanceEvent.setActivityId(targetNode.getId());
+
+            if (targetNode instanceof ExecutableEndEvent)
+            {
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.END_EVENT_OCCURRED);
+            }
+            else if (targetNode instanceof ExecutableServiceTask)
+            {
+                workflowInstanceEvent.setEventType(WorkflowInstanceEventType.ACTIVITY_ACTIVATED);
+            }
+            else
+            {
+                throw new RuntimeException("Currently not supported. A sequence flow must end in an end event or service task.");
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.positionAsKey());
+        }
+    }
+
+    private final class TakeSequenceFlowAspectHandler implements EventProcessor
+    {
+        @Override
+        public void processEvent()
+        {
+            final ExecutableFlowNode currentActivity = getCurrentActivity();
+
+            // the activity has exactly one outgoing sequence flow
+            final ExecutableSequenceFlow sequenceFlow = currentActivity.getOutgoingSequenceFlows()[0];
+
+            workflowInstanceEvent
+                .setEventType(WorkflowInstanceEventType.SEQUENCE_FLOW_TAKEN)
+                .setActivityId(sequenceFlow.getId());
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeWorkflowEvent(writer.positionAsKey());
+        }
+    }
+
+    private final class ConsumeTokenAspectHandler implements EventProcessor
+    {
+        boolean isCompleted;
+
+        @Override
+        public void processEvent()
+        {
+            isCompleted = false;
+
+            final long activeTokenCount = workflowInstanceIndexAccessor.getActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
+            if (activeTokenCount == 1)
+            {
+                workflowInstanceEvent
+                    .setEventType(WorkflowInstanceEventType.WORKFLOW_INSTANCE_COMPLETED)
+                    .setActivityId("");
+
+                isCompleted = true;
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            long position = 0L;
+
+            if (isCompleted)
+            {
+                position = writeWorkflowEvent(
+                        writer.key(workflowInstanceEvent.getWorkflowInstanceKey()));
+            }
+            return position;
+        }
+
+        @Override
+        public void updateState()
+        {
+            workflowInstanceIndexAccessor.decrementActiveTokenCount(workflowInstanceEvent.getWorkflowInstanceKey());
         }
     }
 
