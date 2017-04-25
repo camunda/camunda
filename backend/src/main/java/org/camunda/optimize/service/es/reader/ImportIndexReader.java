@@ -30,8 +30,8 @@ public class ImportIndexReader {
         .get();
     } catch (Exception ignored) {}
 
-    if (getResponse !=null && getResponse.isExists()) {
-        return (Integer) getResponse.getSource().get(ImportIndexType.IMPORT_INDEX_FIELD);
+    if (getResponse != null && getResponse.isExists()) {
+      return (Integer) getResponse.getSource().get(ImportIndexType.IMPORT_INDEX_FIELD);
     } else {
       logger.debug("Was not able to retrieve import index for type '" + typeIndexComesFrom + "' from elasticsearch.");
       return 0;

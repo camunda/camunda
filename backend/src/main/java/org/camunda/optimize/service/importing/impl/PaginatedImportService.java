@@ -23,7 +23,7 @@ import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterTh
 @Component
 abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> implements ImportService {
 
-  protected Logger logger = LoggerFactory.getLogger(PaginatedImportService.class);
+  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   protected ConfigurationService configurationService;

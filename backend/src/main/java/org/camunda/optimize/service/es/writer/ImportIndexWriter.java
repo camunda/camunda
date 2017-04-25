@@ -24,8 +24,15 @@ public class ImportIndexWriter {
   public void importIndex(int importStartIndex, String typeIndexComesFrom) throws IOException {
     logger.debug("Writing import index '" + importStartIndex + "' of type '" + typeIndexComesFrom + "' to elasticsearch");
     esclient
-      .prepareIndex(configurationService.getOptimizeIndex(), configurationService.getImportIndexType(), typeIndexComesFrom)
-      .setSource(XContentFactory.jsonBuilder().startObject().field(ImportIndexType.IMPORT_INDEX_FIELD, importStartIndex).endObject())
+      .prepareIndex(
+        configurationService.getOptimizeIndex(),
+        configurationService.getImportIndexType(),
+        typeIndexComesFrom)
+      .setSource(
+        XContentFactory.jsonBuilder()
+          .startObject()
+            .field(ImportIndexType.IMPORT_INDEX_FIELD, importStartIndex)
+          .endObject())
       .get();
   }
 
