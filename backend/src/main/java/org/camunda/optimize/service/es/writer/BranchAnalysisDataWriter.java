@@ -40,7 +40,7 @@ public class BranchAnalysisDataWriter {
   }
 
   public void importEvents(List<EventDto> events) throws Exception {
-    logger.debug("Writing [" + events.size() + "] events to branch analysis data of elasticsearch");
+    logger.debug("Writing [{}] events to branch analysis data of elasticsearch", events.size());
 
     BulkRequestBuilder branchAnalysisDataBulkRequest = esclient.prepareBulk();
     for (EventDto e : events) {

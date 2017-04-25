@@ -46,7 +46,7 @@ public class ConfigurationService {
   private String eventType;
   @Value("${camunda.optimize.es.variable.type}")
   private String variableType;
-  @Value("${camunda.optimize.es.branchAnalysisData.type}")
+  @Value("${camunda.optimize.es.branch.analysis.type}")
   private String branchAnalysisDataType;
   @Value("${camunda.optimize.es.heatmap.duration.targetValue.type}")
   private String durationHeatmapTargetValueType;

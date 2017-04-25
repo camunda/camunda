@@ -26,7 +26,7 @@ public class VariableWriter {
   private ObjectMapper objectMapper;
 
   public void importVariables(List<VariableDto> variables) throws Exception {
-    logger.debug("Writing [" + variables.size() + "] variables to elasticsearch");
+    logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
     BulkRequestBuilder eventBulkRequest = esclient.prepareBulk();
     for (VariableDto e : variables) {

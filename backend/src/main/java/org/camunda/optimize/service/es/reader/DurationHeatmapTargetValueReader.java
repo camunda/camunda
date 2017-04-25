@@ -31,7 +31,7 @@ public class DurationHeatmapTargetValueReader {
   private ConfigurationService configurationService;
 
   public DurationHeatmapTargetValueDto getTargetValues(String processDefinitionId) {
-    logger.debug("Fetching duration heatmap target value for process definition: " + processDefinitionId);
+    logger.debug("Fetching duration heatmap target value for process definition: {}", processDefinitionId);
     DurationHeatmapTargetValueDto dto = new DurationHeatmapTargetValueDto();
     dto.setProcessDefinitionId(processDefinitionId);
     dto.setTargetValues(Collections.emptyMap());

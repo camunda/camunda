@@ -62,7 +62,7 @@ public class EngineEntityFetcher {
         .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
         });
     } catch (RuntimeException e) {
-      logger.error("Could not fetch historic activity instances from engine. Please check the connection!");
+      logError("Could not fetch historic activity instances from engine. Please check the connection!", e);
       entries = Collections.emptyList();
     }
 
@@ -103,7 +103,7 @@ public class EngineEntityFetcher {
         xmls.add(xml);
       }
     } catch (RuntimeException e) {
-      logger.error("Could not fetch process definition xmls from engine. Please check the connection!");
+      logError("Could not fetch process definition xmls from engine. Please check the connection!", e);
       xmls = Collections.emptyList();
     }
 
@@ -124,7 +124,7 @@ public class EngineEntityFetcher {
         .get(new GenericType<List<ProcessDefinitionEngineDto>>() {
         });
     } catch (RuntimeException e) {
-      logger.error("Could not fetch process definitions from engine. Please check the connection!");
+      logError("Could not fetch process definitions from engine. Please check the connection!", e);
       entries = Collections.emptyList();
     }
 
@@ -160,11 +160,7 @@ public class EngineEntityFetcher {
         .readEntity(new GenericType<List<HistoricProcessInstanceDto>>(){});
       return entries;
     } catch (RuntimeException e) {
-      if (logger.isDebugEnabled()) {
-        logger.error("Could not fetch historic process instances from engine. Please check the connection!", e);
-      } else {
-        logger.error("Could not fetch historic process instances from engine. Please check the connection!");
-      }
+      logError("Could not fetch historic process instances from engine. Please check the connection!", e);
       entries = Collections.emptyList();
     }
     return entries;
@@ -185,7 +181,7 @@ public class EngineEntityFetcher {
         .get(new GenericType<List<HistoricVariableInstanceDto>>() {
         });
     } catch (RuntimeException e) {
-      logger.error("Could not fetch historic activity instances from engine. Please check the connection!");
+      logError("Could not fetch historic activity instances from engine. Please check the connection!", e);
       entries = Collections.emptyList();
     }
 
@@ -205,6 +201,14 @@ public class EngineEntityFetcher {
     }
 
     return count.getCount();
+  }
+
+  private void logError(String message, Exception e) {
+    if (logger.isDebugEnabled()) {
+      logger.error(message, e);
+    } else {
+      logger.error(message);
+    }
   }
 
 }

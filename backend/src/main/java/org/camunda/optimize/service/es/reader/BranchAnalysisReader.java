@@ -44,7 +44,7 @@ public class BranchAnalysisReader {
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
-    logger.debug("Performing branch analysis on process definition: " + request.getProcessDefinitionId());
+    logger.debug("Performing branch analysis on process definition: {}", request.getProcessDefinitionId());
     
     BranchAnalysisDto result = new BranchAnalysisDto();
     List<String> gatewayOutcomes = fetchGatewayOutcomes(request.getProcessDefinitionId(), request.getGateway());

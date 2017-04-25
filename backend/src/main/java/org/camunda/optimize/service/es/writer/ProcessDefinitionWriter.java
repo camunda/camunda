@@ -27,7 +27,7 @@ public class ProcessDefinitionWriter {
   private ObjectMapper objectMapper;
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) throws Exception {
-    logger.debug("Writing [" + procDefs.size() + "] process definitions to elasticsearch");
+    logger.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       String id = procDef.getId();
@@ -44,7 +44,7 @@ public class ProcessDefinitionWriter {
   }
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionXmlOptimizeDto> xmls) throws Exception {
-    logger.debug("writing [" + xmls.size() + "] process definition XMLs to ES");
+    logger.debug("writing [{}] process definition XMLs to ES", xmls.size());
     BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (ProcessDefinitionXmlOptimizeDto xml : xmls) {
       String id = xml.getId();

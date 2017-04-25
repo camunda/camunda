@@ -27,7 +27,7 @@ public class PerfTestConfiguration {
 
     optimizeIndex = properties.getProperty("camunda.optimize.es.index", "optimize");
     eventType = properties.getProperty("camunda.optimize.es.event.type", "event");
-    branchAnalysisDataType = properties.getProperty("camunda.optimize.es.branchAnalysisData.type", "branchAnalysisData");
+    branchAnalysisDataType = properties.getProperty("camunda.optimize.es.branch.analysis.type", "branch-analysis-data");
     dateFormat = properties.getProperty("camunda.optimize.serialization.date.format", "yyyy-MM-dd'T'HH:mm:ss");
     frequencyHeatMapEndpoint = properties.getProperty("camunda.optimize.rest.heatmap.frequency",
       "http://localhost:8090/api/process-definition/heatmap/frequency");

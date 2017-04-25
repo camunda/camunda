@@ -51,16 +51,7 @@ public class ImportScheduler extends Thread {
       checkAndResetImportIndexing();
       logger.debug("Executing import round");
       executeJob();
-//      logger.debug("Finished import round. Progress of the import: " + getImportProgress() + "%");
-    }
-  }
-
-  private String getImportProgress() {
-    try {
-      return Integer.toString(importProgressReporter.computeImportProgress());
-    } catch (OptimizeException e) {
-      logger.debug("Could not fetch import progress", e);
-      return "";
+      logger.debug("Finished import round. \n");
     }
   }
 
@@ -108,11 +99,11 @@ public class ImportScheduler extends Thread {
         }
       }
       if (pagesPassed > 0) {
-        logger.debug("Processed [" + pagesPassed + "] pages during data import run, scheduling one more run");
+        logger.debug("Processed [{}] pages during data import run, scheduling one more run", pagesPassed);
         importScheduleJobs.add(toExecute);
         backoffCounter = STARTING_BACKOFF;
       } if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
-        logger.debug("Index of [" + toExecute.getImportService().getClass() + " is [" + toExecute.getImportService().getImportStartIndex() + "]");
+        logger.debug("Index of [{}] is [{}]", toExecute.getImportService().getClass(), toExecute.getImportService().getImportStartIndex());
         importScheduleJobs.add(toExecute);
       }
     }
@@ -128,7 +119,7 @@ public class ImportScheduler extends Thread {
 
     try {
       long sleepTime = interval * backoffCounter;
-      logger.debug("No data for import detected, sleeping for [" + sleepTime + "] ms");
+      logger.debug("No data for import detected, sleeping for [{}] ms", sleepTime);
       Thread.currentThread().sleep(sleepTime);
     } catch (InterruptedException e) {
       logger.warn("Import handler is interrupted while sleeping between import jobs", e);

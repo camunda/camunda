@@ -22,7 +22,7 @@ public class ImportIndexWriter {
   private ConfigurationService configurationService;
 
   public void importIndex(int importStartIndex, String typeIndexComesFrom) throws IOException {
-    logger.debug("Writing import index '" + importStartIndex + "' of type '" + typeIndexComesFrom + "' to elasticsearch");
+    logger.debug("Writing import index '{}' of type '{}' to elasticsearch", importStartIndex, typeIndexComesFrom);
     esclient
       .prepareIndex(
         configurationService.getOptimizeIndex(),

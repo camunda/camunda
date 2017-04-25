@@ -48,7 +48,7 @@ public abstract class HeatMapReader {
 
   public HeatMapResponseDto getHeatMap(HeatMapQueryDto dto) {
     ValidationHelper.validate(dto);
-    logger.debug("Fetching heat map for process definition: " + dto.getProcessDefinitionId());
+    logger.debug("Fetching heat map for process definition: {}", dto.getProcessDefinitionId());
 
     HeatMapResponseDto result = new HeatMapResponseDto();
     Map<String, Long> flowNodes = new HashMap<>();

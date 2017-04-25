@@ -21,7 +21,7 @@ public class ImportIndexReader {
   private ConfigurationService configurationService;
 
   public int getImportIndex(String typeIndexComesFrom) {
-    logger.debug("Fetching import index of type '" + typeIndexComesFrom + "'");
+    logger.debug("Fetching import index of type '{}'", typeIndexComesFrom);
     GetResponse getResponse = null;
     try {
       getResponse = esclient
@@ -33,7 +33,7 @@ public class ImportIndexReader {
     if (getResponse != null && getResponse.isExists()) {
       return (Integer) getResponse.getSource().get(ImportIndexType.IMPORT_INDEX_FIELD);
     } else {
-      logger.debug("Was not able to retrieve import index for type '" + typeIndexComesFrom + "' from elasticsearch.");
+      logger.debug("Was not able to retrieve import index for type '{}' from elasticsearch.", typeIndexComesFrom);
       return 0;
     }
   }

@@ -121,7 +121,7 @@ public class ProcessDefinitionReader {
     if(response.isExists()) {
       xml = response.getSource().get("bpmn20Xml").toString();
     }else {
-      logger.warn("Could not find process definition xml with id " + processDefinitionId);
+      logger.warn("Could not find process definition xml with id {}", processDefinitionId);
     }
     return xml;
   }

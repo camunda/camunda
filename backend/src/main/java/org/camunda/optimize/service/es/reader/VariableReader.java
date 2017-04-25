@@ -32,7 +32,7 @@ public class VariableReader {
 
 
   public List<GetVariablesResponseDto> getVariables(String processDefinitionId) {
-    logger.debug("Fetching variables for process definition: " + processDefinitionId);
+    logger.debug("Fetching variables for process definition: {}", processDefinitionId);
     QueryBuilder query;
     query = QueryBuilders.boolQuery()
       .must(QueryBuilders.termsQuery(VariableType.PROCESS_DEFINITION_ID, processDefinitionId))
