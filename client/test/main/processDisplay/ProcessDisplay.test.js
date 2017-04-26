@@ -21,8 +21,11 @@ describe('<ProcessDisplay>', () => {
   let update;
   let state;
   let loadDiagram;
+  let resetStatisticData;
   let selectedView;
   let isViewSelected;
+
+  const NEW_CRITERIA = 'NEW_CRITERIA';
 
   beforeEach(() => {
     state = {
@@ -62,8 +65,11 @@ describe('<ProcessDisplay>', () => {
     ProcessInstanceCount = createMockComponent('ProcessInstanceCount');
     __set__('ProcessInstanceCount', withSelector(ProcessInstanceCount));
 
-    loadData = 'load-data';
+    loadData = sinon.spy();
     __set__('loadData', loadData);
+
+    resetStatisticData = sinon.spy();
+    __set__('resetStatisticData', resetStatisticData);
 
     getDefinitionId = sinon.stub().returns('abc');
     __set__('getDefinitionId', getDefinitionId);
@@ -91,6 +97,7 @@ describe('<ProcessDisplay>', () => {
     __ResetDependency__('createCreateAnalyticsRendererFunction');
     __ResetDependency__('createDiagramControlsIntegrator');
     __ResetDependency__('loadData');
+    __ResetDependency__('resetStatisticData');
     __ResetDependency__('loadDiagram');
     __ResetDependency__('isViewSelected');
     __ResetDependency__('getDefinitionId');
@@ -132,8 +139,20 @@ describe('<ProcessDisplay>', () => {
     expect(ProcessInstanceCount.mocks.update.calledWith(33)).to.eql(true);
   });
 
-  it('should pass loadData to Controls component as onCriteriaChanged attribute', () => {
-    expect(Controls.getAttribute('onCriteriaChanged')).to.eql(loadData);
+  it('should pass function to handle criteria change to Controls component as onCriteriaChanged attribute', () => {
+    expect(Controls.getAttribute('onCriteriaChanged')).to.be.a('function');
+  });
+
+  it('should load data when onCriteriaChanged is called', () => {
+    Controls.getAttribute('onCriteriaChanged')(NEW_CRITERIA);
+
+    expect(loadData.calledWith(NEW_CRITERIA)).to.eql(true);
+  });
+
+  it('should reset the statistics data when onCriteriaChanged is called', () => {
+    Controls.getAttribute('onCriteriaChanged')(NEW_CRITERIA);
+
+    expect(resetStatisticData.calledOnce).to.eql(true);
   });
 
   it('should display a loading indicator while loading', () => {

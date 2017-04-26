@@ -1,6 +1,6 @@
 import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount, TargetValueDisplay} from './diagram';
-import {Statistics} from './statistics';
+import {Statistics, resetStatisticData} from './statistics';
 import {isLoading, formatTime} from 'utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
 import {isViewSelected} from './controls';
@@ -14,7 +14,7 @@ function Process() {
   const {Diagram, Controls, integrator} = createDiagramControlsIntegrator();
 
   const template = <div className="process-display">
-    <Controls selector={createControlsState} onCriteriaChanged={loadData} />
+    <Controls selector={createControlsState} onCriteriaChanged={handleCriteriaChange} />
     <div className="diagram">
       <LoadingIndicator predicate={isLoadingSomething}>
         <Match>
@@ -49,6 +49,11 @@ function Process() {
     </div>
     <Statistics getBpmnViewer={Diagram.getViewer} />
   </div>;
+
+  function handleCriteriaChange(newCriteria) {
+    resetStatisticData();
+    loadData(newCriteria);
+  }
 
   function getProcessInstanceCount({diagram}) {
     return getInstanceCount(diagram);
