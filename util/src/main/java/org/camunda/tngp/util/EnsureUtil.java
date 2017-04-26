@@ -1,5 +1,9 @@
 package org.camunda.tngp.util;
 
+
+import org.agrona.DirectBuffer;
+
+
 public class EnsureUtil
 {
 
@@ -62,6 +66,16 @@ public class EnsureUtil
         ensureNotNull(property, testValue);
 
         if (testValue.length == 0)
+        {
+            throw new RuntimeException(property + " must not be empty");
+        }
+    }
+
+    public static void ensureNotNullOrEmpty(String property, DirectBuffer testValue)
+    {
+        ensureNotNull(property, testValue);
+
+        if (testValue.capacity() == 0)
         {
             throw new RuntimeException(property + " must not be empty");
         }
