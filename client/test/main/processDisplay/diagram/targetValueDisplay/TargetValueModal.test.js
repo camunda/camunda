@@ -22,7 +22,7 @@ describe('<TargetValueModal>', () => {
 
   let element;
 
-  const processDefinition = 'asdf';
+  const getProcessDefinition = () => 'asdf';
   const ELEMENT_NAME = 'ELEMENT_NAME';
   const TARGET_VALUE = 400;
 
@@ -68,7 +68,7 @@ describe('<TargetValueModal>', () => {
     saveTargetValues = sinon.spy();
     __set__('saveTargetValues', saveTargetValues);
 
-    TargetValueModal = createTargetValueModal(State, processDefinition);
+    TargetValueModal = createTargetValueModal(State, getProcessDefinition);
 
     ({node, update} = mountTemplate(<TargetValueModal />));
     update();

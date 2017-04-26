@@ -4,7 +4,7 @@ import {onNextTick} from 'utils';
 import {setTargetValue, saveTargetValues, getTargetValue, getTargetDurationFromForm, setTargetDurationToForm} from './service';
 import {TargetValueInput} from './TargetValueInput';
 
-export function createTargetValueModal(State, processDefinition) {
+export function createTargetValueModal(State, getProcessDefinition) {
   const Modal = createModal();
   const Reference = createReferenceComponent();
 
@@ -68,7 +68,7 @@ export function createTargetValueModal(State, processDefinition) {
 
         // wait for redux update to finish, then send up to date data to backend
         onNextTick(() => {
-          saveTargetValues(processDefinition, State.getState().targetValue.data);
+          saveTargetValues(getProcessDefinition(), State.getState().targetValue.data);
         });
       }
     };

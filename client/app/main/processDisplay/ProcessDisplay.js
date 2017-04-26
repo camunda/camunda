@@ -34,7 +34,7 @@ function Process() {
             <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
           </Case>
           <Case predicate={shouldDisplay('target_value')}>
-            <TargetValueDisplay selector="diagram" processDefinition={getDefinitionId()} Diagram={Diagram} />
+            <TargetValueDisplay selector="diagram" getProcessDefinition={getDefinitionId} Diagram={Diagram} />
           </Case>
           <Default>
             <Diagram selector="diagram" />

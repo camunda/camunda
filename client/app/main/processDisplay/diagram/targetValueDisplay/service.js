@@ -1,12 +1,14 @@
 import {dispatchAction} from 'view-utils';
 import {createSetTargetValueAction} from './reducer';
-import {formatTime, formatNumber, updateOverlayVisibility} from 'utils';
+import {formatNumber, updateOverlayVisibility} from 'utils';
 import {put} from 'http';
 import {addNotification} from 'notifications';
 import * as timeUtil from 'utils/formatTime';
 
 const TARGET_VALUE_BADGE = 'TARGET_VALUE_BADGE';
 const TARGET_VALUE_TOOLTIP = 'TARGET_VALUE_TOOLTIP';
+
+const formatTime = timeUtil.formatTime;
 
 export function setTargetValue(element, value) {
   dispatchAction(createSetTargetValueAction(element, value));
@@ -23,7 +25,7 @@ export function getTargetDurationFromForm(form) {
 }
 
 export function setTargetDurationToForm(form, targetValue) {
-  const timeParts = timeUtil.formatTime(targetValue, true);
+  const timeParts = formatTime(targetValue, true);
   const fields = form.querySelectorAll('input');
 
   for (let i = 0; i < fields.length; i++) {

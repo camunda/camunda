@@ -13,7 +13,7 @@ describe('<TargetValueDisplay>', () => {
   let stateComponent;
   let createStateComponent;
   let Diagram;
-  const processDefinition = 'asdf';
+  const getProcessDefinition = () => 'asdf';
 
   beforeEach(() => {
     createOverlaysRenderer = sinon.spy();
@@ -29,7 +29,7 @@ describe('<TargetValueDisplay>', () => {
     createTargetValueModal = sinon.stub().returns(targetValueModal);
     __set__('createTargetValueModal', createTargetValueModal);
 
-    ({node, update} = mountTemplate(<TargetValueDisplay Diagram={Diagram} processDefinition={processDefinition} />));
+    ({node, update} = mountTemplate(<TargetValueDisplay Diagram={Diagram} getProcessDefinition={getProcessDefinition} />));
     update();
   });
 
@@ -40,7 +40,7 @@ describe('<TargetValueDisplay>', () => {
   });
 
   it('should create a targetValueModal with State component and process definition', () => {
-    expect(createTargetValueModal.calledWith(stateComponent, processDefinition)).to.eql(true);
+    expect(createTargetValueModal.calledWith(stateComponent, getProcessDefinition)).to.eql(true);
   });
 
   it('should create an overlay renderer with the state component and the target value modal component', () => {
