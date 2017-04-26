@@ -3,7 +3,7 @@ import {reducer, createSetTargetValueAction, SET_TARGET_VALUE} from 'main/proces
 
 describe('target value reducer', () => {
   const ELEMENT_ID = 'ELEMENT_ID';
-  const VALUE = 'VALUE';
+  const VALUE = 123;
   let element;
 
   beforeEach(() => {
@@ -26,5 +26,13 @@ describe('target value reducer', () => {
     const state = reducer(undefined, createSetTargetValueAction(element, VALUE));
 
     expect(state.data[ELEMENT_ID]).to.eql(VALUE);
+  });
+
+  it('should remove a value when it is set to 0', () => {
+    const state = reducer({data: {
+      [ELEMENT_ID]: VALUE
+    }}, createSetTargetValueAction(element, 0));
+
+    expect(state.data[ELEMENT_ID]).to.not.exist;
   });
 });
