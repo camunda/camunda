@@ -21,6 +21,7 @@ public class BufferReaderMatcher<T extends BufferReader> extends ArgumentMatcher
     protected List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean matches(Object argument)
     {
         if (argument == null || !(argument instanceof BufferReader))

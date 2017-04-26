@@ -41,7 +41,7 @@ public class HashIndexTest
 
         // when
         final HashIndex<LongKeyHandler, LongValueHandler> index =
-                new HashIndex(indexStore,
+                new HashIndex<>(indexStore,
                 LongKeyHandler.class, LongValueHandler.class,
                 indexSize, 1, SIZE_OF_LONG, SIZE_OF_LONG);
 
@@ -57,7 +57,7 @@ public class HashIndexTest
 
         // when
         final HashIndex<LongKeyHandler, LongValueHandler> index =
-                new HashIndex(indexStore,
+                new HashIndex<>(indexStore,
                 LongKeyHandler.class, LongValueHandler.class,
                 indexSize, 1, SIZE_OF_LONG, SIZE_OF_LONG);
 

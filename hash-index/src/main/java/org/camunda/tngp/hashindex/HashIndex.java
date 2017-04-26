@@ -82,13 +82,6 @@ public class HashIndex<K extends IndexKeyHandler, V extends IndexValueHandler>
     }
 
     /**
-     *
-     * @param indexSize
-     *
-     *
-     */
-
-    /**
      * Create a new index
      *
      * @param indexStore the index store which is used to store the index
