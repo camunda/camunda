@@ -29,4 +29,11 @@ describe('formatTime', () => {
     expect(result[0].howMuch).to.eql(400);
     expect(result[0].name).to.eql('ms');
   });
+
+  it('should return raw value even for 0 value', () => {
+    const result = formatTime(0, true);
+
+    expect(result).to.be.an('array');
+    expect(result).to.be.empty;
+  });
 });

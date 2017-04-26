@@ -14,7 +14,7 @@ const units = Object
 
 export function formatTime(time, returnRaw) {
   if (time === 0) {
-    return '0ms';
+    return returnRaw ? [] : '0ms';
   }
 
   // construct array that breaks up time into weeks, days and so on

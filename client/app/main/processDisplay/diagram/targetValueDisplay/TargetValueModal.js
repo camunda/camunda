@@ -33,6 +33,12 @@ export function createTargetValueModal(State, getProcessDefinition) {
                 <TargetValueInput unit="m" />
                 <TargetValueInput unit="s" />
                 <TargetValueInput unit="ms" />
+                <td>
+                  <button type="button" className="btn btn-default">
+                    <OnEvent event="click" listener={resetForm} />
+                    <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+                  </button>
+                </td>
               </tr>
               <tr>
                 <td>Weeks</td>
@@ -41,6 +47,7 @@ export function createTargetValueModal(State, getProcessDefinition) {
                 <td>Minutes</td>
                 <td>Seconds</td>
                 <td>Milliseconds</td>
+                <td />
               </tr>
             </table>
           </div>
@@ -58,6 +65,10 @@ export function createTargetValueModal(State, getProcessDefinition) {
       </Modal>;
 
       return template(parentNode, eventsBus);
+
+      function resetForm() {
+        setTargetDurationToForm(Reference.getNode('durationForm'), 0);
+      }
 
       function storeTargetValue() {
         const form = Reference.getNode('durationForm');

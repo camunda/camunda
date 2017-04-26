@@ -123,4 +123,14 @@ describe('<TargetValueModal>', () => {
 
     expect(Modal.close.calledOnce).to.eql(true);
   });
+
+  it('should have a button to set the form to 0', () => {
+    triggerEvent({
+      node,
+      selector: '.form-group .btn',
+      eventName: 'click'
+    });
+
+    expect(setTargetDurationToForm.calledWith(node.querySelector('.form-group'), 0)).to.eql(true);
+  });
 });
