@@ -1,4 +1,4 @@
-import {jsx, updateOnlyWhenStateChanges, withSelector, createReferenceComponent} from 'view-utils';
+import {jsx, updateOnlyWhenStateChanges, withSelector, createReferenceComponent, OnEvent} from 'view-utils';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {isLoaded} from 'utils/loading';
 import {Loader} from './Loader';
@@ -14,6 +14,9 @@ export function createDiagram() {
         </Loader>
         <div className="diagram__holder">
           <BpmnViewer onLoaded={onLoaded} createOverlaysRenderer={createOverlaysRenderer} />
+          <ZoomButton name="zoom in" icon="zoom-in" listener={BpmnViewer.zoomIn} />
+          <ZoomButton name="zoom out" icon="zoom-out" listener={BpmnViewer.zoomOut} />
+          <ZoomButton name="reset zoom" icon="resize-full" listener={BpmnViewer.resetZoom} />
         </div>
       </div>;
       const templateUpdate = template(node, eventsBus);
@@ -30,6 +33,13 @@ export function createDiagram() {
   Diagram.getViewer = BpmnViewer.getViewer;
 
   return Diagram;
+}
+
+function ZoomButton({name, listener, icon}) {
+  return <button type="button" title={name} className={'btn btn-default ' + name.replace(' ', '-')}>
+    <OnEvent event="click" listener={listener} />
+    <span className={'glyphicon glyphicon-' + icon} aria-hidden="true" />
+  </button>;
 }
 
 function createBpmnViewer() {
@@ -93,6 +103,18 @@ function createBpmnViewer() {
 
   BpmnViewer.getViewer = () => {
     return viewer;
+  };
+
+  BpmnViewer.zoomIn = () => {
+    viewer.get('zoomScroll').zoom(0.5);
+  };
+
+  BpmnViewer.zoomOut = () => {
+    viewer.get('zoomScroll').zoom(-0.5);
+  };
+
+  BpmnViewer.resetZoom = () => {
+    resetZoom(viewer);
   };
 
   return BpmnViewer;

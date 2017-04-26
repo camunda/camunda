@@ -1,5 +1,5 @@
 import {jsx} from 'view-utils';
-import {mountTemplate} from 'testHelpers';
+import {mountTemplate, triggerEvent} from 'testHelpers';
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {createDiagram, __set__, __ResetDependency__} from 'widgets/Diagram';
@@ -13,6 +13,7 @@ describe('<Diagram>', () => {
   let viewer;
   let diagramNode;
   let canvas;
+  let zoomScroll;
   let eventBus;
   let update;
   let renderOverlays;
@@ -49,6 +50,10 @@ describe('<Diagram>', () => {
       }
     };
 
+    zoomScroll = {
+      zoom: sinon.spy()
+    };
+
     eventBus = {
       on: sinon.spy()
     };
@@ -56,7 +61,8 @@ describe('<Diagram>', () => {
     Viewer = function({container}) {
       const modules = {
         canvas,
-        eventBus
+        eventBus,
+        zoomScroll
       };
 
       diagramNode = container;
@@ -98,6 +104,39 @@ describe('<Diagram>', () => {
     update(loadedDiagramState);
 
     expect(node.querySelector('.diagram-loading').style.display).to.eql('none');
+  });
+
+  it('should have a button to zoom in', () => {
+    triggerEvent({
+      node,
+      selector: '.zoom-in.btn',
+      eventName: 'click'
+    });
+
+    expect(zoomScroll.zoom.calledOnce).to.eql(true);
+    expect(zoomScroll.zoom.getCall(0).args[0]).to.be.above(0);
+  });
+
+  it('should have a button to zoom out', () => {
+    triggerEvent({
+      node,
+      selector: '.zoom-out.btn',
+      eventName: 'click'
+    });
+
+    expect(zoomScroll.zoom.calledOnce).to.eql(true);
+    expect(zoomScroll.zoom.getCall(0).args[0]).to.be.below(0);
+  });
+
+  it('should have a button to reset zoom', () => {
+    triggerEvent({
+      node,
+      selector: '.reset-zoom.btn',
+      eventName: 'click'
+    });
+
+    expect(canvas.zoom.calledOnce).to.eql(true);
+    expect(canvas.zoom.calledWith('fit-viewport', 'auto')).to.eql(true);
   });
 
   describe('overlays', () => {
