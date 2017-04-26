@@ -29,8 +29,8 @@ public class StubResponseChannelHandler implements TransportChannelHandler
     protected final ClaimedFragment claimedFragment = new ClaimedFragment();
 
     protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    protected final List<ExecuteCommandResponseStub> cmdRequestStubs = new ArrayList<>();
-    protected final List<ControlMessageResponseStub> controlMessageStubs = new ArrayList<>();
+    protected final List<ResponseStub<ExecuteCommandRequest>> cmdRequestStubs = new ArrayList<>();
+    protected final List<ResponseStub<ControlMessageRequest>> controlMessageStubs = new ArrayList<>();
     protected final MsgPackHelper msgPackHelper;
 
     // can also be used for verification
@@ -122,8 +122,9 @@ public class StubResponseChannelHandler implements TransportChannelHandler
         {
             if (stub.applies(request))
             {
-                stub.initiateFrom(request);
-                final int responseLength = stub.getLength() + TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
+                final MessageBuilder<T> responseWriter = stub.getResponseWriter();
+                responseWriter.initializeFrom(request);
+                final int responseLength = responseWriter.getLength() + TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseProtocolHeaderDescriptor.HEADER_LENGTH;
 
                 final long claimedOffset = sendBuffer.claim(claimedFragment, responseLength, channelId);
                 if (claimedOffset < 0)
@@ -132,7 +133,7 @@ public class StubResponseChannelHandler implements TransportChannelHandler
                 }
 
                 // TODO: the usage (and reuse) of the descriptors is not so nice
-                writeResponseToFragment(protocolHeaderDescriptor.connectionId(), protocolHeaderDescriptor.requestId(), stub);
+                writeResponseToFragment(protocolHeaderDescriptor.connectionId(), protocolHeaderDescriptor.requestId(), responseWriter);
                 claimedFragment.commit();
                 return true;
             }
@@ -168,12 +169,12 @@ public class StubResponseChannelHandler implements TransportChannelHandler
         throw new RuntimeException("not implemented");
     }
 
-    public void addExecuteCommandRequestStub(ExecuteCommandResponseStub stub)
+    public void addExecuteCommandRequestStub(ResponseStub<ExecuteCommandRequest> stub)
     {
         cmdRequestStubs.add(stub);
     }
 
-    public void addControlMessageRequestStub(ControlMessageResponseStub stub)
+    public void addControlMessageRequestStub(ResponseStub<ControlMessageRequest> stub)
     {
         controlMessageStubs.add(stub);
     }

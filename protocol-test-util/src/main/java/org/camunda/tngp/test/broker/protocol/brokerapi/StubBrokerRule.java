@@ -119,18 +119,17 @@ public class StubBrokerRule extends ExternalResource
         return eventType;
     }
 
-    public ExecuteCommandResponseBuilder onExecuteCommandRequest()
+    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest()
     {
         return onExecuteCommandRequest((r) -> true);
     }
 
-    public ExecuteCommandResponseBuilder onExecuteCommandRequest(Predicate<ExecuteCommandRequest> activationFunction)
+    public ResponseBuilder<ExecuteCommandResponseBuilder, ErrorResponseBuilder<ExecuteCommandRequest>> onExecuteCommandRequest(Predicate<ExecuteCommandRequest> activationFunction)
     {
-        return new ExecuteCommandResponseBuilder(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction);
+        return new ResponseBuilder<>(
+                new ExecuteCommandResponseBuilder(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction),
+                new ErrorResponseBuilder<>(channelHandler::addExecuteCommandRequestStub, msgPackHelper, activationFunction));
     }
-
-
-
 
     public ControlMessageResponseBuilder onControlMessageRequest()
     {

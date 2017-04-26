@@ -10,16 +10,18 @@ import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 public class ControlMessageResponseBuilder
 {
 
-    protected final Consumer<ControlMessageResponseStub> registrationFunction;
-    protected ControlMessageResponseStub stub;
+    protected final Consumer<ResponseStub<ControlMessageRequest>> registrationFunction;
+    protected final ControlMessageResponseWriter responseWriter;
+    protected final Predicate<ControlMessageRequest> activationFunction;
 
     public ControlMessageResponseBuilder(
-            Consumer<ControlMessageResponseStub> registrationFunction,
+            Consumer<ResponseStub<ControlMessageRequest>> registrationFunction,
             MsgPackHelper msgPackConverter,
             Predicate<ControlMessageRequest> activationFunction)
     {
         this.registrationFunction = registrationFunction;
-        this.stub = new ControlMessageResponseStub(msgPackConverter, activationFunction);
+        this.responseWriter = new ControlMessageResponseWriter(msgPackConverter);
+        this.activationFunction = activationFunction;
     }
 
     public ControlMessageResponseBuilder respondWith()
@@ -30,17 +32,17 @@ public class ControlMessageResponseBuilder
 
     public ControlMessageResponseBuilder data(Map<String, Object> map)
     {
-        stub.setDataFunction((re) -> map);
+        responseWriter.setDataFunction((re) -> map);
         return this;
     }
 
     public MapFactoryBuilder<ControlMessageRequest, ControlMessageResponseBuilder> data()
     {
-        return new MapFactoryBuilder<>(this, stub::setDataFunction);
+        return new MapFactoryBuilder<>(this, responseWriter::setDataFunction);
     }
 
     public void register()
     {
-        registrationFunction.accept(stub);
+        registrationFunction.accept(new ResponseStub<>(activationFunction, responseWriter));
     }
 }

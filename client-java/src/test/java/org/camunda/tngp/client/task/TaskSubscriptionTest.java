@@ -2,14 +2,19 @@ package org.camunda.tngp.client.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.camunda.tngp.client.ClientProperties;
 import org.camunda.tngp.client.TngpClient;
 import org.camunda.tngp.client.impl.TngpClientImpl;
 import org.camunda.tngp.client.util.ClientRule;
+import org.camunda.tngp.protocol.clientapi.ControlMessageType;
+import org.camunda.tngp.protocol.clientapi.ErrorCode;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.test.broker.protocol.brokerapi.ControlMessageRequest;
 import org.camunda.tngp.test.broker.protocol.brokerapi.StubBrokerRule;
 import org.camunda.tngp.test.util.TestUtil;
 import org.junit.Before;
@@ -126,7 +131,66 @@ public class TaskSubscriptionTest
 
         // then the additional event is handled nevertheless (i.e. client applies backpressure)
         TestUtil.waitUntil(() -> handler.numHandledEvents.get() == taskCapacity + numExecutionThreads + 1);
+    }
 
+    /**
+     * i.e. if signalling task failure itself fails
+     */
+    @Test
+    public void shouldNotLoseCreditsOnFailureToReportTaskFailure() throws InterruptedException
+    {
+        // given
+        broker.stubTaskSubscriptionApi(123L);
+        failTaskFailure();
+
+        final int subscriptionCapacity = 8;
+        final AtomicInteger failedTasks = new AtomicInteger(0);
+
+        final TaskHandler taskHandler = (t) ->
+        {
+            failedTasks.incrementAndGet();
+            throw new RuntimeException("foo");
+        };
+
+        clientRule.taskTopic().newTaskSubscription()
+            .handler(taskHandler)
+            .lockOwner(0)
+            .lockTime(1000L)
+            .taskFetchSize(subscriptionCapacity)
+            .taskType("foo")
+            .open();
+
+        final int clientChannelId = broker.getReceivedControlMessageRequests().get(0).getChannelId();
+
+        for (int i = 0; i < subscriptionCapacity; i++)
+        {
+            broker.pushLockedTask(clientChannelId, 123L, i, i, "foo");
+        }
+
+
+        // when
+        TestUtil.waitUntil(() -> failedTasks.get() == 8);
+        // give the client a bit of time to submit credits; this is not coupled to any defined event, so we just sleep for a bit
+        Thread.sleep(500L);
+
+        // then
+        final List<ControlMessageRequest> creditRequests = broker.getReceivedControlMessageRequests().stream()
+            .filter((r) -> r.messageType() == ControlMessageType.INCREASE_TASK_SUBSCRIPTION_CREDITS)
+            .collect(Collectors.toList());
+
+        assertThat(creditRequests).isNotEmpty();
+        final int numSubmittedCredits = creditRequests.stream().mapToInt((r) -> (int) r.getData().get("credits")).sum();
+        assertThat(numSubmittedCredits).isGreaterThan(0);
+    }
+
+    protected void failTaskFailure()
+    {
+        broker.onExecuteCommandRequest((r) ->
+                r.eventType() == EventType.TASK_EVENT && "FAIL".equals(r.getCommand().get("eventType")))
+            .respondWithError()
+            .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+            .errorData("failed to fail task")
+            .register();
     }
 
     protected class WaitingTaskHandler implements TaskHandler
@@ -159,7 +223,4 @@ public class TaskSubscriptionTest
         }
 
     }
-
-
-
 }

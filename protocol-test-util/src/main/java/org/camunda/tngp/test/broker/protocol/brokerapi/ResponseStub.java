@@ -1,12 +1,27 @@
 package org.camunda.tngp.test.broker.protocol.brokerapi;
 
-import org.camunda.tngp.util.buffer.BufferWriter;
+import java.util.function.Predicate;
 
-public interface ResponseStub<T> extends BufferWriter
+public class ResponseStub<R>
 {
 
-    boolean applies(T request);
+    protected final Predicate<R> activationFunction;
+    protected final MessageBuilder<R> responseWriter;
 
-    void initiateFrom(T request);
+    public ResponseStub(Predicate<R> activationFunction, MessageBuilder<R> responseWriter)
+    {
+        this.responseWriter = responseWriter;
+        this.activationFunction = activationFunction;
+    }
+
+    public boolean applies(R request)
+    {
+        return activationFunction.test(request);
+    }
+
+    public MessageBuilder<R> getResponseWriter()
+    {
+        return responseWriter;
+    }
 
 }

@@ -6,21 +6,18 @@ import static org.camunda.tngp.util.StringUtil.getBytes;
 
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.protocol.clientapi.ExecuteCommandResponseEncoder;
 import org.camunda.tngp.protocol.clientapi.MessageHeaderEncoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 
-public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRequest>
+public class ExecuteCommandResponseWriter implements MessageBuilder<ExecuteCommandRequest>
 {
-
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
     protected final MsgPackHelper msgPackHelper;
 
-    protected Predicate<ExecuteCommandRequest> activationFunction;
     protected Function<ExecuteCommandRequest, Long> keyFunction;
     protected Function<ExecuteCommandRequest, String> topicNameFunction;
     protected Function<ExecuteCommandRequest, Integer> partitionIdFunction;
@@ -31,18 +28,13 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
     protected int partitionId;
     protected byte[] event;
 
-    public ExecuteCommandResponseStub(MsgPackHelper msgPackHelper, Predicate<ExecuteCommandRequest> activationFunction)
+    public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper)
     {
         this.msgPackHelper = msgPackHelper;
-        this.activationFunction = activationFunction;
     }
 
-    public boolean applies(ExecuteCommandRequest request)
-    {
-        return activationFunction.test(request);
-    }
-
-    public void initiateFrom(ExecuteCommandRequest request)
+    @Override
+    public void initializeFrom(ExecuteCommandRequest request)
     {
         key = keyFunction.apply(request);
         topicName = topicNameFunction.apply(request);
@@ -104,4 +96,5 @@ public class ExecuteCommandResponseStub implements ResponseStub<ExecuteCommandRe
             .putEvent(event, 0, event.length);
 
     }
+
 }

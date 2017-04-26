@@ -11,22 +11,18 @@ import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 public class ExecuteCommandResponseBuilder
 {
 
-    protected final Consumer<ExecuteCommandResponseStub> registrationFunction;
-    protected ExecuteCommandResponseStub stub;
+    protected final Consumer<ResponseStub<ExecuteCommandRequest>> registrationFunction;
+    protected final ExecuteCommandResponseWriter commandResponseWriter;
+    protected final Predicate<ExecuteCommandRequest> activationFunction;
 
     public ExecuteCommandResponseBuilder(
-            Consumer<ExecuteCommandResponseStub> registrationFunction,
+            Consumer<ResponseStub<ExecuteCommandRequest>> registrationFunction,
             MsgPackHelper msgPackConverter,
             Predicate<ExecuteCommandRequest> activationFunction)
     {
         this.registrationFunction = registrationFunction;
-        this.stub = new ExecuteCommandResponseStub(msgPackConverter, activationFunction);
-    }
-
-    public ExecuteCommandResponseBuilder respondWith()
-    {
-        // syntactic sugar
-        return this;
+        this.commandResponseWriter = new ExecuteCommandResponseWriter(msgPackConverter);
+        this.activationFunction = activationFunction;
     }
 
     public ExecuteCommandResponseBuilder topicName(final String topicName)
@@ -37,7 +33,7 @@ public class ExecuteCommandResponseBuilder
 
     public ExecuteCommandResponseBuilder topicName(Function<ExecuteCommandRequest, String> topicNameFunction)
     {
-        stub.setTopicNameFunction(topicNameFunction);
+        commandResponseWriter.setTopicNameFunction(topicNameFunction);
         return this;
     }
 
@@ -49,7 +45,7 @@ public class ExecuteCommandResponseBuilder
 
     public ExecuteCommandResponseBuilder partitionId(Function<ExecuteCommandRequest, Integer> partitionIdFunction)
     {
-        stub.setPartitionIdFunction(partitionIdFunction);
+        commandResponseWriter.setPartitionIdFunction(partitionIdFunction);
         return this;
     }
 
@@ -60,24 +56,24 @@ public class ExecuteCommandResponseBuilder
 
     public ExecuteCommandResponseBuilder key(Function<ExecuteCommandRequest, Long> keyFunction)
     {
-        stub.setKeyFunction(keyFunction);
+        commandResponseWriter.setKeyFunction(keyFunction);
         return this;
     }
 
 
     public ExecuteCommandResponseBuilder event(Map<String, Object> map)
     {
-        stub.setEventFunction((re) -> map);
+        commandResponseWriter.setEventFunction((re) -> map);
         return this;
     }
 
     public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> event()
     {
-        return new MapFactoryBuilder<>(this, stub::setEventFunction);
+        return new MapFactoryBuilder<>(this, commandResponseWriter::setEventFunction);
     }
 
     public void register()
     {
-        registrationFunction.accept(stub);
+        registrationFunction.accept(new ResponseStub<>(activationFunction, commandResponseWriter));
     }
 }
