@@ -22,7 +22,7 @@
       <groupId>org.camunda.tngp</groupId>
       <artifactId>tngp-protocol</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>util</artifactId>
@@ -37,7 +37,7 @@
       <groupId>org.camunda.tngp</groupId>
       <artifactId>hash-index</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>service-container</artifactId>
@@ -57,7 +57,7 @@
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.tngp</groupId>
       <artifactId>tngp-protocol-test-util</artifactId>
@@ -104,7 +104,7 @@
       <artifactId>msgpack-core</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
@@ -148,7 +148,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.3.2</version>
+        <version>1.6.0</version>
         <executions>
           <execution>
             <phase>generate-sources</phase>
