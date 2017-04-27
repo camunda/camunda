@@ -1,15 +1,19 @@
-import {jsx, withSelector, Class, OnEvent, Scope, Text, createStateComponent} from 'view-utils';
+import {jsx, withSelector, Class, OnEvent, Scope, Text, createStateComponent, createReferenceComponent} from 'view-utils';
 import {StatisticChart} from './StatisticChart';
 import {leaveGatewayAnalysisMode, getSelection} from '../diagram';
 import {loadStatisticData, resetStatisticData, findSequenceFlowBetweenGatewayAndActivity} from './service';
+import {DragHandle} from './DragHandle';
 import {isInitial, isLoading} from 'utils';
 
 export const Statistics = withSelector(({getBpmnViewer}) => {
   return (parentNode, eventsBus) => {
     const State = createStateComponent();
+    const Reference = createReferenceComponent();
 
     const template = <State>
       <div className="statisticsContainer">
+        <Reference name="statisticsContainer" />
+        <DragHandle />
         <Class className="open" selector="diagram" predicate={isSelectionComplete} />
         <button type="button" className="close">
           <OnEvent event="click" listener={leaveGatewayAnalysisMode} />
@@ -44,7 +48,9 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
 
     const templateUpdate = template(parentNode, eventsBus);
 
-    return [templateUpdate, ({diagram, statistics: {correlation}}) => {
+    return [templateUpdate, ({diagram, statistics: {correlation, height}}) => {
+      Reference.getNode('statisticsContainer').style.height = height + 'px';
+
       if (!isSelectionComplete(diagram) && !isInitial(correlation)) {
         resetStatisticData();
       }

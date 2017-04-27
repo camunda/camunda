@@ -19,6 +19,12 @@ export const Chart = withSelector(({config}) => {
     });
 
     return (data) => {
+      const {height} = getChartDimensions(svg, config);
+
+      y.rangeRound([height, 0]);
+      xAxis.attr('transform', 'translate(0,' + height + ')');
+      svg.attr('viewBox', '0 0 600 ' + (height + margin.top + margin.bottom));
+
       updateScales({data, x, y});
       updateAxes({xAxis, yAxis, x, y, scale: config.absoluteScale ? 'd' : '%', width});
 

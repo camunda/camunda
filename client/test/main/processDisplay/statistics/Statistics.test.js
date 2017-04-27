@@ -11,6 +11,7 @@ describe('<Statistics>', () => {
   let unopenedState;
   let openedState;
   let StatisticChart;
+  let DragHandle;
   let getBpmnViewer;
   let viewer;
   let findSequenceFlowBetweenGatewayAndActivity;
@@ -59,6 +60,9 @@ describe('<Statistics>', () => {
     StatisticChart = createMockComponent('StatisticChart');
     __set__('StatisticChart', StatisticChart);
 
+    DragHandle = createMockComponent('DragHandle');
+    __set__('DragHandle', DragHandle);
+
     leaveGatewayAnalysisMode = sinon.spy();
     __set__('leaveGatewayAnalysisMode', leaveGatewayAnalysisMode);
 
@@ -67,6 +71,7 @@ describe('<Statistics>', () => {
 
   afterEach(() => {
     __ResetDependency__('leaveGatewayAnalysisMode');
+    __ResetDependency__('DragHandle');
     __ResetDependency__('StatisticChart');
     __ResetDependency__('findSequenceFlowBetweenGatewayAndActivity');
   });
@@ -103,6 +108,20 @@ describe('<Statistics>', () => {
     update(openedState);
 
     expect(node.textContent).to.contain('StatisticChart');
+  });
+
+  it('should have a drag handle', () => {
+    update(openedState);
+
+    expect(node.textContent).to.contain(DragHandle.text);
+  });
+
+  it('should set its height based on the state', () => {
+    openedState.statistics.height = 1234;
+
+    update(openedState);
+
+    expect(node.querySelector('.statisticsContainer').style.height).to.eql('1234px');
   });
 
   it('should highlight sequence flows on hover', () => {

@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {resetStatisticData, loadStatisticData, findSequenceFlowBetweenGatewayAndActivity,
+import {resetStatisticData, loadStatisticData, findSequenceFlowBetweenGatewayAndActivity, setHeight,
         __set__, __ResetDependency__} from 'main/processDisplay/statistics/service';
 
 describe('Statistics service', () => {
@@ -18,11 +18,13 @@ describe('Statistics service', () => {
   let createLoadCorrelationAction;
   let createLoadCorrelationResultAction;
   let createResetCorrelationAction;
+  let createSetHeightAction;
   let getFilter;
 
   const LOAD_ACTION = 'LOAD_CORRELATION';
   const RESULT_ACTION = 'CORRELATION_RESULT';
   const RESET_ACTION = 'RESET_CORRELATION';
+  const SET_HEIGHT = 'SET_HEIGHT';
   const definitionId = 'some_definition_id';
 
   beforeEach(() => {
@@ -68,6 +70,9 @@ describe('Statistics service', () => {
     createResetCorrelationAction = sinon.stub().returns(RESET_ACTION);
     __set__('createResetCorrelationAction', createResetCorrelationAction);
 
+    createSetHeightAction = sinon.stub().returns(SET_HEIGHT);
+    __set__('createSetHeightAction', createSetHeightAction);
+
     getFilter = sinon.stub().returns([]);
     __set__('getFilter', getFilter);
   });
@@ -80,6 +85,7 @@ describe('Statistics service', () => {
     __ResetDependency__('createLoadCorrelationAction');
     __ResetDependency__('createLoadCorrelationResultAction');
     __ResetDependency__('createResetCorrelationAction');
+    __ResetDependency__('createSetHeightAction');
     __ResetDependency__('getFilter');
   });
 
@@ -88,6 +94,15 @@ describe('Statistics service', () => {
       resetStatisticData();
 
       expect(dispatchAction.calledWith(RESET_ACTION)).to.eql(true);
+    });
+  });
+
+  describe('set height', () => {
+    it('should dispatch an action with the new height', () => {
+      setHeight(1234);
+
+      expect(dispatchAction.calledWith(SET_HEIGHT)).to.eql(true);
+      expect(createSetHeightAction.calledWith(1234)).to.eql(true);
     });
   });
 

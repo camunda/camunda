@@ -44,8 +44,9 @@ export function getChartDimensions(svg, {marginTop, marginRight, marginBottom, m
     bottom: marginBottom || 30,
     left: marginLeft || 40
   };
-  const width = +svg.attr('width') - margin.left - margin.right;
-  const height = +svg.attr('height') - margin.top - margin.bottom;
+
+  const width = svg.node().parentNode.clientWidth - margin.left - margin.right;
+  const height = svg.node().parentNode.clientHeight - margin.top - margin.bottom;
 
   return {margin, width, height};
 }
@@ -94,8 +95,10 @@ export function removeOldBars(bars) {
 export function createChartOn(node) {
   const svgNode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
-  svgNode.setAttribute('width', node.clientWidth);
-  svgNode.setAttribute('height', node.clientHeight);
+  svgNode.setAttribute('width', '100%');
+  svgNode.setAttribute('height', '100%');
+  svgNode.setAttribute('viewBox', '0 0 600 300');
+  svgNode.setAttribute('preserveAspectRatio', 'none');
 
   node.appendChild(svgNode);
 

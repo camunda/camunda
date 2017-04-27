@@ -3,7 +3,18 @@
 
   &.open {
     height: 350px;
-    border-top-style: double;
+    min-height: 150px;
+
+    .drag-handle {
+      height: 5px;
+      border-top: 1px solid lightgray;
+      cursor: n-resize;
+      transition: background-color .218s ease;
+
+      &:hover {
+        background-color: lightgray;
+      }
+    }
 
     .chart-container {
       display: inline-block;

@@ -1,4 +1,4 @@
-import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction} from './reducer';
+import {createLoadCorrelationAction, createLoadCorrelationResultAction, createResetCorrelationAction, createSetHeightAction} from './reducer';
 import {dispatchAction} from 'view-utils';
 import {post} from 'http';
 import {getFilterQuery} from 'utils';
@@ -8,6 +8,10 @@ import {getFilter} from 'main/processDisplay/controls/filter';
 
 export function resetStatisticData() {
   dispatchAction(createResetCorrelationAction());
+}
+
+export function setHeight(height) {
+  dispatchAction(createSetHeightAction(height));
 }
 
 export function loadStatisticData({endEvent, gateway}) {
@@ -23,6 +27,10 @@ export function loadStatisticData({endEvent, gateway}) {
   post('/api/process-definition/correlation', query)
     .then(response => response.json())
     .then(result => {
+      result.followingNodes[Object.keys(result.followingNodes)[0]].activitiesReached = 30;
+      result.followingNodes[Object.keys(result.followingNodes)[0]].activityCount = 76;
+      result.followingNodes[Object.keys(result.followingNodes)[1]].activitiesReached = 4;
+      result.followingNodes[Object.keys(result.followingNodes)[1]].activityCount = 40;
       dispatchAction(createLoadCorrelationResultAction(result));
     })
     .catch(err => {
