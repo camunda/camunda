@@ -72,7 +72,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getProcessDefinitions() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
@@ -97,7 +97,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getProcessDefinitionsWithXml() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
     ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = ID;
@@ -142,7 +142,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getProcessDefinitionXml() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     ProcessDefinitionXmlOptimizeDto expectedXml = new ProcessDefinitionXmlOptimizeDto();
@@ -178,7 +178,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getFrequencyHeatMap() throws IOException {
-    // given some mocks
+    //given
     insert10ActivitiesWithDifferentPis();
 
     // when
@@ -228,7 +228,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getFrequencyHeatPostMap() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
     insert10ActivitiesWithDifferentPis();
 
@@ -265,7 +265,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getDurationHeatMap() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
     insert10ActivitiesWithDifferentPis();
 
@@ -299,7 +299,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getDurationHeatMapAsPost() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
     insert10ActivitiesWithDifferentPis();
 
@@ -337,7 +337,7 @@ public class ProcessDefinitionRestServiceIT {
 
   @Test
   public void getCorrelation() throws IOException {
-    // given some mocks
+    //given
     String token = embeddedOptimizeRule.authenticateAdmin();
     setupFullInstanceFlow();
 

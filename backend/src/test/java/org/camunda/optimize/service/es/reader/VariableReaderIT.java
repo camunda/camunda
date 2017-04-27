@@ -43,7 +43,7 @@ public class VariableReaderIT {
     variableDto.setType("String");
     variableDto.setValue("aValue");
     variableDto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    int exceededMaxVariableValue = 16;
+    int exceededMaxVariableValue = embeddedOptimizeRule.getMaxVariableValueListSize() + 1;
     for (int i = 0; i < exceededMaxVariableValue; i++) {
       variableDto.setValue(String.valueOf(i));
       elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getVariableType(), String.valueOf(i), variableDto);

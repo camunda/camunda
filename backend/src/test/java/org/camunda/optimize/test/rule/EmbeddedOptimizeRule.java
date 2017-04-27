@@ -182,4 +182,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
 
+  public int getMaxVariableValueListSize() {
+    return Integer.parseInt(properties.getProperty("camunda.optimize.variable.max.valueList.size"));
+  }
 }
