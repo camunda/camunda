@@ -20,6 +20,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+
 public final class BufferUtil
 {
     private BufferUtil()
@@ -81,6 +82,34 @@ public final class BufferUtil
         else
         {
             return false;
+        }
+    }
+
+    /**
+     * Creates a new instance of the src buffer class and copies the underlying bytes.
+     *
+     * @param src the buffer to copy from
+     * @return the new buffer instance
+     */
+    public static DirectBuffer cloneBuffer(final DirectBuffer src)
+    {
+        final int capacity = src.capacity();
+
+        if (src instanceof UnsafeBuffer)
+        {
+            final byte[] dst = new byte[capacity];
+            src.getBytes(0, dst);
+            return new UnsafeBuffer(dst);
+        }
+        else if (src instanceof ExpandableArrayBuffer)
+        {
+            final ExpandableArrayBuffer dst = new ExpandableArrayBuffer(capacity);
+            src.getBytes(0, dst, 0, capacity);
+            return dst;
+        }
+        else
+        {
+            throw new RuntimeException("Unable to clone buffer of class " + src.getClass().getSimpleName());
         }
     }
 

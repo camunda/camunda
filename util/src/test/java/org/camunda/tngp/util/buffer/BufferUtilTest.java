@@ -2,8 +2,11 @@ package org.camunda.tngp.util.buffer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.util.StringUtil.getBytes;
+import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
 
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
@@ -34,6 +37,39 @@ public class BufferUtilTest
         assertThat(
                 BufferUtil.contentsEqual(asBuffer(BYTES3), asBuffer(BYTES1)))
             .isFalse();
+    }
+
+    @Test
+    public void testCloneUnsafeBuffer()
+    {
+        // given
+        final DirectBuffer src = new UnsafeBuffer(BYTES1);
+
+        // when
+        final DirectBuffer dst = cloneBuffer(src);
+
+        // then
+        assertThat(dst)
+            .isNotSameAs(src)
+            .isEqualTo(src)
+            .hasSameClassAs(src);
+    }
+
+    @Test
+    public void testCloneExpandableArrayBuffer()
+    {
+        // given
+        final MutableDirectBuffer src = new ExpandableArrayBuffer(BYTES1.length);
+        src.putBytes(0, BYTES1);
+
+        // when
+        final DirectBuffer dst = cloneBuffer(src);
+
+        // then
+        assertThat(dst)
+            .isNotSameAs(src)
+            .isEqualTo(src)
+            .hasSameClassAs(src);
     }
 
     public DirectBuffer asBuffer(byte[] bytes)
