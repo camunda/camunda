@@ -124,7 +124,7 @@ public class AppendResponse implements BufferReader, BufferWriter
         entryPosition = bodyDecoder.entryPosition();
 
         final int topicNameLength = bodyDecoder.topicNameLength();
-        final int topicNameOffset = bodyDecoder.limit();
+        final int topicNameOffset = bodyDecoder.limit() + topicNameHeaderLength();
         topicName.wrap(buffer, topicNameOffset, topicNameLength);
 
         bodyDecoder.limit(topicNameOffset + topicNameLength);

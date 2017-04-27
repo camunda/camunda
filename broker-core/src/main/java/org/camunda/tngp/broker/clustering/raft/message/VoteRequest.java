@@ -116,7 +116,7 @@ public class VoteRequest implements BufferReader, BufferWriter
         lastEntryTerm = bodyDecoder.lastEntryTerm();
 
         final int topicNameLength = bodyDecoder.topicNameLength();
-        final int topicNameOffset = bodyDecoder.limit();
+        final int topicNameOffset = bodyDecoder.limit() + topicNameHeaderLength();
         topicName.wrap(buffer, topicNameOffset, topicNameLength);
 
         bodyDecoder.limit(topicNameOffset + topicNameLength);

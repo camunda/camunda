@@ -118,7 +118,7 @@ public class PollRequest implements BufferReader, BufferWriter
         candidate.endpoint().port(bodyDecoder.port());
 
         final int topicNameLength = bodyDecoder.topicNameLength();
-        final int topicNameOffset = bodyDecoder.limit();
+        final int topicNameOffset = bodyDecoder.limit() + topicNameHeaderLength();
         topicName.wrap(buffer, topicNameOffset, topicNameLength);
 
         bodyDecoder.limit(topicNameOffset + topicNameLength);
