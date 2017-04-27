@@ -337,7 +337,7 @@ public class LeaderState extends ActiveState
                     final Member member = members.get(i);
                     final long matchPosition = member.matchPosition();
 
-                    if (!self.equals(member) && position >= matchPosition)
+                    if (!self.equals(member) && position <= matchPosition)
                     {
                         replicas += 1;
                     }
