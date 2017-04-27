@@ -179,10 +179,7 @@ public class AppendRequest implements BufferReader, BufferWriter
             isLeaderAvailable = true;
         }
 
-        offset += bodyDecoder.sbeBlockLength();
-        offset += AppendRequestDecoder.hostHeaderLength();
-        offset += hostLength;
-        offset += AppendRequestDecoder.dataHeaderLength();
+        offset = bodyDecoder.limit() + AppendRequestDecoder.dataHeaderLength();
 
         isReadableEntryAvailable = false;
         if (bodyDecoder.dataLength() > 0)
