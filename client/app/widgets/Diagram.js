@@ -14,9 +14,9 @@ export function createDiagram() {
         </Loader>
         <div className="diagram__holder">
           <BpmnViewer onLoaded={onLoaded} createOverlaysRenderer={createOverlaysRenderer} />
-          <ZoomButton name="zoom in" icon="zoom-in" listener={BpmnViewer.zoomIn} />
-          <ZoomButton name="zoom out" icon="zoom-out" listener={BpmnViewer.zoomOut} />
-          <ZoomButton name="reset zoom" icon="resize-full" listener={BpmnViewer.resetZoom} />
+          <ZoomButton name="zoom in" icon="plus" listener={BpmnViewer.zoomIn} />
+          <ZoomButton name="zoom out" icon="minus" listener={BpmnViewer.zoomOut} />
+          <ZoomButton name="reset zoom" icon="screenshot" listener={BpmnViewer.resetZoom} />
         </div>
       </div>;
       const templateUpdate = template(node, eventsBus);
