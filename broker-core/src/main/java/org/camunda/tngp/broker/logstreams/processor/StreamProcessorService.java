@@ -9,6 +9,7 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventFilter;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorController;
+import org.camunda.tngp.logstreams.processor.StreamProcessorErrorHandler;
 import org.camunda.tngp.logstreams.spi.SnapshotPositionProvider;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.servicecontainer.Injector;
@@ -31,8 +32,9 @@ public class StreamProcessorService implements Service<StreamProcessorController
     protected MetadataFilter customEventFilter;
     protected EventFilter customReprocessingEventFilter;
     protected boolean readOnly;
+    protected StreamProcessorErrorHandler errorHandler = (failedEvent, error) -> StreamProcessorErrorHandler.RESULT_REJECT;
 
-    protected MetadataFilter versionFilter = (m) ->
+    protected final MetadataFilter versionFilter = (m) ->
     {
         if (m.getProtocolVersion() > Constants.PROTOCOL_VERSION)
         {
@@ -42,6 +44,7 @@ public class StreamProcessorService implements Service<StreamProcessorController
 
         return true;
     };
+
 
     protected SnapshotPositionProvider snapshotPositionProvider;
 
@@ -78,6 +81,12 @@ public class StreamProcessorService implements Service<StreamProcessorController
         return this;
     }
 
+    public StreamProcessorService errorHandler(StreamProcessorErrorHandler errorHandler)
+    {
+        this.errorHandler = errorHandler;
+        return this;
+    }
+
     @Override
     public void start(ServiceStartContext ctx)
     {
@@ -108,8 +117,9 @@ public class StreamProcessorService implements Service<StreamProcessorController
             .snapshotPositionProvider(snapshotPositionProvider)
             .agentRunnerService(agentRunnerService)
             .eventFilter(eventFilter)
-            .readOnly(readOnly)
             .reprocessingEventFilter(reprocessingEventFilter)
+            .errorHandler(errorHandler)
+            .readOnly(readOnly)
             .build();
 
         ctx.async(streamProcessorController.openAsync());

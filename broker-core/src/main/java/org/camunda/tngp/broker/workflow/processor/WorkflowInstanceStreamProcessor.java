@@ -14,6 +14,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.incident.DummyException;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
@@ -56,6 +57,7 @@ import org.camunda.tngp.msgpack.query.MsgPackQueryExecutor;
 import org.camunda.tngp.msgpack.query.MsgPackTraverser;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 import org.camunda.tngp.protocol.clientapi.EventType;
+import org.camunda.tngp.util.buffer.BufferUtil;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -470,6 +472,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 final ExecutableServiceTask serviceTask = (ExecutableServiceTask) activty;
                 final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
+
+                // TODO hack to force an incident
+                if (BufferUtil.bufferAsString(taskMetadata.getTaskType()).equals("fail"))
+                {
+                    throw new DummyException("foo");
+                }
 
                 taskEvent
                     .setEventType(TaskEventType.CREATE)

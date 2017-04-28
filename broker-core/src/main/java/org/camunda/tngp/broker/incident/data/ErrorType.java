@@ -10,11 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.workflow;
+package org.camunda.tngp.broker.incident.data;
 
-import org.camunda.tngp.logstreams.log.LogStream;
-
-public interface WorkflowQueueManager
+public enum ErrorType
 {
-    void startWorkflowQueue(LogStream logName);
+    UNKNOWN,
+
+    // TODO remove me later
+    DUMMY_ERROR,
+
+    IO_MAPPING_ERROR;
 }

@@ -10,11 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.workflow;
+package org.camunda.tngp.broker.incident;
 
-import org.camunda.tngp.logstreams.log.LogStream;
-
-public interface WorkflowQueueManager
+public class DummyException extends RuntimeException
 {
-    void startWorkflowQueue(LogStream logName);
+
+    public DummyException(String message)
+    {
+        super(message);
+    }
+
+    private static final long serialVersionUID = 1L;
+
 }

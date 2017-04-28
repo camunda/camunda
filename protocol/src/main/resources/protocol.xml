@@ -33,6 +33,7 @@
         <validValue name="SUBSCRIBER_EVENT">3</validValue>
         <validValue name="DEPLOYMENT_EVENT">4</validValue>
         <validValue name="WORKFLOW_EVENT">5</validValue>
+        <validValue name="INCIDENT_EVENT">6</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">

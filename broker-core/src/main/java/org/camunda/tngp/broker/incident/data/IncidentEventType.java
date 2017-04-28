@@ -10,11 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.workflow;
+package org.camunda.tngp.broker.incident.data;
 
-import org.camunda.tngp.logstreams.log.LogStream;
-
-public interface WorkflowQueueManager
+public enum IncidentEventType
 {
-    void startWorkflowQueue(LogStream logName);
+    CREATE,
+    CREATED,
+
+    RESOLVE,
+    RESOLVED,
+
+    CLOSE,
+    CLOSED;
 }

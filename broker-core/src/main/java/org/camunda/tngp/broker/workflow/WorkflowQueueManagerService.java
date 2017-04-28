@@ -24,6 +24,7 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import org.agrona.concurrent.Agent;
+import org.camunda.tngp.broker.incident.IncidentStreamProcessorErrorHandler;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -43,6 +44,7 @@ import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.util.DeferredCommandContext;
+import org.camunda.tngp.util.EnsureUtil;
 import org.camunda.tngp.util.FileUtil;
 
 public class WorkflowQueueManagerService implements Service<WorkflowQueueManager>, WorkflowQueueManager, Agent
@@ -66,16 +68,12 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     }
 
     @Override
-    public void startWorkflowQueue(final String logName)
+    public void startWorkflowQueue(final LogStream logStream)
     {
-        if (logName == null || logName.isEmpty())
-        {
-            throw new RuntimeException("Cannot start workflow queue: Mandatory configuration property 'logName' is not set.");
-        }
+        EnsureUtil.ensureNotNull("logStream", logStream);
 
-        installDeploymentStreamProcessor(logName);
-
-        installWorkflowStreamProcessor(logName);
+        installDeploymentStreamProcessor(logStream.getLogName());
+        installWorkflowStreamProcessor(logStream);
     }
 
     private void installDeploymentStreamProcessor(final String logName)
@@ -104,9 +102,9 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .install();
     }
 
-    private void installWorkflowStreamProcessor(final String logName)
+    private void installWorkflowStreamProcessor(final LogStream logStream)
     {
-        final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logName);
+        final ServiceName<StreamProcessorController> streamProcessorServiceName = workflowInstanceStreamProcessorServiceName(logStream.getLogName());
         final String streamProcessorName = streamProcessorServiceName.getName();
 
         final IndexStore workflowPositionIndexStore = createIndexStore("workflow.instance.position");
@@ -115,7 +113,10 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
         final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
-        final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
+        final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
+
+        // incident target log stream could be configurable
+        final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream, logStream, WORKFLOW_INSTANCE_PROCESSOR_ID);
 
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
                 responseWriter,
@@ -127,7 +128,8 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 streamProcessorName,
                 WORKFLOW_INSTANCE_PROCESSOR_ID,
                 workflowInstanceStreamProcessor)
-                .eventFilter(WorkflowInstanceStreamProcessor.eventFilter());
+                .eventFilter(WorkflowInstanceStreamProcessor.eventFilter())
+                .errorHandler(errorHandler);
 
         serviceContext.createService(streamProcessorServiceName, workflowStreamProcessorService)
                 .dependency(logStreamServiceName, workflowStreamProcessorService.getSourceStreamInjector())
@@ -207,7 +209,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     {
         asyncContext.runAsync((r) ->
         {
-            startWorkflowQueue(logStream.getLogName());
+            startWorkflowQueue(logStream);
         });
     }
 
