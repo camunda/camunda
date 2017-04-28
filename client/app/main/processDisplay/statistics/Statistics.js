@@ -49,7 +49,13 @@ export const Statistics = withSelector(({getBpmnViewer}) => {
     const templateUpdate = template(parentNode, eventsBus);
 
     return [templateUpdate, ({diagram, statistics: {correlation, height}}) => {
-      Reference.getNode('statisticsContainer').style.height = height + 'px';
+      const node = Reference.getNode('statisticsContainer');
+
+      if (isSelectionComplete(diagram)) {
+        node.style.height = (height || 350) + 'px';
+      } else {
+        node.style.height = '0px';
+      }
 
       if (!isSelectionComplete(diagram) && !isInitial(correlation)) {
         resetStatisticData();

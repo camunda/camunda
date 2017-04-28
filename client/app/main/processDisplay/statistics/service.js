@@ -27,10 +27,6 @@ export function loadStatisticData({endEvent, gateway}) {
   post('/api/process-definition/correlation', query)
     .then(response => response.json())
     .then(result => {
-      result.followingNodes[Object.keys(result.followingNodes)[0]].activitiesReached = 30;
-      result.followingNodes[Object.keys(result.followingNodes)[0]].activityCount = 76;
-      result.followingNodes[Object.keys(result.followingNodes)[1]].activitiesReached = 4;
-      result.followingNodes[Object.keys(result.followingNodes)[1]].activityCount = 40;
       dispatchAction(createLoadCorrelationResultAction(result));
     })
     .catch(err => {
