@@ -38,6 +38,8 @@ public interface LogStream extends AutoCloseable
     int DEFAULT_PARTITION_ID = 0;
     String DEFAULT_LOG_NAME = String.format("%s.%d", DEFAULT_TOPIC_NAME, DEFAULT_PARTITION_ID);
 
+    int MAX_TOPIC_NAME_LENGTH = 128;
+
     /**
      * @return the topic name of the log stream
      */

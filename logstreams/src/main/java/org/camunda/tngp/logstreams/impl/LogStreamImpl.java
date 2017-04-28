@@ -62,7 +62,14 @@ public final class LogStreamImpl implements LogStream
 
     private LogStreamImpl(final LogStreamBuilder logStreamBuilder)
     {
-        this.topicName = cloneBuffer(logStreamBuilder.getTopicName());
+        final DirectBuffer topicName = logStreamBuilder.getTopicName();
+        if (topicName.capacity() > MAX_TOPIC_NAME_LENGTH)
+        {
+            throw new RuntimeException(String.format("Topic name exceeds max length (%d > %d bytes)", topicName.capacity(), MAX_TOPIC_NAME_LENGTH));
+
+        }
+
+        this.topicName = cloneBuffer(topicName);
         this.partitionId = logStreamBuilder.getPartitionId();
         this.name = logStreamBuilder.getLogName();
         this.logStorage = logStreamBuilder.getLogStorage();

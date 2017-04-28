@@ -1,13 +1,11 @@
 package org.camunda.tngp.logstreams.log;
 
+import static java.lang.String.join;
+import static org.camunda.tngp.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
 import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.any;
@@ -16,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import org.agrona.DirectBuffer;
@@ -107,6 +106,31 @@ public class LogStreamTest
         when(mockSnapshotStorage.createSnapshot(anyString(), anyLong())).thenReturn(mockSnapshotWriter);
 
         logStream = builder.build();
+    }
+
+    @Test
+    public void shouldFailWithToLongTopicName()
+    {
+        // given
+        final DirectBuffer topicName = wrapString(join("", Collections.nCopies(MAX_TOPIC_NAME_LENGTH + 1, "f")));
+
+        final FsLogStreamBuilder builder = new FsLogStreamBuilder(topicName, PARTITION_ID)
+            .agentRunnerService(mockAgentRunnerService)
+            .writeBufferAgentRunnerService(mockConductorAgentRunnerService)
+            .writeBuffer(mockWriteBuffer)
+            .logStorage(mockLogStorage.getMock())
+            .snapshotStorage(mockSnapshotStorage)
+            .snapshotPolicy(mockSnapshotPolicy)
+            .logBlockIndex(mockBlockIndex)
+            .maxAppendBlockSize(MAX_APPEND_BLOCK_SIZE)
+            .indexBlockSize(INDEX_BLOCK_SIZE);
+
+        // expect exception
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage(String.format("Topic name exceeds max length (%d > %d bytes)", topicName.capacity(), MAX_TOPIC_NAME_LENGTH));
+
+        // when
+        builder.build();
     }
 
     @Test
