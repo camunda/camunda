@@ -51,6 +51,8 @@ public class StreamProcessorBuilder
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
 
+    protected StreamProcessorErrorHandler errorHandler;
+
     protected DeferredCommandContext streamProcessorCmdQueue;
 
     protected boolean readOnly;
@@ -128,6 +130,12 @@ public class StreamProcessorBuilder
         return this;
     }
 
+    public StreamProcessorBuilder errorHandler(StreamProcessorErrorHandler errorHandler)
+    {
+        this.errorHandler = errorHandler;
+        return this;
+    }
+
     protected void initContext()
     {
         Objects.requireNonNull(streamProcessor, "No stream processor provided.");
@@ -169,6 +177,11 @@ public class StreamProcessorBuilder
         {
             logStreamWriter = new LogStreamWriterImpl();
         }
+
+        if (errorHandler == null)
+        {
+            errorHandler = (event, failure) -> StreamProcessorErrorHandler.RESULT_REJECT;
+        }
     }
 
     public StreamProcessorController build()
@@ -199,6 +212,8 @@ public class StreamProcessorBuilder
         ctx.setEventFilter(eventFilter);
         ctx.setReprocessingEventFilter(reprocessingEventFilter);
         ctx.setReadOnly(readOnly);
+
+        ctx.setErrorHandler(errorHandler);
 
         return new StreamProcessorController(ctx);
     }

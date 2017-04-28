@@ -33,6 +33,8 @@ public class StreamProcessorContext
     protected EventFilter eventFilter;
     protected EventFilter reprocessingEventFilter;
 
+    protected StreamProcessorErrorHandler streamProcessorErrorHandler;
+
     protected DeferredCommandContext streamProcessorCmdContext;
 
     public LogStream getSourceStream()
@@ -193,6 +195,16 @@ public class StreamProcessorContext
     public boolean isReadOnlyProcessor()
     {
         return isReadOnlyProcessor;
+    }
+
+    public void setErrorHandler(StreamProcessorErrorHandler streamProcessorErrorHandler)
+    {
+        this.streamProcessorErrorHandler = streamProcessorErrorHandler;
+    }
+
+    public StreamProcessorErrorHandler getErrorHandler()
+    {
+        return streamProcessorErrorHandler;
     }
 
 }

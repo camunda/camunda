@@ -52,6 +52,7 @@ public class StreamProcessorController implements Agent
     protected final State<Context> openingState = new OpeningState();
     protected final State<Context> openedState = new OpenedState();
     protected final State<Context> processState = new ProcessState();
+    protected final State<Context> handleProcessingFailureState = new HandleStreamProcessorFailureState();
     protected final State<Context> snapshottingState = new SnapshottingState();
     protected final State<Context> recoveringState = new RecoveringState();
     protected final State<Context> reprocessingState = new ReprocessingState();
@@ -73,8 +74,10 @@ public class StreamProcessorController implements Agent
             .from(openedState).take(TRANSITION_FAIL).to(failedState)
             .from(processState).take(TRANSITION_DEFAULT).to(openedState)
             .from(processState).take(TRANSITION_SNAPSHOT).to(snapshottingState)
-            .from(processState).take(TRANSITION_FAIL).to(failedState)
+            .from(processState).take(TRANSITION_FAIL).to(handleProcessingFailureState)
             .from(processState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
+            .from(handleProcessingFailureState).take(TRANSITION_DEFAULT).to(openedState)
+            .from(handleProcessingFailureState).take(TRANSITION_FAIL).to(failedState)
             .from(snapshottingState).take(TRANSITION_DEFAULT).to(openedState)
             .from(snapshottingState).take(TRANSITION_FAIL).to(failedState)
             .from(snapshottingState).take(TRANSITION_CLOSE).to(closingSnapshottingState)
@@ -102,6 +105,8 @@ public class StreamProcessorController implements Agent
 
     protected final LogStreamFailureListener targetLogStreamFailureListener = new TargetLogStreamFailureListener();
 
+    protected final StreamProcessorErrorHandler streamProcessorErrorHandler;
+
     protected final AgentRunnerService agentRunnerService;
     protected final AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -124,6 +129,7 @@ public class StreamProcessorController implements Agent
         this.eventFilter = context.getEventFilter();
         this.reprocessingEventFilter = context.getReprocessingEventFilter();
         this.isReadOnlyProcessor = context.isReadOnlyProcessor();
+        this.streamProcessorErrorHandler = context.getErrorHandler();
     }
 
     @Override
@@ -363,7 +369,39 @@ public class StreamProcessorController implements Agent
         @Override
         public void onFailure(Context context, Exception e)
         {
-            stateFailureHandler.accept(context, new RuntimeException("log stream processor failed to process event. It stop processing further events.", e));
+            context.setFailure(e);
+            context.take(TRANSITION_FAIL);
+        }
+    }
+
+    private class HandleStreamProcessorFailureState implements TransitionState<Context>
+    {
+        @Override
+        public void work(Context context) throws Exception
+        {
+            final int result = streamProcessorErrorHandler.onError(context.getEvent(), context.getFailure());
+
+            if (result == StreamProcessorErrorHandler.RESULT_SUCCESS)
+            {
+                context.take(TRANSITION_DEFAULT);
+            }
+            else if (result == StreamProcessorErrorHandler.RESULT_FAILURE)
+            {
+                // retry
+            }
+            else
+            {
+                System.err.println("The log stream processor failed to process event. It stop processing further events.");
+                context.getFailure().printStackTrace();
+
+                context.take(TRANSITION_FAIL);
+            }
+        }
+
+        @Override
+        public void onFailure(Context context, Exception e)
+        {
+            stateFailureHandler.accept(context, e);
         }
     }
 
@@ -630,6 +668,7 @@ public class StreamProcessorController implements Agent
                 final boolean failed = context.tryTake(TRANSITION_FAIL);
                 if (failed)
                 {
+                    context.setFailure(new RuntimeException("log stream failure"));
                     context.setFailedEventPosition(failedPosition);
                 }
             });
@@ -666,6 +705,7 @@ public class StreamProcessorController implements Agent
         private long snapshotPosition = -1;
         private long failedEventPosition = -1;
         private CompletableFuture<Void> future;
+        private Exception failure;
 
         Context(StateMachine<Context> stateMachine)
         {
@@ -733,6 +773,16 @@ public class StreamProcessorController implements Agent
         public long getSnapshotPosition()
         {
             return snapshotPosition;
+        }
+
+        public Exception getFailure()
+        {
+            return failure;
+        }
+
+        public void setFailure(Exception failure)
+        {
+            this.failure = failure;
         }
     }
 

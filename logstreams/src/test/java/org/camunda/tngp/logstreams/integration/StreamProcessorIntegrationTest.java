@@ -440,10 +440,7 @@ public class StreamProcessorIntegrationTest
 
         controllableTargetLogStorage.setFailure(true);
 
-        while (!streamProcessorController.isFailed())
-        {
-            // wait until the stream controller is in fail state
-        }
+        TestUtil.waitUntil(() -> streamProcessorController.isFailed());
 
         controllableTargetLogStorage.setFailure(false);
 

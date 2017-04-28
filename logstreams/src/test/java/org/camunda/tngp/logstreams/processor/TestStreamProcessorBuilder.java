@@ -76,6 +76,12 @@ public class TestStreamProcessorBuilder extends StreamProcessorBuilder
         return (TestStreamProcessorBuilder) super.reprocessingEventFilter(eventFilter);
     }
 
+    @Override
+    public TestStreamProcessorBuilder errorHandler(StreamProcessorErrorHandler streamProcessorErrorHandler)
+    {
+        return (TestStreamProcessorBuilder) super.errorHandler(streamProcessorErrorHandler);
+    }
+
     public TestStreamProcessorBuilder sourceLogStreamReader(LogStreamReader sourceLogStreamReader)
     {
         this.sourceLogStreamReader = sourceLogStreamReader;
