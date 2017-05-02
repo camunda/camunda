@@ -366,7 +366,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>
         final int maxElementDataLength = maxElementDataLength();
         if (maxElementDataLength < length)
         {
-            final String message = String.format("Element length larger than maximum size: %d", maxElementDataLength);
+            final String message = String.format("Element length larger than maximum size: %d > %d", length, maxElementDataLength);
             throw new IllegalArgumentException(message);
         }
     }
