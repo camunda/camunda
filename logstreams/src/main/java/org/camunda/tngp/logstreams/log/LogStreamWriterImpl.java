@@ -1,18 +1,15 @@
 package org.camunda.tngp.logstreams.log;
 
-import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.camunda.tngp.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.dispatcher.ClaimedFragment;
-import org.camunda.tngp.dispatcher.Dispatcher;
+import org.agrona.*;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.tngp.dispatcher.*;
 import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.util.EnsureUtil;
-import org.camunda.tngp.util.buffer.BufferWriter;
-import org.camunda.tngp.util.buffer.DirectBufferWriter;
+import org.camunda.tngp.util.buffer.*;
 
 public class LogStreamWriterImpl implements LogStreamWriter
 {
@@ -26,7 +23,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
     protected long key;
 
     protected long sourceEventPosition = -1L;
-    protected DirectBuffer sourceEventLogStreamTopicName;
+    protected DirectBuffer sourceEventLogStreamTopicName = new UnsafeBuffer(0, 0);
     protected int sourceEventLogStreamPartitionId = -1;
 
     protected int producerId = -1;
@@ -72,7 +69,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
     @Override
     public LogStreamWriter sourceEvent(final DirectBuffer logStreamTopicName, int logStreamPartitionId, long position)
     {
-        this.sourceEventLogStreamTopicName = logStreamTopicName;
+        this.sourceEventLogStreamTopicName.wrap(logStreamTopicName);
         this.sourceEventLogStreamPartitionId = logStreamPartitionId;
         this.sourceEventPosition = position;
         return this;
@@ -131,7 +128,7 @@ public class LogStreamWriterImpl implements LogStreamWriter
         key = -1L;
         metadataWriter = metadataWriterInstance;
         valueWriter = null;
-        sourceEventLogStreamTopicName = null;
+        sourceEventLogStreamTopicName.wrap(0, 0);
         sourceEventLogStreamPartitionId = -1;
         sourceEventPosition = -1L;
         producerId = -1;
@@ -152,10 +149,11 @@ public class LogStreamWriterImpl implements LogStreamWriter
         long result = -1;
 
         final int valueLength = valueWriter.getLength();
+        final int topicNameLength = sourceEventLogStreamTopicName.capacity();
         final int metadataLength = metadataWriter.getLength();
 
         // claim fragment in log write buffer
-        final long claimedPosition = claimLogEntry(valueLength, keyLength, metadataLength);
+        final long claimedPosition = claimLogEntry(valueLength, topicNameLength, metadataLength);
 
         if (claimedPosition >= 0)
         {
@@ -163,32 +161,30 @@ public class LogStreamWriterImpl implements LogStreamWriter
             {
                 final MutableDirectBuffer writeBuffer = claimedFragment.getBuffer();
                 final int bufferOffset = claimedFragment.getOffset();
-                final int keyOffset = keyOffset(bufferOffset);
-                final int metadataLengthOffset = keyOffset + keyLength;
-                final int metadataOffset = metadataLengthOffset + METADATA_HEADER_LENGTH;
-                final int valueWriteOffset = metadataOffset + metadataLength;
+
                 final long keyToWrite = positionAsKey ? claimedPosition : key;
 
                 // write log entry header
-                writeBuffer.putLong(positionOffset(bufferOffset), claimedPosition);
+                setPosition(writeBuffer, bufferOffset, claimedPosition);
+                setProducerId(writeBuffer, bufferOffset, producerId);
+                setSourceEventLogStreamPartitionId(writeBuffer, bufferOffset, sourceEventLogStreamPartitionId);
+                setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
+                setKey(writeBuffer, bufferOffset, keyToWrite);
+                setSourceEventLogStreamTopicNameLength(writeBuffer, bufferOffset, (short) topicNameLength);
+                setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
 
-                writeBuffer.putInt(producerIdOffset(bufferOffset), producerId);
+                if (topicNameLength > 0)
+                {
+                    writeBuffer.putBytes(sourceEventLogStreamTopicNameOffset(bufferOffset), sourceEventLogStreamTopicName, 0, topicNameLength);
+                }
 
-                writeBuffer.putInt(sourceEventLogStreamIdOffset(bufferOffset), sourceEventLogStreamPartitionId);
-                writeBuffer.putLong(sourceEventPositionOffset(bufferOffset), sourceEventPosition);
-
-                writeBuffer.putShort(keyTypeOffset(bufferOffset), KEY_TYPE_UINT64);
-                writeBuffer.putShort(keyLengthOffset(bufferOffset), keyLength);
-                writeBuffer.putLong(keyOffset, keyToWrite);
-
-                writeBuffer.putShort(metadataLengthOffset, (short) metadataLength);
                 if (metadataLength > 0)
                 {
-                    metadataWriter.write(writeBuffer, metadataOffset);
+                    metadataWriter.write(writeBuffer, metadataOffset(bufferOffset, topicNameLength));
                 }
 
                 // write log entry
-                valueWriter.write(writeBuffer, valueWriteOffset);
+                valueWriter.write(writeBuffer, valueOffset(bufferOffset, topicNameLength, metadataLength));
 
                 result = claimedPosition;
                 claimedFragment.commit();
@@ -207,9 +203,9 @@ public class LogStreamWriterImpl implements LogStreamWriter
         return result;
     }
 
-    private long claimLogEntry(final int valueLength, final short keyLength, final int metadataLength)
+    private long claimLogEntry(final int valueLength, final int topicNameLength, final int metadataLength)
     {
-        final int framedLength = valueLength + headerLength(keyLength, metadataLength);
+        final int framedLength = valueLength + headerLength(topicNameLength, metadataLength);
 
         long claimedPosition = -1;
 

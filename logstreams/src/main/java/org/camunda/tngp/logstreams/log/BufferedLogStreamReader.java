@@ -27,7 +27,7 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     protected final LoggedEventImpl curr = new LoggedEventImpl();
 
-    protected final int headerLength = HEADER_BLOCK_LENGHT + HEADER_LENGTH;
+    protected final int headerLength = HEADER_BLOCK_LENGTH + HEADER_LENGTH;
     protected final DirectBuffer buffer = new UnsafeBuffer(0, 0);
 
     protected LogStorage logStorage;
@@ -213,7 +213,7 @@ public class BufferedLogStreamReader implements LogStreamReader
 
     protected boolean readMore(int minBytes)
     {
-        final int initialPosition = curr.getFragementOffset();
+        final int initialPosition = curr.getFragmentOffset();
 
         if (initialPosition >= 0)
         {
@@ -294,7 +294,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
 
         final int fragmentLength = curr.getFragmentLength();
-        int nextFragmentOffset = curr.getFragementOffset() + fragmentLength;
+        int nextFragmentOffset = curr.getFragmentOffset() + fragmentLength;
         final int nextHeaderEnd = nextFragmentOffset + headerLength;
 
         if (available < nextHeaderEnd)
@@ -348,7 +348,7 @@ public class BufferedLogStreamReader implements LogStreamReader
         }
         else
         {
-            final int offset = curr.getFragementOffset();
+            final int offset = curr.getFragmentOffset();
             final int fragmentLength = curr.getFragmentLength();
 
             curr.wrap(buffer, offset + fragmentLength);

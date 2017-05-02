@@ -221,7 +221,10 @@ public class StreamProcessorController implements Agent
 
     protected boolean isSourceStreamWriter()
     {
-        return streamProcessorContext.getTargetStream().getPartitionId() == streamProcessorContext.getSourceStream().getPartitionId();
+        final LogStream sourceStream = streamProcessorContext.getSourceStream();
+        final LogStream targetStream = streamProcessorContext.getTargetStream();
+
+        return targetStream.getPartitionId() == sourceStream.getPartitionId() && targetStream.getTopicName().equals(sourceStream.getTopicName());
     }
 
     public EventFilter getEventFilter()
@@ -509,7 +512,7 @@ public class StreamProcessorController implements Agent
                 }
                 else
                 {
-                    throw new IllegalStateException("Cannot found event with the snapshot position in target log stream.");
+                    throw new IllegalStateException("Cannot find event with the snapshot position in target log stream.");
                 }
             }
             context.setSnapshotPosition(snapshotPosition);

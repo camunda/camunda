@@ -1,12 +1,9 @@
 package org.camunda.tngp.logstreams.impl;
 
 import static org.agrona.BitUtil.*;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
 
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 
 /**
  *  * <pre>
@@ -20,16 +17,19 @@ import org.agrona.DirectBuffer;
  *  +---------------------------------------------------------------+
  *  |                           PRODUCER ID                         |
  *  +---------------------------------------------------------------+
- *  |                      SOURCE EVENT STREAM ID                   |
+ *  |                SOURCE EVENT STREAM PARTITION ID               |
  *  +---------------------------------------------------------------+
  *  |                      SOURCE EVENT POSITION                    |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |            KEY TYPE            |         KEY LENGTH           |
+ *  |                               KEY                             |
+ *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                            ...KEY...                          |
+ *  |        TOPIC NAME LENGTH       |       METADATA LENGTH        |
  *  +---------------------------------------------------------------+
- *  |         METADATA LENGTH        |       ...METADATA...         |
+ *  |              ...SOURCE EVENT STREAM TOPIC NAME...             |
+ *  +---------------------------------------------------------------+
+ *  |                         ...METADATA...                        |
  *  +---------------------------------------------------------------+
  *  |                           ...VALUE...                         |
  *  +---------------------------------------------------------------+
@@ -39,28 +39,26 @@ import org.agrona.DirectBuffer;
  */
 public class LogEntryDescriptor
 {
-    public static final short KEY_TYPE_UINT64 = 1;
-    public static final short KEY_TYPE_BYTES = 2;
-
-    public static final int METADATA_HEADER_LENGTH = BitUtil.SIZE_OF_SHORT;
 
     public static final int VERSION_OFFSET;
 
     public static final int POSITION_OFFSET;
 
-    public static final int SOURCE_EVENT_POSITION_OFFSET;
-
-    public static final int SOURCE_EVENT_LOG_STREAM_ID_OFFSET;
-
     public static final int PRODUCER_ID_OFFSET;
 
-    public static final int KEY_TYPE_OFFSET;
+    public static final int SOURCE_EVENT_LOG_STREAM_PARTITION_ID_OFFSET;
 
-    public static final int KEY_LENGTH_OFFSET;
+    public static final int SOURCE_EVENT_POSITION_OFFSET;
 
     public static final int KEY_OFFSET;
 
-    public static final int HEADER_BLOCK_LENGHT;
+    public static final int SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_LENGTH_OFFSET;
+
+    public static final int METADATA_LENGTH_OFFSET;
+
+    public static final int HEADER_BLOCK_LENGTH;
+
+    public static final int SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET;
 
     static
     {
@@ -78,86 +76,154 @@ public class LogEntryDescriptor
         PRODUCER_ID_OFFSET = offset;
         offset += SIZE_OF_INT;
 
-        SOURCE_EVENT_LOG_STREAM_ID_OFFSET = offset;
+        SOURCE_EVENT_LOG_STREAM_PARTITION_ID_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         SOURCE_EVENT_POSITION_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
-        KEY_TYPE_OFFSET = offset;
-        offset += SIZE_OF_SHORT;
-
-        KEY_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_SHORT;
-
-        HEADER_BLOCK_LENGHT = offset;
-
         KEY_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_SHORT;
+
+        METADATA_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_SHORT;
+
+        HEADER_BLOCK_LENGTH = offset;
+
+        SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET = offset;
     }
 
-    public static int headerLength(int keyLength, int metadataLength)
-    {
-        return HEADER_BLOCK_LENGHT + keyLength + METADATA_HEADER_LENGTH + metadataLength;
-    }
-
-    public static int positionOffset(int offset)
-    {
-        return POSITION_OFFSET + offset;
-    }
-
-    public static long getPosition(DirectBuffer buffer, int offset)
-    {
-        return buffer.getLong(positionOffset(messageOffset(offset)));
-    }
-
-    public static int getFragmentLength(DirectBuffer buffer, int offset)
+    public static int getFragmentLength(final DirectBuffer buffer, final int offset)
     {
         return alignedLength(buffer.getInt(lengthOffset(offset)));
     }
 
-    public static int keyTypeOffset(int offset)
+    public static int headerLength(final int topicNameLength, final int metadataLength)
     {
-        return KEY_TYPE_OFFSET + offset;
+        return HEADER_BLOCK_LENGTH + topicNameLength + metadataLength;
     }
 
-    public static int keyLengthOffset(int offset)
+    public static int positionOffset(final int offset)
     {
-        return KEY_LENGTH_OFFSET + offset;
+        return POSITION_OFFSET + offset;
     }
 
-    public static int keyOffset(int offset)
+    public static long getPosition(final DirectBuffer buffer, final int offset)
     {
-        return KEY_OFFSET + offset;
+        return buffer.getLong(positionOffset(offset));
     }
 
-    public static int sourceEventPositionOffset(int offset)
+    public static void setPosition(final MutableDirectBuffer buffer, final int offset, final long position)
     {
-        return SOURCE_EVENT_POSITION_OFFSET + offset;
+        buffer.putLong(positionOffset(offset), position);
     }
 
-    public static int sourceEventLogStreamIdOffset(int offset)
-    {
-        return SOURCE_EVENT_LOG_STREAM_ID_OFFSET + offset;
-    }
-
-    public static int producerIdOffset(int offset)
+    public static int producerIdOffset(final int offset)
     {
         return PRODUCER_ID_OFFSET + offset;
     }
 
-    public static int metadataLengthOffset(int offset, int keyLength)
+    public static int getProducerId(final DirectBuffer buffer, final int offset)
     {
-        return KEY_OFFSET + keyLength + offset;
+        return buffer.getInt(producerIdOffset(offset));
     }
 
-    public static int metadataOffset(int offset, int keyLength)
+    public static void setProducerId(final MutableDirectBuffer buffer, final int offset, final int producerId)
     {
-        return KEY_OFFSET + keyLength + METADATA_HEADER_LENGTH + offset;
+        buffer.putInt(producerIdOffset(offset), producerId);
     }
 
-    public static int valueOffset(int offset, int keyLength, int metadataLength)
+    public static int sourceEventLogStreamPartitionIdOffset(final int offset)
     {
-        return KEY_OFFSET + keyLength + METADATA_HEADER_LENGTH + metadataLength + offset;
+        return SOURCE_EVENT_LOG_STREAM_PARTITION_ID_OFFSET + offset;
+    }
+
+    public static int getSourceEventLogStreamPartitionId(final DirectBuffer buffer, final int offset)
+    {
+        return buffer.getInt(sourceEventLogStreamPartitionIdOffset(offset));
+    }
+
+    public static void setSourceEventLogStreamPartitionId(final MutableDirectBuffer buffer, final int offset, final int sourceEventLogStreamPartitionId)
+    {
+        buffer.putInt(sourceEventLogStreamPartitionIdOffset(offset), sourceEventLogStreamPartitionId);
+    }
+
+    public static int sourceEventPositionOffset(final int offset)
+    {
+        return SOURCE_EVENT_POSITION_OFFSET + offset;
+    }
+
+    public static long getSourceEventPosition(final DirectBuffer buffer, final int offset)
+    {
+        return buffer.getLong(sourceEventPositionOffset(offset));
+    }
+
+    public static void setSourceEventPosition(final MutableDirectBuffer buffer, final int offset, final long sourceEventPosition)
+    {
+        buffer.putLong(sourceEventPositionOffset(offset), sourceEventPosition);
+    }
+
+    public static int keyOffset(final int offset)
+    {
+        return KEY_OFFSET + offset;
+    }
+
+    public static long getKey(final DirectBuffer buffer, final int offset)
+    {
+        return buffer.getLong(keyOffset(offset));
+    }
+
+    public static void setKey(final MutableDirectBuffer buffer, final int offset, final long key)
+    {
+        buffer.putLong(keyOffset(offset), key);
+    }
+
+    public static int sourceEventLogStreamTopicNameLengthOffset(final int offset)
+    {
+        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_LENGTH_OFFSET + offset;
+    }
+
+    public static short getSourceEventLogStreamTopicNameLength(final DirectBuffer buffer, final int offset)
+    {
+        return buffer.getShort(sourceEventLogStreamTopicNameLengthOffset(offset));
+    }
+
+    public static void setSourceEventLogStreamTopicNameLength(final MutableDirectBuffer buffer, final int offset, final short sourceEventLogStreamTopicNameLength)
+    {
+        buffer.putShort(sourceEventLogStreamTopicNameLengthOffset(offset), sourceEventLogStreamTopicNameLength);
+    }
+
+    public static int metadataLengthOffset(final int offset)
+    {
+        return METADATA_LENGTH_OFFSET + offset;
+    }
+
+    public static short getMetadataLength(final DirectBuffer buffer, final int offset)
+    {
+        return buffer.getShort(metadataLengthOffset(offset));
+    }
+
+    public static void setMetadataLength(final MutableDirectBuffer buffer, final int offset, final short metadataLength)
+    {
+        buffer.putShort(metadataLengthOffset(offset), metadataLength);
+    }
+
+    public static int sourceEventLogStreamTopicNameOffset(final int offset)
+    {
+        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET + offset;
+    }
+
+    public static int metadataOffset(final int offset, final int sourceEventLogStreamTopicNameLength)
+    {
+        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET + sourceEventLogStreamTopicNameLength + offset;
+    }
+
+    public static int valueOffset(final int offset, final int sourceEventLogStreamTopicNameLength, final int metadataLength)
+    {
+        return SOURCE_EVENT_LOG_STREAM_TOPIC_NAME_OFFSET + sourceEventLogStreamTopicNameLength + metadataLength + offset;
     }
 
 }

@@ -50,7 +50,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
         fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
         fsLogStorage = new FsLogStorage(fsStorageConfig);
 
-        final ByteBuffer writeBuffer = ByteBuffer.allocate(128);
+        final ByteBuffer writeBuffer = ByteBuffer.allocate(192);
         final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
         directBuffer.wrap(writeBuffer);
 
@@ -68,7 +68,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // a large event
         idx = 2 * ALIGNED_LEN;
-        directBuffer.putInt(idx, headerLength(96, 96)); // aligned size: 48
+        directBuffer.putInt(idx, headerLength(0, 96)); // aligned size: 48
         directBuffer.putLong(positionOffset(messageOffset(idx)), 3);
 
         fsLogStorage.open();
@@ -93,7 +93,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
     }
 
     @Test
@@ -136,7 +136,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
         assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
         assertThat(readBuffer.limit()).isEqualTo(ALIGNED_LEN);
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
     }
 
     @Test
@@ -157,11 +157,11 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
 
         // second event was read as well
         assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
+        assertThat(getPosition(buffer, messageOffset(ALIGNED_LEN))).isEqualTo(2);
     }
 
     @Test
@@ -182,7 +182,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // and only first event is read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
 
         // position and limit is reset
         assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
@@ -208,7 +208,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // and only first event is read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
 
         // position and limit is reset
         assertThat(readBuffer.position()).isEqualTo(ALIGNED_LEN);
@@ -233,7 +233,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     {
         // given buffer
         processor.setCommitPosition(3);
-        final ByteBuffer readBuffer = ByteBuffer.allocate(4 * ALIGNED_LEN + 1);
+        final ByteBuffer readBuffer = ByteBuffer.allocate(2 * ALIGNED_LEN + ALIGNED_LEN / 2);
 
         // when read into buffer and buffer was processed
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
@@ -249,7 +249,7 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
     {
         // given buffer
         processor.setCommitPosition(3);
-        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(96, 96)));
+        final ByteBuffer readBuffer = ByteBuffer.allocate(alignedLength(headerLength(0, 96)));
 
         // when read into buffer and buffer was processed
         final long result = fsLogStorage.read(readBuffer, appendedAddress, processor);
@@ -264,11 +264,11 @@ public class CompleteAndCommittedEventsInBlockProcessorTest
 
         // first event was read
         assertThat(buffer.getInt(0)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, 0)).isEqualTo(1);
+        assertThat(getPosition(buffer, messageOffset(0))).isEqualTo(1);
 
         // second event was read as well
         assertThat(buffer.getInt(ALIGNED_LEN)).isEqualTo(LENGTH);
-        assertThat(getPosition(buffer, ALIGNED_LEN)).isEqualTo(2);
+        assertThat(getPosition(buffer, messageOffset(ALIGNED_LEN))).isEqualTo(2);
 
         // position and limit is reset
         assertThat(readBuffer.position()).isEqualTo(2 * ALIGNED_LEN);

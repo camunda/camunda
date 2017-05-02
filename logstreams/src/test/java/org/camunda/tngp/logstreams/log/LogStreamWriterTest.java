@@ -12,20 +12,11 @@
  */
 package org.camunda.tngp.logstreams.log;
 
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.offset;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.KEY_TYPE_UINT64;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyLengthOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.keyTypeOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.positionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.producerIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventLogStreamIdOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.sourceEventPositionOffset;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
 import static org.camunda.tngp.util.StringUtil.getBytes;
 import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Matchers.any;
@@ -105,7 +96,7 @@ public class LogStreamWriterTest
         assertThat(writeBuffer.getLong(positionOffset(MESSAGE_OFFSET))).isEqualTo(position);
 
         final byte[] valueBuffer = new byte[EVENT_VALUE.length];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0), valueBuffer);
+        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0, (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(EVENT_VALUE);
     }
 
@@ -120,7 +111,7 @@ public class LogStreamWriterTest
             .tryWrite();
 
         final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0), valueBuffer);
+        writeBuffer.getBytes(valueOffset(MESSAGE_OFFSET, (short) 0, (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_VALUE[1], EVENT_VALUE[2]});
     }
 
@@ -134,7 +125,7 @@ public class LogStreamWriterTest
             .valueWriter(mockBufferWriter)
             .tryWrite();
 
-        final int valueOffset = valueOffset(MESSAGE_OFFSET, SIZE_OF_LONG, 0);
+        final int valueOffset = valueOffset(MESSAGE_OFFSET, (short) 0, (short) 0);
         verify(mockBufferWriter).write(any(), eq(valueOffset));
     }
 
@@ -150,7 +141,7 @@ public class LogStreamWriterTest
             .tryWrite();
 
         final byte[] valueBuffer = new byte[2];
-        writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET, SIZE_OF_LONG), valueBuffer);
+        writeBuffer.getBytes(metadataOffset(MESSAGE_OFFSET, (short) 0), valueBuffer);
         assertThat(valueBuffer).isEqualTo(new byte[] {EVENT_METADATA[3], EVENT_METADATA[4]});
     }
 
@@ -166,7 +157,7 @@ public class LogStreamWriterTest
             .valueWriter(mockBufferWriter)
             .tryWrite();
 
-        final int valueOffset = metadataOffset(MESSAGE_OFFSET, SIZE_OF_LONG);
+        final int valueOffset = metadataOffset(MESSAGE_OFFSET, (short) 0);
         verify(mockMetadataWriter).write(any(), eq(valueOffset));
     }
 
@@ -180,8 +171,6 @@ public class LogStreamWriterTest
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
 
-        assertThat(writeBuffer.getShort(keyTypeOffset(MESSAGE_OFFSET))).isEqualTo(KEY_TYPE_UINT64);
-        assertThat(writeBuffer.getShort(keyLengthOffset(MESSAGE_OFFSET))).isEqualTo((short) SIZE_OF_LONG);
         assertThat(writeBuffer.getLong(keyOffset(MESSAGE_OFFSET))).isEqualTo(4L);
     }
 
@@ -195,8 +184,6 @@ public class LogStreamWriterTest
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
 
-        assertThat(writeBuffer.getShort(keyTypeOffset(MESSAGE_OFFSET))).isEqualTo(KEY_TYPE_UINT64);
-        assertThat(writeBuffer.getShort(keyLengthOffset(MESSAGE_OFFSET))).isEqualTo((short) SIZE_OF_LONG);
         assertThat(writeBuffer.getLong(keyOffset(MESSAGE_OFFSET))).isEqualTo(position);
     }
 
@@ -211,8 +198,14 @@ public class LogStreamWriterTest
             .sourceEvent(TOPIC_NAME, PARTITION_ID, 3L)
             .tryWrite();
 
-        assertThat(writeBuffer.getInt(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(PARTITION_ID);
+        assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(MESSAGE_OFFSET))).isEqualTo(PARTITION_ID);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(3L);
+
+        final short topicNameLength = writeBuffer.getShort(sourceEventLogStreamTopicNameLengthOffset(MESSAGE_OFFSET));
+        assertThat(topicNameLength).isEqualTo((short) TOPIC_NAME.capacity());
+
+        final DirectBuffer topicName = new UnsafeBuffer(writeBuffer, sourceEventLogStreamTopicNameOffset(MESSAGE_OFFSET), topicNameLength);
+        assertThat(topicName).isEqualTo(TOPIC_NAME);
     }
 
     @Test
@@ -225,7 +218,7 @@ public class LogStreamWriterTest
             .value(new UnsafeBuffer(EVENT_VALUE))
             .tryWrite();
 
-        assertThat(writeBuffer.getInt(sourceEventLogStreamIdOffset(MESSAGE_OFFSET))).isEqualTo(-1);
+        assertThat(writeBuffer.getInt(sourceEventLogStreamPartitionIdOffset(MESSAGE_OFFSET))).isEqualTo(-1);
         assertThat(writeBuffer.getLong(sourceEventPositionOffset(MESSAGE_OFFSET))).isEqualTo(-1L);
     }
 
@@ -244,7 +237,7 @@ public class LogStreamWriterTest
     }
 
     @Test
-    public void shouldRetryIfFailToClaimFragmentOnPaddingAtPartionEnd()
+    public void shouldRetryIfFailToClaimFragmentOnPaddingAtPartitionEnd()
     {
         when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt()))
             .thenReturn((long) LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION)
@@ -259,7 +252,7 @@ public class LogStreamWriterTest
     }
 
     @Test
-    public void shouldNotRetryIfFailToClaimFragmentOnPartionEnd()
+    public void shouldNotRetryIfFailToClaimFragmentOnPartitionEnd()
     {
         when(mockWriteBuffer.claim(any(ClaimedFragment.class), anyInt(), anyInt()))
             .thenReturn((long) LogBufferAppender.RESULT_END_OF_PARTITION)
@@ -308,8 +301,7 @@ public class LogStreamWriterTest
 
             claimedFragment.wrap(writeBuffer, 0, alignedLength(length));
 
-            final long claimedPosition = offset + alignedLength(length);
-            return claimedPosition;
+            return offset + alignedLength(length);
         };
     }
 

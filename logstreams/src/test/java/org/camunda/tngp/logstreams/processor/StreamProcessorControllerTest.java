@@ -885,7 +885,7 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldRecoverFromSnapshotIfSourceEqualsTargetStream() throws Exception
     {
-        when(mockSourceLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
+        when(mockTargetLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
         when(mockTargetLogStream.getPartitionId()).thenReturn(SOURCE_LOG_STREAM_PARTITION_ID);
 
         when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);
@@ -986,7 +986,7 @@ public class StreamProcessorControllerTest
     @Test
     public void shouldIgnoreEventsBeforeSnapshotOnRecoveryIfSourceEqualsTargetStream() throws Exception
     {
-        when(mockSourceLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
+        when(mockTargetLogStream.getTopicName()).thenReturn(SOURCE_LOG_STREAM_TOPIC_NAME);
         when(mockTargetLogStream.getPartitionId()).thenReturn(SOURCE_LOG_STREAM_PARTITION_ID);
 
         when(mockSnapshotStorage.getLastSnapshot(STREAM_PROCESSOR_NAME)).thenReturn(mockReadableSnapshot);

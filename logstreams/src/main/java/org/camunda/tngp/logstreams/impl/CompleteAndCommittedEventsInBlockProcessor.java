@@ -73,7 +73,7 @@ public class CompleteAndCommittedEventsInBlockProcessor implements ReadResultPro
         while (remainingBytes >= POSITION_LENGTH)
         {
             final int fragmentLength = getFragmentLength(directBuffer, position);
-            final long loggedEventPosition = getPosition(directBuffer, position);
+            final long loggedEventPosition = getPosition(directBuffer, messageOffset(position));
 
             if (fragmentLength <= remainingBytes && loggedEventPosition <= commitPosition.get())
             {

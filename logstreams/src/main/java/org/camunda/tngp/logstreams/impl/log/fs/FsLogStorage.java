@@ -209,7 +209,7 @@ public class FsLogStorage implements LogStorage
         ensureOpenedStorage();
 
         final int segmentId = partitionId(addr);
-        final int segementOffset = partitionOffset(addr);
+        final int segmentOffset = partitionOffset(addr);
 
         final FsLogSegment segment = logSegments.getSegment(segmentId);
 
@@ -217,14 +217,14 @@ public class FsLogStorage implements LogStorage
 
         if (segment != null)
         {
-            final int readResult = segment.readBytes(readBuffer, segementOffset);
+            final int readResult = segment.readBytes(readBuffer, segmentOffset);
 
             if (readResult >= 0)
             {
                 //processing
                 final int processingResult = processor.process(readBuffer, readResult);
                 opStatus = processingResult < 0 ? processingResult
-                                                : position(segmentId, segementOffset + processingResult);
+                                                : position(segmentId, segmentOffset + processingResult);
 
             }
             else if (readResult == END_OF_SEGMENT)

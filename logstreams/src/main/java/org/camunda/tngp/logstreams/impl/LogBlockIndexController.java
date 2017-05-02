@@ -247,7 +247,7 @@ public class LogBlockIndexController implements Agent
                 if (logContext.getCurrentBlockAddress() == 0)
                 {
                     logContext.setCurrentBlockAddress(currentAddress);
-                    logContext.setLastPosition(getPosition(buffer, 0));
+                    logContext.setLastPosition(getPosition(buffer, messageOffset(0)));
                 }
             }
         }
@@ -268,7 +268,7 @@ public class LogBlockIndexController implements Agent
             // write block IDX
             final long contextPosition = logContext.getLastPosition();
             final long position = contextPosition == 0
-                ? getPosition(buffer, 0)
+                ? getPosition(buffer, messageOffset(0))
                 : contextPosition;
             blockIndex.addBlock(position, addressOfFirstEventInBlock);
 
@@ -457,7 +457,7 @@ public class LogBlockIndexController implements Agent
                 while (remainingBytes >= POSITION_LENGTH)
                 {
                     final int messageLength = getFragmentLength(buffer, position);
-                    final long loggedEventPosition = getPosition(buffer, position);
+                    final long loggedEventPosition = getPosition(buffer, messageOffset(position));
                     if (loggedEventPosition == truncatePosition)
                     {
                         foundPosition = true;
