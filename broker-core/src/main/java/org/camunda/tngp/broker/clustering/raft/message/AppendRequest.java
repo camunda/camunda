@@ -235,10 +235,10 @@ public class AppendRequest implements BufferReader, BufferWriter
 
         if (writeableEntry != null)
         {
-            final DirectBuffer valueBuffer = writeableEntry.getValueBuffer();
-            final int fragementOffset = writeableEntry.getFragementOffset();
+            final DirectBuffer entryBuffer = writeableEntry.getBuffer();
+            final int fragmentOffset = writeableEntry.getFragmentOffset();
             final int fragmentLength = writeableEntry.getFragmentLength();
-            bodyEncoder.putData(valueBuffer, fragementOffset, fragmentLength);
+            bodyEncoder.putData(entryBuffer, fragmentOffset, fragmentLength);
         }
     }
 

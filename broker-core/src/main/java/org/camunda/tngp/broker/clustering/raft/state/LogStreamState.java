@@ -87,7 +87,7 @@ public class LogStreamState
 
         final DirectBuffer value = data.getBuffer();
         final int dataLength = data.getFragmentLength();
-        final int dataOffset = data.getFragementOffset();
+        final int dataOffset = data.getFragmentOffset();
 
         if (remaining < dataLength && bufferedEntriesOffset > 0)
         {
@@ -269,7 +269,7 @@ public class LogStreamState
         protected final LogBlockIndex blockIndex;
         protected final LogStorage logStorage;
 
-        protected final int headerLength = HEADER_BLOCK_LENGHT + HEADER_LENGTH;
+        protected final int headerLength = HEADER_BLOCK_LENGTH + HEADER_LENGTH;
         protected final LoggedEventImpl curr = new LoggedEventImpl();
 
         protected final ByteBuffer ioBuffer = ByteBuffer.allocateDirect(1024 * 32);

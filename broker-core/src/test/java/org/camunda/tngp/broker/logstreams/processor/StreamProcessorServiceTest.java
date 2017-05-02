@@ -1,22 +1,18 @@
 package org.camunda.tngp.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.camunda.tngp.logstreams.log.LogStream.DEFAULT_TOPIC_NAME_BUFFER;
+import static org.mockito.Mockito.*;
 
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.broker.test.MockStreamProcessorController;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.processor.EventFilter;
-import org.camunda.tngp.logstreams.processor.StreamProcessor;
-import org.camunda.tngp.logstreams.processor.StreamProcessorController;
+import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.processor.*;
 import org.camunda.tngp.logstreams.spi.SnapshotStorage;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.util.agent.AgentRunnerService;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class StreamProcessorServiceTest
@@ -161,8 +157,13 @@ public class StreamProcessorServiceTest
         final AgentRunnerService agentRunnerService = mock(AgentRunnerService.class);
         when(agentRunnerServices.logStreamProcessorAgentRunnerService()).thenReturn(agentRunnerService);
         streamProcessorService.getAgentRunnerInjector().inject(agentRunnerServices);
-        streamProcessorService.getSourceStreamInjector().inject(mock(LogStream.class));
-        streamProcessorService.getTargetStreamInjector().inject(mock(LogStream.class));
+
+        final LogStream logStream = mock(LogStream.class);
+        when(logStream.getTopicName()).thenReturn(DEFAULT_TOPIC_NAME_BUFFER);
+        when(logStream.getPartitionId()).thenReturn(0);
+        streamProcessorService.getSourceStreamInjector().inject(logStream);
+        streamProcessorService.getTargetStreamInjector().inject(logStream);
+
         streamProcessorService.getSnapshotStorageInjector().inject(mock(SnapshotStorage.class));
     }
 
