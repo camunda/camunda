@@ -26,15 +26,21 @@
     </types>
 
     <types>
-    
+
         <!-- GOSSIP -->
 
-        <enum name="PeerState" encodingType="uint8">     
+        <enum name="PeerState" encodingType="uint8">
             <validValue name="ALIVE">0</validValue>
             <validValue name="SUSPECT">1</validValue>
             <validValue name="DEAD">2</validValue>
         </enum>
-        
+
+        <enum name="EndpointType" encodingType="uint8">
+            <validValue name="CLIENT">0</validValue>
+            <validValue name="MANAGEMENT">1</validValue>
+            <validValue name="REPLICATION">2</validValue>
+        </enum>
+
     </types>
 
     <!-- GOSSIP MESSAGES: 0 - 99 -->
@@ -44,12 +50,11 @@
             <field name="state" id="2" type="PeerState"/>
             <field name="generation" id="3" type="uint64"/>
             <field name="version" id="4" type="uint16"/>
-            <field name="clientPort" id="5" type="uint16"/>
-            <field name="managementPort" id="6" type="uint16"/>
-            <field name="replicationPort" id="7" type="uint16"/>
-            <data name="clientHost" id="8" type="varDataEncoding"/>
-            <data name="managementHost" id="9" type="varDataEncoding"/>
-            <data name="replicationHost" id="10" type="varDataEncoding"/>
+            <group name="endpoints" id="5" dimensionType="groupSizeEncoding">
+              <field name="endpointType" id="6" type="EndpointType"/>
+              <field name="port" id="7" type="uint16"/>
+              <data name="host" id="8" type="varDataEncoding"/>
+            </group>
             <!-- TODO: rafts and state -->
         </group>
     </sbe:message>
@@ -65,13 +70,12 @@
         <field name="state" id="1" type="PeerState"/>
         <field name="generation" id="2" type="uint64"/>
         <field name="version" id="3" type="uint16"/>
-        <field name="changeStateTime" id="5" type="uint64"/>
-        <field name="clientPort" id="7" type="uint16"/>
-        <field name="managementPort" id="8" type="uint16"/>
-        <field name="replicationPort" id="9" type="uint16"/>
-        <data name="clientHost" id="10" type="varDataEncoding"/>
-        <data name="managementHost" id="11" type="varDataEncoding"/>
-        <data name="replicationHost" id="12" type="varDataEncoding"/>
+        <field name="changeStateTime" id="4" type="uint64"/>
+        <group name="endpoints" id="5" dimensionType="groupSizeEncoding">
+          <field name="endpointType" id="6" type="EndpointType"/>
+          <field name="port" id="7" type="uint16"/>
+          <data name="host" id="8" type="varDataEncoding"/>
+        </group>
     </sbe:message>
 
 </sbe:messageSchema>

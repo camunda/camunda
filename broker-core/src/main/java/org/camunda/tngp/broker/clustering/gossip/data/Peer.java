@@ -6,19 +6,26 @@ import static org.camunda.tngp.clustering.gossip.PeerState.*;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.clustering.channel.Endpoint;
+import org.camunda.tngp.clustering.gossip.EndpointType;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder.EndpointsEncoder;
 import org.camunda.tngp.clustering.gossip.PeerState;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
 {
-    public static final int MAX_PEER_LENGTH = BLOCK_LENGTH +
-            clientHostHeaderLength() +
-            managementHostHeaderLength() +
-            replicationHostHeaderLength() +
-            (Endpoint.MAX_HOST_LENGTH * 3);
+    public static final int PEER_ENDPOINT_COUNT = 3;
+
+    public static final int MAX_PEER_LENGTH =
+            PeerDescriptorEncoder.BLOCK_LENGTH +
+            EndpointsEncoder.sbeHeaderSize() +
+            PEER_ENDPOINT_COUNT * (
+                EndpointsEncoder.sbeBlockLength() +
+                EndpointsEncoder.hostHeaderLength() +
+                Endpoint.MAX_HOST_LENGTH
+            );
 
     protected final PeerDescriptorDecoder decoder = new PeerDescriptorDecoder();
     protected final PeerDescriptorEncoder encoder = new PeerDescriptorEncoder();
@@ -122,27 +129,31 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
             .generation(decoder.generation())
             .version(decoder.version());
 
-        final int clientPort = decoder.clientPort();
-        final int managementPort = decoder.managementPort();
-        final int replicationPort = decoder.replicationPort();
+        for (final EndpointsDecoder endpointsDecoder : decoder.endpoints())
+        {
+            final Endpoint endpoint;
+            switch (endpointsDecoder.endpointType())
+            {
+                case CLIENT:
+                    endpoint = clientEndpoint();
+                    break;
+                case MANAGEMENT:
+                    endpoint = managementEndpoint();
+                    break;
+                case REPLICATION:
+                    endpoint = replicationEndpoint();
+                    break;
+                default:
+                    throw new RuntimeException("Unknown endpoint type for peer: " + endpointsDecoder.endpointType());
+            }
 
-        final int clientHostLength = decoder.clientHostLength();
-        final Endpoint clientEndpoint = clientEndpoint();
-        clientEndpoint.port(clientPort);
-        clientEndpoint.hostLength(clientHostLength);
-        decoder.getClientHost(clientEndpoint.getHostBuffer(), 0, clientHostLength);
+            final MutableDirectBuffer hostBuffer = endpoint.getHostBuffer();
+            final int hostLength = endpointsDecoder.hostLength();
 
-        final int managementHostLength = decoder.managementHostLength();
-        final Endpoint managementEndpoint = managementEndpoint();
-        managementEndpoint.port(managementPort);
-        managementEndpoint.hostLength(managementHostLength);
-        decoder.getManagementHost(managementEndpoint.getHostBuffer(), 0, managementHostLength);
-
-        final int replicationHostLength = decoder.replicationHostLength();
-        final Endpoint replicationEndpoint = replicationEndpoint();
-        replicationEndpoint.port(replicationPort);
-        replicationEndpoint.hostLength(replicationHostLength);
-        decoder.getReplicationHost(replicationEndpoint.getHostBuffer(), 0, replicationHostLength);
+            endpoint.port(endpointsDecoder.port());
+            endpoint.hostLength(hostLength);
+            endpointsDecoder.getHost(hostBuffer, 0, hostLength);
+        }
     }
 
     public void wrap(final Peer peer)
@@ -160,11 +171,10 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     public int getLength()
     {
         return encoder.sbeBlockLength() +
-                clientHostHeaderLength() +
+                EndpointsDecoder.sbeHeaderSize() +
+                PEER_ENDPOINT_COUNT * (EndpointsDecoder.sbeBlockLength() + EndpointsDecoder.hostHeaderLength()) +
                 clientEndpoint().hostLength() +
-                managementHostHeaderLength() +
                 managementEndpoint().hostLength() +
-                replicationHostHeaderLength() +
                 replicationEndpoint().hostLength();
     }
 
@@ -186,17 +196,27 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
         final DirectBuffer replicationEndpointBuffer = replicationEndpoint.getHostBuffer();
         final int replicationHostLength = replicationEndpoint.hostLength();
 
-        encoder.wrap(buffer, offset)
+        final EndpointsEncoder endpointsEncoder = encoder.wrap(buffer, offset)
             .state(state())
             .generation(heartbeat.generation())
             .version(heartbeat.version())
             .changeStateTime(changeStateTime())
-            .clientPort(clientEndpoint.port())
-            .managementPort(managementEndpoint.port())
-            .replicationPort(replicationEndpoint.port())
-            .putClientHost(clientEndpointBuffer, 0, clientHostLength)
-            .putManagementHost(managementEndpointBuffer, 0, managementHostLength)
-            .putReplicationHost(replicationEndpointBuffer, 0, replicationHostLength);
+            .endpointsCount(PEER_ENDPOINT_COUNT);
+
+        endpointsEncoder.next()
+            .endpointType(EndpointType.CLIENT)
+            .port(clientEndpoint.port())
+            .putHost(clientEndpointBuffer, 0, clientHostLength);
+
+        endpointsEncoder.next()
+            .endpointType(EndpointType.MANAGEMENT)
+            .port(managementEndpoint.port())
+            .putHost(managementEndpointBuffer, 0, managementHostLength);
+
+        endpointsEncoder.next()
+            .endpointType(EndpointType.REPLICATION)
+            .port(replicationEndpoint.port())
+            .putHost(replicationEndpointBuffer, 0, replicationHostLength);
     }
 
     public void reset()
@@ -205,13 +225,13 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
         heartbeat().version(PeerDescriptorEncoder.versionNullValue());
 
         clientEndpoint().reset();
-        clientEndpoint().port(PeerDescriptorEncoder.clientPortNullValue());
+        clientEndpoint().port(EndpointsDecoder.portNullValue());
 
         managementEndpoint().reset();
-        managementEndpoint().port(PeerDescriptorEncoder.managementPortNullValue());
+        managementEndpoint().port(EndpointsDecoder.portNullValue());
 
         replicationEndpoint().reset();
-        replicationEndpoint().port(PeerDescriptorEncoder.replicationPortNullValue());
+        replicationEndpoint().port(EndpointsDecoder.portNullValue());
 
         state = NULL_VAL;
         changeStateTime = -1L;

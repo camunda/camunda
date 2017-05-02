@@ -8,6 +8,7 @@ import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.clustering.gossip.GossipDecoder;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder;
+import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.EndpointsDecoder;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 public class GossipMessageReader implements BufferReader, Iterator<Peer>
@@ -19,7 +20,7 @@ public class GossipMessageReader implements BufferReader, Iterator<Peer>
     private final Peer currentPeer = new Peer();
 
     @Override
-    public void wrap(final DirectBuffer values, int offset, final int length)
+    public void wrap(final DirectBuffer values, final int offset, final int length)
     {
         bodyDecoder.wrap(values, offset, GossipDecoder.BLOCK_LENGTH, GossipDecoder.SCHEMA_VERSION);
         iterator = bodyDecoder.peers().iterator();
@@ -42,30 +43,32 @@ public class GossipMessageReader implements BufferReader, Iterator<Peer>
             .generation(decoder.generation())
             .version(decoder.version());
 
-        final int clientPort = decoder.clientPort();
-        final int managementPort = decoder.managementPort();
-        final int replicationPort = decoder.replicationPort();
+        for (final EndpointsDecoder endpointsDecoder : decoder.endpoints())
+        {
+            final Endpoint endpoint;
+            switch (endpointsDecoder.endpointType())
+            {
+                case CLIENT:
+                    endpoint = currentPeer.clientEndpoint();
+                    break;
+                case MANAGEMENT:
+                    endpoint = currentPeer.managementEndpoint();
+                    break;
+                case REPLICATION:
+                    endpoint = currentPeer.replicationEndpoint();
+                    break;
+                default:
+                    throw new RuntimeException("Unknown endpoint type for peer: " + endpointsDecoder.endpointType());
+            }
 
-        final Endpoint clientEndpoint = currentPeer.clientEndpoint();
-        final MutableDirectBuffer clientHostBuffer = clientEndpoint.getHostBuffer();
-        final int clientHostLength = decoder.clientHostLength();
-        clientEndpoint.port(clientPort);
-        clientEndpoint.hostLength(clientHostLength);
-        decoder.getClientHost(clientHostBuffer, 0, clientHostLength);
+            final MutableDirectBuffer hostBuffer = endpoint.getHostBuffer();
+            final int hostLength = endpointsDecoder.hostLength();
 
-        final Endpoint managementEndpoint = currentPeer.managementEndpoint();
-        final MutableDirectBuffer managementHostBuffer = managementEndpoint.getHostBuffer();
-        final int managementHostLength = decoder.managementHostLength();
-        managementEndpoint.port(managementPort);
-        managementEndpoint.hostLength(managementHostLength);
-        decoder.getClientHost(managementHostBuffer, 0, managementHostLength);
-
-        final Endpoint replicationEndpoint = currentPeer.replicationEndpoint();
-        final MutableDirectBuffer replicationHostBuffer = replicationEndpoint.getHostBuffer();
-        final int replicationHostLength = decoder.managementHostLength();
-        replicationEndpoint.port(replicationPort);
-        replicationEndpoint.hostLength(replicationHostLength);
-        decoder.getClientHost(replicationHostBuffer, 0, replicationHostLength);
+            endpoint.port(endpointsDecoder.port());
+            endpoint.hostLength(hostLength);
+            endpointsDecoder.getHost(hostBuffer, 0, hostLength);
+            endpoint.host();
+        }
 
         currentPeer.state(decoder.state())
             .changeStateTime(-1L);
