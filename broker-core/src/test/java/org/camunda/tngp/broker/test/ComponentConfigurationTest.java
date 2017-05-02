@@ -1,15 +1,14 @@
 package org.camunda.tngp.broker.test;
 
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.event.processor.SubscriptionCfg;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
@@ -18,7 +17,11 @@ import org.camunda.tngp.broker.system.ConfigurationManager;
 import org.camunda.tngp.broker.system.ConfigurationManagerImpl;
 import org.camunda.tngp.broker.system.metrics.cfg.MetricsCfg;
 import org.camunda.tngp.broker.transport.cfg.TransportComponentCfg;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class ComponentConfigurationTest
@@ -35,8 +38,7 @@ public class ComponentConfigurationTest
 
     public static boolean runOnce = false;
 
-
-    @Parameters(name = "{0}")
+    @Parameters(name = "{0} - {2}")
     public static Iterable<Object[]> data()
     {
         return Arrays.asList(new Object[][] {
@@ -52,12 +54,9 @@ public class ComponentConfigurationTest
             {"snapshot", SnapshotStorageCfg.class, "snapshotDirectory", "correctPath/snapshot/"},
             {"snapshot", SnapshotStorageCfg.class, "useTempSnapshotDirectory", true},
             {"subscriptions", SubscriptionCfg.class, "snapshotDirectory", "correctPath/subscription/"},
-            {"subscriptions", SubscriptionCfg.class, "useTempSnapshotFile", true},
-
+            {"subscriptions", SubscriptionCfg.class, "useTempSnapshotFile", true}
         });
     }
-
-
 
     @Parameter(0)
     public String configurationSection;
@@ -71,16 +70,11 @@ public class ComponentConfigurationTest
     @Parameter(3)
     public Object exceptedValue;
 
-
-
     @Test
-    public void shouldUseConfigurationInGlobalSection()
+    public void shouldUseConfigurationInGlobalSection() throws Exception
     {
         //given
-
-        final ClassLoader classLoader = getClass().getClassLoader();
-        final File cfgFile = new File(classLoader.getResource("tngp." + globalPrefix + ".cfg.toml").getFile());
-        final ConfigurationManager configurationManager = new ConfigurationManagerImpl(cfgFile.getAbsoluteFile().toString());
+        final ConfigurationManager configurationManager = new ConfigurationManagerImpl(getConfigFilePath("tngp." + globalPrefix + ".cfg.toml"));
         final Object cfg = configurationManager.readEntry(configurationSection, configurationClass);
 
         //testing
@@ -88,13 +82,10 @@ public class ComponentConfigurationTest
     }
 
     @Test
-    public void shouldUseConfigurationInNonGlobalSection()
+    public void shouldUseConfigurationInNonGlobalSection() throws Exception
     {
         //given
-
-        final ClassLoader classLoader = getClass().getClassLoader();
-        final File cfgFile = new File(classLoader.getResource("tngp." + nonglobalPrefix + ".cfg.toml").getFile());
-        final ConfigurationManager configurationManager = new ConfigurationManagerImpl(cfgFile.getAbsoluteFile().toString());
+        final ConfigurationManager configurationManager = new ConfigurationManagerImpl(getConfigFilePath("tngp." + nonglobalPrefix + ".cfg.toml"));
         final Object cfg = configurationManager.readEntry(configurationSection, configurationClass);
 
         //testing
@@ -102,33 +93,25 @@ public class ComponentConfigurationTest
     }
 
     @Test
-    public void shouldUseOriginalConfigurationIfNoConfiguration()
+    public void shouldUseOriginalConfigurationIfNoConfiguration() throws Exception
     {
         //given
-
-        final ClassLoader classLoader = getClass().getClassLoader();
-        final File cfgFile = new File(classLoader.getResource("tngp." + nonconfigPrefix + ".cfg.toml").getFile());
-        final ConfigurationManager configurationManager = new ConfigurationManagerImpl(cfgFile.getAbsoluteFile().toString());
+        final ConfigurationManager configurationManager = new ConfigurationManagerImpl(getConfigFilePath("tngp." + nonconfigPrefix + ".cfg.toml"));
         final Object cfg = configurationManager.readEntry(configurationSection, configurationClass);
 
         //except
-        Object exceptObj = null;
-        try
-        {
-            exceptObj = configurationClass.newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-
+        final Object exceptObj = configurationClass.newInstance();
 
         //testing
         assertThat(getValueFromParameterName(cfg, parameterName)).isEqualTo(getValueFromParameterName(exceptObj, parameterName));
     }
 
+    protected String getConfigFilePath(String fileName) throws UnsupportedEncodingException
+    {
+        final ClassLoader classLoader = getClass().getClassLoader();
+        final String path = URLDecoder.decode(classLoader.getResource(fileName).getFile(), StandardCharsets.UTF_8.name());
+        return new File(path).getAbsolutePath();
+    }
 
     protected static Object getValueFromParameterName(Object obj, String name)
     {
