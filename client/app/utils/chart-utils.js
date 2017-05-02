@@ -77,13 +77,21 @@ export function updateBars({bars, x, y, height}) {
 }
 
 export function createNewBars({bars, x, y, height, tooltip, onHoverChange}) {
+  const mouseOverCallback = onHoverChange(true);
+  const mouseOutCallback = onHoverChange(false);
+
   const newBars = bars.enter()
     .append('rect')
     .attr('class', 'bar')
-    .on('mouseover', tooltip.show)
-    .on('mouseover', onHoverChange(true))
-    .on('mouseout', tooltip.hide)
-    .on('mouseout', onHoverChange(false));
+    .on('mouseover', function() {
+      // it only allows one callback to be registered per event
+      tooltip.show.apply(null, arguments);
+      mouseOverCallback.apply(null, arguments);
+    })
+    .on('mouseout', function() {
+      tooltip.hide.apply(null, arguments);
+      mouseOutCallback.apply(null, arguments);
+    });
 
   updateBars({bars: newBars, x, y, height});
 }
