@@ -100,14 +100,7 @@ resource "aws_iam_role_policy" "optimize_s3_role_policy" {
   "Statement": [
     {
       "Sid": "Stmt1488533493102",
-      "Action": [
-        "s3:DeleteObject",
-        "s3:DeleteObjectVersion",
-        "s3:GetObject",
-        "s3:GetObjectVersion",
-        "s3:ListBucket",
-        "s3:PutObject"
-      ],
+      "Action": "s3:*",
       "Effect": "Allow",
       "Resource": [
         "arn:aws:s3:::camunda-optimize-terraform/caddy",
