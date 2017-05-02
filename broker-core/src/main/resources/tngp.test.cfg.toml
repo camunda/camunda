@@ -3,7 +3,7 @@
 # Networking configuration ----------------------------
 
 [network]
-hostname = "0.0.0.0"
+host = "0.0.0.0"
 sendBufferSize = 128
 
 [network.clientApi]
