@@ -34,6 +34,7 @@ public class Endpoint implements Comparable<Endpoint>
 
     public Endpoint host(final DirectBuffer src, int offset, final int length)
     {
+        checkHostLength(length);
         hostBuffer.putBytes(0, src, offset, length);
         hostBuffer.setMemory(length, hostBuffer.capacity() - length, (byte) 0);
         hostLength = length;
@@ -42,6 +43,7 @@ public class Endpoint implements Comparable<Endpoint>
 
     public Endpoint host(final byte[] src, final int offset, final int length)
     {
+        checkHostLength(length);
         hostBuffer.putBytes(0, src, offset, length);
         hostBuffer.setMemory(length, hostBuffer.capacity() - length, (byte) 0);
         hostLength = length;
@@ -51,7 +53,7 @@ public class Endpoint implements Comparable<Endpoint>
     public Endpoint host(final String host)
     {
         final byte[] hostBytes = getBytes(host);
-
+        checkHostLength(hostBytes.length);
         return host(hostBytes, 0, hostBytes.length);
     }
 
@@ -71,8 +73,17 @@ public class Endpoint implements Comparable<Endpoint>
 
     public Endpoint hostLength(final int hostLength)
     {
+        checkHostLength(hostLength);
         this.hostLength = hostLength;
         return this;
+    }
+
+    protected void checkHostLength(final int hostLength)
+    {
+        if (hostLength > MAX_HOST_LENGTH)
+        {
+            throw new RuntimeException(String.format("Host length exceeds max length (%d > %d bytes)", hostLength, MAX_HOST_LENGTH));
+        }
     }
 
     public int port()
