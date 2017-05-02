@@ -1,11 +1,19 @@
 package org.camunda.tngp.broker.workflow.processor;
 
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
+
+import java.nio.ByteOrder;
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
-import org.camunda.tngp.broker.incident.DummyException;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
@@ -18,7 +26,14 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
-import org.camunda.tngp.broker.workflow.graph.model.*;
+import org.camunda.tngp.broker.workflow.graph.model.BpmnAspect;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
+import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
@@ -28,23 +43,17 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
-import org.camunda.tngp.logstreams.log.*;
+import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.logstreams.log.LogStreamReader;
+import org.camunda.tngp.logstreams.log.LogStreamWriter;
+import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
 import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
-import org.camunda.tngp.util.buffer.BufferUtil;
-
-import java.nio.ByteOrder;
-import java.util.EnumMap;
-import java.util.Map;
-
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
@@ -160,7 +169,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 new HashIndexSnapshotSupport<>(workflowInstanceTokenCountIndex, workflowInstanceTokenCountIndexStore),
                 new HashIndexSnapshotSupport<>(workflowInstancePayloadIndex, workflowInstancePayloadIndexStore));
 
-        workflowCache = new LongLruCache<>(DEFAULT_WORKFLOW_CACHE_CAPACITY, this::lookupWorkflow, (workflow) -> { });
+        workflowCache = new LongLruCache<>(DEFAULT_WORKFLOW_CACHE_CAPACITY, this::lookupWorkflow, (workflow) ->
+        { });
     }
 
     @Override
@@ -473,12 +483,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             {
                 final ExecutableServiceTask serviceTask = (ExecutableServiceTask) activty;
                 final TaskMetadata taskMetadata = serviceTask.getTaskMetadata();
-
-                // TODO hack to force an incident
-                if (BufferUtil.bufferAsString(taskMetadata.getTaskType()).equals("fail"))
-                {
-                    throw new DummyException("foo");
-                }
 
                 taskEvent
                     .setEventType(TaskEventType.CREATE)

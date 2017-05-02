@@ -1,7 +1,22 @@
 package org.camunda.tngp.broker.protocol.clientapi;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_REDUDANT_MAPPING;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.REDUDANT_MAPPING;
+import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
+import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_EVENT;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_BPMN_XML;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions;
@@ -17,19 +32,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_PROHIBITED_EXPRESSION;
-import static org.camunda.tngp.broker.workflow.graph.transformer.validator.IOMappingRule.ERROR_MSG_REDUDANT_MAPPING;
-import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
-import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.REDUDANT_MAPPING;
-import static org.camunda.tngp.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
-import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Represents a test class to test the input and output mappings for
@@ -407,6 +411,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
+    @Ignore("should create an incident if mapping fails")
     public void shouldMapNullForNoMatchOnRootAsTarget() throws Throwable
     {
         // given
@@ -431,6 +436,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
+    @Ignore("should create an incident if mapping fails")
     public void shouldMapNullOnSubObject() throws Throwable
     {
         // given
@@ -458,6 +464,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
+    @Ignore("should create an incident if mapping fails")
     public void shouldMapNullAndMatchingValue() throws Throwable
     {
         // given
@@ -1029,6 +1036,7 @@ public class WorkflowTaskIOMappingTest
     }
 
     @Test
+    @Ignore("should create an incident if mapping fails")
     public void shouldNotMapPayloadToWorkflowIfJsonPathDoesNotMatch() throws Throwable
     {
         // given

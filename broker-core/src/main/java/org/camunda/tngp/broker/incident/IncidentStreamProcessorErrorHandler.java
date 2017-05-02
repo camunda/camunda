@@ -18,7 +18,10 @@ import org.camunda.tngp.broker.incident.data.ErrorType;
 import org.camunda.tngp.broker.incident.data.IncidentEvent;
 import org.camunda.tngp.broker.incident.data.IncidentEventType;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
+import org.camunda.tngp.broker.taskqueue.data.TaskHeaders;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
+import org.camunda.tngp.broker.workflow.processor.PayloadMappingException;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamWriter;
 import org.camunda.tngp.logstreams.log.LogStreamWriterImpl;
@@ -40,6 +43,7 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
     private final BrokerEventMetadata failureEventMetadata = new BrokerEventMetadata();
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
+    private final TaskEvent taskEvent = new TaskEvent();
 
     public IncidentStreamProcessorErrorHandler(LogStream targetLogStream, LogStream sourceStream, int streamProcessorId)
     {
@@ -55,15 +59,15 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     {
         int result = RESULT_REJECT;
 
-        if (error instanceof DummyException)
+        if (error instanceof PayloadMappingException)
         {
-            result = handleDummyException(failureEvent, error);
+            result = handlePayloadMappingException(failureEvent, (PayloadMappingException) error);
         }
 
         return result;
     }
 
-    private int handleDummyException(LoggedEvent failureEvent, Exception error)
+    private int handlePayloadMappingException(LoggedEvent failureEvent, PayloadMappingException error)
     {
         incidentEventMetadata.reset();
         incidentEventMetadata
@@ -73,12 +77,27 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
         incidentEvent.reset();
         incidentEvent
             .setEventType(IncidentEventType.CREATE)
-            .setErrorType(ErrorType.DUMMY_ERROR)
+            .setErrorType(ErrorType.IO_MAPPING_ERROR)
             .setErrorMessage(error.getMessage())
             .setFailureEventTopicName(sourceStreamTopicName)
             .setFailureEventPartitionId(sourceStreamPartitionId)
             .setFailureEventPosition(failureEvent.getPosition());
 
+        setWorkflowInstanceData(failureEvent);
+
+        final long position = logStreamWriter
+                .producerId(streamProcessorId)
+                .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
+                .positionAsKey()
+                .metadataWriter(incidentEventMetadata)
+                .valueWriter(incidentEvent)
+                .tryWrite();
+
+        return position > 0 ? RESULT_SUCCESS : RESULT_FAILURE;
+    }
+
+    private void setWorkflowInstanceData(LoggedEvent failureEvent)
+    {
         failureEventMetadata.reset();
         failureEvent.readMetadata(failureEventMetadata);
 
@@ -92,16 +111,18 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
                 .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
                 .setActivityId(workflowInstanceEvent.getActivityId());
         }
+        else if (failureEventMetadata.getEventType() == EventType.TASK_EVENT)
+        {
+            taskEvent.reset();
+            failureEvent.readValue(taskEvent);
 
-        final long position = logStreamWriter
-                .producerId(streamProcessorId)
-                .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
-                .positionAsKey()
-                .metadataWriter(incidentEventMetadata)
-                .valueWriter(incidentEvent)
-                .tryWrite();
+            final TaskHeaders taskHeaders = taskEvent.headers();
 
-        return position > 0 ? RESULT_SUCCESS : RESULT_FAILURE;
+            incidentEvent
+                .setBpmnProcessId(taskHeaders.getBpmnProcessId())
+                .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
+                .setActivityId(taskHeaders.getActivityId());
+        }
     }
 
 }

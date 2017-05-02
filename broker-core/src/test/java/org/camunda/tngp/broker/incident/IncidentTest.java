@@ -14,6 +14,7 @@ package org.camunda.tngp.broker.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
 import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
 
 import java.util.function.Predicate;
@@ -49,7 +50,7 @@ public class IncidentTest
     }
 
     @Test
-    public void shouldCreateIncident()
+    public void shouldCreateIncidentForInputMappingFailure()
     {
         // given
         final BpmnModelInstance modelInstance = wrap(
@@ -57,7 +58,10 @@ public class IncidentTest
                     .startEvent()
                     .serviceTask("failingTask")
                     .done())
-                        .taskDefinition("failingTask", "fail", 5);
+                    .taskDefinition("failingTask", "test", 3)
+                    .ioMapping("failingTask")
+                        .input("$.foo", "$.bar")
+                        .done();
 
         testClient.deploy(modelInstance);
 
@@ -70,8 +74,46 @@ public class IncidentTest
 
         assertThat(incidentEvent.key()).isGreaterThan(0);
         assertThat(incidentEvent.event())
-            .containsEntry("errorType", ErrorType.DUMMY_ERROR.name())
-            .containsEntry("errorMessage", "foo")
+            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+            .containsEntry("errorMessage", "No data found for query '$.foo'.")
+            .containsEntry("failureEventPartitionId", failureEvent.partitionId())
+            .containsEntry("failureEventTopicName", failureEvent.topicName())
+            .containsEntry("failureEventPosition", failureEvent.position())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask");
+    }
+
+    @Test
+    public void shouldCreateIncidentForOutputMappingFailure()
+    {
+        // given
+        final BpmnModelInstance modelInstance = wrap(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("failingTask")
+                .endEvent()
+                .done())
+            .taskDefinition("failingTask", "test", 3)
+            .ioMapping("failingTask")
+                .output("$.foo", "$.bar")
+            .done();
+
+        testClient.deploy(modelInstance);
+
+        // when
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+
+        testClient.completeTaskOfType("test");
+
+        // then
+        final SubscribedEvent failureEvent = testClient.receiveSingleEvent(taskEvents("COMPLETED"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATE"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
+            .containsEntry("errorMessage", "No data found for query '$.foo'.")
             .containsEntry("failureEventPartitionId", failureEvent.partitionId())
             .containsEntry("failureEventTopicName", failureEvent.topicName())
             .containsEntry("failureEventPosition", failureEvent.position())

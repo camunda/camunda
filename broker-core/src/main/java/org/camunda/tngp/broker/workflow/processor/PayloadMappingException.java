@@ -10,16 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.incident;
+package org.camunda.tngp.broker.workflow.processor;
 
-public class DummyException extends RuntimeException
+public class PayloadMappingException extends RuntimeException
 {
-
-    public DummyException(String message)
-    {
-        super(message);
-    }
-
     private static final long serialVersionUID = 1L;
+
+    public PayloadMappingException(String msg)
+    {
+        super(msg);
+    }
 
 }

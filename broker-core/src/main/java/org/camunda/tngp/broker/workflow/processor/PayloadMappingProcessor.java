@@ -1,5 +1,13 @@
 package org.camunda.tngp.broker.workflow.processor;
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -11,8 +19,7 @@ import org.camunda.tngp.msgpack.query.MsgPackTraverser;
 import org.camunda.tngp.msgpack.spec.MsgPackToken;
 import org.camunda.tngp.msgpack.spec.MsgPackType;
 import org.camunda.tngp.msgpack.spec.MsgPackWriter;
-
-import java.util.*;
+import org.camunda.tngp.util.buffer.BufferUtil;
 
 /**
  * Represents an processor, which executes/process the given mapping on the given payload.
@@ -305,11 +312,12 @@ public class PayloadMappingProcessor
         {
             queryExecutor.moveToResult(0);
             queryResult = (((long) queryExecutor.currentResultPosition()) << 32)
-                | ((long) queryExecutor.currentResultLength());
+                | (queryExecutor.currentResultLength());
         }
         else if (queryExecutor.numResults() == 0)
         {
-            queryResult = NO_MATCHING_VALUE;
+            final String errorMessage = String.format("No data found for query '%s'.", BufferUtil.bufferAsString(jsonPathQuery.getExpression()));
+            throw new PayloadMappingException(errorMessage);
         }
         else
         {
@@ -462,7 +470,7 @@ public class PayloadMappingProcessor
             nodeChildsMap.get(parentId).add(nodeName);
 
             final long mapping = (position << 32)
-                | ((long) currentValue.getTotalLength());
+                | (currentValue.getTotalLength());
             leafMap.put(nodeId, mapping);
             nextIsValue = false;
         }

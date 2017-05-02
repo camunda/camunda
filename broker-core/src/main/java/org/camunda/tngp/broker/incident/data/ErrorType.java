@@ -16,8 +16,5 @@ public enum ErrorType
 {
     UNKNOWN,
 
-    // TODO remove me later
-    DUMMY_ERROR,
-
     IO_MAPPING_ERROR;
 }
