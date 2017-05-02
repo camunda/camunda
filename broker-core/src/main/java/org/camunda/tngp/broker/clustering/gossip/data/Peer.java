@@ -216,4 +216,17 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
         state = NULL_VAL;
         changeStateTime = -1L;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format(
+            "Peer { State: %s, Heartbeat: %s, Endpoints: { Client: %s, Management: %s, Replication: %s } }",
+            state(),
+            heartbeat(),
+            clientEndpoint(),
+            managementEndpoint(),
+            replicationEndpoint()
+        );
+    }
 }

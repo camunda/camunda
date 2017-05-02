@@ -183,7 +183,7 @@ public class Endpoint implements Comparable<Endpoint>
     @Override
     public String toString()
     {
-        return "[host: " + host() + ", port: " + port() + "]";
+        return "{ host: " + host() + ", port: " + port() + " }";
     }
 
 }

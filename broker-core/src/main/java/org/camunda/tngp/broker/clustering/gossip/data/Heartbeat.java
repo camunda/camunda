@@ -45,4 +45,10 @@ public class Heartbeat implements Comparable<Heartbeat>
         this.generation(heartbeat.generation())
             .version(heartbeat.version());
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("{ generation: %d, version: %d }", generation(), version());
+    }
 }
