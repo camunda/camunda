@@ -1,5 +1,7 @@
 package org.camunda.tngp.msgpack.jsonpath;
 
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.msgpack.filter.MsgPackFilter;
 import org.camunda.tngp.msgpack.query.MsgPackFilterContext;
 
@@ -12,6 +14,8 @@ public class JsonPathQuery
     protected MsgPackFilter[] filters;
     protected MsgPackFilterContext filterInstances = new MsgPackFilterContext(MAX_DEPTH, MAX_FILTER_CONTEXT_LENGTH);
 
+    protected UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
+
     protected int invalidPosition;
     protected String errorMessage;
 
@@ -20,10 +24,12 @@ public class JsonPathQuery
         this.filters = filters;
     }
 
-    public void reset()
+    public void wrap(DirectBuffer buffer, int offset, int length)
     {
         filterInstances.clear();
         invalidPosition = NO_INVALID_POSITION;
+
+        expressionBuffer.wrap(buffer, offset, length);
     }
 
     public MsgPackFilterContext getFilterInstances()
@@ -55,6 +61,11 @@ public class JsonPathQuery
     public String getErrorReason()
     {
         return errorMessage;
+    }
+
+    public DirectBuffer getExpression()
+    {
+        return expressionBuffer;
     }
 
 }

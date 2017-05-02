@@ -44,7 +44,8 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor
     public JsonPathQuery compile(DirectBuffer buffer, int offset, int length)
     {
         // TODO: syntactically validate expression
-        jsonPathQuery.reset();
+        jsonPathQuery.wrap(buffer, offset, length);
+
         mode = ParsingMode.DEFAULT;
         tokenizer.tokenize(buffer, offset, length, this);
         return jsonPathQuery;
