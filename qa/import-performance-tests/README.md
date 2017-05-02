@@ -38,6 +38,33 @@ to connect to your database instance
 
 Please follow instruction provided by [Docker container][docker-containers] setup
 
+Docker: 
+```
+docker run -d -p 5432:5432 registry.camunda.com/camunda-ci-postgresql
+psql -hlocalhost -d process-engine -U camunda
+```
+
+DS: 
+```
+    <Resource name="jdbc/ProcessEngine"
+              auth="Container"
+              type="javax.sql.DataSource"
+              factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
+              uniqueResourceName="process-engine"
+              driverClassName="org.postgresql.Driver"
+              url="jdbc:postgresql://localhost:5432/process-engine"
+              defaultTransactionIsolation="READ_COMMITTED"
+              username="camunda"  
+              password="camunda"
+              maxActive="20"
+              minIdle="5" />
+```
+
+JDBC
+```
+cp ~/.m2/repository/org/postgresql/postgresql/9.3-1102-jdbc4/postgresql-9.3-1102-jdbc4.jar server/apache-tomcat-8.0.24/lib/
+```
+
 ### Configuration with Oracle Database
 
 * download and run oracle docker image 

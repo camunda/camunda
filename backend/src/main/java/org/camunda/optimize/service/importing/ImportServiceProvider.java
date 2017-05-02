@@ -34,7 +34,6 @@ public class ImportServiceProvider {
     services.add(activityImportService);
     services.add(processDefinitionImportService);
     services.add(processDefinitionXmlImportService);
-    services.add(variableImportService);
   }
 
   public List<ImportService> getServices() {
