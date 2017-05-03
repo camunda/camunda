@@ -67,7 +67,7 @@ public class ProcessDefinitionImportService extends PaginatedImportService<Proce
   }
 
   @Override
-  protected String getElasticsearchType() {
+  public String getElasticsearchType() {
     return configurationService.getProcessDefinitionType();
   }
 }

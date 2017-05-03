@@ -82,7 +82,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   }
 
   @Override
-  protected String getElasticsearchType() {
+  public String getElasticsearchType() {
     return configurationService.getEventType();
   }
 }

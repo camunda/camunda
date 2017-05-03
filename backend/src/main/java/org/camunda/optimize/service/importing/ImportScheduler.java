@@ -100,11 +100,19 @@ public class ImportScheduler extends Thread {
         }
       }
       if (pagesPassed > 0) {
-        logger.debug("Processed [{}] pages during data import run, scheduling one more run", pagesPassed);
+        logger.debug(
+            "Processed [{}] pages during data import run of [{}], scheduling one more run",
+            pagesPassed,
+            toExecute.getImportService().getElasticsearchType()
+        );
         importScheduleJobs.add(toExecute);
         backoffCounter = STARTING_BACKOFF;
       } if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
-        logger.debug("Index of [{}] is [{}]", toExecute.getImportService().getClass(), toExecute.getImportService().getImportStartIndex());
+        logger.debug(
+            "Index of [{}] is [{}]",
+            toExecute.getImportService().getElasticsearchType(),
+            toExecute.getImportService().getImportStartIndex()
+        );
         importScheduleJobs.add(toExecute);
       }
     }

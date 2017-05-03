@@ -1,13 +1,26 @@
 package org.camunda.optimize.service.util;
 
+import org.glassfish.jersey.jaxb.internal.XmlJaxbElementProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.PropertyPlaceholderHelper;
+import org.springframework.web.context.support.XmlWebApplicationContext;
 
 /**
  * @author Askar Akhmerov
  */
 @Component
 public class ConfigurationService {
+
+  private static final String PAGE_SIZE_MAX = "page.size.max";
+
+  @Autowired
+  private ApplicationContext applicationContext;
 
   @Value("${camunda.optimize.auth.token.live.min}")
   private Integer lifetime;
@@ -278,5 +291,19 @@ public class ConfigurationService {
 
   public String getHistoricVariableInstanceCountEndpoint() {
     return historicVariableInstanceCountEndpoint;
+  }
+
+  public int getEngineImportMaxPageSize(String name) {
+    if (name == null) {
+      return this.getEngineImportMaxPageSize();
+    } else {
+      return Integer.parseInt(
+          ((AbstractApplicationContext)applicationContext).getBeanFactory().resolveEmbeddedValue(getEmbeddedValue(name))
+      );
+    }
+  }
+
+  private String getEmbeddedValue(String name) {
+    return "${" + name + "." + PAGE_SIZE_MAX + "}";
   }
 }

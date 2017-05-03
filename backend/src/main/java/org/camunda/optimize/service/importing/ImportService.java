@@ -31,4 +31,10 @@ public interface ImportService {
    * have been missed are imported as well.
    */
   void resetImportStartIndex();
+
+  /**
+   * This is used for doc id when persisting the import index.
+   * @return returns the type where the data is stored in elasticsearch.
+   */
+  String getElasticsearchType();
 }

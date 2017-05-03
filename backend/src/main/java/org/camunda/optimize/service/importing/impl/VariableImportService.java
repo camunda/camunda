@@ -69,7 +69,7 @@ public class VariableImportService extends PaginatedImportService<HistoricVariab
   }
 
   @Override
-  protected String getElasticsearchType() {
+  public String getElasticsearchType() {
     return configurationService.getVariableType();
   }
 }
