@@ -4,7 +4,7 @@ import {onNextTick} from 'utils';
 import {setTargetValue, saveTargetValues, getTargetValue, getTargetDurationFromForm, setTargetDurationToForm} from './service';
 import {TargetValueInput} from './TargetValueInput';
 
-export function createTargetValueModal(State, getProcessDefinition) {
+export function createTargetValueModal(State, getProcessDefinition, getViewer) {
   const Modal = createModal();
   const Reference = createReferenceComponent();
 
@@ -12,7 +12,7 @@ export function createTargetValueModal(State, getProcessDefinition) {
 
   const TargetValueModal = () => {
     return (parentNode, eventsBus) => {
-      const template = <Modal>
+      const template = <Modal onClose={clearHighlight}>
         <Socket name="head">
           <h4 className="modal-title">Set Target Value for {'"'}
             <span>
@@ -85,11 +85,25 @@ export function createTargetValueModal(State, getProcessDefinition) {
     };
   };
 
+  function clearHighlight() {
+    getViewer()
+      .get('canvas')
+      .removeMarker(element, 'hover-highlight');
+  }
+
   TargetValueModal.open = function(targetValueElement) {
     element = targetValueElement;
     Reference.getNode('elementName').textContent = element.businessObject.name;
 
-    setTargetDurationToForm(Reference.getNode('durationForm'), getTargetValue(State, element));
+    const targetValue = getTargetValue(State, element);
+
+    setTargetDurationToForm(Reference.getNode('durationForm'), targetValue);
+
+    if (!targetValue) {
+      getViewer()
+        .get('canvas')
+        .addMarker(element, 'hover-highlight');
+    }
 
     Modal.open();
   };

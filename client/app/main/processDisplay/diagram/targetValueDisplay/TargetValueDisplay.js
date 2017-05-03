@@ -5,7 +5,7 @@ import {createTargetValueModal} from './TargetValueModal';
 export const TargetValueDisplay = withSelector(({Diagram, getProcessDefinition}) => {
   return (parentNode, eventsBus) => {
     const State = createStateComponent();
-    const TargetValueModal = createTargetValueModal(State, getProcessDefinition);
+    const TargetValueModal = createTargetValueModal(State, getProcessDefinition, Diagram.getViewer);
 
     const template = <State>
       <Diagram createOverlaysRenderer={createOverlaysRenderer(State, TargetValueModal)} />

@@ -19,6 +19,9 @@ describe('<TargetValueModal>', () => {
   let getTargetValue;
   let onNextTick;
   let saveTargetValues;
+  let getViewer;
+  let addMarkerFct;
+  let removeMarkerFct;
 
   let element;
 
@@ -68,7 +71,17 @@ describe('<TargetValueModal>', () => {
     saveTargetValues = sinon.spy();
     __set__('saveTargetValues', saveTargetValues);
 
-    TargetValueModal = createTargetValueModal(State, getProcessDefinition);
+    addMarkerFct = sinon.spy();
+    removeMarkerFct = sinon.spy();
+
+    getViewer = sinon.stub().returns({
+      get: sinon.stub().returns({
+        addMarker: addMarkerFct,
+        removeMarker: removeMarkerFct
+      })
+    });
+
+    TargetValueModal = createTargetValueModal(State, getProcessDefinition, getViewer);
 
     ({node, update} = mountTemplate(<TargetValueModal />));
     update();
@@ -90,6 +103,24 @@ describe('<TargetValueModal>', () => {
 
   it('should have an open function', () => {
     expect(TargetValueModal.open).to.be.a('function');
+  });
+
+  it('should not highlight the diagram element if a target value already has been set', () => {
+    expect(removeMarkerFct.called).to.eql(false);
+  });
+
+  it('should highlight the diagram element if it has no target value', () => {
+    getTargetValue.returns(0);
+
+    TargetValueModal.open(element);
+
+    expect(addMarkerFct.calledWith(element, 'hover-highlight')).to.eql(true);
+  });
+
+  it('should remove the highlight when the modal is closed', () => {
+    Modal.calls[0][0].onClose();
+
+    expect(removeMarkerFct.calledWith(element, 'hover-highlight')).to.eql(true);
   });
 
   it('should set the target duration to the form from the element', () => {

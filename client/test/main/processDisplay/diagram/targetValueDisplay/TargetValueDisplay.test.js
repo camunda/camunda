@@ -20,6 +20,7 @@ describe('<TargetValueDisplay>', () => {
     __set__('createOverlaysRenderer', createOverlaysRenderer);
 
     Diagram = createMockComponent('Diagram');
+    Diagram.getViewer = sinon.spy();
 
     stateComponent = createMockComponent('State', true);
     createStateComponent = sinon.stub().returns(stateComponent);
@@ -39,8 +40,8 @@ describe('<TargetValueDisplay>', () => {
     __ResetDependency__('createStateComponent');
   });
 
-  it('should create a targetValueModal with State component and process definition', () => {
-    expect(createTargetValueModal.calledWith(stateComponent, getProcessDefinition)).to.eql(true);
+  it('should create a targetValueModal with State component, process definition and getViewer function', () => {
+    expect(createTargetValueModal.calledWith(stateComponent, getProcessDefinition, Diagram.getViewer)).to.eql(true);
   });
 
   it('should create an overlay renderer with the state component and the target value modal component', () => {
