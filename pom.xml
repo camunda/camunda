@@ -24,7 +24,7 @@
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <version.msgpack>0.8.11</version.msgpack>
-    <version.util>1.0.0-alpha3</version.util>
+    <version.util>1.0.0-alpha5</version.util>
   </properties>
 
   <dependencyManagement>
