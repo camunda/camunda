@@ -28,7 +28,7 @@ function Process() {
             <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => formatTime(x, 2))} />
+            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => formatTime(x, {precision: 2}))} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />

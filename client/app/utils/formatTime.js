@@ -12,10 +12,11 @@ const units = Object
   .reduce((entries, key) => entries.concat({name: key, value: unitsMap[key]}), [])
   .sort(({value: valueA}, {value: valueB}) => valueB - valueA);
 
-export function formatTime(time, precision) {
-  // convention: precision = 0 returns unprocessed object
+export function formatTime(time, config = {}) {
+  const {precision, returnRaw} = config;
+
   if (time === 0) {
-    return precision === 0 ? [] : '0ms';
+    return returnRaw ? [] : '0ms';
   }
 
   // construct array that breaks up time into weeks, days and so on
@@ -38,7 +39,7 @@ export function formatTime(time, precision) {
     return {parts, time};
   }, {parts: [], time});
 
-  if (precision === 0) {
+  if (returnRaw) {
     return parts;
   }
 

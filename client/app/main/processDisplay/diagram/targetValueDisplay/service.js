@@ -25,7 +25,7 @@ export function getTargetDurationFromForm(form) {
 }
 
 export function setTargetDurationToForm(form, targetValue) {
-  const timeParts = formatTime(targetValue, 0);
+  const timeParts = formatTime(targetValue, {returnRaw: true});
   const fields = form.querySelectorAll('input');
 
   for (let i = 0; i < fields.length; i++) {
@@ -103,7 +103,7 @@ export function addTargetValueTooltip(viewer, element, actualValue, targetValue)
   container.innerHTML =
   `<div class="tooltip top" role="tooltip" style="opacity: 1; pointer-events:none;">
   <div class="tooltip-arrow"></div>
-  <div class="tooltip-inner" style="text-align: left;">target:&nbsp;${formatTime(targetValue, 2)}<br />actual:&nbsp;${formatTime(actualValue, 2)}<br />${percentage}</div>
+  <div class="tooltip-inner" style="text-align: left;">target:&nbsp;${formatTime(targetValue, {precision: 2})}<br />actual:&nbsp;${formatTime(actualValue, {precision: 2})}<br />${percentage}</div>
   </div>`;
   const overlayHtml = container.firstChild;
 
