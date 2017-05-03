@@ -29,6 +29,8 @@
     <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/camunda-tngp/</nexus.release.repository>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
+    <!-- disable javadoc linter to not fail on incomplete javadoc -->
+    <additionalparam>-Xdoclint:none</additionalparam>
   </properties>
 
   <dependencyManagement>
