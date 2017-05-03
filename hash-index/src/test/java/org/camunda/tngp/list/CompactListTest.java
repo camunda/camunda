@@ -14,9 +14,7 @@ import java.util.NoSuchElementException;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 public class CompactListTest
@@ -297,6 +295,23 @@ public class CompactListTest
 
         // assume
         assertThat(list.size()).isEqualTo(10);
+
+        // when
+        list.clear();
+
+        // then
+        assertThat(list.size()).isEqualTo(0);
+    }
+
+    @Test
+    @Ignore("https://github.com/camunda-tngp/util/issues/14")
+    public void shouldClearFullList()
+    {
+        // given
+        fillList();
+
+        // assume
+        assertThat(list.size()).isEqualTo(list.capacity());
 
         // when
         list.clear();
@@ -664,6 +679,15 @@ public class CompactListTest
     protected void addValues()
     {
         for (int i = 0; i < 10; i++)
+        {
+            writeBuffer.putInt(0, i);
+            list.add(writeBuffer);
+        }
+    }
+
+    protected void fillList()
+    {
+        for (int i = list.size(); i < list.capacity(); i++)
         {
             writeBuffer.putInt(0, i);
             list.add(writeBuffer);
