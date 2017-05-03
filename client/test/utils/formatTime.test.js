@@ -31,7 +31,7 @@ describe('formatTime', () => {
   });
 
   it('should return raw value even for 0 value', () => {
-    const result = formatTime(0, {returnRaw: true });
+    const result = formatTime(0, {returnRaw: true});
 
     expect(result).to.be.an('array');
     expect(result).to.be.empty;
