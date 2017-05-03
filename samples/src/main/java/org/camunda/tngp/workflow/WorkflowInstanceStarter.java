@@ -62,6 +62,7 @@ public class WorkflowInstanceStarter
             tngpClient.workflowTopic(topicName, partitionId)
                 .create()
                 .bpmnProcessId(bpmnProcessId)
+                .payload("{\"a\": \"b\"}")
                 .execute();
 
             System.out.println("> Created.");

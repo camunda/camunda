@@ -14,6 +14,10 @@
     <bpmn:serviceTask id="taskA" name="task A">
       <bpmn:extensionElements>
         <tngp:taskDefinition type="foo" />
+        <tngp:ioMapping>
+          <tngp:input source="$.a" target="$.foo" />
+          <tngp:output source="$.foo" target="$.bar" />
+        </tngp:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06ytcxw</bpmn:outgoing>
