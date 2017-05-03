@@ -168,6 +168,11 @@ describe('target value overlays renderer', () => {
     expect(canvas.addMarker.calledWith(element, 'highlight')).to.eql(true);
   });
 
+  it('should mark elements as clickable', () => {
+    update({state, diagramRendered: true});
+    expect(canvas.addMarker.calledWith(element, 'clickable')).to.eql(true);
+  });
+
   it('should create tooltips for all elements with data', () => {
     const TARGET_VALUE = 400;
 

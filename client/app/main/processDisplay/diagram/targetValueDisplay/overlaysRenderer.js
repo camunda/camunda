@@ -11,7 +11,7 @@ export function createOverlaysRenderer(State, TargetValueModal) {
     let heatmap;
 
     eventBus.on('element.click', ({element}) => {
-      if (isValidElement(element) && !getTargetValue(State, element)) {
+      if (isValidElement(element)) {
         TargetValueModal.open(element);
       }
     });
@@ -34,6 +34,10 @@ export function createOverlaysRenderer(State, TargetValueModal) {
       }
     }
 
+    function markAsClickable(element) {
+      canvas.addMarker(element, 'clickable');
+    }
+
     function isValidElement(element) {
       return isBpmnType(element, ['Task', 'IntermediateCatchEvent', 'SubProcess', 'CallActivity', 'EventBasedGateway']);
     }
@@ -45,6 +49,7 @@ export function createOverlaysRenderer(State, TargetValueModal) {
         elementRegistry.forEach((element) => {
           removeHighlight(element);
           if (isValidElement(element)) {
+            markAsClickable(element);
             if (!getTargetValue(State, element)) {
               highlight(element);
             } else {
