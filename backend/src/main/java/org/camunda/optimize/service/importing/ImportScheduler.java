@@ -92,6 +92,7 @@ public class ImportScheduler extends Thread {
         //next step is sleep
         if (logger.isDebugEnabled()) {
           logger.debug("import jobs capacity exceeded");
+          sleepAndReschedule(pagesPassed);
         }
       } catch (Exception e) {
         if (logger.isDebugEnabled()) {

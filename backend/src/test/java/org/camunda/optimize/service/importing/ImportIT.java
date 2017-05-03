@@ -15,6 +15,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.functionscore.RandomScoreFunctionBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -181,6 +182,7 @@ public class ImportIT  {
   }
 
   @Test
+  @Ignore
   public void variableImportWorks() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")

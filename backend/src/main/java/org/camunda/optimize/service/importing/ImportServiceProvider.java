@@ -23,9 +23,6 @@ public class ImportServiceProvider {
   @Autowired
   private ProcessDefinitionXmlImportService processDefinitionXmlImportService;
 
-  @Autowired
-  private VariableImportService variableImportService;
-
   private List<ImportService> services;
 
   @PostConstruct

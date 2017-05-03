@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
 public class VariableImportService extends PaginatedImportService<HistoricVariableInstanceDto, VariableDto> {
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);
