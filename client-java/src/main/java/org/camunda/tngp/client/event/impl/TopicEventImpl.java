@@ -66,4 +66,11 @@ public class TopicEventImpl implements TopicEvent, EventMetadata
         return eventType;
     }
 
+    @Override
+    public String toString()
+    {
+        return "TopicEventImpl [topicName=" + topicName + ", partitionId=" + partitionId + ", key=" +
+                key + ", position=" + position + ", eventType=" + eventType + ", content=" + content.getAsJson() + "]";
+    }
+
 }

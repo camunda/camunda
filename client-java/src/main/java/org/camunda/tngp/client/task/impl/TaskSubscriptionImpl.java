@@ -143,4 +143,10 @@ public class TaskSubscriptionImpl
     {
         return taskClient.getPartitionId();
     }
+
+    @Override
+    public String toString()
+    {
+        return "TaskSubscriptionImpl [taskType=" + taskType + ", subscriberKey=" + subscriberKey + "]";
+    }
 }

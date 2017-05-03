@@ -215,6 +215,7 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
                 }
 
                 handledEvents++;
+                logHandling(event);
 
                 try
                 {
@@ -233,6 +234,19 @@ public abstract class EventSubscription<T extends EventSubscription<T>>
         }
 
         return handledEvents;
+    }
+
+    protected void logHandling(TopicEventImpl event)
+    {
+        try
+        {
+            LOGGER.debug("{} handling event {}", this, event);
+        }
+        catch (Exception e)
+        {
+            // serializing the event might fail (involves msgpack to JSON conversion)
+            LOGGER.warn("Could not construct or write log message", e);
+        }
     }
 
     protected void onUnhandledEventHandlingException(TopicEventImpl event, Exception e)

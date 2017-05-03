@@ -193,4 +193,10 @@ public class TopicSubscriptionImpl
         return client.getPartitionId();
     }
 
+    @Override
+    public String toString()
+    {
+        return "TopicSubscriptionImpl [name=" + name + ", subscriberKey=" + subscriberKey + "]";
+    }
+
 }
