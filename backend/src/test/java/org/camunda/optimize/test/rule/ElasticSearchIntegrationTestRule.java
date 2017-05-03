@@ -8,6 +8,7 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
@@ -49,7 +50,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private void initObjectMapper() {
     objectMapper = new ObjectMapper();
-    objectMapper.setDateFormat(new SimpleDateFormat(properties.getProperty("camunda.optimize.serialization.date.format")));
+    objectMapper.setDateFormat(new SimpleDateFormat(getDateFormat()));
+  }
+
+  public String getDateFormat() {
+    return properties.getProperty("camunda.optimize.serialization.date.format");
   }
 
   private void initTransport() {
@@ -121,7 +126,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
     esclient.prepareIndex(this.getOptimizeIndex(), type, id)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // necessary because otherwise I can't search for the entry immediately
-      .setSource(json).get();
+      .setSource(json, XContentType.JSON)
+      .get();
     addEntryToTracker(type, id);
   }
 
@@ -188,16 +194,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return properties.getProperty("camunda.optimize.es.procdef.xml.type");
   }
 
-  public String getEventType() {
-    return properties.getProperty("camunda.optimize.es.event.type");
-  }
-
-  public String getBranchAnalysisDataType() {
-    return properties.getProperty("camunda.optimize.es.branch.analysis.type");
-  }
-
-  public String getVariableType() {
-    return properties.getProperty("camunda.optimize.es.variable.type");
+  public String getProcessInstanceType() {
+    return properties.getProperty("camunda.optimize.es.process.instance.type");
   }
 
   public String getDurationHeatmapTargetValueType() {

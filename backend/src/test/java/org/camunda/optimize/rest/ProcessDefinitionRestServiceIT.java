@@ -2,13 +2,13 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
-import org.camunda.optimize.rest.optimize.dto.ActivityListDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.SimpleEventDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -27,6 +27,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,7 +52,7 @@ public class ProcessDefinitionRestServiceIT {
   private static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
   private static final String TASK = "task_1";
 
-  public static final String ID = "123";
+  private static final String ID = "123";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
 
@@ -199,17 +201,17 @@ public class ProcessDefinitionRestServiceIT {
 
   private void insert10ActivitiesWithDifferentPis() {
     for (int i = 0; i< 10; i++) {
-      String activityInstanceId = "AI_" + i;
+      String processInstanceId = "PI_" + i;
 
-      EventDto event = new EventDto();
+      SimpleEventDto event = new SimpleEventDto();
       event.setActivityId("A_" + i);
-      event.setActivityInstanceId(activityInstanceId);
-      event.setStartDate(new Date());
-      event.setEndDate(new Date());
-      event.setProcessDefinitionId(ID);
-      event.setProcessInstanceId("PI_" + i);
       event.setDurationInMs(Long.valueOf(i));
-      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(),activityInstanceId,event);
+      ProcessInstanceDto procInst = new ProcessInstanceDto();
+      procInst.setProcessDefinitionId(ID);
+      procInst.setProcessInstanceId(processInstanceId);
+      procInst.setEvents(Collections.singletonList(event));
+
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), processInstanceId, procInst);
     }
   }
 
@@ -372,15 +374,29 @@ public class ProcessDefinitionRestServiceIT {
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setStartDate(new Date());
+    procInst.setEndDate(new Date());
+    procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
 
-    ActivityListDto actList = new ActivityListDto();
-    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK});
-    actList.setProcessInstanceStartDate(new Date());
-    actList.setProcessInstanceEndDate(new Date());
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
-    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY});
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
+    procInst.setEvents(
+      createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
+    );
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
+  }
+
+  private List<SimpleEventDto> createEventList(String[] activityIds) {
+    List<SimpleEventDto> events = new ArrayList<>(activityIds.length);
+    for (String activityId : activityIds) {
+      SimpleEventDto event = new SimpleEventDto();
+      event.setActivityId(activityId);
+      events.add(event);
+    }
+    return events;
   }
 
   private String readDiagram(String diagramPath) throws IOException {

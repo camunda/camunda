@@ -4,6 +4,7 @@ import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +80,7 @@ public class ElasticSearchSchemaManager {
         . endObject()
         .endObject()
       .endObject()
-      .string())
+      .string(), XContentType.JSON)
     .build();
   }
 
@@ -89,7 +90,7 @@ public class ElasticSearchSchemaManager {
       .indices()
       .preparePutMapping(configurationService.getOptimizeIndex())
       .setType(type)
-      .setSource(content)
+      .setSource(content, XContentType.JSON)
       .get();
   }
 

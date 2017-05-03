@@ -111,6 +111,13 @@ public class EngineIntegrationRule extends TestWatcher {
       client.close();
     } catch (IOException e) {
       logger.error("Error during purge request", e);
+    } finally {
+      try {
+        client.close();
+      } catch (IOException e) {
+        logger.error("Could not close clien!");
+        e.printStackTrace();
+      }
     }
   }
 

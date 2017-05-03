@@ -16,11 +16,6 @@ public class ProcessDefinitionXmlImportJob extends ImportJob<ProcessDefinitionXm
   }
 
   @Override
-  protected void getAbsentAggregateInformation() {
-    // nothing to do here
-  }
-
-  @Override
   protected void executeImport() {
     try {
       processDefinitionWriter.importProcessDefinitionXmls(newOptimizeEntities);

@@ -113,12 +113,12 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
       for (FlowNode flowNode : processInstanceFlow) {
         activityList.add(flowNode.getId());
       }
-      XContentBuilder source = generateSource(activityList);
+      XContentBuilder source = generateSource(activityList, processInstanceId);
       bulkRequest
         .add(client
           .prepareIndex(
             context.getConfiguration().getOptimizeIndex(),
-            context.getConfiguration().getBranchAnalysisDataType(),
+            context.getConfiguration().getProcessInstanceType(),
             processInstanceId
           )
           .setSource(source)
@@ -127,21 +127,47 @@ public class BranchAnalysisDataGenerationStep extends DataGenerationStep {
     return processInstanceFlows.size();
   }
 
-  private XContentBuilder generateSource(List<String> activityList) {
+  private XContentBuilder generateSource(List<String> activityList, String processInstanceId) {
     try {
       String date = sdf.format(new Date());
-      return jsonBuilder()
+      XContentBuilder source = jsonBuilder()
         .startObject()
-          .startArray("activityList")
-            .value(activityList.toString())
+          .startArray("events");
+            addEvents(source, activityList)
           .endArray()
+          .startArray("variables")
+            .startObject()
+              .field("id", "Var" + IdGenerator.getNextId())
+              .field("name", "var")
+              .field("type", "string")
+              .startObject("value")
+                .field("stringVal", "aStringValue")
+              .endObject()
+            .endObject()
+          .endArray()
+          .field("processDefinitionKey", IdGenerator.getNextId())
           .field("processDefinitionId", context.getParameter("processDefinitionId"))
-          .field("processInstanceStartDate", date)
-          .field("processInstanceEndDate", date)
+          .field("processInstanceId", processInstanceId)
+          .field("startDate", date)
+          .field("endDate", date)
         .endObject();
+      return source;
     } catch (IOException e) {
       e.printStackTrace();
     }
     return null;
+  }
+
+  private XContentBuilder addEvents(XContentBuilder contentBuilder, List<String> activityList) throws IOException {
+    for (String event : activityList) {
+      contentBuilder
+        .startObject()
+          .field("id", IdGenerator.getNextId())
+          .field("activityId", event)
+          .field("durationInMs", 20)
+          .field("activityType", "flowNode")
+        .endObject();
+    }
+    return contentBuilder;
   }
 }

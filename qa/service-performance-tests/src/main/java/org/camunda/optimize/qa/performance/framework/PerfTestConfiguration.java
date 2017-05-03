@@ -12,8 +12,7 @@ public class PerfTestConfiguration {
 
   private TransportClient client;
   private String optimizeIndex;
-  private String eventType;
-  private String branchAnalysisDataType;
+  private String processInstanceType;
   private String dateFormat;
   private String frequencyHeatMapEndpoint;
   private String durationHeatMapEndpoint;
@@ -23,11 +22,10 @@ public class PerfTestConfiguration {
   public PerfTestConfiguration(Properties properties) {
     maxServiceExecutionDuration = Long.parseLong(properties.getProperty("test.heatmap.max.duration.ms", "1000"));
     numberOfThreads = Integer.parseInt(properties.getProperty("data.generation.numberOfThreads", "2"));
-    dataGenerationSize = Integer.parseInt(properties.getProperty("data.generation.size", "1000000"));
+    dataGenerationSize = Integer.parseInt(properties.getProperty("data.generation.size", "500000"));
 
     optimizeIndex = properties.getProperty("camunda.optimize.es.index", "optimize");
-    eventType = properties.getProperty("camunda.optimize.es.event.type", "event");
-    branchAnalysisDataType = properties.getProperty("camunda.optimize.es.branch.analysis.type", "branch-analysis-data");
+    processInstanceType = properties.getProperty("camunda.optimize.es.process.instance.type", "process-instance");
     dateFormat = properties.getProperty("camunda.optimize.serialization.date.format", "yyyy-MM-dd'T'HH:mm:ss");
     frequencyHeatMapEndpoint = properties.getProperty("camunda.optimize.rest.heatmap.frequency",
       "http://localhost:8090/api/process-definition/heatmap/frequency");
@@ -47,12 +45,8 @@ public class PerfTestConfiguration {
     return optimizeIndex;
   }
 
-  public String getEventType() {
-    return eventType;
-  }
-
-  public String getBranchAnalysisDataType() {
-    return branchAnalysisDataType;
+  public String getProcessInstanceType() {
+    return processInstanceType;
   }
 
   public String getAuthorizationToken() {

@@ -4,6 +4,8 @@ import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.SimpleEventDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -20,6 +22,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -128,17 +132,19 @@ public class ProcessDefinitionReaderIT {
     procDef.setKey("testDefinition");
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(),"123", procDef);
 
-    EventDto event1 = new EventDto();
-    event1.setActivityId("testActivity");
-    event1.setActivityInstanceId("1");
-    event1.setProcessDefinitionId("123");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(),"1", event1);
-
-    EventDto event2 = new EventDto();
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId("testActivity");
+    event.setId("1");
+    SimpleEventDto event2 = new SimpleEventDto();
     event2.setActivityId("testActivity");
-    event2.setActivityInstanceId("2");
-    event2.setProcessDefinitionId("123");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(),"2", event2);
+    event2.setId("2");
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId("123");
+    List<SimpleEventDto> events = new LinkedList<>();
+    events.add(event);
+    events.add(event2);
+    procInst.setEvents(events);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(),"1", procInst);
 
     String token = embeddedOptimizeRule.authenticateAdmin();
     // when

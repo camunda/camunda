@@ -104,8 +104,9 @@
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
             <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>5.3</version>
+            <version>${elasticsearch.plugin.version}</version>
             <configuration>
+              <version>${elasticsearch.version}</version>
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>
               <httpPort>9200</httpPort>

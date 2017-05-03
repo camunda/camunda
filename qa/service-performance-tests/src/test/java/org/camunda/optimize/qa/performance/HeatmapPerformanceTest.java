@@ -26,6 +26,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   public void setUp() {
     super.setUp();
     filter.setDates(new ArrayList<>());
+    filter.setVariables(new ArrayList<>());
     testBuilder = this.testBuilder
         .step(new HeatMapDataGenerationStep());
   }

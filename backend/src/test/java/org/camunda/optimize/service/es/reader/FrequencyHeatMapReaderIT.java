@@ -1,22 +1,18 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.DateFilterDto;
-import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.util.ConfigurationService;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.SimpleEventDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -25,12 +21,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.reader.FrequencyHeatMapReader.MI_BODY;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -53,40 +49,19 @@ public class FrequencyHeatMapReaderIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
-
-  @Test
-  public void getHeatMapWithMIBody() throws Exception {
-
-    // given
-    EventDto event = new EventDto();
-    event.setActivityId(TEST_ACTIVITY);
-    event.setProcessDefinitionId(TEST_DEFINITION);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
-
-    event.setActivityId(TEST_ACTIVITY);
-    event.setActivityType(MI_BODY);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
-
-    event.setActivityId(TEST_ACTIVITY + 3);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
-
-    // when
-    HeatMapResponseDto actual = getHeatMapResponseDto(TEST_DEFINITION);
-
-    // then
-    assertResults(actual, 1, TEST_ACTIVITY, 1L, 1L);
-  }
-
+  
+  
   @Test
   public void getHeatMap() throws Exception {
 
     // given
-    EventDto event = new EventDto();
+    SimpleEventDto event = new SimpleEventDto();
     event.setActivityId(TEST_ACTIVITY);
-    event.setProcessDefinitionId(TEST_DEFINITION);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setEvents(Collections.singletonList(event));
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "5", procInst);
 
     // when
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
@@ -99,15 +74,17 @@ public class FrequencyHeatMapReaderIT {
   public void getHeatMapMultipleEvents() throws Exception {
 
     // given
-    EventDto event = new EventDto();
+    SimpleEventDto event = new SimpleEventDto();
     event.setActivityId(TEST_ACTIVITY);
-    event.setProcessDefinitionId(TEST_DEFINITION);
-    event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setEvents(Collections.singletonList(event));
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "5", procInst);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "6", procInst);
 
     event.setActivityId(TEST_ACTIVITY_2);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "7", procInst);
 
     // when
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(TEST_DEFINITION);
@@ -117,16 +94,73 @@ public class FrequencyHeatMapReaderIT {
   }
 
   @Test
+  public void getHeatMapMultipleEventsWithMultipleProcesses() throws Exception {
+
+    // given
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(TEST_ACTIVITY);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setEvents(Collections.singletonList(event));
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "5", procInst);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "6", procInst);
+
+    procInst.setProcessDefinitionId(TEST_DEFINITION_2);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "7", procInst);
+
+    // when
+    HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(TEST_DEFINITION);
+    HeatMapResponseDto testDefinition2 = getHeatMapResponseDto(TEST_DEFINITION_2);
+
+    // then
+    assertResults(testDefinition1, 1, TEST_ACTIVITY, 2L, 0L);
+    assertResults(testDefinition2, 1, TEST_ACTIVITY, 1L, 0L);
+  }
+  
+  // --------------
+
+  @Test
+  public void getHeatMapWithMIBody() throws Exception {
+
+    // given
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(TEST_ACTIVITY);
+    event.setActivityType("flownode");
+    SimpleEventDto event2 = new SimpleEventDto();
+    event2.setActivityId(TEST_ACTIVITY);
+    event2.setActivityType(MI_BODY);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    ArrayList<SimpleEventDto> events = new ArrayList<>();
+    events.add(event);
+    events.add(event2);
+    procInst.setEvents(events);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "6", procInst);
+
+    event.setActivityType(MI_BODY);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "7", procInst);
+
+    // when
+    HeatMapResponseDto actual = getHeatMapResponseDto(TEST_DEFINITION);
+
+    // then
+    assertResults(actual, 1, TEST_ACTIVITY, 1L, 1L);
+  }
+
+  @Test
   public void getHeatMapWithMoreThenTenEvents() throws Exception {
     // given
     for (int i = 0; i < 11; i++) {
-      EventDto event = new EventDto();
+      SimpleEventDto event = new SimpleEventDto();
       event.setActivityId(TEST_ACTIVITY + i);
-      event.setProcessDefinitionId(TEST_DEFINITION);
-      event.setProcessInstanceId(PROCESS_INSTANCE_ID);
-      int index = 5 + i;
+      ProcessInstanceDto procInst = new ProcessInstanceDto();
+      procInst.setProcessDefinitionId(TEST_DEFINITION);
+      procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+      procInst.setEvents(Collections.singletonList(event));
 
-      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), String.valueOf(index), event);
+      int index = 5 + i;
+      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), String.valueOf(index), procInst);
     }
 
     // when
@@ -147,37 +181,11 @@ public class FrequencyHeatMapReaderIT {
   }
 
   @Test
-  public void getHeatMapMultipleEventsWithMultipleProcesses() throws Exception {
-
-    // given
-    EventDto event = new EventDto();
-    event.setActivityId(TEST_ACTIVITY);
-    event.setProcessDefinitionId(TEST_DEFINITION);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "5", event);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "6", event);
-
-    event = new EventDto();
-    event.setActivityId(TEST_ACTIVITY);
-    event.setProcessDefinitionId(TEST_DEFINITION_2);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "7", event);
-
-    // when
-    HeatMapResponseDto testDefinition1 = getHeatMapResponseDto(TEST_DEFINITION);
-
-    // when
-    HeatMapResponseDto testDefinition2 = getHeatMapResponseDto(TEST_DEFINITION_2);
-
-    // then
-    assertResults(testDefinition1, 1, TEST_ACTIVITY, 2L, 0L);
-    assertResults(testDefinition2, 1, TEST_ACTIVITY, 1L, 0L);
-  }
-
-  @Test
   public void testGetHeatMapWithLtStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
@@ -224,8 +232,8 @@ public class FrequencyHeatMapReaderIT {
   public void testGetHeatMapWithLteStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = ">=";
     String type = "start_date";
@@ -256,8 +264,8 @@ public class FrequencyHeatMapReaderIT {
   public void testGetHeatMapWithLteEndDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = ">=";
     String type = "end_date";
@@ -288,8 +296,8 @@ public class FrequencyHeatMapReaderIT {
   public void testGetHeatMapWithGtStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = "<";
     String type = "start_date";
@@ -320,8 +328,8 @@ public class FrequencyHeatMapReaderIT {
   public void testGetHeatMapWithMixedDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = ">";
     String type = "start_date";
@@ -358,8 +366,8 @@ public class FrequencyHeatMapReaderIT {
   public void testGetHeatMapWithGtEndDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = "<";
     String type = "end_date";
@@ -390,8 +398,8 @@ public class FrequencyHeatMapReaderIT {
   public void testGetHeatMapWithGteStartDateCriteria() throws Exception {
     //given
     Date past = new Date();
-    EventDto data = prepareESData(past);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getEventType(), "1", data);
+    ProcessInstanceDto data = prepareESData(past);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", data);
 
     String operator = "<=";
     String type = "start_date";
@@ -428,19 +436,19 @@ public class FrequencyHeatMapReaderIT {
     assertThat(resultMap.getFlowNodes().get(activity), is(activityCount));
   }
 
-  private EventDto prepareESData(Date past) {
-    EventDto data = new EventDto();
-    data.setActivityId(TEST_ACTIVITY);
-    data.setProcessDefinitionId(TEST_DEFINITION);
-    data.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    data.setStartDate(past);
-    data.setEndDate(past);
-    data.setProcessInstanceStartDate(past);
-    data.setProcessInstanceEndDate(past);
-    return data;
+  private ProcessInstanceDto prepareESData(Date past) {
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(TEST_ACTIVITY);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setEvents(Collections.singletonList(event));
+    procInst.setStartDate(past);
+    procInst.setEndDate(past);
+    return procInst;
   }
 
-  private HeatMapQueryDto createStubHeatMapQueryDto(EventDto data, String operator, String type, Date dateValue) {
+  private HeatMapQueryDto createStubHeatMapQueryDto(ProcessInstanceDto data, String operator, String type, Date dateValue) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(data.getProcessDefinitionId());
     DataUtilHelper.addDateFilter(operator, type, dateValue, dto);

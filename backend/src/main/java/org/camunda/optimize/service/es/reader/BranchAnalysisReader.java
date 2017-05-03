@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
@@ -8,12 +9,13 @@ import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,10 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
  * @author Askar Akhmerov
@@ -71,22 +77,31 @@ public class BranchAnalysisReader {
   }
 
   private long calculateReachedEndEventActivityCount(String activityId, BranchAnalysisQueryDto request) {
-    BoolQueryBuilder query = QueryBuilders.boolQuery()
-      .must(QueryBuilders.matchQuery("processDefinitionId", request.getProcessDefinitionId()))
-      .must(QueryBuilders.termQuery("activityList", request.getGateway()))
-      .must(QueryBuilders.termQuery("activityList", activityId))
-      .must(QueryBuilders.termQuery("activityList", request.getEnd()));
+    BoolQueryBuilder query = boolQuery()
+      .must(termQuery("processDefinitionId", request.getProcessDefinitionId()))
+      .must(createMustMatchActivityIdQuery(request.getGateway()))
+      .must(createMustMatchActivityIdQuery(activityId))
+      .must(createMustMatchActivityIdQuery(request.getEnd())
+      );
 
     return executeQuery(request, query);
   }
 
   private long calculateActivityCount(String activityId, BranchAnalysisQueryDto request) {
-    BoolQueryBuilder query = QueryBuilders.boolQuery()
-        .must(QueryBuilders.matchQuery("processDefinitionId", request.getProcessDefinitionId()))
-        .must(QueryBuilders.termQuery("activityList", request.getGateway()))
-        .must(QueryBuilders.termQuery("activityList", activityId ));
+    BoolQueryBuilder query = boolQuery()
+      .must(termQuery("processDefinitionId", request.getProcessDefinitionId()))
+      .must(createMustMatchActivityIdQuery(request.getGateway()))
+      .must(createMustMatchActivityIdQuery(activityId));
 
     return executeQuery(request, query);
+  }
+
+  private NestedQueryBuilder createMustMatchActivityIdQuery(String activityId) {
+    return nestedQuery(
+      ProcessInstanceType.EVENTS,
+      termQuery("events.activityId", activityId),
+      ScoreMode.None
+    );
   }
 
   private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
@@ -96,7 +111,7 @@ public class BranchAnalysisReader {
 
     SearchResponse sr = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
-        .setTypes(configurationService.getBranchAnalysisDataType())
+        .setTypes(configurationService.getProcessInstanceType())
         .setQuery(query)
         .setSize(0)
         .get();

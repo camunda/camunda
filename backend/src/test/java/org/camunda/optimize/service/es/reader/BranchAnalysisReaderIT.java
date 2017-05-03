@@ -4,7 +4,8 @@ import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
-import org.camunda.optimize.rest.optimize.dto.ActivityListDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.SimpleEventDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
@@ -24,7 +25,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -113,14 +116,16 @@ public class BranchAnalysisReaderIT {
   public void anotherProcessDefinitionDoesNotAffectAnalysis() throws Exception {
     //given
     setupFullInstanceFlow();
-    ActivityListDto actList = new ActivityListDto();
-    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
-    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK_2});
-    actList.setProcessInstanceStartDate(new Date());
-    actList.setProcessInstanceEndDate(new Date());
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), "radnomProcInstId1", actList);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), "radnomProcInstId2", actList);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), "radnomProcInstId3", actList);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setStartDate(new Date());
+    procInst.setEndDate(new Date());
+    procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK_2}));
+
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "radnomProcInstId1", procInst);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "radnomProcInstId2", procInst);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "radnomProcInstId3", procInst);
     BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
     dto.setProcessDefinitionId(PROCESS_DEFINITION_ID_2);
 
@@ -153,14 +158,28 @@ public class BranchAnalysisReaderIT {
   }
 
   private void setupFullInstanceFlow() {
-    ActivityListDto actList = new ActivityListDto();
-    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK});
-    actList.setProcessInstanceStartDate(new Date());
-    actList.setProcessInstanceEndDate(new Date());
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
-    actList.setActivityList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY});
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
+
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setStartDate(new Date());
+    procInst.setEndDate(new Date());
+    procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
+
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
+    procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY}));
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
+  }
+
+  private List<SimpleEventDto> createEventList(String[] activityIds) {
+    List<SimpleEventDto> events = new ArrayList<>(activityIds.length);
+    for (String activityId : activityIds) {
+      SimpleEventDto event = new SimpleEventDto();
+      event.setActivityId(activityId);
+      events.add(event);
+    }
+    return events;
   }
 
   @Test
@@ -307,16 +326,24 @@ public class BranchAnalysisReaderIT {
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM_WITH_BYPASS));
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_BY_PASS, processDefinitionXmlDto);
 
-    ActivityListDto actList = new ActivityListDto();
-    actList.setProcessDefinitionId(PROCESS_DEFINITION_ID_BY_PASS);
-    actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_D, GATEWAY_F, END_ACTIVITY});
-    actList.setProcessInstanceStartDate(new Date());
-    actList.setProcessInstanceEndDate(new Date());
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID, actList);
-    actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_C, GATEWAY_D, GATEWAY_F, END_ACTIVITY});
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_2, actList);
-    actList.setActivityList(new String[]{GATEWAY_B, GATEWAY_C, TASK, GATEWAY_F, END_ACTIVITY});
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getBranchAnalysisDataType(), PROCESS_INSTANCE_ID_BY_PASS, actList);
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID_BY_PASS);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setStartDate(new Date());
+    procInst.setEndDate(new Date());
+    procInst.setEvents(createEventList(new String[]{GATEWAY_B, GATEWAY_D, GATEWAY_F, END_ACTIVITY}));
+
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
+    procInst.setEvents(
+      createEventList(new String[]{GATEWAY_B, GATEWAY_C, GATEWAY_D, GATEWAY_F, END_ACTIVITY})
+    );
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
+    procInst.setEvents(
+      createEventList(new String[]{GATEWAY_B, GATEWAY_C, TASK, GATEWAY_F, END_ACTIVITY})
+      );
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_BY_PASS);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_BY_PASS, procInst);
   }
 
   @Test

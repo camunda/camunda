@@ -32,6 +32,7 @@ public class DataUtilHelper {
     date.setType(type);
     date.setValue(dateValue);
     dates.add(date);
+    filter.setDates(dates);
     return dates;
   }
 }

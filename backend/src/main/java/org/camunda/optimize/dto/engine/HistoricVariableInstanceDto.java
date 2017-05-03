@@ -1,17 +1,11 @@
 package org.camunda.optimize.dto.engine;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import java.io.Serializable;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class HistoricVariableInstanceDto implements Serializable,EngineDto {
+public class HistoricVariableInstanceDto implements EngineDto {
 
   private String id;
   private String name;
   private String type;
   private String value;
-
   private String processDefinitionKey;
   private String processDefinitionId;
   private String processInstanceId;

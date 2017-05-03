@@ -33,7 +33,9 @@ public class ImportProgressReporter {
   public int computeImportProgress() throws OptimizeException {
     int totalEngineEntityCount =
       engineEntityFetcher.fetchHistoricActivityInstanceCount() +
-        2 * engineEntityFetcher.fetchProcessDefinitionCount();
+        2 * engineEntityFetcher.fetchProcessDefinitionCount() +
+//        engineEntityFetcher.fetchHistoricVariableInstanceCount() +
+      engineEntityFetcher.fetchHistoricProcessInstanceCount();
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
       int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));

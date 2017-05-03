@@ -13,7 +13,6 @@ import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.functionscore.RandomScoreFunctionBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -31,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -135,7 +135,7 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getEventType(), 3L);
+    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType(),1L);
   }
 
   @Test
@@ -157,8 +157,11 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getEventType());
-    assertThat(idsResp.getHits().getTotalHits(), is(6L));
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      List events = (List) searchHitFields.getSource().get(EVENTS);
+      assertThat(events.size(), is(3));
+    }
   }
 
   @Test
@@ -177,8 +180,11 @@ public class ImportIT  {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then only the start event should be imported as the user task is not finished yet
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getEventType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    SearchHit hit = idsResp.getHits().getAt(0);
+    List events = (List) hit.getSource().get(EVENTS);
+    assertThat(events.size(), is(1));
   }
 
   @Test
@@ -283,6 +289,7 @@ public class ImportIT  {
         .done();
     CloseableHttpClient client = HttpClientBuilder.create().build();
     engineRule.deployProcess(subProcess, client);
+    client.close();
 
     BpmnModelInstance model = Bpmn.createExecutableProcess(TEST_MI_PROCESS)
         .name("MultiInstance")

@@ -17,11 +17,6 @@ public class VariableImportJob extends ImportJob<VariableDto> {
   }
 
   @Override
-  protected void getAbsentAggregateInformation() throws OptimizeException {
-    // nothing to do here
-  }
-
-  @Override
   protected void executeImport() {
     try {
       variableWriter.importVariables(newOptimizeEntities);

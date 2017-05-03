@@ -8,6 +8,7 @@ import java.util.List;
  */
 public class FilterMapDto {
   protected List<DateFilterDto> dates = new ArrayList<>();
+protected List<VariableFilterDto> variables;
 
   public List<DateFilterDto> getDates() {
     return dates;
@@ -15,5 +16,13 @@ public class FilterMapDto {
 
   public void setDates(List<DateFilterDto> dates) {
     this.dates = dates;
+  }
+
+  public List<VariableFilterDto> getVariables() {
+    return variables;
+  }
+
+  public void setVariables(List<VariableFilterDto> variables) {
+    this.variables = variables;
   }
 }

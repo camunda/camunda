@@ -21,11 +21,6 @@ public class ImportIndexImportJob extends ImportJob<OptimizeDto> {
   }
 
   @Override
-  protected void getAbsentAggregateInformation() throws OptimizeException {
-    // nothing to do here
-  }
-
-  @Override
   protected void executeImport() {
     try {
       importIndexWriter.importIndex(importIndex, typeIndexComesFrom);

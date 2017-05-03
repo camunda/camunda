@@ -81,7 +81,7 @@ public class MissingEntriesFinderIT {
   }
 
   private boolean isOfImportEntityType(String elasticsearchType) {
-    return elasticsearchType.equals(elasticSearchRule.getEventType()) ||
+    return elasticsearchType.equals(elasticSearchRule.getProcessDefinitionType()) ||
       elasticsearchType.equals(elasticSearchRule.getProcessDefinitionType()) ||
       elasticsearchType.equals(elasticSearchRule.getProcessDefinitionXmlType());
   }

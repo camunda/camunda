@@ -1,15 +1,22 @@
 package org.camunda.optimize.service.es.reader;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.InnerHitBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.QueryParseContext;
+import org.elasticsearch.index.query.ScriptQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,14 +45,6 @@ public abstract class HeatMapReader {
     return getHeatMap(dto);
   }
 
-  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
-    BoolQueryBuilder query;
-    query = QueryBuilders.boolQuery()
-      .must(QueryBuilders.matchQuery("processDefinitionId", processDefinitionId))
-      .mustNot(QueryBuilders.matchQuery("activityType", MI_BODY));
-    return query;
-  }
-
   public HeatMapResponseDto getHeatMap(HeatMapQueryDto dto) {
     ValidationHelper.validate(dto);
     logger.debug("Fetching heat map for process definition: {}", dto.getProcessDefinitionId());
@@ -56,7 +55,7 @@ public abstract class HeatMapReader {
 
     SearchRequestBuilder srb = esclient
       .prepareSearch(configurationService.getOptimizeIndex())
-      .setTypes(configurationService.getEventType());
+      .setTypes(configurationService.getProcessInstanceType());
 
     BoolQueryBuilder query = setupBaseQuery(dto.getProcessDefinitionId());
 
@@ -66,6 +65,13 @@ public abstract class HeatMapReader {
     processAggregations(result, srb);
 
     return result;
+  }
+
+  private BoolQueryBuilder setupBaseQuery(String processDefinitionId) {
+    BoolQueryBuilder query;
+    query = QueryBuilders.boolQuery()
+      .must(QueryBuilders.termQuery("processDefinitionId", processDefinitionId));
+    return query;
   }
 
   /**

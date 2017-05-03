@@ -1,12 +1,12 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.type.BranchAnalysisDataType;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
 import org.camunda.optimize.service.es.schema.type.EventType;
 import org.camunda.optimize.service.es.schema.type.ImportIndexType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionXmlType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.UsersType;
 import org.camunda.optimize.service.es.schema.type.VariableType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +25,6 @@ public class ElasticSearchSchemaInitializer {
   private VariableType variableType;
 
   @Autowired
-  private BranchAnalysisDataType branchAnalysisDataType;
-
-  @Autowired
   private DurationHeatmapTargetValueType targetValueType;
 
   @Autowired
@@ -38,6 +35,9 @@ public class ElasticSearchSchemaInitializer {
 
   @Autowired
   private UsersType usersType;
+
+  @Autowired
+  private ProcessInstanceType processInstanceType;
 
   @Autowired
   private ImportIndexType importIndexType;
@@ -54,12 +54,12 @@ public class ElasticSearchSchemaInitializer {
   private void initializeMappings() {
     schemaManager.addMapping(eventType);
     schemaManager.addMapping(variableType);
-    schemaManager.addMapping(branchAnalysisDataType);
     schemaManager.addMapping(processDefinitionType);
     schemaManager.addMapping(processDefinitionXmlType);
     schemaManager.addMapping(usersType);
     schemaManager.addMapping(importIndexType);
     schemaManager.addMapping(targetValueType);
+    schemaManager.addMapping(processInstanceType);
   }
 
 }

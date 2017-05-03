@@ -2,11 +2,9 @@ package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.EventDto;
-import org.camunda.optimize.service.es.writer.BranchAnalysisDataWriter;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
-import org.camunda.optimize.service.importing.job.impl.BranchAnalysisImportJob;
 import org.camunda.optimize.service.importing.job.impl.EventImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +25,6 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   @Autowired
   private EventsWriter eventsWriter;
   @Autowired
-  private BranchAnalysisDataWriter branchAnalysisDataWriter;
-  @Autowired
   private MissingActivityFinder missingActivityFinder;
 
   @Override
@@ -43,13 +39,10 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
 
   @Override
   public void importToElasticSearch(List<EventDto> events) {
-    EventImportJob eventImportJob = new EventImportJob(engineEntityFetcher, eventsWriter);
+    EventImportJob eventImportJob = new EventImportJob(eventsWriter);
     eventImportJob.setEntitiesToImport(events);
-    BranchAnalysisImportJob branchAnalysisImportJob = new BranchAnalysisImportJob(branchAnalysisDataWriter);
-    branchAnalysisImportJob.setEntitiesToImport(events);
     try {
       importJobExecutor.executeImportJob(eventImportJob);
-      importJobExecutor.executeImportJob(branchAnalysisImportJob);
     } catch (InterruptedException e) {
       logger.error("Interruption during import of activity job!", e);
     }

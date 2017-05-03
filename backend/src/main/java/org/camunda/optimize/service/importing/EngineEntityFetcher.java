@@ -146,24 +146,40 @@ public class EngineEntityFetcher {
     return count.getCount();
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) {
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(int indexOfFirstResult, int maxPageSize) {
     List<HistoricProcessInstanceDto> entries;
-    Map<String, Set<String>> pids = new HashMap<>();
-    pids.put("processInstanceIds", processInstanceIds);
     try {
-      WebTarget baseRequest = client
-          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-          .path(configurationService.getHistoricProcessInstanceEndpoint());
-      entries = baseRequest
+      entries = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getHistoricProcessInstanceEndpoint())
+        .queryParam(SORT_BY, SORT_TYPE_END_TIME)
+        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
         .request(MediaType.APPLICATION_JSON)
-        .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
-        .readEntity(new GenericType<List<HistoricProcessInstanceDto>>(){});
+        .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+        });
       return entries;
     } catch (RuntimeException e) {
       logError("Could not fetch historic process instances from engine. Please check the connection!", e);
       entries = Collections.emptyList();
     }
     return entries;
+  }
+
+  public Integer fetchHistoricProcessInstanceCount() throws OptimizeException {
+    CountDto count;
+    try {
+      count = client
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+        .path(configurationService.getHistoricProcessInstanceCountEndpoint())
+        .request()
+        .get(CountDto.class);
+    } catch (RuntimeException e) {
+      throw new OptimizeException("Could not fetch process instance count from engine. Please check the connection!", e);
+    }
+
+    return count.getCount();
   }
 
   public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(int indexOfFirstResult, int maxPageSize) {

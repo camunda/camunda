@@ -50,7 +50,7 @@ public class HeatMapDataGenerationStep extends DataGenerationStep {
         .add(client
           .prepareIndex(
               context.getConfiguration().getOptimizeIndex(),
-              context.getConfiguration().getEventType(),
+              context.getConfiguration().getProcessInstanceType(),
               id
           )
           .setSource(source)
@@ -68,19 +68,30 @@ public class HeatMapDataGenerationStep extends DataGenerationStep {
       String date = sdf.format(new Date());
       return jsonBuilder()
         .startObject()
-        .field("id", id)
-        .field("activityId", activityId)
-        .field("activityInstanceId", generateIdFrom(activityId))
-        .field("timestamp", date)
-        .field("processDefinitionKey", processDefinitionKey)
-        .field("processDefinitionId", context.getParameter("processDefinitionId"))
-        .field("processInstanceId", processInstanceId)
-        .field("startDate", date)
-        .field("endDate", date)
-        .field("processInstanceStartDate", date)
-        .field("processInstanceEndDate", date)
-        .field("durationInMs", 20)
-        .field("activityType", "flowNode")
+          .startArray("events")
+            .startObject()
+              .field("id", id)
+              .field("activityId", activityId)
+              .field("activityInstanceId", generateIdFrom(activityId))
+              .field("durationInMs", 20)
+              .field("activityType", "flowNode")
+            .endObject()
+          .endArray()
+          .startArray("variables")
+            .startObject()
+              .field("id", "Var" + id)
+              .field("name", "var")
+              .field("type", "string")
+              .startObject("value")
+                .field("stringVal", "aStringValue")
+              .endObject()
+            .endObject()
+          .endArray()
+          .field("processDefinitionKey", processDefinitionKey)
+          .field("processDefinitionId", context.getParameter("processDefinitionId"))
+          .field("processInstanceId", processInstanceId)
+          .field("startDate", date)
+          .field("endDate", date)
         .endObject();
     } catch (IOException e) {
       e.printStackTrace();

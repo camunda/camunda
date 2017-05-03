@@ -1,15 +1,10 @@
 package org.camunda.optimize.service.util;
 
-import org.glassfish.jersey.jaxb.internal.XmlJaxbElementProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.util.PropertyPlaceholderHelper;
-import org.springframework.web.context.support.XmlWebApplicationContext;
 
 /**
  * @author Askar Akhmerov
@@ -57,10 +52,10 @@ public class ConfigurationService {
   private String optimizeIndex;
   @Value("${camunda.optimize.es.event.type}")
   private String eventType;
+  @Value("${camunda.optimize.es.process.instance.type}")
+  private String processInstanceType;
   @Value("${camunda.optimize.es.variable.type}")
   private String variableType;
-  @Value("${camunda.optimize.es.branch.analysis.type}")
-  private String branchAnalysisDataType;
   @Value("${camunda.optimize.es.heatmap.duration.target.value.type}")
   private String durationHeatmapTargetValueType;
   @Value("${camunda.optimize.es.procdef.type}")
@@ -94,6 +89,8 @@ public class ConfigurationService {
   private String processDefinitionXmlEndpoint;
   @Value("${camunda.optimize.engine.history.procinst.endpoint}")
   private String historicProcessInstanceEndpoint;
+  @Value("${camunda.optimize.engine.history.procinst.count.endpoint}")
+  private String historicProcessInstanceCountEndpoint;
   @Value("${camunda.optimize.engine.user.validation.endpoint}")
   private String userValidationEndpoint;
   @Value("${camunda.optimize.engine.name}")
@@ -153,10 +150,6 @@ public class ConfigurationService {
 
   public String getEventType() {
     return eventType;
-  }
-
-  public String getBranchAnalysisDataType() {
-    return branchAnalysisDataType;
   }
 
   public String getUserValidationEndpoint() {
@@ -293,7 +286,15 @@ public class ConfigurationService {
     return historicVariableInstanceCountEndpoint;
   }
 
-  public int getEngineImportMaxPageSize(String name) {
+  public String getProcessInstanceType() {
+    return processInstanceType;
+  }
+
+  public String getHistoricProcessInstanceCountEndpoint() {
+    return historicProcessInstanceCountEndpoint;
+  }
+
+public int getEngineImportMaxPageSize(String name) {
     if (name == null) {
       return this.getEngineImportMaxPageSize();
     } else {

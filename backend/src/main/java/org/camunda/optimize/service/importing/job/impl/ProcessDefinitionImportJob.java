@@ -16,11 +16,6 @@ public class ProcessDefinitionImportJob extends ImportJob<ProcessDefinitionOptim
   }
 
   @Override
-  protected void getAbsentAggregateInformation() {
-    // nothing to do here
-  }
-
-  @Override
   protected void executeImport() {
     try {
       processDefinitionWriter.importProcessDefinitions(newOptimizeEntities);

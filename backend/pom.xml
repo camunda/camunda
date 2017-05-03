@@ -92,7 +92,7 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>transport</artifactId>
-      <version>5.1.1</version>
+      <version>${elasticsearch.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-core</artifactId>
@@ -395,8 +395,9 @@
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
             <!-- REPLACE THE FOLLOWING WITH THE PLUGIN VERSION YOU NEED -->
-            <version>5.3</version>
+            <version>${elasticsearch.plugin.version}</version>
             <configuration>
+              <version>${elasticsearch.version}</version>
               <clusterName>elasticsearch</clusterName>
               <transportPort>9300</transportPort>
               <timeout>60</timeout>
@@ -466,6 +467,7 @@
           <plugin>
             <groupId>org.codehaus.cargo</groupId>
             <artifactId>cargo-maven2-plugin</artifactId>
+            <version>1.6.2</version>
             <executions>
               <execution>
                 <id>start-container</id>

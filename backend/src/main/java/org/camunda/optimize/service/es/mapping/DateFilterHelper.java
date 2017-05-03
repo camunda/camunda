@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.service.es.schema.type.EventType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -70,10 +71,10 @@ public class DateFilterHelper {
   private String mapTimeColumn(DateFilterDto dateDto) {
     String result = null;
     if (DateFilterDto.START_DATE.equalsIgnoreCase(dateDto.getType())) {
-      result = EventType.PROCESS_INSTANCE_START_DATE;
+      result = ProcessInstanceType.START_DATE;
     }
     if (DateFilterDto.END_DATE.equalsIgnoreCase(dateDto.getType())) {
-      result = EventType.PROCESS_INSTANCE_END_DATE;
+      result = ProcessInstanceType.END_DATE;
     }
     if (result == null) {
       throw new OptimizeRuntimeException("invalid date column provided for mapping");

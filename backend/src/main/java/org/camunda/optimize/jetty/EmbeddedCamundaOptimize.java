@@ -74,14 +74,23 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     loggerContext.reset();
     JoranConfigurator configurator = new JoranConfigurator();
+    InputStream configStream = null;
     try {
-      InputStream configStream = new FileInputStream(getLogbackConfigurationFilePath());
+      configStream = new FileInputStream(getLogbackConfigurationFilePath());
       configurator.setContext(loggerContext);
       configurator.doConfigure(configStream); // loads logback file
       configStream.close();
     } catch (JoranException | IOException e) {
       e.printStackTrace();
       logger.warn("Can't read log configuration file. Using basic logback configuration instead!", e);
+    } finally {
+      if (configStream != null) {
+        try {
+          configStream.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
     }
   }
 

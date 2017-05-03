@@ -96,8 +96,12 @@ public class SchemaInitializerIT {
 
     // then
     assertTypeExists(configurationService.getEventType());
+    assertTypeExists(configurationService.getProcessInstanceType());
+    assertTypeExists(configurationService.getDurationHeatmapTargetValueType());
+    assertTypeExists(configurationService.getImportIndexType());
     assertTypeExists(configurationService.getProcessDefinitionType());
     assertTypeExists(configurationService.getProcessDefinitionXmlType());
+    assertTypeExists(configurationService.getVariableType());
   }
 
   private void assertTypeExists(String type) {
@@ -125,7 +129,6 @@ public class SchemaInitializerIT {
 
     // then the mapping contains the new fields
     assertThatNewFieldExists();
-
   }
 
   private void assertThatNewFieldExists() {

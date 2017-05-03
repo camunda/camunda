@@ -11,7 +11,6 @@
   <context:annotation-config/>
   <context:component-scan base-package="org.camunda.optimize.service"/>
   <context:component-scan base-package="org.camunda.optimize.rest"/>
-  <context:component-scan base-package="org.camunda.optimize.test"/>
 
   <context:property-placeholder location="classpath:service.properties,classpath:rest/service-rest.properties" />
 
