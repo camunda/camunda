@@ -1,9 +1,8 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
 
 public class LogRecoveryTest
 {
@@ -130,7 +128,7 @@ public class LogRecoveryTest
         newLog.open();
 
         // then block index can't be recovered
-        final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
+        final LogStreamReader logReader = new BufferedLogStreamReader(newLog, true);
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
         newLog.close();
 
@@ -216,7 +214,7 @@ public class LogRecoveryTest
         assertThat(recoveredIndexSize).isEqualTo(indexSize + 1);
 
         // but no further indices are created
-        final LogStreamReader logReader = new BufferedLogStreamReader(newLog);
+        final LogStreamReader logReader = new BufferedLogStreamReader(newLog, true);
         LogIntegrationTestUtil.readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
         newLog.close();
 

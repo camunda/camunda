@@ -12,12 +12,9 @@
  */
 package org.camunda.tngp.logstreams.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenEvents;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.waitUntilWrittenKey;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
 import java.io.FileNotFoundException;
 import java.util.concurrent.CompletableFuture;
@@ -120,11 +117,14 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.openAsync().get();
 
         writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
 
-        final LogStreamReader logReader = new BufferedLogStreamReader(targetLogStream);
+        final LogStreamReader logReader = new BufferedLogStreamReader(targetLogStream, true);
         readLogAndAssertEvents(logReader, WORK_COUNT, MSG_SIZE);
 
         streamProcessorController.closeAsync().get();
@@ -181,6 +181,8 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.openAsync().get();
 
         // just write one initial event
@@ -228,6 +230,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.openAsync().get();
 
         writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
@@ -272,6 +277,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.openAsync().get();
 
         writeLogEvents(sourceLogStream, WORK_COUNT / 2, MSG_SIZE, 0);
@@ -312,6 +320,9 @@ public class StreamProcessorIntegrationTest
             .snapshotPolicy(pos -> false)
             .snapshotStorage(snapshotStorage)
             .build();
+
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
 
         streamProcessorController.openAsync().get();
 
@@ -362,6 +373,9 @@ public class StreamProcessorIntegrationTest
             .snapshotPolicy(pos -> isSnapshotPoint2.getAndSet(false))
             .snapshotStorage(snapshotStorage)
             .build();
+
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
 
         CompletableFuture.allOf(streamProcessorController1.openAsync(), streamProcessorController2.openAsync()).get();
 
@@ -427,6 +441,9 @@ public class StreamProcessorIntegrationTest
             .snapshotStorage(snapshotStorage)
             .build();
 
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        controllableTargetLogStream.setCommitPosition(Long.MAX_VALUE);
+
         controllableTargetLogStream.open();
         streamProcessorController.openAsync().get();
 
@@ -476,6 +493,9 @@ public class StreamProcessorIntegrationTest
                 .snapshotStorage(snapshotStorage)
                 .build();
 
+        sourceLogStream.setCommitPosition(Long.MAX_VALUE);
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.openAsync().get();
 
         writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, 0);
@@ -490,6 +510,44 @@ public class StreamProcessorIntegrationTest
         assertThat(exception).hasMessageContaining("Cannot write event; Writing is disabled");
     }
 
+    @Test
+    public void shouldReadCommittedEntries() throws InterruptedException, ExecutionException
+    {
+        final StreamProcessorController streamProcessorController = LogStreams
+                .createStreamProcessor("copy-processor", 1, new CopyStreamProcessor(resourceCounter))
+                .sourceStream(sourceLogStream)
+                .targetStream(targetLogStream)
+                .agentRunnerService(agentRunnerService)
+                .snapshotPolicy(position -> false)
+                .snapshotStorage(snapshotStorage)
+                .build();
+
+        streamProcessorController.openAsync().get();
+
+        final int keyOffset = 0;
+        writeLogEvents(sourceLogStream, WORK_COUNT, MSG_SIZE, keyOffset);
+        waitUntilWrittenKey(sourceLogStream, WORK_COUNT + keyOffset);
+
+        final BufferedLogStreamReader sourceReader = new BufferedLogStreamReader(sourceLogStream, true);
+        sourceReader.seekToFirstEvent();
+
+        int events = 0;
+        while (sourceReader.hasNext() && events < (WORK_COUNT / 2))
+        {
+            sourceReader.next();
+            events += 1;
+        }
+
+        sourceLogStream.setCommitPosition(sourceReader.getPosition());
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT / 2 - 1);
+
+        sourceReader.seekToLastEvent();
+
+        sourceLogStream.setCommitPosition(sourceReader.getPosition());
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT);
+
+        streamProcessorController.closeAsync().get();
+    }
 
     private class CopyStreamProcessor implements StreamProcessor
     {
@@ -583,8 +641,6 @@ public class StreamProcessorIntegrationTest
                 }
             };
         }
-
-
 
     }
 

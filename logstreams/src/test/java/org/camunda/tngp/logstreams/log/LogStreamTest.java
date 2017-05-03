@@ -1,18 +1,13 @@
 package org.camunda.tngp.logstreams.log;
 
-import static java.lang.String.join;
-import static org.camunda.tngp.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
-import static org.camunda.tngp.logstreams.log.MockLogStorage.newLogEntry;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static java.lang.String.*;
+import static org.camunda.tngp.logstreams.log.LogStream.*;
+import static org.camunda.tngp.logstreams.log.MockLogStorage.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
@@ -288,7 +283,7 @@ public class LogStreamTest
         // set up block index and log storage
         when(mockBlockIndex.size()).thenReturn(1);
         when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
-        when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
+        when(mockBlockIndex.lookupBlockAddress(Long.MAX_VALUE)).thenReturn(10L);
 
         mockLogStorage.add(newLogEntry()
             .address(10)
@@ -339,7 +334,7 @@ public class LogStreamTest
         // set up block index and log storage
         when(mockBlockIndex.size()).thenReturn(1);
         when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
-        when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
+        when(mockBlockIndex.lookupBlockAddress(Long.MAX_VALUE)).thenReturn(10L);
 
         mockLogStorage.add(newLogEntry()
             .address(10)
@@ -387,7 +382,7 @@ public class LogStreamTest
         // set up block index and log storage
         when(mockBlockIndex.size()).thenReturn(1);
         when(mockBlockIndex.getLogPosition(0)).thenReturn(1L);
-        when(mockBlockIndex.lookupBlockAddress(1L)).thenReturn(10L);
+        when(mockBlockIndex.lookupBlockAddress(Long.MAX_VALUE)).thenReturn(10L);
 
         mockLogStorage.add(newLogEntry()
             .address(10)

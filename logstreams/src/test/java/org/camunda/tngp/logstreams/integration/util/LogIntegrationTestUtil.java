@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.logstreams.integration.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.nio.ByteBuffer;
 
@@ -51,7 +51,7 @@ public class LogIntegrationTestUtil
 
     public static void waitUntilWrittenKey(final LogStream log, final int key)
     {
-        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log);
+        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log, true);
 
         logReader.seekToLastEvent();
 
@@ -68,7 +68,7 @@ public class LogIntegrationTestUtil
 
     public static void waitUntilWrittenEvents(final LogStream log, final int eventCount)
     {
-        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log);
+        final BufferedLogStreamReader logReader = new BufferedLogStreamReader(log, true);
 
         long count = 0;
         while (count < eventCount)

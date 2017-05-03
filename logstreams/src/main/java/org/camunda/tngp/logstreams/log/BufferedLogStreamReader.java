@@ -1,17 +1,17 @@
 package org.camunda.tngp.logstreams.log;
 
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
+import static org.camunda.tngp.logstreams.spi.LogStorage.*;
+
+import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.spi.LogStorage;
-
-import java.nio.ByteBuffer;
-import java.util.NoSuchElementException;
-
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.logstreams.impl.LogEntryDescriptor.*;
-import static org.camunda.tngp.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 public class BufferedLogStreamReader implements LogStreamReader
 {
@@ -22,7 +22,8 @@ public class BufferedLogStreamReader implements LogStreamReader
         UNINITIALIZED,
         INITIALIZED,
         INITIALIZED_EMPTY_LOG,
-        ACTIVE;
+        ACTIVE,
+        NOT_COMMITTED;
     }
 
     protected final LoggedEventImpl curr = new LoggedEventImpl();
@@ -30,6 +31,9 @@ public class BufferedLogStreamReader implements LogStreamReader
     protected final int headerLength = HEADER_BLOCK_LENGTH + HEADER_LENGTH;
     protected final DirectBuffer buffer = new UnsafeBuffer(0, 0);
 
+    protected boolean readUncommittedEntries;
+
+    protected LogStream logStream;
     protected LogStorage logStorage;
     protected LogBlockIndex blockIndex;
 
@@ -44,16 +48,33 @@ public class BufferedLogStreamReader implements LogStreamReader
         this(DEFAULT_INITIAL_BUFFER_CAPACITY);
     }
 
+    public BufferedLogStreamReader(boolean readUncommittedEntries)
+    {
+        this(DEFAULT_INITIAL_BUFFER_CAPACITY, readUncommittedEntries);
+    }
+
     public BufferedLogStreamReader(int initialBufferCapacity)
+    {
+        this(initialBufferCapacity, false);
+    }
+
+    public BufferedLogStreamReader(int initialBufferCapacity, boolean readUncommittedEntries)
     {
         this.ioBuffer = ByteBuffer.allocateDirect(initialBufferCapacity);
         this.buffer.wrap(ioBuffer);
+        this.readUncommittedEntries = readUncommittedEntries;
     }
 
-    public BufferedLogStreamReader(int initialBufferCapacity, LogStream log)
+    public BufferedLogStreamReader(int initialBufferCapacity, LogStream logStream)
     {
         this(initialBufferCapacity);
-        wrap(log);
+        wrap(logStream);
+    }
+
+    public BufferedLogStreamReader(int initialBufferCapacity, LogStream logStream, boolean readUncommittedEntries)
+    {
+        this(initialBufferCapacity, readUncommittedEntries);
+        wrap(logStream);
     }
 
     public BufferedLogStreamReader(LogStream logStream)
@@ -61,36 +82,53 @@ public class BufferedLogStreamReader implements LogStreamReader
         this(DEFAULT_INITIAL_BUFFER_CAPACITY, logStream);
     }
 
+    public BufferedLogStreamReader(LogStream logStream, boolean readUncommittedEntries)
+    {
+        this(DEFAULT_INITIAL_BUFFER_CAPACITY, logStream, readUncommittedEntries);
+    }
+
     public BufferedLogStreamReader(LogStorage logStorage, LogBlockIndex blockIndex)
     {
         this(DEFAULT_INITIAL_BUFFER_CAPACITY);
+        this.readUncommittedEntries = true;
         wrap(logStorage, blockIndex);
     }
 
     @Override
     public void wrap(LogStream logStream)
     {
-        wrap(logStream.getLogStorage(), logStream.getLogBlockIndex());
-    }
-
-    public void wrap(LogStorage logStorage, LogBlockIndex blockIndex)
-    {
-        initLog(logStorage, blockIndex);
+        initReader(logStream);
         seekToFirstEvent();
     }
 
     @Override
     public void wrap(LogStream logStream, long position)
     {
-        initLog(logStream.getLogStorage(), logStream.getLogBlockIndex());
+        initReader(logStream);
         seek(position);
     }
 
+    public void wrap(LogStorage logStorage, LogBlockIndex blockIndex)
+    {
+        initReader(logStorage, blockIndex);
+        seekToFirstEvent();
+    }
 
-    protected void initLog(LogStorage logStorage, LogBlockIndex blockIndex)
+    protected void initReader(LogStream logStream)
+    {
+        final LogStorage logStorage = logStream.getLogStorage();
+        final LogBlockIndex blockIndex = logStream.getLogBlockIndex();
+
+        this.logStorage = logStorage;
+        this.blockIndex = blockIndex;
+        this.logStream = logStream;
+    }
+
+    protected void initReader(LogStorage logStorage, LogBlockIndex blockIndex)
     {
         this.logStorage = logStorage;
         this.blockIndex = blockIndex;
+        this.logStream = null;
     }
 
     protected void clear()
@@ -104,6 +142,15 @@ public class BufferedLogStreamReader implements LogStreamReader
     public boolean seek(long seekPosition)
     {
         clear();
+
+        final long commitPosition = getCommitPosition();
+
+        if (commitPosition < 0)
+        {
+            // negative commit position -> nothing is committed
+            iteratorState = IteratorState.INITIALIZED_EMPTY_LOG;
+            return false;
+        }
 
         nextReadAddr = blockIndex.lookupBlockAddress(seekPosition);
 
@@ -144,9 +191,17 @@ public class BufferedLogStreamReader implements LogStreamReader
             }
         }
 
+        final long currPosition = curr.getPosition();
+
+        if (commitPosition < currPosition)
+        {
+            iteratorState = IteratorState.NOT_COMMITTED;
+            return false;
+        }
+
         iteratorState = IteratorState.INITIALIZED;
 
-        while (hasNext())
+        do
         {
             final LoggedEvent entry = next();
             final long entryPosition = entry.getPosition();
@@ -156,7 +211,9 @@ public class BufferedLogStreamReader implements LogStreamReader
                 iteratorState = IteratorState.INITIALIZED;
                 return entryPosition == seekPosition;
             }
+
         }
+        while (hasNext());
 
         iteratorState = IteratorState.ACTIVE;
         return false;
@@ -169,9 +226,14 @@ public class BufferedLogStreamReader implements LogStreamReader
 
         if (size > 0)
         {
-            seek(blockIndex.getLogPosition(0));
+            final long seekPosition = blockIndex.getLogPosition(0);
+            seek(seekPosition);
 
-            this.iteratorState = IteratorState.INITIALIZED;
+            if (iteratorState == IteratorState.ACTIVE)
+            {
+                iteratorState = IteratorState.INITIALIZED;
+            }
+
         }
         else
         {
@@ -183,26 +245,9 @@ public class BufferedLogStreamReader implements LogStreamReader
     @Override
     public void seekToLastEvent()
     {
-        final int size = blockIndex.size();
+        final long commitPosition = getCommitPosition();
 
-        if (size > 0)
-        {
-            final int lastIdx = size - 1;
-            final long lastBlockPosition = blockIndex.getLogPosition(lastIdx);
-
-            seek(lastBlockPosition);
-
-            // advance until end of block
-            while (hasNext())
-            {
-                next();
-            }
-        }
-        else
-        {
-            // fallback: seek without index
-            seek(Long.MAX_VALUE);
-        }
+        seek(commitPosition);
 
         if (iteratorState == IteratorState.ACTIVE)
         {
@@ -293,6 +338,20 @@ public class BufferedLogStreamReader implements LogStreamReader
             return iteratorState == IteratorState.INITIALIZED;
         }
 
+        if (iteratorState == IteratorState.NOT_COMMITTED)
+        {
+            final long currentPosition = curr.getPosition();
+            if (canReadPosition(currentPosition))
+            {
+                iteratorState = IteratorState.INITIALIZED;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         final int fragmentLength = curr.getFragmentLength();
         int nextFragmentOffset = curr.getFragmentOffset() + fragmentLength;
         final int nextHeaderEnd = nextFragmentOffset + headerLength;
@@ -323,7 +382,28 @@ public class BufferedLogStreamReader implements LogStreamReader
             }
         }
 
-        return true;
+        final int nextFragmentLogEntryHeader = nextFragmentOffset + HEADER_LENGTH;
+        final long nextFragmentPosition = buffer.getLong(positionOffset(nextFragmentLogEntryHeader));
+
+        return canReadPosition(nextFragmentPosition);
+    }
+
+    protected boolean canReadPosition(long position)
+    {
+        final long commitPosition = getCommitPosition();
+        return commitPosition >= position;
+    }
+
+    protected long getCommitPosition()
+    {
+        long commitPosition = Long.MAX_VALUE;
+
+        if (!readUncommittedEntries)
+        {
+            commitPosition = logStream.getCommitPosition();
+        }
+
+        return commitPosition;
     }
 
     protected void ensureInitialized()
@@ -362,7 +442,7 @@ public class BufferedLogStreamReader implements LogStreamReader
     {
         ensureInitialized();
 
-        if (iteratorState == IteratorState.INITIALIZED_EMPTY_LOG)
+        if (iteratorState == IteratorState.INITIALIZED_EMPTY_LOG || iteratorState == IteratorState.NOT_COMMITTED)
         {
             throw new NoSuchElementException("No log entry available.");
         }

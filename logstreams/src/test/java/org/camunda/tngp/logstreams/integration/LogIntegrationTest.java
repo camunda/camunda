@@ -1,8 +1,7 @@
 package org.camunda.tngp.logstreams.integration;
 
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.readLogAndAssertEvents;
-import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.writeLogEvents;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
+import static org.camunda.tngp.logstreams.integration.util.LogIntegrationTestUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
 import java.util.concurrent.ExecutionException;
 
@@ -57,7 +56,7 @@ public class LogIntegrationTest
 
         logStream.open();
 
-        final LogStreamReader logReader = new BufferedLogStreamReader(logStream);
+        final LogStreamReader logReader = new BufferedLogStreamReader(logStream, true);
 
         for (int j = 0; j < 10; j++)
         {
