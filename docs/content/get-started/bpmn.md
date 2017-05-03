@@ -38,6 +38,10 @@ Extension element `tngp:taskDefinition`:
     <serviceTask id="task">
       <extensionElements>
         <tngp:taskDefiniton retries="3" type="foo"/>
+        <tngp:ioMapping>
+          <tngp:input source="$.foo" target="$.bar" />
+          <tngp:output source="$.bar" target="$.value" />
+        </tngp:ioMapping>
       </extensionElements>
     </serviceTask>
     ...
