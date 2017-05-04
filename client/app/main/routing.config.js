@@ -5,7 +5,7 @@ const router = getRouter();
 router.addRoutes(
   {
     name: 'login',
-    url: '/login?name=:name&params=:params'
+    url: '/login'
   },
   {
     name: 'processDisplay',
