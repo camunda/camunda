@@ -103,6 +103,7 @@
     <field name="subscriptionId" id="5" type="uint64" />
     <field name="protocolVersion" id="6" type="uint16" />
     <field name="eventType" id="7" type="EventType" />
+    <field name="incidentKey" id="8" type="uint64" />
   </sbe:message>
 
 </sbe:messageSchema>

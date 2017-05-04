@@ -13,38 +13,41 @@
 package org.camunda.tngp.broker.incident.data;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
+import org.camunda.tngp.broker.util.msgpack.property.BinaryProperty;
 import org.camunda.tngp.broker.util.msgpack.property.EnumProperty;
-import org.camunda.tngp.broker.util.msgpack.property.IntegerProperty;
 import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
+import org.camunda.tngp.msgpack.spec.MsgPackHelper;
 
 public class IncidentEvent extends UnpackedObject
 {
+    protected static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+
     private final EnumProperty<IncidentEventType> eventTypeProp = new EnumProperty<>("eventType", IncidentEventType.class);
 
     private final EnumProperty<ErrorType> errorTypeProp = new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
-    private final StringProperty errorMessageProp = new StringProperty("errorMessage");
+    private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
-    private final StringProperty failureEventTopicName = new StringProperty("failureEventTopicName");
-    private final IntegerProperty failureEventPartitionId = new IntegerProperty("failureEventPartitionId");
-    private final LongProperty failureEventPosition = new LongProperty("failureEventPosition");
+    private final LongProperty failureEventPosition = new LongProperty("failureEventPosition", -1L);
 
     private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
     private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
     private final StringProperty activityIdProp = new StringProperty("activityId", "");
+
+    private final BinaryProperty payloadProp = new BinaryProperty("payload", EMPTY_PAYLOAD);
 
     public IncidentEvent()
     {
         this.declareProperty(eventTypeProp)
             .declareProperty(errorTypeProp)
             .declareProperty(errorMessageProp)
-            .declareProperty(failureEventTopicName)
-            .declareProperty(failureEventPartitionId)
             .declareProperty(failureEventPosition)
             .declareProperty(bpmnProcessIdProp)
             .declareProperty(workflowInstanceKeyProp)
-            .declareProperty(activityIdProp);
+            .declareProperty(activityIdProp)
+            .declareProperty(payloadProp);
     }
 
     public IncidentEventType getEventType()
@@ -80,31 +83,9 @@ public class IncidentEvent extends UnpackedObject
         return this;
     }
 
-    public DirectBuffer getFailureEventTopicName()
-    {
-        return failureEventTopicName.getValue();
-    }
-
-    public IncidentEvent setFailureEventTopicName(DirectBuffer topicName)
-    {
-        this.failureEventTopicName.setValue(topicName);
-        return this;
-    }
-
-    public int getFailureEventPartitionId()
-    {
-        return failureEventPartitionId.getValue();
-    }
-
-    public IncidentEvent setFailureEventPartitionId(int failureEventStreamId)
-    {
-        this.failureEventPartitionId.setValue(failureEventStreamId);
-        return this;
-    }
-
     public long getFailureEventPosition()
     {
-        return this.getFailureEventPosition();
+        return failureEventPosition.getValue();
     }
 
     public IncidentEvent setFailureEventPosition(long failureEventPosition)
@@ -143,6 +124,17 @@ public class IncidentEvent extends UnpackedObject
     public IncidentEvent setWorkflowInstanceKey(long workflowInstanceKey)
     {
         this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+        return this;
+    }
+
+    public DirectBuffer getPayload()
+    {
+        return this.payloadProp.getValue();
+    }
+
+    public IncidentEvent setPayload(DirectBuffer payload)
+    {
+        this.payloadProp.setValue(payload);
         return this;
     }
 }

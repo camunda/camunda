@@ -10,32 +10,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.tngp.broker.incident.data;
+package org.camunda.tngp.client.incident;
 
-public enum IncidentEventType
+/**
+ * The result of an incident resolve command.
+ */
+public interface IncidentResolveResult
 {
-    CREATE(0),
-    CREATED(1),
+    /**
+     * @return the key of the incident
+     */
+    long getIncidentKey();
 
-    RESOLVE(2),
-    RESOLVED(3),
-    RESOLVE_REJECTED(4),
-    RESOLVE_FAILED(5),
+    /**
+     * @return <code>true</code>, if the incident is resolved.
+     */
+    boolean isIncidentResolved();
 
-    DELETE(6),
-    DELETED(7),
-    DELETE_REJECTED(8);
-
-    // don't change the ids because the incident stream processor use them for the index
-    private final int id;
-
-    IncidentEventType(int id)
-    {
-        this.id = id;
-    }
-
-    public int id()
-    {
-        return id;
-    }
+    /**
+     * @return the error message, in case the incident could not be resolved.
+     */
+    String getErrorMessage();
 }

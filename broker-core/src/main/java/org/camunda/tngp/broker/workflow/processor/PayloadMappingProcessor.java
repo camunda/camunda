@@ -71,7 +71,7 @@ public class PayloadMappingProcessor
     // processing related
     protected final MsgPackTraverser traverser = new MsgPackTraverser();
     protected final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
-    protected final MsgPackTokenVisitor payloadVisitor;
+    protected final PayloadMergePreprocessor payloadVisitor;
 
     protected MsgPackWriter msgPackWriter = new MsgPackWriter();
     protected MutableDirectBuffer resultingBuffer;
@@ -335,6 +335,7 @@ public class PayloadMappingProcessor
         nodeChildsMap.clear();
         nodeTypeMap.clear();
         leafMap.clear();
+        payloadVisitor.clear();
     }
 
     /**

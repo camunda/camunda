@@ -31,6 +31,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
     protected long subscriberKey;
     protected int protocolVersion = Constants.PROTOCOL_VERSION; // always the current version by default
     protected EventType eventType = NULL_VAL;
+    protected long incidentKey;
 
     @Override
     public void wrap(DirectBuffer buffer, int offset, int length)
@@ -50,6 +51,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         subscriberKey = decoder.subscriptionId();
         protocolVersion = decoder.protocolVersion();
         eventType = decoder.eventType();
+        incidentKey = decoder.incidentKey();
     }
 
     @Override
@@ -78,7 +80,8 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
             .raftTermId(raftTermId)
             .subscriptionId(subscriberKey)
             .protocolVersion(protocolVersion)
-            .eventType(eventType);
+            .eventType(eventType)
+            .incidentKey(incidentKey);
     }
 
     public int getReqChannelId()
@@ -158,6 +161,22 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         return this;
     }
 
+    public long getIncidentKey()
+    {
+        return incidentKey;
+    }
+
+    public BrokerEventMetadata incidentKey(long incidentKey)
+    {
+        this.incidentKey = incidentKey;
+        return this;
+    }
+
+    public boolean hasIncidentKey()
+    {
+        return incidentKey != BrokerEventMetadataDecoder.incidentKeyNullValue();
+    }
+
     public BrokerEventMetadata reset()
     {
         reqChannelId = BrokerEventMetadataEncoder.reqChannelIdNullValue();
@@ -167,6 +186,7 @@ public class BrokerEventMetadata implements BufferWriter, BufferReader
         subscriberKey = BrokerEventMetadataDecoder.subscriptionIdNullValue();
         protocolVersion = Constants.PROTOCOL_VERSION;
         eventType = NULL_VAL;
+        incidentKey = BrokerEventMetadataDecoder.incidentKeyNullValue();
         return this;
     }
 

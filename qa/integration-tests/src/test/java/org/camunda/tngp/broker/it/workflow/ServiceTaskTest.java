@@ -6,25 +6,23 @@ import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.
 import static org.camunda.tngp.test.util.TestUtil.waitUntil;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.tngp.broker.it.ClientRule;
 import org.camunda.tngp.broker.it.EmbeddedBrokerRule;
 import org.camunda.tngp.broker.it.util.RecordingTaskEventHandler;
 import org.camunda.tngp.broker.it.util.RecordingTaskHandler;
+import org.camunda.tngp.broker.it.util.WorkflowInstanceEventRecorder;
 import org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.TngpModelInstance;
 import org.camunda.tngp.client.TaskTopicClient;
 import org.camunda.tngp.client.WorkflowTopicClient;
-import org.camunda.tngp.client.event.TopicEventType;
+import org.camunda.tngp.client.event.TopicSubscription;
 import org.camunda.tngp.client.impl.cmd.taskqueue.TaskEventType;
 import org.camunda.tngp.client.task.Task;
 import org.camunda.tngp.client.workflow.cmd.WorkflowInstance;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,11 +48,28 @@ public class ServiceTaskTest
     private WorkflowTopicClient workflowClient;
     private TaskTopicClient taskClient;
 
+    private WorkflowInstanceEventRecorder workflowInstanceEventRecoder;
+    private TopicSubscription workflowInstanceSubscription;
+
     @Before
     public void init()
     {
         workflowClient = clientRule.workflowTopic();
         taskClient = clientRule.taskTopic();
+
+        workflowInstanceEventRecoder = new WorkflowInstanceEventRecorder();
+
+        workflowInstanceSubscription = clientRule.topic().newSubscription()
+            .name("workflow")
+            .startAtHeadOfTopic()
+            .handler(workflowInstanceEventRecoder)
+            .open();
+    }
+
+    @After
+    public void cleanUp()
+    {
+        workflowInstanceSubscription.close();
     }
 
     private static TngpModelInstance oneTaskProcess(String taskType)
@@ -154,25 +169,7 @@ public class ServiceTaskTest
         // then
         waitUntil(() -> recordingTaskEventHandler.hasTaskEvent(eventType(TaskEventType.COMPLETED)));
 
-        // TODO use workflow topic subscription to verify that workflow instance is completed
-        final List<String> workflowEventTypes = new ArrayList<>();
-        clientRule.topic().newSubscription()
-            .name("test")
-            .startAtHeadOfTopic()
-            .handler((meta, event) ->
-            {
-                if (meta.getEventType() == TopicEventType.WORKFLOW)
-                {
-                    final Matcher matcher = Pattern.compile("\"eventType\":\"(\\w+)\"").matcher(event.getJson());
-                    if (matcher.find())
-                    {
-                        final String eventType = matcher.group(1);
-                        workflowEventTypes.add(eventType);
-                    }
-                }
-            }).open();
-
-        waitUntil(() -> workflowEventTypes.contains("WORKFLOW_INSTANCE_COMPLETED"));
+        waitUntil(() -> workflowInstanceEventRecoder.getEventTypes().contains("WORKFLOW_INSTANCE_COMPLETED"));
     }
 
 }

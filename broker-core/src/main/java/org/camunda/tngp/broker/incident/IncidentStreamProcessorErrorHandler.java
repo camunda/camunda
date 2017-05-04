@@ -45,13 +45,13 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
     private final WorkflowInstanceEvent workflowInstanceEvent = new WorkflowInstanceEvent();
     private final TaskEvent taskEvent = new TaskEvent();
 
-    public IncidentStreamProcessorErrorHandler(LogStream targetLogStream, LogStream sourceStream, int streamProcessorId)
+    public IncidentStreamProcessorErrorHandler(LogStream logStream, int streamProcessorId)
     {
         this.streamProcessorId = streamProcessorId;
-        this.sourceStreamTopicName = sourceStream.getTopicName();
-        this.sourceStreamPartitionId = sourceStream.getPartitionId();
+        this.sourceStreamTopicName = logStream.getTopicName();
+        this.sourceStreamPartitionId = logStream.getPartitionId();
 
-        this.logStreamWriter = new LogStreamWriterImpl(targetLogStream);
+        this.logStreamWriter = new LogStreamWriterImpl(logStream);
     }
 
     @Override
@@ -69,26 +69,38 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
     private int handlePayloadMappingException(LoggedEvent failureEvent, PayloadMappingException error)
     {
-        incidentEventMetadata.reset();
-        incidentEventMetadata
+
+        incidentEventMetadata.reset()
             .protocolVersion(Constants.PROTOCOL_VERSION)
             .eventType(EventType.INCIDENT_EVENT);
 
         incidentEvent.reset();
         incidentEvent
-            .setEventType(IncidentEventType.CREATE)
             .setErrorType(ErrorType.IO_MAPPING_ERROR)
             .setErrorMessage(error.getMessage())
-            .setFailureEventTopicName(sourceStreamTopicName)
-            .setFailureEventPartitionId(sourceStreamPartitionId)
             .setFailureEventPosition(failureEvent.getPosition());
 
+        failureEventMetadata.reset();
+        failureEvent.readMetadata(failureEventMetadata);
+
         setWorkflowInstanceData(failureEvent);
+
+        if (!failureEventMetadata.hasIncidentKey())
+        {
+            incidentEvent.setEventType(IncidentEventType.CREATE);
+
+            logStreamWriter.positionAsKey();
+        }
+        else
+        {
+            incidentEvent.setEventType(IncidentEventType.RESOLVE_FAILED);
+
+            logStreamWriter.key(failureEventMetadata.getIncidentKey());
+        }
 
         final long position = logStreamWriter
                 .producerId(streamProcessorId)
                 .sourceEvent(sourceStreamTopicName, sourceStreamPartitionId, failureEvent.getPosition())
-                .positionAsKey()
                 .metadataWriter(incidentEventMetadata)
                 .valueWriter(incidentEvent)
                 .tryWrite();
@@ -98,9 +110,6 @@ public class IncidentStreamProcessorErrorHandler implements StreamProcessorError
 
     private void setWorkflowInstanceData(LoggedEvent failureEvent)
     {
-        failureEventMetadata.reset();
-        failureEvent.readMetadata(failureEventMetadata);
-
         if (failureEventMetadata.getEventType() == EventType.WORKFLOW_EVENT)
         {
             workflowInstanceEvent.reset();

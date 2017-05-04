@@ -12,6 +12,7 @@ public class EventTypeMapping
         MAPPING = new TopicEventType[EventType.values().length];
         MAPPING[EventType.TASK_EVENT.value()] = TopicEventType.TASK;
         MAPPING[EventType.WORKFLOW_EVENT.value()] = TopicEventType.WORKFLOW;
+        MAPPING[EventType.INCIDENT_EVENT.value()] = TopicEventType.INCIDENT;
         MAPPING[EventType.RAFT_EVENT.value()] = TopicEventType.RAFT;
     }
 

@@ -4,6 +4,8 @@ public enum TopicEventType
 {
     TASK,
     WORKFLOW,
+    INCIDENT,
+
     RAFT,
     UNKNOWN
 }

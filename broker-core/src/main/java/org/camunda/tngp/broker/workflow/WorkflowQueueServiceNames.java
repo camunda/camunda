@@ -28,4 +28,9 @@ public class WorkflowQueueServiceNames
     {
         return ServiceName.newServiceName(String.format("workflow.%s.processor.instance", queueName), StreamProcessorController.class);
     }
+
+    public static ServiceName<StreamProcessorController> incidentStreamProcessorServiceName(String queueName)
+    {
+        return ServiceName.newServiceName(String.format("workflow.%s.processor.incident", queueName), StreamProcessorController.class);
+    }
 }

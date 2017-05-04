@@ -15,9 +15,11 @@ package org.camunda.tngp.broker.workflow;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.SNAPSHOT_STORAGE_SERVICE;
 import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
 import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID;
+import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
 import static org.camunda.tngp.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
 import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.deploymentStreamProcessorServiceName;
+import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.incidentStreamProcessorServiceName;
 import static org.camunda.tngp.broker.workflow.WorkflowQueueServiceNames.workflowInstanceStreamProcessorServiceName;
 
 import java.io.File;
@@ -25,6 +27,7 @@ import java.nio.channels.FileChannel;
 
 import org.agrona.concurrent.Agent;
 import org.camunda.tngp.broker.incident.IncidentStreamProcessorErrorHandler;
+import org.camunda.tngp.broker.incident.processor.IncidentStreamProcessor;
 import org.camunda.tngp.broker.logstreams.cfg.LogStreamsCfg;
 import org.camunda.tngp.broker.logstreams.processor.StreamProcessorService;
 import org.camunda.tngp.broker.system.ConfigurationManager;
@@ -74,6 +77,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
 
         installDeploymentStreamProcessor(logStream.getLogName());
         installWorkflowStreamProcessor(logStream);
+        installIncidentStreamProcessor(logStream);
     }
 
     private void installDeploymentStreamProcessor(final String logName)
@@ -117,7 +121,7 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
 
         // incident target log stream could be configurable
-        final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream, logStream, WORKFLOW_INSTANCE_PROCESSOR_ID);
+        final IncidentStreamProcessorErrorHandler errorHandler = new IncidentStreamProcessorErrorHandler(logStream, WORKFLOW_INSTANCE_PROCESSOR_ID);
 
         final WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor = new WorkflowInstanceStreamProcessor(
                 responseWriter,
@@ -138,6 +142,35 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 .dependency(logStreamServiceName, workflowStreamProcessorService.getTargetStreamInjector())
                 .dependency(SNAPSHOT_STORAGE_SERVICE, workflowStreamProcessorService.getSnapshotStorageInjector())
                 .dependency(AGENT_RUNNER_SERVICE, workflowStreamProcessorService.getAgentRunnerInjector())
+                .install();
+    }
+
+    private void installIncidentStreamProcessor(final LogStream logStream)
+    {
+        final ServiceName<StreamProcessorController> streamProcessorServiceName = incidentStreamProcessorServiceName(logStream.getLogName());
+        final String streamProcessorName = streamProcessorServiceName.getName();
+
+        final IndexStore incidentInstanceIndex = createIndexStore("incident.instance");
+        final IndexStore incidentPositionIndex = createIndexStore("incident.position");
+
+        final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logStream.getLogName());
+
+        final Dispatcher sendBuffer = sendBufferInjector.getValue();
+        final CommandResponseWriter responseWriter = new CommandResponseWriter(sendBuffer);
+
+        final IncidentStreamProcessor incidentStreamProcessor = new IncidentStreamProcessor(responseWriter, incidentInstanceIndex, incidentPositionIndex);
+
+        final StreamProcessorService incidentStreamProcessorService = new StreamProcessorService(
+                streamProcessorName,
+                INCIDENT_PROCESSOR_ID,
+                incidentStreamProcessor)
+                .eventFilter(IncidentStreamProcessor.eventFilter());
+
+        serviceContext.createService(streamProcessorServiceName, incidentStreamProcessorService)
+                .dependency(logStreamServiceName, incidentStreamProcessorService.getSourceStreamInjector())
+                .dependency(logStreamServiceName, incidentStreamProcessorService.getTargetStreamInjector())
+                .dependency(SNAPSHOT_STORAGE_SERVICE, incidentStreamProcessorService.getSnapshotStorageInjector())
+                .dependency(AGENT_RUNNER_SERVICE, incidentStreamProcessorService.getAgentRunnerInjector())
                 .install();
     }
 
