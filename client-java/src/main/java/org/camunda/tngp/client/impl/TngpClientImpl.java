@@ -58,7 +58,6 @@ public class TngpClientImpl implements TngpClient
     protected final ObjectMapper objectMapper;
 
     protected SubscriptionManager subscriptionManager;
-    protected ClientTransportChannelListener channelListener;
 
     public TngpClientImpl(final Properties properties)
     {
@@ -121,7 +120,7 @@ public class TngpClientImpl implements TngpClient
                 autoCompleteTasks,
                 prefetchCapacity,
                 dataFrameReceiveBuffer.openSubscription("task-acquisition"));
-        channelListener = new ClientTransportChannelListener(subscriptionManager);
+        transport.registerChannelListener(subscriptionManager);
     }
 
     @Override
@@ -130,7 +129,6 @@ public class TngpClientImpl implements TngpClient
         channel = transport.createClientChannel(contactPoint)
                 .requestResponseProtocol(connectionPool)
                 .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
-                .channelEventHandler(channelListener)
                 .connect();
 
         channelResolver.setChannelId(channel.getId());
