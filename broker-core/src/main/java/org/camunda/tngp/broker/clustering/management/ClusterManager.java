@@ -230,6 +230,7 @@ public class ClusterManager implements Agent
     {
         managementCmdQueue.add(() ->
         {
+            context.getLocalPeer().addRaft(raft);
             rafts.add(raft);
         });
     }
@@ -248,6 +249,7 @@ public class ClusterManager implements Agent
                 final LogStream stream = r.stream();
                 if (topicName.equals(stream.getTopicName()) && partitionId == stream.getPartitionId())
                 {
+                    context.getLocalPeer().removeRaft(raft);
                     rafts.remove(i);
                     break;
                 }

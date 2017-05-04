@@ -4,7 +4,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
-import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
 import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
@@ -18,6 +17,7 @@ import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
 import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.transport.SocketAddress;
 
 public abstract class RaftState
@@ -69,7 +69,7 @@ public abstract class RaftState
 
     public abstract boolean isClosed();
 
-    public abstract State state();
+    public abstract RaftMembershipState state();
 
     public abstract PollResponse poll(PollRequest pollRequest);
 

@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
-import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.controller.VoteController;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
@@ -12,6 +11,7 @@ import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.StateMachine;
 import org.camunda.tngp.util.state.StateMachineAgent;
@@ -119,9 +119,9 @@ public class CandidateState extends ActiveState
     }
 
     @Override
-    public State state()
+    public RaftMembershipState state()
     {
-        return Raft.State.CANDIDATE;
+        return RaftMembershipState.CANDIDATE;
     }
 
     @Override
@@ -129,7 +129,7 @@ public class CandidateState extends ActiveState
     {
         if (updateTermAndLeader(request.term(), null))
         {
-            raft.transition(State.FOLLOWER);
+            raft.transition(RaftMembershipState.FOLLOWER);
         }
 
         return super.append(request);
@@ -140,7 +140,7 @@ public class CandidateState extends ActiveState
     {
         if (updateTermAndLeader(voteRequest.term(), null))
         {
-            raft.transition(State.FOLLOWER);
+            raft.transition(RaftMembershipState.FOLLOWER);
             return super.vote(voteRequest);
         }
 
@@ -203,7 +203,7 @@ public class CandidateState extends ActiveState
             if (members.size() == 1)
             {
                 context.take(TRANSITION_CLOSE);
-                raft.transition(Raft.State.LEADER);
+                raft.transition(RaftMembershipState.LEADER);
             }
             else
             {
@@ -273,12 +273,12 @@ public class CandidateState extends ActiveState
                 if (quorum.isElected())
                 {
                     // this will close this current state
-                    raft.transition(Raft.State.LEADER);
+                    raft.transition(RaftMembershipState.LEADER);
                 }
                 else
                 {
                     // this will close this current state
-                    raft.transition(Raft.State.FOLLOWER);
+                    raft.transition(RaftMembershipState.FOLLOWER);
                 }
             }
             else if (System.currentTimeMillis() >= electionTime + electionTimeout)

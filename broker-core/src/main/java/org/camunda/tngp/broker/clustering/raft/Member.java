@@ -313,4 +313,20 @@ public class Member
         return true;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Member{" +
+            "raft=" + raft +
+            ", endpoint=" + endpoint +
+            ", failures=" + failures +
+            ", configEntryPosition=" + configEntryPosition +
+            ", configEntryTerm=" + configEntryTerm +
+            ", currentEntryPosition=" + currentEntryPosition +
+            ", currentEntryTerm=" + currentEntryTerm +
+            ", matchPosition=" + matchPosition +
+            ", lastContact=" + lastContact +
+            '}';
+    }
+
 }

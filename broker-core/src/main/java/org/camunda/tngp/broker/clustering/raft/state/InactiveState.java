@@ -6,7 +6,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.camunda.tngp.broker.clustering.raft.Configuration;
 import org.camunda.tngp.broker.clustering.raft.Member;
-import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
 import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
@@ -20,6 +19,8 @@ import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
 import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
+
 
 public class InactiveState extends RaftState
 {
@@ -31,9 +32,9 @@ public class InactiveState extends RaftState
     }
 
     @Override
-    public State state()
+    public RaftMembershipState state()
     {
-        return State.INACTIVE;
+        return RaftMembershipState.INACTIVE;
     }
 
     @Override

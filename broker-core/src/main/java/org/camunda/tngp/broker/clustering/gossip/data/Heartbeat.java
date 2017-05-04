@@ -78,6 +78,10 @@ public class Heartbeat implements Comparable<Heartbeat>
     @Override
     public String toString()
     {
-        return String.format("{ generation: %d, version: %d }", generation(), version());
+        return "Heartbeat{" +
+            "generation=" + generation +
+            ", version=" + version +
+            '}';
     }
+
 }

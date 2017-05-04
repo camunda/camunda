@@ -32,6 +32,7 @@ import org.camunda.tngp.broker.clustering.raft.state.InactiveState;
 import org.camunda.tngp.broker.clustering.raft.state.LeaderState;
 import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.clustering.raft.state.RaftState;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.transport.SocketAddress;
 
@@ -167,7 +168,7 @@ public class Raft implements Agent
         return configuration;
     }
 
-    public State state()
+    public RaftMembershipState state()
     {
         return state.state();
     }
@@ -179,7 +180,7 @@ public class Raft implements Agent
 
     public boolean isLeader()
     {
-        return state.state() == State.LEADER;
+        return state.state() == RaftMembershipState.LEADER;
     }
 
     public int term()
@@ -350,7 +351,7 @@ public class Raft implements Agent
 
     protected Raft join()
     {
-        transition(State.FOLLOWER);
+        transition(RaftMembershipState.FOLLOWER);
 
         final List<Member> activeMembers = new CopyOnWriteArrayList<>();
 
@@ -440,11 +441,11 @@ public class Raft implements Agent
         return this;
     }
 
-    public void transition(final State state)
+    public void transition(final RaftMembershipState state)
     {
         if (this.state.state() != state)
         {
-//            System.out.println(String.format("Transitioning %s from %s to %s, %d", stream.getLogName(), this.state.state(), state, System.currentTimeMillis()));
+            //System.out.println(String.format("Transitioning %s from %s to %s, %d", stream.getLogName(), this.state.state(), state, System.currentTimeMillis()));
 
             try
             {
@@ -468,7 +469,7 @@ public class Raft implements Agent
         }
     }
 
-    protected ActiveState getState(final State state)
+    protected ActiveState getState(final RaftMembershipState state)
     {
         switch (state)
         {
@@ -523,9 +524,16 @@ public class Raft implements Agent
         stateChangeListeners.add(listener);
     }
 
-    public enum State
+    @Override
+    public String toString()
     {
-        INACTIVE, FOLLOWER, CANDIDATE, LEADER
+        return "Raft{" +
+            "stream=" + stream +
+            ", lastVotedFor=" + lastVotedFor +
+            ", leader=" + leader +
+            ", lastContact=" + lastContact +
+            ", state=" + state +
+            ", configuration=" + configuration +
+            '}';
     }
-
 }

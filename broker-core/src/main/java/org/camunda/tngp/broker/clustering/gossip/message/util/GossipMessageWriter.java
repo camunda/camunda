@@ -9,12 +9,15 @@ import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.clustering.gossip.data.Heartbeat;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
+import org.camunda.tngp.broker.clustering.gossip.data.RaftMembership;
+import org.camunda.tngp.broker.clustering.gossip.data.RaftMembershipList;
 import org.camunda.tngp.clustering.gossip.EndpointType;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.EndpointsDecoder;
 import org.camunda.tngp.clustering.gossip.GossipEncoder;
 import org.camunda.tngp.clustering.gossip.GossipEncoder.PeersEncoder;
 import org.camunda.tngp.clustering.gossip.GossipEncoder.PeersEncoder.EndpointsEncoder;
+import org.camunda.tngp.clustering.gossip.GossipEncoder.PeersEncoder.RaftMembershipsEncoder;
 import org.camunda.tngp.clustering.gossip.MessageHeaderEncoder;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferWriter;
@@ -52,6 +55,15 @@ public class GossipMessageWriter implements BufferWriter
             length += current.clientEndpoint().hostLength();
             length += current.managementEndpoint().hostLength();
             length += current.replicationEndpoint().hostLength();
+            length += RaftMembershipsEncoder.sbeHeaderSize();
+
+            for (final RaftMembership raftMembership : current.raftMemberships())
+            {
+                length +=
+                    RaftMembershipsEncoder.sbeBlockLength() +
+                    RaftMembershipsEncoder.topicNameHeaderLength() +
+                    raftMembership.topicNameLength();
+            }
         }
 
         return length;
@@ -105,6 +117,18 @@ public class GossipMessageWriter implements BufferWriter
                 .endpointType(EndpointType.REPLICATION)
                 .port(replicationPort)
                 .putHost(replicationHostBuffer, 0, replicationHostLength);
+
+            final RaftMembershipList raftMemberships = current.raftMemberships();
+            final RaftMembershipsEncoder raftMembershipsEncoder = encoder.raftMembershipsCount(raftMemberships.size());
+            for (final RaftMembership raftMembership : raftMemberships)
+            {
+                raftMembershipsEncoder.next()
+                    .partitionId(raftMembership.partitionId())
+                    .term(raftMembership.term())
+                    .state(raftMembership.state())
+                    .putTopicName(raftMembership.topicNameBuffer(), 0, raftMembership.topicNameLength());
+            }
+
         }
     }
 

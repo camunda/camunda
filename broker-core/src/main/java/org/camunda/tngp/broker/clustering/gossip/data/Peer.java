@@ -1,19 +1,19 @@
 package org.camunda.tngp.broker.clustering.gossip.data;
 
-import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.BLOCK_LENGTH;
-import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.SCHEMA_VERSION;
-import static org.camunda.tngp.clustering.gossip.PeerState.ALIVE;
-import static org.camunda.tngp.clustering.gossip.PeerState.DEAD;
-import static org.camunda.tngp.clustering.gossip.PeerState.NULL_VAL;
-import static org.camunda.tngp.clustering.gossip.PeerState.SUSPECT;
+import static org.camunda.tngp.broker.clustering.gossip.data.RaftMembershipList.*;
+import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.*;
+import static org.camunda.tngp.clustering.gossip.PeerState.*;
+import static org.camunda.tngp.logstreams.log.LogStream.*;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.clustering.gossip.EndpointType;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder;
-import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.EndpointsDecoder;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.*;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder.EndpointsEncoder;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder.RaftMembershipsEncoder;
 import org.camunda.tngp.clustering.gossip.PeerState;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -30,6 +30,12 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
                 EndpointsEncoder.sbeBlockLength() +
                 EndpointsEncoder.hostHeaderLength() +
                 SocketAddress.MAX_HOST_LENGTH
+            ) +
+            RaftMembershipsEncoder.sbeHeaderSize() +
+            MAX_RAFT_MEMBERS * (
+                RaftMembershipsEncoder.sbeBlockLength() +
+                RaftMembershipsEncoder.topicNameHeaderLength() +
+                MAX_TOPIC_NAME_LENGTH
             );
 
     protected final PeerDescriptorDecoder decoder = new PeerDescriptorDecoder();
@@ -40,6 +46,9 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     protected final SocketAddress replicationEndpoint = new SocketAddress();
 
     protected final Heartbeat heartbeat = new Heartbeat();
+
+    protected final RaftMembershipList raftMemberships = new RaftMembershipList();
+
     protected PeerState state = NULL_VAL;
 
     protected long changeStateTime = -1L;
@@ -72,6 +81,23 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     public Peer state(final PeerState state)
     {
         this.state = state;
+        return this;
+    }
+
+    public RaftMembershipList raftMemberships()
+    {
+        return raftMemberships;
+    }
+
+    public Peer raftMemberships(final RaftMembershipList raftMemberships)
+    {
+        this.raftMemberships.clear();
+
+        for (final RaftMembership raftMembership : raftMemberships)
+        {
+            this.raftMemberships.add(raftMembership);
+        }
+
         return this;
     }
 
@@ -118,14 +144,18 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     }
 
     @Override
-    public int compareTo(Peer o)
+    public int compareTo(final Peer o)
     {
         return managementEndpoint.compareTo(o.managementEndpoint());
     }
 
     @Override
-    public void wrap(DirectBuffer buffer, int offset, int length)
+    public void wrap(final DirectBuffer buffer, final int offset, final int length)
     {
+        final int frameEnd = offset + length;
+
+        reset();
+
         decoder.wrap(buffer, offset, BLOCK_LENGTH, SCHEMA_VERSION);
 
         state(decoder.state()).changeStateTime(decoder.changeStateTime());
@@ -159,6 +189,13 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
             endpoint.hostLength(hostLength);
             endpointsDecoder.getHost(hostBuffer, 0, hostLength);
         }
+
+        for (final RaftMembershipsDecoder raftMembershipsDecoder : decoder.raftMemberships())
+        {
+            raftMemberships.add(raftMembershipsDecoder);
+        }
+
+        assert decoder.limit() == frameEnd : "Decoder read only to position " + decoder.limit() + " but expected " + frameEnd + " as final position";
     }
 
     public void wrap(final Peer peer)
@@ -169,22 +206,34 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
         managementEndpoint().wrap(peer.managementEndpoint());
         replicationEndpoint().wrap(peer.replicationEndpoint());
 
+        raftMemberships(peer.raftMemberships());
+
         this.state(peer.state()).changeStateTime(peer.changeStateTime());
     }
 
     @Override
     public int getLength()
     {
-        return encoder.sbeBlockLength() +
-                EndpointsDecoder.sbeHeaderSize() +
-                PEER_ENDPOINT_COUNT * (EndpointsDecoder.sbeBlockLength() + EndpointsDecoder.hostHeaderLength()) +
-                clientEndpoint().hostLength() +
-                managementEndpoint().hostLength() +
-                replicationEndpoint().hostLength();
+        int length = encoder.sbeBlockLength() +
+            EndpointsDecoder.sbeHeaderSize() +
+            PEER_ENDPOINT_COUNT * (EndpointsDecoder.sbeBlockLength() + EndpointsDecoder.hostHeaderLength()) +
+            clientEndpoint().hostLength() +
+            managementEndpoint().hostLength() +
+            replicationEndpoint().hostLength() +
+            RaftMembershipsDecoder.sbeHeaderSize();
+
+        for (final RaftMembership raftMembership : raftMemberships())
+        {
+            length += RaftMembershipsDecoder.sbeBlockLength() +
+                RaftMembershipsDecoder.topicNameHeaderLength() +
+                raftMembership.topicNameLength();
+        }
+
+        return length;
     }
 
     @Override
-    public void write(MutableDirectBuffer buffer, int offset)
+    public void write(final MutableDirectBuffer buffer, final int offset)
     {
         final Heartbeat heartbeat = heartbeat();
 
@@ -222,6 +271,16 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
             .endpointType(EndpointType.REPLICATION)
             .port(replicationEndpoint.port())
             .putHost(replicationEndpointBuffer, 0, replicationHostLength);
+
+        final RaftMembershipsEncoder raftMembershipsEncoder = encoder.raftMembershipsCount(raftMemberships.size());
+        for (final RaftMembership raftMembership : raftMemberships)
+        {
+            raftMembershipsEncoder.next()
+                .partitionId(raftMembership.partitionId())
+                .term(raftMembership.term())
+                .state(raftMembership.state())
+                .putTopicName(raftMembership.topicNameBuffer(), 0, raftMembership.topicNameLength());
+        }
     }
 
     public void reset()
@@ -238,8 +297,22 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
         replicationEndpoint().reset();
         replicationEndpoint().port(EndpointsDecoder.portNullValue());
 
+        raftMemberships.clear();
+
         state = NULL_VAL;
         changeStateTime = -1L;
+    }
+
+    public void addRaft(final Raft raft)
+    {
+        raftMemberships()
+            .add(raft);
+    }
+
+    public void removeRaft(final Raft raft)
+    {
+        raftMemberships()
+            .remove(raft);
     }
 
     @Override
@@ -250,8 +323,10 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
             ", managementEndpoint=" + managementEndpoint +
             ", replicationEndpoint=" + replicationEndpoint +
             ", heartbeat=" + heartbeat +
+            ", raftMembershipList=" + raftMemberships +
             ", state=" + state +
             ", changeStateTime=" + changeStateTime +
             '}';
     }
+
 }

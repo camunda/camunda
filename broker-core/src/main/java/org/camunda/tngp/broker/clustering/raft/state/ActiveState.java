@@ -4,7 +4,6 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
 import org.camunda.tngp.broker.clustering.raft.Member;
-import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
 import org.camunda.tngp.broker.clustering.raft.message.AppendResponse;
@@ -16,6 +15,7 @@ import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
 import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
 import org.camunda.tngp.transport.SocketAddress;
@@ -44,7 +44,7 @@ public abstract class ActiveState extends InactiveState
 
         if (transition)
         {
-            raft.transition(Raft.State.FOLLOWER);
+            raft.transition(RaftMembershipState.FOLLOWER);
         }
 
         return voteResponse;
@@ -105,7 +105,7 @@ public abstract class ActiveState extends InactiveState
 
         if (transition)
         {
-            raft.transition(Raft.State.FOLLOWER);
+            raft.transition(RaftMembershipState.FOLLOWER);
         }
 
         return pollResponse;
@@ -152,7 +152,7 @@ public abstract class ActiveState extends InactiveState
 
         if (transition)
         {
-            raft.transition(Raft.State.FOLLOWER);
+            raft.transition(RaftMembershipState.FOLLOWER);
         }
 
         return response;

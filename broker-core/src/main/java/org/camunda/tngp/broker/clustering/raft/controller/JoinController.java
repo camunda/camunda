@@ -1,6 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
-import static org.camunda.tngp.broker.clustering.raft.Raft.State.*;
+
+import static org.camunda.tngp.clustering.gossip.RaftMembershipState.FOLLOWER;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

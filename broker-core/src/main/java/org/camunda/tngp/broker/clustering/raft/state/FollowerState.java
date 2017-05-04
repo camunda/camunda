@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
-import org.camunda.tngp.broker.clustering.raft.Raft.State;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.clustering.raft.controller.PollController;
 import org.camunda.tngp.broker.clustering.raft.message.AppendRequest;
@@ -14,6 +13,7 @@ import org.camunda.tngp.broker.clustering.raft.message.ConfigureResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.StateMachine;
 import org.camunda.tngp.util.state.StateMachineAgent;
@@ -142,9 +142,9 @@ public class FollowerState extends ActiveState
     }
 
     @Override
-    public State state()
+    public RaftMembershipState state()
     {
-        return Raft.State.FOLLOWER;
+        return RaftMembershipState.FOLLOWER;
     }
 
     static class FollowerContext extends SimpleStateMachineContext
@@ -184,7 +184,7 @@ public class FollowerState extends ActiveState
             if (members.size() == 0 || (members.size() == 1 && members.contains(self)))
             {
                 context.take(TRANSITION_CLOSE);
-                raft.transition(Raft.State.CANDIDATE);
+                raft.transition(RaftMembershipState.CANDIDATE);
                 return;
             }
 
@@ -239,7 +239,7 @@ public class FollowerState extends ActiveState
                 if (quorum.isElected())
                 {
                     // this will close this current state
-                    raft.transition(Raft.State.CANDIDATE);
+                    raft.transition(RaftMembershipState.CANDIDATE);
                 }
                 else
                 {

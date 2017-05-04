@@ -2,11 +2,17 @@ package org.camunda.tngp.broker.clustering.gossip.message;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.camunda.tngp.test.util.BufferWriterUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
 import java.util.Iterator;
 
+import org.agrona.DirectBuffer;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
+import org.camunda.tngp.broker.clustering.gossip.data.RaftMembership;
+import org.camunda.tngp.clustering.gossip.PeerState;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
+import org.camunda.tngp.test.util.BufferWriterUtil;
 import org.camunda.tngp.transport.SocketAddress;
 import org.junit.Test;
 
@@ -85,6 +91,64 @@ public class GossipMessageTest
         assertEqualFieldsAfterWriteAndRead(probeRequest,
             "target"
         );
+    }
+
+    @Test
+    public void testPeer()
+    {
+        final Peer peer = new Peer()
+            .state(PeerState.SUSPECT)
+            .changeStateTime(444);
+
+        peer.heartbeat()
+            .generation(1234)
+            .version(5678);
+
+        peer.clientEndpoint()
+            .host("client")
+            .port(111);
+
+        peer.managementEndpoint()
+            .host("management")
+            .port(222);
+
+        peer.replicationEndpoint()
+            .host("replication")
+            .port(333);
+
+        final DirectBuffer firstTopicName = wrapString("first");
+        final DirectBuffer secondTopicName = wrapString("second");
+
+        peer.raftMemberships()
+            .add(
+                new RaftMembership()
+                    .topicName(firstTopicName, 0, firstTopicName.capacity())
+                    .partitionId(555)
+                    .term(666)
+                    .state(RaftMembershipState.CANDIDATE)
+            )
+            .add(
+                new RaftMembership()
+                    .topicName(secondTopicName, 0, secondTopicName.capacity())
+                    .partitionId(777)
+                    .term(888)
+                    .state(RaftMembershipState.LEADER)
+            );
+
+
+        final Peer actual = BufferWriterUtil.writeAndRead(peer);
+        assertThat(actual)
+            .isEqualToComparingOnlyGivenFields(peer,
+                "clientEndpoint",
+                "managementEndpoint",
+                "replicationEndpoint",
+                "heartbeat",
+                "state",
+                "changeStateTime"
+            );
+
+        assertThat(actual.raftMemberships())
+            .hasSameElementsAs(peer.raftMemberships());
     }
 
 }

@@ -250,7 +250,7 @@ public class GossipController
         final GossipConfiguration config = context.getConfig();
         final int interval = config.disseminationInterval;
 
-        final boolean elapsed = interval > 0 ? now >= TimeUnit.SECONDS.toMillis(interval) + lastDissemination : false;
+        final boolean elapsed = interval > 0 && now >= TimeUnit.SECONDS.toMillis(interval) + lastDissemination;
 
         if (elapsed)
         {

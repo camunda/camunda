@@ -41,6 +41,13 @@
             <validValue name="REPLICATION">2</validValue>
         </enum>
 
+        <enum name="RaftMembershipState" encodingType="uint8">
+          <validValue name="INACTIVE">0</validValue>
+          <validValue name="FOLLOWER">1</validValue>
+          <validValue name="CANDIDATE">2</validValue>
+          <validValue name="LEADER">3</validValue>
+        </enum>
+
     </types>
 
     <!-- GOSSIP MESSAGES: 0 - 99 -->
@@ -55,7 +62,12 @@
               <field name="port" id="7" type="uint16"/>
               <data name="host" id="8" type="varDataEncoding"/>
             </group>
-            <!-- TODO: rafts and state -->
+            <group name="raftMemberships" id="9" dimensionType="groupSizeEncoding">
+              <field name="partitionId" id="10" type="uint16"/>
+              <field name="term" id="11" type="uint16"/>
+              <field name="state" id="12" type="RaftMembershipState"/>
+              <data name="topicName" id="13" type="varDataEncoding"/>
+            </group>
         </group>
     </sbe:message>
 
@@ -75,6 +87,12 @@
           <field name="endpointType" id="6" type="EndpointType"/>
           <field name="port" id="7" type="uint16"/>
           <data name="host" id="8" type="varDataEncoding"/>
+        </group>
+        <group name="raftMemberships" id="9" dimensionType="groupSizeEncoding">
+          <field name="partitionId" id="10" type="uint16"/>
+          <field name="term" id="11" type="uint16"/>
+          <field name="state" id="12" type="RaftMembershipState"/>
+          <data name="topicName" id="13" type="varDataEncoding"/>
         </group>
     </sbe:message>
 

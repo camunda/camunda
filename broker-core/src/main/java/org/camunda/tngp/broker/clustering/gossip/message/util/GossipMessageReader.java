@@ -5,9 +5,11 @@ import java.util.Iterator;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
+import org.camunda.tngp.broker.clustering.gossip.data.RaftMembershipList;
 import org.camunda.tngp.clustering.gossip.GossipDecoder;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.EndpointsDecoder;
+import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.RaftMembershipsDecoder;
 import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 
@@ -68,6 +70,12 @@ public class GossipMessageReader implements BufferReader, Iterator<Peer>
             endpoint.hostLength(hostLength);
             endpointsDecoder.getHost(hostBuffer, 0, hostLength);
             endpoint.host();
+        }
+
+        final RaftMembershipList raftMemberships = currentPeer.raftMemberships();
+        for (final RaftMembershipsDecoder raftMembershipsDecoder : decoder.raftMemberships())
+        {
+            raftMemberships.add(raftMembershipsDecoder);
         }
 
         currentPeer.state(decoder.state())

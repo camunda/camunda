@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -17,7 +19,7 @@ import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder;
 import org.camunda.tngp.list.CompactList;
 
 /**
- * <p>An instance of {@link PeerManager} contains a list of peers.</p>
+ * <p>An instance of {@link PeerList} contains a list of peers.</p>
  */
 public class PeerList implements Iterable<Peer>
 {
@@ -41,6 +43,7 @@ public class PeerList implements Iterable<Peer>
     protected final PeerListIterator localIterator;
 
     protected final UnsafeBuffer tmpPeerBuffer = new UnsafeBuffer(new byte[MAX_PEER_LENGTH]);
+    protected final UnsafeBuffer tmpPeerBufferView = new UnsafeBuffer(0, 0);
 
     protected final Peer shuffledPeer = new Peer();
     protected final Random shuffleRandom = new Random();
@@ -182,6 +185,7 @@ public class PeerList implements Iterable<Peer>
             thisPeer.clientEndpoint().wrap(thatPeer.clientEndpoint());
             thisPeer.managementEndpoint().wrap(thatPeer.managementEndpoint());
             thisPeer.replicationEndpoint().wrap(thatPeer.replicationEndpoint());
+            thisPeer.raftMemberships(thatPeer.raftMemberships());
         }
 
         switch (thatPeer.state())
@@ -244,8 +248,8 @@ public class PeerList implements Iterable<Peer>
      */
     public void get(final int idx, final Peer dst)
     {
-        underlyingList.get(idx, tmpPeerBuffer, 0);
-        dst.wrap(tmpPeerBuffer, 0, tmpPeerBuffer.capacity());
+        final int length = underlyingList.get(idx, tmpPeerBuffer, 0);
+        dst.wrap(tmpPeerBuffer, 0, length);
     }
 
     public void set(final int idx, final Peer src)
@@ -318,7 +322,16 @@ public class PeerList implements Iterable<Peer>
     public int find(final Peer peer)
     {
         peer.write(tmpPeerBuffer, 0);
-        return underlyingList.find(tmpPeerBuffer, PEER_COMPARATOR);
+
+        // limit the accessible memory to peer length to prevent reading out of bounce
+        tmpPeerBufferView.wrap(tmpPeerBuffer, 0, peer.getLength());
+
+        final int index = underlyingList.find(tmpPeerBufferView, PEER_COMPARATOR);
+
+        // reset view to release reference
+        tmpPeerBufferView.wrap(0, 0);
+
+        return index;
     }
 
     /**
@@ -362,11 +375,11 @@ public class PeerList implements Iterable<Peer>
     {
         get(i, shuffledPeer);
 
-        underlyingList.get(j, tmpPeerBuffer, 0);
-        underlyingList.set(i, tmpPeerBuffer);
+        final int length = underlyingList.get(j, tmpPeerBuffer, 0);
+        underlyingList.set(i, tmpPeerBuffer, 0, length);
 
         shuffledPeer.write(tmpPeerBuffer, 0);
-        underlyingList.set(j, tmpPeerBuffer);
+        underlyingList.set(j, tmpPeerBuffer, 0, shuffledPeer.getLength());
     }
 
     public void addAll(final PeerList peerList)
@@ -404,6 +417,20 @@ public class PeerList implements Iterable<Peer>
     public void removeListener(final PeerListListener listener)
     {
         listeners.remove(listener);
+    }
+
+
+    @Override
+    public String toString()
+    {
+        return "PeerList{" +
+            "size=" + underlyingList.size() +
+            ", elements=" +
+                StreamSupport.stream(this.spliterator(), false)
+                    .map(Peer::toString)
+                    .collect(Collectors.joining(", ", "[", "]")) +
+
+            '}';
     }
 
 }

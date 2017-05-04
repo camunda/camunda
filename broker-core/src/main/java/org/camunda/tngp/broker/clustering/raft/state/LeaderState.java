@@ -1,9 +1,8 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
-import static org.camunda.tngp.broker.clustering.raft.Raft.State.FOLLOWER;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
-import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
+import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.clustering.gossip.RaftMembershipState.*;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +29,7 @@ import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.broker.logstreams.LogStreamService;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
+import org.camunda.tngp.clustering.gossip.RaftMembershipState;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
@@ -494,9 +494,9 @@ public class LeaderState extends ActiveState
     }
 
     @Override
-    public Raft.State state()
+    public RaftMembershipState state()
     {
-        return Raft.State.LEADER;
+        return RaftMembershipState.LEADER;
     }
 
     @Override
