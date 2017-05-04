@@ -532,14 +532,14 @@ public class StreamProcessorIntegrationTest
         sourceReader.seekToFirstEvent();
 
         int events = 0;
-        while (sourceReader.hasNext() && events < (WORK_COUNT / 2))
+        while (sourceReader.hasNext() && events <= (WORK_COUNT / 2))
         {
             sourceReader.next();
             events += 1;
         }
 
         sourceLogStream.setCommitPosition(sourceReader.getPosition());
-        waitUntilWrittenKey(targetLogStream, WORK_COUNT / 2 - 1);
+        waitUntilWrittenKey(targetLogStream, WORK_COUNT / 2);
 
         sourceReader.seekToLastEvent();
 
