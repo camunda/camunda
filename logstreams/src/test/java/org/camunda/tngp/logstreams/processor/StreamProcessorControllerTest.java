@@ -12,20 +12,10 @@
  */
 package org.camunda.tngp.logstreams.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -293,7 +283,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(3L);
 
         open();
 
@@ -328,7 +318,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(1L);
 
         open();
 
@@ -351,7 +341,7 @@ public class StreamProcessorControllerTest
         // -> closingSnapshotting
         controller.doWork();
 
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(2L);
 
         // -> closingSnapshotting
         controller.doWork();
@@ -581,7 +571,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(2L);
 
         when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(5L);
 
@@ -660,7 +650,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L, 2L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(1L, 2L);
 
         when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(2L);
 
@@ -678,7 +668,7 @@ public class StreamProcessorControllerTest
         assertThat(controller.isOpen()).isTrue();
 
         assertThat(mockSourceLogStreamReader.getHasNextInvocations()).isEqualTo(1);
-        verify(mockTargetLogStream, times(2)).getCurrentAppenderPosition();
+        verify(mockTargetLogStream, times(2)).getCommitPosition();
 
         verify(mockSnapshotStorage, times(1)).createSnapshot(STREAM_PROCESSOR_NAME, 2L);
         verify(mockSnapshotWriter, times(1)).writeSnapshot(mockStateResource);
@@ -1122,7 +1112,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(1L);
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(1L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(1L);
 
         doThrow(new RuntimeException("expected exception")).when(mockSnapshotWriter).commit();
 
@@ -1316,7 +1306,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(false);
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(3L);
 
         when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(2L);
 
@@ -1389,7 +1379,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L, 3L);
 
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(2L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(2L);
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
         open();
@@ -1405,7 +1395,7 @@ public class StreamProcessorControllerTest
         // -> processing
         controller.doWork();
 
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(3L);
         when(mockSnapshotPositionProvider.getSnapshotPosition(any(), anyLong())).thenReturn(3L);
 
         // when
@@ -1431,7 +1421,7 @@ public class StreamProcessorControllerTest
         when(mockEventProcessor.executeSideEffects()).thenReturn(true);
         when(mockEventProcessor.writeEvent(mockLogStreamWriter)).thenReturn(2L);
 
-        when(mockTargetLogStream.getCurrentAppenderPosition()).thenReturn(3L);
+        when(mockTargetLogStream.getCommitPosition()).thenReturn(3L);
         when(mockSnapshotPolicy.apply(anyLong())).thenReturn(true);
 
         open();

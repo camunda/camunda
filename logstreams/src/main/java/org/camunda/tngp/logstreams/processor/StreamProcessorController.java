@@ -417,16 +417,14 @@ public class StreamProcessorController implements Agent
         boolean isSnapshotWritten = false;
 
         final long lastWrittenEventPosition = context.getLastWrittenEventPosition();
-        final long appenderPosition = streamProcessorContext.getTargetStream().getCurrentAppenderPosition();
+        final long commitPosition = streamProcessorContext.getTargetStream().getCommitPosition();
 
         final long snapshotPosition = snapshotPositionProvider.getSnapshotPosition(context.getEvent(), lastWrittenEventPosition);
         final boolean snapshotAlreadyPresent = snapshotPosition <= context.getSnapshotPosition();
 
         if (!snapshotAlreadyPresent)
         {
-            final boolean appenderCaughtUp = appenderPosition >= lastWrittenEventPosition;
-
-            if (appenderCaughtUp)
+            if (commitPosition >= lastWrittenEventPosition)
             {
                 writeSnapshot(context, snapshotPosition);
 

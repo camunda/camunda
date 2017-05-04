@@ -546,6 +546,8 @@ public class StreamProcessorIntegrationTest
         sourceLogStream.setCommitPosition(sourceReader.getPosition());
         waitUntilWrittenKey(targetLogStream, WORK_COUNT);
 
+        targetLogStream.setCommitPosition(Long.MAX_VALUE);
+
         streamProcessorController.closeAsync().get();
     }
 
