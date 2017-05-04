@@ -1,16 +1,13 @@
 package org.camunda.tngp.broker.transport.clientapi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.VarDataUtil.readBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.VarDataUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.ExecutionException;
 
@@ -138,7 +135,7 @@ public class ClientApiMessageHandlerTest
         // then
         assertThat(isHandled).isTrue();
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
         waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
@@ -170,7 +167,7 @@ public class ClientApiMessageHandlerTest
         // then
         assertThat(isHandled).isTrue();
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
         waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();
@@ -192,7 +189,7 @@ public class ClientApiMessageHandlerTest
         // then
         assertThat(isHandled).isTrue();
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
         waitForAvailableEvent(logStreamReader);
 
         final LoggedEvent loggedEvent = logStreamReader.next();

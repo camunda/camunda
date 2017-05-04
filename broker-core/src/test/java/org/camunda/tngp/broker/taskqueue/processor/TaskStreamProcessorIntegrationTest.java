@@ -1,15 +1,12 @@
 package org.camunda.tngp.broker.taskqueue.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.test.util.BufferAssert.assertThatBuffer;
-import static org.camunda.tngp.util.StringUtil.getBytes;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.camunda.tngp.protocol.clientapi.EventType.*;
+import static org.camunda.tngp.test.util.BufferAssert.*;
+import static org.camunda.tngp.util.StringUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -185,6 +182,7 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         // then
         assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
@@ -227,11 +225,17 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         // then
         LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(0);
         assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(1);
@@ -273,10 +277,16 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         // when
         final byte[] modifiedPayload = getBytes("modified payload");
@@ -291,9 +301,11 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         // then
         event = assertThatEventIsFollowedBy(position, TaskEventType.COMPLETED);
+        logStream.setCommitPosition(event.getPosition());
 
         assertThatBuffer(followUpTaskEvent.getPayload())
             .hasCapacity(modifiedPayload.length)
@@ -327,10 +339,16 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         // when
         taskEvent
@@ -343,11 +361,17 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         // then
         event = assertThatEventIsFollowedBy(position, TaskEventType.FAILED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         verify(mockResponseWriter, times(2)).tryWriteResponse();
     }
@@ -382,10 +406,18 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
+
+        agentRunnerService.waitUntilDone();
 
         // when
         ClockUtil.setCurrentTime(now.plus(lockDuration));
@@ -394,9 +426,16 @@ public class TaskStreamProcessorIntegrationTest
 
         // then
         event = assertThatEventIsFollowedBy(event, TaskEventType.EXPIRE_LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK_EXPIRED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         assertThat(followUpTaskEvent.getLockTime()).isGreaterThan(now.plus(lockDuration).toEpochMilli());
         assertThat(followUpTaskEvent.getLockOwner()).isEqualTo(3);
@@ -434,10 +473,16 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         LoggedEvent event = assertThatEventIsFollowedBy(position, TaskEventType.CREATED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         taskEvent
             .setEventType(TaskEventType.FAIL)
@@ -449,8 +494,10 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         event = assertThatEventIsFollowedBy(position, TaskEventType.FAILED);
+        logStream.setCommitPosition(event.getPosition());
 
         // when
         taskEvent
@@ -462,11 +509,17 @@ public class TaskStreamProcessorIntegrationTest
             .metadataWriter(defaultBrokerEventMetadata)
             .valueWriter(taskEvent)
             .tryWrite();
+        logStream.setCommitPosition(position);
 
         // then
         event = assertThatEventIsFollowedBy(position, TaskEventType.RETRIES_UPDATED);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCK);
+        logStream.setCommitPosition(event.getPosition());
+
         event = assertThatEventIsFollowedBy(event, TaskEventType.LOCKED);
+        logStream.setCommitPosition(event.getPosition());
 
         verify(mockResponseWriter, times(3)).tryWriteResponse();
 
@@ -494,7 +547,7 @@ public class TaskStreamProcessorIntegrationTest
     {
         agentRunnerService.waitUntilDone();
 
-        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+        final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
 
         LoggedEvent loggedEvent = null;
         long sourceEventPosition = -1;

@@ -8,12 +8,12 @@ import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
+import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
 import org.camunda.tngp.logstreams.impl.log.index.LogBlockIndex;
 import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
-import org.camunda.tngp.logstreams.impl.LoggedEventImpl;
 import org.camunda.tngp.logstreams.spi.LogStorage;
 
 public class LogStreamState
@@ -48,7 +48,7 @@ public class LogStreamState
         this.logStorage = stream.getLogStorage();
         this.blockIndex = stream.getLogBlockIndex();
 
-        this.reader = new BufferedLogStreamReader();
+        this.reader = new BufferedLogStreamReader(true);
         this.reader.wrap(stream);
 
         this.bufferedEntriesOffset = 0;

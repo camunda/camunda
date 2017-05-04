@@ -58,7 +58,7 @@ public class Member
 
         this.raft = context.getRaft();
 
-        this.logStreamReader = new BufferedLogStreamReader(raft.stream());
+        this.logStreamReader = new BufferedLogStreamReader(raft.stream(), true);
         this.metadata = new BrokerEventMetadata();
 
         this.replicationController = new ReplicationController(context, this);
