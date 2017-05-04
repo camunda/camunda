@@ -8,10 +8,11 @@ export const Link = withSelector(({replace = false}) => {
     let currentRoute;
 
     node.addEventListener('click', (event) => {
+      event.preventDefault();
+
       if (currentRoute) {
         const {name, params} = currentRoute;
 
-        event.preventDefault();
         router.goTo(name, params, replace);
       }
     });
