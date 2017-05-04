@@ -1,3 +1,7 @@
+require.ensure(['./bootstrap'], () => {
+  require('./bootstrap');
+});
+
 if (isPolyfillNeeded()) {
   require.ensure(['babel-polyfill', 'whatwg-fetch'], () => {
     require('babel-polyfill');
@@ -11,10 +15,6 @@ if (isPolyfillNeeded()) {
 
 require.ensure(['./styles.less'], () => {
   require('./styles.less');
-});
-
-require.ensure(['./bootstrap'], () => {
-  require('./bootstrap');
 });
 
 function isPolyfillNeeded() {
