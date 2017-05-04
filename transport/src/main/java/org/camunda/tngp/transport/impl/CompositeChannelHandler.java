@@ -9,7 +9,6 @@ import org.camunda.tngp.transport.spi.TransportChannelHandler;
 public class CompositeChannelHandler implements TransportChannelHandler
 {
 
-    protected TransportChannelHandler channelEventHandler;
     protected TransportChannelHandler[] handlers = Protocols.handlerForAllProtocols(new DefaultChannelHandler());
 
     /**
@@ -23,19 +22,9 @@ public class CompositeChannelHandler implements TransportChannelHandler
         handlers[protocolId] = handler;
     }
 
-    public void setChannelEventHandler(TransportChannelHandler handler)
-    {
-        this.channelEventHandler = handler;
-    }
-
     @Override
     public void onChannelOpened(TransportChannel transportChannel)
     {
-        if (channelEventHandler != null)
-        {
-            channelEventHandler.onChannelOpened(transportChannel);
-        }
-
         for (int i = 0; i < handlers.length; i++)
         {
             handlers[i].onChannelOpened(transportChannel);
@@ -45,11 +34,6 @@ public class CompositeChannelHandler implements TransportChannelHandler
     @Override
     public void onChannelClosed(TransportChannel transportChannel)
     {
-        if (channelEventHandler != null)
-        {
-            channelEventHandler.onChannelClosed(transportChannel);
-        }
-
         for (int i = 0; i < handlers.length; i++)
         {
             handlers[i].onChannelClosed(transportChannel);
