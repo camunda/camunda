@@ -3,6 +3,7 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
+import org.camunda.optimize.dto.optimize.VariableFilterDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 /**
@@ -18,6 +19,14 @@ public class ValidationHelper {
         ensureNotEmpty("operator", date.getOperator());
         ensureNotEmpty("type", date.getType());
         ensureNotEmpty("value", date.getValue());
+      }
+    }
+    if (dto.getFilter() != null && dto.getFilter().getVariables() != null) {
+      for (VariableFilterDto variable : dto.getFilter().getVariables()) {
+        ensureNotEmpty("operator", variable.getOperator());
+        ensureNotEmpty("name", variable.getName());
+        ensureNotEmpty("type", variable.getType());
+        ensureNotEmpty("value", variable.getValues());
       }
     }
   }

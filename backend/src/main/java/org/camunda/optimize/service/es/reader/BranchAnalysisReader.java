@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.es.mapping.DateFilterHelper;
+import org.camunda.optimize.service.es.mapping.VariableFilterHelper;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -47,6 +48,9 @@ public class BranchAnalysisReader {
 
   @Autowired
   private DateFilterHelper dateFilterHelper;
+
+  @Autowired
+  private VariableFilterHelper variableFilterHelper;
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
@@ -107,12 +111,14 @@ public class BranchAnalysisReader {
   private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
     if (request.getFilter() != null) {
       query = dateFilterHelper.addFilters(query, request.getFilter());
+      query = variableFilterHelper.addFilters(query, request.getFilter());
     }
 
     SearchResponse sr = esclient
         .prepareSearch(configurationService.getOptimizeIndex())
         .setTypes(configurationService.getProcessInstanceType())
         .setQuery(query)
+        .setFetchSource(false)
         .setSize(0)
         .get();
 

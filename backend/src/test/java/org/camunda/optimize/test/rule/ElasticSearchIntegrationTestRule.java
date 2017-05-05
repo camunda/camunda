@@ -101,7 +101,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-
   /**
    * parsed to json and then later
    * This class adds a document entry to elasticsearch (ES). Thereby, the

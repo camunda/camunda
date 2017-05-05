@@ -49,7 +49,7 @@ public class FrequencyHeatMapReaderIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
-  
+
   
   @Test
   public void getHeatMap() throws Exception {
@@ -117,8 +117,6 @@ public class FrequencyHeatMapReaderIT {
     assertResults(testDefinition2, 1, TEST_ACTIVITY, 1L, 0L);
   }
   
-  // --------------
-
   @Test
   public void getHeatMapWithMIBody() throws Exception {
 
@@ -193,7 +191,7 @@ public class FrequencyHeatMapReaderIT {
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
 
     HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
@@ -201,13 +199,13 @@ public class FrequencyHeatMapReaderIT {
     assertResults(resultMap, 0,0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, past);
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, past);
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0,0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
@@ -241,20 +239,20 @@ public class FrequencyHeatMapReaderIT {
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, past);
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, past);
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
@@ -273,20 +271,20 @@ public class FrequencyHeatMapReaderIT {
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, past);
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, past);
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
@@ -305,20 +303,20 @@ public class FrequencyHeatMapReaderIT {
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, past);
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, past);
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -334,7 +332,7 @@ public class FrequencyHeatMapReaderIT {
     String operator = ">";
     String type = "start_date";
 
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     operator = "<";
     type = "end_date";
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS), dto);
@@ -350,7 +348,7 @@ public class FrequencyHeatMapReaderIT {
     //given
     operator = ">";
     type = "start_date";
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     operator = "<";
     type = "end_date";
     DataUtilHelper.addDateFilter(operator, type, new Date(past.getTime()), dto);
@@ -375,20 +373,20 @@ public class FrequencyHeatMapReaderIT {
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, past);
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, past);
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -407,20 +405,20 @@ public class FrequencyHeatMapReaderIT {
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     //when
-    HeatMapQueryDto dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
+    HeatMapQueryDto dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() + TIME_OFFSET_MILLS));
     HeatMapResponseDto resultMap = getHeatMapResponseDto(token, dto);
 
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, past);
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, past);
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 1, TEST_ACTIVITY, 1L, 1L);
 
     //when
-    dto = createStubHeatMapQueryDto(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
+    dto = createHeatMapQueryWithDateFilter(data, operator, type, new Date(past.getTime() - TIME_OFFSET_MILLS));
     resultMap = getHeatMapResponseDto(token, dto);
     //then
     assertResults(resultMap, 0, 0L);
@@ -448,7 +446,7 @@ public class FrequencyHeatMapReaderIT {
     return procInst;
   }
 
-  private HeatMapQueryDto createStubHeatMapQueryDto(ProcessInstanceDto data, String operator, String type, Date dateValue) {
+  private HeatMapQueryDto createHeatMapQueryWithDateFilter(ProcessInstanceDto data, String operator, String type, Date dateValue) {
     HeatMapQueryDto dto = new HeatMapQueryDto();
     dto.setProcessDefinitionId(data.getProcessDefinitionId());
     DataUtilHelper.addDateFilter(operator, type, dateValue, dto);

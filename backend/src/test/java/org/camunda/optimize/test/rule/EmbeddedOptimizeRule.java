@@ -133,8 +133,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private Client getClient() {
     Client client = ClientBuilder.newClient();
-    client.property(ClientProperties.CONNECT_TIMEOUT, 5000);
-    client.property(ClientProperties.READ_TIMEOUT,    5000);
+    client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
+    client.property(ClientProperties.READ_TIMEOUT,    10000);
     return client;
   }
 

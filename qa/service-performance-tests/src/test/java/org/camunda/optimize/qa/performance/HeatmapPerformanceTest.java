@@ -2,6 +2,7 @@ package org.camunda.optimize.qa.performance;
 
 import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
+import org.camunda.optimize.dto.optimize.VariableFilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -12,6 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -19,8 +21,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 
 public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
-  FilterMapDto filter = new FilterMapDto();
-  PerfTest test;
+  private FilterMapDto filter = new FilterMapDto();
+  private PerfTest test;
 
   @Before
   public void setUp() {
@@ -48,7 +50,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   }
 
   @Test
-  public void getFrequencyHeatmapWithFilters() {
+  public void getFrequencyHeatmapWithDateFilter() {
     // given
     String operator = "<";
     String type = "start_date";
@@ -60,8 +62,31 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     filter.getDates().add(date);
 
     test = testBuilder
-        .step(new GetFrequencyGetHeatMapStep(filter))
-        .done();
+      .step(new GetFrequencyGetHeatMapStep(filter))
+      .done();
+
+    // when
+    PerfTestResult testResult = test.run();
+    PerfTestStepResult stepResult =
+      testResult.getResult(GetFrequencyGetHeatMapStep.class);
+
+    // then
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
+  }
+
+  @Test
+  public void getFrequencyHeatmapWithVariableFilter() {
+    // given
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setName("var");
+    variableFilterDto.setType("string");
+    variableFilterDto.setOperator("=");
+    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
+    filter.getVariables().add(variableFilterDto);
+
+    test = testBuilder
+      .step(new GetFrequencyGetHeatMapStep(filter))
+      .done();
 
     // when
     PerfTestResult testResult = test.run();
@@ -89,7 +114,7 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
   }
 
   @Test
-  public void getDurationHeatmapWithFilters() {
+  public void getDurationHeatmapWithDateFilter() {
     // given
     String operator = "<";
     String type = "start_date";
@@ -103,6 +128,29 @@ public class HeatmapPerformanceTest extends OptimizePerformanceTestCase {
     test = testBuilder
         .step(new GetDurationGetHeatMapStep(filter))
         .done();
+
+    // when
+    PerfTestResult testResult = test.run();
+    PerfTestStepResult stepResult =
+      testResult.getResult(GetDurationGetHeatMapStep.class);
+
+    // then
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration())));
+  }
+
+  @Test
+  public void getDurationHeatmapWithVariableFilter() {
+    // given
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setName("var");
+    variableFilterDto.setType("string");
+    variableFilterDto.setOperator("=");
+    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
+    filter.getVariables().add(variableFilterDto);
+
+    test = testBuilder
+      .step(new GetDurationGetHeatMapStep(filter))
+      .done();
 
     // when
     PerfTestResult testResult = test.run();

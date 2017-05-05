@@ -2,6 +2,7 @@ package org.camunda.optimize.qa.performance;
 
 import org.camunda.optimize.dto.optimize.DateFilterDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
+import org.camunda.optimize.dto.optimize.VariableFilterDto;
 import org.camunda.optimize.qa.performance.framework.PerfTest;
 import org.camunda.optimize.qa.performance.framework.PerfTestResult;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -11,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -48,7 +50,7 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
   }
 
   @Test
-  public void getBranchAnalysisWithFilters() {
+  public void getBranchAnalysisWithDateFilter() {
     // given
     String operator = "<";
     String type = "start_date";
@@ -58,6 +60,25 @@ public class BranchAnalysisPerformanceTest extends OptimizePerformanceTestCase {
     date.setType(type);
     date.setValue(new Date());
     filter.getDates().add(date);
+
+    // when
+    PerfTestResult testResult = test.run();
+    PerfTestStepResult stepResult =
+      testResult.getResult(GetBranchAnalysisStep.class);
+
+    // then
+    assertThat(stepResult.getDurationInMs(), is(lessThan(configuration.getMaxServiceExecutionDuration() * CORRELATION_FACTOR)));
+  }
+
+  @Test
+  public void getBranchAnalysisWithVariableFilter() {
+    // given
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setName("var");
+    variableFilterDto.setType("string");
+    variableFilterDto.setOperator("=");
+    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
+    filter.getVariables().add(variableFilterDto);
 
     // when
     PerfTestResult testResult = test.run();

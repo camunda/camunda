@@ -72,7 +72,6 @@ public class HeatMapDataGenerationStep extends DataGenerationStep {
             .startObject()
               .field("id", id)
               .field("activityId", activityId)
-              .field("activityInstanceId", generateIdFrom(activityId))
               .field("durationInMs", 20)
               .field("activityType", "flowNode")
             .endObject()
@@ -99,7 +98,4 @@ public class HeatMapDataGenerationStep extends DataGenerationStep {
     return null;
   }
 
-  private String generateIdFrom(String str) {
-    return str + ":" + IdGenerator.getNextId();
-  }
 }

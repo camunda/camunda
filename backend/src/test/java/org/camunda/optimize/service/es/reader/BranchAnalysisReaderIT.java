@@ -3,9 +3,13 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.SimpleVariableDto;
+import org.camunda.optimize.dto.optimize.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.VariableValueDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
@@ -26,11 +30,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -57,6 +63,11 @@ public class BranchAnalysisReaderIT {
   private static final String GATEWAY_D = "gw_d";
   private static final String GATEWAY_F = "gw_f";
   private static final String PROCESS_INSTANCE_ID_BY_PASS = PROCESS_INSTANCE_ID + "Bypass";
+
+  private static final String VARIABLE_NAME = "var";
+  private static final String VARIABLE_TYPE_STRING = "String";
+  private static final String VARIABLE_VALUE = "aValue";
+  private static final String VARIABLE_VALUE_2 = "anotherValue";
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
@@ -165,11 +176,21 @@ public class BranchAnalysisReaderIT {
     procInst.setStartDate(new Date());
     procInst.setEndDate(new Date());
     procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
+    procInst.setVariables(createVariableList(VARIABLE_VALUE));
 
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
     procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY}));
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
+    procInst.setVariables(createVariableList(VARIABLE_VALUE_2));
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
+  }
+
+  private List<SimpleVariableDto> createVariableList(String variableValue) {
+    SimpleVariableDto variableDto = new SimpleVariableDto();
+    variableDto.setName(VARIABLE_NAME);
+    variableDto.setType(VARIABLE_TYPE_STRING);
+    variableDto.setValue(new VariableValueDto(variableValue));
+    return Collections.singletonList(variableDto);
   }
 
   private List<SimpleEventDto> createEventList(String[] activityIds) {
@@ -344,6 +365,40 @@ public class BranchAnalysisReaderIT {
       );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_BY_PASS);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_BY_PASS, procInst);
+  }
+
+  @Test
+  public void variableFilterWorkInBranchAnalysis() {
+    //given
+    setupFullInstanceFlow();
+    BranchAnalysisQueryDto dto = getBasicBranchAnalysisQueryDto();
+    VariableFilterDto filter = new VariableFilterDto();
+    filter.setName(VARIABLE_NAME);
+    filter.setType(VARIABLE_TYPE_STRING);
+    filter.setOperator("=");
+    filter.setValues(Collections.singletonList(VARIABLE_VALUE_2));
+    FilterMapDto filterMapDto = new FilterMapDto();
+    filterMapDto.setVariables(Collections.singletonList(filter));
+    dto.setFilter(filterMapDto);
+
+    //when
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_ACTIVITY));
+    assertThat(result.getTotal(), is(1L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK);
+    assertThat(task1.getActivityId(), is(TASK));
+    assertThat(task1.getActivitiesReached(), is(0L));
+    assertThat(task1.getActivityCount(), is(0L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_2);
+    assertThat(task2.getActivityId(), is(TASK_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
   }
 
   @Test

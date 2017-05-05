@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class FilterMapDto {
   protected List<DateFilterDto> dates = new ArrayList<>();
-protected List<VariableFilterDto> variables;
+  protected List<VariableFilterDto> variables = new ArrayList<>();
 
   public List<DateFilterDto> getDates() {
     return dates;

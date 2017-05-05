@@ -5,9 +5,12 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ExtendedProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
+import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.VariableFilterDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
@@ -22,8 +25,12 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -215,6 +222,68 @@ public class ImportIT  {
 
     //then
     assertThat(variablesResponseDtos.size(),is(variables.size()));
+  }
+
+  @Test
+  @Ignore
+  public void variableFilterWorks() throws Exception {
+    //given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+        .startEvent()
+        .serviceTask()
+          .camundaExpression("${true}")
+        .endEvent()
+      .done();
+
+    Map<String, Object> variables = createPrimitiveTypeVariables();
+    engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeRule.importEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+     String token = embeddedOptimizeRule.authenticateAdmin();
+    List<ExtendedProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
+        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .get(new GenericType<List<ExtendedProcessDefinitionOptimizeDto>>(){});
+    assertThat(definitions.size(),is(1));
+
+    String id = definitions.get(0).getId();
+    assertThat(id, is(notNullValue()));
+
+    //when
+    HeatMapQueryDto dto = new HeatMapQueryDto();
+    dto.setProcessDefinitionId(id);
+    VariableFilterDto variableFilterDto = new VariableFilterDto();
+    variableFilterDto.setName("stringVar");
+    variableFilterDto.setType("String");
+    variableFilterDto.setOperator("!=");
+    variableFilterDto.setValues(Collections.singletonList("aStringValue"));
+
+    FilterMapDto filterMapDto = new FilterMapDto();
+    filterMapDto.getVariables().add(variableFilterDto);
+    dto.setFilter(filterMapDto);
+
+    HeatMapResponseDto heatMap = getHeatMapResponseDto(token, dto);
+    //then
+    assertThat(heatMap.getPiCount(), is(0L));
+  }
+
+  private HeatMapResponseDto getHeatMapResponseDto(String token, HeatMapQueryDto dto) {
+    Response response = getResponse(token, dto);
+
+    // then the status code is okay
+    return response.readEntity(HeatMapResponseDto.class);
+  }
+
+  private Response getResponse(String token, HeatMapQueryDto dto) {
+    Entity<HeatMapQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
+    return embeddedOptimizeRule.target("process-definition/heatmap/frequency")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
+        .post(entity);
   }
 
   private Map<String, Object> createPrimitiveTypeVariables() {
