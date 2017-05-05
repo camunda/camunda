@@ -12,6 +12,7 @@
  */
 package org.camunda.tngp.util.time;
 
+import java.time.Duration;
 import java.time.Instant;
 
 public class ClockUtil
@@ -28,6 +29,16 @@ public class ClockUtil
         ClockUtil.currentTime = currentTime.toEpochMilli();
     }
 
+    public static void addTime(Duration durationToAdd)
+    {
+        if (!usesManipulatedTime())
+        {
+            throw new RuntimeException("Time not initialized");
+        }
+
+        ClockUtil.currentTime += durationToAdd.toMillis();
+    }
+
     public static void reset()
     {
         ClockUtil.currentTime = -1;
@@ -35,7 +46,7 @@ public class ClockUtil
 
     public static long getCurrentTimeInMillis()
     {
-        if (currentTime > 0)
+        if (usesManipulatedTime())
         {
             return currentTime;
         }
@@ -44,11 +55,16 @@ public class ClockUtil
 
     public static Instant getCurrentTime()
     {
-        if (currentTime > 0)
+        if (usesManipulatedTime())
         {
             return Instant.ofEpochMilli(currentTime);
         }
         return Instant.now();
+    }
+
+    protected static boolean usesManipulatedTime()
+    {
+        return currentTime > 0;
     }
 
 }
