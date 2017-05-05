@@ -102,6 +102,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_VALUE)
+        .field("type", "nested")
         .startObject("properties")
           .startObject(VARIABLE_STRING_VALUE)
             .field("type", "keyword")

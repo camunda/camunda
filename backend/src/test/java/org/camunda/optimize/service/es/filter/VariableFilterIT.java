@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.VariableValueDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -79,6 +80,45 @@ public class VariableFilterIT {
 
     // then
     assertResults(testDefinition, 1, TEST_ACTIVITY, 1L, 1L);
+  }
+
+  @Test
+  @Ignore
+  public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() throws Exception {
+    // given
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(TEST_ACTIVITY);
+
+    SimpleVariableDto variableDto = new SimpleVariableDto();
+    variableDto.setName("stringVar");
+    variableDto.setType(VARIABLE_TYPE_STRING);
+    variableDto.setValue(parseValue(VARIABLE_TYPE_STRING, "aStringValue"));
+
+    SimpleVariableDto variableDto2 = new SimpleVariableDto();
+    variableDto2.setName("boolVar");
+    variableDto2.setType(VARIABLE_TYPE_BOOLEAN);
+    variableDto2.setValue(parseValue(VARIABLE_TYPE_BOOLEAN, "true"));
+    List<SimpleVariableDto> variables = new ArrayList<>();
+    variables.add(variableDto);
+    variables.add(variableDto2);
+
+
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setProcessInstanceId("id1");
+    procInst.setVariables(variables);
+    procInst.setEvents(Collections.singletonList(event));
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "id1", procInst);
+
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
+    // when
+    VariableFilterDto filter = createVariableFilter("!=", "stringVar", VARIABLE_TYPE_STRING, "aStringValue");
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+
+    // then
+    assertResults(testDefinition, 0, 0L);
   }
 
   @Test

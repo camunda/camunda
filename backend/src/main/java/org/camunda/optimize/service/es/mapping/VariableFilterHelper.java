@@ -60,12 +60,21 @@ public class VariableFilterHelper {
       for (VariableFilterDto variable : variables) {
         BoolQueryBuilder boolQueryBuilder =
           boolQuery()
-          .must(matchVariableName(variable.getName()))
-          .must(createFilterQueryBuilder(variable));
+            .must(matchVariableName(variable.getName()))
+            .must(matchVariableType(variable.getType()))
+            .must(createFilterQueryBuilder(variable));
         filters.add(boolQueryBuilder);
       }
     }
     return query;
+  }
+
+  private NestedQueryBuilder matchVariableType(String variableType) {
+    return nestedQuery(
+      ProcessInstanceType.VARIABLES,
+      termsQuery("variables.type", variableType),
+      ScoreMode.None
+    );
   }
 
   private NestedQueryBuilder matchVariableName(String variableName) {
@@ -77,21 +86,28 @@ public class VariableFilterHelper {
   }
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDto dto) {
+    QueryBuilder queryBuilder = matchAllQuery();
     switch (dto.getType().toLowerCase()) {
       case "string":
-        return createStringQueryBuilder(dto);
+        queryBuilder =  createStringQueryBuilder(dto);
+        break;
       case "integer":
       case "double":
       case "short":
       case "long":
-        return createNumberQueryBuilder(dto);
+        queryBuilder = createNumberQueryBuilder(dto);
+        break;
       case "date":
-        return createDateQueryBuilder(dto);
+        queryBuilder = createDateQueryBuilder(dto);
+        break;
       case "boolean":
-        return createBoolQueryBuilder(dto);
+        queryBuilder =  createBoolQueryBuilder(dto);
+        break;
+      default:
+        logger.error("Could not filter for variables! Type [{}] is not supported for variable filters.", dto.getType());
     }
-    logger.error("Could not filter for variables! Type [{}] is not supported for variable filters.", dto.getType());
-    return matchAllQuery();
+    NestedQueryBuilder variableValueQuery = nestedQuery("variables.value", queryBuilder, ScoreMode.None);
+    return nestedQuery(VARIABLES, variableValueQuery, ScoreMode.None);
   }
 
   private QueryBuilder createStringQueryBuilder(VariableFilterDto dto) {
@@ -109,7 +125,7 @@ public class VariableFilterHelper {
     } else {
       logger.error("Could not filter for variables! Operator [{}] is not allowed for type [String]", dto.getOperator());
     }
-    return nestedQuery(VARIABLES, boolQueryBuilder, ScoreMode.None);
+    return boolQueryBuilder;
   }
 
   private QueryBuilder createNumberQueryBuilder(VariableFilterDto dto) {
@@ -143,7 +159,7 @@ public class VariableFilterHelper {
       default:
         logger.error("Could not filter for variables! Operator [{}] is not supported for type [{}]", dto.getOperator(), dto.getType());
     }
-    return nestedQuery(VARIABLES, boolQueryBuilder, ScoreMode.None);
+    return boolQueryBuilder;
   }
 
   private Object retrieveValue(VariableFilterDto dto) {
@@ -183,7 +199,7 @@ public class VariableFilterHelper {
     } else {
       logger.error("Could not filter for variables! Operator [{}] is not supported for type [Boolean]", dto.getOperator());
     }
-    return nestedQuery(VARIABLES, boolQuery, ScoreMode.None);
+    return boolQuery;
   }
 
 }
