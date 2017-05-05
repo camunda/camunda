@@ -3,6 +3,8 @@ import {addLoading, createLoadingActionFunction, createResultActionFunction, cre
 export const SET_VERSION = 'SET_VERSION';
 export const LOAD_PROCESSDEFINITIONS = 'LOAD_PROCESSDEFINITIONS';
 
+export const LOADING_PROPERTY = 'processDefinitions';
+
 export const reducer = addLoading((state, {type, key, version}) => {
   const newState = {...state};
 
@@ -21,7 +23,7 @@ export const reducer = addLoading((state, {type, key, version}) => {
     };
   }
   return newState;
-}, 'processDefinitions');
+}, LOADING_PROPERTY);
 
 export function createSetVersionAction(key, version) {
   return {
@@ -31,6 +33,6 @@ export function createSetVersionAction(key, version) {
   };
 }
 
-export const createLoadProcessDefinitionsAction = createLoadingActionFunction('processDefinitions');
-export const createLoadProcessDefinitionsResultAction = createResultActionFunction('processDefinitions');
-export const createLoadProcessDefinitionsErrorAction = createErrorActionFunction('processDefinitions');
+export const createLoadProcessDefinitionsAction = createLoadingActionFunction(LOADING_PROPERTY);
+export const createLoadProcessDefinitionsResultAction = createResultActionFunction(LOADING_PROPERTY);
+export const createLoadProcessDefinitionsErrorAction = createErrorActionFunction(LOADING_PROPERTY);

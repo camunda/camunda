@@ -1,5 +1,7 @@
 import {expect} from 'chai';
-import {addLoading, createLoadingActionFunction, createResultActionFunction, createResetActionFunction, createErrorActionFunction,
+import {DESTROY_EVENT} from 'view-utils';
+import {addLoading, createLoadingActionFunction, createResultActionFunction,
+        createResetActionFunction, createErrorActionFunction, addDestroyEventCleanUp,
         INITIAL_STATE, LOADING_STATE, LOADED_STATE, ERROR_STATE} from 'utils/loading';
 import sinon from 'sinon';
 
@@ -107,5 +109,34 @@ describe('loading', () => {
     reducer(state, action);
 
     expect(originalReducer.getCall(0).args[1]).to.eql(action);
+  });
+});
+
+describe('addDestroyEventCleanUp', () => {
+  let dispatch;
+  let eventsBus;
+  let names;
+
+  beforeEach(() => {
+    dispatch = sinon.spy();
+    eventsBus = {
+      on: sinon.stub().callsArg(1)
+    };
+    names = ['first', 'second'];
+
+    addDestroyEventCleanUp(eventsBus, dispatch, ...names);
+  });
+
+  it('should add event listener for DESTROY_EVENT', () => {
+    expect(eventsBus.on.calledWith(DESTROY_EVENT)).to.eql(true);
+  });
+
+  it('dispatch reset action for all names', () => {
+    names.forEach(name => {
+      expect(dispatch.calledWith({
+        type: `RESET_${name.toUpperCase()}`,
+        property: name
+      })).to.eql(true, `expected reset action to be dispatch for ${name}`);
+    });
   });
 });

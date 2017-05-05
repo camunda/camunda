@@ -1,8 +1,9 @@
-import {jsx, withSelector, Match, Case, Default, Scope, List} from 'view-utils';
+import {jsx, withSelector, Match, Case, Default, Scope, List, dispatchAction} from 'view-utils';
 import {LoadingIndicator} from 'widgets';
 import {loadProcessDefinitions} from './service';
-import {isLoaded, runOnce} from 'utils';
+import {isLoaded, runOnce, addDestroyEventCleanUp} from 'utils';
 import {PreviewCard} from './PreviewCard';
+import {LOADING_PROPERTY} from './reducer';
 
 export const ProcessSelection = withSelector(() => {
   const template = <div className="process-selection">
@@ -66,6 +67,8 @@ export const ProcessSelection = withSelector(() => {
 
   return (parentNode, eventsBus) => {
     const templateUpdate = template(parentNode, eventsBus);
+
+    addDestroyEventCleanUp(eventsBus, dispatchAction, LOADING_PROPERTY);
 
     return [templateUpdate, runOnce(loadProcessDefinitions)];
   };

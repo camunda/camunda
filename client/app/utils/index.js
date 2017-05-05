@@ -1,8 +1,9 @@
 export {emptyReducer} from './emptyReducer';
 export {
   INITIAL_STATE, LOADING_STATE, LOADED_STATE, ERROR_STATE,
-  addLoading, createLoadingActionFunction, createResultActionFunction, createResetActionFunction, createErrorActionFunction,
-  isInitial, isLoading, isLoaded, isError
+  addLoading, createLoadingActionFunction, createResultActionFunction,
+  createResetActionFunction, createErrorActionFunction,
+  addDestroyEventCleanUp, isInitial, isLoading, isLoaded, isError
 } from './loading';
 export {onNextTick} from './onNextTick';
 export {isBpmnType, removeOverlays, updateOverlayVisibility} from './bpmn-utils';

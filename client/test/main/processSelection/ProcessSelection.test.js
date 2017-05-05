@@ -10,6 +10,7 @@ describe('<ProcessSelection>', () => {
   let loadProcessDefinitions;
   let openDefinition;
   let setVersionForProcess;
+  let addDestroyEventCleanUp;
   let node;
   let update;
   let state;
@@ -27,6 +28,9 @@ describe('<ProcessSelection>', () => {
     setVersionForProcess = sinon.spy();
     __set__('setVersionForProcess', setVersionForProcess);
 
+    addDestroyEventCleanUp = sinon.spy();
+    __set__('addDestroyEventCleanUp', addDestroyEventCleanUp);
+
     ({node, update} = mountTemplate(<ProcessSelection />));
   });
 
@@ -35,6 +39,11 @@ describe('<ProcessSelection>', () => {
     __ResetDependency__('loadProcessDefinitions');
     __ResetDependency__('openDefinition');
     __ResetDependency__('setVersionForProcess');
+    __ResetDependency__('addDestroyEventCleanUp');
+  });
+
+  it('should add destroy event clean up', () => {
+    expect(addDestroyEventCleanUp.called).to.eql(true);
   });
 
   it('should display a hint when no process Definitions are present', () => {

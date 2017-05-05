@@ -1,20 +1,17 @@
+import {includes, DESTROY_EVENT} from 'view-utils';
+
 export const INITIAL_STATE = 'INITIAL';
 export const LOADING_STATE = 'LOADING';
 export const LOADED_STATE = 'LOADED';
 export const ERROR_STATE = 'ERROR';
 
 export function addLoading(next, ...properties) {
-  const loadTypes = getLoadTypes(properties);
-  const loadedTypes = getLoadedTypes(properties);
-  const resetTypes = getResetTypes(properties);
-  const errorTypes = getErrorTypes(properties);
+  const loadTypes = getTypes('LOAD', properties);
+  const loadedTypes = getTypes('LOADED', properties);
+  const resetTypes = getTypes('RESET', properties);
+  const errorTypes = getTypes('ERROR', properties);
 
   return (state, action) => {
-    const loadIdx = loadTypes.indexOf(action.type);
-    const loadedIdx = loadedTypes.indexOf(action.type);
-    const errorIdx = errorTypes.indexOf(action.type);
-    const resetIdx = resetTypes.indexOf(action.type);
-
     let newState = next(state, action) || {};
 
     newState = properties.reduce((state, prop) => {
@@ -28,32 +25,32 @@ export function addLoading(next, ...properties) {
       return state;
     }, newState);
 
-    if (loadIdx !== -1) {
+    if (includes(loadTypes, action.type)) {
       return {
         ...newState,
-        [properties[loadIdx]]: {
+        [action.property]: {
           state: LOADING_STATE
         }
       };
-    } else if (loadedIdx !== -1) {
+    } else if (includes(loadedTypes, action.type)) {
       return {
         ...newState,
-        [properties[loadedIdx]]: {
+        [action.property]: {
           state: LOADED_STATE,
           data: action.result
         }
       };
-    } else if (resetIdx !== -1) {
+    } else if (includes(resetTypes, action.type)) {
       return {
         ...newState,
-        [properties[resetIdx]]: {
+        [action.property]: {
           state: INITIAL_STATE
         }
       };
-    } else if (errorIdx !== -1) {
+    } else if (includes(errorTypes, action.type)) {
       return {
         ...newState,
-        [properties[errorIdx]]: {
+        [action.property]: {
           state: ERROR_STATE,
           error: action.error
         }
@@ -64,51 +61,53 @@ export function addLoading(next, ...properties) {
   };
 }
 
-function getLoadTypes(properties) {
-  return properties.map(prop => 'LOAD_' + prop.toUpperCase());
-}
-function getResetTypes(properties) {
-  return properties.map(prop => 'RESET_' + prop.toUpperCase());
-}
-function getLoadedTypes(properties) {
-  return properties.map(prop => 'LOADED_' + prop.toUpperCase());
-}
-function getErrorTypes(properties) {
-  return properties.map(prop => 'ERROR_' + prop.toUpperCase());
+function getTypes(type, properties) {
+  return properties.map(
+    getType.bind(null, type)
+  );
 }
 
-export function createResetActionFunction(name) {
-  return () => {
-    return {
-      type: 'RESET_' + name.toUpperCase()
+function getType(type, prop) {
+  return `${type.toUpperCase()}_${prop.toUpperCase()}`;
+}
+
+export const createResetActionFunction = createTypedActionFunctionCreator('RESET');
+export const createLoadingActionFunction = createTypedActionFunctionCreator('LOAD');
+export const createResultActionFunction = createTypedActionFunctionCreator('LOADED', result => {
+  return {result};
+});
+export const createErrorActionFunction = createTypedActionFunctionCreator('ERROR', error => {
+  return {error};
+});
+
+function createTypedActionFunctionCreator(typePrefix, create = empty) {
+  return name => {
+    const type = getType(typePrefix, name);
+
+    return (...args) => {
+      const action = create(...args);
+
+      return {
+        ...action,
+        property: name,
+        type
+      };
     };
   };
 }
 
-export function createLoadingActionFunction(name) {
-  return () => {
-    return {
-      type: 'LOAD_' + name.toUpperCase()
-    };
-  };
+function empty() {
+  return {};
 }
 
-export function createResultActionFunction(name) {
-  return result => {
-    return {
-      type: 'LOADED_' + name.toUpperCase(),
-      result
-    };
-  };
-}
+export function addDestroyEventCleanUp(eventsBus, dispatch, ...names) {
+  const resetActionCreators = names.map(createResetActionFunction);
 
-export function createErrorActionFunction(name) {
-  return error => {
-    return {
-      type: 'ERROR_' + name.toUpperCase(),
-      error
-    };
-  };
+  return eventsBus.on(DESTROY_EVENT, () => {
+    resetActionCreators.forEach(createAction => {
+      dispatch(createAction());
+    });
+  });
 }
 
 export function isInitial({state}) {
