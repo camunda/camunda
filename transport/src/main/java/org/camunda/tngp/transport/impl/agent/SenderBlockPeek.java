@@ -44,6 +44,11 @@ public class SenderBlockPeek extends BlockPeek
         return available;
     }
 
+    public boolean canSend()
+    {
+        return hasAvailable && byteBuffer.hasRemaining();
+    }
+
 
     public int doSend()
     {

@@ -2,12 +2,9 @@ package org.camunda.tngp.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.InetSocketAddress;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.dispatcher.Dispatcher;
-import org.camunda.tngp.transport.ProtocolSingleMessageTest.CollectingHandler;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
@@ -23,7 +20,7 @@ public class MixedProtocolsTest
     public void shouldEchoMessages()
     {
 
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
         final CollectingHandler singleMessageHandler = new CollectingHandler();
         final int numRequests = 1000;
 
@@ -35,11 +32,13 @@ public class MixedProtocolsTest
                    .bind();
 
                 final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
-                final ClientChannel channel = clientTransport
-                        .createClientChannel(addr)
-                        .requestResponseProtocol(connectionPool)
-                        .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, singleMessageHandler)
-                        .connect();
+
+                final ClientChannel channel = clientTransport.createClientChannelPool()
+                    .requestResponseProtocol(connectionPool)
+                    .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, singleMessageHandler)
+                    .build()
+                    .requestChannel(addr);
+
                 final TransportConnection connection = connectionPool.openConnection())
         {
             final DataFramePool dataFramePool = DataFramePool.newBoundedPool(2, clientTransport.getSendBuffer());
@@ -133,8 +132,9 @@ public class MixedProtocolsTest
         }
 
         @Override
-        public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+        public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
         {
+            return true;
         }
     }
 

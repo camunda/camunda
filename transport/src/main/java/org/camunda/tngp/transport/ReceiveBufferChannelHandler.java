@@ -53,9 +53,10 @@ public class ReceiveBufferChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         // drop
+        return true;
     }
 
 }

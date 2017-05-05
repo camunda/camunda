@@ -1,6 +1,5 @@
 package org.camunda.tngp.transport;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -28,14 +27,14 @@ public class Transport implements AutoCloseable
         STATE_FIELD.set(this, STATE_OPEN);
     }
 
-    public ClientChannelBuilder createClientChannel(InetSocketAddress remoteAddress)
+    public ClientChannelPoolBuilder createClientChannelPool()
     {
         if (STATE_OPEN != STATE_FIELD.get(this))
         {
             throw new IllegalStateException("Cannot create client channel on " + this + ", transport is not open.");
         }
 
-        return new ClientChannelBuilder(transportContext, remoteAddress);
+        return new ClientChannelPoolBuilder(transportContext);
     }
 
     public CompletableFuture<Void> registerChannelListener(TransportChannelListener listener)
@@ -64,14 +63,14 @@ public class Transport implements AutoCloseable
         return future;
     }
 
-    public ServerSocketBindingBuilder createServerSocketBinding(InetSocketAddress addr)
+    public ServerSocketBindingBuilder createServerSocketBinding(SocketAddress addr)
     {
         if (STATE_OPEN != STATE_FIELD.get(this))
         {
             throw new IllegalStateException("Cannot create server socket on " + this + ", transport is not open.");
         }
 
-        return new ServerSocketBindingBuilder(transportContext, addr);
+        return new ServerSocketBindingBuilder(transportContext, addr.toInetSocketAddress());
     }
 
     public Dispatcher getSendBuffer()

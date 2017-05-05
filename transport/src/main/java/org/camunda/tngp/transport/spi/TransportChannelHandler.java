@@ -13,6 +13,12 @@ public interface TransportChannelHandler
     // invoked in the conductor thread
     void onChannelClosed(TransportChannel transportChannel);
 
+    // invoked in the receiver thread
+    default void onChannelKeepAlive(TransportChannel channel)
+    {
+        // ignore
+    }
+
     // invoked in the sender thread
     void onChannelSendError(
             TransportChannel transportChannel,
@@ -28,7 +34,7 @@ public interface TransportChannelHandler
             int length);
 
     // invoked in the receiver thread
-    void onControlFrame(
+    boolean onControlFrame(
             TransportChannel transportChannel,
             DirectBuffer buffer,
             int offset,

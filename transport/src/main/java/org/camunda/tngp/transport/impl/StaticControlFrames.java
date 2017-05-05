@@ -1,28 +1,44 @@
 package org.camunda.tngp.transport.impl;
 
-import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.*;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_CONTROL_CLOSE;
+import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_CONTROL_END_OF_STREAM;
+import static org.camunda.tngp.transport.impl.TransportControlFrameDescriptor.TYPE_CONTROL_KEEP_ALIVE;
 
 import java.nio.ByteBuffer;
 
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class StaticControlFrames
 {
-    public static final ByteBuffer CLOSE_FRAME = ByteBuffer.allocate(alignedLength(0));
-    public static final ByteBuffer END_OF_STREAM_FRAME = ByteBuffer.allocate(alignedLength(0));
+    public static final DirectBuffer CLOSE_FRAME;
+    public static final DirectBuffer END_OF_STREAM_FRAME;
+    public static final DirectBuffer KEEP_ALIVE_FRAME;
 
     static
     {
         final UnsafeBuffer ctrMsgWriter = new UnsafeBuffer(0, 0);
 
-        ctrMsgWriter.wrap(CLOSE_FRAME);
+        ctrMsgWriter.wrap(ByteBuffer.allocate(alignedLength(0)));
         ctrMsgWriter.putInt(lengthOffset(0), 0);
         ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_CLOSE);
 
-        ctrMsgWriter.wrap(END_OF_STREAM_FRAME);
+        CLOSE_FRAME = new UnsafeBuffer(ctrMsgWriter, 0, ctrMsgWriter.capacity());
+
+        ctrMsgWriter.wrap(ByteBuffer.allocate(alignedLength(0)));
         ctrMsgWriter.putInt(lengthOffset(0), 0);
         ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_END_OF_STREAM);
+
+        END_OF_STREAM_FRAME = new UnsafeBuffer(ctrMsgWriter, 0, ctrMsgWriter.capacity());
+
+        ctrMsgWriter.wrap(ByteBuffer.allocate(alignedLength(0)));
+        ctrMsgWriter.putInt(lengthOffset(0), 0);
+        ctrMsgWriter.putShort(typeOffset(0), TYPE_CONTROL_KEEP_ALIVE);
+
+        KEEP_ALIVE_FRAME = new UnsafeBuffer(ctrMsgWriter, 0, ctrMsgWriter.capacity());
 
     }
 }

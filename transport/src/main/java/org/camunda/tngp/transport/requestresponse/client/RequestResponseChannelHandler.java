@@ -104,9 +104,10 @@ public class RequestResponseChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         // this protocol does not send any control frames from server to client.
+        return true;
     }
 
 }

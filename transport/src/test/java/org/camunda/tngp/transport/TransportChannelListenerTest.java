@@ -2,7 +2,6 @@ package org.camunda.tngp.transport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,10 +49,13 @@ public class TransportChannelListenerTest
         final LoggingTransportChannelListener serverListener = new LoggingTransportChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         serverTransport.createServerSocketBinding(addr).bind();
-        final ClientChannel channel = clientTransport.createClientChannel(addr).connect();
+        final ClientChannel channel = clientTransport
+                .createClientChannelPool()
+                .build()
+                .requestChannel(addr);
 
         // when
         channel.close();
@@ -78,10 +80,13 @@ public class TransportChannelListenerTest
         final LoggingTransportChannelListener serverListener = new LoggingTransportChannelListener();
         serverTransport.registerChannelListener(serverListener);
 
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         serverTransport.createServerSocketBinding(addr).bind();
-        final ClientChannel channel = clientTransport.createClientChannel(addr).connect();
+        final ClientChannel channel = clientTransport
+                .createClientChannelPool()
+                .build()
+                .requestChannel(addr);
 
         // when
         clientTransport.removeChannelListener(clientListener);

@@ -19,6 +19,11 @@ import org.camunda.tngp.transport.impl.agent.TransportConductor;
 
 public class TransportBuilder
 {
+    /**
+     * In the same order of magnitude of what apache and nginx use.
+     */
+    protected static final long DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = 5000;
+
     public enum ThreadingMode
     {
         SHARED,
@@ -33,6 +38,7 @@ public class TransportBuilder
     protected int sendBufferSize = 1024 * 1024 * 16;
 
     protected int maxMessageLength = 1024 * 16;
+    protected long channelKeepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
 
     protected ThreadingMode threadingMode = ThreadingMode.SHARED;
 
@@ -89,6 +95,12 @@ public class TransportBuilder
         return this;
     }
 
+    public TransportBuilder channelKeepAlivePeriod(long channelKeepAlivePeriod)
+    {
+        this.channelKeepAlivePeriod = channelKeepAlivePeriod;
+        return this;
+    }
+
     public TransportBuilder threadingMode(ThreadingMode mode)
     {
         this.threadingMode = mode;
@@ -122,6 +134,7 @@ public class TransportBuilder
     {
         transportContext = new TransportContext();
         transportContext.setMaxMessageLength(maxMessageLength);
+        transportContext.setChannelKeepAlivePeriod(channelKeepAlivePeriod);
     }
 
     protected void initSendBuffer()

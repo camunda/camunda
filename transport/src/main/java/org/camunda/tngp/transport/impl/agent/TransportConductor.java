@@ -16,6 +16,7 @@ import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.TransportChannelListener;
 import org.camunda.tngp.transport.impl.ClientChannelImpl;
+import org.camunda.tngp.transport.impl.ClientChannelPoolImpl;
 import org.camunda.tngp.transport.impl.ServerChannelImpl;
 import org.camunda.tngp.transport.impl.ServerSocketBindingImpl;
 import org.camunda.tngp.transport.impl.TransportChannelImpl;
@@ -33,7 +34,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     protected final AcceptTransportPoller acceptTransportPoller;
     protected final TransportContext context;
 
-    protected final List<ClientChannelImpl> clientChannels = new ArrayList<>();
+    protected List<ClientChannelPoolImpl> clientChannelPools = new ArrayList<>();
     protected final List<ServerSocketBinding> serverSocketBindings = new ArrayList<>();
     protected final List<TransportChannelListener> channelListeners = new CopyOnWriteArrayList<>();
 
@@ -65,6 +66,12 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         {
             workCount += connectTransportPoller.pollNow();
             workCount += acceptTransportPoller.pollNow();
+
+            for (int i = 0; i < clientChannelPools.size(); i++)
+            {
+                final ClientChannelPoolImpl pool = clientChannelPools.get(i);
+                workCount += pool.doWork();
+            }
         }
 
         return workCount;
@@ -96,8 +103,6 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
 
         if (!isClosing)
         {
-            clientChannels.add(channel);
-
             final CompletableFuture<Void> openFuture = openAndRegisterChannel(channel);
 
             openFuture.whenComplete((v, t) ->
@@ -146,6 +151,11 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
         });
 
         return CompletableFuture.allOf(receiverFuture, senderFuture);
+    }
+
+    public void registerClientChannelPool(ClientChannelPoolImpl clientChannelPool)
+    {
+        clientChannelPools.add(clientChannelPool);
     }
 
     public void registerChannelListener(TransportChannelListener listener)
@@ -246,7 +256,10 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     {
         if (channel instanceof ClientChannelImpl)
         {
-            this.clientChannels.remove(channel);
+            for (int i = 0; i < clientChannelPools.size(); i++)
+            {
+                clientChannelPools.get(i).onChannelRemove((ClientChannelImpl) channel);
+            }
         }
         else
         {
@@ -331,7 +344,7 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
     {
         this.isClosing = true;
 
-        final List<TransportChannelImpl> channels = new ArrayList<>(this.clientChannels);
+        final List<ClientChannelPoolImpl> channelsPools = new ArrayList<>(this.clientChannelPools);
         final ArrayList<ServerSocketBinding> serverSocketBindings = new ArrayList<>(this.serverSocketBindings);
 
         acceptTransportPoller.close();
@@ -344,11 +357,11 @@ public class TransportConductor implements Agent, Consumer<TransportConductorCmd
             {
                 try
                 {
-                    final CompletableFuture[] channelCloseFutures = new CompletableFuture[channels.size()];
+                    final CompletableFuture[] channelCloseFutures = new CompletableFuture[channelsPools.size()];
 
                     for (int i = 0; i < channelCloseFutures.length; i++)
                     {
-                        channelCloseFutures[i] = channels.get(i).closeAsync();
+                        channelCloseFutures[i] = channelsPools.get(i).closeAsync();
                     }
                     CompletableFuture.allOf(channelCloseFutures).join();
                 }

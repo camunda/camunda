@@ -1,7 +1,5 @@
 package org.camunda.tngp.transport;
 
-import java.net.InetSocketAddress;
-
 import org.camunda.tngp.transport.requestresponse.client.RequestQueue;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -13,7 +11,7 @@ public class ProtocolRequestResponseTest
     @Test
     public void shouldEchoMessages() throws Exception
     {
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         try (final Transport clientTransport = Transports.createTransport("client").build();
              final Transport serverTransport = Transports.createTransport("server").build();
@@ -24,7 +22,11 @@ public class ProtocolRequestResponseTest
                 .bind();
 
              final TransportConnectionPool connectionPool = TransportConnectionPool.newFixedCapacityPool(clientTransport, 2, 64);
-             final ClientChannel channel = clientTransport.createClientChannel(addr).requestResponseProtocol(connectionPool).connect();
+             final ClientChannel channel = clientTransport
+                     .createClientChannelPool()
+                     .requestResponseProtocol(connectionPool)
+                     .build()
+                     .requestChannel(addr);
              final TransportConnection connection = connectionPool.openConnection())
         {
             final RequestQueue q = new RequestQueue(32);

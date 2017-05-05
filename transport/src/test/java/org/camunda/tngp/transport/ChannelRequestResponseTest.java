@@ -1,6 +1,5 @@
 package org.camunda.tngp.transport;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.agrona.DirectBuffer;
@@ -48,7 +47,7 @@ public class ChannelRequestResponseTest
             .protocolId(Protocols.REQUEST_RESPONSE);
 
         final ClientFragmentHandler fragmentHandler = new ClientFragmentHandler();
-        final InetSocketAddress addr = new InetSocketAddress("localhost", 51115);
+        final SocketAddress addr = new SocketAddress("localhost", 51115);
 
         final Dispatcher clientReceiveBuffer = Dispatchers.create("client-receive-buffer")
                 .bufferSize(16 * 1024 * 1024)
@@ -67,9 +66,10 @@ public class ChannelRequestResponseTest
             .transportChannelHandler(new ReceiveBufferChannelHandler(serverTransport.getSendBuffer()))
             .bind();
 
-        final ClientChannel channel = clientTransport.createClientChannel(addr)
+        final ClientChannel channel = clientTransport.createClientChannelPool()
             .transportChannelHandler(Protocols.REQUEST_RESPONSE, new ReceiveBufferChannelHandler(clientReceiveBuffer))
-            .connect();
+            .build()
+            .requestChannel(addr);
 
         final Dispatcher sendBuffer = clientTransport.getSendBuffer();
         final Subscription clientReceiveBufferSubscription = clientReceiveBuffer.openSubscription("client-receiver");

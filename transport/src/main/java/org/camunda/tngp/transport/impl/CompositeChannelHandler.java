@@ -1,6 +1,7 @@
 package org.camunda.tngp.transport.impl;
 
 import org.agrona.DirectBuffer;
+import org.camunda.tngp.dispatcher.impl.log.DataFrameDescriptor;
 import org.camunda.tngp.transport.TransportChannel;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.protocol.TransportHeaderDescriptor;
@@ -55,10 +56,10 @@ public class CompositeChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
-        final TransportChannelHandler handler = getHandler(buffer, offset, length);
-        handler.onControlFrame(transportChannel, buffer, offset, length);
+        final TransportChannelHandler handler = getHandler(buffer, DataFrameDescriptor.HEADER_LENGTH + offset, length - DataFrameDescriptor.HEADER_LENGTH);
+        return handler.onControlFrame(transportChannel, buffer, offset, length);
     }
 
     protected TransportChannelHandler getHandler(DirectBuffer message, int protocolHeaderOffset, int length)

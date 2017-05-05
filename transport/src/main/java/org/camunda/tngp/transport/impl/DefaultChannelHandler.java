@@ -33,9 +33,10 @@ public class DefaultChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
         System.err.println("received and dropped control frame on channel " + transportChannel + " in " + DefaultChannelHandler.class.getName());
+        return true;
     }
 
 }

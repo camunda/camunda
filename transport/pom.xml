@@ -28,11 +28,23 @@
       <artifactId>dispatcher</artifactId>
       <version>1.0.0-alpha3</version>
     </dependency>
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>util</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
 
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
       <version>0.9.2</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.tngp</groupId>
+      <artifactId>test-util</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
