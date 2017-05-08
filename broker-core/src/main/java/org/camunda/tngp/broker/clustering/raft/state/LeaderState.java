@@ -1,14 +1,14 @@
 package org.camunda.tngp.broker.clustering.raft.state;
 
-import static org.camunda.tngp.broker.clustering.raft.Raft.State.*;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
+import static org.camunda.tngp.broker.clustering.raft.Raft.State.FOLLOWER;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAM_SERVICE_GROUP;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.logStreamServiceName;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Configuration;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
@@ -33,6 +33,7 @@ import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.agent.AgentRunnerService;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -387,7 +388,7 @@ public class LeaderState extends ActiveState
             );
         }
 
-        final Endpoint endpoint = joinRequest.member().endpoint();
+        final SocketAddress endpoint = joinRequest.member().endpoint();
         configuringMember.endpoint().wrap(endpoint);
 
         configuringMembers.clear();
@@ -450,7 +451,7 @@ public class LeaderState extends ActiveState
             );
         }
 
-        final Endpoint endpoint = leaveRequest.member().endpoint();
+        final SocketAddress endpoint = leaveRequest.member().endpoint();
         configuringMember.endpoint().wrap(endpoint);
 
         configuringMembers.clear();

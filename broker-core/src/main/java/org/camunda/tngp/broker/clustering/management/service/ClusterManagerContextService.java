@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.clustering.management.service;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.broker.clustering.management.ClusterManagerContext;
@@ -12,11 +11,12 @@ import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.transport.ClientChannelPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterManagerContextService implements Service<ClusterManagerContext>
 {
-    private final Injector<ClientChannelManager> clientChannelManagerInjector = new Injector<>();
+    private final Injector<ClientChannelPool> clientChannelManagerInjector = new Injector<>();
     private final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<>();
     private final Injector<Subscription> subscriptionInjector = new Injector<>();
     private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
@@ -30,7 +30,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ClientChannelManager clientChannelManager = clientChannelManagerInjector.getValue();
+        final ClientChannelPool clientChannelManager = clientChannelManagerInjector.getValue();
         final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
         final Subscription subscription = subscriptionInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
@@ -42,7 +42,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         context = new ClusterManagerContext();
         context.setAgentRunner(agentRunner);
         context.setLocalPeer(localPeer);
-        context.setClientChannelManager(clientChannelManager);
+        context.setClientChannelPool(clientChannelManager);
         context.setConnections(connectionPool);
         context.setSubscription(subscription);
         context.setSendBuffer(sendBuffer);
@@ -61,7 +61,7 @@ public class ClusterManagerContextService implements Service<ClusterManagerConte
         return context;
     }
 
-    public Injector<ClientChannelManager> getClientChannelManagerInjector()
+    public Injector<ClientChannelPool> getClientChannelManagerInjector()
     {
         return clientChannelManagerInjector;
     }

@@ -54,6 +54,15 @@ public class ClientProperties
      */
     public static final String CLIENT_TOPIC_SUBSCRIPTION_PREFETCH_CAPACITY = "tngp.client.event.prefetch";
 
+    /**
+     * The period of time in milliseconds for sending keep alive messages on tcp channels. Setting this appropriately
+     * can avoid overhead by reopening channels after idle time.
+     */
+    /*
+     * Optional property; Default is defined by transport
+     */
+    public static final String CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD = "tngp.client.channel.keepalive";
+
     public static void setDefaults(Properties properties)
     {
         properties.putIfAbsent(BROKER_CONTACTPOINT, "127.0.0.1:51015");

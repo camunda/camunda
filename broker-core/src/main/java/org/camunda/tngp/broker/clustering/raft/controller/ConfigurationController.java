@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Configuration;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
@@ -13,6 +12,7 @@ import org.camunda.tngp.broker.clustering.raft.entry.ConfigurationEntry;
 import org.camunda.tngp.broker.clustering.raft.entry.ConfiguredMember;
 import org.camunda.tngp.broker.clustering.util.MessageWriter;
 import org.camunda.tngp.broker.util.msgpack.value.ArrayValueIterator;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
 import org.camunda.tngp.util.state.StateMachine;
@@ -208,7 +208,7 @@ public class ConfigurationController
             for (int i = 0; i < members.size(); i++)
             {
                 final Member member = members.get(i);
-                final Endpoint endpoint = member.endpoint();
+                final SocketAddress endpoint = member.endpoint();
                 iterator.add()
                     .setPort(endpoint.port())
                     .setHost(endpoint.getHostBuffer(), 0, endpoint.hostLength());

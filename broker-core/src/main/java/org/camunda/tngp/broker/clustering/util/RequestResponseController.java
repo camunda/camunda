@@ -4,10 +4,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
-import org.camunda.tngp.broker.clustering.channel.EndpointChannel;
 import org.camunda.tngp.transport.ClientChannel;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.PooledFuture;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.PooledTransportRequest;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnection;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
@@ -58,14 +58,14 @@ public class RequestResponseController
     private final StateMachineAgent<RequestResponseContext> requestStateMachine;
 
     public RequestResponseController(
-            final ClientChannelManager clientChannelManager,
+            final ClientChannelPool clientChannelManager,
             final TransportConnectionPool connections)
     {
         this(clientChannelManager, connections, -1);
     }
 
     public RequestResponseController(
-            final ClientChannelManager clientChannelManager,
+            final ClientChannelPool clientChannelManager,
             final TransportConnectionPool connections,
             final int timeout)
     {
@@ -108,7 +108,7 @@ public class RequestResponseController
                     .build());
     }
 
-    public void open(final Endpoint receiver, final BufferWriter requestWriter)
+    public void open(final SocketAddress receiver, final BufferWriter requestWriter)
     {
         if (isClosed())
         {
@@ -162,22 +162,22 @@ public class RequestResponseController
     static class RequestResponseContext extends SimpleStateMachineContext
     {
         TransportConnection connection;
-        EndpointChannel endpointChannel;
         ClientChannel channel;
+        PooledFuture<ClientChannel> channelFuture;
         TransportRequest request;
 
-        final Endpoint receiver;
+        final SocketAddress receiver;
 
         final int timeout;
-        final ClientChannelManager clientChannelManager;
+        final ClientChannelPool clientChannelManager;
         final TransportConnectionPool connections;
 
         BufferWriter requestWriter;
 
-        RequestResponseContext(StateMachine<?> stateMachine, final int timeout, final ClientChannelManager clientChannelManager, final TransportConnectionPool connections)
+        RequestResponseContext(StateMachine<?> stateMachine, final int timeout, final ClientChannelPool clientChannelManager, final TransportConnectionPool connections)
         {
             super(stateMachine);
-            this.receiver = new Endpoint();
+            this.receiver = new SocketAddress();
             this.timeout = timeout;
             this.clientChannelManager = clientChannelManager;
             this.connections = connections;
@@ -235,26 +235,26 @@ public class RequestResponseController
         @Override
         public int doWork(RequestResponseContext context) throws Exception
         {
-            EndpointChannel endpointChannel = context.endpointChannel;
-            final ClientChannelManager clientChannelManager = context.clientChannelManager;
-            final Endpoint receiver = context.receiver;
-
             int workcount = 0;
 
-            if (endpointChannel == null || endpointChannel.isClosed())
+            if (context.channelFuture == null)
             {
+                final ClientChannelPool clientChannelManager = context.clientChannelManager;
+                final SocketAddress receiver = context.receiver;
+
                 workcount += 1;
-                endpointChannel = clientChannelManager.claim(receiver);
+                context.channelFuture = clientChannelManager.requestChannelAsync(receiver);
             }
 
-            context.endpointChannel = endpointChannel;
-            final ClientChannel channel = endpointChannel.getClientChannel();
-
-            if (channel != null)
+            if (context.channelFuture != null)
             {
-                workcount += 1;
-                context.channel = channel;
-                context.take(TRANSITION_DEFAULT);
+                final ClientChannel clientChannel = context.channelFuture.pollAndReturnOnSuccess();
+                if (clientChannel != null)
+                {
+                    context.channel = clientChannel;
+                    context.channelFuture = null;
+                    context.take(TRANSITION_DEFAULT);
+                }
             }
 
             return workcount;
@@ -372,11 +372,10 @@ public class RequestResponseController
                 connection.close();
             }
 
-            final EndpointChannel endpointChannel = context.endpointChannel;
-            context.clientChannelManager.reclaim(endpointChannel);
+            final ClientChannel endpointChannel = context.channel;
+            context.clientChannelManager.returnChannel(endpointChannel);
 
             context.connection = null;
-            context.endpointChannel = null;
             context.channel = null;
             context.request = null;
 

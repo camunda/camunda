@@ -1,8 +1,6 @@
 package org.camunda.tngp.broker.clustering.raft.controller;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
@@ -12,6 +10,8 @@ import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.clustering.raft.util.Quorum;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -150,7 +150,7 @@ public class PollController
         final RequestResponseController requestController;
         final PollRequest pollRequest;
         final PollResponse pollResponse;
-        final Endpoint endpoint;
+        final SocketAddress endpoint;
 
         Quorum quorum;
 
@@ -160,14 +160,14 @@ public class PollController
 
             this.context = context;
 
-            final ClientChannelManager clientChannelManager = context.getClientChannelManager();
+            final ClientChannelPool clientChannelManager = context.getClientChannelPool();
             final TransportConnectionPool connections = context.getConnections();
             this.requestController = new RequestResponseController(clientChannelManager, connections);
 
             this.pollRequest = new PollRequest();
             this.pollResponse = new PollResponse();
 
-            this.endpoint = new Endpoint();
+            this.endpoint = new SocketAddress();
             this.endpoint.wrap(member.endpoint());
         }
 
@@ -216,7 +216,7 @@ public class PollController
         public void work(PollContext context) throws Exception
         {
             final RequestResponseController requestController = context.requestController;
-            final Endpoint endpoint = context.endpoint;
+            final SocketAddress endpoint = context.endpoint;
             final PollRequest pollRequest = context.pollRequest;
 
             requestController.open(endpoint, pollRequest);

@@ -1,14 +1,15 @@
 package org.camunda.tngp.broker.clustering.gossip.protocol.util;
 
-import static org.camunda.tngp.clustering.gossip.PeerState.*;
+import static org.camunda.tngp.clustering.gossip.PeerState.ALIVE;
+import static org.camunda.tngp.clustering.gossip.PeerState.DEAD;
 
 import java.util.Random;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerListIterator;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerSelector;
+import org.camunda.tngp.transport.SocketAddress;
 
 public class SimplePeerSelector implements PeerSelector
 {
@@ -80,7 +81,7 @@ public class SimplePeerSelector implements PeerSelector
             final int idx = random.nextInt(n);
             shuffled.get(idx, curr);
 
-            final Endpoint currEndpoint = curr.managementEndpoint();
+            final SocketAddress currEndpoint = curr.managementEndpoint();
             if (curr.state() != ALIVE || isExcluded(curr, exclusions))
             {
                 continue;
@@ -116,10 +117,10 @@ public class SimplePeerSelector implements PeerSelector
 
     protected boolean isExcluded(final Peer peer, final Peer[] exclusions)
     {
-        final Endpoint peerEndpoint = peer.managementEndpoint();
+        final SocketAddress peerEndpoint = peer.managementEndpoint();
         for (int i = 0; i < exclusions.length; i++)
         {
-            final Endpoint excludedEndpoint = exclusions[i].managementEndpoint();
+            final SocketAddress excludedEndpoint = exclusions[i].managementEndpoint();
             if (excludedEndpoint.compareTo(peerEndpoint) == 0)
             {
                 return true;

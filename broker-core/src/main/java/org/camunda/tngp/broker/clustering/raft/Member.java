@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.clustering.raft;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
 import org.camunda.tngp.broker.clustering.raft.controller.PollController;
 import org.camunda.tngp.broker.clustering.raft.controller.ReplicationController;
@@ -11,6 +10,7 @@ import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LogStreamReader;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.transport.SocketAddress;
 
 /**
  * A member is a reference to another node involved in the raft protocol.
@@ -18,7 +18,7 @@ import org.camunda.tngp.logstreams.log.LoggedEvent;
 public class Member
 {
     private final Raft raft;
-    private final Endpoint endpoint;
+    private final SocketAddress endpoint;
 
     private final LogStreamReader logStreamReader;
     private final BrokerEventMetadata metadata;
@@ -41,7 +41,7 @@ public class Member
 
     public Member()
     {
-        this.endpoint = new Endpoint();
+        this.endpoint = new SocketAddress();
         this.raft = null;
         this.logStreamReader = null;
         this.metadata = null;
@@ -51,9 +51,9 @@ public class Member
         this.configureController = null;
     }
 
-    public Member(final Endpoint endpoint, final RaftContext context)
+    public Member(final SocketAddress endpoint, final RaftContext context)
     {
-        this.endpoint = new Endpoint();
+        this.endpoint = new SocketAddress();
         this.endpoint.wrap(endpoint);
 
         this.raft = context.getRaft();
@@ -67,7 +67,7 @@ public class Member
         this.configureController = new ConfigureController(context, this);
     }
 
-    public Endpoint endpoint()
+    public SocketAddress endpoint()
     {
         return endpoint;
     }

@@ -6,22 +6,23 @@ import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceName;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.transport.ClientChannelPool;
 import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 
-public class ClientChannelManagerService implements Service<ClientChannelManager>
+public class ClientChannelManagerService implements Service<ClientChannelPool>
 {
-    public static final ServiceName<ClientChannelManager> CLIENT_CHANNEL_MANAGER = ServiceName.newServiceName("client.channel.manager", ClientChannelManager.class);
+    public static final ServiceName<ClientChannelPool> CLIENT_CHANNEL_POOL = ServiceName.newServiceName("client.channel.pool", ClientChannelPool.class);
 
-    protected final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<TransportConnectionPool>();
-    protected final Injector<Transport> transportInjector = new Injector<Transport>();
-    protected final Injector<Dispatcher> receiveBufferInjector = new Injector<Dispatcher>();
+    protected final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<>();
+    protected final Injector<Transport> transportInjector = new Injector<>();
+    protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
 
     protected final int capacity;
-    protected ClientChannelManager clientChannelManager;
+    protected ClientChannelPool clientChannelPool;
 
 
     public ClientChannelManagerService(final int capacity)
@@ -33,16 +34,14 @@ public class ClientChannelManagerService implements Service<ClientChannelManager
     public void start(final ServiceStartContext serviceContext)
     {
 
-        final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
         final Transport transport = transportInjector.getValue();
+        final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
         final Dispatcher receiveBuffer = receiveBufferInjector.getValue();
 
-        clientChannelManager = new ClientChannelManager(capacity, transport, (tr, addr) ->
-        {
-            return tr.createClientChannel(addr)
-                    .requestResponseProtocol(connectionPool)
-                    .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(receiveBuffer));
-        });
+        clientChannelPool = transport.createClientChannelPool()
+                .requestResponseProtocol(connectionPool)
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(receiveBuffer))
+                .build();
     }
 
     @Override
@@ -51,9 +50,9 @@ public class ClientChannelManagerService implements Service<ClientChannelManager
     }
 
     @Override
-    public ClientChannelManager get()
+    public ClientChannelPool get()
     {
-        return clientChannelManager;
+        return clientChannelPool;
     }
 
     public Injector<Transport> getTransportInjector()

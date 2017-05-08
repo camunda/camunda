@@ -7,10 +7,10 @@ import static org.camunda.tngp.client.ClientProperties.CLIENT_SENDBUFFER_SIZE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_AUTOCOMPLETE;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_TASK_EXECUTION_THREADS;
 import static org.camunda.tngp.client.ClientProperties.CLIENT_THREADINGMODE;
+import static org.camunda.tngp.client.ClientProperties.CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD;
 import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static org.camunda.tngp.util.EnsureUtil.ensureNotNullOrEmpty;
 
-import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import org.camunda.tngp.client.ClientProperties;
@@ -20,13 +20,14 @@ import org.camunda.tngp.client.WorkflowTopicClient;
 import org.camunda.tngp.client.event.impl.TopicClientImpl;
 import org.camunda.tngp.client.impl.cmd.DummyChannelResolver;
 import org.camunda.tngp.client.incident.impl.IncidentTopicClientImpl;
-import org.camunda.tngp.client.task.impl.ClientTransportChannelListener;
 import org.camunda.tngp.client.task.impl.SubscriptionManager;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Dispatchers;
 import org.camunda.tngp.transport.ClientChannel;
 import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
+import org.camunda.tngp.transport.TransportBuilder;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.Transports;
 import org.camunda.tngp.transport.protocol.Protocols;
@@ -49,7 +50,7 @@ public class TngpClientImpl implements TngpClient
     protected final TransportConnectionPool connectionPool;
     protected final DataFramePool dataFramePool;
     protected ClientChannel channel;
-    protected InetSocketAddress contactPoint;
+    protected SocketAddress contactPoint;
     protected Dispatcher dataFrameReceiveBuffer;
 
     protected DummyChannelResolver channelResolver;
@@ -81,16 +82,23 @@ public class TngpClientImpl implements TngpClient
             throw new RuntimeException(errorMessage);
         }
 
-        contactPoint = new InetSocketAddress(hostName, port);
+        contactPoint = new SocketAddress(hostName, port);
         final int maxConnections = Integer.parseInt(properties.getProperty(CLIENT_MAXCONNECTIONS));
         final int maxRequests = Integer.parseInt(properties.getProperty(CLIENT_MAXREQUESTS));
         final int sendBufferSize = Integer.parseInt(properties.getProperty(CLIENT_SENDBUFFER_SIZE));
         final ThreadingMode threadingMode = ThreadingMode.valueOf(properties.getProperty(CLIENT_THREADINGMODE));
 
-        transport = Transports.createTransport("tngp.client")
+        final TransportBuilder transportBuilder = Transports.createTransport("tngp.client")
             .sendBufferSize(1024 * 1024 * sendBufferSize)
             .maxMessageLength(1024 * 1024)
-            .threadingMode(threadingMode)
+            .threadingMode(threadingMode);
+
+        if (properties.containsKey(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD))
+        {
+            transportBuilder.channelKeepAlivePeriod(Long.parseLong(properties.getProperty(CLIENT_TCP_CHANNEL_KEEP_ALIVE_PERIOD)));
+        }
+
+        transport = transportBuilder
             .build();
 
         dataFrameReceiveBuffer = Dispatchers.create("receive-buffer")
@@ -126,10 +134,11 @@ public class TngpClientImpl implements TngpClient
     @Override
     public void connect()
     {
-        channel = transport.createClientChannel(contactPoint)
+        channel = transport.createClientChannelPool()
                 .requestResponseProtocol(connectionPool)
                 .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, new ReceiveBufferChannelHandler(dataFrameReceiveBuffer))
-                .connect();
+                .build()
+                .requestChannel(contactPoint);
 
         channelResolver.setChannelId(channel.getId());
 

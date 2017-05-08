@@ -4,7 +4,6 @@ package org.camunda.tngp.test.broker.protocol.brokerapi;
 import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_PARTITION_ID;
 import static org.camunda.tngp.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -16,6 +15,7 @@ import org.camunda.tngp.protocol.clientapi.SubscriptionType;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.test.util.collection.MapFactoryBuilder;
 import org.camunda.tngp.transport.ServerSocketBinding;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.Transports;
@@ -35,7 +35,7 @@ public class StubBrokerRule extends ExternalResource
 
     protected StubResponseChannelHandler channelHandler;
     protected MsgPackHelper msgPackHelper;
-    private InetSocketAddress bindAddr;
+    private SocketAddress bindAddr;
 
     public StubBrokerRule()
     {
@@ -57,7 +57,7 @@ public class StubBrokerRule extends ExternalResource
                 .threadingMode(ThreadingMode.SHARED)
                 .build();
 
-        bindAddr = new InetSocketAddress(host, port);
+        bindAddr = new SocketAddress(host, port);
 
         channelHandler = new StubResponseChannelHandler(transport.getSendBuffer(), msgPackHelper);
 

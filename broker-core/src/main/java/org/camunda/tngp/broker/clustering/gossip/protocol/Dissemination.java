@@ -1,10 +1,8 @@
 package org.camunda.tngp.broker.clustering.gossip.protocol;
 
-import static org.camunda.tngp.clustering.gossip.PeerState.*;
+import static org.camunda.tngp.clustering.gossip.PeerState.ALIVE;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
@@ -13,6 +11,8 @@ import org.camunda.tngp.broker.clustering.gossip.data.PeerSelector;
 import org.camunda.tngp.broker.clustering.gossip.message.GossipRequest;
 import org.camunda.tngp.broker.clustering.gossip.message.GossipResponse;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
 import org.camunda.tngp.util.state.State;
@@ -160,7 +160,7 @@ public class Dissemination
             this.request = new GossipRequest();
             this.response = new GossipResponse();
 
-            final ClientChannelManager clientChannelManager = gossipContext.getClientChannelManager();
+            final ClientChannelPool clientChannelManager = gossipContext.getClientChannelPool();
             final TransportConnectionPool connections = gossipContext.getConnections();
             final GossipConfiguration config = gossipContext.getConfig();
             this.requestController = new RequestResponseController(clientChannelManager, connections, config.disseminationTimeout);
@@ -206,7 +206,7 @@ public class Dissemination
 
             request.peers(peers);
 
-            final Endpoint endpoint = peer.managementEndpoint();
+            final SocketAddress endpoint = peer.managementEndpoint();
             requestController.open(endpoint, request);
             context.take(TRANSITION_DEFAULT);
         }

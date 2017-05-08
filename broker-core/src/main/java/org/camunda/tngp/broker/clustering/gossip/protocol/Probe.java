@@ -1,8 +1,6 @@
 package org.camunda.tngp.broker.clustering.gossip.protocol;
 
 import org.agrona.DirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
@@ -11,6 +9,8 @@ import org.camunda.tngp.broker.clustering.gossip.message.GossipResponse;
 import org.camunda.tngp.broker.clustering.gossip.message.ProbeRequest;
 import org.camunda.tngp.broker.clustering.util.MessageWriter;
 import org.camunda.tngp.broker.clustering.util.RequestResponseController;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
@@ -157,7 +157,7 @@ public class Probe
             super(stateMachine);
             this.peers = gossipContext.getPeers();
 
-            final ClientChannelManager clientChannelManager = gossipContext.getClientChannelManager();
+            final ClientChannelPool clientChannelManager = gossipContext.getClientChannelPool();
             final TransportConnectionPool connections = gossipContext.getConnections();
             final GossipConfiguration config = gossipContext.getConfig();
             this.requestController = new RequestResponseController(clientChannelManager, connections, config.probeTimeout);
@@ -191,7 +191,7 @@ public class Probe
 
             gossipRequest.peers(peers);
 
-            final Endpoint target = probeRequest.target();
+            final SocketAddress target = probeRequest.target();
             requestController.open(target, gossipRequest);
             context.take(TRANSITION_DEFAULT);
         }

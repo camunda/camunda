@@ -1,7 +1,13 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.*;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.*;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.configurationEntryPositionNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.configurationEntryTermNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.partitionIdNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.termNullValue;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.topicNameHeaderLength;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.sbeHeaderSize;
 
 import java.util.Iterator;
 import java.util.List;
@@ -10,14 +16,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder.MembersDecoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder;
-import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.*;
+import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -147,7 +153,7 @@ public class ConfigureRequest implements BufferReader, BufferWriter
         for (int i = 0; i < size; i++)
         {
             final Member member = members.get(i);
-            final Endpoint endpoint = member.endpoint();
+            final SocketAddress endpoint = member.endpoint();
 
             encoder.next()
                 .port(endpoint.port())

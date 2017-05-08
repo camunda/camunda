@@ -1,11 +1,11 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.sbeHeaderSize;
 import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.configurationEntryPositionNullValue;
 import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.configurationEntryTermNullValue;
 import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.termNullValue;
+import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder.sbeHeaderSize;
 
 import java.util.Iterator;
 import java.util.List;
@@ -13,7 +13,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.BooleanType;
 import org.camunda.tngp.clustering.raft.JoinResponseDecoder;
@@ -22,6 +21,7 @@ import org.camunda.tngp.clustering.raft.JoinResponseEncoder;
 import org.camunda.tngp.clustering.raft.JoinResponseEncoder.MembersEncoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -136,7 +136,7 @@ public class JoinResponse implements BufferReader, BufferWriter
         for (int i = 0; i < size; i++)
         {
             final Member member = members.get(i);
-            final Endpoint endpoint = member.endpoint();
+            final SocketAddress endpoint = member.endpoint();
 
             encoder.next()
                 .port(endpoint.port())

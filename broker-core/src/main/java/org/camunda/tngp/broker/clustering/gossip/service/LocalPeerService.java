@@ -1,20 +1,20 @@
 package org.camunda.tngp.broker.clustering.gossip.service;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.transport.SocketAddress;
 
 public class LocalPeerService implements Service<Peer>
 {
-    private final Endpoint clientEndpoint;
-    private final Endpoint managementEndpoint;
-    private final Endpoint replicationEndpoint;
+    private final SocketAddress clientEndpoint;
+    private final SocketAddress managementEndpoint;
+    private final SocketAddress replicationEndpoint;
 
     private Peer localPeer;
 
-    public LocalPeerService(final Endpoint clientEndpoint, final Endpoint managementEndpoint, final Endpoint replicationEndpoint)
+    public LocalPeerService(final SocketAddress clientEndpoint, final SocketAddress managementEndpoint, final SocketAddress replicationEndpoint)
     {
         this.clientEndpoint = clientEndpoint;
         this.managementEndpoint = managementEndpoint;

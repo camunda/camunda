@@ -1,16 +1,21 @@
 package org.camunda.tngp.broker.clustering.gossip.data;
 
-import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.*;
-import static org.camunda.tngp.clustering.gossip.PeerState.*;
+import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.BLOCK_LENGTH;
+import static org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.SCHEMA_VERSION;
+import static org.camunda.tngp.clustering.gossip.PeerState.ALIVE;
+import static org.camunda.tngp.clustering.gossip.PeerState.DEAD;
+import static org.camunda.tngp.clustering.gossip.PeerState.NULL_VAL;
+import static org.camunda.tngp.clustering.gossip.PeerState.SUSPECT;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.clustering.gossip.EndpointType;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder;
+import org.camunda.tngp.clustering.gossip.PeerDescriptorDecoder.EndpointsDecoder;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder;
 import org.camunda.tngp.clustering.gossip.PeerDescriptorEncoder.EndpointsEncoder;
 import org.camunda.tngp.clustering.gossip.PeerState;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -24,32 +29,32 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
             PEER_ENDPOINT_COUNT * (
                 EndpointsEncoder.sbeBlockLength() +
                 EndpointsEncoder.hostHeaderLength() +
-                Endpoint.MAX_HOST_LENGTH
+                SocketAddress.MAX_HOST_LENGTH
             );
 
     protected final PeerDescriptorDecoder decoder = new PeerDescriptorDecoder();
     protected final PeerDescriptorEncoder encoder = new PeerDescriptorEncoder();
 
-    protected final Endpoint clientEndpoint = new Endpoint();
-    protected final Endpoint managementEndpoint = new Endpoint();
-    protected final Endpoint replicationEndpoint = new Endpoint();
+    protected final SocketAddress clientEndpoint = new SocketAddress();
+    protected final SocketAddress managementEndpoint = new SocketAddress();
+    protected final SocketAddress replicationEndpoint = new SocketAddress();
 
     protected final Heartbeat heartbeat = new Heartbeat();
     protected PeerState state = NULL_VAL;
 
     protected long changeStateTime = -1L;
 
-    public Endpoint clientEndpoint()
+    public SocketAddress clientEndpoint()
     {
         return clientEndpoint;
     }
 
-    public Endpoint managementEndpoint()
+    public SocketAddress managementEndpoint()
     {
         return managementEndpoint;
     }
 
-    public Endpoint replicationEndpoint()
+    public SocketAddress replicationEndpoint()
     {
         return replicationEndpoint;
     }
@@ -131,7 +136,7 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
 
         for (final EndpointsDecoder endpointsDecoder : decoder.endpoints())
         {
-            final Endpoint endpoint;
+            final SocketAddress endpoint;
             switch (endpointsDecoder.endpointType())
             {
                 case CLIENT:
@@ -183,9 +188,9 @@ public class Peer implements BufferWriter, BufferReader, Comparable<Peer>
     {
         final Heartbeat heartbeat = heartbeat();
 
-        final Endpoint clientEndpoint = clientEndpoint();
-        final Endpoint managementEndpoint = managementEndpoint();
-        final Endpoint replicationEndpoint = replicationEndpoint();
+        final SocketAddress clientEndpoint = clientEndpoint();
+        final SocketAddress managementEndpoint = managementEndpoint();
+        final SocketAddress replicationEndpoint = replicationEndpoint();
 
         final DirectBuffer clientEndpointBuffer = clientEndpoint.getHostBuffer();
         final int clientHostLength = clientEndpoint.hostLength();

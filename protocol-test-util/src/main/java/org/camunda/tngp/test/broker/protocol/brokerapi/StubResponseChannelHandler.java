@@ -164,9 +164,11 @@ public class StubResponseChannelHandler implements TransportChannelHandler
     }
 
     @Override
-    public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
-        throw new RuntimeException("not implemented");
+        // ignore
+        System.out.println("Stub: Ignoring control frame");
+        return true;
     }
 
     public void addExecuteCommandRequestStub(ResponseStub<ExecuteCommandRequest> stub)

@@ -1,11 +1,11 @@
 package org.camunda.tngp.broker.clustering.management.message;
 
-import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeHeaderSize;
 import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.partitionIdNullValue;
 import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.termNullValue;
 import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.topicNameHeaderLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.hostHeaderLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeBlockLength;
+import static org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeHeaderSize;
 
 import java.util.Iterator;
 import java.util.List;
@@ -14,7 +14,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.management.InvitationRequestDecoder;
 import org.camunda.tngp.clustering.management.InvitationRequestDecoder.MembersDecoder;
@@ -22,6 +21,7 @@ import org.camunda.tngp.clustering.management.InvitationRequestEncoder;
 import org.camunda.tngp.clustering.management.InvitationRequestEncoder.MembersEncoder;
 import org.camunda.tngp.clustering.management.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.management.MessageHeaderEncoder;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -95,7 +95,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
         for (int i = 0; i < size; i++)
         {
             final Member member = members.get(i);
-            final Endpoint endpoint = member.endpoint();
+            final SocketAddress endpoint = member.endpoint();
             length += endpoint.hostLength();
         }
 
@@ -130,7 +130,7 @@ public class InvitationRequest implements BufferWriter, BufferReader
         for (int i = 0; i < size; i++)
         {
             final Member member = members.get(i);
-            final Endpoint endpoint = member.endpoint();
+            final SocketAddress endpoint = member.endpoint();
 
             encoder.next()
                 .port(endpoint.port())

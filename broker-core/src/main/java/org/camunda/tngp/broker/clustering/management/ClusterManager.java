@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManagerService;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.management.config.ClusterManagementConfig;
@@ -49,6 +48,7 @@ import org.camunda.tngp.logstreams.impl.log.fs.FsLogStorage;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.transport.ClientChannelPool;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
@@ -215,7 +215,7 @@ public class ClusterManager implements Agent
                         .term(raft.term())
                         .members(raft.configuration().members());
 
-                    final ClientChannelManager clientChannelManager = context.getClientChannelManager();
+                    final ClientChannelPool clientChannelManager = context.getClientChannelPool();
                     final TransportConnectionPool connections = context.getConnections();
                     final RequestResponseController requestController = new RequestResponseController(clientChannelManager, connections);
                     requestController.open(copy.managementEndpoint(), invitationRequest);
@@ -280,7 +280,7 @@ public class ClusterManager implements Agent
 
         // TODO: make it configurable
         final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(128);
-        final ServiceName<ClientChannelManager> clientChannelManagerServiceName = clientChannelManagerName(component);
+        final ServiceName<ClientChannelPool> clientChannelManagerServiceName = clientChannelManagerName(component);
         serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
             .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
             .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())

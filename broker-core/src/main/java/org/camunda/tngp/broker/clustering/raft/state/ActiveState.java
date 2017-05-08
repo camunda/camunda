@@ -3,7 +3,6 @@ package org.camunda.tngp.broker.clustering.raft.state;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
@@ -19,6 +18,7 @@ import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
 import org.camunda.tngp.logstreams.log.LogStream;
 import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.transport.SocketAddress;
 
 public abstract class ActiveState extends InactiveState
 {
@@ -53,8 +53,8 @@ public abstract class ActiveState extends InactiveState
     protected VoteResponse handleVoteRequest(final VoteRequest voteRequest)
     {
         final int currentTerm = raft.term();
-        final Endpoint currentLeader = raft.leader();
-        final Endpoint lastVotedFor = raft.lastVotedFor();
+        final SocketAddress currentLeader = raft.leader();
+        final SocketAddress lastVotedFor = raft.lastVotedFor();
 
         final int voteTerm = voteRequest.term();
         final long lastEntryPosition = voteRequest.lastEntryPosition();

@@ -137,7 +137,7 @@ public class ConfigureController
             this.raftContext = raftContext;
             this.member = member;
             this.configureRequest = new ConfigureRequest();
-            this.requestController = new RequestResponseController(raftContext.getClientChannelManager(), raftContext.getConnections());
+            this.requestController = new RequestResponseController(raftContext.getClientChannelPool(), raftContext.getConnections());
         }
 
         public void reset()

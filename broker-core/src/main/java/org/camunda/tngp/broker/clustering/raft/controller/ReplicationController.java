@@ -144,7 +144,7 @@ public class ReplicationController
             this.raftContext = raftContext;
             this.member = member;
             this.appendRequest = new AppendRequest();
-            this.singleMessageController = new SingleMessageController(raftContext.getClientChannelManager(), raftContext.getSendBuffer());
+            this.singleMessageController = new SingleMessageController(raftContext.getClientChannelPool(), raftContext.getSendBuffer());
         }
 
         public void reset()

@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.clustering.raft.service;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.raft.RaftContext;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
@@ -11,11 +10,12 @@ import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.transport.ClientChannelPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class RaftContextService implements Service<RaftContext>
 {
-    private final Injector<ClientChannelManager> clientChannelManagerInjector = new Injector<>();
+    private final Injector<ClientChannelPool> clientChannelManagerInjector = new Injector<>();
     private final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<>();
     private final Injector<Subscription> subscriptionInjector = new Injector<>();
     private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
@@ -33,7 +33,7 @@ public class RaftContextService implements Service<RaftContext>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ClientChannelManager clientChannelManager = clientChannelManagerInjector.getValue();
+        final ClientChannelPool clientChannelManager = clientChannelManagerInjector.getValue();
         final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
         final Subscription subscription = subscriptionInjector.getValue();
         final Dispatcher sendBuffer = sendBufferInjector.getValue();
@@ -41,7 +41,7 @@ public class RaftContextService implements Service<RaftContext>
         final AgentRunnerServices agentRunner = agentRunnerInjector.getValue();
 
         raftContext = new RaftContext();
-        raftContext.setClientChannelManager(clientChannelManager);
+        raftContext.setClientChannelPool(clientChannelManager);
         raftContext.setConnections(connectionPool);
         raftContext.setSubscription(subscription);
         raftContext.setSendBuffer(sendBuffer);
@@ -61,7 +61,7 @@ public class RaftContextService implements Service<RaftContext>
         return raftContext;
     }
 
-    public Injector<ClientChannelManager> getClientChannelManagerInjector()
+    public Injector<ClientChannelPool> getClientChannelManagerInjector()
     {
         return clientChannelManagerInjector;
     }

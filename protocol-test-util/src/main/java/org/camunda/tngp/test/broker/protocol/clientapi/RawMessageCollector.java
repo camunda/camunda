@@ -101,8 +101,9 @@ public class RawMessageCollector implements TransportChannelHandler, Supplier<Ra
     }
 
     @Override
-    public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+    public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
     {
+        return true;
     }
 
     public List<RawMessage> getMessages()

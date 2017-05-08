@@ -2,7 +2,6 @@ package org.camunda.tngp.broker.clustering.raft.state;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.broker.clustering.raft.Raft;
 import org.camunda.tngp.broker.clustering.raft.Raft.State;
@@ -19,6 +18,7 @@ import org.camunda.tngp.broker.clustering.raft.message.PollRequest;
 import org.camunda.tngp.broker.clustering.raft.message.PollResponse;
 import org.camunda.tngp.broker.clustering.raft.message.VoteRequest;
 import org.camunda.tngp.broker.clustering.raft.message.VoteResponse;
+import org.camunda.tngp.transport.SocketAddress;
 
 public abstract class RaftState
 {
@@ -49,7 +49,7 @@ public abstract class RaftState
     protected boolean updateTermAndLeader(final int term, final Member leader)
     {
         final int currentTerm = raft.term();
-        final Endpoint currentLeader = raft.leader();
+        final SocketAddress currentLeader = raft.leader();
 
         if (term > currentTerm || (term == currentTerm && currentLeader == null && leader != null))
         {

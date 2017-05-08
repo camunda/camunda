@@ -1,22 +1,22 @@
 package org.camunda.tngp.broker.clustering.gossip.message.util;
 
-import static org.camunda.tngp.broker.clustering.gossip.data.Peer.*;
-import static org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.*;
+import static org.camunda.tngp.broker.clustering.gossip.data.Peer.PEER_ENDPOINT_COUNT;
 
 import java.util.Iterator;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.data.Heartbeat;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.clustering.gossip.EndpointType;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder;
+import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.EndpointsDecoder;
 import org.camunda.tngp.clustering.gossip.GossipEncoder;
 import org.camunda.tngp.clustering.gossip.GossipEncoder.PeersEncoder;
 import org.camunda.tngp.clustering.gossip.GossipEncoder.PeersEncoder.EndpointsEncoder;
 import org.camunda.tngp.clustering.gossip.MessageHeaderEncoder;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class GossipMessageWriter implements BufferWriter
@@ -69,9 +69,9 @@ public class GossipMessageWriter implements BufferWriter
 
             final Heartbeat heartbeat = current.heartbeat();
 
-            final Endpoint clientEndpoint = current.clientEndpoint();
-            final Endpoint managementEndpoint = current.managementEndpoint();
-            final Endpoint replicationEndpoint = current.replicationEndpoint();
+            final SocketAddress clientEndpoint = current.clientEndpoint();
+            final SocketAddress managementEndpoint = current.managementEndpoint();
+            final SocketAddress replicationEndpoint = current.replicationEndpoint();
 
             final DirectBuffer clientHostBuffer = clientEndpoint.getHostBuffer();
             final int clientHostLength = clientEndpoint.hostLength();

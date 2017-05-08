@@ -1,12 +1,12 @@
 package org.camunda.tngp.broker.clustering.management;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
 import org.camunda.tngp.broker.logstreams.LogStreamsManager;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
+import org.camunda.tngp.transport.ClientChannelPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterManagerContext
@@ -14,7 +14,7 @@ public class ClusterManagerContext
     private AgentRunnerServices agentRunner;
     private Peer localPeer;
     private Subscription subscription;
-    private ClientChannelManager clientChannelManager;
+    private ClientChannelPool clientChannelPool;
     private TransportConnectionPool connections;
     private Dispatcher sendBuffer;
     private PeerList peers;
@@ -50,14 +50,14 @@ public class ClusterManagerContext
         this.subscription = subscription;
     }
 
-    public ClientChannelManager getClientChannelManager()
+    public ClientChannelPool getClientChannelPool()
     {
-        return clientChannelManager;
+        return clientChannelPool;
     }
 
-    public void setClientChannelManager(ClientChannelManager clientChannelManager)
+    public void setClientChannelPool(ClientChannelPool clientChannelManager)
     {
-        this.clientChannelManager = clientChannelManager;
+        this.clientChannelPool = clientChannelManager;
     }
 
     public TransportConnectionPool getConnections()

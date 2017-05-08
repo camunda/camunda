@@ -5,9 +5,9 @@ import static org.camunda.tngp.test.util.BufferWriterUtil.*;
 
 import java.util.Iterator;
 
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.broker.clustering.gossip.data.PeerList;
+import org.camunda.tngp.transport.SocketAddress;
 import org.junit.Test;
 
 
@@ -77,7 +77,7 @@ public class GossipMessageTest
     {
         final ProbeRequest probeRequest = new ProbeRequest()
             .target(
-                new Endpoint()
+                new SocketAddress()
                     .host("test")
                     .port(111)
             );

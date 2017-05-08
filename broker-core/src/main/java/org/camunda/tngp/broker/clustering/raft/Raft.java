@@ -6,7 +6,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import org.agrona.concurrent.Agent;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.controller.ConfigureController;
 import org.camunda.tngp.broker.clustering.raft.controller.JoinController;
 import org.camunda.tngp.broker.clustering.raft.controller.LeaveController;
@@ -34,6 +33,7 @@ import org.camunda.tngp.broker.clustering.raft.state.LeaderState;
 import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.clustering.raft.state.RaftState;
 import org.camunda.tngp.logstreams.log.LogStream;
+import org.camunda.tngp.transport.SocketAddress;
 
 public class Raft implements Agent
 {
@@ -47,10 +47,10 @@ public class Raft implements Agent
     private final LeaderState leaderState;
 
     private boolean lastVotedForAvailable;
-    private final Endpoint lastVotedFor;
+    private final SocketAddress lastVotedFor;
 
     private boolean leaderAvailable;
-    private final Endpoint leader;
+    private final SocketAddress leader;
 
     protected long lastContact;
 
@@ -79,10 +79,10 @@ public class Raft implements Agent
         context.setLogStreamState(logStreamState);
 
         this.lastVotedForAvailable = false;
-        this.lastVotedFor = new Endpoint();
+        this.lastVotedFor = new SocketAddress();
 
         this.leaderAvailable = false;
-        this.leader = new Endpoint();
+        this.leader = new SocketAddress();
 
         this.member = new Member(context.getRaftEndpoint(), context);
         this.members = new CopyOnWriteArrayList<>();
@@ -102,7 +102,7 @@ public class Raft implements Agent
 
         this.stream.setTerm(meta.loadTerm());
 
-        final Endpoint vote = meta.loadVote();
+        final SocketAddress vote = meta.loadVote();
         if (vote != null)
         {
             lastVotedForAvailable = true;
@@ -236,12 +236,12 @@ public class Raft implements Agent
         return lastContact(System.currentTimeMillis());
     }
 
-    public Endpoint leader()
+    public SocketAddress leader()
     {
         return leaderAvailable ? leader : null;
     }
 
-    public Raft leader(final Endpoint leader)
+    public Raft leader(final SocketAddress leader)
     {
         leaderAvailable = false;
         this.leader.reset();
@@ -255,12 +255,12 @@ public class Raft implements Agent
         return this;
     }
 
-    public Endpoint lastVotedFor()
+    public SocketAddress lastVotedFor()
     {
         return lastVotedForAvailable ? lastVotedFor : null;
     }
 
-    public Raft lastVotedFor(final Endpoint lastVotedFor)
+    public Raft lastVotedFor(final SocketAddress lastVotedFor)
     {
         lastVotedForAvailable = false;
         this.lastVotedFor.reset();
@@ -290,7 +290,7 @@ public class Raft implements Agent
         return (int) Math.floor(members().size() / 2.0) + 1;
     }
 
-    public Member getMemberByEndpoint(final Endpoint endpoint)
+    public Member getMemberByEndpoint(final SocketAddress endpoint)
     {
         for (int i = 0; i < members.size(); i++)
         {
@@ -343,7 +343,7 @@ public class Raft implements Agent
 
     public CompletableFuture<Void> leave()
     {
-        final CompletableFuture<Void> future = new CompletableFuture<Void>();
+        final CompletableFuture<Void> future = new CompletableFuture<>();
         leaveController.open(future);
         return future;
     }

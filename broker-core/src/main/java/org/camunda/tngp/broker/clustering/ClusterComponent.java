@@ -1,13 +1,24 @@
 package org.camunda.tngp.broker.clustering;
 
-import static org.camunda.tngp.broker.clustering.ClusterServiceNames.*;
-import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.*;
-import static org.camunda.tngp.broker.system.SystemServiceNames.*;
-import static org.camunda.tngp.broker.transport.TransportServiceNames.*;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_CONTEXT_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.CLUSTER_MANAGER_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.GOSSIP_CONTEXT_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.GOSSIP_PEER_SELECTOR_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.GOSSIP_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LIST_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.PEER_LOCAL_SERVICE;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.RAFT_SERVICE_GROUP;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.clientChannelManagerName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.subscriptionServiceName;
+import static org.camunda.tngp.broker.clustering.ClusterServiceNames.transportConnectionPoolName;
+import static org.camunda.tngp.broker.logstreams.LogStreamServiceNames.LOG_STREAMS_MANAGER_SERVICE;
+import static org.camunda.tngp.broker.system.SystemServiceNames.AGENT_RUNNER_SERVICE;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.MANAGEMENT_SOCKET_BINDING_NAME;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.TRANSPORT_SEND_BUFFER;
+import static org.camunda.tngp.broker.transport.TransportServiceNames.serverSocketBindingReceiveBufferName;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.channel.ClientChannelManagerService;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.service.GossipContextService;
 import org.camunda.tngp.broker.clustering.gossip.service.GossipService;
@@ -26,6 +37,8 @@ import org.camunda.tngp.broker.transport.cfg.TransportComponentCfg;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
 import org.camunda.tngp.servicecontainer.ServiceName;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class ClusterComponent implements Component
@@ -48,9 +61,9 @@ public class ClusterComponent implements Component
 
     protected void initLocalPeer(final ServiceContainer serviceContainer, final TransportComponentCfg config)
     {
-        final Endpoint clientEndpoint = createEndpoint(config, config.clientApi);
-        final Endpoint managementEndpoint = createEndpoint(config, config.managementApi);
-        final Endpoint replicationEndpoint = createEndpoint(config, config.replicationApi);
+        final SocketAddress clientEndpoint = createEndpoint(config, config.clientApi);
+        final SocketAddress managementEndpoint = createEndpoint(config, config.managementApi);
+        final SocketAddress replicationEndpoint = createEndpoint(config, config.replicationApi);
 
         final LocalPeerService localPeerService = new LocalPeerService(clientEndpoint, managementEndpoint, replicationEndpoint);
         serviceContainer.createService(PEER_LOCAL_SERVICE, localPeerService).install();
@@ -82,7 +95,7 @@ public class ClusterComponent implements Component
             .install();
 
         final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(clientChannelManagerCapacity);
-        final ServiceName<ClientChannelManager> clientChannelManagerServiceName = clientChannelManagerName(component);
+        final ServiceName<ClientChannelPool> clientChannelManagerServiceName = clientChannelManagerName(component);
         serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
             .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
             .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())
@@ -129,7 +142,7 @@ public class ClusterComponent implements Component
 
         // TODO: make capacity of client channel manager configurable
         final ClientChannelManagerService clientChannelManagerService = new ClientChannelManagerService(100);
-        final ServiceName<ClientChannelManager> clientChannelManagerServiceName = clientChannelManagerName("management");
+        final ServiceName<ClientChannelPool> clientChannelManagerServiceName = clientChannelManagerName("management");
         serviceContainer.createService(clientChannelManagerServiceName, clientChannelManagerService)
             .dependency(TRANSPORT, clientChannelManagerService.getTransportInjector())
             .dependency(transportConnectionPoolServiceName, clientChannelManagerService.getTransportConnectionPoolInjector())
@@ -162,7 +175,7 @@ public class ClusterComponent implements Component
             .install();
     }
 
-    protected Endpoint createEndpoint(final TransportComponentCfg config, final SocketBindingCfg socketConfig)
+    protected SocketAddress createEndpoint(final TransportComponentCfg config, final SocketBindingCfg socketConfig)
     {
         final int port = socketConfig.port;
 
@@ -172,12 +185,12 @@ public class ClusterComponent implements Component
             host = config.host;
         }
 
-        final Endpoint endpoint = new Endpoint();
+        final SocketAddress endpoint = new SocketAddress();
         endpoint
             .host(host)
             .port(port);
 
-        return new Endpoint()
+        return new SocketAddress()
                 .host(host)
                 .port(port);
     }

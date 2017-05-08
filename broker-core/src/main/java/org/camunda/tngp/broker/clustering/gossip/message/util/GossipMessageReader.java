@@ -4,11 +4,11 @@ import java.util.Iterator;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
 import org.camunda.tngp.clustering.gossip.GossipDecoder;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder;
 import org.camunda.tngp.clustering.gossip.GossipDecoder.PeersDecoder.EndpointsDecoder;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 
 public class GossipMessageReader implements BufferReader, Iterator<Peer>
@@ -45,7 +45,7 @@ public class GossipMessageReader implements BufferReader, Iterator<Peer>
 
         for (final EndpointsDecoder endpointsDecoder : decoder.endpoints())
         {
-            final Endpoint endpoint;
+            final SocketAddress endpoint;
             switch (endpointsDecoder.endpointType())
             {
                 case CLIENT:

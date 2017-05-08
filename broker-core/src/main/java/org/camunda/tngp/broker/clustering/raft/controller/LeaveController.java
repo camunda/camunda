@@ -148,7 +148,7 @@ public class LeaveController
         {
             super(stateMachine);
             this.raft = raftContext.getRaft();
-            this.requestController = new RequestResponseController(raftContext.getClientChannelManager(), raftContext.getConnections());
+            this.requestController = new RequestResponseController(raftContext.getClientChannelPool(), raftContext.getConnections());
             this.leaveRequest = new LeaveRequest();
             this.leaveResponse = new LeaveResponse();
         }

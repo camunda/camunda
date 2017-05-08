@@ -1,14 +1,14 @@
 package org.camunda.tngp.broker.clustering.gossip.message;
 
-import static org.camunda.tngp.clustering.gossip.ProbeEncoder.*;
+import static org.camunda.tngp.clustering.gossip.ProbeEncoder.hostHeaderLength;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.clustering.gossip.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.gossip.MessageHeaderEncoder;
 import org.camunda.tngp.clustering.gossip.ProbeDecoder;
 import org.camunda.tngp.clustering.gossip.ProbeEncoder;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.buffer.BufferReader;
 import org.camunda.tngp.util.buffer.BufferWriter;
 
@@ -20,14 +20,14 @@ public class ProbeRequest implements BufferReader, BufferWriter
     protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     protected final ProbeEncoder bodyEncoder = new ProbeEncoder();
 
-    protected final Endpoint target = new Endpoint();
+    protected final SocketAddress target = new SocketAddress();
 
-    public Endpoint target()
+    public SocketAddress target()
     {
         return target;
     }
 
-    public ProbeRequest target(final Endpoint target)
+    public ProbeRequest target(final SocketAddress target)
     {
         this.target.wrap(target);
         return this;

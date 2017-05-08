@@ -1,6 +1,5 @@
 package org.camunda.tngp.test.broker.protocol.clientapi;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -11,6 +10,8 @@ import org.camunda.tngp.protocol.clientapi.MessageHeaderDecoder;
 import org.camunda.tngp.protocol.clientapi.SubscribedEventDecoder;
 import org.camunda.tngp.test.broker.protocol.MsgPackHelper;
 import org.camunda.tngp.transport.ClientChannel;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
 import org.camunda.tngp.transport.TransportBuilder.ThreadingMode;
 import org.camunda.tngp.transport.TransportChannel;
@@ -32,6 +33,7 @@ public class ClientApiRule extends ExternalResource
     protected final int port = 51015;
     protected final String host = "localhost";
 
+    protected ClientChannelPool clientChannelPool;
     protected ClientChannel clientChannel;
 
     protected TransportConnectionPool connectionPool;
@@ -48,6 +50,16 @@ public class ClientApiRule extends ExternalResource
                 .build();
 
         connectionPool = TransportConnectionPool.newFixedCapacityPool(transport, 2, 64);
+
+        final TransportChannelHandler requestResponseHandler = broadcastingHandler(
+                incomingMessageCollector,
+                new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
+
+        clientChannelPool = transport.createClientChannelPool()
+                .transportChannelHandler(Protocols.REQUEST_RESPONSE, requestResponseHandler)
+                .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, incomingMessageCollector)
+                .build();
+
         openChannel();
 
         msgPackHelper = new MsgPackHelper();
@@ -216,15 +228,7 @@ public class ClientApiRule extends ExternalResource
             throw new RuntimeException("Cannot open more than one channel at once");
         }
 
-        final TransportChannelHandler requestResponseHandler = broadcastingHandler(
-                incomingMessageCollector,
-                new RequestResponseChannelHandler((TransportConnectionPoolImpl) connectionPool));
-
-        clientChannel = transport
-            .createClientChannel(new InetSocketAddress(host, port))
-            .transportChannelHandler(Protocols.REQUEST_RESPONSE, requestResponseHandler)
-            .transportChannelHandler(Protocols.FULL_DUPLEX_SINGLE_MESSAGE, incomingMessageCollector)
-            .connect();
+        clientChannel = clientChannelPool.requestChannel(new SocketAddress(host, port));
     }
 
     protected TransportChannelHandler broadcastingHandler(TransportChannelHandler... handlers)
@@ -233,9 +237,10 @@ public class ClientApiRule extends ExternalResource
         {
 
             @Override
-            public void onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
+            public boolean onControlFrame(TransportChannel transportChannel, DirectBuffer buffer, int offset, int length)
             {
                 Arrays.stream(handlers).forEach((h) -> h.onControlFrame(transportChannel, buffer, offset, length));
+                return true;
             }
 
             @Override

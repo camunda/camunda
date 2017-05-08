@@ -1,7 +1,5 @@
 package org.camunda.tngp.broker.transport.binding;
 
-import java.net.InetSocketAddress;
-
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
@@ -9,6 +7,7 @@ import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
 import org.camunda.tngp.transport.ReceiveBufferChannelHandler;
 import org.camunda.tngp.transport.ServerSocketBinding;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.Transport;
 
 public class ServerSocketBindingService implements Service<ServerSocketBinding>
@@ -17,11 +16,11 @@ public class ServerSocketBindingService implements Service<ServerSocketBinding>
     protected final Injector<Dispatcher> receiveBufferInjector = new Injector<>();
 
     protected final String bindingName;
-    protected final InetSocketAddress bindAddress;
+    protected final SocketAddress bindAddress;
 
     protected ServerSocketBinding serverSocketBinding;
 
-    public ServerSocketBindingService(String bindingName, InetSocketAddress bindAddress)
+    public ServerSocketBindingService(String bindingName, SocketAddress bindAddress)
     {
         this.bindingName = bindingName;
         this.bindAddress = bindAddress;

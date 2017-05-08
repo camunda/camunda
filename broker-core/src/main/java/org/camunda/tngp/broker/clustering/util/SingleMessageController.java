@@ -1,10 +1,10 @@
 package org.camunda.tngp.broker.clustering.util;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
-import org.camunda.tngp.broker.clustering.channel.EndpointChannel;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.transport.ClientChannel;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.PooledFuture;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.protocol.Protocols;
 import org.camunda.tngp.util.buffer.BufferWriter;
 import org.camunda.tngp.util.state.SimpleStateMachineContext;
@@ -48,7 +48,7 @@ public class SingleMessageController
     private SingleMessageContext singleMessageContext;
     private final StateMachineAgent<SingleMessageContext> singleMessageStateMachine;
 
-    public SingleMessageController(final ClientChannelManager clientChannelManager, final Dispatcher sendBuffer)
+    public SingleMessageController(final ClientChannelPool clientChannelManager, final Dispatcher sendBuffer)
     {
         this.singleMessageStateMachine = new StateMachineAgent<>(
                 StateMachine.<SingleMessageContext> builder(s ->
@@ -78,7 +78,7 @@ public class SingleMessageController
                     .build());
     }
 
-    public void open(final Endpoint receiver, final BufferWriter requestWriter)
+    public void open(final SocketAddress receiver, final BufferWriter requestWriter)
     {
         if (isClosed())
         {
@@ -119,19 +119,19 @@ public class SingleMessageController
 
     static class SingleMessageContext extends SimpleStateMachineContext
     {
-        final ClientChannelManager clientChannelManager;
-        final Endpoint receiver;
+        final ClientChannelPool clientChannelManager;
+        final SocketAddress receiver;
         final MessageWriter messageWriter;
 
-        EndpointChannel endpointChannel;
+        PooledFuture<ClientChannel> channelFuture;
         ClientChannel channel;
         BufferWriter requestWriter;
 
-        SingleMessageContext(final StateMachine<?> stateMachine, final ClientChannelManager clientChannelManager, final Dispatcher sendBuffer)
+        SingleMessageContext(final StateMachine<?> stateMachine, final ClientChannelPool clientChannelManager, final Dispatcher sendBuffer)
         {
             super(stateMachine);
             this.clientChannelManager = clientChannelManager;
-            this.receiver = new Endpoint();
+            this.receiver = new SocketAddress();
             this.messageWriter = new MessageWriter(sendBuffer);
         }
     }
@@ -141,29 +141,31 @@ public class SingleMessageController
         @Override
         public int doWork(SingleMessageContext context) throws Exception
         {
-            EndpointChannel endpointChannel = context.endpointChannel;
-            final ClientChannelManager clientChannelManager = context.clientChannelManager;
-            final Endpoint receiver = context.receiver;
 
             int workcount = 0;
 
-            if (endpointChannel == null || endpointChannel.isClosed())
+            if (context.channelFuture == null)
             {
+                final ClientChannelPool clientChannelManager = context.clientChannelManager;
+                final SocketAddress receiver = context.receiver;
+
                 workcount += 1;
-                endpointChannel = clientChannelManager.claim(receiver);
+                context.channelFuture = clientChannelManager.requestChannelAsync(receiver);
             }
 
-            context.endpointChannel = endpointChannel;
-            final ClientChannel channel = endpointChannel.getClientChannel();
-
-            if (channel != null)
+            if (context.channelFuture != null)
             {
-                workcount += 1;
-                context.channel = channel;
-                context.take(TRANSITION_DEFAULT);
+                final ClientChannel clientChannel = context.channelFuture.pollAndReturnOnSuccess();
+                if (clientChannel != null)
+                {
+                    context.channel = clientChannel;
+                    context.channelFuture = null;
+                    context.take(TRANSITION_DEFAULT);
+                }
             }
 
             return workcount;
+
         }
 
         @Override
@@ -216,11 +218,10 @@ public class SingleMessageController
         @Override
         public void work(SingleMessageContext context) throws Exception
         {
-            final ClientChannelManager clientChannelManager = context.clientChannelManager;
-            final EndpointChannel endpointChannel = context.endpointChannel;
-            clientChannelManager.reclaim(endpointChannel);
+            final ClientChannelPool clientChannelManager = context.clientChannelManager;
+            final ClientChannel endpointChannel = context.channel;
+            clientChannelManager.returnChannel(endpointChannel);
 
-            context.endpointChannel = null;
             context.channel = null;
             context.requestWriter = null;
 

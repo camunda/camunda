@@ -158,7 +158,7 @@ public class JoinController
         {
             super(stateMachine);
             this.raft = raftContext.getRaft();
-            this.requestController = new RequestResponseController(raftContext.getClientChannelManager(), raftContext.getConnections());
+            this.requestController = new RequestResponseController(raftContext.getClientChannelPool(), raftContext.getConnections());
             this.joinRequest = new JoinRequest();
             this.joinResponse = new JoinResponse();
         }

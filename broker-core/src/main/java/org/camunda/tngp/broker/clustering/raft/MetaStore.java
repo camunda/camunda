@@ -18,7 +18,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.entry.ConfiguredMember;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.util.msgpack.property.ArrayProperty;
@@ -27,6 +26,7 @@ import org.camunda.tngp.broker.util.msgpack.property.LongProperty;
 import org.camunda.tngp.broker.util.msgpack.property.StringProperty;
 import org.camunda.tngp.broker.util.msgpack.value.ArrayValue;
 import org.camunda.tngp.msgpack.spec.MsgPackHelper;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.util.LangUtil;
 import org.camunda.tngp.util.StreamUtil;
 
@@ -38,7 +38,7 @@ public class MetaStore
     protected final String file;
 
     protected final Meta meta = new Meta();
-    protected final Endpoint voted = new Endpoint();
+    protected final SocketAddress voted = new SocketAddress();
 
     protected final UnsafeBuffer readBuffer;
     protected final UnsafeBuffer writeBuffer;
@@ -101,7 +101,7 @@ public class MetaStore
         return this;
     }
 
-    public Endpoint loadVote()
+    public SocketAddress loadVote()
     {
         load();
 
@@ -121,7 +121,7 @@ public class MetaStore
         return null;
     }
 
-    public MetaStore storeVote(final Endpoint vote)
+    public MetaStore storeVote(final SocketAddress vote)
     {
         if (vote != null)
         {
@@ -139,7 +139,7 @@ public class MetaStore
         return this;
     }
 
-    public MetaStore storeTermAndVote(final int term, final Endpoint vote)
+    public MetaStore storeTermAndVote(final int term, final SocketAddress vote)
     {
         meta.termProp.setValue(term);
 
@@ -182,7 +182,7 @@ public class MetaStore
             final int hostLength = hostValue.capacity();
             final int port = m.getPort();
 
-            final Endpoint endpoint = new Endpoint();
+            final SocketAddress endpoint = new SocketAddress();
             endpoint.port(port);
             endpoint.host(hostValue, 0, hostValue.capacity());
 
@@ -213,7 +213,7 @@ public class MetaStore
         for (int i = 0; i < members.size(); i++)
         {
             final Member m = members.get(i);
-            final Endpoint endpoint = m.endpoint();
+            final SocketAddress endpoint = m.endpoint();
 
             final MutableDirectBuffer hostValue = endpoint.getHostBuffer();
             final int hostLength = endpoint.hostLength();

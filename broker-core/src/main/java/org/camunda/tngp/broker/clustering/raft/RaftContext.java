@@ -1,12 +1,12 @@
 package org.camunda.tngp.broker.clustering.raft;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
-import org.camunda.tngp.broker.clustering.channel.Endpoint;
 import org.camunda.tngp.broker.clustering.raft.state.LogStreamState;
 import org.camunda.tngp.broker.system.threads.AgentRunnerServices;
 import org.camunda.tngp.dispatcher.Dispatcher;
 import org.camunda.tngp.dispatcher.Subscription;
 import org.camunda.tngp.servicecontainer.ServiceContainer;
+import org.camunda.tngp.transport.ClientChannelPool;
+import org.camunda.tngp.transport.SocketAddress;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class RaftContext
@@ -16,9 +16,9 @@ public class RaftContext
 
     private ServiceContainer serviceContainer;
     private AgentRunnerServices agentRunner;
-    private Endpoint raftEndpoint;
+    private SocketAddress raftEndpoint;
     private Subscription subscription;
-    private ClientChannelManager clientChannelManager;
+    private ClientChannelPool clientChannelManager;
     private TransportConnectionPool connections;
     private Dispatcher sendBuffer;
 
@@ -42,12 +42,12 @@ public class RaftContext
         this.logStreamState = logStreamState;
     }
 
-    public Endpoint getRaftEndpoint()
+    public SocketAddress getRaftEndpoint()
     {
         return raftEndpoint;
     }
 
-    public void setRaftEndpoint(Endpoint raftEndpoint)
+    public void setRaftEndpoint(SocketAddress raftEndpoint)
     {
         this.raftEndpoint = raftEndpoint;
     }
@@ -61,12 +61,12 @@ public class RaftContext
         this.subscription = subscription;
     }
 
-    public ClientChannelManager getClientChannelManager()
+    public ClientChannelPool getClientChannelPool()
     {
         return clientChannelManager;
     }
 
-    public void setClientChannelManager(ClientChannelManager clientChannelManager)
+    public void setClientChannelPool(ClientChannelPool clientChannelManager)
     {
         this.clientChannelManager = clientChannelManager;
     }

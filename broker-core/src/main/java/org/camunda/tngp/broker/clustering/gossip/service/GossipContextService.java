@@ -1,6 +1,5 @@
 package org.camunda.tngp.broker.clustering.gossip.service;
 
-import org.camunda.tngp.broker.clustering.channel.ClientChannelManager;
 import org.camunda.tngp.broker.clustering.gossip.GossipContext;
 import org.camunda.tngp.broker.clustering.gossip.config.GossipConfiguration;
 import org.camunda.tngp.broker.clustering.gossip.data.Peer;
@@ -12,11 +11,12 @@ import org.camunda.tngp.servicecontainer.Injector;
 import org.camunda.tngp.servicecontainer.Service;
 import org.camunda.tngp.servicecontainer.ServiceStartContext;
 import org.camunda.tngp.servicecontainer.ServiceStopContext;
+import org.camunda.tngp.transport.ClientChannelPool;
 import org.camunda.tngp.transport.requestresponse.client.TransportConnectionPool;
 
 public class GossipContextService implements Service<GossipContext>
 {
-    private final Injector<ClientChannelManager> clientChannelManagerInjector = new Injector<>();
+    private final Injector<ClientChannelPool> clientChannelManagerInjector = new Injector<>();
     private final Injector<TransportConnectionPool> transportConnectionPoolInjector = new Injector<>();
     private final Injector<Subscription> subscriptionInjector = new Injector<>();
     private final Injector<Dispatcher> sendBufferInjector = new Injector<>();
@@ -36,7 +36,7 @@ public class GossipContextService implements Service<GossipContext>
     @Override
     public void start(ServiceStartContext startContext)
     {
-        final ClientChannelManager clientChannelManager = clientChannelManagerInjector.getValue();
+        final ClientChannelPool clientChannelManager = clientChannelManagerInjector.getValue();
         final TransportConnectionPool connectionPool = transportConnectionPoolInjector.getValue();
         final Subscription subscription = subscriptionInjector.getValue();
         final Dispatcher dispatcher = sendBufferInjector.getValue();
@@ -48,7 +48,7 @@ public class GossipContextService implements Service<GossipContext>
         context.setLocalPeer(localPeer);
         context.setPeers(peers);
         context.setConfig(config);
-        context.setClientChannelManager(clientChannelManager);
+        context.setClientChannelPool(clientChannelManager);
         context.setConnections(connectionPool);
         context.setSubscription(subscription);
         context.setSendBuffer(dispatcher);
@@ -66,7 +66,7 @@ public class GossipContextService implements Service<GossipContext>
         return context;
     }
 
-    public Injector<ClientChannelManager> getClientChannelManagerInjector()
+    public Injector<ClientChannelPool> getClientChannelManagerInjector()
     {
         return clientChannelManagerInjector;
     }
