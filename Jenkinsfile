@@ -77,8 +77,8 @@ pipeline {
       post {
         always {
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-          junit testResults: '**/failsafe-reports/**/*.txt', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
           archiveArtifacts artifacts:  backendModuleName + '/target/elasticsearch*/logs/*.log', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
         }
       }
 
