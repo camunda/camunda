@@ -1,7 +1,5 @@
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.service.es.writer.EventsWriter;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.job.ImportJob;
@@ -15,10 +13,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -64,23 +58,6 @@ public class ImportJobTest {
     verify(eventsWriter, times(1)).importEvents(any());
   }
 
-
-  private HistoricProcessInstanceDto createMissingAggregateInformation() {
-    HistoricProcessInstanceDto dto = new HistoricProcessInstanceDto();
-    dto.setStartTime(new Date() );
-    dto.setEndTime(new Date());
-    dto.setId(PROCESS_INSTANCE_ID);
-    return dto;
-  }
-
-  private List<EventDto> createImportEntities() {
-    EventDto eventDto = new EventDto();
-    eventDto.setId("123");
-    eventDto.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    List<EventDto> list = new ArrayList<>();
-    list.add(eventDto);
-    return list;
-  }
 
   @Test
   public void processDefinitionXmlImportJobIsExecuted() throws Exception {

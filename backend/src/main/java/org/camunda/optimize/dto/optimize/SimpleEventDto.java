@@ -1,7 +1,6 @@
 package org.camunda.optimize.dto.optimize;
 
 import java.io.Serializable;
-import java.util.Date;
 
 public class SimpleEventDto implements Serializable,OptimizeDto {
 
