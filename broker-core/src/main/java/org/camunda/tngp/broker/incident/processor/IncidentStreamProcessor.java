@@ -14,18 +14,21 @@ package org.camunda.tngp.broker.incident.processor;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import java.nio.ByteOrder;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.broker.Constants;
+import org.camunda.tngp.broker.incident.data.ErrorType;
 import org.camunda.tngp.broker.incident.data.IncidentEvent;
 import org.camunda.tngp.broker.incident.data.IncidentEventType;
 import org.camunda.tngp.broker.logstreams.BrokerEventMetadata;
 import org.camunda.tngp.broker.logstreams.processor.HashIndexSnapshotSupport;
 import org.camunda.tngp.broker.logstreams.processor.MetadataFilter;
 import org.camunda.tngp.broker.taskqueue.data.TaskEvent;
+import org.camunda.tngp.broker.taskqueue.data.TaskHeaders;
 import org.camunda.tngp.broker.transport.clientapi.CommandResponseWriter;
 import org.camunda.tngp.broker.util.msgpack.UnpackedObject;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
@@ -46,10 +49,16 @@ import org.camunda.tngp.protocol.clientapi.EventType;
 
 public class IncidentStreamProcessor implements StreamProcessor
 {
-    private static final int INCIDENT_INSTANCE_INDEX_LENGTH = 2 * SIZE_OF_INT + 4 * SIZE_OF_LONG;
+    private static final int INCIDENT_INSTANCE_INDEX_LENGTH = SIZE_OF_SHORT + SIZE_OF_INT + 4 * SIZE_OF_LONG;
+
+    private static final short STATE_WORKFLOW_INCIDENT_CREATED = 1;
+    private static final short STATE_TASK_INCIDENT_CREATED = 2;
+    private static final short STATE_INCIDENT_RESOLVING = 3;
+    private static final short STATE_INCIDENT_RESOLVE_FAILED = 4;
 
     private final Long2BytesHashIndex incidentInstanceIndex;
     private final Long2LongHashIndex sourcePositionIndex;
+    private final Long2LongHashIndex failedTaskIndex;
     private final SnapshotSupport indexSnapshot;
 
     private final IncidentInstanceIndexAccessor incidentIndexAccessor = new IncidentInstanceIndexAccessor();
@@ -58,6 +67,8 @@ public class IncidentStreamProcessor implements StreamProcessor
     private final ResolveIncidentProcessor resolveIncidentProcessor = new ResolveIncidentProcessor();
     private final ResolveFailedProcessor resolveFailedProcessor = new ResolveFailedProcessor();
     private final ResultEventProcessor resultEventProcessor = new ResultEventProcessor();
+    private final TaskFailedProcessor taskFailedProcessor = new TaskFailedProcessor();
+    private final TaskRetriesUpdatedProcessor taskRetriesUpdatedProcessor = new TaskRetriesUpdatedProcessor();
 
     private final BrokerEventMetadata sourceEventMetadata = new BrokerEventMetadata();
     private final BrokerEventMetadata targetEventMetadata = new BrokerEventMetadata();
@@ -76,15 +87,17 @@ public class IncidentStreamProcessor implements StreamProcessor
     private DirectBuffer logStreamTopicName;
     private int logStreamPartitionId;
 
-    public IncidentStreamProcessor(CommandResponseWriter responseWriter, IndexStore instanceIndexStore, IndexStore positionIndexStore)
+    public IncidentStreamProcessor(CommandResponseWriter responseWriter, IndexStore instanceIndexStore, IndexStore positionIndexStore, IndexStore taskIndexStore)
     {
         this.responseWriter = responseWriter;
         this.incidentInstanceIndex = new Long2BytesHashIndex(instanceIndexStore, Short.MAX_VALUE, 64, INCIDENT_INSTANCE_INDEX_LENGTH);
         this.sourcePositionIndex = new Long2LongHashIndex(positionIndexStore, Short.MAX_VALUE, 64);
+        this.failedTaskIndex = new Long2LongHashIndex(taskIndexStore, Short.MAX_VALUE, 64);
 
         this.indexSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(incidentInstanceIndex, instanceIndexStore),
-                new HashIndexSnapshotSupport<>(sourcePositionIndex, positionIndexStore));
+                new HashIndexSnapshotSupport<>(sourcePositionIndex, positionIndexStore),
+                new HashIndexSnapshotSupport<>(failedTaskIndex, taskIndexStore));
     }
 
     @Override
@@ -128,8 +141,11 @@ public class IncidentStreamProcessor implements StreamProcessor
                 break;
 
             case WORKFLOW_EVENT:
+                eventProcessor = onWorkflowInstanceEvent(event);
+                break;
+
             case TASK_EVENT:
-                eventProcessor = resultEventProcessor;
+                eventProcessor = onTaskEvent(event);
                 break;
 
             default:
@@ -154,6 +170,42 @@ public class IncidentStreamProcessor implements StreamProcessor
 
             case RESOLVE_FAILED:
                 return resolveFailedProcessor;
+
+            default:
+                return null;
+        }
+    }
+
+    private EventProcessor onWorkflowInstanceEvent(LoggedEvent event)
+    {
+        workflowInstanceEvent.reset();
+        event.readValue(workflowInstanceEvent);
+
+        switch (workflowInstanceEvent.getEventType())
+        {
+            case ACTIVITY_COMPLETED:
+                return resultEventProcessor;
+
+            default:
+                return null;
+        }
+    }
+
+    private EventProcessor onTaskEvent(LoggedEvent event)
+    {
+        taskEvent.reset();
+        event.readValue(taskEvent);
+
+        switch (taskEvent.getEventType())
+        {
+            case CREATE:
+                return resultEventProcessor;
+
+            case FAILED:
+                return taskFailedProcessor;
+
+            case RETRIES_UPDATED:
+                return taskRetriesUpdatedProcessor;
 
             default:
                 return null;
@@ -203,7 +255,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         @Override
         public void updateState()
         {
-            incidentIndexAccessor.created(eventKey, eventPosition, incidentEvent.getFailureEventPosition());
+            incidentIndexAccessor.created(eventKey, STATE_WORKFLOW_INCIDENT_CREATED, eventPosition, incidentEvent.getFailureEventPosition());
         }
     }
 
@@ -220,7 +272,7 @@ public class IncidentStreamProcessor implements StreamProcessor
 
             incidentIndexAccessor.wrapIncidentKey(eventKey);
 
-            if (incidentIndexAccessor.getState() == IncidentEventType.CREATED.id() || incidentIndexAccessor.getState() == IncidentEventType.RESOLVE_FAILED.id())
+            if (incidentIndexAccessor.getState() == STATE_WORKFLOW_INCIDENT_CREATED || incidentIndexAccessor.getState() == STATE_INCIDENT_RESOLVE_FAILED)
             {
                 final LoggedEvent failureEvent = findEvent(incidentIndexAccessor.getFailureEventPosition());
                 failureEventKey = failureEvent.getKey();
@@ -326,7 +378,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             incidentIndexAccessor.wrapIncidentKey(eventKey);
 
-            isFailed = incidentIndexAccessor.getState() == IncidentEventType.RESOLVE.id();
+            isFailed = incidentIndexAccessor.getState() == STATE_INCIDENT_RESOLVING;
         }
 
         @Override
@@ -357,7 +409,8 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             if (isFailed)
             {
-                incidentIndexAccessor.setState(eventKey, IncidentEventType.RESOLVE_FAILED);
+                incidentIndexAccessor.resolveFailed(eventKey);
+                sourcePositionIndex.remove(sourceEventPosition, -1L);
             }
         }
     }
@@ -378,7 +431,7 @@ public class IncidentStreamProcessor implements StreamProcessor
             {
                 incidentIndexAccessor.wrapIncidentKey(incidentKey);
 
-                if (incidentIndexAccessor.getState() == IncidentEventType.RESOLVE.id())
+                if (incidentIndexAccessor.getState() == STATE_INCIDENT_RESOLVING)
                 {
                     final LoggedEvent incidentCreateEvent = findEvent(incidentIndexAccessor.getIncidentEventPosition());
 
@@ -446,12 +499,112 @@ public class IncidentStreamProcessor implements StreamProcessor
         }
     }
 
+    private final class TaskFailedProcessor implements EventProcessor
+    {
+        private boolean hasRetries;
+        private long incidentPosition;
+
+        @Override
+        public void processEvent()
+        {
+            hasRetries = taskEvent.getRetries() > 0;
+
+            if (!hasRetries)
+            {
+                final TaskHeaders taskHeaders = taskEvent.headers();
+
+                incidentEvent.reset();
+                incidentEvent
+                    .setEventType(IncidentEventType.CREATED)
+                    .setErrorType(ErrorType.TASK_NO_RETRIES)
+                    .setErrorMessage("No more retries left.")
+                    .setFailureEventPosition(eventPosition)
+                    .setBpmnProcessId(taskHeaders.getBpmnProcessId())
+                    .setWorkflowInstanceKey(taskHeaders.getWorkflowInstanceKey())
+                    .setActivityId(taskHeaders.getActivityId());
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            incidentPosition = 0;
+
+            if (!hasRetries)
+            {
+                incidentPosition = writeIncidentEvent(writer.positionAsKey());
+            }
+            return incidentPosition;
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (!hasRetries)
+            {
+                incidentIndexAccessor.created(incidentPosition, STATE_TASK_INCIDENT_CREATED, incidentPosition, eventPosition);
+                failedTaskIndex.put(eventKey, incidentPosition);
+            }
+        }
+    }
+
+    private final class TaskRetriesUpdatedProcessor implements EventProcessor
+    {
+        private boolean isResolved;
+        private long incidentKey;
+
+        @Override
+        public void processEvent()
+        {
+            incidentKey = failedTaskIndex.get(eventKey, -1L);
+
+            isResolved = taskEvent.getRetries() > 0 && incidentKey > 0;
+
+            if (isResolved)
+            {
+                incidentIndexAccessor.wrapIncidentKey(incidentKey);
+
+                if (incidentIndexAccessor.getState() == STATE_TASK_INCIDENT_CREATED)
+                {
+                    final LoggedEvent incidentCreateEvent = findEvent(incidentIndexAccessor.getIncidentEventPosition());
+
+                    incidentEvent.reset();
+                    incidentCreateEvent.readValue(incidentEvent);
+
+                    incidentEvent.setEventType(IncidentEventType.DELETED);
+
+                    isResolved = true;
+                }
+                else
+                {
+                    throw new IllegalStateException("inconsistent incident index");
+                }
+            }
+        }
+
+        @Override
+        public long writeEvent(LogStreamWriter writer)
+        {
+            return writeIncidentEvent(writer.key(incidentKey));
+        }
+
+        @Override
+        public void updateState()
+        {
+            if (isResolved)
+            {
+                incidentInstanceIndex.remove(incidentKey);
+                failedTaskIndex.remove(eventKey, -1L);
+            }
+        }
+    }
+
     private final class IncidentInstanceIndexAccessor
     {
         private static final int MISSING_VALUE = -1;
 
         private static final int STATE_OFFSET = 0;
-        private static final int INCIDENT_EVENT_POSITION_OFFSET = STATE_OFFSET + SIZE_OF_INT;
+        private static final int INCIDENT_EVENT_POSITION_OFFSET = STATE_OFFSET + SIZE_OF_SHORT;
         private static final int FAILURE_EVENT_POSITION_OFFSET = INCIDENT_EVENT_POSITION_OFFSET + SIZE_OF_LONG;
         private static final int CHANNEL_ID_OFFSET = FAILURE_EVENT_POSITION_OFFSET + SIZE_OF_LONG;
         private static final int CONNECTION_ID_OFFSET = CHANNEL_ID_OFFSET + SIZE_OF_INT;
@@ -473,9 +626,9 @@ public class IncidentStreamProcessor implements StreamProcessor
             }
         }
 
-        public int getState()
+        public short getState()
         {
-            return isRead ? indexValueReadBuffer.getInt(STATE_OFFSET, ByteOrder.LITTLE_ENDIAN) : MISSING_VALUE;
+            return isRead ? indexValueReadBuffer.getShort(STATE_OFFSET, ByteOrder.LITTLE_ENDIAN) : MISSING_VALUE;
         }
 
         public long getIncidentEventPosition()
@@ -503,9 +656,9 @@ public class IncidentStreamProcessor implements StreamProcessor
             return isRead ? indexValueReadBuffer.getLong(REQUEST_ID_OFFSET, ByteOrder.LITTLE_ENDIAN) : MISSING_VALUE;
         }
 
-        public void created(long incidentKey, long incidentEventPosition, long failureEventPosition)
+        public void created(long incidentKey, short state, long incidentEventPosition, long failureEventPosition)
         {
-            indexValueReadBuffer.putInt(STATE_OFFSET, IncidentEventType.CREATED.id(), ByteOrder.LITTLE_ENDIAN);
+            indexValueReadBuffer.putShort(STATE_OFFSET, state, ByteOrder.LITTLE_ENDIAN);
             indexValueReadBuffer.putLong(INCIDENT_EVENT_POSITION_OFFSET, incidentEventPosition, ByteOrder.LITTLE_ENDIAN);
             indexValueReadBuffer.putLong(FAILURE_EVENT_POSITION_OFFSET, failureEventPosition, ByteOrder.LITTLE_ENDIAN);
 
@@ -516,7 +669,7 @@ public class IncidentStreamProcessor implements StreamProcessor
         {
             wrapIncidentKey(incidentKey);
 
-            indexValueReadBuffer.putInt(STATE_OFFSET, IncidentEventType.RESOLVE.id(), ByteOrder.LITTLE_ENDIAN);
+            indexValueReadBuffer.putShort(STATE_OFFSET, STATE_INCIDENT_RESOLVING, ByteOrder.LITTLE_ENDIAN);
             indexValueReadBuffer.putInt(CHANNEL_ID_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
             indexValueReadBuffer.putLong(CONNECTION_ID_OFFSET, connectionId, ByteOrder.LITTLE_ENDIAN);
             indexValueReadBuffer.putLong(REQUEST_ID_OFFSET, requestId, ByteOrder.LITTLE_ENDIAN);
@@ -524,11 +677,11 @@ public class IncidentStreamProcessor implements StreamProcessor
             incidentInstanceIndex.put(incidentKey, indexValueReadBuffer.byteArray());
         }
 
-        public void setState(long incidentKey, IncidentEventType state)
+        public void resolveFailed(long incidentKey)
         {
             wrapIncidentKey(incidentKey);
 
-            indexValueReadBuffer.putInt(STATE_OFFSET, state.id(), ByteOrder.LITTLE_ENDIAN);
+            indexValueReadBuffer.putShort(STATE_OFFSET, STATE_INCIDENT_RESOLVE_FAILED, ByteOrder.LITTLE_ENDIAN);
 
             incidentInstanceIndex.put(incidentKey, indexValueReadBuffer.byteArray());
         }

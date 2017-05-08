@@ -14,28 +14,13 @@ package org.camunda.tngp.broker.incident.data;
 
 public enum IncidentEventType
 {
-    CREATE(0),
-    CREATED(1),
+    CREATE,
+    CREATED,
 
-    RESOLVE(2),
-    RESOLVED(3),
-    RESOLVE_REJECTED(4),
-    RESOLVE_FAILED(5),
+    RESOLVE,
+    RESOLVED,
+    RESOLVE_REJECTED,
+    RESOLVE_FAILED,
 
-    DELETE(6),
-    DELETED(7),
-    DELETE_REJECTED(8);
-
-    // don't change the ids because the incident stream processor use them for the index
-    private final int id;
-
-    IncidentEventType(int id)
-    {
-        this.id = id;
-    }
-
-    public int id()
-    {
-        return id;
-    }
+    DELETED;
 }

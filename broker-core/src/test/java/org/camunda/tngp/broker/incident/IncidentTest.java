@@ -48,6 +48,26 @@ public class IncidentTest
 
     private TestTopicClient testClient;
 
+    private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING = wrap(
+            Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("failingTask")
+            .done())
+            .taskDefinition("failingTask", "test", 3)
+            .ioMapping("failingTask")
+                .input("$.foo", "$.foo")
+                .done();
+
+    private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING = wrap(
+            Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("failingTask")
+            .done())
+            .taskDefinition("failingTask", "test", 3)
+            .ioMapping("failingTask")
+                .output("$.foo", "$.foo")
+                .done();
+
     private static final byte[] PAYLOAD;
 
     static
@@ -72,17 +92,7 @@ public class IncidentTest
     public void shouldCreateIncidentForInputMappingFailure()
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("failingTask")
-                    .done())
-                    .taskDefinition("failingTask", "test", 3)
-                    .ioMapping("failingTask")
-                        .input("$.foo", "$.foo")
-                        .done();
-
-        testClient.deploy(modelInstance);
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -105,18 +115,7 @@ public class IncidentTest
     public void shouldCreateIncidentForOutputMappingFailure()
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("failingTask")
-                .endEvent()
-                .done())
-            .taskDefinition("failingTask", "test", 3)
-            .ioMapping("failingTask")
-                .output("$.foo", "$.foo")
-            .done();
-
-        testClient.deploy(modelInstance);
+        testClient.deploy(WORKFLOW_OUTPUT_MAPPING);
 
         // when
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
@@ -141,17 +140,7 @@ public class IncidentTest
     public void shouldResolveIncidentForInputMappingFailure() throws Exception
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("failingTask")
-                    .done())
-                    .taskDefinition("failingTask", "test", 3)
-                    .ioMapping("failingTask")
-                        .input("$.foo", "$.foo")
-                        .done();
-
-        testClient.deploy(modelInstance);
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
@@ -181,17 +170,7 @@ public class IncidentTest
     public void shouldResolveIncidentForOutputMappingFailure() throws Exception
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("failingTask")
-                    .done())
-                    .taskDefinition("failingTask", "test", 3)
-                    .ioMapping("failingTask")
-                        .output("$.foo", "$.foo")
-                        .done();
-
-        testClient.deploy(modelInstance);
+        testClient.deploy(WORKFLOW_OUTPUT_MAPPING);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
@@ -276,17 +255,7 @@ public class IncidentTest
     public void shouldResolveIncidentAfterPreviousResolvingFailed() throws Exception
     {
         // given
-        final BpmnModelInstance modelInstance = wrap(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("failingTask")
-                    .done())
-                    .taskDefinition("failingTask", "test", 3)
-                    .ioMapping("failingTask")
-                        .input("$.foo", "$.foo")
-                        .done();
-
-        testClient.deploy(modelInstance);
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
         final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
@@ -308,6 +277,116 @@ public class IncidentTest
             .containsEntry("bpmnProcessId", "process")
             .containsEntry("workflowInstanceKey", workflowInstanceKey)
             .containsEntry("activityId", "failingTask");
+    }
+
+    @Test
+    public void shouldCreateIncidentIfTaskHasNoRetriesLeft()
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+
+        // when
+        failTaskWithNoRetriesLeft();
+
+        // then
+        final SubscribedEvent failedEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("failureEventPosition", failedEvent.position())
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask");
+    }
+
+    @Test
+    public void shouldDeleteIncidentIfTaskRetriesIncreased()
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+
+        failTaskWithNoRetriesLeft();
+
+        // when
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("FAILED"));
+
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
+            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
+            .key(taskEvent.key())
+            .eventTypeTask()
+            .command()
+                .put("eventType", "UPDATE_RETRIES")
+                .put("retries", 1)
+                .put("type", "test")
+                .put("lockOwner", taskEvent.event().get("lockOwner"))
+                .put("headers", taskEvent.event().get("headers"))
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getEvent()).containsEntry("eventType", "RETRIES_UPDATED");
+
+        // then
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("DELETED"));
+
+        assertThat(incidentEvent.key()).isGreaterThan(0);
+        assertThat(incidentEvent.event())
+            .containsEntry("errorType", ErrorType.TASK_NO_RETRIES.name())
+            .containsEntry("errorMessage", "No more retries left.")
+            .containsEntry("bpmnProcessId", "process")
+            .containsEntry("workflowInstanceKey", workflowInstanceKey)
+            .containsEntry("activityId", "failingTask");
+    }
+
+    @Test
+    public void shouldRejectToResolveTaskIncident() throws Exception
+    {
+        // given
+        testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+        testClient.createWorkflowInstance("process", PAYLOAD);
+
+        failTaskWithNoRetriesLeft();
+
+        final SubscribedEvent incidentEvent = testClient.receiveSingleEvent(incidentEvents("CREATED"));
+
+        // when
+        final ExecuteCommandResponse response = resolveIncident(incidentEvent.key(), PAYLOAD);
+
+        // then
+        assertThat(response.getEvent()).containsEntry("eventType", IncidentEventType.RESOLVE_REJECTED.name());
+
+        testClient.receiveSingleEvent(incidentEvents("RESOLVE_REJECTED"));
+    }
+
+    private void failTaskWithNoRetriesLeft()
+    {
+        apiRule.openTaskSubscription(ClientApiRule.DEFAULT_TOPIC_NAME, ClientApiRule.DEFAULT_PARTITION_ID, "test").await();
+
+        final SubscribedEvent taskEvent = testClient.receiveSingleEvent(taskEvents("LOCKED"));
+
+        final ExecuteCommandResponse response = apiRule.createCmdRequest()
+            .topicName(ClientApiRule.DEFAULT_TOPIC_NAME)
+            .partitionId(ClientApiRule.DEFAULT_PARTITION_ID)
+            .key(taskEvent.key())
+            .eventTypeTask()
+            .command()
+                .put("eventType", "FAIL")
+                .put("retries", 0)
+                .put("type", "test")
+                .put("lockOwner", taskEvent.event().get("lockOwner"))
+                .put("headers", taskEvent.event().get("headers"))
+                .done()
+            .sendAndAwait();
+
+        assertThat(response.getEvent()).containsEntry("eventType", "FAILED");
     }
 
     private ExecuteCommandResponse resolveIncident(long incidentKey, byte[] payload)

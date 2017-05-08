@@ -16,5 +16,7 @@ public enum ErrorType
 {
     UNKNOWN,
 
-    IO_MAPPING_ERROR;
+    IO_MAPPING_ERROR,
+
+    TASK_NO_RETRIES;
 }
