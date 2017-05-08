@@ -490,7 +490,7 @@ public class BpmnValidationTests
         assertThat(validationResults.getResults().get(getActivityExtensionElements(bpmnModelInstance, "foo")))
             .isNotNull()
             .extracting("code")
-            .contains(ValidationCodes.REDUDANT_MAPPING);
+            .contains(ValidationCodes.REDUNDANT_MAPPING);
     }
 
     private ExtensionElements getActivityExtensionElements(BpmnModelInstance bpmnModelInstance, String name)

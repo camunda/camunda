@@ -215,4 +215,14 @@ public class TestTopicClient
     {
         return taskEvents().and(eventType(eventType));
     }
+
+    public static Predicate<SubscribedEvent> incidentEvents()
+    {
+        return e -> e.eventType() == EventType.INCIDENT_EVENT;
+    }
+
+    public static Predicate<SubscribedEvent> incidentEvents(String eventType)
+    {
+        return incidentEvents().and(eventType(eventType));
+    }
 }

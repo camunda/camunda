@@ -29,12 +29,14 @@ public class IOMappingTransformer
 
         final ModelElementInstance ioMappingElement = extensionElements.getUniqueChildElementByNameNs(TNGP_NAMESPACE, IO_MAPPING_ELEMENT);
 
-        final List<DomElement> inputMappingElements = ioMappingElement != null
-                ? ioMappingElement.getDomElement().getChildElementsByNameNs(TNGP_NAMESPACE, INPUT_MAPPING_ELEMENT)
-                : null;
-        final List<DomElement> outputMappingElements = ioMappingElement != null
-            ? ioMappingElement.getDomElement().getChildElementsByNameNs(TNGP_NAMESPACE, OUTPUT_MAPPING_ELEMENT)
-            : null;
+        List<DomElement> inputMappingElements = null;
+        List<DomElement> outputMappingElements = null;
+        if (ioMappingElement != null)
+        {
+            final DomElement domElement = ioMappingElement.getDomElement();
+            inputMappingElements = domElement.getChildElementsByNameNs(TNGP_NAMESPACE, INPUT_MAPPING_ELEMENT);
+            outputMappingElements = domElement.getChildElementsByNameNs(TNGP_NAMESPACE, OUTPUT_MAPPING_ELEMENT);
+        }
 
         ioMapping.setInputMappings(createMappings(inputMappingElements));
         ioMapping.setOutputMappings(createMappings(outputMappingElements));
@@ -49,7 +51,7 @@ public class IOMappingTransformer
         if (mappingElements == null || mappingElements.isEmpty())
         {
             mappings = new Mapping[SINGLE_MAPPING_COUNT];
-            setMapping(null, mappings, FIRST_MAPPING_IDX);
+            mappings[FIRST_MAPPING_IDX] = createMapping(null);
         }
         else
         {
@@ -58,21 +60,21 @@ public class IOMappingTransformer
             for (int i = 0; i < mappingElements.size(); i++)
             {
                 final DomElement mappingElement = mappingElements.get(i);
-                setMapping(mappingElement, mappings, i);
+                mappings[i] = createMapping(mappingElement);
             }
         }
         return mappings;
     }
 
-    private static void setMapping(DomElement mappingElement, Mapping[] mappings, int index)
+    private static Mapping createMapping(DomElement mappingElement)
     {
         final String sourceMapping = getMappingQuery(mappingElement, MAPPING_ATTRIBUTE_SOURCE);
         final String targetMapping = getMappingQuery(mappingElement, MAPPING_ATTRIBUTE_TARGET);
 
         //TODO make json path compiler re-usable!
-        mappings[index] =  new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
-                                       new JsonPathQueryCompiler().compile(targetMapping),
-                                       targetMapping);
+        return new Mapping(new JsonPathQueryCompiler().compile(sourceMapping),
+                           new JsonPathQueryCompiler().compile(targetMapping),
+                           targetMapping);
     }
 
     private static String getMappingQuery(DomElement mappingElement, String attributeName)

@@ -4,10 +4,12 @@ import org.camunda.tngp.msgpack.jsonpath.JsonPathQuery;
 
 /**
  * Represents a mapping which can used for input or output mappings.
+ * The mapping has a json path query for the source and target.
  */
 public class Mapping
 {
     public static final String JSON_ROOT_PATH = "$";
+
     private JsonPathQuery source;
     private JsonPathQuery target;
     private String targetQueryString;

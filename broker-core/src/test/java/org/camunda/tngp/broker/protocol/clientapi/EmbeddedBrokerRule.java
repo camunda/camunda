@@ -78,7 +78,7 @@ public class EmbeddedBrokerRule extends ExternalResource
                 .dependency(TransportServiceNames.serverSocketBindingReceiveBufferName(TransportServiceNames.CLIENT_API_SOCKET_BINDING_NAME))
                 .dependency(taskQueueInstanceStreamProcessorServiceName(DEFAULT_LOG_NAME))
                 .install()
-                .get(10, TimeUnit.SECONDS);
+                .get(25, TimeUnit.SECONDS);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e)
         {

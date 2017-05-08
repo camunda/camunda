@@ -13,10 +13,10 @@ public class IOMappingBuilder
     public static final String MAPPING_ATTRIBUTE_SOURCE = "source";
     public static final String MAPPING_ATTRIBUTE_TARGET = "target";
 
-    private final TngpExtensions.TngpModelInstance tngpModelInstance;
+    private final TngpModelInstance tngpModelInstance;
     private final ModelElementInstance ioMapping;
 
-    public IOMappingBuilder(TngpExtensions.TngpModelInstance tngpModelInstance, ModelElementInstance ioMapping)
+    public IOMappingBuilder(TngpModelInstance tngpModelInstance, ModelElementInstance ioMapping)
     {
         this.ioMapping = ioMapping;
         this.tngpModelInstance = tngpModelInstance;
@@ -34,7 +34,7 @@ public class IOMappingBuilder
         return this;
     }
 
-    public TngpExtensions.TngpModelInstance done()
+    public TngpModelInstance done()
     {
         return tngpModelInstance;
     }

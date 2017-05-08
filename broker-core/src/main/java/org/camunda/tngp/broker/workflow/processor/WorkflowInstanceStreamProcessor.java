@@ -67,7 +67,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private static final int DEFAULT_WORKFLOW_CACHE_CAPACITY = 1024;
 
     /**
-     * Currently the payload is limited to 4096 bytes.
+     * The maxiumum payload size, which is 4096 bytes.
      */
     private static final int PAYLOAD_MAX_SIZE = 1024 * 4;
 
@@ -161,7 +161,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
         this.workflowPositionIndex = new Bytes2LongHashIndex(workflowPositionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
         this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(workflowVersionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
         this.workflowInstanceTokenCountIndex = new Long2LongHashIndex(workflowInstanceTokenCountIndexStore, Short.MAX_VALUE, 256);
-        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, PAYLOAD_MAX_SIZE);
+        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, PAYLOAD_MAX_SIZE + SIZE_OF_INT);
 
         this.composedSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(workflowPositionIndex, workflowPositionIndexStore),
@@ -499,17 +499,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
         }
 
-        private final MutableDirectBuffer tempPayload = new UnsafeBuffer(new byte[PAYLOAD_MAX_SIZE]);
+        private final MutableDirectBuffer tempPayload = new UnsafeBuffer(new byte[PAYLOAD_MAX_SIZE + SIZE_OF_INT]);
 
         public void setTaskPayload(Mapping[] mappings)
         {
-
             final DirectBuffer sourcePayload = workflowInstanceEvent.getPayload();
             tempPayload.putInt(0, sourcePayload.capacity(), ByteOrder.LITTLE_ENDIAN);
             sourcePayload.getBytes(0, tempPayload, SIZE_OF_INT, sourcePayload.capacity());
             workflowInstancePayloadIndex.put(workflowInstanceEvent.getWorkflowInstanceKey(), tempPayload.byteArray());
 
-            final int resultLen = payloadMappingProcessor.extractPayload(mappings, workflowInstanceEvent.getPayload());
+            final int resultLen = payloadMappingProcessor.extractPayload(mappings, sourcePayload);
             final MutableDirectBuffer buffer = payloadMappingProcessor.getResultBuffer();
             taskEvent.setPayload(buffer, 0, resultLen);
         }

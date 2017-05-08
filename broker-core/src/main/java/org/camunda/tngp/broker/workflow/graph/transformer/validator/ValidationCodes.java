@@ -25,6 +25,6 @@ public class ValidationCodes
 
     public static final int INVALID_JSON_PATH_EXPRESSION = 60;
     public static final int PROHIBITED_JSON_PATH_EXPRESSION = 61;
-    public static final int REDUDANT_MAPPING = 62;
+    public static final int REDUNDANT_MAPPING = 62;
 
 }

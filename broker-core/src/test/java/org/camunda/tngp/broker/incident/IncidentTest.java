@@ -12,15 +12,6 @@
  */
 package org.camunda.tngp.broker.incident;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
-import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.taskEvents;
-import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.workflowInstanceEvents;
-import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
-
-import java.util.function.Predicate;
-
 import org.agrona.MutableDirectBuffer;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -37,6 +28,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.tngp.broker.util.msgpack.MsgPackUtil.encodeMsgPack;
+import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.wrap;
+import static org.camunda.tngp.test.broker.protocol.clientapi.TestTopicClient.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.wrapString;
 
 public class IncidentTest
 {
@@ -401,11 +398,6 @@ public class IncidentTest
                 .put("payload", payload)
                 .done()
             .sendAndAwait();
-    }
-
-    private static Predicate<SubscribedEvent> incidentEvents(String eventType)
-    {
-        return e -> e.eventType() == EventType.INCIDENT_EVENT && eventType.equals(e.event().get("eventType"));
     }
 
 }

@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 import static org.camunda.tngp.broker.workflow.graph.transformer.TngpExtensions.*;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.INVALID_JSON_PATH_EXPRESSION;
 import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.PROHIBITED_JSON_PATH_EXPRESSION;
-import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.REDUDANT_MAPPING;
+import static org.camunda.tngp.broker.workflow.graph.transformer.validator.ValidationCodes.REDUNDANT_MAPPING;
 
 /**
  * Represents the IO mapping validation rule.
@@ -25,7 +25,7 @@ public class IOMappingRule implements ModelElementValidator<ExtensionElements>
 {
     public static final String ERROR_MSG_PROHIBITED_EXPRESSION = "Mapping failed! JSON Path contains prohibited expression (for example $.* or $.(foo|bar)).";
     public static final String ERROR_MSG_INVALID_EXPRESSION = "Mapping failed JSON Path Query is not valid! Reason: %s";
-    public static final String ERROR_MSG_REDUDANT_MAPPING = "Mapping failed! If Root path is mapped other mapping (makes no sense) is disallowed.";
+    public static final String ERROR_MSG_REDUNDANT_MAPPING = "Mapping failed! If Root path is mapped other mapping (makes no sense) is disallowed.";
 
     private static final String PROHIBITED_EXPRESSIONS_REGEX = "(\\.\\*)|(\\[.*,.*\\])";
     private static final Pattern PROHIBITED_EXPRESSIONS = Pattern.compile(PROHIBITED_EXPRESSIONS_REGEX);
@@ -40,15 +40,12 @@ public class IOMappingRule implements ModelElementValidator<ExtensionElements>
     public void validate(ExtensionElements extensionElements, ValidationResultCollector validationResultCollector)
     {
         final ModelElementInstance ioMappingElement = extensionElements.getUniqueChildElementByNameNs(TNGP_NAMESPACE, IO_MAPPING_ELEMENT);
+
         if (ioMappingElement != null)
         {
-
-            final List<DomElement> inputMappingElements = ioMappingElement != null
-                ? ioMappingElement.getDomElement().getChildElementsByNameNs(TNGP_NAMESPACE, INPUT_MAPPING_ELEMENT)
-                : null;
-            final List<DomElement> outputMappingElements = ioMappingElement != null
-                ? ioMappingElement.getDomElement().getChildElementsByNameNs(TNGP_NAMESPACE, OUTPUT_MAPPING_ELEMENT)
-                : null;
+            final DomElement domElement = ioMappingElement.getDomElement();
+            final List<DomElement> inputMappingElements = domElement.getChildElementsByNameNs(TNGP_NAMESPACE, INPUT_MAPPING_ELEMENT);
+            final List<DomElement> outputMappingElements = domElement.getChildElementsByNameNs(TNGP_NAMESPACE, OUTPUT_MAPPING_ELEMENT);
 
             validateMappings(validationResultCollector, inputMappingElements);
             validateMappings(validationResultCollector, outputMappingElements);
@@ -62,12 +59,13 @@ public class IOMappingRule implements ModelElementValidator<ExtensionElements>
             for (int i = 0; i < mappingElements.size(); i++)
             {
                 final DomElement mapping = mappingElements.get(i);
+
                 validateMappingExpression(validationResultCollector, mapping, MAPPING_ATTRIBUTE_SOURCE);
                 final boolean isRootMapping = validateMappingExpression(validationResultCollector, mapping, MAPPING_ATTRIBUTE_TARGET);
 
                 if (isRootMapping && mappingElements.size() > 1)
                 {
-                    validationResultCollector.addError(REDUDANT_MAPPING, ERROR_MSG_REDUDANT_MAPPING);
+                    validationResultCollector.addError(REDUNDANT_MAPPING, ERROR_MSG_REDUNDANT_MAPPING);
                 }
             }
         }
@@ -76,7 +74,6 @@ public class IOMappingRule implements ModelElementValidator<ExtensionElements>
     private static boolean validateMappingExpression(ValidationResultCollector validationResultCollector, DomElement mappingElement, String attributeName)
     {
         boolean isRootMapping = false;
-        final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
 
         if (mappingElement != null)
         {
@@ -93,7 +90,7 @@ public class IOMappingRule implements ModelElementValidator<ExtensionElements>
                     isRootMapping = true;
                 }
 
-                final JsonPathQuery jsonPathQuery = jsonPathQueryCompiler.compile(mapping);
+                final JsonPathQuery jsonPathQuery = new JsonPathQueryCompiler().compile(mapping);
                 if (!jsonPathQuery.isValid())
                 {
                     validationResultCollector.addError(INVALID_JSON_PATH_EXPRESSION,
