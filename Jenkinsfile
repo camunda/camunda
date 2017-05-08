@@ -57,19 +57,19 @@ pipeline {
         }
       }
     }
-    stage('E2E') {
-      steps {
-        sh 'sh ./start-e2e.sh'
-      }
-      post {
-        always {
-          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
-        }
-        failure {
-          archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
-        }
-      }
-    }
+//    stage('E2E') {
+//      steps {
+//        sh 'sh ./start-e2e.sh'
+//      }
+//      post {
+//        always {
+//          junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
+//        }
+//        failure {
+//          archiveArtifacts artifacts: '**/errorShots/*', onlyIfSuccessful: false
+//        }
+//      }
+//    }
     stage('IT') {
       steps {
         sh 'mvn -s settings.xml -Pit  -f ' + backendModuleName + '/pom.xml clean verify'
