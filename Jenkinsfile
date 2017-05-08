@@ -79,7 +79,7 @@ pipeline {
           junit testResults: '**/failsafe-reports/**/*.xml', allowEmptyResults: true, healthScaleFactor: 1.0, keepLongStdio: true
           archiveArtifacts artifacts:  backendModuleName + '/target/elasticsearch*/logs/*.log', onlyIfSuccessful: false
           archiveArtifacts artifacts:  backendModuleName + '/target/failsafe-reports/*.txt', onlyIfSuccessful: false
-          archiveArtifacts artifacts:  backendModuleName + '/target/cargo-config-tomcat/logs/*.*', onlyIfSuccessful: false
+          archiveArtifacts artifacts:  backendModuleName + '/target/camunda-tomcat/server/apache-tomcat-8.0.24/logs/*.*', onlyIfSuccessful: false
         }
       }
 

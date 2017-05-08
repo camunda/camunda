@@ -496,7 +496,7 @@
                 <append>false</append>
                 <home>${tomcat.runtime}</home>
                 <timeout>${cargo.timeout}</timeout>
-                <log>${project.build.directory}/cargo-config-tomcat/logs/catalina.out</log>
+                <log>${tomcat.runtime}/logs/catalina.out</log>
               </container>
               <configuration>
                 <type>standalone</type>
