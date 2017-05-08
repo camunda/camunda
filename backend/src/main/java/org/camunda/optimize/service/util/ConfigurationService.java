@@ -12,11 +12,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConfigurationService {
 
-  private static final String PAGE_SIZE_MAX = "page.size.max";
-
-  @Autowired
-  private ApplicationContext applicationContext;
-
   @Value("${camunda.optimize.auth.token.live.min}")
   private Integer lifetime;
   @Value("${camunda.optimize.auth.token.secret}")
@@ -32,6 +27,8 @@ public class ConfigurationService {
   private String dateFormat;
   @Value("${camunda.optimize.engine.import.page.size.max}")
   private int engineImportMaxPageSize;
+  @Value("${camunda.optimize.engine.import.process-definition-xml.page.size.max}")
+  private int engineImportProcessDefinitionXmlMaxPageSize;
   @Value("${camunda.optimize.engine.import.jobqueue.size.max}")
   private int maxJobQueueSize;
   @Value("${camunda.optimize.engine.import.executor.thread.count}")
@@ -294,17 +291,7 @@ public class ConfigurationService {
     return historicProcessInstanceCountEndpoint;
   }
 
-public int getEngineImportMaxPageSize(String name) {
-    if (name == null) {
-      return this.getEngineImportMaxPageSize();
-    } else {
-      return Integer.parseInt(
-          ((AbstractApplicationContext)applicationContext).getBeanFactory().resolveEmbeddedValue(getEmbeddedValue(name))
-      );
-    }
-  }
-
-  private String getEmbeddedValue(String name) {
-    return "${" + name + "." + PAGE_SIZE_MAX + "}";
+  public int getXmlDefinitionPageSize() {
+    return engineImportProcessDefinitionXmlMaxPageSize;
   }
 }

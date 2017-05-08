@@ -37,7 +37,6 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
   private ImportIndexReader importIndexReader;
 
   private int importIndex;
-  private String name;
 
   @PostConstruct
   private void init() {
@@ -48,7 +47,7 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
   public int executeImport() {
     int pagesWithData = 0;
     int searchedSize;
-    int maxPageSize = configurationService.getEngineImportMaxPageSize(getName());
+    int maxPageSize = this.getEngineImportMaxPageSize();
     ensureGreaterThanZero(maxPageSize);
     logger.debug("Importing page with index starting from '" + importIndex +
       "' and max page size '" + maxPageSize + "' from type " + getElasticsearchType());
@@ -66,6 +65,10 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
     persistIndexToElasticsearch(importIndex);
 
     return pagesWithData;
+  }
+
+  protected int getEngineImportMaxPageSize() {
+    return configurationService.getEngineImportMaxPageSize();
   }
 
   public int getImportStartIndex() {
@@ -115,8 +118,4 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
    * adding them to elasticsearch.
    */
   protected abstract void importToElasticSearch(List<OPT> events);
-
-  public String getName() {
-    return name;
-  }
 }

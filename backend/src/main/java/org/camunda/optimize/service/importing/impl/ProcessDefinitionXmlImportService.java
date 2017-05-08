@@ -18,8 +18,6 @@ import java.util.List;
 public class ProcessDefinitionXmlImportService extends PaginatedImportService<ProcessDefinitionXmlEngineDto, ProcessDefinitionXmlOptimizeDto> {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlImportService.class);
 
-  private static String NAME = "camunda.optimize.engine.import.process-definition-xml";
-
   @Autowired
   private ProcessDefinitionWriter procDefWriter;
 
@@ -71,8 +69,7 @@ public class ProcessDefinitionXmlImportService extends PaginatedImportService<Pr
     return configurationService.getProcessDefinitionXmlType();
   }
 
-  @Override
-  public String getName() {
-    return NAME;
+  protected int getEngineImportMaxPageSize() {
+    return configurationService.getXmlDefinitionPageSize();
   }
 }
