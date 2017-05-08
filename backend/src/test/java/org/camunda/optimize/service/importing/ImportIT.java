@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.VariableFilterDto;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
@@ -73,7 +74,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterStartAndEndImportState() {
+  public void importProgressReporterStartAndEndImportState() throws OptimizeException {
     // when
     deployAndStartSimpleServiceTask();
 
@@ -88,7 +89,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterItermediateImportState() {
+  public void importProgressReporterItermediateImportState() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importEngineEntities();
@@ -101,7 +102,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importProgressReporterConsidersOnlyFinishedHistoricalActivityInstances() {
+  public void importProgressReporterConsidersOnlyFinishedHistoricalActivityInstances() throws OptimizeException {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -146,7 +147,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void unfinishedActivitiesAreNotSkippedDuringImport() {
+  public void unfinishedActivitiesAreNotSkippedDuringImport() throws OptimizeException {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .startEvent()
@@ -311,7 +312,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void latestImportIndexAfterRestartOfOptimize() {
+  public void latestImportIndexAfterRestartOfOptimize() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importEngineEntities();
@@ -329,7 +330,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void itIsPossibleToResetTheImportIndex() {
+  public void itIsPossibleToResetTheImportIndex() throws OptimizeException {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importEngineEntities();

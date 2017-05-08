@@ -38,6 +38,7 @@ public class ImportScheduler extends Thread {
   private LocalDateTime lastReset = LocalDateTime.now();
 
   public void scheduleProcessEngineImport() {
+    logger.debug("Scheduling import of all types");
     for (ImportService service : importServiceProvider.getServices()) {
       ImportScheduleJob job = new ImportScheduleJob();
       job.setImportService(service);
@@ -92,8 +93,10 @@ public class ImportScheduler extends Thread {
         //next step is sleep
         if (logger.isDebugEnabled()) {
           logger.debug("import jobs capacity exceeded");
-          sleepAndReschedule(pagesPassed);
+          sleepAndReschedule(pagesPassed, toExecute);
         }
+      } catch (OptimizeException op) {
+        sleepAndReschedule(pagesPassed, toExecute);
       } catch (Exception e) {
         if (logger.isDebugEnabled()) {
           logger.debug("error while executing import job", e);
@@ -122,13 +125,13 @@ public class ImportScheduler extends Thread {
     }
   }
 
-  protected void sleepAndReschedule(int pagesPassed) {
+  private void sleepAndReschedule(int pagesPassed, ImportScheduleJob toExecute) {
     backoffCounter = calculateBackoff(pagesPassed);
     long interval = configurationService.getImportHandlerWait();
 
     try {
       long sleepTime = interval * backoffCounter;
-      logger.debug("No data for import detected, sleeping for [{}] ms", sleepTime);
+      logDebugSleepInformation(sleepTime, toExecute);
       Thread.currentThread().sleep(sleepTime);
     } catch (InterruptedException e) {
       logger.warn("Import handler is interrupted while sleeping between import jobs", e);
@@ -138,6 +141,25 @@ public class ImportScheduler extends Thread {
     if (importScheduleJobs.isEmpty()) {
       this.scheduleProcessEngineImport();
     }
+  }
+
+  private void logDebugSleepInformation(long sleepTime, ImportScheduleJob toExecute) {
+    if (toExecute != null) {
+      logger.debug(
+          "Cant schedule import of [{}], sleeping for [{}] ms",
+          toExecute.getImportService().getElasticsearchType(),
+          sleepTime
+      );
+    } else {
+      logger.debug(
+          "No data for import detected, sleeping for [{}] ms",
+          sleepTime
+      );
+    }
+  }
+
+  protected void sleepAndReschedule(int pagesPassed) {
+    this.sleepAndReschedule(pagesPassed, null);
   }
 
   protected long calculateBackoff(int pagesPassed) {

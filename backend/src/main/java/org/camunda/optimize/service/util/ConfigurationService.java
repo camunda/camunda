@@ -29,6 +29,8 @@ public class ConfigurationService {
   private int engineImportMaxPageSize;
   @Value("${camunda.optimize.engine.import.process-definition-xml.page.size.max}")
   private int engineImportProcessDefinitionXmlMaxPageSize;
+  @Value("${camunda.optimize.engine.import.process-instance.page.size.max}")
+  private int engineImportProcessInstanceMaxPageSize;
   @Value("${camunda.optimize.engine.import.jobqueue.size.max}")
   private int maxJobQueueSize;
   @Value("${camunda.optimize.engine.import.executor.thread.count}")
@@ -293,5 +295,9 @@ public class ConfigurationService {
 
   public int getXmlDefinitionPageSize() {
     return engineImportProcessDefinitionXmlMaxPageSize;
+  }
+
+  public int getEngineImportProcessInstanceMaxPageSize() {
+    return engineImportProcessInstanceMaxPageSize;
   }
 }

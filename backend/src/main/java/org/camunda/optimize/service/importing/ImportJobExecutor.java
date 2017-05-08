@@ -38,6 +38,11 @@ public class ImportJobExecutor {
   }
 
   public void executeImportJob(ImportJob importJob) throws InterruptedException {
+    logger.debug(
+        "Currently active [{}] jobs and [{}] in queue",
+        importExecutor.getActiveCount(),
+        importExecutor.getQueue().size()
+    );
     importExecutor.execute(importJob);
   }
 

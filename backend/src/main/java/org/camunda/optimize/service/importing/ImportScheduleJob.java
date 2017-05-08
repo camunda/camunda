@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.exceptions.OptimizeException;
+
 /**
  * @author Askar Akhmerov
  */
@@ -7,7 +9,7 @@ public class ImportScheduleJob {
 
   private ImportService importService;
 
-  public int execute() {
+  public int execute() throws OptimizeException {
     return importService.executeImport();
   }
 

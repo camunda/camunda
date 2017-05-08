@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
@@ -66,7 +67,7 @@ public class PaginatedImportServiceTest {
   }
 
   @Test
-  public void unreasonableMaxPageSizeThrowsError() {
+  public void unreasonableMaxPageSizeThrowsError() throws OptimizeException {
     // given
     when(configurationService.getEngineImportMaxPageSize()).thenReturn(0);
 

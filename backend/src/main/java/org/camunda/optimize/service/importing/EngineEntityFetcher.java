@@ -49,6 +49,7 @@ public class EngineEntityFetcher {
 
   public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(int indexOfFirstResult, int maxPageSize) {
     List<HistoricActivityInstanceEngineDto> entries;
+    long requestStart = System.currentTimeMillis();
     try {
       entries = client
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
@@ -61,6 +62,8 @@ public class EngineEntityFetcher {
         .request(MediaType.APPLICATION_JSON)
         .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
         });
+      long requestEnd = System.currentTimeMillis();
+      logger.debug("Fetch of [HAI] took [{}] ms", requestEnd - requestStart);
     } catch (RuntimeException e) {
       logError("Could not fetch historic activity instances from engine. Please check the connection!", e);
       entries = Collections.emptyList();
@@ -146,8 +149,9 @@ public class EngineEntityFetcher {
     return count.getCount();
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(int indexOfFirstResult, int maxPageSize) {
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(int indexOfFirstResult, int maxPageSize) throws OptimizeException {
     List<HistoricProcessInstanceDto> entries;
+    long requestStart = System.currentTimeMillis();
     try {
       entries = client
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
@@ -159,10 +163,11 @@ public class EngineEntityFetcher {
         .request(MediaType.APPLICATION_JSON)
         .get(new GenericType<List<HistoricProcessInstanceDto>>() {
         });
-      return entries;
+      long requestEnd = System.currentTimeMillis();
+      logger.debug("Fetch of [HPI] took [{}] ms", requestEnd - requestStart);
     } catch (RuntimeException e) {
       logError("Could not fetch historic process instances from engine. Please check the connection!", e);
-      entries = Collections.emptyList();
+      throw new OptimizeException();
     }
     return entries;
   }

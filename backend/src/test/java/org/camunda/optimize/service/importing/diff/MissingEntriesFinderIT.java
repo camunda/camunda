@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing.diff;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.rule.EngineIntegrationRule;
@@ -86,7 +87,7 @@ public class MissingEntriesFinderIT {
       elasticsearchType.equals(elasticSearchRule.getProcessDefinitionXmlType());
   }
 
-  private void deployImportAndDeployAgainProcess() throws InterruptedException {
+  private void deployImportAndDeployAgainProcess() throws InterruptedException, OptimizeException {
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.writer.ProcessInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingProcessInstanceFinder;
 import org.camunda.optimize.service.importing.job.impl.ProcessInstanceImportJob;
@@ -30,7 +31,7 @@ public class ProcessInstanceImportService extends PaginatedImportService<Histori
   }
 
   @Override
-  protected List<HistoricProcessInstanceDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
+  protected List<HistoricProcessInstanceDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) throws OptimizeException {
     return engineEntityFetcher.fetchHistoricProcessInstances(indexOfFirstResult, maxPageSize);
   }
 
@@ -68,5 +69,9 @@ public class ProcessInstanceImportService extends PaginatedImportService<Histori
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessInstanceType();
+  }
+
+  protected int getEngineImportMaxPageSize() {
+    return configurationService.getEngineImportProcessInstanceMaxPageSize();
   }
 }

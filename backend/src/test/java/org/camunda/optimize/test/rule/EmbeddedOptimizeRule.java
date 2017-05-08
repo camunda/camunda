@@ -1,8 +1,8 @@
 package org.camunda.optimize.test.rule;
 
-import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.dto.optimize.ProgressDto;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportService;
@@ -52,7 +52,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     properties = PropertyUtil.loadProperties(propertiesLocation);
   }
 
-  public void importEngineEntities() {
+  public void importEngineEntities() throws OptimizeException {
     getJobExecutor().startExecutingImportJobs();
     for (ImportService importService : getServiceProvider().getServices()) {
       ImportScheduleJob job = new ImportScheduleJob();

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
@@ -65,7 +66,7 @@ public class ImportSchedulerTest {
   }
 
   @Test
-  public void allImportsAreTriggered() throws InterruptedException {
+  public void allImportsAreTriggered() throws InterruptedException, OptimizeException {
 
     // given
     List<ImportService> services = mockImportServices();
@@ -170,7 +171,7 @@ public class ImportSchedulerTest {
   }
 
   @Test
-  public void testBackoffResetAfterPage() {
+  public void testBackoffResetAfterPage() throws OptimizeException {
     //given
     //right after instantiation backoff is 0
     assertThat(importScheduler.getBackoffCounter(), is(ImportScheduler.STARTING_BACKOFF));

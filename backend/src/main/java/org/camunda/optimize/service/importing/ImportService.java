@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.service.exceptions.OptimizeException;
+
 /**
  * Every class that should import data from the
  * engine needs to implement this interface and
@@ -13,7 +15,7 @@ public interface ImportService {
    *
    * @return number of pages with new data that has been processed
    */
-  int executeImport();
+  int executeImport() throws OptimizeException;
 
   /**
    * Showing the progress of the import and where it

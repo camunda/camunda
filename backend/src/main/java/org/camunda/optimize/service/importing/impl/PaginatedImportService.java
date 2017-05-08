@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportService;
@@ -44,7 +45,7 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
   }
 
   @Override
-  public int executeImport() {
+  public int executeImport() throws OptimizeException {
     int pagesWithData = 0;
     int searchedSize;
     int maxPageSize = this.getEngineImportMaxPageSize();
@@ -99,7 +100,7 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
    * @return All entries from the engine that we want to
    * import to optimize, i.e. elasticsearch
    */
-  protected abstract List<ENG> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize);
+  protected abstract List<ENG> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) throws OptimizeException;
 
   /**
    * @return Finder that checks which entries are already in
