@@ -1,4 +1,4 @@
-import {dispatchAction} from 'view-utils';
+import {dispatchAction, $document} from 'view-utils';
 import {createSetTargetValueAction} from './reducer';
 import {formatNumber, createDelayedTimePrecisionElement} from 'utils';
 import {put} from 'http';
@@ -91,13 +91,19 @@ export function addTargetValueBadge(viewer, element, value, onClick) {
 export function addTargetValueTooltip(viewer, element, actualValue, targetValue) {
   // create overlay node from html string
   const container = document.createElement('div');
-
-  const percentage = targetValue > actualValue ?
-    `${formatNumber(Math.round((-actualValue / targetValue + 1) * 100))}%&nbsp;below&nbsp;target` :
-    `${formatNumber(Math.round((actualValue / targetValue - 1) * 100))}%&nbsp;above&nbsp;target`;
-
   const targetValueElement = createDelayedTimePrecisionElement(targetValue, {initialPrecision: 2, delay: 1500});
-  const actualValueElement = createDelayedTimePrecisionElement(actualValue, {initialPrecision: 2, delay: 1500});
+  let actualValueElement;
+  let percentage;
+
+  if (typeof actualValue !== 'undefined') {
+    actualValueElement = createDelayedTimePrecisionElement(actualValue, {initialPrecision: 2, delay: 1500});
+    percentage = targetValue > actualValue ?
+      `${formatNumber(Math.round((-actualValue / targetValue + 1) * 100))}%&nbsp;below&nbsp;target` :
+      `${formatNumber(Math.round((actualValue / targetValue - 1) * 100))}%&nbsp;above&nbsp;target`;
+  } else {
+    actualValueElement = $document.createTextNode('no\xa0data');
+    percentage = '';
+  }
 
   container.innerHTML =
   `<div class="tooltip top" role="tooltip" style="opacity: 1; pointer-events:none;">
@@ -112,6 +118,7 @@ export function addTargetValueTooltip(viewer, element, actualValue, targetValue)
   // calculate overlay width
   document.body.appendChild(overlayHtml);
   const overlayWidth = overlayHtml.clientWidth;
+  const overlayHeight = overlayHtml.clientHeight;
 
   document.body.removeChild(overlayHtml);
 
@@ -138,7 +145,7 @@ export function addTargetValueTooltip(viewer, element, actualValue, targetValue)
   // add overlay to viewer
   return viewer.get('overlays').add(element, TARGET_VALUE_TOOLTIP, {
     position: {
-      top: -65,
+      top: -overlayHeight,
       left: elementWidth / 2 - overlayWidth / 2
     },
     show: {

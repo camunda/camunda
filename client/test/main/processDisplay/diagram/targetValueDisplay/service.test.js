@@ -234,5 +234,13 @@ describe('TargetValue service', () => {
     it('should contain the percentage in the overlay', () => {
       expect(overlayHtml.textContent).to.contain('75%');
     });
+
+    it('should show "no data" when no actual value exists', () => {
+      addTargetValueTooltip(viewer, ELEMENT, undefined, TARGET_VALUE);
+
+      overlayHtml = addFunction.lastCall.args[2].html;
+
+      expect(overlayHtml.textContent).to.contain('actual:\xa0no\xa0data');
+    });
   });
 });
