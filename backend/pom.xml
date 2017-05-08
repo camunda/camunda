@@ -391,6 +391,7 @@
 
       <build>
         <plugins>
+
           <plugin>
             <groupId>com.github.alexcojocaru</groupId>
             <artifactId>elasticsearch-maven-plugin</artifactId>
@@ -429,6 +430,9 @@
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
             <version>2.19.1</version>
+            <configuration>
+              <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            </configuration>
             <executions>
               <execution>
                 <goals>
