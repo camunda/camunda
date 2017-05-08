@@ -1,6 +1,6 @@
 import {dispatchAction} from 'view-utils';
 import {createSetTargetValueAction} from './reducer';
-import {formatNumber, updateOverlayVisibility} from 'utils';
+import {formatNumber, createDelayedTimePrecisionElement} from 'utils';
 import {put} from 'http';
 import {addNotification} from 'notifications';
 import * as timeUtil from 'utils/formatTime';
@@ -88,10 +88,6 @@ export function addTargetValueBadge(viewer, element, value, onClick) {
   });
 }
 
-export function hoverElement(viewer, element) {
-  updateOverlayVisibility(viewer, element, TARGET_VALUE_TOOLTIP);
-}
-
 export function addTargetValueTooltip(viewer, element, actualValue, targetValue) {
   // create overlay node from html string
   const container = document.createElement('div');
@@ -100,12 +96,18 @@ export function addTargetValueTooltip(viewer, element, actualValue, targetValue)
     `${formatNumber(Math.round((-actualValue / targetValue + 1) * 100))}%&nbsp;below&nbsp;target` :
     `${formatNumber(Math.round((actualValue / targetValue - 1) * 100))}%&nbsp;above&nbsp;target`;
 
+  const targetValueElement = createDelayedTimePrecisionElement(targetValue, {initialPrecision: 2, delay: 1500});
+  const actualValueElement = createDelayedTimePrecisionElement(actualValue, {initialPrecision: 2, delay: 1500});
+
   container.innerHTML =
   `<div class="tooltip top" role="tooltip" style="opacity: 1; pointer-events:none;">
   <div class="tooltip-arrow"></div>
-  <div class="tooltip-inner" style="text-align: left;">target:&nbsp;${formatTime(targetValue, {precision: 2})}<br />actual:&nbsp;${formatTime(actualValue, {precision: 2})}<br />${percentage}</div>
+  <div class="tooltip-inner" style="text-align: left;">target:&nbsp;<span class="target"></span><br />actual:&nbsp;<span class="actual"></span><br />${percentage}</div>
   </div>`;
   const overlayHtml = container.firstChild;
+
+  overlayHtml.querySelector('.target').appendChild(targetValueElement);
+  overlayHtml.querySelector('.actual').appendChild(actualValueElement);
 
   // calculate overlay width
   document.body.appendChild(overlayHtml);
@@ -122,11 +124,19 @@ export function addTargetValueTooltip(viewer, element, actualValue, targetValue)
     .getAttribute('width')
     , 10);
 
-  // hide the element initially
-  overlayHtml.style.display = 'none';
+  // react to changes in the overlay content and reposition it
+  const observer = new MutationObserver(() => {
+    const parent = overlayHtml.parentNode;
+
+    if (parent) {
+      parent.style.left = elementWidth / 2 - overlayHtml.clientWidth / 2 + 'px';
+    }
+  });
+
+  observer.observe(overlayHtml, {childList: true, subtree: true});
 
   // add overlay to viewer
-  viewer.get('overlays').add(element, TARGET_VALUE_TOOLTIP, {
+  return viewer.get('overlays').add(element, TARGET_VALUE_TOOLTIP, {
     position: {
       top: -65,
       left: elementWidth / 2 - overlayWidth / 2

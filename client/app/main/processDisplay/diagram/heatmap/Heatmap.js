@@ -1,14 +1,20 @@
-import {getHeatmap, hoverElement, addHeatmapOverlay} from './service';
+import {getHeatmap, addHeatmapOverlay} from './service';
 import {removeOverlays} from 'utils';
 import {isLoaded} from 'utils/loading';
 
-export function createHeatmapRendererFunction(formatTooltip) {
+export function createHeatmapRendererFunction(createTooltip) {
   return ({viewer}) => {
     let heatmap;
     let heatmapRendered = false;
+    let data;
+    let currentlyHovered = false;
 
-    viewer.get('eventBus').on('element.hover', ({element}) => {
-      hoverElement(viewer, element);
+    viewer.get('eventBus').on('element.hover', ({element: {id}}) => {
+      if (currentlyHovered !== id) {
+        currentlyHovered = id;
+        removeOverlays(viewer);
+        addHeatmapOverlay(viewer, id, data, createTooltip);
+      }
     });
 
     return ({state, diagramRendered}) => {
@@ -22,6 +28,8 @@ export function createHeatmapRendererFunction(formatTooltip) {
     };
 
     function renderHeatmap({heatmap: {data: {flowNodes}}}) {
+      data = flowNodes;
+
       // add heatmap
       if (!heatmapRendered) {
         removeHeatmap();
@@ -29,10 +37,6 @@ export function createHeatmapRendererFunction(formatTooltip) {
         viewer.get('canvas')._viewport.appendChild(heatmap);
         heatmapRendered = true;
       }
-
-      // add heatmap overlays
-      removeOverlays(viewer);
-      addHeatmapOverlay(viewer, flowNodes, formatTooltip);
     }
 
     function removeHeatmap() {

@@ -1,59 +1,60 @@
 import generateHeatmap from './generateHeatmap';
-import {updateOverlayVisibility} from 'utils';
 
 export const VALUE_OVERLAY = 'VALUE_OVERLAY';
 
-export function hoverElement(viewer, element) {
-  updateOverlayVisibility(viewer, element, VALUE_OVERLAY);
-}
+export function addHeatmapOverlay(viewer, element, data, createTooltip) {
+  const value = data[element];
 
-export function addHeatmapOverlay(viewer, data, formatTooltip) {
-  Object.keys(data).forEach(element => {
-    const value = data[element];
+  if (value !== undefined) {
+    // create overlay node from html string
+    const container = document.createElement('div');
 
-    if (value !== undefined) {
-      // create overlay node from html string
-      const container = document.createElement('div');
+    container.innerHTML =
+    `<div class="tooltip top" role="tooltip" style="opacity: 1;">
+    <div class="tooltip-arrow"></div>
+    <div class="tooltip-inner" style="text-align: left;"></div>
+    </div>`;
+    const overlayHtml = container.firstChild;
 
-      container.innerHTML =
-      `<div class="tooltip top" role="tooltip" style="opacity: 1;">
-      <div class="tooltip-arrow"></div>
-      <div class="tooltip-inner" style="text-align: left;">${formatTooltip(value)}</div>
-      </div>`;
-      const overlayHtml = container.firstChild;
+    const tooltipContent = createTooltip(value);
 
-      // calculate overlay width
-      document.body.appendChild(overlayHtml);
-      const overlayWidth = overlayHtml.clientWidth;
+    overlayHtml.querySelector('.tooltip-inner').appendChild(tooltipContent);
 
-      document.body.removeChild(overlayHtml);
+    // calculate overlay width
+    document.body.appendChild(overlayHtml);
+    const overlayWidth = overlayHtml.clientWidth;
 
-      // calculate element width
-      const elementWidth = parseInt(
-        viewer
-        .get('elementRegistry')
-        .getGraphics(element)
-        .querySelector('.djs-hit')
-        .getAttribute('width')
-        , 10);
+    document.body.removeChild(overlayHtml);
 
-      // hide the element initially
-      overlayHtml.style.display = 'none';
+    // calculate element width
+    const elementWidth = parseInt(
+      viewer
+      .get('elementRegistry')
+      .getGraphics(element)
+      .querySelector('.djs-hit')
+      .getAttribute('width')
+      , 10);
 
-      // add overlay to viewer
-      viewer.get('overlays').add(element, VALUE_OVERLAY, {
-        position: {
-          top: -36,
-          left: elementWidth / 2 - overlayWidth / 2
-        },
-        show: {
-          minZoom: -Infinity,
-          maxZoom: +Infinity
-        },
-        html: overlayHtml
-      });
-    }
-  });
+    // react to changes in the overlay content and reposition it
+    const observer = new MutationObserver(() => {
+      overlayHtml.parentNode.style.left = elementWidth / 2 - overlayHtml.clientWidth / 2 + 'px';
+    });
+
+    observer.observe(tooltipContent, {childList: true, subtree: true});
+
+    // add overlay to viewer
+    viewer.get('overlays').add(element, VALUE_OVERLAY, {
+      position: {
+        top: -36,
+        left: elementWidth / 2 - overlayWidth / 2
+      },
+      show: {
+        minZoom: -Infinity,
+        maxZoom: +Infinity
+      },
+      html: overlayHtml
+    });
+  }
 }
 
 export function getHeatmap(viewer, data) {

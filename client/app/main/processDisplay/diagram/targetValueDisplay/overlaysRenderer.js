@@ -1,5 +1,5 @@
 import {isBpmnType, removeOverlays} from 'utils';
-import {prepareFlowNodes, addTargetValueBadge, addTargetValueTooltip, hoverElement, getTargetValue} from './service';
+import {prepareFlowNodes, addTargetValueBadge, addTargetValueTooltip, getTargetValue} from './service';
 import {getHeatmap} from 'main/processDisplay/diagram/heatmap/service';
 
 export function createOverlaysRenderer(State, TargetValueModal) {
@@ -9,6 +9,9 @@ export function createOverlaysRenderer(State, TargetValueModal) {
     const eventBus = viewer.get('eventBus');
 
     let heatmap;
+    let flowNodeData;
+    let currentlyHovered = false;
+    let displayedTooltip;
 
     eventBus.on('element.click', ({element}) => {
       if (isValidElement(element)) {
@@ -17,7 +20,17 @@ export function createOverlaysRenderer(State, TargetValueModal) {
     });
 
     eventBus.on('element.hover', ({element}) => {
-      hoverElement(viewer, element);
+      if (currentlyHovered !== element.id) {
+        currentlyHovered = element.id;
+
+        if (displayedTooltip) {
+          viewer.get('overlays').remove(displayedTooltip);
+        }
+
+        if (getTargetValue(State, element)) {
+          displayedTooltip = addTargetValueTooltip(viewer, element, flowNodeData[element.businessObject.id], getTargetValue(State, element));
+        }
+      }
     });
 
     function removeHighlight(element) {
@@ -43,6 +56,8 @@ export function createOverlaysRenderer(State, TargetValueModal) {
     }
 
     return ({state:{heatmap:{data:{flowNodes}}, targetValue:{data}}, diagramRendered}) => {
+      flowNodeData = flowNodes;
+
       if (diagramRendered) {
         removeOverlays(viewer);
 
@@ -54,7 +69,6 @@ export function createOverlaysRenderer(State, TargetValueModal) {
               highlight(element);
             } else {
               addTargetValueBadge(viewer, element, getTargetValue(State, element), TargetValueModal.open);
-              addTargetValueTooltip(viewer, element, flowNodes[element.businessObject.id], getTargetValue(State, element));
             }
           }
         });

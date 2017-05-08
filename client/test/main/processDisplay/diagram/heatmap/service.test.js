@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {setupPromiseMocking} from 'testHelpers';
-import {getHeatmap, hoverElement, addHeatmapOverlay,
+import {getHeatmap, addHeatmapOverlay,
         VALUE_OVERLAY, __set__, __ResetDependency__} from 'main/processDisplay/diagram/heatmap/service';
 
 describe('Heatmap service', () => {
@@ -46,7 +46,7 @@ describe('Heatmap service', () => {
     createHoverElementAction = sinon.stub().returns(HOVER_ACTION);
     __set__('createHoverElementAction', createHoverElementAction);
 
-    formatter = sinon.stub().returnsArg(0);
+    formatter = sinon.stub().returns(document.createTextNode('0'));
 
     clearFunction = sinon.spy();
 
@@ -101,14 +101,16 @@ describe('Heatmap service', () => {
   });
 
   describe('hover overlays', () => {
-    it('should add overlays on the elements', () => {
-      addHeatmapOverlay(viewer, heatmapData, formatter);
+    it('should add overlays on an element', () => {
+      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, formatter);
 
       expect(addFunction.calledWith(diagramElement.id)).to.eql(true);
     });
 
     it('should add an overlay with the heat value as text content', () => {
-      addHeatmapOverlay(viewer, heatmapData, formatter);
+      formatter.returns(document.createTextNode(heatmapData[diagramElement.id].toString()));
+
+      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, formatter);
 
       const node = addFunction.getCall(0).args[2].html;
 
@@ -116,7 +118,7 @@ describe('Heatmap service', () => {
     });
 
     it('should add the overlay with the correct type', () => {
-      addHeatmapOverlay(viewer, heatmapData, formatter);
+      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, formatter);
 
       const type = addFunction.getCall(0).args[1];
 
@@ -126,25 +128,11 @@ describe('Heatmap service', () => {
     it('should use formatter to format data', () => {
       const text = 'text';
 
-      addHeatmapOverlay(viewer, heatmapData, () => text);
+      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, () => document.createTextNode(text));
 
       const node = addFunction.getCall(0).args[2].html;
 
       expect(node.textContent).to.contain(text);
-    });
-
-    describe('interaction', () => {
-      it('should hide all overlays', () => {
-        hoverElement(viewer, 'someElement');
-
-        expect(notHoveredOverlay.style.display).to.eql('none');
-      });
-
-      it('should show the hovered element', () => {
-        hoverElement(viewer, 'someElement');
-
-        expect(hoveredOverlay.style.display).to.eql('block');
-      });
     });
   });
 });

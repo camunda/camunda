@@ -1,5 +1,7 @@
 import {expect} from 'chai';
-import {formatTime, ms, d, m, s, h} from 'utils/formatTime';
+import sinon from 'sinon';
+import {formatTime, ms, d, m, s, h, createDelayedTimePrecisionElement,
+        __set__, __ResetDependency__} from 'utils/formatTime';
 
 describe('formatTime', () => {
   it('should format ms input into human readable string', () => {
@@ -35,5 +37,55 @@ describe('formatTime', () => {
 
     expect(result).to.be.an('array');
     expect(result).to.be.empty;
+  });
+});
+
+describe('createDelayedTimePrecisionElement', () => {
+  let $window;
+
+  beforeEach(() => {
+    $window = {
+      setTimeout: sinon.spy()
+    };
+
+    __set__('$window', $window);
+  });
+
+  afterEach(() => {
+    __ResetDependency__('$window');
+  });
+
+  it('should return a dom element', () => {
+    const returnValue = createDelayedTimePrecisionElement(123, {initialPrecision: 2, delay: 500});
+
+    expect(typeof returnValue).to.eql('object');
+    expect(returnValue.tagName).to.exist;
+  });
+
+  it('should contain the formatted time with the provided initial precision', () => {
+    const returnValue = createDelayedTimePrecisionElement(3*d + 5*h, {initialPrecision: 2, delay: 500});
+
+    expect(returnValue.textContent).to.eql('3d\xa05h');
+  });
+
+  it('should contain an ellipsis when value has more precision than initially shown', () => {
+    const returnValue = createDelayedTimePrecisionElement(3*d + 5*h, {initialPrecision: 1, delay: 500});
+
+    expect(returnValue.textContent).to.eql('3d\u2026');
+  });
+
+  it('should replace its contents after the provided delay', () => {
+    const returnValue = createDelayedTimePrecisionElement(3*d + 5*h, {initialPrecision: 1, delay: 500});
+
+    $window.setTimeout.getCall(0).args[0]();
+
+    expect($window.setTimeout.getCall(0).args[1]).to.eql(500);
+    expect(returnValue.textContent).to.eql('3d\xa05h');
+  });
+
+  it('should not replace the contents if the initial precision was sufficient', () => {
+    createDelayedTimePrecisionElement(3*d + 5*h, {initialPrecision: 2, delay: 500});
+
+    expect($window.setTimeout.called).to.eql(false);
   });
 });

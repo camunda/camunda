@@ -1,3 +1,5 @@
+import {$window, $document} from 'view-utils';
+
 export const ms = 1;
 export const s = 1000;
 export const m = 60 * s;
@@ -60,4 +62,22 @@ export function formatTime(time, config = {}) {
 
       return unit;
     }, '');
+}
+
+export function createDelayedTimePrecisionElement(timeStamp, {initialPrecision, delay}) {
+  const element = $document.createElement('span');
+  const initialTimeString = formatTime(timeStamp, {precision: initialPrecision});
+  const exactTimeString = formatTime(timeStamp);
+
+  element.innerHTML = initialTimeString;
+
+  if (initialTimeString !== exactTimeString) {
+    element.innerHTML += '\u2026';
+
+    $window.setTimeout(() => {
+      element.innerHTML = formatTime(timeStamp);
+    }, delay);
+  }
+
+  return element;
 }

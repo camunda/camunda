@@ -154,13 +154,16 @@ describe('target value overlays renderer', () => {
     expect(ModalComponent.open.called).to.eql(false);
   });
 
-  it('should handle hovering of an element', () => {
+  it('should add tooltip when hovering over an element', () => {
+    const TARGET_VALUE = 400;
+
+    getTargetValue.returns(TARGET_VALUE);
     update({state, diagramRendered: true});
     const hoverHandler = eventBus.on.secondCall.args[1];
 
     hoverHandler({element});
 
-    expect(hoverElement.calledWith(viewer, element)).to.eql(true);
+    expect(addTargetValueTooltip.calledWith(viewer, element, 1, TARGET_VALUE)).to.eql(true);
   });
 
   it('should highlight valid elements', () => {
@@ -180,14 +183,5 @@ describe('target value overlays renderer', () => {
     update({state, diagramRendered: true});
 
     expect(addTargetValueBadge.calledWith(viewer, element, TARGET_VALUE, ModalComponent.open)).to.eql(true);
-  });
-
-  it('should create badges for all elements with a target value', () => {
-    const TARGET_VALUE = 400;
-
-    getTargetValue.returns(TARGET_VALUE);
-    update({state, diagramRendered: true});
-
-    expect(addTargetValueTooltip.calledWith(viewer, element, 1, TARGET_VALUE)).to.eql(true);
   });
 });

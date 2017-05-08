@@ -1,7 +1,7 @@
-import {jsx, withSelector, Match, Case, Default} from 'view-utils';
+import {jsx, withSelector, Match, Case, Default, $document} from 'view-utils';
 import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount, TargetValueDisplay} from './diagram';
 import {Statistics, resetStatisticData} from './statistics';
-import {isLoading, formatTime} from 'utils';
+import {isLoading, createDelayedTimePrecisionElement} from 'utils';
 import {loadData, loadDiagram, getDefinitionId} from './service';
 import {isViewSelected} from './controls';
 import {LoadingIndicator} from 'widgets';
@@ -25,10 +25,13 @@ function Process() {
             </div>
           </Case>
           <Case predicate={shouldDisplay('frequency')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
+            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => $document.createTextNode(x))} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => formatTime(x, {precision: 2}))} />
+            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => createDelayedTimePrecisionElement(x, {
+              initialPrecision: 2,
+              delay: 1500
+            }))} />
           </Case>
           <Case predicate={shouldDisplay('branch_analysis')}>
             <Diagram selector="diagram" createOverlaysRenderer={createCreateAnalyticsRendererFunction(integrator)} />
