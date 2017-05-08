@@ -1,4 +1,5 @@
 #!/bin/sh
+echo "Starting E2E tests"
 sh ./start-selenium.sh &
 
 mvn clean package -Pproduction -DskipTests
@@ -26,3 +27,5 @@ done
 node ./client/scripts/add_demo_data.js
 ./client/node_modules/.bin/wdio ./client/wdio-ci.conf.js
 pkill -f optimize-backend
+
+echo "Stopping E2E test"
