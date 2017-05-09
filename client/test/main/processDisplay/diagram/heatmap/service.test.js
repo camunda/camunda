@@ -134,5 +134,15 @@ describe('Heatmap service', () => {
 
       expect(node.textContent).to.contain(text);
     });
+
+    it('should work with non-node formatter return values', () => {
+      const text = 'text';
+
+      addHeatmapOverlay(viewer, diagramElement.id, heatmapData, () => text);
+
+      const node = addFunction.getCall(0).args[2].html;
+
+      expect(node.textContent).to.contain(text);
+    });
   });
 });

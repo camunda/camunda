@@ -1,4 +1,4 @@
-import {jsx, withSelector, Match, Case, Default, $document} from 'view-utils';
+import {jsx, withSelector, Match, Case, Default} from 'view-utils';
 import {createHeatmapRendererFunction, createCreateAnalyticsRendererFunction, getInstanceCount, TargetValueDisplay} from './diagram';
 import {Statistics, resetStatisticData} from './statistics';
 import {isLoading, createDelayedTimePrecisionElement} from 'utils';
@@ -25,7 +25,7 @@ function Process() {
             </div>
           </Case>
           <Case predicate={shouldDisplay('frequency')}>
-            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => $document.createTextNode(x))} />
+            <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => x)} />
           </Case>
           <Case predicate={shouldDisplay('duration')}>
             <Diagram selector="diagram" createOverlaysRenderer={createHeatmapRendererFunction(x => createDelayedTimePrecisionElement(x, {

@@ -1,4 +1,5 @@
 import generateHeatmap from './generateHeatmap';
+import {$document} from 'view-utils';
 
 export const VALUE_OVERLAY = 'VALUE_OVERLAY';
 
@@ -17,8 +18,11 @@ export function addHeatmapOverlay(viewer, element, data, createTooltip) {
     const overlayHtml = container.firstChild;
 
     const tooltipContent = createTooltip(value);
+    const tooltipContentNode = tooltipContent.nodeName ?
+      tooltipContent:
+      $document.createTextNode(tooltipContent);
 
-    overlayHtml.querySelector('.tooltip-inner').appendChild(tooltipContent);
+    overlayHtml.querySelector('.tooltip-inner').appendChild(tooltipContentNode);
 
     // calculate overlay width
     document.body.appendChild(overlayHtml);
@@ -40,7 +44,7 @@ export function addHeatmapOverlay(viewer, element, data, createTooltip) {
       overlayHtml.parentNode.style.left = elementWidth / 2 - overlayHtml.clientWidth / 2 + 'px';
     });
 
-    observer.observe(tooltipContent, {childList: true, subtree: true});
+    observer.observe(tooltipContentNode, {childList: true, subtree: true});
 
     // add overlay to viewer
     viewer.get('overlays').add(element, VALUE_OVERLAY, {
