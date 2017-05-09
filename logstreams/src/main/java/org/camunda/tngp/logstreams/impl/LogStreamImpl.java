@@ -1,9 +1,7 @@
 package org.camunda.tngp.logstreams.impl;
 
-import static org.camunda.tngp.util.EnsureUtil.ensureFalse;
-import static org.camunda.tngp.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static org.camunda.tngp.util.buffer.BufferUtil.bufferAsString;
-import static org.camunda.tngp.util.buffer.BufferUtil.cloneBuffer;
+import static org.camunda.tngp.util.EnsureUtil.*;
+import static org.camunda.tngp.util.buffer.BufferUtil.*;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -333,6 +331,17 @@ public final class LogStreamImpl implements LogStream
             throw new IllegalStateException(EXCEPTION_MSG_TRUNCATE_AND_LOG_STREAM_CTRL_IN_PARALLEL);
         }
         return logBlockIndexController.truncate(position);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "LogStreamImpl{" +
+            "topicName=" + bufferAsString(topicName) +
+            ", partitionId=" + partitionId +
+            ", term=" + term +
+            ", name='" + name + '\'' +
+            '}';
     }
 
     // BUILDER ////////////////////////
