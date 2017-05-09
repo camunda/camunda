@@ -30,6 +30,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import static org.camunda.optimize.rest.util.RestResponseUtil.buildOkResponse;
 import static org.camunda.optimize.rest.util.RestResponseUtil.buildServerErrorResponse;
@@ -183,7 +185,7 @@ public class ProcessDefinitionRestService {
   @Path("/{id}/variables")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Collection<GetVariablesResponseDto> getVariables(@PathParam("id") String processDefinitionId) {
+  public Map<String, List<GetVariablesResponseDto>> getVariables(@PathParam("id") String processDefinitionId) {
     return variableReader.getVariables(processDefinitionId);
   }
 

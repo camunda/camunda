@@ -2,11 +2,17 @@ package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.GetVariablesResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.SimpleVariableDto;
-import org.camunda.optimize.dto.optimize.VariableDto;
-import org.camunda.optimize.dto.optimize.VariableValueDto;
+import org.camunda.optimize.dto.optimize.variable.BooleanVariableDto;
+import org.camunda.optimize.dto.optimize.variable.DateVariableDto;
+import org.camunda.optimize.dto.optimize.variable.DoubleVariableDto;
+import org.camunda.optimize.dto.optimize.variable.IntegerVariableDto;
+import org.camunda.optimize.dto.optimize.variable.LongVariableDto;
+import org.camunda.optimize.dto.optimize.variable.ShortVariableDto;
+import org.camunda.optimize.dto.optimize.variable.StringVariableDto;
+import org.camunda.optimize.dto.optimize.variable.VariableInstanceDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -17,17 +23,15 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/rest/restTestApplicationContext.xml"})
@@ -38,6 +42,13 @@ public class VariableReaderIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:rest/restEmbeddedOptimizeContext.xml");
 
+  private SimpleDateFormat simpleDateFormat;
+
+  @Before
+  public void init() {
+    simpleDateFormat = new SimpleDateFormat(elasticSearchRule.getDateFormat());
+  }
+
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
@@ -46,24 +57,25 @@ public class VariableReaderIT {
   public void maxVariableValueListSize() {
 
     // given
-    SimpleVariableDto variableDto = new SimpleVariableDto();
+    StringVariableDto variableDto = new StringVariableDto();
     variableDto.setName("varName");
     variableDto.setType("String");
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    procInst.setVariables(Collections.singletonList(variableDto));
+    procInst.addVariableInstance(variableDto);
     int exceededMaxVariableValue = embeddedOptimizeRule.getMaxVariableValueListSize() + 1;
     for (int i = 0; i < exceededMaxVariableValue; i++) {
-      variableDto.setValue(new VariableValueDto(String.valueOf(i)));
+      variableDto.setValue(String.valueOf(i));
       elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), String.valueOf(i), procInst);
     }
 
     // when
-    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get(0);
+    assertThat(variables.get("varName").size(), is(1));
+    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
     assertThat(responseDto.getValues().size(), is(15));
     assertThat(responseDto.isValuesAreComplete(), is(false));
   }
@@ -71,27 +83,27 @@ public class VariableReaderIT {
   @Test
   public void maxVariableValueListSizeInSameProcessInstance() {
 
-    int exceededMaxVariableValue = 16;
+    int exceededMaxVariableValue = embeddedOptimizeRule.getMaxVariableValueListSize() + 1;
     // given
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    procInst.setVariables(new ArrayList<>());
     for (int i = 0; i < exceededMaxVariableValue; i++) {
-      SimpleVariableDto variableDto = new SimpleVariableDto();
+      StringVariableDto variableDto = new StringVariableDto();
       variableDto.setName("varName");
       variableDto.setType("String");
-      variableDto.setValue(new VariableValueDto(String.valueOf(i)));
-      procInst.getVariables().add(variableDto);
+      variableDto.setValue(String.valueOf(i));
+      procInst.addVariableInstance(variableDto);
     }
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "asdfasd", procInst);
 
     // when
-    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get(0);
-    assertThat(responseDto.getValues().size(), is(15));
+    assertThat(variables.get("varName").size(), is(1));
+    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
+    assertThat(responseDto.getValues().size(), is(embeddedOptimizeRule.getMaxVariableValueListSize()));
     assertThat(responseDto.isValuesAreComplete(), is(false));
   }
 
@@ -99,206 +111,171 @@ public class VariableReaderIT {
   public void getVariables() {
 
     // given
-    SimpleVariableDto variableDto = new SimpleVariableDto();
+    StringVariableDto variableDto = new StringVariableDto();
     variableDto.setName("var1");
     variableDto.setType("String");
-    variableDto.setValue(new VariableValueDto("value1"));
+    variableDto.setValue("value1");
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    procInst.setVariables(Collections.singletonList(variableDto));
+    procInst.addVariableInstance(variableDto);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
 
     variableDto.setName("var2");
-        variableDto.setValue(new VariableValueDto("value2"));
-
+        variableDto.setValue("value2");
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "2", procInst);
 
     variableDto.setName("var3");
-        variableDto.setValue(new VariableValueDto("value3"));
-
+        variableDto.setValue("value3");
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "3", procInst);
 
-
     // when
-    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(3));
-    GetVariablesResponseDto responseDto = variables.get(0);
-    assertThat(responseDto.getValues().size(), is(1));
-    switch (responseDto.getName()) {
-      case "var1":
-        assertThat(responseDto.getValues().get(0), is("value1"));
-        assertThat(responseDto.isValuesAreComplete(), is(true));
-        assertThat(responseDto.getType(), is("String"));
-        break;
-      case "var2":
-        assertThat(responseDto.getValues().get(0), is("value2"));
-        assertThat(responseDto.isValuesAreComplete(), is(true));
-        assertThat(responseDto.getType(), is("String"));
-        break;
-      case "var3":
-        assertThat(responseDto.getValues().get(0), is("value3"));
-        assertThat(responseDto.isValuesAreComplete(), is(true));
-        assertThat(responseDto.getType(), is("String"));
-        break;
-      default:
-        fail("Should not have a different value!");
-        break;
-    }
+    assertVariableNameValueRelation(variables, "var1", "value1");
+    assertVariableNameValueRelation(variables, "var2", "value2");
+    assertVariableNameValueRelation(variables, "var3", "value3");
+  }
 
+  private void assertVariableNameValueRelation(Map<String, List<GetVariablesResponseDto>> variables, String name, String value) {
+    assertThat(variables.get(name).size(), is(1));
+    GetVariablesResponseDto responseDto = variables.get(name).get(0);
+    assertThat(responseDto.getValues().get(0), is(value));
+    assertThat(responseDto.isValuesAreComplete(), is(true));
+    assertThat(responseDto.getType(), is("String"));
   }
 
   @Test
-  public void variableWithSameNameChangeType() {
+  public void variableWithSameNameAndDifferentType() {
     // given
-    SimpleVariableDto variableDto = new SimpleVariableDto();
-    variableDto.setName("varName");
-    variableDto.setType("String");
-    variableDto.setValue(new VariableValueDto("aValue"));
+    StringVariableDto stringVariable = new StringVariableDto();
+    stringVariable.setName("varName");
+    stringVariable.setType("String");
+    stringVariable.setValue("aValue");
+
+    BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+    booleanVariableDto.setName("varName");
+    booleanVariableDto.setType("Boolean");
+    booleanVariableDto.setValue(true);
+
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    procInst.addVariableInstance(stringVariable);
+    procInst.addVariableInstance(booleanVariableDto);
 
-    SimpleVariableDto variableDto2 = new SimpleVariableDto();
-    variableDto2.setName("varName");
-    variableDto2.setType("Boolean");
-    variableDto2.setValue(new VariableValueDto(true));
-
-    List<SimpleVariableDto> valueList = new LinkedList<>();
-    valueList.add(variableDto);
-    valueList.add(variableDto2);
-
-    procInst.setVariables(valueList);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
 
     // when
-    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get(0);
-    assertThat(responseDto.getValues().size(), is(2));
+    assertThat(variables.get("varName").size(), is(2));
+    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
+    assertThat(responseDto.getValues().size(), is(1));
     assertThat(responseDto.isValuesAreComplete(), is(true));
   }
 
   @Test
   public void variablesInDifferentProcessDefinitionDoesNotAffectResult() {
     // given
-    SimpleVariableDto variableDto = new SimpleVariableDto();
-    variableDto.setName("var1");
+    StringVariableDto variableDto = new StringVariableDto();
+    variableDto.setName("varName");
     variableDto.setType("String");
-    variableDto.setValue(new VariableValueDto("value1"));
+    variableDto.setValue("value1");
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    procInst.setVariables(Collections.singletonList(variableDto));
+    procInst.addVariableInstance(variableDto);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
 
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID + "2");
         elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "2", procInst);
 
     // when
-    List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+    Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
     // then
     assertThat(variables.size(), is(1));
-    GetVariablesResponseDto responseDto = variables.get(0);
+    assertThat(variables.get("varName").size(), is(1));
+    GetVariablesResponseDto responseDto = variables.get("varName").get(0);
     assertThat(responseDto.getValues().size(), is(1));
     assertThat(responseDto.isValuesAreComplete(), is(true));
-
   }
 
 
   @Test
-  public void allPrimitiveTypesCanBeRead() {
+  public void allPrimitiveTypesCanBeRead() throws ParseException {
     // given
-    Map<String, VariableValueDto> typeValueMap = preparePrimitiveTypeValueMap();
+    Map<String, VariableInstanceDto> typeValueMap = preparePrimitiveTypeValueMap();
 
-    for (Map.Entry<String, VariableValueDto> typeValueEntry : typeValueMap.entrySet()) {
+    for (Map.Entry<String, VariableInstanceDto> typeValueEntry : typeValueMap.entrySet()) {
 
-      SimpleVariableDto variableDto = new SimpleVariableDto();
-      variableDto.setName("varName");
-      variableDto.setType(typeValueEntry.getKey());
-      variableDto.setValue(typeValueEntry.getValue());
+      typeValueEntry.getValue().setName("varName");
       ProcessInstanceDto procInst = new ProcessInstanceDto();
       procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-      procInst.setVariables(Collections.singletonList(variableDto));
+      procInst.addVariableInstance(typeValueEntry.getValue());
       elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
 
       // when
-      List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
+      Map<String, List<GetVariablesResponseDto>> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
 
       // then
       assertThat(variables.size(), is(1));
-      GetVariablesResponseDto responseDto = variables.get(0);
+      assertThat(variables.get("varName").size(), is(1));
+      GetVariablesResponseDto responseDto = variables.get("varName").get(0);
       assertThat(responseDto.getName(), is("varName"));
       assertThat(responseDto.getType(), is(typeValueEntry.getKey()));
       assertThat(responseDto.isValuesAreComplete(), is(true));
+      String resultValueString = typeValueEntry.getValue().getValue().toString();
+      if( typeValueEntry.getValue() instanceof DateVariableDto) {
+        DateVariableDto dateVariableDto = (DateVariableDto) typeValueEntry.getValue();
+        resultValueString = simpleDateFormat.format(dateVariableDto.getValue());
+      }
       assertThat(
         responseDto.getValues().get(0),
-          is(typeValueEntry.getValue().toString(elasticSearchRule.getDateFormat())));
-
+          is(resultValueString)
+      );
       elasticSearchRule.cleanAndVerify();
       embeddedOptimizeRule.stopOptimize();
       embeddedOptimizeRule.startOptimize();
     }
   }
 
-  private Map<String, VariableValueDto> preparePrimitiveTypeValueMap() {
-    Map<String, VariableValueDto> typeToValue = new HashMap<>();
-    typeToValue.put("Date", new VariableValueDto(new Date()));
-    typeToValue.put("Boolean", new VariableValueDto(true));
-    typeToValue.put("Short", new VariableValueDto((short)2));
-    typeToValue.put("Integer", new VariableValueDto(5));
-    typeToValue.put("Long", new VariableValueDto(10L));
-    typeToValue.put("Double", new VariableValueDto(2.87));
-    typeToValue.put("String", new VariableValueDto("aString"));
+  private Map<String, VariableInstanceDto> preparePrimitiveTypeValueMap() {
+    Map<String, VariableInstanceDto> typeToValue = new HashMap<>();
+    DateVariableDto dateVariableDto = new DateVariableDto();
+    dateVariableDto.setValue(new Date());
+    typeToValue.put("Date", dateVariableDto);
+    BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+    booleanVariableDto.setValue(true);
+    typeToValue.put("Boolean", booleanVariableDto);
+    ShortVariableDto shortVariableDto = new ShortVariableDto();
+    shortVariableDto.setValue((short)2);
+    typeToValue.put("Short", shortVariableDto);
+    IntegerVariableDto integerVariableDto = new IntegerVariableDto();
+    integerVariableDto.setValue(5);
+    typeToValue.put("Integer", integerVariableDto);
+    LongVariableDto longVariableDto = new LongVariableDto();
+    longVariableDto.setValue(5L);
+    typeToValue.put("Long", longVariableDto);
+    DoubleVariableDto doubleVariableDto = new DoubleVariableDto();
+    doubleVariableDto.setValue(5.5);
+    typeToValue.put("Double", doubleVariableDto);
+    StringVariableDto stringVariableDto =  new StringVariableDto();
+    stringVariableDto.setValue("aString");
+    typeToValue.put("String", stringVariableDto);
     return typeToValue;
   }
 
-
-  @Test
-  public void complexTypesCannotBeRead() {
-    // given
-    Map<String, String> typeValueMap = prepareComplexTypeValueMap();
-
-    for (Map.Entry<String, String> typeValueEntry : typeValueMap.entrySet()) {
-
-      SimpleVariableDto variableDto = new SimpleVariableDto();
-      variableDto.setName("varName");
-      variableDto.setType(typeValueEntry.getKey());
-      variableDto.setValue(new VariableValueDto(typeValueEntry.getValue()));
-      ProcessInstanceDto procInst = new ProcessInstanceDto();
-      procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-      procInst.setVariables(Collections.singletonList(variableDto));
-      elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "1", procInst);
-
-      // when
-      List<GetVariablesResponseDto> variables = getGetVariablesResponseDtos(PROCESS_DEFINITION_ID);
-
-      // then
-      assertThat(variables.size(), is(0));
-      elasticSearchRule.cleanAndVerify();
-      embeddedOptimizeRule.stopOptimize();
-      embeddedOptimizeRule.startOptimize();
-    }
-  }
-
-  private List<GetVariablesResponseDto> getGetVariablesResponseDtos(String processDefinition) {
+  private Map<String, List<GetVariablesResponseDto>> getGetVariablesResponseDtos(String processDefinition) {
     String token = embeddedOptimizeRule.authenticateAdmin();
     Response response =
         embeddedOptimizeRule.target("process-definition/" + processDefinition + "/variables")
             .request()
             .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
             .get();
-    return response.readEntity(new GenericType<List<GetVariablesResponseDto>>() {});
+    return response.readEntity(new GenericType<Map<String, List<GetVariablesResponseDto>>>() {});
   }
 
-  private Map<String, String> prepareComplexTypeValueMap() {
-    Map<String, String> typeToValue = new HashMap<>();
-    typeToValue.put("Object", "sdsfasd");
-    typeToValue.put("File", null);
-    typeToValue.put("Json", "asdf");
-    typeToValue.put("Xml", "asdf");
-    return typeToValue;
-  }
 }

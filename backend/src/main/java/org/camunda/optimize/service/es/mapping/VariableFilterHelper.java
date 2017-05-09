@@ -5,7 +5,6 @@ import org.camunda.optimize.dto.optimize.FilterMapDto;
 import org.camunda.optimize.dto.optimize.VariableFilterDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +15,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_BOOLEAN_VALUE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_DATE_VALUE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_DOUBLE_VALUE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_INTEGER_VALUE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_LONG_VALUE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_SHORT_VALUE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_STRING_VALUE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DOUBLE_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.INTEGER_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.LONG_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.SHORT_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -36,18 +34,18 @@ public class VariableFilterHelper {
 
   private Logger logger = LoggerFactory.getLogger(VariableFilterHelper.class);
 
-  private Map<String,String> typeToVariableValueName;
+  private Map<String,String> typeToVariableFieldLabel;
   
   @PostConstruct
   private void init() {
-    typeToVariableValueName = new HashMap<>();
-    typeToVariableValueName.put("string", VARIABLE_STRING_VALUE);
-    typeToVariableValueName.put("integer", VARIABLE_INTEGER_VALUE);
-    typeToVariableValueName.put("short", VARIABLE_SHORT_VALUE);
-    typeToVariableValueName.put("long", VARIABLE_LONG_VALUE);
-    typeToVariableValueName.put("double", VARIABLE_DOUBLE_VALUE);
-    typeToVariableValueName.put("boolean", VARIABLE_BOOLEAN_VALUE);
-    typeToVariableValueName.put("date", VARIABLE_DATE_VALUE);
+    typeToVariableFieldLabel = new HashMap<>();
+    typeToVariableFieldLabel.put("string", STRING_VARIABLES);
+    typeToVariableFieldLabel.put("integer", INTEGER_VARIABLES);
+    typeToVariableFieldLabel.put("short", SHORT_VARIABLES);
+    typeToVariableFieldLabel.put("long", LONG_VARIABLES);
+    typeToVariableFieldLabel.put("double", DOUBLE_VARIABLES);
+    typeToVariableFieldLabel.put("boolean", BOOLEAN_VARIABLES);
+    typeToVariableFieldLabel.put("date", DATE_VARIABLES);
   }
 
   public BoolQueryBuilder addFilters(BoolQueryBuilder query, FilterMapDto filter) {
@@ -58,31 +56,10 @@ public class VariableFilterHelper {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDto variable : variables) {
-        BoolQueryBuilder boolQueryBuilder =
-          boolQuery()
-            .must(matchVariableName(variable.getName()))
-            .must(matchVariableType(variable.getType()))
-            .must(createFilterQueryBuilder(variable));
-        filters.add(boolQueryBuilder);
+        filters.add(createFilterQueryBuilder(variable));
       }
     }
     return query;
-  }
-
-  private NestedQueryBuilder matchVariableType(String variableType) {
-    return nestedQuery(
-      ProcessInstanceType.VARIABLES,
-      termsQuery("variables.type", variableType),
-      ScoreMode.None
-    );
-  }
-
-  private NestedQueryBuilder matchVariableName(String variableName) {
-    return nestedQuery(
-      ProcessInstanceType.VARIABLES,
-      termsQuery("variables.name", variableName),
-      ScoreMode.None
-    );
   }
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDto dto) {
@@ -106,21 +83,34 @@ public class VariableFilterHelper {
       default:
         logger.error("Could not filter for variables! Type [{}] is not supported for variable filters.", dto.getType());
     }
-    NestedQueryBuilder variableValueQuery = nestedQuery("variables.value", queryBuilder, ScoreMode.None);
-    return nestedQuery(VARIABLES, variableValueQuery, ScoreMode.None);
+    return queryBuilder;
   }
 
   private QueryBuilder createStringQueryBuilder(VariableFilterDto dto) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
+    String variableNameFieldLabel = getFullVariableNameFieldLabel(dto.getType());
+    String variableValueFieldLabel = getFullVariableValueFieldLabel(dto.getType());
     if (dto.getOperator().equals("=")) {
       for (String value : dto.getValues()) {
-        boolQueryBuilder
-          .must(termQuery(getVariableValueFieldName(dto.getType()), value));
+       boolQueryBuilder.should(
+         nestedQuery(
+           STRING_VARIABLES,
+            boolQuery()
+              .must(termQuery(variableNameFieldLabel, dto.getName()))
+              .must(termQuery(variableValueFieldLabel, value)),
+            ScoreMode.None)
+       );
       }
     } else if (dto.getOperator().equals("!=")) {
       for (String value : dto.getValues()) {
-        boolQueryBuilder
-          .mustNot(termQuery(getVariableValueFieldName(dto.getType()), value));
+        boolQueryBuilder.should(
+          boolQuery().mustNot(nestedQuery(
+            STRING_VARIABLES,
+            boolQuery()
+                .must(termQuery(variableNameFieldLabel, dto.getName()))
+                .must(termQuery(variableValueFieldLabel, value)),
+            ScoreMode.None))
+        );
       }
     } else {
       logger.error("Could not filter for variables! Operator [{}] is not allowed for type [String]", dto.getOperator());
@@ -135,31 +125,40 @@ public class VariableFilterHelper {
         "There were no value provided for operator [{}] and type [{}]", dto.getOperator(), dto.getType());
       return boolQueryBuilder;
     }
+    QueryBuilder resultQuery = nestedQuery(
+      typeToVariableFieldLabel.get(dto.getType().toLowerCase()),
+      boolQueryBuilder,
+      ScoreMode.None);
+    String variableNameFieldLabel = getFullVariableNameFieldLabel(dto.getType());
+    boolQueryBuilder.must(
+      termQuery(variableNameFieldLabel, dto.getName())
+    );
+    String variableValueFieldLabel = getFullVariableValueFieldLabel(dto.getType());
     Object value = retrieveValue(dto);
-    String variableValueFieldName = getVariableValueFieldName(dto.getType());
     switch (dto.getOperator()) {
       case "=":
-        boolQueryBuilder.must(termQuery(variableValueFieldName, value));
+        boolQueryBuilder.must(termQuery(variableValueFieldLabel, value));
         break;
       case "!=":
-        boolQueryBuilder.mustNot(termQuery(variableValueFieldName, value));
+        boolQueryBuilder.must(termQuery(variableValueFieldLabel, value));
+        resultQuery = boolQuery().mustNot(resultQuery);
         break;
       case "<":
-        boolQueryBuilder.must(rangeQuery(variableValueFieldName).lt(value));
+        boolQueryBuilder.must(rangeQuery(variableValueFieldLabel).lt(value));
         break;
       case ">":
-        boolQueryBuilder.must(rangeQuery(variableValueFieldName).gt(value));
+        boolQueryBuilder.must(rangeQuery(variableValueFieldLabel).gt(value));
         break;
       case "<=":
-        boolQueryBuilder.must(rangeQuery(variableValueFieldName).lte(value));
+        boolQueryBuilder.must(rangeQuery(variableValueFieldLabel).lte(value));
         break;
       case ">=":
-        boolQueryBuilder.must(rangeQuery(variableValueFieldName).gte(value));
+        boolQueryBuilder.must(rangeQuery(variableValueFieldLabel).gte(value));
         break;
       default:
         logger.error("Could not filter for variables! Operator [{}] is not supported for type [{}]", dto.getOperator(), dto.getType());
     }
-    return boolQueryBuilder;
+    return resultQuery;
   }
 
   private Object retrieveValue(VariableFilterDto dto) {
@@ -183,8 +182,12 @@ public class VariableFilterHelper {
     return value;
   }
 
-  private String getVariableValueFieldName(String variableType) {
-    return "variables.value." + typeToVariableValueName.get(variableType.toLowerCase());
+  private String getFullVariableNameFieldLabel(String variableType) {
+    return typeToVariableFieldLabel.get(variableType.toLowerCase()) + "." + ProcessInstanceType.VARIABLE_NAME;
+  }
+
+  private String getFullVariableValueFieldLabel(String variableType) {
+    return typeToVariableFieldLabel.get(variableType.toLowerCase()) + "." + ProcessInstanceType.VARIABLE_VALUE;
   }
 
   private QueryBuilder createDateQueryBuilder(VariableFilterDto dto) {
@@ -192,14 +195,21 @@ public class VariableFilterHelper {
   }
 
   private QueryBuilder createBoolQueryBuilder(VariableFilterDto dto) {
-    BoolQueryBuilder boolQuery = boolQuery();
+    QueryBuilder queryBuilder = matchAllQuery();
     if (dto.getOperator().equals("=")) {
-      boolQuery
-        .must(termQuery(getVariableValueFieldName(dto.getType()), retrieveValue(dto)));
+      queryBuilder =
+            nestedQuery(
+              BOOLEAN_VARIABLES,
+              boolQuery()
+                .must(termsQuery("booleanVariables.name", dto.getName()))
+                .must(termsQuery("booleanVariables.value", retrieveValue(dto))
+              ),
+              ScoreMode.None
+            );
     } else {
       logger.error("Could not filter for variables! Operator [{}] is not supported for type [Boolean]", dto.getOperator());
     }
-    return boolQuery;
+    return queryBuilder;
   }
 
 }

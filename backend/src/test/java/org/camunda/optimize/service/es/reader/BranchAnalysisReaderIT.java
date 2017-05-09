@@ -4,12 +4,11 @@ import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.FilterMapDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionXmlOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleEventDto;
-import org.camunda.optimize.dto.optimize.SimpleVariableDto;
 import org.camunda.optimize.dto.optimize.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.VariableValueDto;
+import org.camunda.optimize.dto.optimize.variable.StringVariableDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DataUtilHelper;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -74,7 +72,13 @@ public class BranchAnalysisReaderIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+
+  public static String read(InputStream input) throws IOException {
+    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
+      return buffer.lines().collect(Collectors.joining("\n"));
+    }
+  }
 
   @Before
   public void setUp() throws Exception {
@@ -89,12 +93,6 @@ public class BranchAnalysisReaderIT {
 
   private String readDiagram(String diagramPath) throws IOException {
     return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(diagramPath));
-  }
-
-  public static String read(InputStream input) throws IOException {
-    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
-      return buffer.lines().collect(Collectors.joining("\n"));
-    }
   }
 
   @Test
@@ -176,21 +174,21 @@ public class BranchAnalysisReaderIT {
     procInst.setStartDate(new Date());
     procInst.setEndDate(new Date());
     procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
-    procInst.setVariables(createVariableList(VARIABLE_VALUE));
+    procInst.addVariableInstance(createStringVariable(VARIABLE_VALUE));
 
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
     procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY}));
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    procInst.setVariables(createVariableList(VARIABLE_VALUE_2));
+    procInst.addVariableInstance(createStringVariable(VARIABLE_VALUE_2));
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
   }
 
-  private List<SimpleVariableDto> createVariableList(String variableValue) {
-    SimpleVariableDto variableDto = new SimpleVariableDto();
+  private StringVariableDto createStringVariable(String variableValue) {
+    StringVariableDto variableDto = new StringVariableDto();
     variableDto.setName(VARIABLE_NAME);
     variableDto.setType(VARIABLE_TYPE_STRING);
-    variableDto.setValue(new VariableValueDto(variableValue));
-    return Collections.singletonList(variableDto);
+    variableDto.setValue(variableValue);
+    return variableDto;
   }
 
   private List<SimpleEventDto> createEventList(String[] activityIds) {
@@ -362,7 +360,7 @@ public class BranchAnalysisReaderIT {
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
     procInst.setEvents(
       createEventList(new String[]{GATEWAY_B, GATEWAY_C, TASK, GATEWAY_F, END_ACTIVITY})
-      );
+    );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_BY_PASS);
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_BY_PASS, procInst);
   }
@@ -402,34 +400,34 @@ public class BranchAnalysisReaderIT {
   }
 
   @Test
-  public void testValidationExceptionOnNullDto () {
+  public void testValidationExceptionOnNullDto() {
 
     //when
     Response response = getResponse(null);
-    assertThat(response.getStatus(),is(500));
+    assertThat(response.getStatus(), is(500));
   }
 
   @Test
-  public void testValidationExceptionOnNullProcessDefinition () {
+  public void testValidationExceptionOnNullProcessDefinition() {
 
     //when
     Response response = getResponse(new BranchAnalysisQueryDto());
-    assertThat(response.getStatus(),is(500));
+    assertThat(response.getStatus(), is(500));
   }
 
   @Test
-  public void testValidationExceptionOnNullGateway () {
+  public void testValidationExceptionOnNullGateway() {
     //given
     BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
     request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
     //when
     Response response = getResponse(request);
 
-    assertThat(response.getStatus(),is(500));
+    assertThat(response.getStatus(), is(500));
   }
 
   @Test
-  public void testValidationExceptionOnNullEndActivity () {
+  public void testValidationExceptionOnNullEndActivity() {
 
     BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
     request.setProcessDefinitionId(PROCESS_DEFINITION_ID);
@@ -437,7 +435,7 @@ public class BranchAnalysisReaderIT {
     //when
     Response response = getResponse(request);
 
-    assertThat(response.getStatus(),is(500));
+    assertThat(response.getStatus(), is(500));
   }
 
 
@@ -452,9 +450,9 @@ public class BranchAnalysisReaderIT {
   private Response getResponse(String token, BranchAnalysisQueryDto dto) {
     Entity<BranchAnalysisQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
     return embeddedOptimizeRule.target("process-definition/correlation")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .post(entity);
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .post(entity);
   }
 
   private Response getResponse(BranchAnalysisQueryDto request) {

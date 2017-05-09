@@ -5,13 +5,18 @@ import org.camunda.optimize.dto.optimize.HeatMapQueryDto;
 import org.camunda.optimize.dto.optimize.HeatMapResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.SimpleEventDto;
-import org.camunda.optimize.dto.optimize.SimpleVariableDto;
 import org.camunda.optimize.dto.optimize.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.VariableValueDto;
+import org.camunda.optimize.dto.optimize.variable.BooleanVariableDto;
+import org.camunda.optimize.dto.optimize.variable.DateVariableDto;
+import org.camunda.optimize.dto.optimize.variable.DoubleVariableDto;
+import org.camunda.optimize.dto.optimize.variable.IntegerVariableDto;
+import org.camunda.optimize.dto.optimize.variable.LongVariableDto;
+import org.camunda.optimize.dto.optimize.variable.ShortVariableDto;
+import org.camunda.optimize.dto.optimize.variable.StringVariableDto;
+import org.camunda.optimize.dto.optimize.variable.VariableInstanceDto;
 import org.camunda.optimize.test.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.rule.EmbeddedOptimizeRule;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -30,6 +35,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static org.camunda.optimize.service.util.VariableHelper.BOOLEAN_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.DATE_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.LONG_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.SHORT_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.STRING_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -55,26 +67,19 @@ public class VariableFilterIT {
   private final String TEST_ACTIVITY = "testActivity";
 
   private final String VARIABLE_NAME = "var";
-  private final String VARIABLE_TYPE_STRING = "String";
-  private final String VARIABLE_TYPE_INTEGER = "Integer";
-  private final String VARIABLE_TYPE_LONG = "Long";
-  private final String VARIABLE_TYPE_SHORT = "Short";
-  private final String VARIABLE_TYPE_DOUBLE = "Double";
-  private final String VARIABLE_TYPE_BOOLEAN = "Boolean";
-  private final String VARIABLE_TYPE_DATE = "Date";
   private final String[] NUMERIC_TYPES =
-    {VARIABLE_TYPE_INTEGER, VARIABLE_TYPE_SHORT, VARIABLE_TYPE_LONG, VARIABLE_TYPE_DOUBLE};
+    {INTEGER_TYPE, SHORT_TYPE, LONG_TYPE, DOUBLE_TYPE};
 
 
   @Test
   public void simpleVariableFilter() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_STRING, "value");
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_STRING, "anotherValue");
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, STRING_TYPE, "value");
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, STRING_TYPE, "anotherValue");
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, VARIABLE_TYPE_STRING, "value");
+    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -83,37 +88,29 @@ public class VariableFilterIT {
   }
 
   @Test
-  @Ignore
   public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() throws Exception {
     // given
-    SimpleEventDto event = new SimpleEventDto();
-    event.setActivityId(TEST_ACTIVITY);
+    StringVariableDto stringVariableDto = new StringVariableDto();
+    stringVariableDto.setName("stringVar");
+    stringVariableDto.setType(STRING_TYPE);
+    stringVariableDto.setValue("aStringValue");
 
-    SimpleVariableDto variableDto = new SimpleVariableDto();
-    variableDto.setName("stringVar");
-    variableDto.setType(VARIABLE_TYPE_STRING);
-    variableDto.setValue(parseValue(VARIABLE_TYPE_STRING, "aStringValue"));
+    StringVariableDto anotherStringVariable = new StringVariableDto();
+    anotherStringVariable.setName("anotherStringVar");
+    anotherStringVariable.setType(STRING_TYPE);
+    anotherStringVariable.setValue("anotherValue");
 
-    SimpleVariableDto variableDto2 = new SimpleVariableDto();
-    variableDto2.setName("boolVar");
-    variableDto2.setType(VARIABLE_TYPE_BOOLEAN);
-    variableDto2.setValue(parseValue(VARIABLE_TYPE_BOOLEAN, "true"));
-    List<SimpleVariableDto> variables = new ArrayList<>();
-    variables.add(variableDto);
-    variables.add(variableDto2);
+    BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+    booleanVariableDto.setName("boolVar");
+    booleanVariableDto.setType(BOOLEAN_TYPE);
+    booleanVariableDto.setValue(true);
 
-
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(TEST_DEFINITION);
-    procInst.setProcessInstanceId("id1");
-    procInst.setVariables(variables);
-    procInst.setEvents(Collections.singletonList(event));
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), "id1", procInst);
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id1", new VariableInstanceDto[]{booleanVariableDto, stringVariableDto, anotherStringVariable});
 
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", "stringVar", VARIABLE_TYPE_STRING, "aStringValue");
+    VariableFilterDto filter = createVariableFilter("!=", "stringVar", STRING_TYPE, "aStringValue");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -122,14 +119,109 @@ public class VariableFilterIT {
   }
 
   @Test
-  public void variablesWithDifferentNameAreFiltered() throws Exception {
+  public void stringEqualityFilterWithVariableOfDifferentType() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_STRING, "value");
-    addProcessInstanceWithVariableToElasticsearch("2", "anotherVariable", VARIABLE_TYPE_STRING, "value");
+    StringVariableDto stringVariableDto = new StringVariableDto();
+    stringVariableDto.setName("stringVar");
+    stringVariableDto.setType(STRING_TYPE);
+    stringVariableDto.setValue("aStringValue");
+
+    StringVariableDto anotherStringVariable = new StringVariableDto();
+    anotherStringVariable.setName("anotherStringVar");
+    anotherStringVariable.setType(STRING_TYPE);
+    anotherStringVariable.setValue("anotherValue");
+
+    BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+    booleanVariableDto.setName("boolVar");
+    booleanVariableDto.setType(BOOLEAN_TYPE);
+    booleanVariableDto.setValue(true);
+
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id1",
+      new VariableInstanceDto[]{booleanVariableDto, stringVariableDto, anotherStringVariable});
+
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, VARIABLE_TYPE_STRING, "value");
+    VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "aStringValue");
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+
+    // then
+    assertResults(testDefinition, 1, TEST_ACTIVITY, 1L, 1L);
+  }
+
+  @Test
+  public void stringInequalityFilterWithVariableOfDifferentTypeAndProcessInstance() throws Exception {
+    // given
+    StringVariableDto stringVariableDto = new StringVariableDto();
+    stringVariableDto.setName("stringVar");
+    stringVariableDto.setType(STRING_TYPE);
+    stringVariableDto.setValue("aStringValue");
+
+    StringVariableDto anotherStringVariable = new StringVariableDto();
+    anotherStringVariable.setName("anotherStringVar");
+    anotherStringVariable.setType(STRING_TYPE);
+    anotherStringVariable.setValue("aStringValue");
+
+    BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+    booleanVariableDto.setName("boolVar");
+    booleanVariableDto.setType(BOOLEAN_TYPE);
+    booleanVariableDto.setValue(true);
+
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id1", new VariableInstanceDto[]{booleanVariableDto, stringVariableDto});
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id2", new VariableInstanceDto[]{booleanVariableDto, stringVariableDto});
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id3", new VariableInstanceDto[]{booleanVariableDto, stringVariableDto, anotherStringVariable});
+
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
+    // when
+    VariableFilterDto filter = createVariableFilter("!=", "anotherStringVar", STRING_TYPE, "aStringValue");
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+
+    // then
+    assertResults(testDefinition, 1, TEST_ACTIVITY, 2L, 2L);
+  }
+
+  @Test
+  public void severalStringValueFiltersAreConcatenated() throws Exception {
+    // given
+    StringVariableDto stringVariableDto = new StringVariableDto();
+    stringVariableDto.setName("stringVar");
+    stringVariableDto.setType(STRING_TYPE);
+    stringVariableDto.setValue("aStringValue");
+
+    StringVariableDto anotherStringVariable = new StringVariableDto();
+    anotherStringVariable.setName("stringVar");
+    anotherStringVariable.setType(STRING_TYPE);
+    anotherStringVariable.setValue("anotherValue");
+
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id1", new VariableInstanceDto[]{});
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id2", new VariableInstanceDto[]{stringVariableDto});
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id3", new VariableInstanceDto[]{anotherStringVariable});
+    addProcessInstanceWithSeveralVariablesToElasticsearch("id4", new VariableInstanceDto[]{anotherStringVariable, stringVariableDto});
+
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
+    // when
+    VariableFilterDto filter = createVariableFilter("=", "stringVar", STRING_TYPE, "aStringValue");
+    filter.getValues().add("anotherValue");
+    HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
+    HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
+
+    // then
+    assertResults(testDefinition, 1, TEST_ACTIVITY, 3L, 3L);
+  }
+
+  @Test
+  public void variablesWithDifferentNameAreFiltered() throws Exception {
+    // given
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, STRING_TYPE, "value");
+    addProcessInstanceWithVariableToElasticsearch("2", "anotherVariable", STRING_TYPE, "value");
+    String token = embeddedOptimizeRule.authenticateAdmin();
+
+    // when
+    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -140,12 +232,12 @@ public class VariableFilterIT {
   @Test
   public void variablesWithDifferentTypeAreFiltered() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_STRING, "1");
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_INTEGER, "1");
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, STRING_TYPE, "1");
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, INTEGER_TYPE, "1");
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, VARIABLE_TYPE_STRING, "1");
+    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, STRING_TYPE, "1");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -156,13 +248,13 @@ public class VariableFilterIT {
   @Test
   public void stringInequalityVariableFilter() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_STRING, "value");
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_STRING, "anotherValue");
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_STRING, "aThirdValue");
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, STRING_TYPE, "value");
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, STRING_TYPE, "anotherValue");
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, STRING_TYPE, "aThirdValue");
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", VARIABLE_NAME, VARIABLE_TYPE_STRING, "value");
+    VariableFilterDto filter = createVariableFilter("!=", VARIABLE_NAME, STRING_TYPE, "value");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -173,13 +265,13 @@ public class VariableFilterIT {
   @Test
   public void booleanTrueVariableFilter() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "false");
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "false");
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, BOOLEAN_TYPE, "true");
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, BOOLEAN_TYPE, "false");
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, BOOLEAN_TYPE, "false");
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "false");
+    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, BOOLEAN_TYPE, "false");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -190,13 +282,13 @@ public class VariableFilterIT {
   @Test
   public void booleanFalseVariableFilter() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "false");
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, BOOLEAN_TYPE, "true");
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, BOOLEAN_TYPE, "true");
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, BOOLEAN_TYPE, "false");
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
+    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, BOOLEAN_TYPE, "true");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -207,13 +299,13 @@ public class VariableFilterIT {
   @Test
   public void booleanVariableFilterWithUnsupportedOperator() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "false");
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, BOOLEAN_TYPE, "true");
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, BOOLEAN_TYPE, "true");
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, BOOLEAN_TYPE, "false");
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", VARIABLE_NAME, VARIABLE_TYPE_BOOLEAN, "true");
+    VariableFilterDto filter = createVariableFilter("!=", VARIABLE_NAME, BOOLEAN_TYPE, "true");
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -387,13 +479,13 @@ public class VariableFilterIT {
   @Test
   public void dateLessThanVariableFilter() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(1));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(1));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("<", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDate());
+    VariableFilterDto filter = createVariableFilter("<", VARIABLE_NAME, DATE_TYPE, nowDate());
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -405,13 +497,13 @@ public class VariableFilterIT {
   public void dateLessThanEqualVariableFilter() throws Exception {
     // given
     String now = nowDate();
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, now);
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("<=", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
+    VariableFilterDto filter = createVariableFilter("<=", VARIABLE_NAME, DATE_TYPE, now);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -422,13 +514,13 @@ public class VariableFilterIT {
   @Test
   public void dateGreaterThanVariableFilter() throws Exception {
     // given
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDate());
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, nowDate());
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
+    VariableFilterDto filter = createVariableFilter(">", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -441,13 +533,13 @@ public class VariableFilterIT {
 
     // given
     String now = nowDate();
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, now);
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">=", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
+    VariableFilterDto filter = createVariableFilter(">=", VARIABLE_NAME, DATE_TYPE, now);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -460,13 +552,13 @@ public class VariableFilterIT {
 
     // given
     String now = nowDate();
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, now);
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
+    VariableFilterDto filter = createVariableFilter("=", VARIABLE_NAME, DATE_TYPE, now);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -479,13 +571,13 @@ public class VariableFilterIT {
 
     // given
     String now = nowDate();
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, now);
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("!=", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
+    VariableFilterDto filter = createVariableFilter("!=", VARIABLE_NAME, DATE_TYPE, now);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilter(TEST_DEFINITION, filter);
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -499,14 +591,14 @@ public class VariableFilterIT {
     // given
     String nowMinus2Seconds = nowDateMinusSeconds(2);
     String nowPlus10Seconds = nowDatePlusSeconds(10);
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDate());
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowMinus2Seconds);
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowPlus10Seconds);
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, nowDate());
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowMinus2Seconds);
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowPlus10Seconds);
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter(">", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowMinus2Seconds);
-    VariableFilterDto filter2 = createVariableFilter("<", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowPlus10Seconds);
+    VariableFilterDto filter = createVariableFilter(">", VARIABLE_NAME, DATE_TYPE, nowMinus2Seconds);
+    VariableFilterDto filter2 = createVariableFilter("<", VARIABLE_NAME, DATE_TYPE, nowPlus10Seconds);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(TEST_DEFINITION, new VariableFilterDto[]{filter, filter2});
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -519,14 +611,14 @@ public class VariableFilterIT {
 
     // given
     String now = nowDate();
-    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
-    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDateMinusSeconds(2));
-    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, VARIABLE_TYPE_DATE, nowDatePlusSeconds(10));
+    addProcessInstanceWithVariableToElasticsearch("1", VARIABLE_NAME, DATE_TYPE, now);
+    addProcessInstanceWithVariableToElasticsearch("2", VARIABLE_NAME, DATE_TYPE, nowDateMinusSeconds(2));
+    addProcessInstanceWithVariableToElasticsearch("3", VARIABLE_NAME, DATE_TYPE, nowDatePlusSeconds(10));
     String token = embeddedOptimizeRule.authenticateAdmin();
 
     // when
-    VariableFilterDto filter = createVariableFilter("<", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
-    VariableFilterDto filter2 = createVariableFilter(">", VARIABLE_NAME, VARIABLE_TYPE_DATE, now);
+    VariableFilterDto filter = createVariableFilter("<", VARIABLE_NAME, DATE_TYPE, now);
+    VariableFilterDto filter2 = createVariableFilter(">", VARIABLE_NAME, DATE_TYPE, now);
     HeatMapQueryDto queryDto = createHeatMapQueryWithVariableFilters(TEST_DEFINITION, new VariableFilterDto[]{filter, filter2});
     HeatMapResponseDto testDefinition = getHeatMapResponseDto(token, queryDto);
 
@@ -650,44 +742,92 @@ public class VariableFilterIT {
     filter.setOperator(operator);
     filter.setName(variableName);
     filter.setType(variableType);
-    filter.setValues(Collections.singletonList(variableValue));
+    List<String> values = new ArrayList<>();
+    values.add(variableValue);
+    filter.setValues(values);
     return filter;
   }
 
-  private void addProcessInstanceWithVariableToElasticsearch(String id, String name, String type, String value) throws ParseException {
-    SimpleEventDto event = new SimpleEventDto();
-    event.setActivityId(TEST_ACTIVITY);
-
-    SimpleVariableDto variableDto = new SimpleVariableDto();
-    variableDto.setName(name);
-    variableDto.setType(type);
-    variableDto.setValue(parseValue(type, value));
+  private void addProcessInstanceWithSeveralVariablesToElasticsearch(String id, VariableInstanceDto[] variables) throws ParseException {
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(TEST_DEFINITION);
     procInst.setProcessInstanceId(id);
-    procInst.setVariables(Collections.singletonList(variableDto));
+
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(TEST_ACTIVITY);
     procInst.setEvents(Collections.singletonList(event));
+
+    for (VariableInstanceDto variable : variables) {
+      procInst.addVariableInstance(variable);
+    }
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), id, procInst);
   }
 
-  private VariableValueDto parseValue(String type, String value) throws ParseException {
+  private void addProcessInstanceWithVariableToElasticsearch(String id, String name, String type, String value) throws ParseException {
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(TEST_DEFINITION);
+    procInst.setProcessInstanceId(id);
+
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(TEST_ACTIVITY);
+    procInst.setEvents(Collections.singletonList(event));
+
+    parseValueAndAddToProcInstance(procInst, id, name, type, value);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), id, procInst);
+  }
+
+  private void parseValueAndAddToProcInstance(ProcessInstanceDto procInst, String id, String name, String type, String value) throws ParseException {
     switch (type.toLowerCase()) {
       case "string":
-        return new VariableValueDto(value);
+        StringVariableDto stringVariableDto = new StringVariableDto();
+        stringVariableDto.setValue(value);
+        stringVariableDto.setId(id);
+        stringVariableDto.setName(name);
+        procInst.getStringVariables().add(stringVariableDto);
+        break;
       case "integer":
-        return new VariableValueDto(Integer.parseInt(value));
+        IntegerVariableDto integerVariableDto = new IntegerVariableDto();
+        integerVariableDto.setValue(Integer.parseInt(value));
+        integerVariableDto.setId(id);
+        integerVariableDto.setName(name);
+        procInst.getIntegerVariables().add(integerVariableDto);
+        break;
       case "long":
-        return new VariableValueDto(Long.parseLong(value));
+        LongVariableDto longVariableDto = new LongVariableDto();
+        longVariableDto.setValue(Long.parseLong(value));
+        longVariableDto.setId(id);
+        longVariableDto.setName(name);
+        procInst.getLongVariables().add(longVariableDto);
+        break;
       case "short":
-        return new VariableValueDto(Short.parseShort(value));
+        ShortVariableDto shortVariableDto = new ShortVariableDto();
+        shortVariableDto.setValue(Short.parseShort(value));
+        shortVariableDto.setId(id);
+        shortVariableDto.setName(name);
+        procInst.getShortVariables().add(shortVariableDto);
+        break;
       case "double":
-        return new VariableValueDto(Double.parseDouble(value));
+        DoubleVariableDto doubleVariableDto = new DoubleVariableDto();
+        doubleVariableDto.setValue(Double.parseDouble(value));
+        doubleVariableDto.setId(id);
+        doubleVariableDto.setName(name);
+        procInst.getDoubleVariables().add(doubleVariableDto);
+        break;
       case "boolean":
-        return new VariableValueDto(Boolean.parseBoolean(value));
+        BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+        booleanVariableDto.setValue(Boolean.parseBoolean(value));
+        booleanVariableDto.setId(id);
+        booleanVariableDto.setName(name);
+        procInst.getBooleanVariables().add(booleanVariableDto);
+        break;
       case "date":
-        return new VariableValueDto(sdf.parse(value));
+        DateVariableDto dateVariableDto = new DateVariableDto();
+        dateVariableDto.setValue(sdf.parse(value));
+        dateVariableDto.setId(id);
+        dateVariableDto.setName(name);
+        procInst.getDateVariables().add(dateVariableDto);
+        break;
     }
-    return new VariableValueDto(value);
   }
 
   private HeatMapQueryDto createHeatMapQueryWithVariableFilter(String processDefinitionId, VariableFilterDto variable) {

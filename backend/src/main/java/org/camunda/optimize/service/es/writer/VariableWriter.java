@@ -3,9 +3,15 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.SimpleVariableDto;
 import org.camunda.optimize.dto.optimize.VariableDto;
-import org.camunda.optimize.dto.optimize.VariableValueDto;
+import org.camunda.optimize.dto.optimize.variable.BooleanVariableDto;
+import org.camunda.optimize.dto.optimize.variable.DateVariableDto;
+import org.camunda.optimize.dto.optimize.variable.DoubleVariableDto;
+import org.camunda.optimize.dto.optimize.variable.IntegerVariableDto;
+import org.camunda.optimize.dto.optimize.variable.LongVariableDto;
+import org.camunda.optimize.dto.optimize.variable.ShortVariableDto;
+import org.camunda.optimize.dto.optimize.variable.StringVariableDto;
+import org.camunda.optimize.dto.optimize.variable.VariableInstanceDto;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
@@ -27,6 +33,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
+import static org.camunda.optimize.service.util.VariableHelper.isDateType;
+import static org.camunda.optimize.service.util.VariableHelper.isDoubleType;
+import static org.camunda.optimize.service.util.VariableHelper.isIntegerType;
+import static org.camunda.optimize.service.util.VariableHelper.isLongType;
+import static org.camunda.optimize.service.util.VariableHelper.isShortType;
+import static org.camunda.optimize.service.util.VariableHelper.isStringType;
+import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
+
 @Component
 public class VariableWriter {
 
@@ -40,6 +56,8 @@ public class VariableWriter {
   private ObjectMapper objectMapper;
 
   private SimpleDateFormat sdf;
+
+  private final String variableParameterName = "variable";
 
   @PostConstruct
   public void init() {
@@ -72,27 +90,23 @@ public class VariableWriter {
   }
 
   private void addImportVariableRequest(BulkRequestBuilder addVariableToProcessInstanceBulkRequest, VariableDto variable) throws IOException, ParseException {
-    if (isVariableFromCaseDefinition(variable)) {
+    if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
       return;
     }
     String processInstanceId = variable.getProcessInstanceId();
-    SimpleVariableDto variableDto = new SimpleVariableDto();
-    variableDto.setId(variable.getId());
-    variableDto.setName(variable.getName());
-    variableDto.setType(variable.getType());
-    variableDto.setValue(parseValue(variable));
+    VariableInstanceDto variableInstanceDto = parseValue(variable);
     Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
     HashMap jsonMap = objectMapper.readValue(
-      objectMapper.writeValueAsString(variableDto),
+      objectMapper.writeValueAsString(variableInstanceDto),
       HashMap.class
     );
-    params.put("variable", jsonMap);
+    params.put(variableParameterName, jsonMap);
 
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.variables.add(params.variable)",
+      createInlineUpdateScript(variable.getType()),
       params
     );
 
@@ -102,7 +116,7 @@ public class VariableWriter {
     procInst.setProcessInstanceId(variable.getProcessInstanceId());
     procInst.setStartDate(new Date());
     procInst.setEndDate(new Date());
-    procInst.getVariables().add(variableDto);
+    procInst.addVariableInstance(variableInstanceDto);
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
     addVariableToProcessInstanceBulkRequest.add(esclient
@@ -119,23 +133,55 @@ public class VariableWriter {
     return variable.getProcessDefinitionId() == null;
   }
 
-  private VariableValueDto parseValue(VariableDto e) throws ParseException {
-    switch (e.getType().toLowerCase()) {
-      case "string":
-        return new VariableValueDto(e.getValue());
-      case "integer":
-        return new VariableValueDto(Integer.parseInt(e.getValue()));
-      case "long":
-        return new VariableValueDto(Long.parseLong(e.getValue()));
-      case "short":
-        return new VariableValueDto(Short.parseShort(e.getValue()));
-      case "double":
-        return new VariableValueDto(Double.parseDouble(e.getValue()));
-      case "boolean":
-        return new VariableValueDto(Boolean.parseBoolean(e.getValue()));
-      case "date":
-        return new VariableValueDto(sdf.parse(e.getValue()));
-    }
-    return new VariableValueDto(e.getValue());
+  private String createInlineUpdateScript(String type) {
+    return "ctx._source." +
+      variableTypeToFieldLabel(type) +
+      ".add(params." +
+      variableParameterName +
+      ")";
   }
+
+  private VariableInstanceDto parseValue(VariableDto e) throws ParseException {
+    VariableInstanceDto variableInstanceDto;
+    if (isStringType(e.getType())) {
+      StringVariableDto stringVariableDto = new StringVariableDto();
+      stringVariableDto.setValue(e.getValue());
+      variableInstanceDto = stringVariableDto;
+    } else if (isIntegerType(e.getType())) {
+      IntegerVariableDto integerVariableDto = new IntegerVariableDto();
+      integerVariableDto.setValue(Integer.parseInt(e.getValue()));
+      variableInstanceDto = integerVariableDto;
+    } else if (isLongType(e.getType())) {
+      LongVariableDto longVariableDto = new LongVariableDto();
+      longVariableDto.setValue(Long.parseLong(e.getValue()));
+      variableInstanceDto = longVariableDto;
+    } else if(isShortType(e.getType())) {
+      ShortVariableDto shortVariableDto = new ShortVariableDto();
+      shortVariableDto.setValue(Short.parseShort(e.getValue()));
+      variableInstanceDto = shortVariableDto;
+    } else if(isDoubleType(e.getType())) {
+      DoubleVariableDto doubleVariableDto = new DoubleVariableDto();
+      doubleVariableDto.setValue(Double.parseDouble(e.getValue()));
+      variableInstanceDto = doubleVariableDto;
+    } else if(isBooleanType(e.getType())) {
+      BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+      booleanVariableDto.setValue(Boolean.parseBoolean(e.getValue()));
+      variableInstanceDto = booleanVariableDto;
+    } else if(isDateType(e.getType())) {
+      DateVariableDto dateVariableDto = new DateVariableDto();
+      dateVariableDto.setValue(sdf.parse(e.getValue()));
+      variableInstanceDto = dateVariableDto;
+    } else {
+      logger.warn("Unsupported variable type [{}] if variable {}! " +
+        "Interpreting this as string type instead.", e.getType(), e.getName());
+      StringVariableDto stringVariableDto = new StringVariableDto();
+      stringVariableDto.setValue(e.getValue());
+      variableInstanceDto = stringVariableDto;
+    }
+    variableInstanceDto.setType(e.getType());
+    variableInstanceDto.setId(e.getId());
+    variableInstanceDto.setName(e.getName());
+    return variableInstanceDto;
+  }
+
 }
