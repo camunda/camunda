@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
@@ -33,7 +34,6 @@ import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_ORDER_TYPE_ASCENDING;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_END_TIME;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_ID;
-import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_TYPE_INSTANCE_ID;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.TRUE;
 
 @Component
@@ -153,7 +153,7 @@ public class EngineEntityFetcher {
     List<HistoricProcessInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
     Map<String, Set<String>> pids = new HashMap<>();
-    pids.put("processInstanceIds", processInstanceIds);
+    pids.put(INCLUDE_PROCESS_INSTANCE_IDS, processInstanceIds);
     try {
       WebTarget baseRequest = client
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
@@ -171,63 +171,25 @@ public class EngineEntityFetcher {
     return entries;
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(int indexOfFirstResult, int maxPageSize) throws OptimizeException {
-    List<HistoricProcessInstanceDto> entries;
+  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(Set<String> processInstanceIds) throws OptimizeException {
+    List<HistoricVariableInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
+    Map<String, Set<String>> pids = new HashMap<>();
+    pids.put(INCLUDE_PROCESS_INSTANCE_IDS, processInstanceIds);
     try {
-      entries = client
+      WebTarget baseRequest = client
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-          .path(configurationService.getHistoricProcessInstanceEndpoint())
-          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .path(configurationService.getHistoricVariableInstanceEndpoint());
+      entries = baseRequest
           .request(MediaType.APPLICATION_JSON)
-          .get(new GenericType<List<HistoricProcessInstanceDto>>() {
-          });
+          .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
+          .readEntity(new GenericType<List<HistoricVariableInstanceDto>>(){});
       long requestEnd = System.currentTimeMillis();
-      logger.debug("Fetch of [HPI] took [{}] ms", requestEnd - requestStart);
+      logger.debug("Fetch of [HVI] took [{}] ms", requestEnd - requestStart);
     } catch (RuntimeException e) {
-      logError("Could not fetch historic process instances from engine. Please check the connection!", e);
+      logError("Could not fetch historic variable instances from engine. Please check the connection!", e);
       throw new OptimizeException();
     }
-    return entries;
-  }
-
-  public Integer fetchHistoricProcessInstanceCount() throws OptimizeException {
-    CountDto count;
-    try {
-      count = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricProcessInstanceCountEndpoint())
-        .request()
-        .get(CountDto.class);
-    } catch (RuntimeException e) {
-      throw new OptimizeException("Could not fetch process instance count from engine. Please check the connection!", e);
-    }
-
-    return count.getCount();
-  }
-
-  public List<HistoricVariableInstanceDto> fetchHistoricVariableInstances(int indexOfFirstResult, int maxPageSize) {
-    List<HistoricVariableInstanceDto> entries;
-    try {
-      entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricVariableInstanceEndpoint())
-        .queryParam(SORT_BY, SORT_TYPE_INSTANCE_ID)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .queryParam("deserializeValues", "false")
-        .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<HistoricVariableInstanceDto>>() {
-        });
-    } catch (RuntimeException e) {
-      logError("Could not fetch historic activity instances from engine. Please check the connection!", e);
-      entries = Collections.emptyList();
-    }
-
     return entries;
   }
 

@@ -28,9 +28,23 @@ public class ScheduleJobFactory {
     return result;
   }
 
-  public ImportScheduleJob createHistoricProcessInstanceScheduleJob(Set<String> idsToFetch) {
+  public List<ImportScheduleJob> createScheduleJobs(Set<String> idsToFetch) {
+    List<ImportScheduleJob> jobs = new ArrayList<>();
+    jobs.add(createHistoricProcessInstanceScheduleJob(idsToFetch));
+    jobs.add(createHistoricVariableInstanceScheduleJob(idsToFetch));
+    return jobs;
+  }
+
+  private ImportScheduleJob createHistoricProcessInstanceScheduleJob(Set<String> idsToFetch) {
     IdBasedImportScheduleJob hpiJob = new IdBasedImportScheduleJob();
     hpiJob.setImportService(importServiceProvider.getProcessInstanceImportService());
+    hpiJob.setIdsToFetch(idsToFetch);
+    return hpiJob;
+  }
+
+  private ImportScheduleJob createHistoricVariableInstanceScheduleJob(Set<String> idsToFetch) {
+    IdBasedImportScheduleJob hpiJob = new IdBasedImportScheduleJob();
+    hpiJob.setImportService(importServiceProvider.getVariableImportService());
     hpiJob.setIdsToFetch(idsToFetch);
     return hpiJob;
   }

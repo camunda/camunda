@@ -3,6 +3,7 @@ package org.camunda.optimize.service.importing.impl;
 import org.camunda.optimize.dto.engine.HistoricVariableInstanceDto;
 import org.camunda.optimize.dto.optimize.VariableDto;
 import org.camunda.optimize.service.es.writer.VariableWriter;
+import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
 import org.camunda.optimize.service.importing.diff.MissingVariablesFinder;
 import org.camunda.optimize.service.importing.job.impl.VariableImportJob;
@@ -13,8 +14,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-public class VariableImportService extends PaginatedImportService<HistoricVariableInstanceDto, VariableDto> {
+public class VariableImportService extends IndexedImportService<HistoricVariableInstanceDto, VariableDto> {
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);
 
@@ -24,8 +26,8 @@ public class VariableImportService extends PaginatedImportService<HistoricVariab
   private MissingVariablesFinder missingVariablesFinder;
 
   @Override
-  protected List<HistoricVariableInstanceDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) {
-    return engineEntityFetcher.fetchHistoricVariableInstances(indexOfFirstResult, maxPageSize);
+  protected List<HistoricVariableInstanceDto> queryEngineRestPoint(Set<String> processInstanceIds) throws OptimizeException {
+    return engineEntityFetcher.fetchHistoricVariableInstances(processInstanceIds);
   }
 
   @Override

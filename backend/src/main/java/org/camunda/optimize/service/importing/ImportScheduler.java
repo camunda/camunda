@@ -124,7 +124,7 @@ public class ImportScheduler extends Thread {
    */
   private void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
-      importScheduleJobs.add(scheduleJobFactory.createHistoricProcessInstanceScheduleJob(importResult.getIdsToFetch()));
+      importScheduleJobs.addAll(scheduleJobFactory.createScheduleJobs(importResult.getIdsToFetch()));
     }
 
     if (toExecute.isPageBased()) {

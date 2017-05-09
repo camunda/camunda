@@ -20,6 +20,9 @@ public class ImportServiceProvider {
   private ProcessInstanceImportService processInstanceImportService;
 
   @Autowired
+  private VariableImportService variableImportService;
+
+  @Autowired
   private ActivityImportService activityImportService;
 
   @Autowired
@@ -40,6 +43,10 @@ public class ImportServiceProvider {
 
   public ProcessInstanceImportService getProcessInstanceImportService() {
     return processInstanceImportService;
+  }
+
+  public VariableImportService getVariableImportService() {
+    return variableImportService;
   }
 
   public List<PaginatedImportService> getPagedServices() {
