@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.BranchAnalysisQueryDto;
@@ -340,10 +342,7 @@ public class BranchAnalysisReaderIT {
   }
 
   private void setupFullGatewayWithBypassFlow() throws IOException {
-    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
-    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_BY_PASS);
-    processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM_WITH_BYPASS));
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), PROCESS_DEFINITION_ID_BY_PASS, processDefinitionXmlDto);
+    addXmlToElasticsearch(PROCESS_DEFINITION_ID_BY_PASS, readDiagram(DIAGRAM_WITH_BYPASS));
 
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID_BY_PASS);
@@ -398,6 +397,89 @@ public class BranchAnalysisReaderIT {
     assertThat(task2.getActivitiesReached(), is(0L));
     assertThat(task2.getActivityCount(), is(0L));
   }
+
+  @Test
+  public void shortcutInExclusiveGatewayDoesNotDistortBranchAnalysis() {
+
+    // given
+    String startEventId = "startEvent";
+    String exclusiveSplittingGateway = "splittingGateway";
+    String userTask = "userTask";
+    String mergeExclusiveGateway = "mergeExclusiveGateway";
+    String endEvent = "endEvent";
+    BpmnModelInstance modelInstance = Bpmn.createProcess()
+    .startEvent(startEventId)
+    .exclusiveGateway(exclusiveSplittingGateway)
+      .userTask(userTask)
+      .exclusiveGateway(mergeExclusiveGateway)
+      .endEvent(endEvent)
+    .moveToLastGateway()
+    .moveToLastGateway()
+      .connectTo(mergeExclusiveGateway)
+    .done();
+    addXmlToElasticsearch(PROCESS_DEFINITION_ID, Bpmn.convertToString(modelInstance));
+
+    List<SimpleEventDto> events = new ArrayList<>();
+    events.add(createEventWithFlownodeType(startEventId));
+    events.add(createEventWithGatewayType(exclusiveSplittingGateway));
+    events.add(createEventWithGatewayType(mergeExclusiveGateway));
+    events.add(createEventWithFlownodeType(endEvent));
+
+    ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
+    procInst.setEvents(events);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
+
+    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
+    events.add(createEventWithFlownodeType(userTask));
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
+
+    //when
+    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
+    dto.setProcessDefinitionId(PROCESS_DEFINITION_ID);
+    dto.setGateway(exclusiveSplittingGateway);
+    dto.setEnd(endEvent);
+    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(endEvent));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(userTask);
+    assertThat(task1.getActivityId(), is(userTask));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(mergeExclusiveGateway);
+    assertThat(task2.getActivityId(), is(mergeExclusiveGateway));
+    assertThat(task2.getActivitiesReached(), is(1L));
+    assertThat(task2.getActivityCount(), is(1L));
+  }
+
+  private void addXmlToElasticsearch(String processDefinitionId, String bpmn20Xml) {
+    ProcessDefinitionXmlOptimizeDto processDefinitionXmlDto = new ProcessDefinitionXmlOptimizeDto();
+    processDefinitionXmlDto.setId(processDefinitionId);
+    processDefinitionXmlDto.setBpmn20Xml(bpmn20Xml);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionXmlType(), processDefinitionId, processDefinitionXmlDto);
+  }
+
+  private SimpleEventDto createEventWithFlownodeType(String activityId) {
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(activityId);
+    event.setActivityType("flowNode");
+    return event;
+  }
+
+  private SimpleEventDto createEventWithGatewayType(String activityId) {
+    SimpleEventDto event = new SimpleEventDto();
+    event.setActivityId(activityId);
+    event.setActivityType("exclusiveGateway");
+    return event;
+  }
+
 
   @Test
   public void testValidationExceptionOnNullDto() {
