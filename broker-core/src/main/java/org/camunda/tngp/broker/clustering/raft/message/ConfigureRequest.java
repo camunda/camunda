@@ -1,13 +1,7 @@
 package org.camunda.tngp.broker.clustering.raft.message;
 
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.hostHeaderLength;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.sbeBlockLength;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.sbeHeaderSize;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.configurationEntryPositionNullValue;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.configurationEntryTermNullValue;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.partitionIdNullValue;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.termNullValue;
-import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.topicNameHeaderLength;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder.*;
+import static org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.*;
 
 import java.util.Iterator;
 import java.util.List;
@@ -21,7 +15,7 @@ import org.camunda.tngp.broker.clustering.raft.Member;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestDecoder.MembersDecoder;
 import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder;
-import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.MembersEncoder;
+import org.camunda.tngp.clustering.raft.ConfigureRequestEncoder.*;
 import org.camunda.tngp.clustering.raft.MessageHeaderDecoder;
 import org.camunda.tngp.clustering.raft.MessageHeaderEncoder;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -196,7 +190,11 @@ public class ConfigureRequest implements BufferReader, BufferWriter
         }
 
         final int topicNameLength = bodyDecoder.topicNameLength();
-        topicName.wrap(buffer, bodyDecoder.limit(), topicNameLength);
+        final int topicNameOffset = bodyDecoder.limit() + topicNameHeaderLength();
+        topicName.wrap(buffer, topicNameOffset, topicNameLength);
+
+        // skip topic name in decoder
+        bodyDecoder.limit(topicNameOffset + topicNameLength);
     }
 
     public void reset()

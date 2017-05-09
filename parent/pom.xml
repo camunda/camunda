@@ -12,7 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <util.version>1.0.0-alpha5</util.version>
+    <util.version>1.0.0-SNAPSHOT</util.version>
     <msgpack.version>0.8.11</msgpack.version>
     <sbe.version>1.5.6</sbe.version>
     <agrona.version>0.9.2</agrona.version>
@@ -42,7 +42,7 @@
         <artifactId>tngp-broker-core</artifactId>
         <version>${project.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>tngp-protocol-test-util</artifactId>
@@ -66,7 +66,7 @@
         <artifactId>transport</artifactId>
         <version>1.0.0-alpha6</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>service-container</artifactId>
@@ -78,19 +78,19 @@
         <artifactId>hash-index</artifactId>
         <version>${util.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>test-util</artifactId>
         <version>${util.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.camunda.tngp</groupId>
         <artifactId>util</artifactId>
         <version>${util.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.camunda.tngp.msgpack</groupId>
         <artifactId>msgpack-json-path</artifactId>
@@ -120,7 +120,7 @@
         <artifactId>msgpack-core</artifactId>
         <version>${msgpack.version}</version>
       </dependency>
-  
+
       <dependency>
         <groupId>org.msgpack</groupId>
         <artifactId>jackson-dataformat-msgpack</artifactId>
@@ -132,19 +132,19 @@
         <artifactId>camunda-bpmn-model</artifactId>
         <version>7.6.0</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-slf4j-impl</artifactId>
         <version>${log4j.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
@@ -168,7 +168,7 @@
         <artifactId>assertj-core</artifactId>
         <version>3.3.0</version>
       </dependency>
-      
+
       <dependency>
   	    <groupId>org.hamcrest</groupId>
   	    <artifactId>hamcrest-library</artifactId>
