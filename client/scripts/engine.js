@@ -56,12 +56,10 @@ function startServer() {
         'bin',
         utils.isWindows ? 'shutdown.bat' : 'shutdown.sh'
       ]);
-      const startScript = utils.findPath(extractTarget, [
-        'server',
-        /tomcat/,
-        'bin',
-        utils.isWindows ? 'startup.bat' : 'startup.sh'
-      ]);
+      const startScript = path.resolve(
+        extractTarget,
+         utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
+       );
 
       if (running) {
         console.log(chalk.yellow('Previous instance of engine still running closing...'));
@@ -70,7 +68,9 @@ function startServer() {
 
       console.log('Starting new instance of engine...');
 
-      utils.runWithColor(startScript, 'engine', chalk.blue);
+      utils.runWithColor(startScript, 'engine', chalk.blue, {
+        cwd: extractTarget
+      });
 
       return utils.waitForServer(engineUrl);
     })
