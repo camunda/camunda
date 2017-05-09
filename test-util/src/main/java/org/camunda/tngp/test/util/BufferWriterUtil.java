@@ -12,7 +12,7 @@
  */
 package org.camunda.tngp.test.util;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.ReflectUtil;
@@ -22,14 +22,22 @@ import org.camunda.tngp.util.buffer.BufferWriter;
 public class BufferWriterUtil
 {
 
-    public static <T extends BufferWriter & BufferReader> void assertThatWriteAndReadEquals(T writer)
+    public static <T extends BufferWriter & BufferReader> void assertEqualFieldsAfterWriteAndRead(final T writer, String... fieldNames)
+    {
+        final T reader = writeAndRead(writer);
+
+        assertThat(reader)
+            .isEqualToComparingOnlyGivenFields(writer, fieldNames);
+    }
+
+    public static <T extends BufferWriter & BufferReader> T writeAndRead(final T writer)
     {
         @SuppressWarnings("unchecked")
         final T reader = ReflectUtil.newInstance((Class<T>) writer.getClass());
 
         wrap(writer, reader);
 
-        assertEquals(reader, writer);
+        return reader;
     }
 
 
