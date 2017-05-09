@@ -123,6 +123,11 @@ mavenJob(jobName)
 
     }
 
+    postBuildSteps {
+        // check if out of memory
+        shell("dmesg | egrep -i 'killed process'")
+    }
+
     publishers
     {
         deployArtifacts
