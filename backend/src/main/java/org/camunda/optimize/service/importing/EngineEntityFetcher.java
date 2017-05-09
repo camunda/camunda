@@ -27,6 +27,7 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_IDS;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_ONLY_FINISHED_INSTANCES;
+import static org.camunda.optimize.service.util.EngineConstantsUtil.INCLUDE_PROCESS_INSTANCE_ID_IN;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.EngineConstantsUtil.SORT_BY;
@@ -175,10 +176,11 @@ public class EngineEntityFetcher {
     List<HistoricVariableInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
     Map<String, Set<String>> pids = new HashMap<>();
-    pids.put(INCLUDE_PROCESS_INSTANCE_IDS, processInstanceIds);
+    pids.put(INCLUDE_PROCESS_INSTANCE_ID_IN, processInstanceIds);
     try {
       WebTarget baseRequest = client
           .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .queryParam("deserializeValues", "false")
           .path(configurationService.getHistoricVariableInstanceEndpoint());
       entries = baseRequest
           .request(MediaType.APPLICATION_JSON)

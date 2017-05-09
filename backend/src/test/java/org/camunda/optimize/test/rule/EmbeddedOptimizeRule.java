@@ -4,10 +4,12 @@ import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.dto.optimize.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
+import org.camunda.optimize.service.importing.ImportResult;
+import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
-import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
 import org.junit.rules.TestWatcher;
@@ -55,12 +57,17 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void importEngineEntities() throws OptimizeException {
     getJobExecutor().startExecutingImportJobs();
-    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
-      ImportScheduleJob job = new PageBasedImportScheduleJob();
-      job.setImportService(importService);
-      job.execute();
+    for(ImportScheduleJob job : getScheduleFactory().createPagedJobs()) {
+      ImportResult result = job.execute();
+      for (ImportScheduleJob idJob : getScheduleFactory().createIndexedScheduleJobs(result.getIdsToFetch())) {
+        idJob.execute();
+      }
     }
     getJobExecutor().stopExecutingImportJobs();
+  }
+
+  private ScheduleJobFactory getScheduleFactory() {
+    return camundaOptimize.getImportScheduleFactory();
   }
 
   private ImportServiceProvider getServiceProvider() {

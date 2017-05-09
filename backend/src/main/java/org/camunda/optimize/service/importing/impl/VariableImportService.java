@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+@Component
 public class VariableImportService extends IndexedImportService<HistoricVariableInstanceDto, VariableDto> {
 
   private final Logger logger = LoggerFactory.getLogger(VariableImportService.class);

@@ -1,6 +1,7 @@
 package org.camunda.optimize.test.rule;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -16,5 +17,9 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   @Override
   protected ApplicationContext getApplicationContext() {
     return super.getApplicationContext();
+  }
+
+  public ScheduleJobFactory getImportScheduleFactory() {
+    return getApplicationContext().getBean(ScheduleJobFactory.class);
   }
 }

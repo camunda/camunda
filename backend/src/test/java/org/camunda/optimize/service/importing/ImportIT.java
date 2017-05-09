@@ -34,6 +34,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -196,7 +197,6 @@ public class ImportIT  {
   }
 
   @Test
-  @Ignore
   public void variableImportWorks() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
@@ -215,18 +215,17 @@ public class ImportIT  {
     //when
     String token = embeddedOptimizeRule.authenticateAdmin();
     String procDefId = engineRule.getProcessDefinitionId();
-    List<GetVariablesResponseDto> variablesResponseDtos = embeddedOptimizeRule.target()
+    Map<String, List<GetVariablesResponseDto>> variablesResponseDtos = embeddedOptimizeRule.target()
         .path(embeddedOptimizeRule.getProcessDefinitionEndpoint() + "/" + procDefId + "/" + "variables")
         .request()
         .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get(new GenericType<List<GetVariablesResponseDto>>(){});
+        .get(new GenericType<Map<String, List<GetVariablesResponseDto>>>(){});
 
     //then
     assertThat(variablesResponseDtos.size(),is(variables.size()));
   }
 
   @Test
-  @Ignore
   public void variableFilterWorks() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")

@@ -6,6 +6,7 @@ import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -68,12 +69,19 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     } catch (Exception e) {
       logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
     }
-    esclient
-      .admin()
-      .cluster()
-      .prepareHealth(properties.getProperty("camunda.optimize.es.index"))
-      .setWaitForYellowStatus()
-      .get();
+    String indexName = properties.getProperty("camunda.optimize.es.index");
+    boolean exists = esclient.admin().indices()
+        .prepareExists(indexName)
+        .execute().actionGet().isExists();
+
+    if (exists) {
+      esclient
+          .admin()
+          .cluster()
+          .prepareHealth(indexName)
+          .setWaitForYellowStatus()
+          .get();
+    }
   }
 
   protected void starting(Description description) {
@@ -149,11 +157,17 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private void cleanUpElasticSearch() {
     try {
-      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-        .refresh(true)
-        .filter(matchAllQuery())
-        .source("optimize")
-        .get();
+      String indexName = properties.getProperty("camunda.optimize.es.index");
+      boolean exists = esclient.admin().indices()
+          .prepareExists(indexName)
+          .execute().actionGet().isExists();
+      if (exists) {
+        DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+            .refresh(true)
+            .filter(matchAllQuery())
+            .source(indexName)
+            .get();
+      }
     } catch (IndexNotFoundException e) {
       //nothing to do
     }

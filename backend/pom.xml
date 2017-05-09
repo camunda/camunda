@@ -405,6 +405,7 @@
               <httpPort>9200</httpPort>
               <pathScripts>${project.basedir}/src/main/scripts</pathScripts>
               <skip>${skipTests}</skip>
+              <logLevel>ERROR</logLevel>
             </configuration>
             <executions>
               <!--

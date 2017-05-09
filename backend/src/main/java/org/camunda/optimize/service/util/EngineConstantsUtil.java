@@ -6,6 +6,7 @@ public class EngineConstantsUtil {
   public static final String INDEX_OF_FIRST_RESULT = "firstResult";
 
   public static final String INCLUDE_PROCESS_INSTANCE_IDS = "processInstanceIds";
+  public static final String INCLUDE_PROCESS_INSTANCE_ID_IN = "processInstanceIdIn";
 
   public static final String INCLUDE_ONLY_FINISHED_INSTANCES = "finished";
   public static final String TRUE = "true";

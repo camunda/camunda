@@ -2,7 +2,6 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.PaginatedImportService;
-import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
 import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
@@ -124,7 +123,7 @@ public class ImportScheduler extends Thread {
    */
   private void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
     if (importResult.getIdsToFetch() != null) {
-      importScheduleJobs.addAll(scheduleJobFactory.createScheduleJobs(importResult.getIdsToFetch()));
+      importScheduleJobs.addAll(scheduleJobFactory.createIndexedScheduleJobs(importResult.getIdsToFetch()));
     }
 
     if (toExecute.isPageBased()) {
