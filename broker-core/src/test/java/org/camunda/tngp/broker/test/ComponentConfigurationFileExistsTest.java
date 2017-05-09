@@ -6,14 +6,16 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 
+import org.agrona.IoUtil;
+import org.camunda.tngp.broker.Broker;
+import org.camunda.tngp.broker.system.ConfigurationManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.assertj.core.util.Files;
-import org.camunda.tngp.broker.Broker;
-import org.camunda.tngp.broker.system.ConfigurationManagerImpl;
 
 
 
@@ -110,12 +112,15 @@ public class ComponentConfigurationFileExistsTest
     Broker broker;
     String configString;
     Thread brokerThreadHandler;
-    String workSpace = "/tngp-config-test/";
+    String workSpace;
 
 
     @Before
-    public void before()
+    public void before() throws Exception
     {
+        final Path path = Files.createTempDirectory("tngp-config-test-");
+        workSpace = path.toString();
+
         System.out.println("------------->");
 
     }
@@ -320,7 +325,7 @@ public class ComponentConfigurationFileExistsTest
                 deleteDir(f);
             }
         }
-        Files.delete(file);
+        IoUtil.deleteIfExists(file);
     }
 
 
