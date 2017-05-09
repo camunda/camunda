@@ -1,19 +1,21 @@
-var fs = require('fs');
-var path = require('path');
-var request = promisify(require('request'));
-var tarball = require('tarball-extract');
-var chalk = require('chalk');
-var exec = require('child_process').exec;
+const fs = require('fs');
+const path = require('path');
+const request = promisify(require('request'));
+const tarball = require('tarball-extract');
+const chalk = require('chalk');
+const exec = require('child_process').exec;
 
-var readdir = promisify(fs.readdir, fs);
+const readdir = promisify(fs.readdir, fs);
 
 exports.waitForServer = waitForServer;
+exports.isServerUp = isServerUp;
 exports.readdir = readdir;
 exports.findPath = findPath;
 exports.findFile = findFile;
 exports.promisify = promisify;
 exports.extract = promisify(tarball.extractTarball);
 exports.runWithColor = runWithColor;
+exports.isWindows = /^win/.test(process.platform);
 
 function runWithColor(command, name, color, options = {}) {
   const process = exec(command, options);
@@ -45,6 +47,12 @@ function waitForServer(address, retries = 5, waitTime = 10) {
     });
 }
 
+function isServerUp(address) {
+  return request(address)
+    .then(() => true)
+    .catch(() => false);
+}
+
 function delay(time) {
   return new Promise(function(resolve) {
     setTimeout(function() {
@@ -59,27 +67,33 @@ function findPath(start, predicates) {
   }, start);
 }
 
-function findFile(directory, predicate) {
+function findFile(directory, predicate, multiple) {
   if (typeof predicate === 'string') {
     return findFile(directory, function(file) {
       return file.slice(-1 * predicate.length) === predicate;
-    });
+    }, multiple);
   } else if (predicate instanceof RegExp) {
     return findFile(directory, function(file) {
       return predicate.test(file);
-    });
+    }, multiple);
+  }
+
+  const files = fs.readdirSync(directory)
+    .filter(predicate);
+
+  if (multiple) {
+    return files.map(file => path.resolve(directory, file));
   }
 
   return path.resolve(
     directory,
-    fs.readdirSync(directory)
-      .filter(predicate)[0]
+    files[0]
   );
 }
 
 function promisify(original, thisArg) {
  return function() {
-   var args = Array.prototype.slice.call(arguments);
+   const args = Array.prototype.slice.call(arguments);
 
    return new Promise(function(resolve, reject) {
      original.apply(

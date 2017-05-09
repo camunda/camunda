@@ -1,21 +1,21 @@
-var shell = require('shelljs');
-var path = require('path');
-var http = require('http');
-var serveStatic = require('serve-static');
-var fs = require('fs');
-var proxy = require('http-proxy-middleware');
+const shell = require('shelljs');
+const path = require('path');
+const http = require('http');
+const serveStatic = require('serve-static');
+const fs = require('fs');
+const proxy = require('http-proxy-middleware');
 
-var webpack = path.resolve(__dirname, '..', 'node_modules', '.bin', 'webpack');
-var config = path.resolve(__dirname, '..', 'webpack-production.config.js');
-var dist = path.resolve(__dirname, '..', 'dist');
-var index = path.resolve(dist, 'index.html');
+const webpack = path.resolve(__dirname, '..', 'node_modules', '.bin', 'webpack');
+const config = path.resolve(__dirname, '..', 'webpack-production.config.js');
+const dist = path.resolve(__dirname, '..', 'dist');
+const index = path.resolve(dist, 'index.html');
 
 shell.rm('-rf', dist);
 shell.exec(`${webpack} --config ${config}`);
 
-var serve = serveStatic(dist);
-var gzExtensions = ['.js', '.css', '.eot', '.ttf', '.svg'];
-var contentTypes = {
+const serve = serveStatic(dist);
+const gzExtensions = ['.js', '.css', '.eot', '.ttf', '.svg'];
+const contentTypes = {
   '.js': 'application/javascript',
   '.css': 'text/css',
   '.tff': 'application/x-font-ttf',
@@ -23,7 +23,7 @@ var contentTypes = {
 };
 
 function redirectGzips(req, res, next) {
-  var extension = gzExtensions.filter(matchesExtension.bind(null, req.url))[0];
+  const extension = gzExtensions.filter(matchesExtension.bind(null, req.url))[0];
 
   if (extension) {
     req.url = req.url + '.gz';
@@ -41,7 +41,7 @@ function matchesExtension(url, extension) {
   return url.substr(url.length - extension.length) === extension;
 }
 
-var proxyInstance = proxy({
+const proxyInstance = proxy({
   target: 'http://localhost:8090/',
   changeOrigin: true
 });
@@ -55,8 +55,8 @@ function proxyApi(req, res, next) {
 }
 
 function serveIndex(req, res) {
-  var stat = fs.statSync(index);
-  var indexStream = fs.createReadStream(index);
+  const stat = fs.statSync(index);
+  const indexStream = fs.createReadStream(index);
 
   res.writeHead(200, {
     'Content-Type': 'text/html',
@@ -66,7 +66,7 @@ function serveIndex(req, res) {
   indexStream.pipe(res);
 }
 
-var server = http.createServer(applyMiddlewares([
+const server = http.createServer(applyMiddlewares([
   redirectGzips,
   serve,
   proxyApi,
@@ -77,9 +77,9 @@ function applyMiddlewares(functions) {
   return applyMiddleware(0);
 
   function applyMiddleware(index) {
-    return function(req, res) {
-      var middleWare = functions[index];
-      var next = function() {
+    return (req, res) => {
+      const middleWare = functions[index];
+      const next = function() {
         applyMiddleware(index + 1)(req, res);
       };
 
