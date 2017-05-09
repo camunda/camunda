@@ -12,6 +12,8 @@
  */
 package org.camunda.tngp.test.util;
 
+import static org.junit.Assert.*;
+
 import org.agrona.concurrent.UnsafeBuffer;
 import org.camunda.tngp.util.ReflectUtil;
 import org.camunda.tngp.util.buffer.BufferReader;
@@ -19,6 +21,17 @@ import org.camunda.tngp.util.buffer.BufferWriter;
 
 public class BufferWriterUtil
 {
+
+    public static <T extends BufferWriter & BufferReader> void assertThatWriteAndReadEquals(T writer)
+    {
+        @SuppressWarnings("unchecked")
+        final T reader = ReflectUtil.newInstance((Class<T>) writer.getClass());
+
+        wrap(writer, reader);
+
+        assertEquals(reader, writer);
+    }
+
 
     public static void wrap(BufferWriter writer, BufferReader reader)
     {
