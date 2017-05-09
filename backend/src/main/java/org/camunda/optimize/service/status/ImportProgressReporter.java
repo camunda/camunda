@@ -4,6 +4,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.EngineEntityFetcher;
 import org.camunda.optimize.service.importing.ImportService;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
+import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -33,9 +34,7 @@ public class ImportProgressReporter {
   public int computeImportProgress() throws OptimizeException {
     int totalEngineEntityCount =
       engineEntityFetcher.fetchHistoricActivityInstanceCount() +
-        2 * engineEntityFetcher.fetchProcessDefinitionCount() +
-//        engineEntityFetcher.fetchHistoricVariableInstanceCount() +
-      engineEntityFetcher.fetchHistoricProcessInstanceCount();
+        2 * engineEntityFetcher.fetchProcessDefinitionCount();
     double alreadyImportedCount = getAlreadyImportedCount();
     if (totalEngineEntityCount > 0) {
       int tempResult = (int) (Math.floor(alreadyImportedCount / totalEngineEntityCount * 100));
@@ -47,7 +46,7 @@ public class ImportProgressReporter {
 
   private double getAlreadyImportedCount() {
     double alreadyImportedCount = 0;
-    for (ImportService importService : importServiceProvider.getServices()) {
+    for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
       alreadyImportedCount += importService.getImportStartIndex();
     }
     return alreadyImportedCount;

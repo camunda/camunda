@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Askar Akhmerov
@@ -26,6 +28,7 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   private EventsWriter eventsWriter;
   @Autowired
   private MissingActivityFinder missingActivityFinder;
+  private Set<String> currentHpi;
 
   @Override
   protected MissingEntitiesFinder<HistoricActivityInstanceEngineDto> getMissingEntitiesFinder() {
@@ -51,11 +54,13 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   @Override
   public List<EventDto> mapToOptimizeDto(List<HistoricActivityInstanceEngineDto> entries) {
     List<EventDto> result = new ArrayList<>(entries.size());
+    currentHpi = new HashSet<>();
     for (HistoricActivityInstanceEngineDto entry : entries) {
       final EventDto createEvent = new EventDto();
       mapDefaults(entry, createEvent);
       result.add(createEvent);
 
+      currentHpi.add(createEvent.getProcessInstanceId());
     }
     return result;
   }
@@ -77,5 +82,10 @@ public class ActivityImportService extends PaginatedImportService<HistoricActivi
   @Override
   public String getElasticsearchType() {
     return configurationService.getEventType();
+  }
+
+  @Override
+  protected Set<String> getIdsForPostProcessing() {
+    return this.currentHpi;
   }
 }

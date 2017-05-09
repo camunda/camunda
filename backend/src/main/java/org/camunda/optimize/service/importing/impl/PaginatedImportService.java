@@ -5,14 +5,8 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.importing.EngineEntityFetcher;
-import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.ImportService;
-import org.camunda.optimize.service.importing.diff.MissingEntitiesFinder;
+import org.camunda.optimize.service.importing.ImportResult;
 import org.camunda.optimize.service.importing.job.impl.ImportIndexImportJob;
-import org.camunda.optimize.service.util.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,34 +16,28 @@ import java.util.List;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 
 @Component
-abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> implements ImportService {
+public abstract class PaginatedImportService<ENG extends EngineDto, OPT extends OptimizeDto> extends AbstractImportService <ENG, OPT> {
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  protected ConfigurationService configurationService;
-  @Autowired
-  protected EngineEntityFetcher engineEntityFetcher;
-  @Autowired
-  protected ImportJobExecutor importJobExecutor;
   @Autowired
   private ImportIndexWriter importIndexWriter;
   @Autowired
   private ImportIndexReader importIndexReader;
 
   private int importIndex;
+  private int maxPageSize;
 
   @PostConstruct
-  private void init() {
+  protected void init() {
     importIndex = importIndexReader.getImportIndex(getElasticsearchType());
+    maxPageSize = this.getEngineImportMaxPageSize();
+    ensureGreaterThanZero(maxPageSize);
   }
 
   @Override
-  public int executeImport() throws OptimizeException {
+  public ImportResult executeImport() throws OptimizeException {
+    ImportResult result = new ImportResult();
     int pagesWithData = 0;
     int searchedSize;
-    int maxPageSize = this.getEngineImportMaxPageSize();
-    ensureGreaterThanZero(maxPageSize);
     logger.debug("Importing page with index starting from '" + importIndex +
       "' and max page size '" + maxPageSize + "' from type " + getElasticsearchType());
 
@@ -65,7 +53,9 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
     importIndex += searchedSize;
     persistIndexToElasticsearch(importIndex);
 
-    return pagesWithData;
+    result.setPagesPassed(pagesWithData);
+    result.setIdsToFetch(getIdsForPostProcessing());
+    return result;
   }
 
   protected int getEngineImportMaxPageSize() {
@@ -102,21 +92,4 @@ abstract class PaginatedImportService<ENG extends EngineDto, OPT extends Optimiz
    */
   protected abstract List<ENG> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) throws OptimizeException;
 
-  /**
-   * @return Finder that checks which entries are already in
-   * imported to optimize.
-   */
-  protected abstract MissingEntitiesFinder<ENG> getMissingEntitiesFinder();
-
-  /**
-   * maps the entities from an engine representation
-   * to an optimize representation.
-   */
-  protected abstract List<OPT> mapToOptimizeDto(List<ENG> entries);
-
-  /**
-   * imports the given events to optimize by
-   * adding them to elasticsearch.
-   */
-  protected abstract void importToElasticSearch(List<OPT> events);
 }

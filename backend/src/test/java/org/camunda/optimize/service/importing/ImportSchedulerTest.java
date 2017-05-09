@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.status.ImportProgressReporter;
@@ -43,7 +44,7 @@ public class ImportSchedulerTest {
   @Autowired
   private ImportProgressReporter importProgressReporter;
 
-  private List<ImportService> services;
+  private List<PaginatedImportService> services;
 
   @Before
   public void setUp() {
@@ -51,7 +52,7 @@ public class ImportSchedulerTest {
     importScheduler.importScheduleJobs.clear();
 
     services = mockImportServices();
-    when(importServiceProvider.getServices()).thenReturn(services);
+    when(importServiceProvider.getPagedServices()).thenReturn(services);
   }
 
   @After
@@ -62,15 +63,15 @@ public class ImportSchedulerTest {
   @Test
   public void testJobsScheduled () {
     importScheduler.scheduleProcessEngineImport();
-    assertThat(importScheduler.importScheduleJobs.size(),is(importServiceProvider.getServices().size()));
+    assertThat(importScheduler.importScheduleJobs.size(),is(importServiceProvider.getPagedServices().size()));
   }
 
   @Test
   public void allImportsAreTriggered() throws InterruptedException, OptimizeException {
 
     // given
-    List<ImportService> services = mockImportServices();
-    when(importServiceProvider.getServices()).thenReturn(services);
+    List<PaginatedImportService> services = mockImportServices();
+    when(importServiceProvider.getPagedServices()).thenReturn(services);
     importScheduler.scheduleProcessEngineImport();
 
     // when
@@ -84,8 +85,8 @@ public class ImportSchedulerTest {
     }
   }
 
-  private List<ImportService> mockImportServices() {
-    List<ImportService> services = new ArrayList<>();
+  private List<PaginatedImportService> mockImportServices() {
+    List<PaginatedImportService> services = new ArrayList<>();
     services.add(mock(ActivityImportService.class));
     services.add(mock(ProcessDefinitionImportService.class));
     services.add(mock(ProcessDefinitionXmlImportService.class));
@@ -95,7 +96,9 @@ public class ImportSchedulerTest {
   @Test
   public void testNotBackingOffIfImportPagesFound() throws Exception {
     //given
-    when(services.get(0).executeImport()).thenReturn(1);
+    ImportResult result = new ImportResult();
+    result.setPagesPassed(1);
+    when(services.get(0).executeImport()).thenReturn(result);
     importScheduler.scheduleProcessEngineImport();
 
     //when
@@ -107,9 +110,11 @@ public class ImportSchedulerTest {
   @Test
   public void testBackingOffIfNoImportPagesFound() throws Exception {
     //given
-    List<ImportService> services = mockImportServices();
-    when(importServiceProvider.getServices()).thenReturn(services);
-    when(services.get(0).executeImport()).thenReturn(0);
+    List<PaginatedImportService> services = mockImportServices();
+    when(importServiceProvider.getPagedServices()).thenReturn(services);
+    ImportResult result = new ImportResult();
+    result.setPagesPassed(0);
+    when(services.get(0).executeImport()).thenReturn(result);
     importScheduler.scheduleProcessEngineImport();
 
     //when
@@ -134,8 +139,8 @@ public class ImportSchedulerTest {
   @Test
   public void testResetAfterPeriod () throws Exception {
     // given
-    List<ImportService> services = mockImportServices();
-    when(importServiceProvider.getServices()).thenReturn(services);
+    List<PaginatedImportService> services = mockImportServices();
+    when(importServiceProvider.getPagedServices()).thenReturn(services);
 
     LocalDateTime expectedReset = LocalDateTime.now().plus(Double.valueOf(configurationService.getImportResetInterval()).longValue(), ChronoUnit.HOURS);
     long toSleep = LocalDateTime.now().until(expectedReset, ChronoUnit.MILLIS);
@@ -145,7 +150,7 @@ public class ImportSchedulerTest {
     importScheduler.checkAndResetImportIndexing();
 
     // then
-    Mockito.verify(importServiceProvider.getServices().get(0),times(1)).resetImportStartIndex();
+    Mockito.verify(importServiceProvider.getPagedServices().get(0),times(1)).resetImportStartIndex();
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks
@@ -155,15 +160,15 @@ public class ImportSchedulerTest {
   @Test
   public void testResetIfEntitiesWereMissedDuringImport () throws Exception {
     // given
-    List<ImportService> services = mockImportServices();
-    when(importServiceProvider.getServices()).thenReturn(services);
+    List<PaginatedImportService> services = mockImportServices();
+    when(importServiceProvider.getPagedServices()).thenReturn(services);
     when(importProgressReporter.allEntitiesAreImported()).thenReturn(true);
 
     //when
     importScheduler.checkAndResetImportIndexing();
 
     // then
-    Mockito.verify(importServiceProvider.getServices().get(0),times(1)).resetImportStartIndex();
+    Mockito.verify(importServiceProvider.getPagedServices().get(0),times(1)).resetImportStartIndex();
     assertThat(importScheduler.getLastReset().isAfter(LocalDateTime.now().minusSeconds(2)), is(true));
 
     //clean up mocks
@@ -188,7 +193,9 @@ public class ImportSchedulerTest {
 
     //return one page from first import service
 
-    when(services.get(0).executeImport()).thenReturn(1);
+    ImportResult result = new ImportResult();
+    result.setPagesPassed(1);
+    when(services.get(0).executeImport()).thenReturn(result);
     importScheduler.scheduleProcessEngineImport();
 
     //when

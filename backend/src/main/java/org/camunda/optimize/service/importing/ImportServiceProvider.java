@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
+import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.impl.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.impl.ProcessInstanceImportService;
@@ -27,18 +28,22 @@ public class ImportServiceProvider {
   @Autowired
   private ProcessDefinitionXmlImportService processDefinitionXmlImportService;
 
-  private List<ImportService> services;
+  private List<PaginatedImportService> services;
 
   @PostConstruct
   public void init() {
     services = new ArrayList<>();
     services.add(activityImportService);
-    services.add(processInstanceImportService);
     services.add(processDefinitionImportService);
     services.add(processDefinitionXmlImportService);
   }
 
-  public List<ImportService> getServices() {
+  public ProcessInstanceImportService getProcessInstanceImportService() {
+    return processInstanceImportService;
+  }
+
+  public List<PaginatedImportService> getPagedServices() {
     return services;
   }
+   
 }

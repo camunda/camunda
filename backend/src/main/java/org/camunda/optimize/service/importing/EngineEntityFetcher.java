@@ -149,20 +149,42 @@ public class EngineEntityFetcher {
     return count.getCount();
   }
 
+  public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(Set<String> processInstanceIds) throws OptimizeException {
+    List<HistoricProcessInstanceDto> entries;
+    long requestStart = System.currentTimeMillis();
+    Map<String, Set<String>> pids = new HashMap<>();
+    pids.put("processInstanceIds", processInstanceIds);
+    try {
+      WebTarget baseRequest = client
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getHistoricProcessInstanceEndpoint());
+      entries = baseRequest
+          .request(MediaType.APPLICATION_JSON)
+          .post(Entity.entity(pids, MediaType.APPLICATION_JSON))
+          .readEntity(new GenericType<List<HistoricProcessInstanceDto>>(){});
+      long requestEnd = System.currentTimeMillis();
+      logger.debug("Fetch of [HPI] took [{}] ms", requestEnd - requestStart);
+    } catch (RuntimeException e) {
+      logError("Could not fetch historic process instances from engine. Please check the connection!", e);
+      throw new OptimizeException();
+    }
+    return entries;
+  }
+
   public List<HistoricProcessInstanceDto> fetchHistoricProcessInstances(int indexOfFirstResult, int maxPageSize) throws OptimizeException {
     List<HistoricProcessInstanceDto> entries;
     long requestStart = System.currentTimeMillis();
     try {
       entries = client
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
-        .path(configurationService.getHistoricProcessInstanceEndpoint())
-        .queryParam(SORT_BY, SORT_TYPE_END_TIME)
-        .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
-        .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
-        .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
-        .request(MediaType.APPLICATION_JSON)
-        .get(new GenericType<List<HistoricProcessInstanceDto>>() {
-        });
+          .target(configurationService.getEngineRestApiEndpointOfCustomEngine())
+          .path(configurationService.getHistoricProcessInstanceEndpoint())
+          .queryParam(SORT_BY, SORT_TYPE_END_TIME)
+          .queryParam(SORT_ORDER, SORT_ORDER_TYPE_ASCENDING)
+          .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
+          .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+          .request(MediaType.APPLICATION_JSON)
+          .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+          });
       long requestEnd = System.currentTimeMillis();
       logger.debug("Fetch of [HPI] took [{}] ms", requestEnd - requestStart);
     } catch (RuntimeException e) {

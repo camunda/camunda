@@ -1,6 +1,11 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.importing.impl.PaginatedImportService;
+import org.camunda.optimize.service.importing.job.schedule.IdBasedImportScheduleJob;
+import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
+import org.camunda.optimize.service.importing.job.schedule.ScheduleJobFactory;
 import org.camunda.optimize.service.status.ImportProgressReporter;
 import org.camunda.optimize.service.util.ConfigurationService;
 import org.slf4j.Logger;
@@ -23,13 +28,16 @@ public class ImportScheduler extends Thread {
   protected ConfigurationService configurationService;
 
   @Autowired
-  protected ImportServiceProvider importServiceProvider;
-
-  @Autowired
   protected ImportJobExecutor importJobExecutor;
 
   @Autowired
   protected ImportProgressReporter importProgressReporter;
+
+  @Autowired
+  protected ScheduleJobFactory scheduleJobFactory;
+
+  @Autowired
+  protected ImportServiceProvider importServiceProvider;
 
   protected long backoffCounter = STARTING_BACKOFF;
 
@@ -38,12 +46,8 @@ public class ImportScheduler extends Thread {
   private LocalDateTime lastReset = LocalDateTime.now();
 
   public void scheduleProcessEngineImport() {
-    logger.debug("Scheduling import of all types");
-    for (ImportService service : importServiceProvider.getServices()) {
-      ImportScheduleJob job = new ImportScheduleJob();
-      job.setImportService(service);
-      this.importScheduleJobs.add(job);
-    }
+    logger.debug("Scheduling import of all paginated types");
+    this.importScheduleJobs.addAll(scheduleJobFactory.createPagedJobs());
   }
 
   @Override
@@ -52,7 +56,7 @@ public class ImportScheduler extends Thread {
       checkAndResetImportIndexing();
       logger.debug("Executing import round");
       executeJob();
-      logger.debug("Finished import round. \n");
+      logger.debug("Finished import round");
     }
   }
 
@@ -61,7 +65,7 @@ public class ImportScheduler extends Thread {
     LocalDateTime resetDueDate = lastReset.plus(castToLong, ChronoUnit.HOURS);
     if (LocalDateTime.now().isAfter(resetDueDate)) {
       logger.debug("Reset due date is due. Resetting the import indexes of the import services!");
-      for (ImportService importService : importServiceProvider.getServices()) {
+      for (PaginatedImportService importService : importServiceProvider.getPagedServices()) {
         importService.resetImportStartIndex();
       }
       lastReset = LocalDateTime.now();
@@ -77,17 +81,17 @@ public class ImportScheduler extends Thread {
   }
 
 
-
   protected void executeJob() {
     int pagesPassed = 0;
 
     if (!importScheduleJobs.isEmpty()) {
       ImportScheduleJob toExecute = importScheduleJobs.poll();
-      int startIndex = toExecute.getImportService().getImportStartIndex();
-      int endIndex = 0;
       try {
-        pagesPassed = toExecute.execute();
-        endIndex = toExecute.getImportService().getImportStartIndex();
+
+        ImportResult importResult = toExecute.execute();
+        pagesPassed = importResult.getPagesPassed();
+        postProcess(toExecute, importResult);
+
       } catch (RejectedExecutionException e) {
         //nothing bad happened, we just have a lot of data to import
         //next step is sleep
@@ -96,32 +100,70 @@ public class ImportScheduler extends Thread {
           sleepAndReschedule(pagesPassed, toExecute);
         }
       } catch (OptimizeException op) {
+        // is thrown if there is a connection problem for instance
         sleepAndReschedule(pagesPassed, toExecute);
       } catch (Exception e) {
         if (logger.isDebugEnabled()) {
           logger.debug("error while executing import job", e);
         }
       }
-      if (pagesPassed > 0) {
-        logger.debug(
-            "Processed [{}] pages during data import run of [{}], scheduling one more run",
-            pagesPassed,
-            toExecute.getImportService().getElasticsearchType()
-        );
-        importScheduleJobs.add(toExecute);
-        backoffCounter = STARTING_BACKOFF;
-      } if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
-        logger.debug(
-            "Index of [{}] is [{}]",
-            toExecute.getImportService().getElasticsearchType(),
-            toExecute.getImportService().getImportStartIndex()
-        );
-        importScheduleJobs.add(toExecute);
-      }
+
     }
 
     if (importScheduleJobs.isEmpty()) {
       sleepAndReschedule(pagesPassed);
+    }
+  }
+
+  /**
+   * The job might create additional information for creation of other jobs based on it.
+   * An example is import of HPI based on information obtained from HAI.
+   *
+   * @param toExecute
+   * @param importResult
+   */
+  private void postProcess(ImportScheduleJob toExecute, ImportResult importResult) {
+    if (importResult.getIdsToFetch() != null) {
+      importScheduleJobs.add(scheduleJobFactory.createHistoricProcessInstanceScheduleJob(importResult.getIdsToFetch()));
+    }
+
+    if (toExecute.isPageBased()) {
+      PageBasedImportScheduleJob typeCastedJob = (PageBasedImportScheduleJob) toExecute;
+      rescheduleBasedOnPages(
+          importResult.getPagesPassed(),
+          typeCastedJob,
+          typeCastedJob.getIndexBeforeExecution(),
+          typeCastedJob.getIndexAfterExecution()
+      );
+    }
+  }
+
+  /**
+   * Handle rescheduling of currently executed job based on pages that were fetched
+   * from the engine and overall progress.
+   *
+   * @param pagesPassed
+   * @param toExecute
+   * @param startIndex
+   * @param endIndex
+   */
+  private void rescheduleBasedOnPages(int pagesPassed, PageBasedImportScheduleJob toExecute, int startIndex, int endIndex) {
+    if (pagesPassed > 0) {
+      logger.debug(
+          "Processed [{}] pages during data import run of [{}], scheduling one more run",
+          pagesPassed,
+          toExecute.getImportService().getElasticsearchType()
+      );
+      importScheduleJobs.add(toExecute);
+      backoffCounter = STARTING_BACKOFF;
+    }
+    if (pagesPassed == 0 && (endIndex - startIndex != 0)) {
+      logger.debug(
+          "Index of [{}] is [{}]",
+          toExecute.getImportService().getElasticsearchType(),
+          toExecute.getImportService().getImportStartIndex()
+      );
+      importScheduleJobs.add(toExecute);
     }
   }
 

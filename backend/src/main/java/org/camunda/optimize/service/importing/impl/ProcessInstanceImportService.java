@@ -14,9 +14,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Component
-public class ProcessInstanceImportService extends PaginatedImportService<HistoricProcessInstanceDto, ProcessInstanceDto> {
+public class ProcessInstanceImportService extends IndexedImportService<HistoricProcessInstanceDto, ProcessInstanceDto> {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessInstanceImportService.class);
 
@@ -30,9 +31,8 @@ public class ProcessInstanceImportService extends PaginatedImportService<Histori
     return missingProcessInstanceFinder;
   }
 
-  @Override
-  protected List<HistoricProcessInstanceDto> queryEngineRestPoint(int indexOfFirstResult, int maxPageSize) throws OptimizeException {
-    return engineEntityFetcher.fetchHistoricProcessInstances(indexOfFirstResult, maxPageSize);
+  protected List<HistoricProcessInstanceDto> queryEngineRestPoint(Set<String> idsToFetch) throws OptimizeException {
+    return engineEntityFetcher.fetchHistoricProcessInstances(idsToFetch);
   }
 
   @Override
@@ -69,9 +69,5 @@ public class ProcessInstanceImportService extends PaginatedImportService<Histori
   @Override
   public String getElasticsearchType() {
     return configurationService.getProcessInstanceType();
-  }
-
-  protected int getEngineImportMaxPageSize() {
-    return configurationService.getEngineImportProcessInstanceMaxPageSize();
   }
 }

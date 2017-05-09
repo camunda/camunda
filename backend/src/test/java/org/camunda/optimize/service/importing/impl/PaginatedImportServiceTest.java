@@ -1,8 +1,11 @@
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.impl;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.EngineEntityFetcher;
+import org.camunda.optimize.service.importing.ImportJobExecutor;
 import org.camunda.optimize.service.importing.diff.MissingActivityFinder;
 import org.camunda.optimize.service.importing.impl.ActivityImportService;
 import org.camunda.optimize.service.importing.job.impl.EventImportJob;
@@ -52,6 +55,9 @@ public class PaginatedImportServiceTest {
   @Mock
   private ImportJobExecutor importJobExecutor;
 
+  @Mock
+  private ImportIndexReader importIndexReader;
+
   //do not remove as it is used for autowiring
   @Spy
   @Autowired
@@ -75,7 +81,7 @@ public class PaginatedImportServiceTest {
     exception.expect(OptimizeRuntimeException.class);
 
     // when
-    activityImportService.executeImport();
+    activityImportService.init();
   }
 
   @Test

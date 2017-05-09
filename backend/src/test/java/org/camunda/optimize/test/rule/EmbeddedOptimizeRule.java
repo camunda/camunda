@@ -4,9 +4,10 @@ import org.camunda.optimize.dto.optimize.CredentialsDto;
 import org.camunda.optimize.dto.optimize.ProgressDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.importing.ImportJobExecutor;
-import org.camunda.optimize.service.importing.ImportScheduleJob;
-import org.camunda.optimize.service.importing.ImportService;
+import org.camunda.optimize.service.importing.job.schedule.ImportScheduleJob;
 import org.camunda.optimize.service.importing.ImportServiceProvider;
+import org.camunda.optimize.service.importing.job.schedule.PageBasedImportScheduleJob;
+import org.camunda.optimize.service.importing.impl.PaginatedImportService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
 import org.junit.rules.TestWatcher;
@@ -54,8 +55,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void importEngineEntities() throws OptimizeException {
     getJobExecutor().startExecutingImportJobs();
-    for (ImportService importService : getServiceProvider().getServices()) {
-      ImportScheduleJob job = new ImportScheduleJob();
+    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
+      ImportScheduleJob job = new PageBasedImportScheduleJob();
       job.setImportService(importService);
       job.execute();
     }
@@ -144,7 +145,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public List<Integer> getImportIndexes() {
     List<Integer> indexes = new LinkedList<>();
-    for (ImportService importService : getServiceProvider().getServices()) {
+    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
       indexes.add(importService.getImportStartIndex());
     }
     return indexes;
@@ -152,7 +153,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void resetImportStartIndexes() {
     getJobExecutor().startExecutingImportJobs();
-    for (ImportService importService : getServiceProvider().getServices()) {
+    for (PaginatedImportService importService : getServiceProvider().getPagedServices()) {
       importService.resetImportStartIndex();
     }
     getJobExecutor().stopExecutingImportJobs();
