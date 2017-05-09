@@ -56,10 +56,12 @@ function startServer() {
         'bin',
         utils.isWindows ? 'shutdown.bat' : 'shutdown.sh'
       ]);
-      const startScript = path.resolve(
-        extractTarget,
-         utils.isWindows ? 'start-camunda.bat' : 'start-camunda.sh'
-       );
+      const startScript = utils.findPath(extractTarget, [
+        'server',
+        /tomcat/,
+        'bin',
+        utils.isWindows ? 'startup.bat' : 'startup.sh'
+      ]);
 
       if (running) {
         console.log(chalk.yellow('Previous instance of engine still running closing...'));
