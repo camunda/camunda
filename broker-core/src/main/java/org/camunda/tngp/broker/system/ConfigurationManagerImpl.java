@@ -66,12 +66,26 @@ public class ConfigurationManagerImpl implements ConfigurationManager
     public <T> T readEntry(final String key, final Class<T> configObjectType)
     {
         final Toml componentConfig = toml.getTable(key);
-
-        T configObject = null;
+        final T configObject;
 
         if (componentConfig != null)
         {
             configObject = componentConfig.to(configObjectType);
+        }
+        else
+        {
+            try
+            {
+                configObject = configObjectType.newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException("Configuration class should have public default ctor!", e);
+            }
+        }
+
+        if (configObject instanceof ComponentConfiguration)
+        {
             ((ComponentConfiguration) configObject).applyGlobalConfiguration(componentConfig, this.globalConfiguration);
         }
 

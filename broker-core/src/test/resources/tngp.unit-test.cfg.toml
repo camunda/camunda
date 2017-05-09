@@ -2,9 +2,6 @@
 
 # Global configuration --------------------------------
 
-[global]
-
-
 # Networking configuration ----------------------------
 
 [network]
@@ -26,12 +23,6 @@ host = "localhost"
 port = 51017
 receiveBufferSize = 16
 
-[network.gossip]
-
-
-[network.management]
-
-
 # System Configuration --------------------------------
 
 [threading]
@@ -39,19 +30,7 @@ numberOfThreads = 2
 maxIdleTimeMs = 100
 idleStrategy = "BACKOFF"
 
-[metrics]
-
-
 # Log Configuration -----------------------------------
 
 [logs]
 defaultLogSegmentSize = 512
-
-
-[snapshot]
-
-
-# Topic Subscriptions ------------------------------------------
-
-[subscriptions]
-

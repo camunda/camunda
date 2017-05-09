@@ -1,21 +1,18 @@
 package org.camunda.tngp.broker.test;
 
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-
 import org.agrona.IoUtil;
 import org.camunda.tngp.broker.Broker;
 import org.camunda.tngp.broker.system.ConfigurationManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Set;
 
 
 
@@ -42,6 +39,7 @@ class ConfigurationHelper
                 configBuffer.append(each);
                 configBuffer.append(System.lineSeparator());
             }
+            configMaps.remove(sCurrentLine);
         }
     }
     public String generateConfig()
@@ -62,6 +60,16 @@ class ConfigurationHelper
                 configBuffer.append(sCurrentLine);
                 configBuffer.append(System.lineSeparator());
                 lineHandler(sCurrentLine);
+            }
+            if (!configMaps.isEmpty())
+            {
+                final Set<String> keys = configMaps.keySet();
+                for (String key : keys)
+                {
+                    configBuffer.append(key);
+                    configBuffer.append(System.lineSeparator());
+                    lineHandler(key);
+                }
             }
 
         }

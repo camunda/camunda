@@ -1,14 +1,5 @@
 package org.camunda.tngp.broker.workflow.processor;
 
-import static org.agrona.BitUtil.SIZE_OF_CHAR;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
-import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
-
-import java.nio.ByteOrder;
-import java.util.EnumMap;
-import java.util.Map;
-
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.LongLruCache;
@@ -26,14 +17,7 @@ import org.camunda.tngp.broker.workflow.data.DeployedWorkflow;
 import org.camunda.tngp.broker.workflow.data.WorkflowDeploymentEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEvent;
 import org.camunda.tngp.broker.workflow.data.WorkflowInstanceEventType;
-import org.camunda.tngp.broker.workflow.graph.model.BpmnAspect;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableEndEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowElement;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableFlowNode;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableSequenceFlow;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableServiceTask;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableStartEvent;
-import org.camunda.tngp.broker.workflow.graph.model.ExecutableWorkflow;
+import org.camunda.tngp.broker.workflow.graph.model.*;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.Mapping;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata;
 import org.camunda.tngp.broker.workflow.graph.model.metadata.TaskMetadata.TaskHeader;
@@ -43,11 +27,7 @@ import org.camunda.tngp.hashindex.Bytes2LongHashIndex;
 import org.camunda.tngp.hashindex.Long2BytesHashIndex;
 import org.camunda.tngp.hashindex.Long2LongHashIndex;
 import org.camunda.tngp.hashindex.store.IndexStore;
-import org.camunda.tngp.logstreams.log.BufferedLogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStream;
-import org.camunda.tngp.logstreams.log.LogStreamReader;
-import org.camunda.tngp.logstreams.log.LogStreamWriter;
-import org.camunda.tngp.logstreams.log.LoggedEvent;
+import org.camunda.tngp.logstreams.log.*;
 import org.camunda.tngp.logstreams.processor.EventProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessor;
 import org.camunda.tngp.logstreams.processor.StreamProcessorContext;
@@ -55,21 +35,20 @@ import org.camunda.tngp.logstreams.snapshot.ComposedSnapshot;
 import org.camunda.tngp.logstreams.spi.SnapshotSupport;
 import org.camunda.tngp.protocol.clientapi.EventType;
 
+import java.nio.ByteOrder;
+import java.util.EnumMap;
+import java.util.Map;
+
+import static org.agrona.BitUtil.SIZE_OF_CHAR;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.camunda.tngp.protocol.clientapi.EventType.TASK_EVENT;
+import static org.camunda.tngp.protocol.clientapi.EventType.WORKFLOW_EVENT;
+
 public class WorkflowInstanceStreamProcessor implements StreamProcessor
 {
 
     public static final int SIZE_OF_PROCESS_ID = BpmnProcessIdRule.PROCESS_ID_MAX_LENGTH * SIZE_OF_CHAR;
     public static final int SIZE_OF_COMPOSITE_KEY = SIZE_OF_PROCESS_ID + SIZE_OF_INT;
-
-    /**
-     * The default workflow cache capacity, which is used if no cache capacity is specified via configuration file.
-     */
-    private static final int DEFAULT_WORKFLOW_CACHE_CAPACITY = 1024;
-
-    /**
-     * The maxiumum payload size, which is 4096 bytes.
-     */
-    private static final int PAYLOAD_MAX_SIZE = 1024 * 4;
 
     // processors ////////////////////////////////////
     protected final DeployedWorkflowEventProcessor deployedWorkflowEventProcessor = new DeployedWorkflowEventProcessor();
@@ -79,7 +58,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     protected final WorkflowInstanceCompletedEventProcessor workflowInstanceCompletedEventProcessor = new WorkflowInstanceCompletedEventProcessor();
 
     protected final SequenceFlowTakenEventProcessor sequenceFlowTakenEventProcessor = new SequenceFlowTakenEventProcessor();
-    protected final ActivityActivatedEventProcessor activityActivatedEventProcessor = new ActivityActivatedEventProcessor();
+    protected final ActivityActivatedEventProcessor activityActivatedEventProcessor;
 
     protected final TaskCompletedEventProcessor taskCompletedEventProcessor = new TaskCompletedEventProcessor();
 
@@ -147,21 +126,32 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
      */
     protected final LongLruCache<ExecutableWorkflow> workflowCache;
 
-    protected final PayloadMappingProcessor payloadMappingProcessor = new PayloadMappingProcessor(PAYLOAD_MAX_SIZE);
+    protected final PayloadMappingProcessor payloadMappingProcessor;
+
+    /**
+     * The maxiumum payload size.
+     */
+    protected final int maxPayloadSize;
 
     public WorkflowInstanceStreamProcessor(
             CommandResponseWriter responseWriter,
             IndexStore workflowPositionIndexStore,
             IndexStore workflowVersionIndexStore,
             IndexStore workflowInstanceTokenCountIndexStore,
-            IndexStore workflowInstancePayloadIndexStore)
+            IndexStore workflowInstancePayloadIndexStore,
+            int cacheSize,
+            int maxPayloadSize)
     {
         this.responseWriter = responseWriter;
 
         this.workflowPositionIndex = new Bytes2LongHashIndex(workflowPositionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_COMPOSITE_KEY);
         this.latestWorkflowVersionIndex = new Bytes2LongHashIndex(workflowVersionIndexStore, Short.MAX_VALUE, 64, SIZE_OF_PROCESS_ID);
         this.workflowInstanceTokenCountIndex = new Long2LongHashIndex(workflowInstanceTokenCountIndexStore, Short.MAX_VALUE, 256);
-        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, PAYLOAD_MAX_SIZE + SIZE_OF_INT);
+
+        this.maxPayloadSize = maxPayloadSize;
+        this.payloadMappingProcessor = new PayloadMappingProcessor(maxPayloadSize);
+        this.activityActivatedEventProcessor = new ActivityActivatedEventProcessor(maxPayloadSize);
+        this.workflowInstancePayloadIndex = new Long2BytesHashIndex(workflowInstancePayloadIndexStore, Short.MAX_VALUE, 64, maxPayloadSize + SIZE_OF_INT);
 
         this.composedSnapshot = new ComposedSnapshot(
                 new HashIndexSnapshotSupport<>(workflowPositionIndex, workflowPositionIndexStore),
@@ -169,7 +159,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
                 new HashIndexSnapshotSupport<>(workflowInstanceTokenCountIndex, workflowInstanceTokenCountIndexStore),
                 new HashIndexSnapshotSupport<>(workflowInstancePayloadIndex, workflowInstancePayloadIndexStore));
 
-        workflowCache = new LongLruCache<>(DEFAULT_WORKFLOW_CACHE_CAPACITY, this::lookupWorkflow, (workflow) ->
+        workflowCache = new LongLruCache<>(cacheSize, this::lookupWorkflow, (workflow) ->
         { });
     }
 
@@ -474,6 +464,13 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
     private final class ActivityActivatedEventProcessor implements EventProcessor
     {
 
+        private final MutableDirectBuffer tempPayload;
+
+        ActivityActivatedEventProcessor(int maxPayload)
+        {
+            tempPayload = new UnsafeBuffer(new byte[maxPayload + SIZE_OF_INT]);
+        }
+
         @Override
         public void processEvent()
         {
@@ -499,7 +496,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessor
             }
         }
 
-        private final MutableDirectBuffer tempPayload = new UnsafeBuffer(new byte[PAYLOAD_MAX_SIZE + SIZE_OF_INT]);
 
         public void setTaskPayload(Mapping[] mappings)
         {

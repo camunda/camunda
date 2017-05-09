@@ -36,7 +36,7 @@ public class ComponentConfiguration
         }
         public Object execute()
         {
-            if (this.globalObj != null && !tomlHandler.contains(this.localName))
+            if (this.globalObj != null && (tomlHandler == null || !tomlHandler.contains(this.localName)))
             {
                 return this.rule.apply(this.globalObj);
             }
@@ -56,10 +56,6 @@ public class ComponentConfiguration
     //used in configuration manager
     public boolean applyGlobalConfiguration(Toml tomlHandler, GlobalConfiguration global)
     {
-        if (tomlHandler == null)
-        {
-            return false;
-        }
 
         this.tomlHandler = tomlHandler;
         this.globalConfiguration = global;

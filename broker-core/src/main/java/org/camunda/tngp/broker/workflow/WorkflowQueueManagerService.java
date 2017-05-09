@@ -64,10 +64,12 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
     protected ServiceStartContext serviceContext;
     protected DeferredCommandContext asyncContext;
     protected LogStreamsCfg logStreamsCfg;
+    protected WorkflowCfg workflowCfg;
 
     public WorkflowQueueManagerService(final ConfigurationManager configurationManager)
     {
         logStreamsCfg = configurationManager.readEntry("logs", LogStreamsCfg.class);
+        workflowCfg = configurationManager.readEntry("workflow", WorkflowCfg.class);
     }
 
     @Override
@@ -92,17 +94,17 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
         final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
 
         final DeploymentStreamProcessor deploymentStreamProcessor = new DeploymentStreamProcessor(responseWriter, indexStore);
-        final StreamProcessorService deployemtStreamProcessorService = new StreamProcessorService(
+        final StreamProcessorService deploymentStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
                 DEPLOYMENT_PROCESSOR_ID,
                 deploymentStreamProcessor)
                 .eventFilter(DeploymentStreamProcessor.eventFilter());
 
-        serviceContext.createService(streamProcessorServiceName, deployemtStreamProcessorService)
-                .dependency(logStreamServiceName, deployemtStreamProcessorService.getSourceStreamInjector())
-                .dependency(logStreamServiceName, deployemtStreamProcessorService.getTargetStreamInjector())
-                .dependency(SNAPSHOT_STORAGE_SERVICE, deployemtStreamProcessorService.getSnapshotStorageInjector())
-                .dependency(AGENT_RUNNER_SERVICE, deployemtStreamProcessorService.getAgentRunnerInjector())
+        serviceContext.createService(streamProcessorServiceName, deploymentStreamProcessorService)
+                .dependency(logStreamServiceName, deploymentStreamProcessorService.getSourceStreamInjector())
+                .dependency(logStreamServiceName, deploymentStreamProcessorService.getTargetStreamInjector())
+                .dependency(SNAPSHOT_STORAGE_SERVICE, deploymentStreamProcessorService.getSnapshotStorageInjector())
+                .dependency(AGENT_RUNNER_SERVICE, deploymentStreamProcessorService.getAgentRunnerInjector())
                 .install();
     }
 
@@ -128,7 +130,9 @@ public class WorkflowQueueManagerService implements Service<WorkflowQueueManager
                 workflowPositionIndexStore,
                 workflowVersionIndexStore,
                 workflowInstanceTokenCountIndexStore,
-                workflowInstancePayloadIndexStore);
+                workflowInstancePayloadIndexStore,
+                workflowCfg.cacheSize,
+                workflowCfg.maxPayloadSize);
 
         final StreamProcessorService workflowStreamProcessorService = new StreamProcessorService(
                 streamProcessorName,
